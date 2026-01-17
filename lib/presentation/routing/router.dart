@@ -13,7 +13,9 @@ import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_p
 import 'package:taskly_bloc/presentation/features/values/view/value_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/inbox/view/inbox_page.dart';
 import 'package:taskly_bloc/presentation/features/anytime/view/anytime_page.dart';
-import 'package:taskly_bloc/core/env/env.dart';
+import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
+import 'package:taskly_bloc/presentation/features/scheduled/model/scheduled_scope.dart';
+import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_mvp_page.dart';
 
 /// Router for authenticated app shell.
@@ -55,8 +57,27 @@ final router = GoRouter(
             ? candidate
             : null;
 
+        // Scoped Anytime routes should still highlight the Anytime destination.
+        final scopedAnytimeActiveScreenId =
+            (segments.length == 3 &&
+                (segments.first == 'project' || segments.first == 'value') &&
+                segments.last == 'anytime')
+            ? Routing.parseScreenKey('anytime')
+            : null;
+
+        // Scoped Scheduled routes should still highlight the Scheduled destination.
+        final scopedScheduledActiveScreenId =
+            (segments.length == 3 &&
+                (segments.first == 'project' || segments.first == 'value') &&
+                segments.last == 'scheduled')
+            ? Routing.parseScreenKey('scheduled')
+            : null;
+
         return ScaffoldWithNestedNavigation(
-          activeScreenId: activeScreenId,
+          activeScreenId:
+              scopedScheduledActiveScreenId ??
+              scopedAnytimeActiveScreenId ??
+              activeScreenId,
           child: child,
         );
       },
@@ -73,17 +94,80 @@ final router = GoRouter(
         GoRoute(
           path: Routing.screenPath('my_day'),
           builder: (_, __) {
-            if (Env.enableMvpMyDay) return const MyDayMvpPage();
-            return Routing.buildScreen('my_day');
+            return const MyDayMvpPage();
           },
         ),
         GoRoute(
           path: Routing.screenPath('someday'),
           builder: (_, __) => const AnytimePage(),
         ),
+
+        // Scoped Anytime feeds.
+        GoRoute(
+          path: '/project/:id/anytime',
+          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+            state,
+            paramName: 'id',
+            entityType: 'project',
+            operation: 'route_param_decode_project_anytime_scope',
+          ),
+          builder: (_, state) {
+            final id = state.pathParameters['id']!;
+            return AnytimePage(
+              scope: AnytimeScope.project(projectId: id),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/value/:id/anytime',
+          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+            state,
+            paramName: 'id',
+            entityType: 'value',
+            operation: 'route_param_decode_value_anytime_scope',
+          ),
+          builder: (_, state) {
+            final id = state.pathParameters['id']!;
+            return AnytimePage(
+              scope: AnytimeScope.value(valueId: id),
+            );
+          },
+        ),
         GoRoute(
           path: Routing.screenPath('scheduled'),
-          builder: (_, __) => Routing.buildScreen('scheduled'),
+          builder: (_, __) => const ScheduledPage(),
+        ),
+
+        // Scoped Scheduled feeds.
+        GoRoute(
+          path: '/project/:id/scheduled',
+          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+            state,
+            paramName: 'id',
+            entityType: 'project',
+            operation: 'route_param_decode_project_scheduled_scope',
+          ),
+          builder: (_, state) {
+            final id = state.pathParameters['id']!;
+            return ScheduledPage(
+              scope: ProjectScheduledScope(projectId: id),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/value/:id/scheduled',
+          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+            state,
+            paramName: 'id',
+            entityType: 'value',
+            operation: 'route_param_decode_value_scheduled_scope',
+          ),
+          builder: (_, state) {
+            final id = state.pathParameters['id']!;
+            return ScheduledPage(
+              scope: ValueScheduledScope(valueId: id),
+            );
+          },
         ),
 
         // Inbox is a new global MVP route. Implementation will move to a real

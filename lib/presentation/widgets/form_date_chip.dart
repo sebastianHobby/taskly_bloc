@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
 /// A compact date chip for forms that shows a date or "Add [label]" prompt.
 ///
@@ -89,7 +91,7 @@ class FormDateChip extends StatelessWidget {
 
   bool _isOverdue(DateTime? date) {
     if (date == null || !isDeadline) return false;
-    final now = DateTime.now();
+    final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final dateDay = DateTime(date.year, date.month, date.day);
     return dateDay.isBefore(today);

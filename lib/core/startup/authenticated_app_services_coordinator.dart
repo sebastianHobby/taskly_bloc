@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:taskly_core/logging.dart';
+import 'package:taskly_data/data_stack.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
 /// Starts and stops the set of services that should only run once a user is
@@ -10,6 +11,7 @@ import 'package:taskly_domain/taskly_domain.dart';
 /// allowing the app to keep running offline after a successful sign-in.
 class AuthenticatedAppServicesCoordinator {
   AuthenticatedAppServicesCoordinator({
+    required TasklyDataStack dataStack,
     required HomeDayKeyService homeDayKeyService,
     required AppLifecycleService appLifecycleService,
     required TemporalTriggerService temporalTriggerService,
@@ -17,7 +19,8 @@ class AuthenticatedAppServicesCoordinator {
     attentionTemporalInvalidationService,
     required AttentionPrewarmService attentionPrewarmService,
     required AllocationSnapshotCoordinator allocationSnapshotCoordinator,
-  }) : _homeDayKeyService = homeDayKeyService,
+  }) : _dataStack = dataStack,
+       _homeDayKeyService = homeDayKeyService,
        _appLifecycleService = appLifecycleService,
        _temporalTriggerService = temporalTriggerService,
        _attentionTemporalInvalidationService =
@@ -25,6 +28,7 @@ class AuthenticatedAppServicesCoordinator {
        _attentionPrewarmService = attentionPrewarmService,
        _allocationSnapshotCoordinator = allocationSnapshotCoordinator;
 
+  final TasklyDataStack _dataStack;
   final HomeDayKeyService _homeDayKeyService;
   final AppLifecycleService _appLifecycleService;
   final TemporalTriggerService _temporalTriggerService;
@@ -47,6 +51,9 @@ class AuthenticatedAppServicesCoordinator {
     try {
       talker.info('[AuthServices] starting post-auth services');
 
+      // Session lifecycle is owned by the app (DEC-032B).
+      await _dataStack.startSession();
+
       await _homeDayKeyService.ensureInitialized();
       _homeDayKeyService.start();
 
@@ -65,21 +72,42 @@ class AuthenticatedAppServicesCoordinator {
   }
 
   Future<void> stop() async {
-    if (!_started) {
-      _startInFlight = null;
-      return;
+    await stopWithReason(reason: 'sign out', clearLocalData: true);
+  }
+
+  Future<void> stopWithReason({
+    required String reason,
+    required bool clearLocalData,
+  }) async {
+    // If start is in-flight, wait for it to settle so we don't race
+    // with partial initialization.
+    final inFlight = _startInFlight;
+    if (inFlight != null) {
+      try {
+        await inFlight;
+      } catch (_) {
+        // Ignore; we still attempt best-effort session shutdown.
+      }
     }
 
-    talker.info('[AuthServices] stopping post-auth services');
+    if (_started) {
+      talker.info('[AuthServices] stopping post-auth services ($reason)');
 
-    // Stop in reverse-ish order of dependencies.
-    await _allocationSnapshotCoordinator.stop();
-    await _attentionPrewarmService.stop();
-    _attentionTemporalInvalidationService.stop();
-    _temporalTriggerService.stop();
-    _appLifecycleService.stop();
-    _homeDayKeyService.stop();
+      // Stop in reverse-ish order of dependencies.
+      await _allocationSnapshotCoordinator.stop();
+      await _attentionPrewarmService.stop();
+      _attentionTemporalInvalidationService.stop();
+      _temporalTriggerService.stop();
+      _appLifecycleService.stop();
+      _homeDayKeyService.stop();
 
-    _started = false;
+      _started = false;
+    }
+
+    await _dataStack.stopSession(
+      reason: reason,
+      clearLocalData: clearLocalData,
+    );
+    _startInFlight = null;
   }
 }

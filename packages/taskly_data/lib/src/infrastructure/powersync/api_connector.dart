@@ -385,12 +385,7 @@ Future<String> getDatabasePath() async {
 }
 
 /// Opens the PowerSync database and sets up auth state listeners.
-///
-/// [onAuthenticated] is called after each successful authentication:
-/// - Once immediately if user is already logged in
-/// - On each signedIn event
 Future<PowerSyncDatabase> openDatabase({
-  Future<void> Function()? onAuthenticated,
   String? pathOverride,
 }) async {
   final db = PowerSyncDatabase(
@@ -443,67 +438,6 @@ Future<PowerSyncDatabase> openDatabase({
     }
   });
 
-  SupabaseConnector? currentConnector;
-  var lastAuthenticatedUserId = getUserId();
-
-  Future<void> disconnectAndClear({required String reason}) async {
-    currentConnector = null;
-
-    talker.warning('[powersync] Clearing local data ($reason)');
-    await db.disconnect();
-
-    try {
-      await db.disconnectedAndClear();
-    } catch (e, st) {
-      // Avoid turning a sign-out into a crash.
-      talker.handle(
-        e,
-        st,
-        '[powersync] Failed to clear local data ($reason) - continuing',
-      );
-    }
-  }
-
-  if (isLoggedIn()) {
-    // If the user is already logged in, connect immediately.
-    // Otherwise, connect once logged in.
-    currentConnector = SupabaseConnector(db);
-    await db.connect(connector: currentConnector!);
-
-    // Run post-auth maintenance (seeding, cleanup)
-    await onAuthenticated?.call();
-  }
-
-  Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
-    final event = data.event;
-    if (event == AuthChangeEvent.signedIn) {
-      final newUserId = getUserId();
-
-      // Always clear when the authenticated user changes.
-      // Offline-first local DB + user switch without clearing can leak
-      // cross-user state.
-      if (lastAuthenticatedUserId != null &&
-          newUserId != null &&
-          newUserId != lastAuthenticatedUserId) {
-        await disconnectAndClear(reason: 'user switch');
-      }
-
-      lastAuthenticatedUserId = newUserId;
-
-      // Connect to PowerSync when the user is signed in
-      currentConnector = SupabaseConnector(db);
-      await db.connect(connector: currentConnector!);
-
-      // Run post-auth maintenance (seeding, cleanup)
-      await onAuthenticated?.call();
-    } else if (event == AuthChangeEvent.signedOut) {
-      lastAuthenticatedUserId = null;
-      await disconnectAndClear(reason: 'sign out');
-    } else if (event == AuthChangeEvent.tokenRefreshed) {
-      // Supabase token refreshed - trigger token refresh for PowerSync.
-      await currentConnector?.prefetchCredentials();
-    }
-  });
   return db;
 }
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
 /// Utility class for date-related display logic.
 ///
@@ -10,7 +12,7 @@ class DateDisplayUtils {
   /// Checks if the given deadline date is overdue (before today).
   static bool isOverdue(DateTime? deadline, {bool isCompleted = false}) {
     if (deadline == null || isCompleted) return false;
-    final now = DateTime.now();
+    final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
     return deadlineDay.isBefore(today);
@@ -19,7 +21,7 @@ class DateDisplayUtils {
   /// Checks if the given deadline date is today.
   static bool isDueToday(DateTime? deadline, {bool isCompleted = false}) {
     if (deadline == null || isCompleted) return false;
-    final now = DateTime.now();
+    final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
     return deadlineDay.isAtSameMomentAs(today);
@@ -32,7 +34,7 @@ class DateDisplayUtils {
     int withinDays = 3,
   }) {
     if (deadline == null || isCompleted) return false;
-    final now = DateTime.now();
+    final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
     final daysUntil = deadlineDay.difference(today).inDays;
@@ -41,7 +43,7 @@ class DateDisplayUtils {
 
   /// Formats a date relative to today (e.g., "Today", "Tomorrow", "In 3 days").
   static String formatRelativeDate(BuildContext context, DateTime date) {
-    final now = DateTime.now();
+    final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final dateDay = DateTime(date.year, date.month, date.day);
     final difference = dateDay.difference(today).inDays;
