@@ -329,7 +329,7 @@ class ProjectRepository implements ProjectRepositoryContract {
         .map((rows) => rows.map(_toExceptionData).toList());
 
     final evaluator = ProjectFilterEvaluator();
-    final ctx = EvaluationContext();
+    final ctx = EvaluationContext(today: dateOnly(systemClock.nowUtc()));
 
     return occurrenceExpander.expandProjectOccurrences(
       projectsStream: baseStream,

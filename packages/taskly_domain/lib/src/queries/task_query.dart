@@ -245,10 +245,12 @@ class TaskQuery {
   }
 
   /// Tasks due today.
-  factory TaskQuery.dueToday({List<SortCriterion>? sortCriteria}) {
-    final today = DateTime.now();
-    final startOfDay = DateTime(today.year, today.month, today.day);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
+  factory TaskQuery.dueToday({
+    required DateTime todayDayKeyUtc,
+    List<SortCriterion>? sortCriteria,
+  }) {
+    final startOfDay = todayDayKeyUtc;
+    final endOfDay = todayDayKeyUtc.add(const Duration(days: 1));
     return TaskQuery(
       filter: QueryFilter<TaskPredicate>(
         shared: [
@@ -269,13 +271,12 @@ class TaskQuery {
   }
 
   /// Tasks due this week.
-  factory TaskQuery.dueThisWeek({List<SortCriterion>? sortCriteria}) {
-    final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final start = DateTime(
-      startOfWeek.year,
-      startOfWeek.month,
-      startOfWeek.day,
+  factory TaskQuery.dueThisWeek({
+    required DateTime todayDayKeyUtc,
+    List<SortCriterion>? sortCriteria,
+  }) {
+    final start = todayDayKeyUtc.subtract(
+      Duration(days: todayDayKeyUtc.weekday - 1),
     );
     final end = start.add(const Duration(days: 7));
     return TaskQuery(
@@ -298,9 +299,11 @@ class TaskQuery {
   }
 
   /// Overdue tasks.
-  factory TaskQuery.overdue({List<SortCriterion>? sortCriteria}) {
-    final today = DateTime.now();
-    final startOfDay = DateTime(today.year, today.month, today.day);
+  factory TaskQuery.overdue({
+    required DateTime todayDayKeyUtc,
+    List<SortCriterion>? sortCriteria,
+  }) {
+    final startOfDay = todayDayKeyUtc;
     return TaskQuery(
       filter: QueryFilter<TaskPredicate>(
         shared: [

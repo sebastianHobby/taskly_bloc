@@ -23,6 +23,8 @@ class TaskStatsCalculator {
   StatResult calculate({
     required List<Task> tasks,
     required TaskStatType statType,
+    required DateTime nowUtc,
+    required DateTime todayDayKeyUtc,
     DateRange? range,
   }) {
     final relevantTasks = range != null
@@ -33,13 +35,20 @@ class TaskStatsCalculator {
       TaskStatType.totalCount => _calculateTotalCount(relevantTasks),
       TaskStatType.completedCount => _calculateCompletedCount(relevantTasks),
       TaskStatType.completionRate => _calculateCompletionRate(relevantTasks),
-      TaskStatType.staleCount => _calculateStaleCount(relevantTasks),
-      TaskStatType.overdueCount => _calculateOverdueCount(relevantTasks),
+      TaskStatType.staleCount => _calculateStaleCount(
+        relevantTasks,
+        nowUtc: nowUtc,
+      ),
+      TaskStatType.overdueCount => _calculateOverdueCount(
+        relevantTasks,
+        todayDayKeyUtc: todayDayKeyUtc,
+      ),
       TaskStatType.avgDaysToComplete => _calculateAvgDaysToComplete(
         relevantTasks,
       ),
       TaskStatType.completedThisWeek => _calculateCompletedThisWeek(
         relevantTasks,
+        todayDayKeyUtc: todayDayKeyUtc,
       ),
       TaskStatType.velocity => _calculateVelocity(relevantTasks, range),
     };
@@ -99,9 +108,11 @@ class TaskStatsCalculator {
     );
   }
 
-  StatResult _calculateStaleCount(List<Task> tasks) {
-    final now = DateTime.now();
-    final staleThreshold = now.subtract(Duration(days: staleThresholdDays));
+  StatResult _calculateStaleCount(
+    List<Task> tasks, {
+    required DateTime nowUtc,
+  }) {
+    final staleThreshold = nowUtc.subtract(Duration(days: staleThresholdDays));
 
     final stale = tasks.where((t) {
       if (t.completed) return false;
@@ -118,13 +129,14 @@ class TaskStatsCalculator {
     );
   }
 
-  StatResult _calculateOverdueCount(List<Task> tasks) {
-    final now = DateTime.now();
-
+  StatResult _calculateOverdueCount(
+    List<Task> tasks, {
+    required DateTime todayDayKeyUtc,
+  }) {
     final overdue = tasks.where((t) {
       if (t.completed) return false;
       final dueDate = t.deadlineDate;
-      return dueDate != null && dueDate.isBefore(now);
+      return dueDate != null && dueDate.isBefore(todayDayKeyUtc);
     }).length;
 
     return StatResult(
@@ -163,9 +175,13 @@ class TaskStatsCalculator {
     );
   }
 
-  StatResult _calculateCompletedThisWeek(List<Task> tasks) {
-    final now = DateTime.now();
-    final weekStart = now.subtract(Duration(days: now.weekday - 1));
+  StatResult _calculateCompletedThisWeek(
+    List<Task> tasks, {
+    required DateTime todayDayKeyUtc,
+  }) {
+    final weekStart = todayDayKeyUtc.subtract(
+      Duration(days: todayDayKeyUtc.weekday - 1),
+    );
     final weekEnd = weekStart.add(const Duration(days: 7));
 
     final completed = tasks.where((t) {

@@ -18,6 +18,7 @@ import 'package:taskly_domain/src/services/analytics/analytics_service.dart';
 import 'package:taskly_domain/src/allocation/contracts/allocation_snapshot_repository_contract.dart';
 import 'package:taskly_domain/src/allocation/model/allocation_snapshot.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
+import 'package:taskly_domain/src/time/clock.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/src/services/values/effective_values.dart';
 
@@ -34,6 +35,7 @@ class AllocationOrchestrator {
     required AnalyticsService analyticsService,
     required ProjectRepositoryContract projectRepository,
     required HomeDayKeyService dayKeyService,
+    Clock clock = systemClock,
     AllocationSnapshotRepositoryContract? allocationSnapshotRepository,
   }) : _taskRepository = taskRepository,
        _valueRepository = valueRepository,
@@ -41,6 +43,7 @@ class AllocationOrchestrator {
        _analyticsService = analyticsService,
        _projectRepository = projectRepository,
        _dayKeyService = dayKeyService,
+       _clock = clock,
        _allocationSnapshotRepository = allocationSnapshotRepository;
 
   final TaskRepositoryContract _taskRepository;
@@ -49,6 +52,7 @@ class AllocationOrchestrator {
   final AnalyticsService _analyticsService;
   final ProjectRepositoryContract _projectRepository;
   final HomeDayKeyService _dayKeyService;
+  final Clock _clock;
   final AllocationSnapshotRepositoryContract? _allocationSnapshotRepository;
 
   /// Watch the full allocation result (pinned + allocated tasks)
@@ -109,7 +113,8 @@ class AllocationOrchestrator {
     final projects = combined.$2;
     final allocationConfig = combined.$3;
 
-    final todayUtc = _dayKeyService.todayDayKeyUtc();
+    final nowUtc = _clock.nowUtc();
+    final todayUtc = _dayKeyService.todayDayKeyUtc(nowUtc: nowUtc);
 
     AppLog.routineThrottled(
       'allocation.stream_update',
@@ -201,6 +206,8 @@ class AllocationOrchestrator {
     final allocatedRegularTasks = await allocateRegularTasks(
       regularTasks,
       allocationConfig,
+      nowUtc: nowUtc,
+      todayDayKeyUtc: todayUtc,
     );
 
     final candidatePoolCountNow =
@@ -234,6 +241,7 @@ class AllocationOrchestrator {
     final urgencyDetector = UrgencyDetector.fromConfig(allocationConfig);
     final urgentValueless = urgencyDetector.findUrgentValuelessTasks(
       regularTasks,
+      todayDayKeyUtc: todayUtc,
     );
     if (urgentValueless.isNotEmpty) {
       talker.debug(
@@ -337,6 +345,10 @@ class AllocationOrchestrator {
   Future<AllocationResult> allocateRegularTasks(
     List<Task> tasks,
     AllocationConfig config,
+    {
+    required DateTime nowUtc,
+    required DateTime todayDayKeyUtc,
+  }
   ) async {
     // Get all values first - needed for both ranking check and allocation
     final values = await _valueRepository.getAll();
@@ -406,6 +418,8 @@ class AllocationOrchestrator {
 
     // Run allocation
     final parameters = AllocationParameters(
+      nowUtc: nowUtc,
+      todayDayKeyUtc: todayDayKeyUtc,
       tasks: tasks,
       categories: categories,
       maxTasks: config.dailyLimit,

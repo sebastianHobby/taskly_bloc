@@ -70,7 +70,8 @@ class NeglectBasedAllocator implements AllocationStrategy {
       projectThresholdDays: parameters.taskUrgencyThresholdDays,
     );
 
-    final now = DateTime.now();
+    final nowUtc = parameters.nowUtc;
+    final todayDayKeyUtc = parameters.todayDayKeyUtc;
 
     // SINGLE-PASS: Calculate combined score for EACH task
     final scoredTasks = <_ScoredTask>[];
@@ -117,11 +118,14 @@ class NeglectBasedAllocator implements AllocationStrategy {
       final neglectFactor = neglectMultipliers[categoryId] ?? 1.0;
 
       // Urgency factor (from task's deadline)
-      final isUrgent = detector.isTaskUrgent(task);
+      final isUrgent = detector.isTaskUrgent(
+        task,
+        todayDayKeyUtc: todayDayKeyUtc,
+      );
       var urgencyFactor = isUrgent ? parameters.urgencyBoostMultiplier : 1.0;
       final deadline = task.deadlineDate;
       if (deadline != null) {
-        final daysUntilDeadline = deadline.difference(now).inDays;
+        final daysUntilDeadline = deadline.difference(todayDayKeyUtc).inDays;
         if (daysUntilDeadline < 0) {
           urgencyFactor *= AllocationScoring.overdueEmergencyFactor(
             daysOverdue: -daysUntilDeadline,
@@ -137,7 +141,7 @@ class NeglectBasedAllocator implements AllocationStrategy {
 
       final recencyFactor = AllocationScoring.recencyMultiplier(
         task: task,
-        now: now,
+        now: nowUtc,
         recencyPenalty: parameters.recencyPenalty,
       );
 

@@ -89,6 +89,18 @@ abstract final class AppLog {
     talker.handle(error, stackTrace, _format(category, message));
   }
 
+  /// Logs an exception/error with stack trace and structured fields.
+  static void handleStructured(
+    String category,
+    String message,
+    Object error, [
+    StackTrace? stackTrace,
+    Map<String, Object?> fields = const <String, Object?>{},
+  ]) {
+    final formatted = _format(category, _withFields(message, fields));
+    talker.handle(error, stackTrace, formatted);
+  }
+
   /// Emits a routine log at most once per [interval] for a [key].
   static void routineThrottled(
     String key,

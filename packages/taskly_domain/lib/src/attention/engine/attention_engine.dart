@@ -18,6 +18,7 @@ import 'package:taskly_domain/src/core/model/project.dart';
 import 'package:taskly_domain/src/allocation/engine/urgency_detector.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/services/values/effective_values.dart';
+import 'package:taskly_domain/src/time/clock.dart';
 import 'package:uuid/uuid.dart';
 
 /// Reactive attention evaluation engine.
@@ -34,12 +35,14 @@ class AttentionEngine implements AttentionEngineContract {
     required SettingsRepositoryContract settingsRepository,
     required HomeDayKeyService dayKeyService,
     required Stream<void> invalidations,
+    Clock clock = systemClock,
   }) : _attentionRepository = attentionRepository,
        _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _allocationSnapshotRepository = allocationSnapshotRepository,
        _settingsRepository = settingsRepository,
        _dayKeyService = dayKeyService,
+       _clock = clock,
        _invalidations = invalidations;
 
   final v2.AttentionRepositoryContract _attentionRepository;
@@ -48,6 +51,7 @@ class AttentionEngine implements AttentionEngineContract {
   final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
   final SettingsRepositoryContract _settingsRepository;
   final HomeDayKeyService _dayKeyService;
+  final Clock _clock;
   final Stream<void> _invalidations;
 
   final _uuid = const Uuid();
@@ -75,11 +79,11 @@ class AttentionEngine implements AttentionEngineContract {
   Stream<List<AttentionItem>> watch(AttentionQuery query) {
     final pulse$ = _invalidations
         // Convert to a value stream so it can be composed.
-        .map((_) => DateTime.now().microsecondsSinceEpoch)
-        .startWith(DateTime.now().microsecondsSinceEpoch);
+        .map((_) => _clock.nowUtc().microsecondsSinceEpoch)
+        .startWith(_clock.nowUtc().microsecondsSinceEpoch);
 
     final dayUtc$ = pulse$
-        .map((_) => _dayKeyService.todayDayKeyUtc())
+      .map((_) => _dayKeyService.todayDayKeyUtc(nowUtc: _clock.nowUtc()))
         .distinct((a, b) => a.isAtSameMomentAs(b));
 
     final snapshot$ = dayUtc$.switchMap(
@@ -135,7 +139,7 @@ class AttentionEngine implements AttentionEngineContract {
     })
     inputs,
   ) async {
-    final now = DateTime.now();
+    final now = _clock.nowUtc();
     final items = <AttentionItem>[];
 
     for (final rule in inputs.rules) {
@@ -371,10 +375,13 @@ class AttentionEngine implements AttentionEngineContract {
         .map((e) => e.entity.id)
         .toSet();
 
+    final todayDayKeyUtc = _dayKeyService.todayDayKeyUtc(nowUtc: inputs.now);
+
     final candidates = await _selectAllocationTaskCandidates(
       inputs.tasks,
       projects: inputs.projects,
       predicate: predicate,
+      todayDayKeyUtc: todayDayKeyUtc,
     );
 
     final allocationVersion = snapshot.version;
@@ -539,6 +546,7 @@ class AttentionEngine implements AttentionEngineContract {
     List<Task> tasks, {
     required List<Project> projects,
     required String predicate,
+    required DateTime todayDayKeyUtc,
   }) async {
     final allocationConfig = await _settingsRepository.load(
       SettingsKey.allocation,
@@ -550,7 +558,7 @@ class AttentionEngine implements AttentionEngineContract {
     return switch (predicate) {
       'urgentValueless' =>
         urgencyDetector
-            .findUrgentValuelessTasks(tasks)
+            .findUrgentValuelessTasks(tasks, todayDayKeyUtc: todayDayKeyUtc)
             .where((t) => !t.completed)
             .toList(growable: false),
       'urgentValueAligned' =>
@@ -558,7 +566,10 @@ class AttentionEngine implements AttentionEngineContract {
             .where(
               (t) =>
                   !t.completed &&
-                  urgencyDetector.isTaskUrgent(t) &&
+                  urgencyDetector.isTaskUrgent(
+                    t,
+                    todayDayKeyUtc: todayDayKeyUtc,
+                  ) &&
                   !t.isEffectivelyValueless,
             )
             .toList(growable: false),
@@ -572,7 +583,10 @@ class AttentionEngine implements AttentionEngineContract {
                   t.project ??
                   (t.projectId == null ? null : projectById[t.projectId]);
               if (project == null) return false;
-              return urgencyDetector.isProjectUrgent(project);
+              return urgencyDetector.isProjectUrgent(
+                project,
+                todayDayKeyUtc: todayDayKeyUtc,
+              );
             })
             .toList(growable: false),
       _ => const <Task>[],
@@ -723,17 +737,19 @@ class AttentionEngine implements AttentionEngineContract {
 
   bool _isTaskOverdue(Task task, {required int thresholdHours}) {
     if (task.deadlineDate == null) return false;
-    final threshold = DateTime.now().subtract(Duration(hours: thresholdHours));
+    final threshold = _clock
+        .nowUtc()
+        .subtract(Duration(hours: thresholdHours));
     return task.deadlineDate!.isBefore(threshold);
   }
 
   bool _isTaskStale(Task task, {required int thresholdDays}) {
-    final threshold = DateTime.now().subtract(Duration(days: thresholdDays));
+    final threshold = _clock.nowUtc().subtract(Duration(days: thresholdDays));
     return task.updatedAt.isBefore(threshold);
   }
 
   bool _isProjectIdle(Project project, {required int thresholdDays}) {
-    final threshold = DateTime.now().subtract(Duration(days: thresholdDays));
+    final threshold = _clock.nowUtc().subtract(Duration(days: thresholdDays));
     return project.updatedAt.isBefore(threshold);
   }
 

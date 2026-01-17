@@ -10,6 +10,8 @@ import 'package:taskly_domain/src/preferences/model/settings_key.dart';
 import 'package:taskly_domain/src/core/model/value_priority.dart';
 import 'package:taskly_domain/src/queries/project_query.dart';
 import 'package:taskly_domain/src/queries/task_query.dart';
+import 'package:taskly_domain/src/time/clock.dart';
+import 'package:taskly_domain/src/time/date_only.dart';
 
 @immutable
 class _TemplateValueSeed {
@@ -183,17 +185,20 @@ class TemplateDataService {
     required ValueRepositoryContract valueRepository,
     required SettingsRepositoryContract settingsRepository,
     required AllocationSnapshotRepositoryContract allocationSnapshotRepository,
+    Clock clock = systemClock,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
        _settingsRepository = settingsRepository,
-       _allocationSnapshotRepository = allocationSnapshotRepository;
+       _allocationSnapshotRepository = allocationSnapshotRepository,
+       _clock = clock;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
   final SettingsRepositoryContract _settingsRepository;
   final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
+  final Clock _clock;
 
   /// Deletes all user Tasks/Projects/Values and recreates template demo data.
   ///
@@ -285,8 +290,7 @@ class TemplateDataService {
     final valueIdByName = await _loadValueIdByName();
 
     // 4) Create Projects (linked to values via valueIds; first value is primary).
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = dateOnly(_clock.nowUtc());
     DateTime day(int offset) => today.add(Duration(days: offset));
 
     await _projectRepository.create(

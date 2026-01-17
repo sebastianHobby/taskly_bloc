@@ -4,6 +4,7 @@ import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/src/notifications/model/pending_notification.dart';
 import 'package:taskly_domain/src/interfaces/pending_notifications_repository_contract.dart';
 import 'package:taskly_domain/src/services/notifications/notification_presenter.dart';
+import 'package:taskly_domain/src/time/clock.dart';
 
 /// Watches for new pending notifications and processes them.
 ///
@@ -14,11 +15,14 @@ class PendingNotificationsProcessor {
   PendingNotificationsProcessor({
     required PendingNotificationsRepositoryContract repository,
     required NotificationPresenter presenter,
+    Clock clock = systemClock,
   }) : _repository = repository,
-       _presenter = presenter;
+       _presenter = presenter,
+       _clock = clock;
 
   final PendingNotificationsRepositoryContract _repository;
   final NotificationPresenter _presenter;
+  final Clock _clock;
 
   StreamSubscription<List<PendingNotification>>? _subscription;
   final Set<String> _inFlight = <String>{};
@@ -49,7 +53,7 @@ class PendingNotificationsProcessor {
       if (!_inFlight.add(item.id)) continue;
 
       try {
-        if (item.scheduledFor.isAfter(DateTime.now())) {
+        if (item.scheduledFor.isAfter(_clock.nowUtc())) {
           continue;
         }
 

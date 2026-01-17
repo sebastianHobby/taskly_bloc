@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/src/services/time/app_lifecycle_service.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
+import 'package:taskly_domain/src/time/clock.dart';
 
 sealed class TemporalTriggerEvent {
   const TemporalTriggerEvent();
@@ -32,11 +33,14 @@ class TemporalTriggerService {
   TemporalTriggerService({
     required HomeDayKeyService dayKeyService,
     required AppLifecycleService lifecycleService,
+    Clock clock = systemClock,
   }) : _dayKeyService = dayKeyService,
-       _lifecycleService = lifecycleService;
+       _lifecycleService = lifecycleService,
+       _clock = clock;
 
   final HomeDayKeyService _dayKeyService;
   final AppLifecycleService _lifecycleService;
+  final Clock _clock;
 
   final StreamController<TemporalTriggerEvent> _eventsController =
       StreamController<TemporalTriggerEvent>.broadcast();
@@ -54,7 +58,7 @@ class TemporalTriggerService {
     if (_started) return;
     _started = true;
 
-    _currentDayKeyUtc = _dayKeyService.todayDayKeyUtc();
+    _currentDayKeyUtc = _dayKeyService.todayDayKeyUtc(nowUtc: _clock.nowUtc());
     _scheduleNextBoundary();
 
     _lifecycleSub = _lifecycleService.events.listen((event) {
@@ -84,7 +88,7 @@ class TemporalTriggerService {
   void _scheduleNextBoundary() {
     _boundaryTimer?.cancel();
 
-    final now = DateTime.now().toUtc();
+    final now = _clock.nowUtc();
     final nextBoundaryUtc = _dayKeyService.nextHomeDayBoundaryUtc(nowUtc: now);
     final delay = nextBoundaryUtc.difference(now);
 
@@ -102,7 +106,7 @@ class TemporalTriggerService {
   }
 
   void _checkForBoundaryCrossing({required String source}) {
-    final newKey = _dayKeyService.todayDayKeyUtc();
+    final newKey = _dayKeyService.todayDayKeyUtc(nowUtc: _clock.nowUtc());
     final oldKey = _currentDayKeyUtc;
 
     if (oldKey == null || newKey.isAtSameMomentAs(oldKey)) {

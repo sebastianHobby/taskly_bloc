@@ -1,6 +1,5 @@
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_data/id.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
 
 /// Shared mock implementations for repository contracts.
 ///
@@ -10,6 +9,7 @@ import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract
 // === Core Repositories ===
 
 import 'package:taskly_domain/taskly_domain.dart';
+
 class MockTaskRepositoryContract extends Mock
     implements TaskRepositoryContract {}
 
@@ -29,11 +29,6 @@ class MockOccurrenceStreamExpanderContract extends Mock
 
 class MockOccurrenceWriteHelperContract extends Mock
     implements OccurrenceWriteHelperContract {}
-
-// === Screens & Workflows ===
-
-class MockScreenCatalogRepositoryContract extends Mock
-    implements ScreenCatalogRepositoryContract {}
 
 // === Notifications ===
 

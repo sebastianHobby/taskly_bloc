@@ -2,7 +2,7 @@
 
 > Audience: developers + architects
 >
-> Scope: the *current* Journal system (entries + trackers) and how it feeds the
+> Scope: the Journal system (entries + trackers) and how it feeds the
 > Statistics/Analytics subsystem (trends, distributions, correlations, snapshots).
 
 ## 1) Executive Summary
@@ -63,15 +63,10 @@ Key model files:
 - Seeder (system trackers):
   - [lib/data/features/journal/maintenance/journal_tracker_seeder.dart](../../lib/data/features/journal/maintenance/journal_tracker_seeder.dart)
 
-### Unified screen integration (domain interpreters)
-- Today composer:
-  - [lib/domain/screens/templates/interpreters/journal_today_composer_module_interpreter_v1.dart](../../lib/domain/screens/templates/interpreters/journal_today_composer_module_interpreter_v1.dart)
-- Today entries:
-  - [lib/domain/screens/templates/interpreters/journal_today_entries_module_interpreter_v1.dart](../../lib/domain/screens/templates/interpreters/journal_today_entries_module_interpreter_v1.dart)
-- Manage trackers:
-  - [lib/domain/screens/templates/interpreters/journal_manage_trackers_module_interpreter_v1.dart](../../lib/domain/screens/templates/interpreters/journal_manage_trackers_module_interpreter_v1.dart)
-- History list:
-  - [lib/domain/screens/templates/interpreters/journal_history_list_module_interpreter_v1.dart](../../lib/domain/screens/templates/interpreters/journal_history_list_module_interpreter_v1.dart)
+### Screen integration
+
+Journal is exposed through explicit screens/pages driven by presentation-layer
+BLoCs.
 
 ### Journal presentation (BLoCs + pages)
 - Hub (tabs):
@@ -164,34 +159,15 @@ Design intent:
 - system keys (e.g. `mood`) allow business logic to find key trackers without
   hardcoding DB IDs
 
-### 3.4 Unified Screen Model integration (Journal)
+### 3.4 Screen integration (Journal)
 
-Journal is exposed through unified screen specs and module interpreters.
+Journal screens subscribe to repository streams through BLoCs:
 
-Relevant system screens:
+- BLoCs combine tracker definitions, entry streams, and event streams.
+- Widgets render the BLoC state.
 
-- `journal`: standard scaffold with header/primary journal modules
-- `journal_history`: history list module
-- `journal_manage_trackers`: manage trackers module
-
-See:
-- [lib/domain/screens/catalog/system_screens/system_screen_specs.dart](../../lib/domain/screens/catalog/system_screens/system_screen_specs.dart)
-
-Key runtime flow (Today screen):
-
-```text
-1) UI renders a Journal unified screen
-2) ScreenSpecBloc subscribes to ScreenSpecDataInterpreter
-3) JournalTodayEntriesModuleInterpreterV1 combines:
-   - tracker definitions stream
-   - journal entries stream (query: today)
-   - tracker events stream (range: today, anchor_type='entry')
-4) Interpreter emits SectionDataResult.journalTodayEntriesV1(...)
-5) Presentation renders the section VM
-```
-
-This matches the system-wide invariants in:
-- [UNIFIED_SCREEN_MODEL_ARCHITECTURE.md](UNIFIED_SCREEN_MODEL_ARCHITECTURE.md)
+Legacy USM integration details are documented only in:
+- [LEGACY_ARCHITECTURE_OVERVIEW.md](LEGACY_ARCHITECTURE_OVERVIEW.md)
 
 ---
 
@@ -270,9 +246,9 @@ Entry points:
 This document describes the current system as implemented. Likely next steps
 for the product/architecture:
 
-- Replace the `statisticsDashboard` placeholder with a unified screen module
-  driven dashboard (so it participates in the USM pipeline).
-- Define a stable “journal stats” module spec and interpreter(s) for commonly
-  requested analytics (mood trend, distributions, correlations).
+- Replace the `statisticsDashboard` placeholder with an explicit statistics
+  dashboard screen driven by a presentation-layer BLoC.
+- Define stable “journal stats” read models/APIs for commonly requested
+  analytics (mood trend, distributions, correlations).
 - Decide which computations should be *purely derived* vs *persisted* (snapshots)
   for offline speed and sync friendliness.

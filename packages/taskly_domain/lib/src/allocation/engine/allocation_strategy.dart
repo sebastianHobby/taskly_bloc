@@ -19,6 +19,8 @@ abstract class AllocationStrategy {
 /// Parameters for allocation
 class AllocationParameters {
   const AllocationParameters({
+    required this.nowUtc,
+    required this.todayDayKeyUtc,
     required this.tasks,
     required this.categories,
     required this.maxTasks,
@@ -38,6 +40,17 @@ class AllocationParameters {
     this.overdueEmergencyMultiplier = 1.0,
     this.completionsByValue = const {},
   });
+
+  /// Current time (UTC).
+  ///
+  /// This is used for recency scoring and any time-based calculations that
+  /// need sub-day precision.
+  final DateTime nowUtc;
+
+  /// Today's home-day key (UTC midnight).
+  ///
+  /// This is the canonical anchor for date-only scheduling semantics.
+  final DateTime todayDayKeyUtc;
 
   /// Tasks to allocate
   final List<Task> tasks;

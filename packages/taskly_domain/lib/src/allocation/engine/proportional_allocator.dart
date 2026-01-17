@@ -28,7 +28,8 @@ class ProportionalAllocator implements AllocationStrategy {
     final tasks = parameters.tasks;
     final categories = parameters.categories;
     final totalLimit = parameters.maxTasks;
-    final now = DateTime.now();
+    final nowUtc = parameters.nowUtc;
+    final todayDayKeyUtc = parameters.todayDayKeyUtc;
 
     final allocatedTasks = <AllocatedTask>[];
     final excludedTasks = <ExcludedTask>[];
@@ -130,14 +131,16 @@ class ProportionalAllocator implements AllocationStrategy {
         (a, b) =>
             _taskScore(
               task: b,
-              now: now,
+              nowUtc: nowUtc,
+              todayDayKeyUtc: todayDayKeyUtc,
               categoryWeight: categoryWeights[categoryId] ?? 0.0,
               totalWeight: totalWeight,
               parameters: parameters,
             ).compareTo(
               _taskScore(
                 task: a,
-                now: now,
+                nowUtc: nowUtc,
+                todayDayKeyUtc: todayDayKeyUtc,
                 categoryWeight: categoryWeights[categoryId] ?? 0.0,
                 totalWeight: totalWeight,
                 parameters: parameters,
@@ -173,6 +176,7 @@ class ProportionalAllocator implements AllocationStrategy {
             isUrgent: _isUrgent(
               availableTasks[i],
               parameters.taskUrgencyThresholdDays,
+              todayDayKeyUtc: todayDayKeyUtc,
             ),
           ),
         );
@@ -186,7 +190,11 @@ class ProportionalAllocator implements AllocationStrategy {
           task: task,
           reason: 'Task has no matching priority category',
           exclusionType: ExclusionType.noCategory,
-          isUrgent: _isUrgent(task, parameters.taskUrgencyThresholdDays),
+          isUrgent: _isUrgent(
+            task,
+            parameters.taskUrgencyThresholdDays,
+            todayDayKeyUtc: todayDayKeyUtc,
+          ),
         ),
       );
     }
@@ -203,16 +211,22 @@ class ProportionalAllocator implements AllocationStrategy {
     );
   }
 
-  bool _isUrgent(Task task, int thresholdDays) {
+  bool _isUrgent(
+    Task task,
+    int thresholdDays, {
+    required DateTime todayDayKeyUtc,
+  }) {
     if (task.deadlineDate == null) return false;
-    final now = DateTime.now();
-    final daysUntilDeadline = task.deadlineDate!.difference(now).inDays;
+    final daysUntilDeadline = task.deadlineDate!
+        .difference(todayDayKeyUtc)
+        .inDays;
     return daysUntilDeadline <= thresholdDays;
   }
 
   double _taskScore({
     required Task task,
-    required DateTime now,
+    required DateTime nowUtc,
+    required DateTime todayDayKeyUtc,
     required double categoryWeight,
     required double totalWeight,
     required AllocationParameters parameters,
@@ -221,14 +235,18 @@ class ProportionalAllocator implements AllocationStrategy {
         (categoryWeight / totalWeight).clamp(0.0, 1.0) *
         parameters.valuePriorityWeight;
 
-    final isUrgent = _isUrgent(task, parameters.taskUrgencyThresholdDays);
+    final isUrgent = _isUrgent(
+      task,
+      parameters.taskUrgencyThresholdDays,
+      todayDayKeyUtc: todayDayKeyUtc,
+    );
     if (isUrgent) {
       score *= parameters.urgencyBoostMultiplier;
     }
 
     final deadline = task.deadlineDate;
     if (deadline != null) {
-      final daysUntilDeadline = deadline.difference(now).inDays;
+      final daysUntilDeadline = deadline.difference(todayDayKeyUtc).inDays;
       if (daysUntilDeadline < 0) {
         score *= AllocationScoring.overdueEmergencyFactor(
           daysOverdue: -daysUntilDeadline,
@@ -244,7 +262,7 @@ class ProportionalAllocator implements AllocationStrategy {
 
     score *= AllocationScoring.recencyMultiplier(
       task: task,
-      now: now,
+      now: nowUtc,
       recencyPenalty: parameters.recencyPenalty,
     );
 

@@ -33,9 +33,9 @@ class ScoringWeights {
 class ScoringContext {
   const ScoringContext({
     required this.categoryWeights,
+    required this.todayDayKeyUtc,
     this.completionsByValue = const {},
     this.totalWeight = 1.0,
-    this.now,
     this.neglectLookbackDays = 7,
   });
 
@@ -48,8 +48,8 @@ class ScoringContext {
   /// Sum of all category weights.
   final double totalWeight;
 
-  /// Reference time for urgency calculation (defaults to now).
-  final DateTime? now;
+  /// Today's home-day key (UTC midnight) used for date-only urgency.
+  final DateTime todayDayKeyUtc;
 
   /// Number of days to look back for neglect calculation.
   final int neglectLookbackDays;
@@ -195,8 +195,9 @@ class TaskScoringService {
   double _calculateUrgency(Task task, ScoringContext context) {
     if (task.deadlineDate == null) return 0;
 
-    final now = context.now ?? DateTime.now();
-    final daysUntilDeadline = task.deadlineDate!.difference(now).inDays;
+    final daysUntilDeadline = task.deadlineDate!
+        .difference(context.todayDayKeyUtc)
+        .inDays;
 
     if (daysUntilDeadline < 0) {
       // Overdue: clamp at 1.0

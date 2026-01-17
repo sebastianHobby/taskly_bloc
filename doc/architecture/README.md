@@ -47,13 +47,11 @@ promote it into a BLoC (or lower layer) and expose a BLoC state instead.
 +-----------------------------------------------------------------------+
 |                              Presentation                             |
 |  - routing / pages / widgets / feature state                           |
-|  - unified screen renderers (template-specific UI)                     |
 +------------------------------------+----------------------------------+
                                      |
                                      v
 +-----------------------------------------------------------------------+
 |                                 Domain                                |
-|  - screen interpretation pipeline (spec -> section VMs)                |
 |  - business services (allocation, attention, etc.)                     |
 |  - repository contracts (interfaces)                                  |
 +------------------------------------+----------------------------------+
@@ -77,40 +75,14 @@ promote it into a BLoC (or lower layer) and expose a BLoC state instead.
 
 This section is intentionally high-level and focuses on *integration points*.
 
-### 2.1 Unified Screen Model (legacy UI composition mechanism; being removed)
+### 2.1 Screens + Routing
 
-Most screens are currently assembled from typed, declarative screen specs
-composed of screen templates and typed modules.
-
-Migration note (Package D / USM strangler): the app is moving to explicit
-hand-authored Flutter screens for MVP routes. As a first step, routing entry
-points are being converted from a convention-based catch-all (`/:segment`) to
-explicit screen routes (e.g. `/my-day`, `/anytime`, `/scheduled`) so USM can be
-disabled incrementally without breaking navigation.
-
-Key idea:
-
-- Presentation asks the domain layer to interpret a `ScreenSpec`.
-- The domain layer executes typed module interpreters to produce section view-models.
-- Presentation renders those view-models through template-specific widgets.
-
-#### Unified screen pipeline diagram
-
-```text
-Route -> Screen key
-  -> load ScreenSpec (system screens + persisted preferences)
-  -> interpret modules (domain):
-       ScreenModuleSpec + typed params -> interpreter -> SectionVm (stream)
-  -> combine all sections into ScreenSpecData (stream)
-  -> render (presentation): UnifiedScreenPageFromSpec + SectionWidget switch
-```
+Screens are **explicit Flutter pages** with **explicit routes** (no catch-all
+route-to-spec mapping). Presentation state and reactive subscriptions are owned
+by presentation-layer BLoCs.
 
 For the deeper dive see:
-- [UNIFIED_SCREEN_MODEL_ARCHITECTURE.md](UNIFIED_SCREEN_MODEL_ARCHITECTURE.md)
-  - non-negotiable invariants (how to avoid layering drift)
-  - ED/RD outline (routing + editor/detail data contract)
-  - decision guide (module vs template vs params/variant vs enrichment)
-  - mutations boundary (`ScreenActionsBloc`) and error surfacing
+- [SCREEN_ARCHITECTURE.md](SCREEN_ARCHITECTURE.md)
 
 ### 2.2 Offline-first persistence + sync (PowerSync + Supabase)
 
@@ -151,14 +123,14 @@ For the deeper dive see:
 ### 2.3 Attention System (rule evaluation -> support sections)
 
 The attention system evaluates rules into user-facing “attention items” and
-surfaces them in unified screen support sections and settings.
+surfaces them in screens and settings.
 
 Integration highlights:
 
-- Section interpreters build an `AttentionQuery` and subscribe to the engine.
+- BLoCs build an `AttentionQuery` and subscribe to the engine.
 - The engine combines persisted rule config, domain data, and time invalidation
   pulses.
-- The output is rendered by template-specific support section widgets.
+- The output is rendered by feature screens and shared widgets.
 
 For the deeper dive see:
 - [ATTENTION_SYSTEM_ARCHITECTURE.md](ATTENTION_SYSTEM_ARCHITECTURE.md)
@@ -173,10 +145,9 @@ Integration highlights:
 
 - Allocation is invoked by domain orchestration (including time/day boundary
   triggers).
-- My Day renders allocation outputs via the shared hierarchy/list primary section,
-  with membership/order driven by the allocation snapshot (and optional V2
-  enrichment consumed by the renderer).
-- Allocation warnings are surfaced via the attention system’s allocation alerts.
+- My Day renders allocation outputs via explicit presentation widgets driven by
+  a My Day BLoC.
+- Allocation warnings are surfaced via the attention system.
 
 For the deeper dive see:
 - [ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md)
@@ -197,7 +168,7 @@ The statistics/analytics layer consumes journal + core domain data to produce:
 
 Integration highlights:
 
-- Journal unified screen modules interpret repository streams into section VMs.
+- Journal screens use BLoCs that subscribe to journal repository streams.
 - Analytics services query journal repositories for mood/tracker series and
   persist cached results through the analytics repository.
 
@@ -206,13 +177,16 @@ For the deeper dive see:
 
 ## 3) Architecture Docs Index (This Folder)
 
-- Unified screens: [UNIFIED_SCREEN_MODEL_ARCHITECTURE.md](UNIFIED_SCREEN_MODEL_ARCHITECTURE.md)
+- Architecture invariants (normative): [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md)
+- Screen architecture (future): [SCREEN_ARCHITECTURE.md](SCREEN_ARCHITECTURE.md)
+- Legacy architecture overview: [LEGACY_ARCHITECTURE_OVERVIEW.md](LEGACY_ARCHITECTURE_OVERVIEW.md)
 - Journal + statistics: [JOURNAL_AND_STATISTICS_ARCHITECTURE.md](JOURNAL_AND_STATISTICS_ARCHITECTURE.md)
 - Screen purpose concepts: [screen_purpose_concepts.md](screen_purpose_concepts.md)
 - Offline-first + sync: [POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md](POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md)
 - Local dev / E2E (PowerSync + Supabase): [LOCAL_SUPABASE_POWERSYNC_E2E.md](LOCAL_SUPABASE_POWERSYNC_E2E.md)
 - Allocation: [ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md)
 - Attention: [ATTENTION_SYSTEM_ARCHITECTURE.md](ATTENTION_SYSTEM_ARCHITECTURE.md)
+- Recurrence + sync contract: [RECURRENCE_SYNC_CONTRACT.md](RECURRENCE_SYNC_CONTRACT.md)
 - Testing: [TESTING_ARCHITECTURE.md](TESTING_ARCHITECTURE.md)
 
 ## Appendix A — Directory Layout (Conceptual)

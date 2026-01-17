@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_bloc/presentation/entity_views/tile_capabilities/entity_tile_capabilities.dart';
+import 'package:taskly_bloc/domain/entity_views/tile_capabilities/entity_tile_capabilities.dart';
 
 /// Types of date tags for agenda items.
 enum AgendaDateTag {

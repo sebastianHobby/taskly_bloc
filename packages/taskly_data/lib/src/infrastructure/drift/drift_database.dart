@@ -359,8 +359,6 @@ class ProjectRecurrenceExceptionsTable extends Table {
     TrackerEvents,
     TrackerStateDay,
     TrackerStateEntry,
-    // Screen preferences (per-user ordering/visibility)
-    ScreenPreferencesTable,
     PendingNotifications,
     // Allocation snapshots (allocated membership only)
     AllocationSnapshots,

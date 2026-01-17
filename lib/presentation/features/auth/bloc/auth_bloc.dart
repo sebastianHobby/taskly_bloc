@@ -4,8 +4,12 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/errors.dart';
+import 'package:taskly_domain/telemetry.dart';
+import 'package:uuid/uuid.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -17,7 +21,9 @@ part 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
   AuthBloc({
     required AuthRepositoryContract authRepository,
+    required AppErrorReporter errorReporter,
   }) : _authRepository = authRepository,
+       _errorReporter = errorReporter,
        super(const AppAuthState()) {
     talker.blocLog('Auth', 'AuthBloc CONSTRUCTOR called');
     on<AuthSubscriptionRequested>(
@@ -39,7 +45,22 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
   }
 
   final AuthRepositoryContract _authRepository;
+  final AppErrorReporter _errorReporter;
   StreamSubscription<AuthState>? _authSubscription;
+
+  OperationContext _newContext({
+    required String screen,
+    required String intent,
+    required String operation,
+  }) {
+    return OperationContext(
+      correlationId: const Uuid().v4(),
+      feature: 'auth',
+      screen: screen,
+      intent: intent,
+      operation: operation,
+    );
+  }
 
   @override
   Future<void> close() async {
@@ -128,8 +149,15 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
   ) async {
     emit(state.copyWith(status: AuthStatus.loading));
 
+    final ctx = _newContext(
+      screen: 'sign_in',
+      intent: 'sign_in_requested',
+      operation: 'auth.sign_in',
+    );
+
     try {
       final response = await _authRepository.signInWithPassword(
+        context: ctx,
         email: event.email,
         password: event.password,
       );
@@ -150,10 +178,27 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       // Success case: onAuthStateChange will emit authenticated state
     } catch (error, stackTrace) {
       talker.handle(error, stackTrace, '[AuthBloc] Sign in failed');
+
+      if (error is AppFailure && error.reportAsUnexpected) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: ctx,
+          message: 'Auth sign-in failed (unexpected failure)',
+        );
+      } else if (error is! AppFailure) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: ctx,
+          message: 'Auth sign-in failed (unmapped exception)',
+        );
+      }
+
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
-          error: error.toString(),
+          error: error is AppFailure ? error.uiMessage() : 'Sign in failed',
         ),
       );
     }
@@ -165,8 +210,15 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
   ) async {
     emit(state.copyWith(status: AuthStatus.loading));
 
+    final ctx = _newContext(
+      screen: 'sign_up',
+      intent: 'sign_up_requested',
+      operation: 'auth.sign_up',
+    );
+
     try {
       final response = await _authRepository.signUp(
+        context: ctx,
         email: event.email,
         password: event.password,
       );
@@ -190,10 +242,27 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       }
     } catch (error, stackTrace) {
       talker.handle(error, stackTrace, '[AuthBloc] Sign up failed');
+
+      if (error is AppFailure && error.reportAsUnexpected) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: ctx,
+          message: 'Auth sign-up failed (unexpected failure)',
+        );
+      } else if (error is! AppFailure) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: ctx,
+          message: 'Auth sign-up failed (unmapped exception)',
+        );
+      }
+
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
-          error: error.toString(),
+          error: error is AppFailure ? error.uiMessage() : 'Sign up failed',
         ),
       );
     }
@@ -203,8 +272,14 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
     AuthSignOutRequested event,
     Emitter<AppAuthState> emit,
   ) async {
+    final ctx = _newContext(
+      screen: 'settings',
+      intent: 'sign_out_requested',
+      operation: 'auth.sign_out',
+    );
+
     try {
-      await _authRepository.signOut();
+      await _authRepository.signOut(context: ctx);
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
@@ -212,9 +287,26 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       );
     } catch (error, stackTrace) {
       talker.handle(error, stackTrace, '[AuthBloc] Sign out failed');
+
+      if (error is AppFailure && error.reportAsUnexpected) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: ctx,
+          message: 'Auth sign-out failed (unexpected failure)',
+        );
+      } else if (error is! AppFailure) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: ctx,
+          message: 'Auth sign-out failed (unmapped exception)',
+        );
+      }
+
       emit(
         state.copyWith(
-          error: error.toString(),
+          error: error is AppFailure ? error.uiMessage() : 'Sign out failed',
         ),
       );
     }
@@ -228,8 +320,17 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
     final wasAuthenticated = state.status == AuthStatus.authenticated;
     emit(state.copyWith(status: AuthStatus.loading));
 
+    final ctx = _newContext(
+      screen: wasAuthenticated ? 'settings' : 'forgot_password',
+      intent: 'password_reset_requested',
+      operation: 'auth.password_reset',
+    );
+
     try {
-      await _authRepository.resetPasswordForEmail(event.email);
+      await _authRepository.resetPasswordForEmail(
+        event.email,
+        context: ctx,
+      );
       emit(
         state.copyWith(
           status: wasAuthenticated
@@ -240,12 +341,31 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       );
     } catch (error, stackTrace) {
       talker.handle(error, stackTrace, '[AuthBloc] Password reset failed');
+
+      if (error is AppFailure && error.reportAsUnexpected) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: ctx,
+          message: 'Auth password reset failed (unexpected failure)',
+        );
+      } else if (error is! AppFailure) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: ctx,
+          message: 'Auth password reset failed (unmapped exception)',
+        );
+      }
+
       emit(
         state.copyWith(
           status: wasAuthenticated
               ? AuthStatus.authenticated
               : AuthStatus.unauthenticated,
-          error: error.toString(),
+          error: error is AppFailure
+              ? error.uiMessage()
+              : 'Password reset failed',
         ),
       );
     }
