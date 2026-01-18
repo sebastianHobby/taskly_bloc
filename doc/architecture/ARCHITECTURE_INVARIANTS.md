@@ -148,6 +148,10 @@ Normative rules:
   (`go_router`, `Routing`, etc.). “Navigation” here means pushing app routes
   (for example, `GoRouter` or `Navigator` route pushes), not presenting
   UI-only overlays like dialogs or bottom sheets.
+- `taskly_ui` must not depend on **app intent/action infrastructure**:
+  - forbidden: `TileIntent` types, `TileIntentDispatcher`, overflow action
+    catalogs, app analytics/logging dispatch, or any other “do something in the
+    app” orchestration.
 - Reusable UI must follow **data in / events out** APIs (props + callbacks).
 - App code must not deep-import `taskly_ui` internals; import only
   `package:taskly_ui/taskly_ui.dart`.

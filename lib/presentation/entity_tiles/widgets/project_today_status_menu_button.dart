@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
 import 'package:taskly_core/logging.dart';
-import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/core.dart';
 
 class ProjectTodayStatusMenuButton extends StatelessWidget {
   const ProjectTodayStatusMenuButton({

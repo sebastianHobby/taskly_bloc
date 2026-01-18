@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' as drift_pkg;
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/src/errors/failure_guard.dart';
@@ -68,12 +70,99 @@ class ValueRepository implements ValueRepositoryContract {
   @override
   Stream<List<Value>> watchAll([ValueQuery? query]) {
     final normalizedQuery = query ?? ValueQuery.all();
+    final cacheHit = _sharedWatchAllCache.containsKey(normalizedQuery);
+
+    Stream<List<Value>> instrumented(
+      Stream<List<Value>> source, {
+      required bool hasFilter,
+    }) {
+      final fields = <String, Object?>{
+        'hasFilter': hasFilter,
+        'cacheHit': cacheHit,
+      };
+
+      // We intentionally keep this lightweight:
+      // - routine log on subscribe/first emission
+      // - warn if first emission is delayed (helps identify "infinite loading")
+      // - error is captured via AppLog.handleStructured
+      return Stream<List<Value>>.multi(
+        (controller) {
+          late final StreamSubscription<List<Value>> sub;
+          var hasFirstEmission = false;
+          Timer? delayedFirstEmissionTimer;
+
+          void cancelDelayTimer() {
+            delayedFirstEmissionTimer?.cancel();
+            delayedFirstEmissionTimer = null;
+          }
+
+          controller.onCancel = () async {
+            cancelDelayTimer();
+            await sub.cancel();
+          };
+
+          AppLog.routineStructured(
+            'data.value',
+            'watchAll subscribed',
+            fields: fields,
+          );
+
+          delayedFirstEmissionTimer = Timer(const Duration(seconds: 2), () {
+            if (hasFirstEmission) return;
+            AppLog.warnStructured(
+              'data.value',
+              'watchAll first emission delayed',
+              fields: <String, Object?>{
+                ...fields,
+                'delayMs': 2000,
+              },
+            );
+          });
+
+          sub = source.listen(
+            (values) {
+              if (!hasFirstEmission) {
+                hasFirstEmission = true;
+                cancelDelayTimer();
+                AppLog.routineStructured(
+                  'data.value',
+                  'watchAll first emission',
+                  fields: <String, Object?>{
+                    ...fields,
+                    'count': values.length,
+                  },
+                );
+              }
+              controller.add(values);
+            },
+            onError: (Object error, StackTrace stackTrace) {
+              cancelDelayTimer();
+              AppLog.handleStructured(
+                'data.value',
+                'watchAll stream error',
+                error,
+                stackTrace,
+                fields,
+              );
+              controller.addError(error, stackTrace);
+            },
+            onDone: () {
+              cancelDelayTimer();
+              controller.close();
+            },
+          );
+        },
+      );
+    }
 
     return _sharedWatchAllCache.getOrCreate(normalizedQuery, () {
       // Fast path: no filter.
       if (normalizedQuery.filter.shared.isEmpty &&
           normalizedQuery.filter.orGroups.isEmpty) {
-        return _valueStream.map((rows) => rows.map(valueFromTable).toList());
+        final stream = _valueStream.map(
+          (rows) => rows.map(valueFromTable).toList(),
+        );
+        return instrumented(stream, hasFilter: false);
       }
 
       final select = driftDb.select(driftDb.valueTable);
@@ -86,7 +175,10 @@ class ValueRepository implements ValueRepositoryContract {
         ),
         (l) => drift_pkg.OrderingTerm(expression: l.name),
       ]);
-      return select.watch().map((rows) => rows.map(valueFromTable).toList());
+      final stream = select.watch().map(
+        (rows) => rows.map(valueFromTable).toList(),
+      );
+      return instrumented(stream, hasFilter: true);
     });
   }
 

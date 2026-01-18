@@ -433,6 +433,33 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
         );
 
     await _valuesSub?.cancel();
+
+    // Seed valuesCount from a snapshot so the wizard doesn't incorrectly
+    // conclude there are no values if the watch stream is delayed.
+    try {
+      final initialValues = await _valueRepository.getAll();
+      add(FocusSetupEvent.valuesStreamUpdated(initialValues.length));
+    } catch (e, st) {
+      talker.error('[FocusSetupBloc] initial values snapshot failed', e, st);
+
+      final context = _contextFactory.create(
+        feature: 'focus_setup',
+        screen: 'focus_setup',
+        intent: 'values_initial_snapshot_error',
+        operation: 'values.getAll',
+        entityType: 'value',
+      );
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[FocusSetupBloc] initial values snapshot failed',
+      );
+
+      add(const FocusSetupEvent.saveFailed('Failed to load values'));
+      return;
+    }
+
     _valuesSub = _valueRepository.watchAll().listen(
       (values) => add(FocusSetupEvent.valuesStreamUpdated(values.length)),
       onError: (Object e, StackTrace st) {

@@ -67,7 +67,16 @@ class MyDayGateBloc extends Cubit<MyDayGateState> {
         .map<AllocationConfig?>((value) => value)
         .startWith(null);
 
-    final values$ = _valueRepository.watchAll().startWith(const <Value>[]);
+    // Use a real DB snapshot to avoid showing "Add Values" when values exist
+    // but the watch stream is delayed or never emits.
+    //
+    // We intentionally seed locally (per consumer) instead of turning the
+    // repository stream into a replaying subject, to keep lifecycle/memory
+    // ownership in the presentation layer.
+    final values$ = Rx.concat<List<Value>>([
+      Stream.fromFuture(_valueRepository.getAll()),
+      _valueRepository.watchAll(),
+    ]);
 
     _sub =
         Rx.combineLatest2<AllocationConfig?, List<Value>, MyDayGateLoaded>(

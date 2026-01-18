@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
@@ -9,6 +8,7 @@ import 'package:taskly_bloc/presentation/shared/formatters/date_label_formatter.
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
+import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui.dart';
@@ -27,12 +27,13 @@ TaskTileModel buildTaskListRowTileModel(
   final today = DateTime(now.year, now.month, now.day);
 
   final start = effectiveStartDate;
-  final startDay = start == null
-      ? null
-      : DateTime(start.year, start.month, start.day);
-  final startDateLabel = (startDay != null && startDay.isAfter(today))
-      ? DateLabelFormatter.format(context, start)
-      : null;
+  final startDateLabel = switch (start) {
+    null => null,
+    final startDate =>
+      DateTime(startDate.year, startDate.month, startDate.day).isAfter(today)
+          ? DateLabelFormatter.format(context, startDate)
+          : null,
+  };
 
   final deadlineDateLabel = effectiveDeadlineDate == null
       ? null
@@ -41,10 +42,11 @@ TaskTileModel buildTaskListRowTileModel(
   final meta = EntityMetaLineModel(
     primaryValue: task.effectivePrimaryValue?.toChipData(context),
     secondaryValues: task.effectiveSecondaryValues
+        .take(1)
         .map((v) => v.toChipData(context))
         .toList(growable: false),
-    secondaryValuePresentation:
-        EntitySecondaryValuePresentation.singleOutlinedIconOnly,
+    secondaryValuePresentation: EntitySecondaryValuePresentation.dotsCluster,
+    maxSecondaryValues: 1,
     startDateLabel: startDateLabel,
     deadlineDateLabel: deadlineDateLabel,
     isOverdue: _isOverdue(
@@ -89,102 +91,6 @@ TaskTileModel buildTaskListRowTileModel(
     checkboxSemanticLabel: isCompleted
         ? 'Mark "${task.name}" as incomplete'
         : 'Mark "${task.name}" as complete',
-  );
-}
-
-TaskAgendaCardModel buildTaskAgendaCardModel(
-  BuildContext context, {
-  required Task task,
-  required EntityTileCapabilities tileCapabilities,
-  required bool inProgressStyle,
-  required DateTime? endDate,
-  Color? accentColor,
-  bool backgroundBlendPrimary = false,
-  bool showDeadlineChipOnOngoing = true,
-}) {
-  final isCompleted = task.occurrence?.isCompleted ?? task.completed;
-
-  final effectiveStartDate = task.occurrence?.date ?? task.startDate;
-  final effectiveDeadlineDate = task.occurrence?.deadline ?? task.deadlineDate;
-
-  final now = context.read<NowService>().nowLocal();
-  final today = DateTime(now.year, now.month, now.day);
-
-  final start = effectiveStartDate;
-  final startDay = start == null
-      ? null
-      : DateTime(start.year, start.month, start.day);
-  final startDateLabel =
-      (startDay != null && startDay.isAfter(today) && !inProgressStyle)
-      ? DateLabelFormatter.format(context, start)
-      : null;
-
-  final deadlineDateLabel = effectiveDeadlineDate == null
-      ? null
-      : DateLabelFormatter.format(context, effectiveDeadlineDate);
-
-  final meta = EntityMetaLineModel(
-    primaryValue: task.effectivePrimaryValue?.toChipData(context),
-    secondaryValues: task.effectiveSecondaryValues
-        .map((v) => v.toChipData(context))
-        .toList(growable: false),
-    secondaryValuePresentation:
-        EntitySecondaryValuePresentation.singleOutlinedIconOnly,
-    startDateLabel: startDateLabel,
-    deadlineDateLabel: deadlineDateLabel,
-    showDates: !inProgressStyle || showDeadlineChipOnOngoing,
-    isOverdue: _isOverdue(
-      effectiveDeadlineDate,
-      completed: isCompleted,
-      today: today,
-    ),
-    isDueToday: _isDueToday(
-      effectiveDeadlineDate,
-      completed: isCompleted,
-      today: today,
-    ),
-    isDueSoon: _isDueSoon(
-      effectiveDeadlineDate,
-      completed: isCompleted,
-      today: today,
-    ),
-    hasRepeat: task.repeatIcalRrule != null,
-    showRepeatOnRight: true,
-    showBothDatesIfPresent: true,
-    showPriorityMarkerOnRight: true,
-    priority: task.priority,
-    priorityColor: _priorityColor(task.priority),
-    priorityPillLabel: task.priority == null
-        ? null
-        : 'Priority P${task.priority}',
-    enableRightOverflowDemotion: true,
-    showOverflowIndicatorOnRight: true,
-    onTapValues: buildTaskOpenValuesHandler(
-      context,
-      task: task,
-      tileCapabilities: tileCapabilities,
-    ),
-  );
-
-  final base = TaskTileModel(
-    id: task.id,
-    title: task.name,
-    completed: isCompleted,
-    pinned: task.isPinned,
-    meta: meta,
-    checkboxSemanticLabel: isCompleted
-        ? 'Mark "${task.name}" as incomplete'
-        : 'Mark "${task.name}" as complete',
-  );
-
-  final endDayLabel = endDate == null ? null : _formatWeekday(context, endDate);
-
-  return TaskAgendaCardModel(
-    base: base,
-    accentColor: accentColor,
-    inProgressStyle: inProgressStyle,
-    endDayLabel: endDayLabel,
-    backgroundBlendPrimary: backgroundBlendPrimary,
   );
 }
 
@@ -270,11 +176,6 @@ bool _isDueSoon(
   final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
   final daysUntil = deadlineDay.difference(today).inDays;
   return daysUntil > 0 && daysUntil <= 3;
-}
-
-String _formatWeekday(BuildContext context, DateTime date) {
-  final locale = Localizations.localeOf(context);
-  return DateFormat.E(locale.toLanguageTag()).format(date);
 }
 
 Color? _priorityColor(int? p) {

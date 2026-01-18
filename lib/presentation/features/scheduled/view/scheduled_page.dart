@@ -4,8 +4,9 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
-import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
+import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
+import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
+import 'package:taskly_bloc/presentation/entity_tiles/widgets/widgets.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_feed_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
@@ -269,9 +270,8 @@ class _ScheduledRow extends StatelessWidget {
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ),
-      ScheduledEntityRowUiModel(:final occurrence) => Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: _ScheduledOccurrenceTile(occurrence: occurrence),
+      ScheduledEntityRowUiModel(:final occurrence) => _ScheduledOccurrenceTile(
+        occurrence: occurrence,
       ),
       _ => const SizedBox.shrink(),
     };
@@ -290,26 +290,74 @@ class _ScheduledOccurrenceTile extends StatelessWidget {
     if (occurrence.ref.entityType == EntityType.task &&
         occurrence.task != null) {
       final task = occurrence.task!;
-      return TaskView(
-        task: task,
-        tileCapabilities: EntityTileCapabilitiesResolver.forTask(task),
-        variant: TaskViewVariant.agendaCard,
-        agendaInProgressStyle: isOngoing,
-        endDate: task.deadlineDate,
-        onTap: (_) => Routing.toTaskEdit(context, task.id),
+
+      final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
+
+      return TaskListRowTile(
+        model: buildTaskListRowTileModel(
+          context,
+          task: task,
+          tileCapabilities: tileCapabilities,
+        ),
+        onTap: () => Routing.toTaskEdit(context, task.id),
+        onToggleCompletion: buildTaskToggleCompletionHandler(
+          context,
+          task: task,
+          tileCapabilities: tileCapabilities,
+        ),
+        trailing: TaskTodayStatusMenuButton(
+          taskId: task.id,
+          taskName: task.name,
+          isPinnedToMyDay: task.isPinned,
+          isInMyDayAuto: false,
+          isRepeating: task.isRepeating,
+          seriesEnded: task.seriesEnded,
+          tileCapabilities: tileCapabilities,
+          compact: true,
+        ),
+        statusBadge: isOngoing
+            ? TasklyBadge(
+                label: 'Ongoing',
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                isOutlined: true,
+              )
+            : null,
       );
     }
 
     if (occurrence.ref.entityType == EntityType.project &&
         occurrence.project != null) {
       final project = occurrence.project!;
-      return ProjectView(
-        project: project,
-        tileCapabilities: EntityTileCapabilitiesResolver.forProject(project),
-        variant: ProjectViewVariant.agendaCard,
-        agendaInProgressStyle: isOngoing,
-        endDate: project.deadlineDate,
-        onTap: (_) => Routing.toProjectEdit(context, project.id),
+
+      final tileCapabilities = EntityTileCapabilitiesResolver.forProject(
+        project,
+      );
+
+      return ProjectListRowTile(
+        model: buildProjectListRowTileModel(
+          context,
+          project: project,
+          tileCapabilities: tileCapabilities,
+          taskCount: project.taskCount,
+          completedTaskCount: project.completedTaskCount,
+        ),
+        onTap: () => Routing.toProjectEdit(context, project.id),
+        trailing: ProjectTodayStatusMenuButton(
+          projectId: project.id,
+          projectName: project.name,
+          isPinnedToMyDay: project.isPinned,
+          isInMyDayAuto: false,
+          isRepeating: project.isRepeating,
+          seriesEnded: project.seriesEnded,
+          tileCapabilities: tileCapabilities,
+        ),
+        statusBadge: isOngoing
+            ? TasklyBadge(
+                label: 'Ongoing',
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                isOutlined: true,
+              )
+            : null,
       );
     }
 

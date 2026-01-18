@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_bloc/presentation/widgets/value_chip.dart';
 
 /// A shared footer widget to display Primary and Secondary values for tasks and projects.
 ///

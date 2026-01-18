@@ -56,6 +56,12 @@ All UI in Taskly uses a consistent 4-tier composition model:
 - **Screens/Templates**: full pages and flows (routing + BLoC wiring + effects).
   These live in the app presentation layer (typically under `lib/presentation/`).
 
+Canonical entity tiles (for example Task/Project tiles) follow this split:
+
+- `packages/taskly_ui`: render-only tiles + UI-only models.
+- app (`lib/`): domain→UI mapping, navigation, and app-owned trailing widgets
+  (overflow menus/status) wired via explicit `trailing` slots.
+
 Normative details live in: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md)
 (section 2.2).
 

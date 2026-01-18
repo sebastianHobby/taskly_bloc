@@ -1,29 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/taskly_ui.dart' show ValueChipData;
+
 enum ValueChipVariant { solid, outlined }
 
-/// Data model for rendering a value chip without domain dependencies.
-class ValueChipData {
-  const ValueChipData({
-    required this.label,
-    required this.color,
-    required this.icon,
-    this.semanticLabel,
-  });
-
-  final String label;
-  final Color color;
-  final IconData icon;
-  final String? semanticLabel;
-}
-
-/// A chip displaying a value with enhanced visual prominence.
+/// App-owned chip widget.
 ///
-/// Designed to be more visually distinct than regular label chips:
-/// - Larger size with more padding
-/// - Optional rank badge showing priority
-/// - Colored background emphasizing the value color
-/// - Subtle border/elevation for emphasis
+/// This intentionally mirrors Taskly UI chip visuals, but lives in the app so
+/// `taskly_ui` can keep chip widgets out of its public API.
 class ValueChip extends StatelessWidget {
   const ValueChip({
     required this.data,
@@ -33,19 +17,9 @@ class ValueChip extends StatelessWidget {
     super.key,
   });
 
-  /// The data to display.
   final ValueChipData data;
-
-  /// Optional tap handler. When provided, the chip becomes tappable.
   final VoidCallback? onTap;
-
-  /// The visual variant (solid or outlined).
   final ValueChipVariant variant;
-
-  /// When true, renders as a more compact chip.
-  ///
-  /// This is primarily used in denser layouts (e.g., grouped headers) to keep
-  /// tiles compact while still showing value identity.
   final bool iconOnly;
 
   @override
@@ -54,9 +28,6 @@ class ValueChip extends StatelessWidget {
     final color = data.color;
     final iconData = data.icon;
 
-    // Visual language (UX-001/UX-002):
-    // - Primary (solid): icon + name, subtle tint fill.
-    // - Secondary (outlined): icon-only, no fill.
     final backgroundColor = switch (variant) {
       ValueChipVariant.solid => color.withValues(alpha: 0.18),
       ValueChipVariant.outlined => Colors.transparent,
@@ -92,9 +63,7 @@ class ValueChip extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 1),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 140,
-                  ),
+                  constraints: const BoxConstraints(maxWidth: 140),
                   child: Text(
                     data.label,
                     style: theme.textTheme.labelSmall?.copyWith(
@@ -123,15 +92,12 @@ class ValueChip extends StatelessWidget {
       );
     }
 
-    if (iconOnly) {
-      final label = data.semanticLabel ?? data.label;
-      result = Semantics(
-        label: label,
-        button: onTap != null,
-        child: Tooltip(message: label, child: result),
-      );
-    }
+    final semanticsLabel = data.semanticLabel ?? data.label;
 
-    return result;
+    return Semantics(
+      label: semanticsLabel,
+      button: onTap != null,
+      child: result,
+    );
   }
 }

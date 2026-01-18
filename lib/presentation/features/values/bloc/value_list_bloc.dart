@@ -155,9 +155,24 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
       }
     }
 
+    // Ensure we always leave the loading state even if the watch stream takes
+    // time to emit its first value (or never emits due to an upstream issue).
+    emit(createLoadingState());
+    try {
+      final initialValues = await _valueRepository.getAll();
+      emit(createLoadedState(_sortValues(initialValues)));
+    } catch (error, stackTrace) {
+      emit(createErrorState(error, stackTrace));
+      return;
+    }
+
     final stream = _valueRepository.watchAll();
 
-    await subscribeToStream(emit, stream: stream, onData: _sortValues);
+    await emit.forEach<List<Value>>(
+      stream,
+      onData: (values) => createLoadedState(_sortValues(values)),
+      onError: createErrorState,
+    );
   }
 
   Future<void> _onSortChanged(
