@@ -110,6 +110,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           flutter test --coverage --reporter=expanded \
+            --coverage-package="^(taskly_bloc|taskly_core|taskly_data|taskly_domain|taskly_ui)$" \
             --dart-define=SUPABASE_URL="${{ steps.supabase.outputs.SUPABASE_URL }}" \
             --dart-define=SUPABASE_PUBLISHABLE_KEY="${{ steps.supabase.outputs.SUPABASE_PUBLISHABLE_KEY }}" \
             --dart-define=POWERSYNC_URL="http://127.0.0.1:8080" \
@@ -141,8 +142,8 @@ jobs:
       - name: Check coverage threshold
         run: |
           dart pub global activate coverage
-          dart pub global run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib
-          # This will fail if coverage is below 80%
+          dart pub global run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib,packages/taskly_core/lib,packages/taskly_data/lib,packages/taskly_domain/lib,packages/taskly_ui/lib
+          # Optional informational check (does not fail the workflow).
           dart pub global run coverage:test_with_coverage --min-coverage 80 || true
 
   # Analyze code quality

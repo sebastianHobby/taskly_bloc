@@ -49,6 +49,7 @@ final excludedPatterns = [
 
   // Localization
   RegExp(r'lib[/\\]core[/\\]l10n[/\\]'),
+  RegExp(r'lib[/\\]l10n[/\\]'),
 
   // Database/sync infrastructure
   RegExp('supabase'),
