@@ -24,6 +24,8 @@ import 'package:taskly_data/src/repositories/project_repository.dart';
 import 'package:taskly_data/src/repositories/settings_repository.dart';
 import 'package:taskly_data/src/repositories/task_repository.dart';
 import 'package:taskly_data/src/repositories/value_repository.dart';
+import 'package:taskly_data/src/services/occurrence_stream_expander.dart';
+import 'package:taskly_data/src/services/occurrence_write_helper.dart';
 
 /// Strongly-typed bindings for Taskly's day-1 data stack.
 ///
@@ -232,14 +234,19 @@ final class TasklyDataStack implements SyncAnomalyStream {
   /// The stack itself owns the wiring between infra + repositories. The app
   /// provides occurrence services (still owned outside of `taskly_data` today).
   TasklyDataBindings createBindings({
-    required OccurrenceStreamExpanderContract occurrenceExpander,
-    required OccurrenceWriteHelperContract occurrenceWriteHelper,
     Clock clock = systemClock,
   }) {
     final settingsRepository = SettingsRepository(driftDb: driftDb);
 
     final homeDayKeyService = HomeDayKeyService(
       settingsRepository: settingsRepository,
+      clock: clock,
+    );
+
+    final occurrenceExpander = OccurrenceStreamExpander(clock: clock);
+    final occurrenceWriteHelper = OccurrenceWriteHelper(
+      driftDb: driftDb,
+      idGenerator: idGenerator,
       clock: clock,
     );
 

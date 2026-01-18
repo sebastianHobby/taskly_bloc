@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
+import 'package:taskly_bloc/presentation/entity_views/entity_view_style.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
@@ -38,9 +38,9 @@ class ProjectView extends StatelessWidget {
     this.onTap,
     this.compact = false,
     this.isInMyDayAuto = false,
-    this.agendaMetaDensity = AgendaMetaDensityV1.full,
-    this.agendaPriorityEncoding = AgendaPriorityEncodingV1.explicitPill,
-    this.agendaActionsVisibility = AgendaActionsVisibilityV1.always,
+    this.agendaMetaDensity = AgendaMetaDensity.full,
+    this.agendaPriorityEncoding = AgendaPriorityEncoding.explicitPill,
+    this.agendaActionsVisibility = AgendaActionsVisibility.always,
     this.agendaPrimaryValueIconOnly = false,
     this.agendaMaxSecondaryValues = 2,
     this.agendaShowDeadlineChipOnOngoing = true,
@@ -72,13 +72,13 @@ class ProjectView extends StatelessWidget {
   final bool isInMyDayAuto;
 
   /// Agenda-only: how dense the meta line should be.
-  final AgendaMetaDensityV1 agendaMetaDensity;
+  final AgendaMetaDensity agendaMetaDensity;
 
   /// Agenda-only: how priority should be encoded.
-  final AgendaPriorityEncodingV1 agendaPriorityEncoding;
+  final AgendaPriorityEncoding agendaPriorityEncoding;
 
   /// Agenda-only: how row actions should be surfaced.
-  final AgendaActionsVisibilityV1 agendaActionsVisibility;
+  final AgendaActionsVisibility agendaActionsVisibility;
 
   /// Agenda-only: render primary value as icon-only.
   final bool agendaPrimaryValueIconOnly;
@@ -583,7 +583,7 @@ class ProjectView extends StatelessWidget {
   }
 
   bool _resolveAgendaActionsVisibility(BuildContext context) {
-    if (agendaActionsVisibility == AgendaActionsVisibilityV1.always) {
+    if (agendaActionsVisibility == AgendaActionsVisibility.always) {
       return true;
     }
 
@@ -598,7 +598,7 @@ class ProjectView extends StatelessWidget {
     final p = project.priority;
     if (p == null) return FontWeight.w600;
 
-    if (agendaPriorityEncoding != AgendaPriorityEncodingV1.subtleTitleWeight) {
+    if (agendaPriorityEncoding != AgendaPriorityEncoding.subtleTitleWeight) {
       return FontWeight.w600;
     }
 
@@ -614,7 +614,7 @@ class ProjectView extends StatelessWidget {
     final p = project.priority;
     if (p == null) return null;
 
-    if (agendaPriorityEncoding != AgendaPriorityEncodingV1.subtleDot) {
+    if (agendaPriorityEncoding != AgendaPriorityEncoding.subtleDot) {
       return null;
     }
 
@@ -884,8 +884,8 @@ class _MetaLine extends StatelessWidget {
     this.hasRepeat = false,
     this.showDates = true,
     this.showOnlyDeadlineDate = false,
-    this.metaDensity = AgendaMetaDensityV1.full,
-    this.priorityEncoding = AgendaPriorityEncodingV1.explicitPill,
+    this.metaDensity = AgendaMetaDensity.full,
+    this.priorityEncoding = AgendaPriorityEncoding.explicitPill,
     this.primaryValueIconOnly = false,
     this.maxSecondaryValues = 2,
     this.expanded = true,
@@ -905,8 +905,8 @@ class _MetaLine extends StatelessWidget {
   final bool hasRepeat;
   final bool showDates;
   final bool showOnlyDeadlineDate;
-  final AgendaMetaDensityV1 metaDensity;
-  final AgendaPriorityEncodingV1 priorityEncoding;
+  final AgendaMetaDensity metaDensity;
+  final AgendaPriorityEncoding priorityEncoding;
   final String Function(BuildContext, DateTime) formatDate;
   final List<Value> secondaryValues;
   final int? priority;
@@ -934,9 +934,9 @@ class _MetaLine extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     final effectiveExpanded = switch (metaDensity) {
-      AgendaMetaDensityV1.full => true,
-      AgendaMetaDensityV1.minimal => false,
-      AgendaMetaDensityV1.minimalExpandable => expanded,
+      AgendaMetaDensity.full => true,
+      AgendaMetaDensity.minimal => false,
+      AgendaMetaDensity.minimalExpandable => expanded,
     };
 
     final leftChildren = <Widget>[];
@@ -1049,7 +1049,7 @@ class _MetaLine extends StatelessWidget {
 
     final p = priority;
     if (p != null &&
-        priorityEncoding == AgendaPriorityEncodingV1.explicitPill) {
+        priorityEncoding == AgendaPriorityEncoding.explicitPill) {
       final priorityPill = Tooltip(
         message: 'Priority P$p',
         child: _CountPill(
@@ -1339,8 +1339,8 @@ class _MetaLineWithExpansion extends StatefulWidget {
   final String Function(BuildContext, DateTime) formatDate;
   final List<Value> secondaryValues;
   final int? priority;
-  final AgendaMetaDensityV1 metaDensity;
-  final AgendaPriorityEncodingV1 priorityEncoding;
+  final AgendaMetaDensity metaDensity;
+  final AgendaPriorityEncoding priorityEncoding;
   final bool primaryValueIconOnly;
   final int maxSecondaryValues;
   final VoidCallback? onTapValues;
@@ -1353,23 +1353,23 @@ class _MetaLineWithExpansionState extends State<_MetaLineWithExpansion> {
   bool _expanded = false;
 
   bool get _canToggle {
-    if (widget.metaDensity != AgendaMetaDensityV1.minimalExpandable) {
+    if (widget.metaDensity != AgendaMetaDensity.minimalExpandable) {
       return false;
     }
 
     return widget.secondaryValues.isNotEmpty ||
         widget.hasRepeat ||
         (widget.priority != null &&
-            widget.priorityEncoding == AgendaPriorityEncodingV1.explicitPill) ||
+            widget.priorityEncoding == AgendaPriorityEncoding.explicitPill) ||
         (!widget.showOnlyDeadlineDate && widget.startDate != null);
   }
 
   @override
   Widget build(BuildContext context) {
     final effectiveExpanded =
-        widget.metaDensity == AgendaMetaDensityV1.minimalExpandable
+        widget.metaDensity == AgendaMetaDensity.minimalExpandable
         ? _expanded
-        : widget.metaDensity == AgendaMetaDensityV1.full;
+        : widget.metaDensity == AgendaMetaDensity.full;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

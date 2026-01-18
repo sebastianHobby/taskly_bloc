@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart';
+import 'package:taskly_domain/analytics.dart';
 
 /// FormBuilder field for selecting entity type.
 ///
