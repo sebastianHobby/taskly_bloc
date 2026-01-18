@@ -49,10 +49,13 @@ Prefer presets over ad-hoc tag combinations. Presets are defined in
 
 Common presets:
 
-- Fast loop: `flutter test --preset=fast`
-- Broader: `flutter test --preset=quick`
-- DB confidence: `flutter test --preset=database`
-- Exclude local-stack pipeline: `flutter test --preset=no_pipeline`
+Note: `flutter test` does not currently support `--preset` in this repo's
+Flutter SDK. Use tag filters (or the VS Code tasks) instead.
+
+- Fast loop: `flutter test -x integration -x slow -x repository -x flaky -x pipeline -x diagnosis`
+- Broader: `flutter test -x slow -x flaky -x pipeline -x diagnosis`
+- DB confidence: `flutter test -t integration -t repository`
+- Exclude local-stack pipeline: `flutter test -x pipeline -x diagnosis`
 
 ### All Tests
 ```bash
@@ -61,18 +64,19 @@ flutter test
 
 ### With Coverage
 ```bash
-flutter test --coverage
+flutter test --coverage \
+  --coverage-package="^(taskly_bloc|taskly_core|taskly_data|taskly_domain|taskly_ui)$"
 ```
 
 Official coverage metric in this repo:
 
-1) `flutter test --coverage`
+1) `flutter test --coverage --coverage-package="^(taskly_bloc|taskly_core|taskly_data|taskly_domain|taskly_ui)$"`
 2) `dart run tool/coverage_filter.dart`
 3) `dart run tool/coverage_summary.dart`
 
 ### Fast Tests Only
 ```bash
-flutter test --preset=fast
+flutter test -x integration -x slow -x repository -x flaky -x pipeline -x diagnosis
 ```
 
 ### Specific Feature
@@ -245,8 +249,8 @@ void main() {
 
 ```text
 1) flutter analyze
-2) small loop: flutter test --preset=fast
-3) broader loop (before merging): flutter test --preset=quick or --preset=database
+2) small loop: flutter test -x integration -x slow -x repository -x flaky -x pipeline -x diagnosis
+3) broader loop (before merging): flutter test -x slow -x flaky -x pipeline -x diagnosis or -t integration -t repository
 4) when touching sync/persistence pipelines: run tag=pipeline intentionally
 5) when failures happen: inspect test/last_run.json artifacts
 ```

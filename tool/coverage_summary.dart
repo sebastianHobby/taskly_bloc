@@ -20,6 +20,31 @@ class FileCoverage {
 
 String _normalizePath(String raw) {
   final normalized = raw.replaceAll(r'\', '/');
+
+  if (normalized.startsWith('package:')) {
+    final withoutScheme = normalized.substring('package:'.length);
+    final firstSlash = withoutScheme.indexOf('/');
+    if (firstSlash != -1) {
+      final packageName = withoutScheme.substring(0, firstSlash);
+      final relativeToLib = withoutScheme.substring(firstSlash + 1);
+
+      if (packageName == 'taskly_bloc') {
+        return 'lib/$relativeToLib';
+      }
+
+      if (packageName.startsWith('taskly_')) {
+        return 'packages/$packageName/lib/$relativeToLib';
+      }
+    }
+  }
+
+  // Prefer keeping local package paths intact so coverage can be grouped.
+  // Example: /.../packages/taskly_domain/lib/foo.dart -> packages/taskly_domain/lib/foo.dart
+  final packagesIndex = normalized.indexOf('/packages/');
+  if (packagesIndex != -1) {
+    return normalized.substring(packagesIndex + 1);
+  }
+
   final libIndex = normalized.indexOf('/lib/');
   if (libIndex != -1) return normalized.substring(libIndex + 1);
 
@@ -31,6 +56,19 @@ String _normalizePath(String raw) {
 }
 
 String _groupFor(String normalizedPath) {
+  if (normalizedPath.startsWith('packages/taskly_core/lib/')) {
+    return 'pkg/taskly_core';
+  }
+  if (normalizedPath.startsWith('packages/taskly_domain/lib/')) {
+    return 'pkg/taskly_domain';
+  }
+  if (normalizedPath.startsWith('packages/taskly_data/lib/')) {
+    return 'pkg/taskly_data';
+  }
+  if (normalizedPath.startsWith('packages/taskly_ui/lib/')) {
+    return 'pkg/taskly_ui';
+  }
+
   if (normalizedPath.startsWith('lib/domain/')) return 'domain';
   if (normalizedPath.startsWith('lib/data/')) return 'data';
   if (normalizedPath.startsWith('lib/presentation/')) return 'presentation';

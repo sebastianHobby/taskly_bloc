@@ -558,7 +558,17 @@ Future<bool> _runTestsWithCoverage() async {
     // Run tests with coverage
     final result = await Process.run(
       'flutter',
-      ['test', '--no-pub', '--coverage', '--preset=no_pipeline'],
+      [
+        'test',
+        '--no-pub',
+        '--coverage',
+        '--coverage-package',
+        r'^(taskly_bloc|taskly_core|taskly_data|taskly_domain|taskly_ui)$',
+        '-x',
+        'pipeline',
+        '-x',
+        'diagnosis',
+      ],
       runInShell: true,
     );
 
