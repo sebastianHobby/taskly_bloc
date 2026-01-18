@@ -36,6 +36,18 @@ final class TileIntentSetPinned extends TileIntent {
   final bool isPinned;
 }
 
+final class TileIntentCompleteSeries extends TileIntent {
+  const TileIntentCompleteSeries({
+    required this.entityType,
+    required this.entityId,
+    required this.entityName,
+  });
+
+  final EntityType entityType;
+  final String entityId;
+  final String entityName;
+}
+
 final class TileIntentRequestDelete extends TileIntent {
   const TileIntentRequestDelete({
     required this.entityType,

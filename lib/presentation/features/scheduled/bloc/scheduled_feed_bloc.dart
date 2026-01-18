@@ -18,6 +18,16 @@ final class ScheduledFeedRetryRequested extends ScheduledFeedEvent {
   const ScheduledFeedRetryRequested();
 }
 
+final class ScheduledBucketCollapseToggled extends ScheduledFeedEvent {
+  const ScheduledBucketCollapseToggled({required this.bucketKey});
+
+  final String bucketKey;
+}
+
+final class ScheduledJumpToTodayRequested extends ScheduledFeedEvent {
+  const ScheduledJumpToTodayRequested();
+}
+
 sealed class ScheduledFeedState {
   const ScheduledFeedState();
 }
@@ -27,9 +37,16 @@ final class ScheduledFeedLoading extends ScheduledFeedState {
 }
 
 final class ScheduledFeedLoaded extends ScheduledFeedState {
-  const ScheduledFeedLoaded({required this.rows});
+  const ScheduledFeedLoaded({
+    required this.rows,
+    required this.scrollToTodaySignal,
+  });
 
   final List<ListRowUiModel> rows;
+
+  /// Monotonically increasing signal used by the UI to trigger a one-off
+  /// "scroll to today" effect after the state has been rebuilt.
+  final int scrollToTodaySignal;
 }
 
 final class ScheduledFeedError extends ScheduledFeedState {
@@ -53,12 +70,19 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
       transformer: restartable(),
     );
 
+    on<ScheduledBucketCollapseToggled>(_onBucketCollapseToggled);
+    on<ScheduledJumpToTodayRequested>(_onJumpToTodayRequested);
+
     add(const ScheduledFeedStarted());
   }
 
   final ScheduledOccurrencesService _scheduledOccurrencesService;
   final HomeDayService _homeDayService;
   final ScheduledScope _scope;
+
+  ScheduledOccurrencesResult? _latestResult;
+  final Map<String, bool> _collapsedBuckets = <String, bool>{};
+  int _scrollToTodaySignal = 0;
 
   Future<void> _onStarted(
     ScheduledFeedStarted event,
@@ -88,7 +112,11 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
       ),
       onData: (result) {
         try {
-          return ScheduledFeedLoaded(rows: _mapToRows(result));
+          _latestResult = result;
+          return ScheduledFeedLoaded(
+            rows: _mapToRows(result),
+            scrollToTodaySignal: _scrollToTodaySignal,
+          );
         } catch (e) {
           return ScheduledFeedError(message: e.toString());
         }
@@ -99,28 +127,73 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     );
   }
 
+  Future<void> _onBucketCollapseToggled(
+    ScheduledBucketCollapseToggled event,
+    Emitter<ScheduledFeedState> emit,
+  ) async {
+    final current = _collapsedBuckets[event.bucketKey] ?? false;
+    _collapsedBuckets[event.bucketKey] = !current;
+
+    final latestResult = _latestResult;
+    if (latestResult == null) return;
+
+    emit(
+      ScheduledFeedLoaded(
+        rows: _mapToRows(latestResult),
+        scrollToTodaySignal: _scrollToTodaySignal,
+      ),
+    );
+  }
+
+  Future<void> _onJumpToTodayRequested(
+    ScheduledJumpToTodayRequested event,
+    Emitter<ScheduledFeedState> emit,
+  ) async {
+    final latestResult = _latestResult;
+    if (latestResult == null) return;
+
+    final today = _normalizeDate(latestResult.rangeStartDay);
+    final todayBucketKey = _bucketKeyForDate(today, today: today);
+    _collapsedBuckets[todayBucketKey] = false;
+
+    _scrollToTodaySignal++;
+    emit(
+      ScheduledFeedLoaded(
+        rows: _mapToRows(latestResult),
+        scrollToTodaySignal: _scrollToTodaySignal,
+      ),
+    );
+  }
+
   static const int _nearTermDays = 7;
 
   List<ListRowUiModel> _mapToRows(ScheduledOccurrencesResult result) {
     final rows = <ListRowUiModel>[];
 
+    const overdueBucketKey = 'overdue';
+
     if (result.overdue.isNotEmpty) {
+      final isCollapsed = _collapsedBuckets[overdueBucketKey] ?? false;
       rows.add(
         BucketHeaderRowUiModel(
           rowKey: RowKey.v1(
             screen: 'scheduled',
             rowType: 'bucket',
-            params: const <String, String>{'label': 'Overdue'},
+            params: const <String, String>{'bucket': overdueBucketKey},
           ),
           depth: 0,
+          bucketKey: overdueBucketKey,
           title: 'Overdue',
+          isCollapsed: isCollapsed,
         ),
       );
 
-      final overdueSorted = [...result.overdue]..sort(_compareOccurrences);
+      if (!isCollapsed) {
+        final overdueSorted = [...result.overdue]..sort(_compareOccurrences);
 
-      for (final item in overdueSorted) {
-        rows.add(_itemRow(item, bucket: 'Overdue', date: null));
+        for (final item in overdueSorted) {
+          rows.add(_itemRow(item, bucketKey: overdueBucketKey, date: null));
+        }
       }
     }
 
@@ -136,35 +209,47 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
       nearTermDays: _nearTermDays,
     );
 
-    String? lastBucket;
+    final distinctBucketKeys = groups
+        .map((g) => g.bucketKey)
+        .toSet()
+        .toList(growable: false);
+    final useBuckets = distinctBucketKeys.length >= 2;
+
+    String? lastBucketKey;
+    var isCurrentBucketCollapsed = false;
     for (final group in groups) {
-      final bucket = group.semanticLabel;
-      if (bucket != lastBucket) {
+      final bucketKey = group.bucketKey;
+      if (useBuckets && bucketKey != lastBucketKey) {
+        isCurrentBucketCollapsed = _collapsedBuckets[bucketKey] ?? false;
         rows.add(
           BucketHeaderRowUiModel(
             rowKey: RowKey.v1(
               screen: 'scheduled',
               rowType: 'bucket',
-              params: <String, String>{
-                'label': bucket,
-                'start': _dateKey(group.date),
-              },
+              params: <String, String>{'bucket': bucketKey},
             ),
             depth: 0,
-            title: bucket,
+            bucketKey: bucketKey,
+            title: _bucketTitle(bucketKey),
+            isCollapsed: isCurrentBucketCollapsed,
           ),
         );
-        lastBucket = bucket;
+        lastBucketKey = bucketKey;
       }
+
+      if (useBuckets && isCurrentBucketCollapsed) continue;
 
       rows.add(
         DateHeaderRowUiModel(
           rowKey: RowKey.v1(
             screen: 'scheduled',
             rowType: 'date_header',
-            params: <String, String>{'date': _dateKey(group.date)},
+            params: <String, String>{
+              'date': _dateKey(group.date),
+              if (useBuckets) 'bucket': bucketKey,
+            },
           ),
-          depth: 0,
+          depth: 1,
           date: group.date,
           title: group.formattedHeader,
         ),
@@ -176,9 +261,12 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
             rowKey: RowKey.v1(
               screen: 'scheduled',
               rowType: 'empty_day',
-              params: <String, String>{'date': _dateKey(group.date)},
+              params: <String, String>{
+                'date': _dateKey(group.date),
+                if (useBuckets) 'bucket': bucketKey,
+              },
             ),
-            depth: 0,
+            depth: 2,
             date: group.date,
           ),
         );
@@ -187,7 +275,13 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
 
       final itemsSorted = [...group.items]..sort(_compareOccurrences);
       for (final item in itemsSorted) {
-        rows.add(_itemRow(item, bucket: bucket, date: group.date));
+        rows.add(
+          _itemRow(
+            item,
+            bucketKey: useBuckets ? bucketKey : null,
+            date: group.date,
+          ),
+        );
       }
     }
 
@@ -196,7 +290,7 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
 
   ScheduledEntityRowUiModel _itemRow(
     ScheduledOccurrence item, {
-    required String bucket,
+    required String? bucketKey,
     required DateTime? date,
   }) {
     final entityId = item.ref.entityId;
@@ -211,10 +305,10 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
           'id': entityId,
           if (date != null) 'date': _dateKey(date),
           'tag': tag.name,
-          'bucket': bucket,
+          'bucket': ?bucketKey,
         },
       ),
-      depth: 0,
+      depth: date == null ? 1 : 2,
       occurrence: item,
     );
   }
@@ -260,13 +354,15 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
   }) {
     final groups = <_ScheduledDateGroup>[];
 
+    final normalizedToday = _normalizeDate(today);
+
     for (var i = 0; i <= nearTermDays; i++) {
-      final date = today.add(Duration(days: i));
+      final date = normalizedToday.add(Duration(days: i));
       final items = itemsByDate[_normalizeDate(date)] ?? const [];
       groups.add(
         _ScheduledDateGroup(
           date: date,
-          semanticLabel: _getSemanticLabel(date, today),
+          bucketKey: _bucketKeyForDate(date, today: normalizedToday),
           formattedHeader: _formatHeader(date),
           items: items,
           isEmpty: items.isEmpty,
@@ -284,7 +380,7 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
       groups.add(
         _ScheduledDateGroup(
           date: date,
-          semanticLabel: _getSemanticLabel(date, today),
+          bucketKey: _bucketKeyForDate(date, today: normalizedToday),
           formattedHeader: _formatHeader(date),
           items: itemsByDate[date] ?? const [],
           isEmpty: false,
@@ -295,22 +391,26 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     return groups;
   }
 
-  String _getSemanticLabel(DateTime date, DateTime today) {
-    final diff = _normalizeDate(date).difference(_normalizeDate(today)).inDays;
+  String _bucketKeyForDate(DateTime date, {required DateTime today}) {
+    // Sunday-start week boundaries (Sunday..Saturday).
+    final startOfThisWeek = today.subtract(Duration(days: today.weekday % 7));
+    final endOfThisWeek = startOfThisWeek.add(const Duration(days: 6));
+    final endOfNextWeek = endOfThisWeek.add(const Duration(days: 7));
 
-    if (diff < 0) return 'Overdue';
-    if (diff == 0) return 'Today';
-    if (diff == 1) return 'Tomorrow';
+    final normalizedDate = _normalizeDate(date);
+    if (!normalizedDate.isAfter(endOfThisWeek)) return 'this_week';
+    if (!normalizedDate.isAfter(endOfNextWeek)) return 'next_week';
+    return 'later';
+  }
 
-    final daysUntilEndOfWeek = 6 - today.weekday; // Saturday = 6
-    if (diff <= daysUntilEndOfWeek && daysUntilEndOfWeek >= 0) {
-      return 'This Week';
-    }
-
-    final daysUntilEndOfNextWeek = daysUntilEndOfWeek + 7;
-    if (diff <= daysUntilEndOfNextWeek) return 'Next Week';
-
-    return 'Later';
+  String _bucketTitle(String bucketKey) {
+    return switch (bucketKey) {
+      'this_week' => 'This Week',
+      'next_week' => 'Next Week',
+      'later' => 'Later',
+      'overdue' => 'Overdue',
+      _ => bucketKey,
+    };
   }
 
   String _formatHeader(DateTime date) {
@@ -332,14 +432,14 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
 class _ScheduledDateGroup {
   const _ScheduledDateGroup({
     required this.date,
-    required this.semanticLabel,
+    required this.bucketKey,
     required this.formattedHeader,
     required this.items,
     required this.isEmpty,
   });
 
   final DateTime date;
-  final String semanticLabel;
+  final String bucketKey;
   final String formattedHeader;
   final List<ScheduledOccurrence> items;
   final bool isEmpty;

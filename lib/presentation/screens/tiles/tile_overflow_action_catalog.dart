@@ -13,6 +13,7 @@ enum TileOverflowActionId {
   edit,
   moveToProject,
   alignValues,
+  completeSeries,
   delete,
 }
 
@@ -43,8 +44,23 @@ abstract final class TileOverflowActionCatalog {
     required EntityType entityType,
     required String entityId,
     required String entityName,
+    required bool isRepeating,
+    required bool seriesEnded,
   }) {
+    final canCompleteSeries = isRepeating && !seriesEnded;
     return [
+      TileOverflowActionEntry(
+        id: TileOverflowActionId.completeSeries,
+        group: TileOverflowActionGroup.destructive,
+        label: 'Complete series',
+        enabled: canCompleteSeries,
+        destructive: true,
+        intent: TileIntentCompleteSeries(
+          entityType: entityType,
+          entityId: entityId,
+          entityName: entityName,
+        ),
+      ),
       TileOverflowActionEntry(
         id: TileOverflowActionId.delete,
         group: TileOverflowActionGroup.destructive,
@@ -65,8 +81,12 @@ abstract final class TileOverflowActionCatalog {
     required String taskId,
     required String taskName,
     required bool isPinnedToMyDay,
+    required bool isRepeating,
+    required bool seriesEnded,
     required EntityTileCapabilities tileCapabilities,
   }) {
+    final canCompleteSeries =
+        tileCapabilities.canToggleCompletion && isRepeating && !seriesEnded;
     return [
       TileOverflowActionEntry(
         id: TileOverflowActionId.togglePinnedToMyDay,
@@ -117,6 +137,18 @@ abstract final class TileOverflowActionCatalog {
         ),
       ),
       TileOverflowActionEntry(
+        id: TileOverflowActionId.completeSeries,
+        group: TileOverflowActionGroup.destructive,
+        label: 'Complete series',
+        enabled: canCompleteSeries,
+        destructive: true,
+        intent: TileIntentCompleteSeries(
+          entityType: EntityType.task,
+          entityId: taskId,
+          entityName: taskName,
+        ),
+      ),
+      TileOverflowActionEntry(
         id: TileOverflowActionId.delete,
         group: TileOverflowActionGroup.destructive,
         label: 'Delete',
@@ -135,8 +167,12 @@ abstract final class TileOverflowActionCatalog {
     required String projectId,
     required String projectName,
     required bool isPinnedToMyDay,
+    required bool isRepeating,
+    required bool seriesEnded,
     required EntityTileCapabilities tileCapabilities,
   }) {
+    final canCompleteSeries =
+        tileCapabilities.canToggleCompletion && isRepeating && !seriesEnded;
     return [
       TileOverflowActionEntry(
         id: TileOverflowActionId.togglePinnedToMyDay,
@@ -171,6 +207,18 @@ abstract final class TileOverflowActionCatalog {
           entityType: EntityType.project,
           entityId: projectId,
           openToValues: true,
+        ),
+      ),
+      TileOverflowActionEntry(
+        id: TileOverflowActionId.completeSeries,
+        group: TileOverflowActionGroup.destructive,
+        label: 'Complete series',
+        enabled: canCompleteSeries,
+        destructive: true,
+        intent: TileIntentCompleteSeries(
+          entityType: EntityType.project,
+          entityId: projectId,
+          entityName: projectName,
         ),
       ),
       TileOverflowActionEntry(

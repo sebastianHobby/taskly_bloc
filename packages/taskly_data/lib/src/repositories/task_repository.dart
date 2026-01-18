@@ -3,6 +3,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
+import 'package:taskly_data/src/infrastructure/powersync/crud_metadata.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/mappers/drift_to_domain.dart';
 import 'package:taskly_data/src/errors/failure_guard.dart';
@@ -433,6 +434,8 @@ class TaskRepository implements TaskRepositoryContract {
             ? normalizedValueIds[1]
             : null;
 
+        final psMetadata = encodeCrudMetadata(context);
+
         await driftDb.transaction(() async {
           await driftDb
               .into(driftDb.taskTable)
@@ -458,6 +461,9 @@ class TaskRepository implements TaskRepositoryContract {
                   overrideSecondaryValueId: drift_pkg.Value(
                     overrideSecondaryValueId,
                   ),
+                  psMetadata: psMetadata == null
+                      ? const drift_pkg.Value<String?>.absent()
+                      : drift_pkg.Value(psMetadata),
                   createdAt: drift_pkg.Value(now),
                   updatedAt: drift_pkg.Value(now),
                 ),
@@ -527,6 +533,8 @@ class TaskRepository implements TaskRepositoryContract {
             ? null
             : (normalizedValueIds.length > 1 ? normalizedValueIds[1] : null);
 
+        final psMetadata = encodeCrudMetadata(context);
+
         await driftDb.transaction(() async {
           await driftDb
               .update(driftDb.taskTable)
@@ -558,6 +566,9 @@ class TaskRepository implements TaskRepositoryContract {
                   overrideSecondaryValueId: normalizedValueIds == null
                       ? const drift_pkg.Value<String?>.absent()
                       : drift_pkg.Value(overrideSecondaryValueId),
+                  psMetadata: psMetadata == null
+                      ? const drift_pkg.Value<String?>.absent()
+                      : drift_pkg.Value(psMetadata),
                   createdAt: drift_pkg.Value(existing.createdAt),
                   updatedAt: drift_pkg.Value(now),
                 ),
@@ -581,11 +592,15 @@ class TaskRepository implements TaskRepositoryContract {
         talker.debug(
           '[TaskRepository] setPinned: id=$id, isPinned=$isPinned',
         );
+        final psMetadata = encodeCrudMetadata(context);
         await (driftDb.update(
           driftDb.taskTable,
         )..where((t) => t.id.equals(id))).write(
           TaskTableCompanion(
             isPinned: drift_pkg.Value(isPinned),
+            psMetadata: psMetadata == null
+                ? const drift_pkg.Value<String?>.absent()
+                : drift_pkg.Value(psMetadata),
             updatedAt: drift_pkg.Value(DateTime.now()),
           ),
         );

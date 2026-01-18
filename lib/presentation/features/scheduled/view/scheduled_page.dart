@@ -9,6 +9,7 @@ import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_feed_
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_ui/taskly_ui.dart';
 
 class ScheduledPage extends StatelessWidget {
@@ -29,59 +30,124 @@ class ScheduledPage extends StatelessWidget {
   }
 }
 
-class _ScheduledView extends StatelessWidget {
+class _ScheduledView extends StatefulWidget {
   const _ScheduledView({required this.scope});
 
   final ScheduledScope scope;
 
   @override
-  Widget build(BuildContext context) {
-    final showScopeHeader = scope is! GlobalScheduledScope;
+  State<_ScheduledView> createState() => _ScheduledViewState();
+}
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Scheduled')),
-      body: BlocBuilder<ScheduledFeedBloc, ScheduledFeedState>(
-        builder: (context, state) {
-          final feed = switch (state) {
-            ScheduledFeedLoading() => const FeedBody.loading(),
-            ScheduledFeedError(:final message) => FeedBody.error(
-              message: message,
-              onRetry: () => context.read<ScheduledFeedBloc>().add(
-                const ScheduledFeedRetryRequested(),
-              ),
-            ),
-            ScheduledFeedLoaded(:final rows) when rows.isEmpty =>
-              FeedBody.empty(
-                child: EmptyStateWidget.noTasks(
-                  title: 'Nothing scheduled',
-                  description:
-                      'Add start dates or deadlines to see items here.',
-                ),
-              ),
-            ScheduledFeedLoaded(:final rows) => FeedBody.list(
-              itemCount: rows.length,
-              itemBuilder: (context, index) {
-                final row = rows[index];
-                return KeyedSubtree(
-                  key: ValueKey(row.rowKey),
-                  child: _ScheduledRow(row: row),
+class _ScheduledViewState extends State<_ScheduledView> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _todayHeaderKey = GlobalKey(debugLabel: 'scheduled_today');
+  int _lastScrollToTodaySignal = 0;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToTodayIfPresent() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _todayHeaderKey.currentContext;
+      if (ctx == null) return;
+
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        alignment: 0,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = widget.scope;
+    final showScopeHeader = scope is! GlobalScheduledScope;
+    final today = getIt<HomeDayService>().todayDayKeyUtc();
+
+    return BlocListener<ScheduledFeedBloc, ScheduledFeedState>(
+      listenWhen: (previous, current) => current is ScheduledFeedLoaded,
+      listener: (context, state) {
+        if (state is! ScheduledFeedLoaded) return;
+        if (state.scrollToTodaySignal == _lastScrollToTodaySignal) return;
+        _lastScrollToTodaySignal = state.scrollToTodaySignal;
+        _scrollToTodayIfPresent();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Scheduled'),
+          actions: [
+            IconButton(
+              tooltip: 'Jump to today',
+              icon: const Icon(Icons.today),
+              onPressed: () {
+                context.read<ScheduledFeedBloc>().add(
+                  const ScheduledJumpToTodayRequested(),
                 );
               },
             ),
-          };
+          ],
+        ),
+        body: BlocBuilder<ScheduledFeedBloc, ScheduledFeedState>(
+          builder: (context, state) {
+            final feed = switch (state) {
+              ScheduledFeedLoading() => const FeedBody.loading(),
+              ScheduledFeedError(:final message) => FeedBody.error(
+                message: message,
+                onRetry: () => context.read<ScheduledFeedBloc>().add(
+                  const ScheduledFeedRetryRequested(),
+                ),
+              ),
+              ScheduledFeedLoaded(:final rows) when rows.isEmpty =>
+                FeedBody.empty(
+                  child: EmptyStateWidget.noTasks(
+                    title: 'Nothing scheduled',
+                    description:
+                        'Add start dates or deadlines to see items here.',
+                  ),
+                ),
+              ScheduledFeedLoaded(:final rows) => FeedBody.list(
+                controller: _scrollController,
+                itemCount: rows.length,
+                itemBuilder: (context, index) {
+                  final row = rows[index];
 
-          if (!showScopeHeader) return feed;
+                  final child = _ScheduledRow(row: row);
+                  final withTodayKey =
+                      row is DateHeaderRowUiModel && _isSameDay(row.date, today)
+                      ? KeyedSubtree(key: _todayHeaderKey, child: child)
+                      : child;
 
-          return Column(
-            children: [
-              ScheduledScopeHeader(scope: scope),
-              Expanded(child: feed),
-            ],
-          );
-        },
+                  return KeyedSubtree(
+                    key: ValueKey(row.rowKey),
+                    child: withTodayKey,
+                  );
+                },
+              ),
+            };
+
+            if (!showScopeHeader) return feed;
+
+            return Column(
+              children: [
+                ScheduledScopeHeader(scope: scope),
+                Expanded(child: feed),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
+}
+
+bool _isSameDay(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
 class _ScheduledRow extends StatelessWidget {
@@ -92,13 +158,33 @@ class _ScheduledRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (row) {
-      BucketHeaderRowUiModel(:final title) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-        child: Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium,
+      BucketHeaderRowUiModel(
+        :final bucketKey,
+        :final title,
+        :final isCollapsed,
+      ) =>
+        InkWell(
+          onTap: () => context.read<ScheduledFeedBloc>().add(
+            ScheduledBucketCollapseToggled(bucketKey: bucketKey),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                Icon(
+                  isCollapsed ? Icons.chevron_right : Icons.expand_more,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
       DateHeaderRowUiModel(:final title) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
         child: Text(

@@ -36,6 +36,7 @@ class TaskForm extends StatefulWidget {
     this.onDelete,
     this.onTogglePinned,
     this.onClose,
+    this.trailingActions = const <Widget>[],
     super.key,
   });
 
@@ -64,6 +65,9 @@ class TaskForm extends StatefulWidget {
   /// Called when the user wants to close the form.
   /// If null, no close button is shown.
   final VoidCallback? onClose;
+
+  /// Optional action widgets to render in the header row (right side).
+  final List<Widget> trailingActions;
 
   @override
   State<TaskForm> createState() => _TaskFormState();
@@ -244,6 +248,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                 : l10n.pinAction,
           ),
       ],
+      trailingActions: widget.trailingActions,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 24),
         child: FormBuilder(

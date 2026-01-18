@@ -36,6 +36,8 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
         return _setCompletion(context, intent);
       case TileIntentSetPinned():
         return _setPinned(context, intent);
+      case TileIntentCompleteSeries():
+        return _completeSeries(context, intent);
       case TileIntentRequestDelete():
         return _requestDelete(context, intent);
       case TileIntentOpenEditor():
@@ -182,6 +184,87 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
     if (context.mounted) {
       await Navigator.of(context).maybePop();
     }
+  }
+
+  Future<void> _completeSeries(
+    BuildContext context,
+    TileIntentCompleteSeries intent,
+  ) async {
+    final confirmed = await _confirmCompleteSeries(
+      context,
+      entityName: intent.entityName,
+    );
+
+    if (!confirmed || !context.mounted) return;
+
+    final bloc = context.read<ScreenActionsBloc>();
+
+    switch (intent.entityType) {
+      case EntityType.task:
+        bloc.add(
+          ScreenActionsTaskSeriesCompleted(taskId: intent.entityId),
+        );
+      case EntityType.project:
+        bloc.add(
+          ScreenActionsProjectSeriesCompleted(projectId: intent.entityId),
+        );
+      case EntityType.value:
+        break;
+    }
+  }
+
+  Future<bool> _confirmCompleteSeries(
+    BuildContext context, {
+    required String entityName,
+  }) async {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.event_busy_outlined,
+            color: colorScheme.primary,
+            size: 32,
+          ),
+        ),
+        title: const Text(
+          'Complete series?',
+          textAlign: TextAlign.center,
+        ),
+        content: Text(
+          'This ends the recurring series for "$entityName" and marks it complete.',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: colorScheme.onSurfaceVariant),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Complete series'),
+          ),
+        ],
+        actionsAlignment: MainAxisAlignment.spaceEvenly,
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      ),
+    );
+
+    return result ?? false;
   }
 
   Future<void> _openEditor(BuildContext context, TileIntentOpenEditor intent) {

@@ -47,6 +47,26 @@ final class ScreenActionsProjectCompletionChanged extends ScreenActionsEvent {
   final Completer<void>? completer;
 }
 
+final class ScreenActionsTaskSeriesCompleted extends ScreenActionsEvent {
+  const ScreenActionsTaskSeriesCompleted({
+    required this.taskId,
+    this.completer,
+  });
+
+  final String taskId;
+  final Completer<void>? completer;
+}
+
+final class ScreenActionsProjectSeriesCompleted extends ScreenActionsEvent {
+  const ScreenActionsProjectSeriesCompleted({
+    required this.projectId,
+    this.completer,
+  });
+
+  final String projectId;
+  final Completer<void>? completer;
+}
+
 final class ScreenActionsTaskPinnedChanged extends ScreenActionsEvent {
   const ScreenActionsTaskPinnedChanged({
     required this.taskId,
@@ -127,6 +147,14 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     );
     on<ScreenActionsProjectCompletionChanged>(
       _onProjectCompletionChanged,
+      transformer: sequential(),
+    );
+    on<ScreenActionsTaskSeriesCompleted>(
+      _onTaskSeriesCompleted,
+      transformer: sequential(),
+    );
+    on<ScreenActionsProjectSeriesCompleted>(
+      _onProjectSeriesCompleted,
       transformer: sequential(),
     );
     on<ScreenActionsTaskPinnedChanged>(
@@ -306,6 +334,96 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.completionFailed,
           fallbackMessage: 'Project update failed',
+          shouldShowSnackBar: shouldShowSnackBar,
+          entityType: EntityType.project,
+          entityId: event.projectId,
+          error: e,
+        ),
+      );
+      event.completer?.completeError(e, st);
+      emit(const ScreenActionsIdleState());
+    }
+  }
+
+  Future<void> _onTaskSeriesCompleted(
+    ScreenActionsTaskSeriesCompleted event,
+    Emitter<ScreenActionsState> emit,
+  ) async {
+    final context = _newContext(
+      intent: 'task_complete_series',
+      operation: 'complete_series',
+      entityType: EntityType.task,
+      entityId: event.taskId,
+    );
+
+    try {
+      await _entityActionService.completeTaskSeries(
+        event.taskId,
+        context: context,
+      );
+      event.completer?.complete();
+    } catch (e, st) {
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: 'Task series completion failed',
+      );
+
+      talker.handle(e, st, '[ScreenActionsBloc] task series complete failed');
+
+      final shouldShowSnackBar = !_isUnexpectedOrUnmapped(e);
+      emit(
+        ScreenActionsFailureState(
+          failureKind: ScreenActionsFailureKind.completionFailed,
+          fallbackMessage: 'Series completion failed',
+          shouldShowSnackBar: shouldShowSnackBar,
+          entityType: EntityType.task,
+          entityId: event.taskId,
+          error: e,
+        ),
+      );
+      event.completer?.completeError(e, st);
+      emit(const ScreenActionsIdleState());
+    }
+  }
+
+  Future<void> _onProjectSeriesCompleted(
+    ScreenActionsProjectSeriesCompleted event,
+    Emitter<ScreenActionsState> emit,
+  ) async {
+    final context = _newContext(
+      intent: 'project_complete_series',
+      operation: 'complete_series',
+      entityType: EntityType.project,
+      entityId: event.projectId,
+    );
+
+    try {
+      await _entityActionService.completeProjectSeries(
+        event.projectId,
+        context: context,
+      );
+      event.completer?.complete();
+    } catch (e, st) {
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: 'Project series completion failed',
+      );
+
+      talker.handle(
+        e,
+        st,
+        '[ScreenActionsBloc] project series complete failed',
+      );
+
+      final shouldShowSnackBar = !_isUnexpectedOrUnmapped(e);
+      emit(
+        ScreenActionsFailureState(
+          failureKind: ScreenActionsFailureKind.completionFailed,
+          fallbackMessage: 'Series completion failed',
           shouldShowSnackBar: shouldShowSnackBar,
           entityType: EntityType.project,
           entityId: event.projectId,

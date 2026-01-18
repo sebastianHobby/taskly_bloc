@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_feedback.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_form.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
 
 class TaskDetailSheet extends StatefulWidget {
   const TaskDetailSheet({
@@ -238,6 +241,13 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                     );
                   }
                 },
+                trailingActions: _buildDetailActions(
+                  context,
+                  taskId: task.id,
+                  taskName: task.name,
+                  isRepeating: task.isRepeating,
+                  seriesEnded: task.seriesEnded,
+                ),
                 submitTooltip: context.l10n.actionUpdate,
                 availableProjects: availableProjects,
                 availableValues: availableValues,
@@ -253,5 +263,57 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
         );
       },
     );
+  }
+
+  List<Widget> _buildDetailActions(
+    BuildContext context, {
+    required String taskId,
+    required String taskName,
+    required bool isRepeating,
+    required bool seriesEnded,
+  }) {
+    final actions = TileOverflowActionCatalog.forEntityDetail(
+      entityType: EntityType.task,
+      entityId: taskId,
+      entityName: taskName,
+      isRepeating: isRepeating,
+      seriesEnded: seriesEnded,
+    );
+
+    final enabledActions = actions.where((a) => a.enabled).toList();
+    if (enabledActions.isEmpty) return const <Widget>[];
+
+    return [
+      PopupMenuButton<TileOverflowActionId>(
+        tooltip: 'More',
+        icon: const Icon(Icons.more_horiz),
+        onSelected: (actionId) async {
+          final dispatcher = context.read<TileIntentDispatcher>();
+          final action = actions.firstWhere((a) => a.id == actionId);
+          return dispatcher.dispatch(context, action.intent);
+        },
+        itemBuilder: (context) {
+          final items = <PopupMenuEntry<TileOverflowActionId>>[];
+          TileOverflowActionGroup? lastGroup;
+
+          for (final action in actions) {
+            if (lastGroup != null && action.group != lastGroup) {
+              if (items.isNotEmpty) items.add(const PopupMenuDivider());
+            }
+            lastGroup = action.group;
+
+            items.add(
+              PopupMenuItem<TileOverflowActionId>(
+                value: action.id,
+                enabled: action.enabled,
+                child: Text(action.label),
+              ),
+            );
+          }
+
+          return items;
+        },
+      ),
+    ];
   }
 }

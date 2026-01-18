@@ -34,30 +34,23 @@ final List<RegExp> fatalResponseCodes = [
   RegExp(r'^42501$'),
 ];
 
-    final metadataJson = op.metadata;
-    if (metadataJson != null && metadataJson.trim().isNotEmpty) {
-      try {
-        final decoded = jsonDecode(metadataJson);
-        if (decoded is Map) {
-          final cid = decoded['cid'];
-          if (cid is String && cid.trim().isNotEmpty) {
-            correlationId = cid;
-          }
+/// PostgREST error codes that indicate schema mismatch (table doesn't exist).
+/// PGRST205: Could not find the table in the schema cache
+const _schemaNotFoundCode = 'PGRST205';
 
-          final src = decoded['src'];
-          if (src is String && src.trim().isNotEmpty) {
-            source = src;
-          }
-
-          final ts = decoded['ts'];
-          if (ts is String && ts.trim().isNotEmpty) {
-            occurredAt = ts;
-          }
-        }
-      } catch (_) {
-        // Ignore metadata parse failures; anomalies still publish without cid.
-      }
-    }
+Map<String, dynamic> _normalizeUploadData(
+  String table,
+  String rowId,
+  UpdateType opType,
+  Map<String, dynamic> data,
+) {
+  return upload_normalizer.normalizeUploadData(
+    table: table,
+    rowId: rowId,
+    opType: opType,
+    data: data,
+    logError: talker.error,
+  );
 }
 
 /// Use Supabase for authentication and data upload.
@@ -434,29 +427,42 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     String? source;
     String? occurredAt;
 
-    final metadata = op.metadata;
+    final Object? metadata = op.metadata;
+    Map<String, dynamic>? decodedMetadata;
+
     if (metadata is Map) {
-      final cid = metadata['cid'];
-      if (cid.trim().isNotEmpty) {
+      decodedMetadata = Map<String, dynamic>.from(metadata);
+    } else if (metadata is String && metadata.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(metadata);
+        if (decoded is Map) {
+          decodedMetadata = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        // Ignore metadata parse failures; anomalies still publish.
+      }
+    }
+
+    if (decodedMetadata != null) {
+      final cid = decodedMetadata['cid'];
+      if (cid is String && cid.trim().isNotEmpty) {
         correlationId = cid;
       }
 
-      final src = metadata['src'];
-      if (src.trim().isNotEmpty) {
+      final src = decodedMetadata['src'];
+      if (src is String && src.trim().isNotEmpty) {
         source = src;
       }
 
-      final ts = metadata['ts'];
-      if (ts.trim().isNotEmpty) {
+      final ts = decodedMetadata['ts'];
+      if (ts is String && ts.trim().isNotEmpty) {
         occurredAt = ts;
       }
     }
 
-    final mergedDetails = <String, Object?>{
-      'src': ?source,
-      'ts': ?occurredAt,
-      ...?details,
-    };
+    final mergedDetails = <String, Object?>{...?details};
+    if (source != null) mergedDetails['src'] = source;
+    if (occurredAt != null) mergedDetails['ts'] = occurredAt;
 
     final anomaly = SyncAnomaly(
       kind: kind,
