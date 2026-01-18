@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
-import 'package:taskly_bloc/presentation/features/attention/widgets/attention_bell_icon_button.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_list_bloc.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/values_list.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -33,17 +33,17 @@ class ValuesPage extends StatelessWidget {
           return Scaffold(
             appBar: AppBar(
               title: const Text('Values'),
-              actions: [
-                if (!isCompact)
-                  IconButton(
-                    tooltip: context.l10n.createValueTooltip,
-                    onPressed: () => _createValue(context),
-                    icon: const Icon(Icons.add),
-                  ),
-                AttentionBellIconButton(
-                  onPressed: () => Routing.toScreenKey(context, 'review_inbox'),
-                ),
-              ],
+              actions: TasklyAppBarActions.withAttentionBell(
+                context,
+                actions: [
+                  if (!isCompact)
+                    IconButton(
+                      tooltip: context.l10n.createValueTooltip,
+                      onPressed: () => _createValue(context),
+                      icon: const Icon(Icons.add),
+                    ),
+                ],
+              ),
             ),
             floatingActionButton: isCompact
                 ? FloatingActionButton(
@@ -60,6 +60,7 @@ class ValuesPage extends StatelessWidget {
                   ValueListLoading() => const FeedBody.loading(),
                   ValueListError(:final error) => FeedBody.error(
                     message: friendlyErrorMessageForUi(error, context.l10n),
+                    retryLabel: context.l10n.retryButton,
                     onRetry: () => context.read<ValueListBloc>().add(
                       const ValueListEvent.subscriptionRequested(),
                     ),

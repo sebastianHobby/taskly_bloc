@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/my_day_hero_card.dart';
@@ -10,8 +15,32 @@ import 'package:taskly_bloc/presentation/screens/view/my_day_focus_mode_required
 class MyDayPage extends StatelessWidget {
   const MyDayPage({super.key});
 
+  Future<void> _openNewTaskEditor(
+    BuildContext context, {
+    required DateTime defaultDay,
+  }) {
+    return EditorLauncher.fromGetIt().openTaskEditor(
+      context,
+      taskId: null,
+      showDragHandle: true,
+      defaultStartDate: defaultDay,
+      defaultDeadlineDate: defaultDay,
+    );
+  }
+
+  Future<void> _openNewProjectEditor(BuildContext context) {
+    return EditorLauncher.fromGetIt().openProjectEditor(
+      context,
+      projectId: null,
+      showDragHandle: true,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isCompact = WindowSizeClass.of(context).isCompact;
+    final today = getIt<HomeDayService>().todayDayKeyUtc().toLocal();
+
     return MultiBlocProvider(
       providers: [
         BlocProvider<MyDayGateBloc>(create: (_) => getIt<MyDayGateBloc>()),
@@ -20,17 +49,67 @@ class MyDayPage extends StatelessWidget {
       child: BlocBuilder<MyDayGateBloc, MyDayGateState>(
         builder: (context, gateState) {
           return switch (gateState) {
-            MyDayGateLoading() => const Center(
-              child: CircularProgressIndicator(),
+            MyDayGateLoading() => Scaffold(
+              appBar: AppBar(
+                title: const Text('My Day'),
+                actions: TasklyAppBarActions.withAttentionBell(
+                  context,
+                  actions: const <Widget>[],
+                ),
+              ),
+              body: const Center(
+                child: CircularProgressIndicator(),
+              ),
             ),
-            MyDayGateError(:final message) => Center(child: Text(message)),
+            MyDayGateError(:final message) => Scaffold(
+              appBar: AppBar(
+                title: const Text('My Day'),
+                actions: TasklyAppBarActions.withAttentionBell(
+                  context,
+                  actions: const <Widget>[],
+                ),
+              ),
+              body: Center(child: Text(message)),
+            ),
             MyDayGateLoaded(
               :final needsFocusModeSetup,
               :final needsValuesSetup,
             ) =>
               (needsFocusModeSetup || needsValuesSetup)
                   ? const MyDayFocusModeRequiredPage()
-                  : const _MyDayLoadedBody(),
+                  : Scaffold(
+                      appBar: AppBar(
+                        title: const Text('My Day'),
+                        actions: TasklyAppBarActions.withAttentionBell(
+                          context,
+                          actions: [
+                            if (!isCompact)
+                              EntityAddMenuButton(
+                                onCreateTask: () => _openNewTaskEditor(
+                                  context,
+                                  defaultDay: today,
+                                ),
+                                onCreateProject: () => _openNewProjectEditor(
+                                  context,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      floatingActionButton: isCompact
+                          ? EntityAddSpeedDial(
+                              heroTag: 'add_speed_dial_my_day',
+                              onCreateTask: () => _openNewTaskEditor(
+                                context,
+                                defaultDay: today,
+                              ),
+                              onCreateProject: () => _openNewProjectEditor(
+                                context,
+                              ),
+                            )
+                          : null,
+                      body: const _MyDayLoadedBody(),
+                    ),
           };
         },
       ),
@@ -50,20 +129,18 @@ class _MyDayLoadedBody extends StatelessWidget {
             child: CircularProgressIndicator(),
           ),
           MyDayError(:final message) => Center(child: Text(message)),
-          MyDayLoaded(:final summary, :final mix, :final tasks) => Scaffold(
-            body: SafeArea(
-              bottom: false,
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: MyDayHeroCard(summary: summary),
-                  ),
-                  MyDayTaskListSection(
-                    tasks: tasks,
-                    mix: mix,
-                  ),
-                ],
-              ),
+          MyDayLoaded(:final summary, :final mix, :final tasks) => SafeArea(
+            bottom: false,
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: MyDayHeroCard(summary: summary),
+                ),
+                MyDayTaskListSection(
+                  tasks: tasks,
+                  mix: mix,
+                ),
+              ],
             ),
           ),
         };

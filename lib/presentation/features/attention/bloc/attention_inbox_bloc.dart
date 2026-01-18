@@ -609,7 +609,12 @@ class AttentionInboxBloc
     final actionVisible = visibleFor(AttentionBucket.action);
     final reviewVisible = visibleFor(AttentionBucket.review);
 
-    final visible = <AttentionItem>[...actionVisible, ...reviewVisible];
+    // The segmented control selects which bucket is currently visible.
+    // We still compute counts for both buckets so the user can switch.
+    final visible = switch (_viewConfig.bucket) {
+      AttentionBucket.action => actionVisible,
+      AttentionBucket.review => reviewVisible,
+    };
 
     final entities = _groupByEntity(visible);
     final groups = _groupEntitiesBySeverity(entities);
@@ -786,15 +791,15 @@ class AttentionInboxBloc
 
   Set<String> _currentVisibleKeys() {
     final keys = <String>{};
-    for (final bucket in AttentionBucket.values) {
-      final items = _itemsByBucket[bucket] ?? const <AttentionItem>[];
-      for (final item in items) {
-        final k = _reasonKey(item);
-        if (_hiddenKeys.contains(k)) continue;
-        if (!_matchesFilters(item)) continue;
-        keys.add(k);
-      }
+
+    final items = _itemsByBucket[_viewConfig.bucket] ?? const <AttentionItem>[];
+    for (final item in items) {
+      final k = _reasonKey(item);
+      if (_hiddenKeys.contains(k)) continue;
+      if (!_matchesFilters(item)) continue;
+      keys.add(k);
     }
+
     return keys;
   }
 

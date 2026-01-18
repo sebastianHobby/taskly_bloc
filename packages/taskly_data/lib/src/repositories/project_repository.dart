@@ -548,7 +548,10 @@ class ProjectRepository implements ProjectRepositoryContract {
           );
         }
 
-        final normalizedValueIds = valueIds.where((v) => v.isNotEmpty).toList();
+        final normalizedValueIds = valueIds
+            .map((v) => v.trim())
+            .where((v) => v.isNotEmpty)
+            .toList();
         if (normalizedValueIds.isEmpty) {
           throw RepositoryValidationException(
             'Projects must have at least one value.',
@@ -635,7 +638,10 @@ class ProjectRepository implements ProjectRepositoryContract {
 
         List<String>? normalizedValueIds;
         if (valueIds != null) {
-          normalizedValueIds = valueIds.where((v) => v.isNotEmpty).toList();
+          normalizedValueIds = valueIds
+              .map((v) => v.trim())
+              .where((v) => v.isNotEmpty)
+              .toList();
           if (normalizedValueIds.isEmpty) {
             throw RepositoryValidationException(
               'Projects must have at least one value.',

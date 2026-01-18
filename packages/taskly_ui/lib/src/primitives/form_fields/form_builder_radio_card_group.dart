@@ -16,6 +16,7 @@ class FormBuilderRadioCardGroup<T> extends StatelessWidget {
     this.onChanged,
     this.enabled = true,
     this.recommendedValue,
+    this.recommendedLabel,
     super.key,
   });
 
@@ -40,8 +41,20 @@ class FormBuilderRadioCardGroup<T> extends StatelessWidget {
   /// Value to show as "Recommended".
   final T? recommendedValue;
 
+  /// Label for the recommended badge.
+  ///
+  /// Shared UI must not hardcode user-facing strings; provide localized text
+  /// from the app.
+  final String? recommendedLabel;
+
   @override
   Widget build(BuildContext context) {
+    assert(
+      recommendedValue == null || recommendedLabel != null,
+      'When recommendedValue is provided, recommendedLabel must be provided '
+      '(taskly_ui does not hardcode user-facing strings).',
+    );
+
     return FormBuilderField<T>(
       name: name,
       initialValue: initialValue,
@@ -59,6 +72,7 @@ class FormBuilderRadioCardGroup<T> extends StatelessWidget {
                 option: option,
                 isSelected: isSelected,
                 isRecommended: isRecommended,
+                recommendedLabel: recommendedLabel,
                 enabled: enabled,
                 onTap: () {
                   field.didChange(option.value);
@@ -112,6 +126,7 @@ class _RadioCard<T> extends StatelessWidget {
     required this.option,
     required this.isSelected,
     required this.isRecommended,
+    required this.recommendedLabel,
     required this.enabled,
     required this.onTap,
   });
@@ -119,6 +134,7 @@ class _RadioCard<T> extends StatelessWidget {
   final RadioCardOption<T> option;
   final bool isSelected;
   final bool isRecommended;
+  final String? recommendedLabel;
   final bool enabled;
   final VoidCallback onTap;
 
@@ -169,10 +185,10 @@ class _RadioCard<T> extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (isRecommended)
+                  if (isRecommended && recommendedLabel != null)
                     Chip(
                       label: Text(
-                        'Recommended',
+                        recommendedLabel!,
                         style: theme.textTheme.labelSmall,
                       ),
                       backgroundColor: colorScheme.primaryContainer,

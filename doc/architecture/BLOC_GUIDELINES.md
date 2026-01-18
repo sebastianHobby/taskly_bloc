@@ -125,6 +125,48 @@ Guidelines:
   screen is purely derived.
 - Avoid using `Subject`s unless you truly need imperative injection.
 
+### 3.1 Fan-out (share upstream triggers)
+
+If one upstream stream is used by multiple downstream subscriptions, it must be
+**shareable**.
+
+Common footgun:
+- A single-subscription stream (the default for most composed streams) is
+  re-used in multiple `switchMap`/`combineLatest` chains.
+- Each chain subscribes independently.
+- Runtime crash: `Bad state: Stream has already been listened to.`
+
+Guidelines:
+- If you use an upstream trigger in more than one derived stream, make it a
+  broadcast/shared stream using RxDart (for example `share()`/`shareReplay(...)`
+  or `shareValue()` when you explicitly want `ValueStream` semantics).
+- Prefer `shareReplay(maxSize: 1)` when you need the latest value for late
+  subscribers but do not want `ValueStream` behavior.
+- Prefer keeping the fan-out inside a single derived stream when reasonable
+  (compute a single view model stream and bind once with `emit.forEach`).
+
+#### Picking a sharing operator (trade-offs)
+
+- `share()`
+  - Pros: simplest; turns a single-subscription stream into a broadcast stream.
+  - Cons: does not replay the last value; late subscribers may miss the current
+    value and wait for the next event.
+
+- `shareReplay(maxSize: 1)`
+  - Pros: safe fan-out + late subscribers immediately get the latest value.
+  - Cons: retains the last event; be mindful when the value is large.
+
+- `shareValue()` (creates a `ValueStream`)
+  - Pros: always has a “current value” concept; convenient for UI/state-like
+    streams.
+  - Cons: stronger semantics than you often need; can encourage accidental
+    reliance on synchronous `value` access and can keep values alive longer.
+
+Default preference:
+- Use `shareReplay(maxSize: 1)` for derived trigger streams that multiple chains
+  subscribe to.
+- Use `shareValue()` only when you explicitly want `ValueStream` semantics.
+
 ## 4) Event concurrency policy (bloc_concurrency)
 
 Use event transformers explicitly for handlers that start async work.
@@ -139,6 +181,8 @@ Recommended defaults:
 - No `.listen(... emit(...))` patterns in BLoCs.
 - Stream bindings are done via `emit.forEach` / `emit.onEach`.
 - If a handler does `await ...` and then emits, it checks `emit.isDone`.
+- Any upstream stream fanned out to multiple derived streams is shared/broadcast
+  (no multi-listen single-subscription crashes).
 - Start/retry handlers use `restartable()` unless justified otherwise.
 - Errors map into state + retry exists.
 - Writes create and pass `OperationContext`.

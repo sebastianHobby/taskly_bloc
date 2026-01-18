@@ -90,10 +90,16 @@ class FeedBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    assert(
+      _onRetry == null || _retryLabel != null,
+      'When onRetry is provided, retryLabel must be provided (taskly_ui does not '
+      'hardcode user-facing strings).',
+    );
+
     return switch (_kind) {
       _FeedBodyKind.loading => const Center(child: CircularProgressIndicator()),
       _FeedBodyKind.error => ErrorStateWidget(
-        message: _errorMessage ?? 'Something went wrong.',
+        message: _errorMessage!,
         onRetry: _onRetry,
         retryLabel: _retryLabel,
       ),

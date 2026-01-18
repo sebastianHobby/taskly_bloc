@@ -46,6 +46,8 @@ class EditorLauncher {
     String? taskId,
     String? defaultProjectId,
     List<String>? defaultValueIds,
+    DateTime? defaultStartDate,
+    DateTime? defaultDeadlineDate,
     bool openToValues = false,
     bool openToProjectPicker = false,
     bool? showDragHandle,
@@ -76,6 +78,8 @@ class EditorLauncher {
           child: TaskDetailSheet(
             defaultProjectId: defaultProjectId,
             defaultValueIds: defaultValueIds,
+            defaultStartDate: defaultStartDate,
+            defaultDeadlineDate: defaultDeadlineDate,
             openToValues: openToValues,
             openToProjectPicker: openToProjectPicker,
           ),

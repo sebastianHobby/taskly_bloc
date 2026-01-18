@@ -1,8 +1,6 @@
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/taskly_domain.dart' show ScheduledOccurrence;
 
-import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
-
 /// Shared flat list row UI models for feed screens (Anytime/Scheduled/My Day).
 ///
 /// The hierarchy is expressed via [depth] and by deterministic ordering of
@@ -93,17 +91,6 @@ final class EmptyDayRowUiModel extends ListRowUiModel {
   });
 
   final DateTime date;
-}
-
-/// Scheduled-only: a scheduled agenda item row (task or project).
-final class AgendaEntityRowUiModel extends ListRowUiModel {
-  const AgendaEntityRowUiModel({
-    required super.rowKey,
-    required super.depth,
-    required this.item,
-  });
-
-  final AgendaItem item;
 }
 
 /// Scheduled-only: a scheduled occurrence row (task or project).

@@ -19,6 +19,8 @@ class TaskDetailSheet extends StatefulWidget {
   const TaskDetailSheet({
     this.defaultProjectId,
     this.defaultValueIds,
+    this.defaultStartDate,
+    this.defaultDeadlineDate,
     this.openToValues = false,
     this.openToProjectPicker = false,
     super.key,
@@ -26,6 +28,12 @@ class TaskDetailSheet extends StatefulWidget {
 
   final String? defaultProjectId;
   final List<String>? defaultValueIds;
+
+  /// Optional start date to prefill when creating a new task.
+  final DateTime? defaultStartDate;
+
+  /// Optional deadline date to prefill when creating a new task.
+  final DateTime? defaultDeadlineDate;
 
   /// When true, scrolls to the values section and opens the values alignment
   /// sheet on first build.
@@ -185,6 +193,8 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 availableValues: availableValues,
                 defaultProjectId: widget.defaultProjectId,
                 defaultValueIds: widget.defaultValueIds,
+                defaultStartDate: widget.defaultStartDate,
+                defaultDeadlineDate: widget.defaultDeadlineDate,
                 openToValues: widget.openToValues,
                 openToProjectPicker: widget.openToProjectPicker,
                 onClose: () => unawaited(closeEditor(context)),

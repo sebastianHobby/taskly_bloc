@@ -10,6 +10,7 @@ import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_core/env.dart';
 import 'package:taskly_core/logging.dart';
+import 'package:taskly_data/src/infrastructure/powersync/powersync_log_forwarding.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/attention/maintenance/attention_seeder.dart';
 import 'package:taskly_data/src/features/journal/maintenance/journal_tracker_seeder.dart';
@@ -516,6 +517,8 @@ Future<String> getDatabasePath() async {
 Future<PowerSyncDatabase> openDatabase({
   String? pathOverride,
 }) async {
+  installPowerSyncLogForwarding();
+
   final db = PowerSyncDatabase(
     schema: schema,
     path: pathOverride ?? await getDatabasePath(),

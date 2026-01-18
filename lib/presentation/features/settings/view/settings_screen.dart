@@ -10,7 +10,6 @@ import 'package:taskly_domain/settings.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
-import 'package:taskly_bloc/presentation/features/attention/widgets/attention_bell_icon_button.dart';
 import 'package:taskly_bloc/presentation/features/settings/widgets/accent_palette_gallery.dart';
 import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
@@ -37,11 +36,6 @@ class SettingsScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Settings'),
-          actions: [
-            AttentionBellIconButton(
-              onPressed: () => Routing.toScreenKey(context, 'review_inbox'),
-            ),
-          ],
         ),
         body: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
           builder: (context, state) {

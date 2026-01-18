@@ -8,7 +8,9 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/view/scope_header.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/theme/taskly_typography.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -66,6 +68,18 @@ class _AnytimeView extends StatelessWidget {
     );
   }
 
+  Future<void> _openNewProjectEditor(
+    BuildContext context, {
+    required bool openToValues,
+  }) {
+    return EditorLauncher.fromGetIt().openProjectEditor(
+      context,
+      projectId: null,
+      openToValues: openToValues,
+      showDragHandle: true,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isCompact = WindowSizeClass.of(context).isCompact;
@@ -102,6 +116,8 @@ class _AnytimeView extends StatelessWidget {
                   defaultProjectId: defaultProjectId,
                   defaultValueId: defaultValueId,
                 );
+              case AnytimeOpenProjectNew(:final openToValues):
+                _openNewProjectEditor(context, openToValues: openToValues);
             }
 
             context.read<AnytimeScreenBloc>().add(const AnytimeEffectHandled());
@@ -111,42 +127,47 @@ class _AnytimeView extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Anytime'),
-          actions: [
-            if (!isCompact)
-              IconButton(
-                tooltip: context.l10n.createTaskTooltip,
-                onPressed: () => context.read<AnytimeScreenBloc>().add(
-                  const AnytimeCreateTaskRequested(),
-                ),
-                icon: const Icon(Icons.add),
-              ),
-            BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
-              buildWhen: (p, n) => p.focusOnly != n.focusOnly,
-              builder: (context, state) {
-                final enabled = state.focusOnly;
-                return IconButton(
-                  tooltip: enabled ? 'Focus only: on' : 'Focus only: off',
-                  icon: Icon(
-                    enabled ? Icons.filter_alt : Icons.filter_alt_off,
+          actions: TasklyAppBarActions.withAttentionBell(
+            context,
+            actions: [
+              if (!isCompact)
+                EntityAddMenuButton(
+                  onCreateTask: () => context.read<AnytimeScreenBloc>().add(
+                    const AnytimeCreateTaskRequested(),
                   ),
-                  onPressed: () {
-                    context.read<AnytimeScreenBloc>().add(
-                      const AnytimeFocusOnlyToggled(),
-                    );
-                  },
-                );
-              },
-            ),
-          ],
+                  onCreateProject: () => context.read<AnytimeScreenBloc>().add(
+                    const AnytimeCreateProjectRequested(),
+                  ),
+                ),
+              BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
+                buildWhen: (p, n) => p.focusOnly != n.focusOnly,
+                builder: (context, state) {
+                  final enabled = state.focusOnly;
+                  return IconButton(
+                    tooltip: enabled ? 'Focus only: on' : 'Focus only: off',
+                    icon: Icon(
+                      enabled ? Icons.filter_alt : Icons.filter_alt_off,
+                    ),
+                    onPressed: () {
+                      context.read<AnytimeScreenBloc>().add(
+                        const AnytimeFocusOnlyToggled(),
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
         ),
         floatingActionButton: isCompact
-            ? FloatingActionButton(
-                tooltip: context.l10n.createTaskTooltip,
-                onPressed: () => context.read<AnytimeScreenBloc>().add(
+            ? EntityAddSpeedDial(
+                heroTag: 'add_speed_dial_anytime',
+                onCreateTask: () => context.read<AnytimeScreenBloc>().add(
                   const AnytimeCreateTaskRequested(),
                 ),
-                heroTag: 'create_task_fab_anytime',
-                child: const Icon(Icons.add),
+                onCreateProject: () => context.read<AnytimeScreenBloc>().add(
+                  const AnytimeCreateProjectRequested(),
+                ),
               )
             : null,
         body: Column(
@@ -159,6 +180,7 @@ class _AnytimeView extends StatelessWidget {
                     AnytimeFeedLoading() => const FeedBody.loading(),
                     AnytimeFeedError(:final message) => FeedBody.error(
                       message: message,
+                      retryLabel: context.l10n.retryButton,
                       onRetry: () => context.read<AnytimeFeedBloc>().add(
                         const AnytimeFeedRetryRequested(),
                       ),

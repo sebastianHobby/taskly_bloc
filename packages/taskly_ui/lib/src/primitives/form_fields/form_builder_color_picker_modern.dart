@@ -1,6 +1,6 @@
-import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flex_color_picker/flex_color_picker.dart';
 
 /// A modern color picker field for FormBuilder using flex_color_picker.
 ///
@@ -18,10 +18,13 @@ class FormBuilderColorPickerModern extends StatelessWidget {
     this.validator,
     this.enabled = true,
     this.isRequired = false,
+    this.requiredErrorText,
     this.showLabel = true,
     this.compact = false,
     this.showMaterialName = false,
     this.enableOpacity = false,
+    this.dialogTitle,
+    this.chipLabelBuilder,
     super.key,
   });
 
@@ -32,6 +35,12 @@ class FormBuilderColorPickerModern extends StatelessWidget {
   final String? Function(Color?)? validator;
   final bool enabled;
   final bool isRequired;
+
+  /// Error text returned when [isRequired] is true and no color is selected.
+  ///
+  /// Shared UI must not hardcode user-facing strings; provide localized text
+  /// from the app.
+  final String? requiredErrorText;
 
   /// Whether to show the label above the chip.
   final bool showLabel;
@@ -45,10 +54,27 @@ class FormBuilderColorPickerModern extends StatelessWidget {
   /// Whether to enable opacity/alpha channel.
   final bool enableOpacity;
 
+  /// Optional dialog title.
+  ///
+  /// Shared UI must not hardcode user-facing strings; provide localized text
+  /// from the app.
+  final String? dialogTitle;
+
+  /// Builds the label shown in the chip from the current color.
+  ///
+  /// If not provided, a language-neutral hex label is used.
+  final String Function(Color color)? chipLabelBuilder;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    assert(
+      !isRequired || requiredErrorText != null || validator != null,
+      'When isRequired is true, provide requiredErrorText or validator (taskly_ui '
+      'does not hardcode user-facing strings).',
+    );
 
     return Padding(
       padding: compact
@@ -57,10 +83,24 @@ class FormBuilderColorPickerModern extends StatelessWidget {
       child: FormBuilderField<Color>(
         name: name,
         initialValue: initialValue,
-        validator: validator,
+        validator: (value) {
+          if (validator != null) {
+            final error = validator!(value);
+            if (error != null) return error;
+          }
+
+          if (isRequired && value == null) {
+            return requiredErrorText;
+          }
+
+          return null;
+        },
         enabled: enabled,
         builder: (FormFieldState<Color> field) {
           final currentColor = field.value ?? initialValue;
+          final resolvedChipLabel =
+              chipLabelBuilder?.call(currentColor) ??
+              _defaultHexLabel(currentColor, includeAlpha: enableOpacity);
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,6 +110,16 @@ class FormBuilderColorPickerModern extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
                     label!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              if (hint != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    hint!,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -88,7 +138,7 @@ class FormBuilderColorPickerModern extends StatelessWidget {
                     ),
                   ),
                 ),
-                label: Text(ColorTools.nameThatColor(currentColor)),
+                label: Text(resolvedChipLabel),
                 onPressed: enabled
                     ? () => _showColorPickerDialog(context, field)
                     : null,
@@ -116,6 +166,13 @@ class FormBuilderColorPickerModern extends StatelessWidget {
     );
   }
 
+  String _defaultHexLabel(Color color, {required bool includeAlpha}) {
+    final value = includeAlpha ? color.value : (color.value & 0x00FFFFFF);
+    final width = includeAlpha ? 8 : 6;
+    final hex = value.toRadixString(16).toUpperCase().padLeft(width, '0');
+    return '#$hex';
+  }
+
   Future<void> _showColorPickerDialog(
     BuildContext context,
     FormFieldState<Color> field,
@@ -123,7 +180,9 @@ class FormBuilderColorPickerModern extends StatelessWidget {
     final pickedColor = await showColorPickerDialog(
       context,
       field.value ?? initialValue,
-      title: Text(label ?? 'Select color'),
+      title: dialogTitle != null
+          ? Text(dialogTitle!)
+          : (label != null ? Text(label!) : const SizedBox.shrink()),
       pickersEnabled: const <ColorPickerType, bool>{
         ColorPickerType.primary: true,
         ColorPickerType.accent: true,

@@ -95,7 +95,7 @@ void main() {
         );
 
         final created = factory.create(
-          feature: 'usm',
+          feature: 'screen_actions',
           intent: 'task_completion_changed',
           operation: 'complete_occurrence',
           screen: 'screen_actions',
@@ -136,7 +136,7 @@ void main() {
         );
 
         final created = factory.create(
-          feature: 'usm',
+          feature: 'screen_actions',
           intent: 'task_completion_changed',
           operation: 'uncomplete_occurrence',
           screen: 'screen_actions',
@@ -172,7 +172,7 @@ void main() {
         );
 
         final created = factory.create(
-          feature: 'usm',
+          feature: 'screen_actions',
           intent: 'task_pinned_changed',
           operation: 'pin',
           screen: 'screen_actions',

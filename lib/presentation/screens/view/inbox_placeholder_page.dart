@@ -6,7 +6,7 @@ import 'package:taskly_ui/taskly_ui.dart';
 /// Temporary placeholder for the global `/inbox` route.
 ///
 /// Package D will replace this with the real Inbox feed screen once the
-/// post-USM feed architecture is in place.
+/// new feed architecture is in place.
 class InboxPlaceholderPage extends StatelessWidget {
   const InboxPlaceholderPage({super.key});
 
@@ -21,7 +21,7 @@ class InboxPlaceholderPage extends StatelessWidget {
             message:
                 'Inbox not implemented yet.\n\n'
                 'The new Inbox feed route exists, but the feed screen is not '
-                'migrated off the Unified Screen Model yet.',
+                'implemented yet.',
           ),
           const SizedBox(height: 16),
           FilledButton(
