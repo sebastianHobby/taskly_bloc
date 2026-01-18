@@ -38,6 +38,12 @@
   - Selection dispatches the mutation and closes the modal on success; failures are shown inline and keep the modal open.
   - Interim contract: picker selection returns `ProjectId?` in presentation but maps `null` → `''` when dispatching the existing move-to-project action (to avoid broad API churn).
 
+- **USM strangler (Project/Value detail entrypoints) (DEC-006B, DEC-024A, DEC-011H)**: removed legacy entity “detail” surfaces backed by USM.
+  - Removed the legacy routes (`/project/:id`, `/value/:id`) entirely (no redirects under Q3).
+  - Navigation helpers route to canonical editor paths (`/project/:id/edit`, `/value/:id/edit`).
+  - Deleted the legacy USM/ScreenSpec-backed Project/Value unified detail pages and the now-unused entity detail ScreenSpec catalog/runtime.
+  - Removed the now-dead routing indirection (entity builder registry + routing bootstrap registration).
+
 - **Shared UI extraction (`taskly_ui`)**: introduced `packages/taskly_ui` and migrated shared primitives (including `PriorityFlag` and `ColorPickerField`).
   - Allowed `flex_color_picker` inside `taskly_ui` to support the color picker field.
   - Deleted the unused `lib/presentation/widgets/filters/` folder after confirming no call sites.
@@ -45,8 +51,14 @@
 - **Centralized error taxonomy + reporter pipeline (DEC-039A–DEC-044A)**: replicated the Auth vertical slice pattern across additional high-write presentation flows.
   - Editors: task/project/value create + edit + delete now report unexpected/unmapped failures via `AppErrorReporter` with an `OperationContext`.
   - Screen actions: global tile mutations (complete/pin/delete/move) now use the same reporting path and avoid duplicate SnackBars.
+  - Journal: add log, journal entry editor, and tracker CRUD/prefs flows now use the same reporting path and propagate `OperationContext` into repository writes.
   - Other slices: settings, focus setup, and value list mutations now follow the same “expected failures local / unexpected global” rule.
   - In all migrated flows, UI still emits local failure states to recover (stop spinners, re-enable actions) even when a global report is emitted.
+
+- **Route param decoding (DEC-052A)**: implemented `RouteCodec` UUID v4/v5 validation and wired it into `go_router` redirects.
+  - Invalid deep links redirect to `/not-found` and emit structured logs.
+
+- **Domain time source (DEC-053A)**: introduced `Clock` (`systemClock`) in `taskly_domain` and migrated core domain time-boundary services to accept an injected clock.
 
 ### 2026-01-17
 
@@ -64,7 +76,7 @@
   - in-app origin (back-stack) → open editor as modal (sheet/panel/dialog)
   - direct deep link (no back-stack) → render editor full-page
 - **State management policy (presentation)**: for new work, prefer full `Bloc` (events + states) over `Cubit`. Existing Cubits may remain temporarily, but do not introduce new Cubits.
-- **Notes**: Most shell routes still render USM-backed system screens via `ScreenSpec` for now. `/anytime` is now an explicit Flutter screen and no longer uses USM.
+- **Notes (historical, 2026-01-17)**: At this point in the migration, most shell routes still rendered USM-backed system screens via `ScreenSpec`. As of 2026-01-18, USM screen entrypoints and runtime have been removed.
 - **Scoped route context (Anytime)**: `ScopeHeader` now uses `ScopeContextBloc` for scoped Anytime routes with the requested simple metrics:
   - Value scope: task count + project count
   - Project scope: task count only
@@ -87,7 +99,7 @@ Implementation follow-ups to keep in mind:
   - Create an `OperationContext` in each BLoC intent handler and pass it down into domain/data operations.
   - Ensure data catches exceptions and throws domain `AppFailure` (with `UnknownFailure` fallback).
   - Use `AppErrorReporter` only for unexpected/unmapped failures; keep expected failures screen-owned.
-  - **Status (Jan 2026):** Auth + task/project/value editors + ScreenActions + global settings + focus setup + value list are migrated; remaining flows are mainly Journal/trackers, feed-level mutations outside ScreenActions, and maintenance/background mutations.
+  - **Status (Jan 2026):** Auth + task/project/value editors + ScreenActions + global settings + focus setup + value list + Journal (add log, entry editor, trackers) are migrated; remaining flows are mainly feed-level mutations outside ScreenActions and maintenance/background mutations.
 
 ## Decisions locked in
 
@@ -478,10 +490,18 @@ Deliverables:
 - Disable/remove remaining USM routing entrypoints:
   - screen catalog and screen editor UI
   - unified screen page rendering
+- Disable/remove legacy USM entity detail entrypoints (Project/Value).
 - Replace remaining shell routes that still render USM-backed system screens.
 
 Progress:
-- In progress: Remove remaining USM screens + entrypoints from the user experience.
+- Completed (2026-01-18): Strangled legacy Project/Value entity “detail” entrypoints.
+  - Legacy `/project/:id` and `/value/:id` routes removed (no redirects).
+  - USM-backed unified Project/Value detail pages and unused entity detail specs removed.
+  - Routing indirection for entity detail builders removed.
+- Completed (2026-01-18): Removed remaining USM system screen entrypoints and runtime.
+  - Deleted the `ScreenSpec` model and generated file, system screen catalog, and typed screen runtime interpreter.
+  - Removed USM page/template/bloc entrypoints and related DI registrations/exports.
+  - Router table contains only explicit routes (no legacy entity detail redirects).
 
 Presentation design decisions (confirmed):
 - DEC-010B (Navigation): Adaptive destinations navigation (rail on desktop/tablet, drawer/bottom nav adaptation on mobile) for My Day / Anytime / Scheduled.

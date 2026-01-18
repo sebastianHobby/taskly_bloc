@@ -53,6 +53,7 @@ import 'package:flutter_test/flutter_test.dart';
 ///     .having((s) => s.task.id, 'task.id', 'task-1'));
 /// ```
 import 'package:taskly_domain/taskly_domain.dart';
+
 TypeMatcher<T> isStateOfType<T>() => isA<T>();
 
 /// Matcher that checks both type and a condition.
@@ -209,38 +210,37 @@ class _HasLengthOf extends Matcher {
 ///
 /// Usage:
 /// ```dart
-/// expect(task.createdAt, isToday());
+/// expect(task.createdAt, isToday(now: TestConstants.referenceDate));
 /// ```
-Matcher isToday() => predicate<DateTime>(
+Matcher isToday({required DateTime now}) => predicate<DateTime>(
   (date) {
-    final now = DateTime.now();
     return date.year == now.year &&
         date.month == now.month &&
         date.day == now.day;
   },
-  'is today',
+  'is today (relative to provided now)',
 );
 
 /// Matcher that checks if a DateTime is in the past.
 ///
 /// Usage:
 /// ```dart
-/// expect(task.completedAt, isInThePast());
+/// expect(task.completedAt, isInThePast(now: TestConstants.referenceDate));
 /// ```
-Matcher isInThePast() => predicate<DateTime>(
-  (date) => date.isBefore(DateTime.now()),
-  'is in the past',
+Matcher isInThePast({required DateTime now}) => predicate<DateTime>(
+  (date) => date.isBefore(now),
+  'is in the past (relative to provided now)',
 );
 
 /// Matcher that checks if a DateTime is in the future.
 ///
 /// Usage:
 /// ```dart
-/// expect(task.deadline, isInTheFuture());
+/// expect(task.deadline, isInTheFuture(now: TestConstants.referenceDate));
 /// ```
-Matcher isInTheFuture() => predicate<DateTime>(
-  (date) => date.isAfter(DateTime.now()),
-  'is in the future',
+Matcher isInTheFuture({required DateTime now}) => predicate<DateTime>(
+  (date) => date.isAfter(now),
+  'is in the future (relative to provided now)',
 );
 
 /// Matcher that checks if a String is not empty.

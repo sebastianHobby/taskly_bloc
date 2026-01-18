@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 import 'package:powersync/powersync.dart';
@@ -74,7 +76,7 @@ final class TasklyDataBindings {
 ///
 /// This is intentionally the only place that knows the exact wiring between
 /// Supabase, PowerSync, and Drift.
-final class TasklyDataStack {
+final class TasklyDataStack implements SyncAnomalyStream {
   TasklyDataStack._({
     required this.supabaseClient,
     required this.syncDb,
@@ -101,6 +103,12 @@ final class TasklyDataStack {
 
   /// Local maintenance service implementation.
   final LocalDataMaintenanceService localDataMaintenanceService;
+
+  final StreamController<SyncAnomaly> _syncAnomaliesController =
+      StreamController<SyncAnomaly>.broadcast();
+
+  @override
+  Stream<SyncAnomaly> get anomalies => _syncAnomaliesController.stream;
 
   SupabaseConnector? _connector;
   String? _sessionUserId;
@@ -171,7 +179,10 @@ final class TasklyDataStack {
     }
 
     talker.info('[data_stack] Starting session (userId=$userId)');
-    _connector = SupabaseConnector(syncDb);
+    _connector = SupabaseConnector(
+      syncDb,
+      onAnomaly: _syncAnomaliesController.add,
+    );
     await syncDb.connect(connector: _connector!);
 
     await runPostAuthMaintenance(driftDb: driftDb, idGenerator: idGenerator);
@@ -211,6 +222,8 @@ final class TasklyDataStack {
     } catch (_) {}
 
     await driftDb.close();
+
+    await _syncAnomaliesController.close();
   }
 
   /// Creates the app-facing `taskly_domain` contract implementations for this

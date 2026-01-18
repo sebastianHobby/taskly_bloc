@@ -80,6 +80,7 @@ export 'bloc_test_helpers.dart';
 export 'checks.dart';
 export 'disposables.dart';
 export 'test_clock.dart';
+export 'operation_context_test_helpers.dart';
 export 'test_environment.dart';
 
 /// Standard fixture builders (Object Mother).

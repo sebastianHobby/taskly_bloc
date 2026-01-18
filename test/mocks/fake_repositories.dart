@@ -10,8 +10,13 @@ import 'package:rxdart/rxdart.dart';
 /// Minimal in-memory fake repository for task operations.
 import 'package:taskly_domain/taskly_domain.dart';
 
+DateTime _defaultNow() => DateTime(2025, 1, 15, 12);
+
 class FakeTaskRepository implements TaskRepositoryContract {
-  FakeTaskRepository();
+  FakeTaskRepository({DateTime Function()? now}) : _now = now ?? _defaultNow;
+
+  static int _idCounter = 0;
+  final DateTime Function() _now;
 
   final _controller = BehaviorSubject<List<Task>>.seeded([]);
   Completer<void>? updateCalled;
@@ -95,7 +100,7 @@ class FakeTaskRepository implements TaskRepositoryContract {
     final old = _last[idx];
     final updated = [..._last];
     updated[idx] = old.copyWith(
-      updatedAt: DateTime.now(),
+      updatedAt: _now(),
       name: name,
       completed: completed,
       description: description,
@@ -125,7 +130,7 @@ class FakeTaskRepository implements TaskRepositoryContract {
 
     final old = _last[idx];
     final updated = [..._last];
-    updated[idx] = old.copyWith(isPinned: isPinned, updatedAt: DateTime.now());
+    updated[idx] = old.copyWith(isPinned: isPinned, updatedAt: _now());
 
     _last = updated;
     _controller.add(_last);
@@ -146,8 +151,8 @@ class FakeTaskRepository implements TaskRepositoryContract {
     List<String>? valueIds,
     OperationContext? context,
   }) async {
-    final now = DateTime.now();
-    final id = 'gen-${now.microsecondsSinceEpoch}';
+    final now = _now();
+    final id = 'gen-task-${_idCounter++}';
     final newTask = Task(
       id: id,
       createdAt: now,
@@ -364,7 +369,10 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
 
 /// Minimal in-memory fake repository for project operations.
 class FakeProjectRepository implements ProjectRepositoryContract {
-  FakeProjectRepository();
+  FakeProjectRepository({DateTime Function()? now}) : _now = now ?? _defaultNow;
+
+  static int _idCounter = 0;
+  final DateTime Function() _now;
 
   final _controller = BehaviorSubject<List<Project>>.seeded([]);
   List<Project> get _last => _controller.value;
@@ -413,7 +421,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
 
     final old = _last[idx];
     final updated = [..._last];
-    updated[idx] = old.copyWith(isPinned: isPinned, updatedAt: DateTime.now());
+    updated[idx] = old.copyWith(isPinned: isPinned, updatedAt: _now());
 
     _last = updated;
     _controller.add(_last);
@@ -438,8 +446,8 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     List<String>? valueIds,
     OperationContext? context,
   }) async {
-    final now = DateTime.now();
-    final id = 'gen-${now.microsecondsSinceEpoch}';
+    final now = _now();
+    final id = 'gen-project-${_idCounter++}';
     final newProject = Project(
       id: id,
       createdAt: now,
@@ -480,7 +488,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     final old = _last[idx];
     final updated = [..._last];
     updated[idx] = old.copyWith(
-      updatedAt: DateTime.now(),
+      updatedAt: _now(),
       name: name,
       completed: completed,
       description: description,
@@ -560,7 +568,10 @@ class FakeProjectRepository implements ProjectRepositoryContract {
 
 /// Minimal in-memory fake repository for value operations.
 class FakeValueRepository implements ValueRepositoryContract {
-  FakeValueRepository();
+  FakeValueRepository({DateTime Function()? now}) : _now = now ?? _defaultNow;
+
+  static int _idCounter = 0;
+  final DateTime Function() _now;
 
   final _controller = BehaviorSubject<List<Value>>.seeded([]);
   List<Value> get _last => _controller.value;
@@ -602,8 +613,8 @@ class FakeValueRepository implements ValueRepositoryContract {
     ValuePriority priority = ValuePriority.medium,
     OperationContext? context,
   }) async {
-    final now = DateTime.now();
-    final id = 'gen-${now.microsecondsSinceEpoch}';
+    final now = _now();
+    final id = 'gen-value-${_idCounter++}';
     final newValue = Value(
       id: id,
       createdAt: now,
@@ -632,7 +643,7 @@ class FakeValueRepository implements ValueRepositoryContract {
     final old = _last[idx];
     final updated = [..._last];
     updated[idx] = old.copyWith(
-      updatedAt: DateTime.now(),
+      updatedAt: _now(),
       name: name,
       color: color,
       iconName: iconName,

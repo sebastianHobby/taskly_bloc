@@ -22,9 +22,6 @@ import 'package:taskly_domain/attention.dart'
     as attention_engine_v2_impl
     show AttentionEngine;
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
-import 'package:taskly_bloc/domain/screens/runtime/entity_style_resolver.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_module_interpreter_registry.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
@@ -47,12 +44,8 @@ import 'package:taskly_bloc/presentation/features/attention/bloc/attention_inbox
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_rules_cubit.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_session_cubit.dart';
-import 'package:taskly_bloc/presentation/features/journal/bloc/add_log_cubit.dart';
-import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_cubit.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
-import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_trackers_cubit.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
-import 'package:taskly_bloc/presentation/features/journal/bloc/journal_trackers_cubit.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
 
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
@@ -69,6 +62,7 @@ Future<void> setupDependencies() async {
   // Core stack handles.
   getIt
     ..registerSingleton<TasklyDataStack>(dataStack)
+    ..registerSingleton<SyncAnomalyStream>(dataStack)
     ..registerSingleton<AppDatabase>(dataStack.driftDb)
     ..registerSingleton<IdGenerator>(dataStack.idGenerator)
     ..registerSingleton<AuthRepositoryContract>(dataStack.authRepository)
@@ -309,33 +303,6 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
       ),
     )
-    ..registerFactoryParam<AddLogCubit, Set<String>, void>(
-      (preselectedTrackerIds, _) => AddLogCubit(
-        repository: getIt<JournalRepositoryContract>(),
-        preselectedTrackerIds: preselectedTrackerIds,
-        nowUtc: getIt<NowService>().nowUtc,
-      ),
-    )
-    ..registerFactoryParam<JournalEntryEditorCubit, String?, Set<String>>(
-      (entryId, preselectedTrackerIds) => JournalEntryEditorCubit(
-        repository: getIt<JournalRepositoryContract>(),
-        entryId: entryId,
-        preselectedTrackerIds: preselectedTrackerIds,
-        nowUtc: getIt<NowService>().nowUtc,
-      ),
-    )
-    ..registerFactory<JournalManageTrackersCubit>(
-      () => JournalManageTrackersCubit(
-        repository: getIt<JournalRepositoryContract>(),
-        nowUtc: getIt<NowService>().nowUtc,
-      ),
-    )
-    ..registerFactory<JournalTrackersCubit>(
-      () => JournalTrackersCubit(
-        repository: getIt<JournalRepositoryContract>(),
-        nowUtc: getIt<NowService>().nowUtc,
-      ),
-    )
     ..registerFactory<MyDayGateBloc>(
       () => MyDayGateBloc(
         settingsRepository: getIt<SettingsRepositoryContract>(),
@@ -440,58 +407,6 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<JournalManageTrackersModuleInterpreterV1>(
       () => JournalManageTrackersModuleInterpreterV1(
         repository: getIt<JournalRepositoryContract>(),
-      ),
-    )
-    ..registerLazySingleton<EntityStyleResolver>(
-      () => const EntityStyleResolver(),
-    )
-    ..registerLazySingleton<ScreenModuleInterpreterRegistry>(
-      () => DefaultScreenModuleInterpreterRegistry(
-        entityStyleResolver: getIt<EntityStyleResolver>(),
-        taskListInterpreter: getIt<DataListSectionInterpreterV2>(
-          instanceName: SectionTemplateId.taskListV2,
-        ),
-        valueListInterpreter: getIt<DataListSectionInterpreterV2>(
-          instanceName: SectionTemplateId.valueListV2,
-        ),
-        interleavedListInterpreter: getIt<InterleavedListSectionInterpreterV2>(
-          instanceName: SectionTemplateId.interleavedListV2,
-        ),
-        hierarchyValueProjectTaskInterpreter:
-            getIt<HierarchyValueProjectTaskSectionInterpreterV2>(
-              instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
-            ),
-        agendaInterpreter: getIt<AgendaSectionInterpreterV2>(
-          instanceName: SectionTemplateId.agendaV2,
-        ),
-        attentionBannerV2Interpreter:
-            getIt<AttentionBannerSectionInterpreterV2>(
-              instanceName: SectionTemplateId.attentionBannerV2,
-            ),
-        attentionInboxInterpreter: getIt<AttentionInboxSectionInterpreterV1>(
-          instanceName: SectionTemplateId.attentionInboxV1,
-        ),
-        entityHeaderInterpreter: getIt<EntityHeaderSectionInterpreter>(
-          instanceName: SectionTemplateId.entityHeader,
-        ),
-        myDayHeroV1Interpreter: getIt<MyDayHeroV1ModuleInterpreter>(),
-        myDayRankedTasksV1Interpreter:
-            getIt<MyDayRankedTasksV1ModuleInterpreter>(),
-        journalTodayComposerV1Interpreter:
-            getIt<JournalTodayComposerModuleInterpreterV1>(),
-        journalTodayEntriesV1Interpreter:
-            getIt<JournalTodayEntriesModuleInterpreterV1>(),
-        journalHistoryListV1Interpreter:
-            getIt<JournalHistoryListModuleInterpreterV1>(),
-        journalManageTrackersV1Interpreter:
-            getIt<JournalManageTrackersModuleInterpreterV1>(),
-      ),
-    )
-    ..registerLazySingleton<ScreenSpecDataInterpreter>(
-      () => ScreenSpecDataInterpreter(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-        valueRepository: getIt<ValueRepositoryContract>(),
-        moduleInterpreterRegistry: getIt<ScreenModuleInterpreterRegistry>(),
       ),
     );
 }
