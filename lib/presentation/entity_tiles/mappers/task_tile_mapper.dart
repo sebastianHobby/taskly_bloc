@@ -1,6 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/shared/formatters/date_label_formatter.dart';
@@ -14,13 +16,14 @@ import 'package:taskly_ui/taskly_ui.dart';
 TaskTileModel buildTaskListRowTileModel(
   BuildContext context, {
   required Task task,
+  required EntityTileCapabilities tileCapabilities,
 }) {
   final isCompleted = task.occurrence?.isCompleted ?? task.completed;
 
   final effectiveStartDate = task.occurrence?.date ?? task.startDate;
   final effectiveDeadlineDate = task.occurrence?.deadline ?? task.deadlineDate;
 
-  final now = getIt<NowService>().nowLocal();
+  final now = context.read<NowService>().nowLocal();
   final today = DateTime(now.year, now.month, now.day);
 
   final start = effectiveStartDate;
@@ -37,11 +40,9 @@ TaskTileModel buildTaskListRowTileModel(
 
   final meta = EntityMetaLineModel(
     primaryValue: task.effectivePrimaryValue?.toChipData(context),
-    secondaryValues: task.effectiveSecondaryValues.isEmpty
-        ? const <ValueChipData>[]
-        : <ValueChipData>[
-            task.effectiveSecondaryValues.first.toChipData(context),
-          ],
+    secondaryValues: task.effectiveSecondaryValues
+        .map((v) => v.toChipData(context))
+        .toList(growable: false),
     secondaryValuePresentation:
         EntitySecondaryValuePresentation.singleOutlinedIconOnly,
     startDateLabel: startDateLabel,
@@ -49,14 +50,17 @@ TaskTileModel buildTaskListRowTileModel(
     isOverdue: _isOverdue(
       effectiveDeadlineDate,
       completed: isCompleted,
+      today: today,
     ),
     isDueToday: _isDueToday(
       effectiveDeadlineDate,
       completed: isCompleted,
+      today: today,
     ),
     isDueSoon: _isDueSoon(
       effectiveDeadlineDate,
       completed: isCompleted,
+      today: today,
     ),
     hasRepeat: task.repeatIcalRrule != null,
     showRepeatOnRight: true,
@@ -69,6 +73,11 @@ TaskTileModel buildTaskListRowTileModel(
         : 'Priority P${task.priority}',
     enableRightOverflowDemotion: true,
     showOverflowIndicatorOnRight: true,
+    onTapValues: buildTaskOpenValuesHandler(
+      context,
+      task: task,
+      tileCapabilities: tileCapabilities,
+    ),
   );
 
   return TaskTileModel(
@@ -86,6 +95,7 @@ TaskTileModel buildTaskListRowTileModel(
 TaskAgendaCardModel buildTaskAgendaCardModel(
   BuildContext context, {
   required Task task,
+  required EntityTileCapabilities tileCapabilities,
   required bool inProgressStyle,
   required DateTime? endDate,
   Color? accentColor,
@@ -97,7 +107,7 @@ TaskAgendaCardModel buildTaskAgendaCardModel(
   final effectiveStartDate = task.occurrence?.date ?? task.startDate;
   final effectiveDeadlineDate = task.occurrence?.deadline ?? task.deadlineDate;
 
-  final now = getIt<NowService>().nowLocal();
+  final now = context.read<NowService>().nowLocal();
   final today = DateTime(now.year, now.month, now.day);
 
   final start = effectiveStartDate;
@@ -115,11 +125,9 @@ TaskAgendaCardModel buildTaskAgendaCardModel(
 
   final meta = EntityMetaLineModel(
     primaryValue: task.effectivePrimaryValue?.toChipData(context),
-    secondaryValues: task.effectiveSecondaryValues.isEmpty
-        ? const <ValueChipData>[]
-        : <ValueChipData>[
-            task.effectiveSecondaryValues.first.toChipData(context),
-          ],
+    secondaryValues: task.effectiveSecondaryValues
+        .map((v) => v.toChipData(context))
+        .toList(growable: false),
     secondaryValuePresentation:
         EntitySecondaryValuePresentation.singleOutlinedIconOnly,
     startDateLabel: startDateLabel,
@@ -128,14 +136,17 @@ TaskAgendaCardModel buildTaskAgendaCardModel(
     isOverdue: _isOverdue(
       effectiveDeadlineDate,
       completed: isCompleted,
+      today: today,
     ),
     isDueToday: _isDueToday(
       effectiveDeadlineDate,
       completed: isCompleted,
+      today: today,
     ),
     isDueSoon: _isDueSoon(
       effectiveDeadlineDate,
       completed: isCompleted,
+      today: today,
     ),
     hasRepeat: task.repeatIcalRrule != null,
     showRepeatOnRight: true,
@@ -148,6 +159,11 @@ TaskAgendaCardModel buildTaskAgendaCardModel(
         : 'Priority P${task.priority}',
     enableRightOverflowDemotion: true,
     showOverflowIndicatorOnRight: true,
+    onTapValues: buildTaskOpenValuesHandler(
+      context,
+      task: task,
+      tileCapabilities: tileCapabilities,
+    ),
   );
 
   final base = TaskTileModel(
@@ -161,9 +177,7 @@ TaskAgendaCardModel buildTaskAgendaCardModel(
         : 'Mark "${task.name}" as complete',
   );
 
-  final endDayLabel = endDate == null
-      ? null
-      : MaterialLocalizations.of(context).formatShortWeekday(endDate);
+  final endDayLabel = endDate == null ? null : _formatWeekday(context, endDate);
 
   return TaskAgendaCardModel(
     base: base,
@@ -189,15 +203,17 @@ ValueChanged<bool?>? buildTaskToggleCompletionHandler(
     final originalOccurrenceDate =
         task.occurrence?.originalDate ?? occurrenceDate;
 
-    dispatcher.dispatch(
-      context,
-      TileIntentSetCompletion(
-        entityType: EntityType.task,
-        entityId: task.id,
-        completed: completed,
-        scope: tileCapabilities.completionScope,
-        occurrenceDate: occurrenceDate,
-        originalOccurrenceDate: originalOccurrenceDate,
+    unawaited(
+      dispatcher.dispatch(
+        context,
+        TileIntentSetCompletion(
+          entityType: EntityType.task,
+          entityId: task.id,
+          completed: completed,
+          scope: tileCapabilities.completionScope,
+          occurrenceDate: occurrenceDate,
+          originalOccurrenceDate: originalOccurrenceDate,
+        ),
       ),
     );
   };
@@ -212,40 +228,53 @@ VoidCallback? buildTaskOpenValuesHandler(
 
   return () {
     final dispatcher = context.read<TileIntentDispatcher>();
-    dispatcher.dispatch(
-      context,
-      TileIntentOpenEditor(
-        entityType: EntityType.task,
-        entityId: task.id,
-        openToValues: true,
+    unawaited(
+      dispatcher.dispatch(
+        context,
+        TileIntentOpenEditor(
+          entityType: EntityType.task,
+          entityId: task.id,
+          openToValues: true,
+        ),
       ),
     );
   };
 }
 
-bool _isOverdue(DateTime? deadline, {required bool completed}) {
+bool _isOverdue(
+  DateTime? deadline, {
+  required bool completed,
+  required DateTime today,
+}) {
   if (deadline == null || completed) return false;
-  final now = getIt<NowService>().nowLocal();
-  final today = DateTime(now.year, now.month, now.day);
   final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
   return deadlineDay.isBefore(today);
 }
 
-bool _isDueToday(DateTime? deadline, {required bool completed}) {
+bool _isDueToday(
+  DateTime? deadline, {
+  required bool completed,
+  required DateTime today,
+}) {
   if (deadline == null || completed) return false;
-  final now = getIt<NowService>().nowLocal();
-  final today = DateTime(now.year, now.month, now.day);
   final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
   return deadlineDay.isAtSameMomentAs(today);
 }
 
-bool _isDueSoon(DateTime? deadline, {required bool completed}) {
+bool _isDueSoon(
+  DateTime? deadline, {
+  required bool completed,
+  required DateTime today,
+}) {
   if (deadline == null || completed) return false;
-  final now = getIt<NowService>().nowLocal();
-  final today = DateTime(now.year, now.month, now.day);
   final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
   final daysUntil = deadlineDay.difference(today).inDays;
   return daysUntil > 0 && daysUntil <= 3;
+}
+
+String _formatWeekday(BuildContext context, DateTime date) {
+  final locale = Localizations.localeOf(context);
+  return DateFormat.E(locale.toLanguageTag()).format(date);
 }
 
 Color? _priorityColor(int? p) {

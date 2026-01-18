@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
+import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
+import 'package:taskly_bloc/presentation/entity_tiles/widgets/widgets.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
@@ -120,10 +121,35 @@ class _InboxRow extends StatelessWidget {
     return switch (row) {
       TaskRowUiModel(:final task) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: TaskView(
-          task: task,
-          tileCapabilities: EntityTileCapabilitiesResolver.forTask(task),
-          onTap: (_) => Routing.toTaskEdit(context, task.id),
+        child: Builder(
+          builder: (context) {
+            final tileCapabilities = EntityTileCapabilitiesResolver.forTask(
+              task,
+            );
+
+            return TaskListRowTile(
+              model: buildTaskListRowTileModel(
+                context,
+                task: task,
+                tileCapabilities: tileCapabilities,
+              ),
+              onTap: () => Routing.toTaskEdit(context, task.id),
+              onToggleCompletion: buildTaskToggleCompletionHandler(
+                context,
+                task: task,
+                tileCapabilities: tileCapabilities,
+              ),
+              trailing: TaskTodayStatusMenuButton(
+                taskId: task.id,
+                taskName: task.name,
+                isPinnedToMyDay: task.isPinned,
+                isInMyDayAuto: false,
+                isRepeating: task.isRepeating,
+                seriesEnded: task.seriesEnded,
+                tileCapabilities: tileCapabilities,
+              ),
+            );
+          },
         ),
       ),
       _ => const SizedBox.shrink(),

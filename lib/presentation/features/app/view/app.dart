@@ -201,6 +201,8 @@ class _AuthenticatedApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<NowService>(create: (_) => getIt<NowService>()),
+
         // TodayBadgeService: Lightweight service for navigation badge count
         Provider<TodayBadgeService>(
           create: (_) => TodayBadgeService(
