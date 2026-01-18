@@ -161,6 +161,28 @@ Allowed exceptions (narrow):
 - Short-lived experiments/prototypes that are explicitly scoped and removed or
   extracted if they become permanent.
 
+### 2.1.1 Form UI boundary (FormBuilder) (strict)
+
+When using `flutter_form_builder`, keep a strict separation between form logic
+and form UI so `taskly_ui` remains pure UI.
+
+Normative rules:
+
+- **Form logic** (state, validation rules, submit orchestration) must live in
+  the **presentation layer** (feature BLoC/ViewModel + screen).
+- **Form UI wrappers** (inputs, layout, styling) may live in `taskly_ui` **only
+  as thin, data-in / events-out adapters** around FormBuilder widgets.
+- `taskly_ui` **must not** include DI, domain models, navigation, async
+  services, or form submission logic.
+- **Domain rules** may expose validators as **pure functions** when needed, but
+  presentation owns wiring and error messaging.
+
+Rationale:
+
+- Keeps Domain pure and platform-agnostic.
+- Prevents `taskly_ui` from becoming stateful/business-aware.
+- Centralizes styling without leaking orchestration into UI packages.
+
 See: [doc/architecture/README.md](README.md)
 
 See also: [BLOC_GUIDELINES.md](BLOC_GUIDELINES.md)

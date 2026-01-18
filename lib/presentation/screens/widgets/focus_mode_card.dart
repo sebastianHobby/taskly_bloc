@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
+import 'package:taskly_bloc/presentation/widgets/taskly/taskly_card.dart';
 
 /// Card widget for displaying a focus mode option.
 class FocusModeCard extends StatelessWidget {

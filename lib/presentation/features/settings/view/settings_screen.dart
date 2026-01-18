@@ -14,6 +14,8 @@ import 'package:taskly_bloc/presentation/features/attention/widgets/attention_be
 import 'package:taskly_bloc/presentation/features/settings/widgets/accent_palette_gallery.dart';
 import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_domain/allocation.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui.dart';
 
 /// Settings screen for global app configuration.
@@ -28,7 +30,10 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<SettingsMaintenanceCubit>(
-      create: (_) => getIt<SettingsMaintenanceCubit>(),
+      create: (_) => SettingsMaintenanceCubit(
+        templateDataService: getIt<TemplateDataService>(),
+        allocationSnapshotCoordinator: getIt<AllocationSnapshotCoordinator>(),
+      ),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Settings'),
@@ -83,7 +88,6 @@ class SettingsScreen extends StatelessWidget {
                     children: [
                       _buildViewLogsItem(context),
                       if (kDebugMode) const _GenerateTemplateDataItem(),
-                      if (kDebugMode) const _ClearLocalDataItem(),
                     ],
                   ),
                   _buildSection(
@@ -446,98 +450,6 @@ class _GenerateTemplateDataItem extends StatelessWidget {
 
     if (!(confirmed ?? false) || !context.mounted) return;
     await context.read<SettingsMaintenanceCubit>().generateTemplateData();
-  }
-}
-
-class _ClearLocalDataItem extends StatelessWidget {
-  const _ClearLocalDataItem();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocListener<SettingsMaintenanceCubit, SettingsMaintenanceState>(
-      listenWhen: (prev, next) =>
-          prev.status.runtimeType != next.status.runtimeType,
-      listener: (context, state) {
-        final messenger = ScaffoldMessenger.of(context);
-
-        switch (state.status) {
-          case SettingsMaintenanceRunning(:final action)
-              when action == SettingsMaintenanceAction.clearLocalData:
-            messenger.clearSnackBars();
-            messenger.showSnackBar(
-              const SnackBar(
-                content: Text('Clearing local data…'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          case SettingsMaintenanceSuccess(:final action)
-              when action == SettingsMaintenanceAction.clearLocalData:
-            messenger.clearSnackBars();
-            messenger.showSnackBar(
-              const SnackBar(
-                content: Text('Local data cleared. Restarting…'),
-                duration: Duration(seconds: 5),
-              ),
-            );
-            context.read<AuthBloc>().add(const AuthSignOutRequested());
-          case SettingsMaintenanceFailure(:final action, :final message)
-              when action == SettingsMaintenanceAction.clearLocalData:
-            messenger.clearSnackBars();
-            messenger.showSnackBar(
-              SnackBar(
-                content: Text(message),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-            );
-          default:
-            break;
-        }
-      },
-      child: ListTile(
-        leading: Icon(
-          Icons.delete_forever,
-          color: Theme.of(context).colorScheme.error,
-        ),
-        title: const Text('Clear Local Data'),
-        subtitle: const Text('Delete all cached data and resync'),
-        trailing: Icon(
-          Icons.warning_amber,
-          color: Theme.of(context).colorScheme.error,
-        ),
-        onTap: () => _showClearLocalDataConfirmation(context),
-      ),
-    );
-  }
-
-  Future<void> _showClearLocalDataConfirmation(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Clear Local Data'),
-        content: const Text(
-          'This will delete all locally cached data and force a full resync '
-          'from the server. The app will restart after clearing.\n\n'
-          'Use this to fix data sync issues or corrupted local state.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Clear & Restart'),
-          ),
-        ],
-      ),
-    );
-
-    if ((confirmed ?? false) && context.mounted) {
-      await context.read<SettingsMaintenanceCubit>().clearLocalData();
-    }
   }
 }
 

@@ -4,7 +4,6 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
-import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_list_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
