@@ -1,20 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/presentation/shared/formatters/date_label_formatter.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui.dart';
 
 ProjectTileModel buildProjectListRowTileModel(
   BuildContext context, {
   required Project project,
+  required EntityTileCapabilities tileCapabilities,
   int? taskCount,
   int? completedTaskCount,
   bool showTrailingProgressLabel = false,
 }) {
-  final now = getIt<NowService>().nowLocal();
+  final now = context.read<NowService>().nowLocal();
   final today = DateTime(now.year, now.month, now.day);
 
   final start = project.startDate;
@@ -22,25 +28,37 @@ ProjectTileModel buildProjectListRowTileModel(
       ? null
       : DateTime(start.year, start.month, start.day);
   final startDateLabel = (startDay != null && startDay.isAfter(today))
-      ? DateLabelFormatter.format(context, start)
+      ? _formatMonthDay(context, start)
       : null;
 
   final deadlineDateLabel = project.deadlineDate == null
       ? null
-      : DateLabelFormatter.format(context, project.deadlineDate);
+      : _formatMonthDay(context, project.deadlineDate!);
 
   final meta = EntityMetaLineModel(
     primaryValue: project.primaryValue?.toChipData(context),
-    secondaryValues: project.secondaryValues.isEmpty
-        ? const <ValueChipData>[]
-        : <ValueChipData>[project.secondaryValues.first.toChipData(context)],
+    secondaryValues: project.secondaryValues
+        .map((v) => v.toChipData(context))
+        .toList(growable: false),
     secondaryValuePresentation:
         EntitySecondaryValuePresentation.singleOutlinedIconOnly,
     startDateLabel: startDateLabel,
     deadlineDateLabel: deadlineDateLabel,
-    isOverdue: _isOverdue(project.deadlineDate, completed: project.completed),
-    isDueToday: _isDueToday(project.deadlineDate, completed: project.completed),
-    isDueSoon: _isDueSoon(project.deadlineDate, completed: project.completed),
+    isOverdue: _isOverdue(
+      project.deadlineDate,
+      completed: project.completed,
+      today: today,
+    ),
+    isDueToday: _isDueToday(
+      project.deadlineDate,
+      completed: project.completed,
+      today: today,
+    ),
+    isDueSoon: _isDueSoon(
+      project.deadlineDate,
+      completed: project.completed,
+      today: today,
+    ),
     hasRepeat: project.repeatIcalRrule != null,
     showRepeatOnRight: true,
     showBothDatesIfPresent: true,
@@ -52,6 +70,11 @@ ProjectTileModel buildProjectListRowTileModel(
         : 'Priority P${project.priority}',
     enableRightOverflowDemotion: true,
     showOverflowIndicatorOnRight: true,
+    onTapValues: buildProjectOpenValuesHandler(
+      context,
+      project: project,
+      tileCapabilities: tileCapabilities,
+    ),
   );
 
   return ProjectTileModel(
@@ -70,6 +93,7 @@ ProjectTileModel buildProjectListRowTileModel(
 ProjectAgendaCardModel buildProjectAgendaCardModel(
   BuildContext context, {
   required Project project,
+  required EntityTileCapabilities tileCapabilities,
   required bool inProgressStyle,
   required DateTime? endDate,
   int? taskCount,
@@ -77,7 +101,7 @@ ProjectAgendaCardModel buildProjectAgendaCardModel(
   Color? accentColor,
   bool showDeadlineChipOnOngoing = true,
 }) {
-  final now = getIt<NowService>().nowLocal();
+  final now = context.read<NowService>().nowLocal();
   final today = DateTime(now.year, now.month, now.day);
 
   final start = project.startDate;
@@ -85,27 +109,39 @@ ProjectAgendaCardModel buildProjectAgendaCardModel(
       ? null
       : DateTime(start.year, start.month, start.day);
   final startDateLabel = (startDay != null && startDay.isAfter(today))
-      ? DateLabelFormatter.format(context, start)
+      ? _formatMonthDay(context, start)
       : null;
 
   final deadlineDateLabel = project.deadlineDate == null
       ? null
-      : DateLabelFormatter.format(context, project.deadlineDate);
+      : _formatMonthDay(context, project.deadlineDate!);
 
   final meta = EntityMetaLineModel(
     primaryValue: project.primaryValue?.toChipData(context),
-    secondaryValues: project.secondaryValues.isEmpty
-        ? const <ValueChipData>[]
-        : <ValueChipData>[project.secondaryValues.first.toChipData(context)],
+    secondaryValues: project.secondaryValues
+        .map((v) => v.toChipData(context))
+        .toList(growable: false),
     secondaryValuePresentation:
         EntitySecondaryValuePresentation.singleOutlinedIconOnly,
     startDateLabel: startDateLabel,
     deadlineDateLabel: deadlineDateLabel,
     showDates: !inProgressStyle || showDeadlineChipOnOngoing,
     showOnlyDeadlineDate: inProgressStyle,
-    isOverdue: _isOverdue(project.deadlineDate, completed: project.completed),
-    isDueToday: _isDueToday(project.deadlineDate, completed: project.completed),
-    isDueSoon: _isDueSoon(project.deadlineDate, completed: project.completed),
+    isOverdue: _isOverdue(
+      project.deadlineDate,
+      completed: project.completed,
+      today: today,
+    ),
+    isDueToday: _isDueToday(
+      project.deadlineDate,
+      completed: project.completed,
+      today: today,
+    ),
+    isDueSoon: _isDueSoon(
+      project.deadlineDate,
+      completed: project.completed,
+      today: today,
+    ),
     hasRepeat: project.repeatIcalRrule != null,
     showRepeatOnRight: true,
     showBothDatesIfPresent: true,
@@ -117,6 +153,11 @@ ProjectAgendaCardModel buildProjectAgendaCardModel(
         : 'Priority P${project.priority}',
     enableRightOverflowDemotion: true,
     showOverflowIndicatorOnRight: true,
+    onTapValues: buildProjectOpenValuesHandler(
+      context,
+      project: project,
+      tileCapabilities: tileCapabilities,
+    ),
   );
 
   final base = ProjectTileModel(
@@ -130,9 +171,7 @@ ProjectAgendaCardModel buildProjectAgendaCardModel(
     emptyTasksLabel: taskCount == 0 ? 'No tasks yet' : null,
   );
 
-  final endDayLabel = endDate == null
-      ? null
-      : MaterialLocalizations.of(context).formatShortWeekday(endDate);
+  final endDayLabel = endDate == null ? null : _formatWeekday(context, endDate);
 
   return ProjectAgendaCardModel(
     base: base,
@@ -142,29 +181,67 @@ ProjectAgendaCardModel buildProjectAgendaCardModel(
   );
 }
 
-bool _isOverdue(DateTime? deadline, {required bool completed}) {
+VoidCallback? buildProjectOpenValuesHandler(
+  BuildContext context, {
+  required Project project,
+  required EntityTileCapabilities tileCapabilities,
+}) {
+  if (!tileCapabilities.canAlignValues) return null;
+
+  return () {
+    final dispatcher = context.read<TileIntentDispatcher>();
+    unawaited(
+      dispatcher.dispatch(
+        context,
+        TileIntentOpenEditor(
+          entityType: EntityType.project,
+          entityId: project.id,
+          openToValues: true,
+        ),
+      ),
+    );
+  };
+}
+
+bool _isOverdue(
+  DateTime? deadline, {
+  required bool completed,
+  required DateTime today,
+}) {
   if (deadline == null || completed) return false;
-  final now = getIt<NowService>().nowLocal();
-  final today = DateTime(now.year, now.month, now.day);
   final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
   return deadlineDay.isBefore(today);
 }
 
-bool _isDueToday(DateTime? deadline, {required bool completed}) {
+bool _isDueToday(
+  DateTime? deadline, {
+  required bool completed,
+  required DateTime today,
+}) {
   if (deadline == null || completed) return false;
-  final now = getIt<NowService>().nowLocal();
-  final today = DateTime(now.year, now.month, now.day);
   final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
   return deadlineDay.isAtSameMomentAs(today);
 }
 
-bool _isDueSoon(DateTime? deadline, {required bool completed}) {
+bool _isDueSoon(
+  DateTime? deadline, {
+  required bool completed,
+  required DateTime today,
+}) {
   if (deadline == null || completed) return false;
-  final now = getIt<NowService>().nowLocal();
-  final today = DateTime(now.year, now.month, now.day);
   final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
   final daysUntil = deadlineDay.difference(today).inDays;
   return daysUntil > 0 && daysUntil <= 3;
+}
+
+String _formatMonthDay(BuildContext context, DateTime date) {
+  final locale = Localizations.localeOf(context);
+  return DateFormat.MMMd(locale.toLanguageTag()).format(date);
+}
+
+String _formatWeekday(BuildContext context, DateTime date) {
+  final locale = Localizations.localeOf(context);
+  return DateFormat.E(locale.toLanguageTag()).format(date);
 }
 
 Color? _priorityColor(int? p) {

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
+import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
+import 'package:taskly_bloc/presentation/entity_tiles/widgets/widgets.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
@@ -257,17 +258,40 @@ class _MyDayTaskListSectionState extends State<MyDayTaskListSection> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TaskView(
-                task: task,
-                tileCapabilities: EntityTileCapabilitiesResolver.forTask(task),
-                isInFocus: true,
-                titlePrefix: titlePrefix,
-                onTap: (_) {
-                  setState(() {
-                    _expandedTaskId = _expandedTaskId == task.id
-                        ? null
-                        : task.id;
-                  });
+              Builder(
+                builder: (context) {
+                  final tileCapabilities =
+                      EntityTileCapabilitiesResolver.forTask(task);
+
+                  return TaskListRowTile(
+                    model: buildTaskListRowTileModel(
+                      context,
+                      task: task,
+                      tileCapabilities: tileCapabilities,
+                    ),
+                    titlePrefix: titlePrefix,
+                    onTap: () {
+                      setState(() {
+                        _expandedTaskId = _expandedTaskId == task.id
+                            ? null
+                            : task.id;
+                      });
+                    },
+                    onToggleCompletion: buildTaskToggleCompletionHandler(
+                      context,
+                      task: task,
+                      tileCapabilities: tileCapabilities,
+                    ),
+                    trailing: TaskTodayStatusMenuButton(
+                      taskId: task.id,
+                      taskName: task.name,
+                      isPinnedToMyDay: task.isPinned,
+                      isInMyDayAuto: true,
+                      isRepeating: task.isRepeating,
+                      seriesEnded: task.seriesEnded,
+                      tileCapabilities: tileCapabilities,
+                    ),
+                  );
                 },
               ),
               AnimatedCrossFade(

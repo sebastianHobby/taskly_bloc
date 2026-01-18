@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
+import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
+import 'package:taskly_bloc/presentation/entity_tiles/widgets/widgets.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
@@ -278,12 +279,37 @@ class _AnytimeRow extends StatelessWidget {
         ),
       TaskRowUiModel(:final task) => Padding(
         padding: EdgeInsets.only(left: 8 + leftIndent, right: 8),
-        child: TaskView(
-          task: task,
-          tileCapabilities: EntityTileCapabilitiesResolver.forTask(task),
-          onTap: (_) => context.read<AnytimeScreenBloc>().add(
-            AnytimeTaskTapped(taskId: task.id),
-          ),
+        child: Builder(
+          builder: (context) {
+            final tileCapabilities = EntityTileCapabilitiesResolver.forTask(
+              task,
+            );
+
+            return TaskListRowTile(
+              model: buildTaskListRowTileModel(
+                context,
+                task: task,
+                tileCapabilities: tileCapabilities,
+              ),
+              onTap: () => context.read<AnytimeScreenBloc>().add(
+                AnytimeTaskTapped(taskId: task.id),
+              ),
+              onToggleCompletion: buildTaskToggleCompletionHandler(
+                context,
+                task: task,
+                tileCapabilities: tileCapabilities,
+              ),
+              trailing: TaskTodayStatusMenuButton(
+                taskId: task.id,
+                taskName: task.name,
+                isPinnedToMyDay: task.isPinned,
+                isInMyDayAuto: false,
+                isRepeating: task.isRepeating,
+                seriesEnded: task.seriesEnded,
+                tileCapabilities: tileCapabilities,
+              ),
+            );
+          },
         ),
       ),
       _ => const SizedBox.shrink(),
