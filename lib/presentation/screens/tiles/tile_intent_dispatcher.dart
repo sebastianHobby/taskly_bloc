@@ -8,6 +8,7 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/domain/entity_views/tile_capabilities/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/project_picker/project_picker.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
@@ -287,62 +288,25 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
           ),
         );
       case _MoveToProjectChoice.quickMove:
-        final targetProjectId = await _pickProjectId(context);
-        if (targetProjectId == null || !context.mounted) return;
-        return dispatch(
-          context,
-          TileIntentMoveTaskToProject(
-            taskId: intent.taskId,
-            targetProjectId: targetProjectId,
-          ),
+        await showProjectPickerModal(
+          context: context,
+          projectRepository: _projectRepository,
+          onSelect: (projectId) async {
+            if (!context.mounted) return;
+
+            final completer = Completer<void>();
+            context.read<ScreenActionsBloc>().add(
+              ScreenActionsMoveTaskToProject(
+                taskId: intent.taskId,
+                targetProjectId: projectId ?? '',
+                completer: completer,
+              ),
+            );
+            await completer.future;
+          },
         );
+        return;
     }
-  }
-
-  Future<String?> _pickProjectId(BuildContext context) async {
-    final l10n = context.l10n;
-
-    final projects = await _projectRepository.getAll();
-
-    if (!context.mounted) return null;
-
-    return showDialog<String?>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(l10n.selectProjectTitle),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: projects.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return ListTile(
-                    leading: const Icon(Icons.folder_off_outlined),
-                    title: const Text('No project'),
-                    onTap: () => Navigator.of(context).pop(''),
-                  );
-                }
-
-                final project = projects[index - 1];
-                return ListTile(
-                  leading: const Icon(Icons.folder_outlined),
-                  title: Text(project.name),
-                  onTap: () => Navigator.of(context).pop(project.id),
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: Text(l10n.cancelLabel),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   Future<void> _moveTaskToProject(

@@ -19,8 +19,8 @@ import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.d
 ///   - URL segments use hyphens (`my_day` ? `/my-day`).
 ///   - The canonical Anytime URL segment is `anytime`, which maps to the
 ///     legacy system screen key `someday`.
-/// - **Entity detail (read/composite)**: `/<entityType>/:id`
-///   - Currently supported for `project` and `value`.
+/// - **Entity detail (legacy entrypoints)**: `/<entityType>/:id`
+///   - Project/value details redirect to their editor routes.
 /// - **Entity editors (NAV-01)**: `/<entityType>/new` and `/<entityType>/:id/edit`
 ///   - Tasks are editor-only: `/task/:id` redirects to `/task/:id/edit`.
 /// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
@@ -30,11 +30,6 @@ import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.d
 ///
 /// Entity paths use convention: `/${entityType}/${id}`
 /// (e.g., `/project/xyz-456`, `/value/xyz-456`).
-///
-/// ## Initialization
-///
-/// Call [registerEntityBuilders] at app startup (in bootstrap.dart)
-/// to inject bloc factories and dependencies.
 abstract final class Routing {
   // === PATH UTILITIES ===
 
@@ -126,22 +121,25 @@ abstract final class Routing {
 
   /// Navigate to project detail (pushes onto nav stack).
   static void toProject(BuildContext context, Project project) =>
-      GoRouter.of(context).push('/project/${project.id}');
+      GoRouter.of(context).push('/project/${project.id}/edit');
 
   /// Navigate to value detail (pushes onto nav stack).
   static void toValue(BuildContext context, Value value) =>
-      GoRouter.of(context).push('/value/${value.id}');
+      GoRouter.of(context).push('/value/${value.id}/edit');
 
   // === ENTITY NAVIGATION (generic) ===
 
   /// Navigate to entity detail by type and ID.
   /// Use when you only have the ID, not the full domain object.
   static void toEntity(BuildContext context, EntityType type, String id) {
-    if (type == EntityType.task) {
-      GoRouter.of(context).push('/task/$id/edit');
-      return;
+    switch (type) {
+      case EntityType.task:
+        GoRouter.of(context).push('/task/$id/edit');
+      case EntityType.project:
+        GoRouter.of(context).push('/project/$id/edit');
+      case EntityType.value:
+        GoRouter.of(context).push('/value/$id/edit');
     }
-    GoRouter.of(context).push('/${type.urlSegment}/$id');
   }
 
   // === NAV-01 CREATE/EDIT ROUTES (core entities) ===
@@ -252,54 +250,5 @@ abstract final class Routing {
       key: ValueKey('screen_not_found_$screenKey'),
       child: Text('Screen not found: $screenKey'),
     );
-  }
-
-  // === ENTITY BUILDERS ===
-
-  static Widget Function(String id)? _taskDetailBuilder;
-  static Widget Function(String id)? _projectDetailBuilder;
-  static Widget Function(String id)? _valueDetailBuilder;
-
-  /// Register entity detail builders at app startup.
-  ///
-  /// Called once from bootstrap.dart after DI is initialized.
-  static void registerEntityBuilders({
-    required Widget Function(String id) taskBuilder,
-    required Widget Function(String id) projectBuilder,
-    required Widget Function(String id) valueBuilder,
-  }) {
-    _taskDetailBuilder = taskBuilder;
-    _projectDetailBuilder = projectBuilder;
-    _valueDetailBuilder = valueBuilder;
-  }
-
-  /// Build an entity detail widget by type and ID.
-  ///
-  /// This is the single entry point for all entity detail construction.
-  static Widget buildEntityDetail(String entityType, String id) {
-    return switch (entityType) {
-      'task' => _taskDetailBuilder?.call(id) ?? _notRegisteredError('task'),
-      'project' =>
-        _projectDetailBuilder?.call(id) ?? _notRegisteredError('project'),
-      'value' => _valueDetailBuilder?.call(id) ?? _notRegisteredError('value'),
-      _ => Center(child: Text('Unknown entity type: $entityType')),
-    };
-  }
-
-  static Widget _notRegisteredError(String type) {
-    return Center(
-      child: Text(
-        'Entity builder not registered for $type. '
-        'Call Routing.registerEntityBuilders() in bootstrap.',
-      ),
-    );
-  }
-
-  /// Reset all registered builders. Used for testing.
-  @visibleForTesting
-  static void reset() {
-    _taskDetailBuilder = null;
-    _projectDetailBuilder = null;
-    _valueDetailBuilder = null;
   }
 }

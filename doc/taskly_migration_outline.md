@@ -17,6 +17,37 @@
 
 ## Progress log (implementation notes)
 
+### 2026-01-18
+
+- **UI “today” contract (DEC-216C)**: completed the presentation migration away from direct `DateTime.now()` usage.
+  - Remaining `DateTime.now()` usage is centralized in the presentation time boundary (`NowService`).
+  - Added a presentation guardrail: `dart run tool/no_datetime_now_in_presentation.dart` (also wired into `tool/guardrails.dart`).
+  - Enforced via git pre-push hook runner (`git_hooks.dart`), so regressions are caught before pushing.
+
+- **Scheduled range query contract (DEC-253A)**: implemented `watchScheduledOccurrences(...)` in domain and migrated the Scheduled screen to use it.
+
+- **Scheduled scope header (DEC-192A)**: scoped Scheduled routes now render a single scope header above the feed.
+  - Scope title format: `Project: <name>` / `Value: <name>`.
+  - Global `/scheduled` remains header-free.
+  - Missing/deleted scope entity shows an inline header error but keeps the feed route usable (offline-first).
+
+- **Project picker modal flow (DEC-148B–DEC-163A)**: replaced the ad-hoc “move to project” selection dialog with a real Project Picker flow.
+  - Adaptive modal container (sheet on narrow layouts, dialog on wider layouts).
+  - Picker is BLoC-owned: subscribes to projects, supports name search, and uses deterministic ordering (name → id).
+  - Includes a top “No project (Inbox)” option.
+  - Selection dispatches the mutation and closes the modal on success; failures are shown inline and keep the modal open.
+  - Interim contract: picker selection returns `ProjectId?` in presentation but maps `null` → `''` when dispatching the existing move-to-project action (to avoid broad API churn).
+
+- **Shared UI extraction (`taskly_ui`)**: introduced `packages/taskly_ui` and migrated shared primitives (including `PriorityFlag` and `ColorPickerField`).
+  - Allowed `flex_color_picker` inside `taskly_ui` to support the color picker field.
+  - Deleted the unused `lib/presentation/widgets/filters/` folder after confirming no call sites.
+
+- **Centralized error taxonomy + reporter pipeline (DEC-039A–DEC-044A)**: replicated the Auth vertical slice pattern across additional high-write presentation flows.
+  - Editors: task/project/value create + edit + delete now report unexpected/unmapped failures via `AppErrorReporter` with an `OperationContext`.
+  - Screen actions: global tile mutations (complete/pin/delete/move) now use the same reporting path and avoid duplicate SnackBars.
+  - Other slices: settings, focus setup, and value list mutations now follow the same “expected failures local / unexpected global” rule.
+  - In all migrated flows, UI still emits local failure states to recover (stop spinners, re-enable actions) even when a global report is emitted.
+
 ### 2026-01-17
 
 - **Routing**: Explicit MVP shell routes exist for `/my-day`, `/anytime`, `/scheduled`, and `/inbox` (no `/:segment` catch-all route).
@@ -25,7 +56,7 @@
 - **USM strangler (Scheduled)**: `/scheduled` now runs as a non-USM MVP screen (no USM fallback).
   - Scoped routes are implemented: `/project/:id/scheduled` and `/value/:id/scheduled`.
   - Scoped routes keep the Scheduled nav destination highlighted.
-  - Data source: uses the existing `AgendaSectionDataService.watchAgendaData(...)` stream with an optional scope.
+  - Data source: uses the domain `ScheduledOccurrencesService.watchScheduledOccurrences(...)` stream with an optional scope.
     - Scope filtering is applied at the query level before occurrence expansion (matches DEC-254B intent).
     - Value scope includes only tasks/projects directly tagged with the value (no inherited inclusion via project values).
   - Feed mapping uses the shared flat row model (`ListRowUiModel`) and `RowKey.v1(...)` with bucket/date/tag disambiguators.
@@ -50,13 +81,13 @@
   - Unexpected/unmapped errors go through `AppErrorReporter` (structured logs + minimal throttled snackbar).
 
 Implementation follow-ups to keep in mind:
-- **Scheduled scope header** (DEC-192A): scoped Scheduled routes should render a single `ScopeHeaderRow(scope)` for orientation and suppress any duplicate header.
-- **Scheduled range query contract** (DEC-253A): `watchScheduledOccurrences(...)` is still the target domain API; current MVP Scheduled is implemented via `AgendaSectionDataService.watchAgendaData(...)` as an interim.
+- **Scheduled range query contract** (DEC-253A): completed — Scheduled now uses `watchScheduledOccurrences(...)`.
 
 - **Error handling migration work item (DEC-039A–DEC-044A)**: replicate the Auth vertical slice pattern across the app.
   - Create an `OperationContext` in each BLoC intent handler and pass it down into domain/data operations.
   - Ensure data catches exceptions and throws domain `AppFailure` (with `UnknownFailure` fallback).
   - Use `AppErrorReporter` only for unexpected/unmapped failures; keep expected failures screen-owned.
+  - **Status (Jan 2026):** Auth + task/project/value editors + ScreenActions + global settings + focus setup + value list are migrated; remaining flows are mainly Journal/trackers, feed-level mutations outside ScreenActions, and maintenance/background mutations.
 
 ## Decisions locked in
 

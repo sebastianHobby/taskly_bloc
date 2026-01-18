@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/attention/widgets/attention_bell_icon_button.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_list_bloc.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/values_list.dart';
@@ -21,8 +22,9 @@ class ValuesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<ValueListBloc>(
-      create: (_) => ValueListBloc(
+      create: (context) => ValueListBloc(
         valueRepository: getIt<ValueRepositoryContract>(),
+        errorReporter: context.read<AppErrorReporter>(),
       )..add(const ValueListEvent.subscriptionRequested()),
       child: Builder(
         builder: (context) {

@@ -4,10 +4,13 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/errors.dart';
 import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/telemetry.dart';
 
 part 'focus_setup_bloc.freezed.dart';
 
@@ -273,8 +276,10 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
   FocusSetupBloc({
     required SettingsRepositoryContract settingsRepository,
     required ValueRepositoryContract valueRepository,
+    required AppErrorReporter errorReporter,
   }) : _settingsRepository = settingsRepository,
        _valueRepository = valueRepository,
+       _errorReporter = errorReporter,
        super(const FocusSetupState()) {
     on<FocusSetupStarted>(_onStarted, transformer: droppable());
     on<FocusSetupAllocationStreamUpdated>(
@@ -344,8 +349,40 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
 
   final SettingsRepositoryContract _settingsRepository;
   final ValueRepositoryContract _valueRepository;
+  final AppErrorReporter _errorReporter;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
+
+  void _reportIfUnexpectedOrUnmapped(
+    Object error,
+    StackTrace stackTrace, {
+    required OperationContext context,
+    required String message,
+  }) {
+    if (error is AppFailure && error.reportAsUnexpected) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unexpected failure)',
+      );
+      return;
+    }
+
+    if (error is! AppFailure) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unmapped exception)',
+      );
+    }
+  }
+
+  String _uiMessageFor(Object error) {
+    if (error is AppFailure) return error.uiMessage();
+    return 'Something went wrong. Please try again.';
+  }
 
   StreamSubscription<AllocationConfig>? _allocationSub;
   StreamSubscription<dynamic>? _valuesSub;
@@ -372,7 +409,21 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
         .listen(
           (cfg) => add(FocusSetupEvent.allocationStreamUpdated(cfg)),
           onError: (Object e, StackTrace st) {
-            talker.handle(e, st, '[FocusSetupBloc] allocation stream error');
+            talker.error('[FocusSetupBloc] allocation stream error', e, st);
+
+            final context = _contextFactory.create(
+              feature: 'focus_setup',
+              screen: 'focus_setup',
+              intent: 'allocation_stream_error',
+              operation: 'settings.watch.allocation',
+              entityType: 'settings',
+            );
+            _reportIfUnexpectedOrUnmapped(
+              e,
+              st,
+              context: context,
+              message: '[FocusSetupBloc] allocation stream error',
+            );
             add(
               const FocusSetupEvent.saveFailed(
                 'Failed to load allocation settings',
@@ -385,7 +436,21 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     _valuesSub = _valueRepository.watchAll().listen(
       (values) => add(FocusSetupEvent.valuesStreamUpdated(values.length)),
       onError: (Object e, StackTrace st) {
-        talker.handle(e, st, '[FocusSetupBloc] values stream error');
+        talker.error('[FocusSetupBloc] values stream error', e, st);
+
+        final context = _contextFactory.create(
+          feature: 'focus_setup',
+          screen: 'focus_setup',
+          intent: 'values_stream_error',
+          operation: 'values.watchAll',
+          entityType: 'value',
+        );
+        _reportIfUnexpectedOrUnmapped(
+          e,
+          st,
+          context: context,
+          message: '[FocusSetupBloc] values stream error',
+        );
         add(const FocusSetupEvent.saveFailed('Failed to load values'));
       },
     );
@@ -435,23 +500,30 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     final name = event.name.trim();
     if (name.isEmpty) return;
 
+    final context = _contextFactory.create(
+      feature: 'focus_setup',
+      screen: 'focus_setup',
+      intent: 'value_quick_add_requested',
+      operation: 'values.create',
+      entityType: 'value',
+      extraFields: <String, Object?>{'source': 'focus_setup'},
+    );
+
     try {
-      final context = _contextFactory.create(
-        feature: 'focus_setup',
-        screen: 'focus_setup',
-        intent: 'value_quick_add_requested',
-        operation: 'values.create',
-        entityType: 'value',
-        extraFields: <String, Object?>{'source': 'focus_setup'},
-      );
       await _valueRepository.create(
         name: name,
         color: _colorHexForName(name),
         context: context,
       );
     } catch (e, st) {
-      talker.handle(e, st, '[FocusSetupBloc] quick add value failed');
-      emit(state.copyWith(errorMessage: 'Failed to create value'));
+      talker.error('[FocusSetupBloc] quick add value failed', e, st);
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[FocusSetupBloc] quick add value failed',
+      );
+      emit(state.copyWith(errorMessage: _uiMessageFor(e)));
     }
   }
 
@@ -665,6 +737,14 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
 
     emit(state.copyWith(isSaving: true, errorMessage: null));
 
+    final context = _contextFactory.create(
+      feature: 'focus_setup',
+      screen: 'focus_setup',
+      intent: 'allocation_finalize_requested',
+      operation: 'settings.save.allocation',
+      entityType: 'settings',
+    );
+
     try {
       final focusMode = state.effectiveFocusMode;
 
@@ -689,14 +769,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
         strategySettings: strategySettings,
       );
 
-      final context = _contextFactory.create(
-        feature: 'focus_setup',
-        screen: 'focus_setup',
-        intent: 'allocation_finalize_requested',
-        operation: 'settings.save.allocation',
-        entityType: 'settings',
-      );
-
       await _settingsRepository.save(
         SettingsKey.allocation,
         updatedConfig,
@@ -705,8 +777,14 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
 
       add(const FocusSetupEvent.saveSucceeded());
     } catch (e, st) {
-      talker.handle(e, st, '[FocusSetupBloc] finalize failed');
-      add(FocusSetupEvent.saveFailed('Failed to save: $e'));
+      talker.error('[FocusSetupBloc] finalize failed', e, st);
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[FocusSetupBloc] finalize failed',
+      );
+      add(FocusSetupEvent.saveFailed(_uiMessageFor(e)));
     }
   }
 

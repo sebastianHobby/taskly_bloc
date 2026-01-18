@@ -31,12 +31,10 @@ import 'package:taskly_bloc/presentation/features/trackers/view/trackers_page.da
 /// Uses convention-based routing with a small set of patterns:
 /// - **System screens (explicit)**: concrete paths like `/my-day`, `/anytime`,
 ///   `/scheduled`, etc.
-/// - **Entity detail (read/composite)**: `/<entityType>/:id` → handled by
-///   [Routing.buildEntityDetail]
+/// - **Entity detail (legacy entrypoints)**: `/<entityType>/:id`
+///   - Project/value details redirect to their editor routes.
 /// - **Entity editors (NAV-01)**: `/<entityType>/new` and `/<entityType>/:id/edit`
 /// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
-///
-/// All screen/entity builders are registered in [Routing] at bootstrap.
 /// Note: legacy USM entrypoints should be removed as features migrate.
 final router = GoRouter(
   initialLocation: Routing.screenPath('my_day'),
@@ -184,37 +182,6 @@ final router = GoRouter(
           builder: (_, __) => const InboxPage(),
         ),
 
-        // === LEGACY ROUTE ALIASES / REDIRECTS ===
-        // Projects list destination has been removed.
-        GoRoute(
-          path: '/projects',
-          redirect: (_, __) => Routing.screenPath('someday'),
-          builder: (_, __) => const SizedBox.shrink(),
-        ),
-        // Legacy plural project detail route.
-        GoRoute(
-          path: '/projects/:id',
-          redirect: (_, state) {
-            final invalid = RouteCodec.redirectIfInvalidUuidParam(
-              state,
-              paramName: 'id',
-              entityType: 'project',
-              operation: 'route_redirect_legacy_project_plural',
-            );
-            if (invalid != null) return invalid;
-
-            final id = state.pathParameters['id']!;
-            return '/project/$id';
-          },
-          builder: (_, __) => const SizedBox.shrink(),
-        ),
-        // Legacy Someday route redirects to canonical Anytime path.
-        GoRoute(
-          path: '/someday',
-          redirect: (_, __) => Routing.screenPath('someday'),
-          builder: (_, __) => const SizedBox.shrink(),
-        ),
-
         // === ENTITY EDITOR ROUTES (NAV-01) ===
         // Create + edit are route-backed editor entry points.
         // They open the modal editor and then return (pop).
@@ -270,27 +237,9 @@ final router = GoRouter(
             entityType: 'task',
             operation: 'route_param_decode_task_edit',
           ),
-          builder: (_, state) => Routing.buildEntityDetail(
-            'task',
-            state.pathParameters['id']!,
+          builder: (_, state) => TaskEditorRoutePage(
+            taskId: state.pathParameters['id'],
           ),
-        ),
-        // Redirect legacy/non-canonical task detail route to canonical edit.
-        GoRoute(
-          path: '/task/:id',
-          redirect: (_, state) {
-            final invalid = RouteCodec.redirectIfInvalidUuidParam(
-              state,
-              paramName: 'id',
-              entityType: 'task',
-              operation: 'route_redirect_task_to_edit',
-            );
-            if (invalid != null) return invalid;
-
-            final id = state.pathParameters['id']!;
-            return '/task/$id/edit';
-          },
-          builder: (_, state) => const SizedBox.shrink(),
         ),
 
         // Project (editor routes)
@@ -329,33 +278,38 @@ final router = GoRouter(
           ),
         ),
 
-        // === ENTITY DETAIL ROUTES (RD surfaces) ===
-        // Parameterized routes for read/composite entity pages.
+        // === LEGACY ENTITY DETAIL ROUTES (redirect to editor) ===
         GoRoute(
           path: '/project/:id',
-          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-            state,
-            paramName: 'id',
-            entityType: 'project',
-            operation: 'route_param_decode_project_detail',
-          ),
-          builder: (_, state) => Routing.buildEntityDetail(
-            'project',
-            state.pathParameters['id']!,
-          ),
+          redirect: (_, state) {
+            final invalid = RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'project',
+              operation: 'route_redirect_project_detail_to_edit',
+            );
+            if (invalid != null) return invalid;
+
+            final id = state.pathParameters['id']!;
+            return '/project/$id/edit';
+          },
+          builder: (_, __) => const SizedBox.shrink(),
         ),
         GoRoute(
           path: '/value/:id',
-          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-            state,
-            paramName: 'id',
-            entityType: 'value',
-            operation: 'route_param_decode_value_detail',
-          ),
-          builder: (_, state) => Routing.buildEntityDetail(
-            'value',
-            state.pathParameters['id']!,
-          ),
+          redirect: (_, state) {
+            final invalid = RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'value',
+              operation: 'route_redirect_value_detail_to_edit',
+            );
+            if (invalid != null) return invalid;
+
+            final id = state.pathParameters['id']!;
+            return '/value/$id/edit';
+          },
+          builder: (_, __) => const SizedBox.shrink(),
         ),
 
         // === OTHER SYSTEM SCREENS (explicit; no catch-all) ===
