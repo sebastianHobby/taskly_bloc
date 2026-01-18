@@ -230,8 +230,8 @@ class EntityActionService {
     Map<String, dynamic>? params,
     OperationContext? context,
   }) async {
-    talker.serviceLog(
-      'EntityActionService',
+    AppLog.routine(
+      'domain.entity_actions',
       'performAction: $action on $entityType/$entityId',
     );
 
