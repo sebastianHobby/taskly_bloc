@@ -5,10 +5,12 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme_mode.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/errors.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/settings.dart';
 import 'package:taskly_domain/telemetry.dart';
@@ -114,8 +116,10 @@ class GlobalSettingsBloc
   GlobalSettingsBloc({
     required SettingsRepositoryContract settingsRepository,
     required NowService nowService,
+    required AppErrorReporter errorReporter,
   }) : _settingsRepository = settingsRepository,
        _nowService = nowService,
+       _errorReporter = errorReporter,
        super(const GlobalSettingsState()) {
     on<GlobalSettingsStarted>(_onStarted, transformer: droppable());
     on<GlobalSettingsThemeModeChanged>(
@@ -147,9 +151,36 @@ class GlobalSettingsBloc
 
   final SettingsRepositoryContract _settingsRepository;
   final NowService _nowService;
+  final AppErrorReporter _errorReporter;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
   StreamSubscription<GlobalSettings>? _subscription;
+
+  void _reportIfUnexpectedOrUnmapped(
+    Object error,
+    StackTrace stackTrace, {
+    required OperationContext context,
+    required String message,
+  }) {
+    if (error is AppFailure && error.reportAsUnexpected) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unexpected failure)',
+      );
+      return;
+    }
+
+    if (error is! AppFailure) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unmapped exception)',
+      );
+    }
+  }
 
   OperationContext _newContext({
     required String intent,
@@ -183,6 +214,17 @@ class GlobalSettingsBloc
           (settings) => add(GlobalSettingsEvent.streamUpdated(settings)),
           onError: (Object error, StackTrace stack) {
             talker.handle(error, stack, '[GlobalSettingsBloc] Stream error');
+
+            final context = _newContext(
+              intent: 'settings_global_stream_error',
+              operation: 'settings.watch.global',
+            );
+            _reportIfUnexpectedOrUnmapped(
+              error,
+              stack,
+              context: context,
+              message: '[GlobalSettingsBloc] settings stream error',
+            );
           },
         );
   }
@@ -237,14 +279,15 @@ class GlobalSettingsBloc
       '  old=${state.settings.themeMode}\n'
       '  new=${event.themeMode}',
     );
+    final context = _newContext(
+      intent: 'settings_theme_mode_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{
+        'themeMode': event.themeMode.name,
+      },
+    );
+
     try {
-      final context = _newContext(
-        intent: 'settings_theme_mode_changed',
-        operation: 'settings.save.global',
-        extraFields: <String, Object?>{
-          'themeMode': event.themeMode.name,
-        },
-      );
       await _settingsRepository.save(
         SettingsKey.global,
         updated,
@@ -261,7 +304,12 @@ class GlobalSettingsBloc
         e,
         st,
       );
-      rethrow;
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[GlobalSettingsBloc] ThemeMode persist failed',
+      );
     }
   }
 
@@ -282,11 +330,21 @@ class GlobalSettingsBloc
       operation: 'settings.save.global',
       extraFields: <String, Object?>{'colorArgb': event.colorArgb},
     );
-    await _settingsRepository.save(
-      SettingsKey.global,
-      updated,
-      context: context,
-    );
+    try {
+      await _settingsRepository.save(
+        SettingsKey.global,
+        updated,
+        context: context,
+      );
+    } catch (e, st) {
+      talker.error('[settings.global] Color persist FAILED', e, st);
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[GlobalSettingsBloc] color persist failed',
+      );
+    }
   }
 
   Future<void> _onLocaleChanged(
@@ -299,11 +357,21 @@ class GlobalSettingsBloc
       operation: 'settings.save.global',
       extraFields: <String, Object?>{'localeCode': event.localeCode},
     );
-    await _settingsRepository.save(
-      SettingsKey.global,
-      updated,
-      context: context,
-    );
+    try {
+      await _settingsRepository.save(
+        SettingsKey.global,
+        updated,
+        context: context,
+      );
+    } catch (e, st) {
+      talker.error('[settings.global] Locale persist FAILED', e, st);
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[GlobalSettingsBloc] locale persist failed',
+      );
+    }
   }
 
   Future<void> _onHomeTimeZoneOffsetChanged(
@@ -318,11 +386,21 @@ class GlobalSettingsBloc
       operation: 'settings.save.global',
       extraFields: <String, Object?>{'offsetMinutes': event.offsetMinutes},
     );
-    await _settingsRepository.save(
-      SettingsKey.global,
-      updated,
-      context: context,
-    );
+    try {
+      await _settingsRepository.save(
+        SettingsKey.global,
+        updated,
+        context: context,
+      );
+    } catch (e, st) {
+      talker.error('[settings.global] Home TZ persist FAILED', e, st);
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[GlobalSettingsBloc] home tz persist failed',
+      );
+    }
   }
 
   Future<void> _onTextScaleChanged(
@@ -337,11 +415,21 @@ class GlobalSettingsBloc
       operation: 'settings.save.global',
       extraFields: <String, Object?>{'textScaleFactor': event.textScaleFactor},
     );
-    await _settingsRepository.save(
-      SettingsKey.global,
-      updated,
-      context: context,
-    );
+    try {
+      await _settingsRepository.save(
+        SettingsKey.global,
+        updated,
+        context: context,
+      );
+    } catch (e, st) {
+      talker.error('[settings.global] Text scale persist FAILED', e, st);
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[GlobalSettingsBloc] text scale persist failed',
+      );
+    }
   }
 
   Future<void> _onOnboardingCompleted(
@@ -353,10 +441,20 @@ class GlobalSettingsBloc
       intent: 'settings_onboarding_completed',
       operation: 'settings.save.global',
     );
-    await _settingsRepository.save(
-      SettingsKey.global,
-      updated,
-      context: context,
-    );
+    try {
+      await _settingsRepository.save(
+        SettingsKey.global,
+        updated,
+        context: context,
+      );
+    } catch (e, st) {
+      talker.error('[settings.global] Onboarding persist FAILED', e, st);
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[GlobalSettingsBloc] onboarding persist failed',
+      );
+    }
   }
 }

@@ -158,6 +158,11 @@ explicitly choose to allow `flutter_form_builder` inside `taskly_ui`.
   - Now l10n-agnostic via `semanticsLabel`/`tooltipMessage` inputs.
 - `packages/taskly_ui/lib/src/primitives/taskly_badge.dart`
 - `packages/taskly_ui/lib/src/primitives/taskly_header.dart`
+- `packages/taskly_ui/lib/src/primitives/priority_flag.dart`
+  - Pure UI: no app imports; semantics are provided by the app via optional
+    `semanticsLabel`/`semanticsValue`.
+- `packages/taskly_ui/lib/src/primitives/color_picker_field.dart`
+  - `flex_color_picker` is allowed in `taskly_ui` for this primitive.
 
 #### Needs decision (Primitives): dependency/policy questions
 
@@ -165,13 +170,10 @@ explicitly choose to allow `flutter_form_builder` inside `taskly_ui`.
   - Long-term shared Primitive but currently depends on app ThemeExtension.
   - Direction: move the ThemeExtension type (“design tokens”) into `taskly_ui`
     and have the app provide values.
-- `lib/presentation/widgets/priority_flag.dart`
-  - Uses app color constants and hardcoded semantics strings.
-  - Decide: keep app-only vs move with parameterized labels and token-based
-    colors.
-- `lib/presentation/widgets/color_picker/color_picker_field.dart`
-  - Depends on `flex_color_picker`.
-  - Decide: keep app-only vs allow this dependency in `taskly_ui`.
+
+Completed decisions:
+- `PriorityFlag` and `ColorPickerField` have been migrated into `taskly_ui`
+  as pure primitives.
 
 #### Move later → `taskly_ui` (Entities/Sections via VMs): domain-coupled today
 
@@ -193,15 +195,9 @@ thin adapters in the app mapping domain + l10n into VMs.
 - `lib/presentation/widgets/form_date_chip.dart`
   - Uses DI/time service and hardcoded English strings; not suitable for
     `taskly_ui` as-is.
-- Filters (potentially reusable, but currently stringly-typed / app-dependent):
-  - `lib/presentation/widgets/filters/entity_multi_select.dart` (has default
-    English strings)
-  - `lib/presentation/widgets/filters/selection_mode_choice.dart` (labels come
-    from `filter_enums.dart` which hardcodes English)
-  - `lib/presentation/widgets/filters/filter_enums.dart` (hardcoded labels)
-  - `lib/presentation/widgets/filters/date_range_filter.dart` (depends on
-    `FormDateChip` + uses `showDatePicker`)
-  - `lib/presentation/widgets/filters/filters.dart` (barrel)
+- Filters: removed
+  - The unused filter widgets folder under `lib/presentation/widgets/filters/`
+    was deleted (no call sites in the repo at time of removal).
 
 #### Already migrated / not in this inventory
 

@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 import 'package:taskly_bloc/domain/entity_views/tile_capabilities/entity_tile_capabilities_resolver.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_feed_bloc.dart';
+import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_ui/taskly_ui.dart';
@@ -23,21 +24,25 @@ class ScheduledPage extends StatelessWidget {
         homeDayService: getIt(),
         scope: scope,
       ),
-      child: const _ScheduledView(),
+      child: _ScheduledView(scope: scope),
     );
   }
 }
 
 class _ScheduledView extends StatelessWidget {
-  const _ScheduledView();
+  const _ScheduledView({required this.scope});
+
+  final ScheduledScope scope;
 
   @override
   Widget build(BuildContext context) {
+    final showScopeHeader = scope is! GlobalScheduledScope;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Scheduled')),
       body: BlocBuilder<ScheduledFeedBloc, ScheduledFeedState>(
         builder: (context, state) {
-          return switch (state) {
+          final feed = switch (state) {
             ScheduledFeedLoading() => const FeedBody.loading(),
             ScheduledFeedError(:final message) => FeedBody.error(
               message: message,
@@ -64,6 +69,15 @@ class _ScheduledView extends StatelessWidget {
               },
             ),
           };
+
+          if (!showScopeHeader) return feed;
+
+          return Column(
+            children: [
+              ScheduledScopeHeader(scope: scope),
+              Expanded(child: feed),
+            ],
+          );
         },
       ),
     );

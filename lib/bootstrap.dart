@@ -7,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker_bloc_logger/talker_bloc_logger.dart';
 import 'package:taskly_bloc/bootstrap/error_capture.dart';
 import 'package:taskly_bloc/bootstrap/logging_bootstrap.dart';
-import 'package:taskly_bloc/bootstrap/routing_bootstrap.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/core/env/env.dart';
 import 'package:taskly_core/logging.dart';
@@ -47,10 +46,6 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
       talker.info('Initializing dependencies...');
       await setupDependencies();
       talker.info('Dependencies initialized successfully');
-
-      // Register screen and entity builders with Routing
-      registerRoutingBuilders();
-      talker.debug('Routing builders registered');
 
       // Add cross-flavor configuration here
 

@@ -28,6 +28,7 @@ Phase 2 work must stay compliant with these invariants:
 - **PowerSync + SQLite views constraint**: avoid local UPSERT helper patterns
   against PowerSync schema tables (prefer update-then-insert or insert-or-ignore).
 - **Time model**: no `DateTime.now()` in domain/data; use injected time service.
+- **Time model (presentation)**: avoid direct `DateTime.now()` usage in presentation; use `NowService` and enforce via guardrails/pre-push.
 - **Error handling**: do not leak raw exceptions as control flow across
   boundaries; map to typed failures and avoid permanently terminating UI streams.
 
@@ -87,9 +88,10 @@ The migration outline (Part 1) defines a future `taskly_ui` package boundary
 - Interactivity is exposed via callbacks / UI events handled by app-owned BLoCs.
 - It may depend on public domain identity types, but must not depend on data.
 
-As of today, no `packages/taskly_ui` package exists in the repo; Phase 2 can
-either introduce it explicitly or keep shared UI components inside the apps
-presentation layer until extraction.
+As of 2026-01-18, `packages/taskly_ui` exists and is the home for pure UI
+primitives (and future entities/sections) that are reused across screens.
+Continue migrating shared UI there incrementally while keeping screens,
+routing, and BLoCs in the app.
 
 
 ### WS-2: Package API hardening (public surfaces + hidden internals)
@@ -143,6 +145,10 @@ presentation layer until extraction.
 **Key risks**
 - Over-centralizing UI error UX (should remain screen-owned for expected cases).
 - Inconsistent retry semantics.
+
+**Status (Jan 2026 snapshot)**
+- Migrated beyond Auth: task/project/value editors, global tile actions (`ScreenActionsBloc`), global settings, focus setup, and values list.
+- Remaining likely hotspots: Journal flows (add log, entry editor, tracker CRUD/prefs), feed-level blocks/Cubits that still catch raw exceptions and surface strings, and any background/maintenance write flows.
 
 
 ### WS-5 (optional / stretch): Recurrence foundations (if Phase 2 includes it)
@@ -263,6 +269,8 @@ Please answer these next 4 so I can refine the Phase 2 scope and sequencing.
 pipeline without committing to the full editor UX surface immediately.
 
 **Decision:** **B + C** (Scheduled switches to `watchScheduledOccurrences(...)` in Phase 2, and recurrence editing UX is also in Phase 2 scope).
+
+**Status:** **B completed** — the domain `watchScheduledOccurrences(...)` contract is implemented and the Scheduled screen has been migrated to it (DEC-253A).
 
 
 ### Q6) How do we stage Supabase schema + PowerSync sync-rules changes for recurrence?

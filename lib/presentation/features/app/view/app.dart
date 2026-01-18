@@ -59,9 +59,10 @@ class App extends StatelessWidget {
       value: App.errorReporter,
       child: BlocProvider<GlobalSettingsBloc>(
         lazy: false, // Start immediately to load settings
-        create: (_) => GlobalSettingsBloc(
+        create: (context) => GlobalSettingsBloc(
           settingsRepository: getIt<SettingsRepositoryContract>(),
           nowService: getIt<NowService>(),
+          errorReporter: context.read<AppErrorReporter>(),
         )..add(const GlobalSettingsEvent.started()),
         child: BlocProvider<AuthBloc>(
           lazy: false, // Immediate creation to check auth state
