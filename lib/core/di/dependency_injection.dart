@@ -17,9 +17,6 @@ import 'package:taskly_domain/attention.dart'
     show AttentionEngine;
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_ranked_tasks_v1_module_interpreter.dart';
-import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_inbox_bloc.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_rules_cubit.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
@@ -107,7 +104,6 @@ Future<void> setupDependencies() async {
       getIt<TasklyDataBindings>().homeDayKeyService,
     )
     ..registerLazySingleton<AppLifecycleService>(AppLifecycleService.new)
-    ..registerLazySingleton<PerformanceLogger>(PerformanceLogger.new)
     ..registerLazySingleton<TemporalTriggerService>(
       () => TemporalTriggerService(
         dayKeyService: getIt<HomeDayKeyService>(),
@@ -155,7 +151,7 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
       ),
     )
-    // Entity action service for unified screen model
+    // Entity action service for cross-screen entity mutations.
     ..registerLazySingleton<EntityActionService>(
       () => EntityActionService(
         taskRepository: getIt<TaskRepositoryContract>(),
@@ -282,20 +278,5 @@ Future<void> setupDependencies() async {
         templateDataService: getIt<TemplateDataService>(),
         allocationSnapshotCoordinator: getIt<AllocationSnapshotCoordinator>(),
       ),
-    )
-    ..registerLazySingleton<HierarchyValueProjectTaskSectionInterpreterV2>(
-      () => HierarchyValueProjectTaskSectionInterpreterV2(
-        sectionDataService: getIt<SectionDataService>(),
-      ),
-      instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
-    )
-    ..registerLazySingleton<MyDayRankedTasksV1ModuleInterpreter>(
-      () => MyDayRankedTasksV1ModuleInterpreter(
-        hierarchyValueProjectTaskInterpreter:
-            getIt<HierarchyValueProjectTaskSectionInterpreterV2>(
-              instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
-            ),
-      ),
-    )
-    ;
+    );
 }

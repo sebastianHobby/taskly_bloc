@@ -44,7 +44,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/db.dart';
 import 'package:taskly_data/repositories.dart';
 

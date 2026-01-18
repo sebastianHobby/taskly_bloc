@@ -1,19 +1,15 @@
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/queries.dart';
-import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
 /// Service for computing badge counts for navigation screens.
 ///
-/// Post-USM, badges are computed explicitly by screen key.
+/// Badges are computed explicitly by screen key.
 class NavigationBadgeService {
   NavigationBadgeService({
     required TaskRepositoryContract taskRepository,
-    required NowService nowService,
-  }) : _taskRepository = taskRepository,
-       _nowService = nowService;
+  }) : _taskRepository = taskRepository;
 
   final TaskRepositoryContract _taskRepository;
-  final NowService _nowService;
 
   final Map<String, Stream<int>?> _badgeStreamCache = {};
 
@@ -25,7 +21,7 @@ class NavigationBadgeService {
     }
 
     // Keep this intentionally small and explicit.
-    // Add more mappings as we introduce navigation badges outside USM.
+    // Add more mappings as we introduce navigation badges for more screens.
     final stream = switch (normalized) {
       'scheduled' => _taskRepository.watchAllCount(_scheduledQuery()),
       _ => null,

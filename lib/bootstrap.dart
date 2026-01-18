@@ -8,7 +8,7 @@ import 'package:talker_bloc_logger/talker_bloc_logger.dart';
 import 'package:taskly_bloc/bootstrap/error_capture.dart';
 import 'package:taskly_bloc/bootstrap/logging_bootstrap.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/core/env/env.dart';
+import 'package:taskly_core/env.dart';
 import 'package:taskly_core/logging.dart';
 
 Future<void> bootstrap(FutureOr<Widget> Function() builder) async {

@@ -17,6 +17,7 @@ class TaskStatusFilterBar extends StatelessWidget {
     required this.allLabel,
     required this.openLabel,
     required this.completedLabel,
+    this.sheetTitle,
     super.key,
     this.singleLine = false,
   });
@@ -27,6 +28,12 @@ class TaskStatusFilterBar extends StatelessWidget {
   final String allLabel;
   final String openLabel;
   final String completedLabel;
+
+  /// Optional sheet title shown at the top of the picker bottom sheet.
+  ///
+  /// Shared UI must not hardcode user-facing strings; provide localized text
+  /// from the app.
+  final String? sheetTitle;
 
   final bool singleLine;
 
@@ -90,12 +97,13 @@ class TaskStatusFilterBar extends StatelessWidget {
           child: ListView(
             shrinkWrap: true,
             children: [
-              const ListTile(
-                title: Text(
-                  'Task status',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+              if (sheetTitle != null)
+                ListTile(
+                  title: Text(
+                    sheetTitle!,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
-              ),
               row(title: allLabel, mode: TaskCompletionFilter.all),
               row(title: openLabel, mode: TaskCompletionFilter.open),
               row(title: completedLabel, mode: TaskCompletionFilter.completed),

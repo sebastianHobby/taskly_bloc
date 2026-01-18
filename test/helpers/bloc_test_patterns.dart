@@ -60,7 +60,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_core/logging.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // BLoC Test Constants

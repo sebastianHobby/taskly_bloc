@@ -9,6 +9,7 @@ import 'package:taskly_bloc/presentation/features/attention/view/attention_rules
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/focus_mode_card.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_ui/taskly_ui.dart';
 
@@ -50,6 +51,10 @@ class FocusSetupWizardPage extends StatelessWidget {
           return Scaffold(
             appBar: AppBar(
               title: Text(title),
+              actions: TasklyAppBarActions.withAttentionBell(
+                context,
+                actions: const <Widget>[],
+              ),
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(36),
                 child: Padding(

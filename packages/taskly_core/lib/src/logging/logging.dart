@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -18,8 +19,6 @@ abstract interface class TasklyLog {
   void error(String message, [Object? error, StackTrace? stackTrace]);
 
   void handle(Object exception, [StackTrace? stackTrace, String? msg]);
-
-  void perf(String message, {String category = 'general'});
   void trace(String message);
 
   void logFor(
@@ -70,9 +69,8 @@ void initializeLogging() {
 
   final observer = kDebugMode
       ? MultiTalkerObserver(
-          observers: [
+          observers: <TalkerObserver>[
             DebugFileLogObserver(),
-            DebugPerfFileLogObserver(),
           ],
         )
       : null;
@@ -130,11 +128,6 @@ class _TasklyLogAdapter implements TasklyLog {
   @override
   void handle(Object exception, [StackTrace? stackTrace, String? msg]) {
     _backend.handle(exception, stackTrace, msg);
-  }
-
-  @override
-  void perf(String message, {String category = 'general'}) {
-    _backend.perf(message, category: category);
   }
 
   @override
@@ -293,14 +286,6 @@ class TasklyTalker {
 
   void logCustom(TalkerLog log) => _raw.logCustom(log);
 
-  void perf(
-    String message, {
-    String category = 'general',
-  }) {
-    if (kReleaseMode) return;
-    logCustom(PerfLog(message, category: category));
-  }
-
   void trace(String message) {
     if (kDebugMode) {
       verbose(message);
@@ -371,24 +356,6 @@ class TasklyLogRecord extends TalkerLog {
   AnsiPen get pen => AnsiPen()..green();
 }
 
-class PerfLog extends TalkerLog {
-  PerfLog(
-    super.message, {
-    this.category = 'general',
-  });
-
-  final String category;
-
-  @override
-  String get title => 'PERF';
-
-  @override
-  String get key => 'perf_$category';
-
-  @override
-  AnsiPen get pen => AnsiPen()..cyan();
-}
-
 class MultiTalkerObserver extends TalkerObserver {
   MultiTalkerObserver({
     required List<TalkerObserver> observers,
@@ -421,6 +388,9 @@ class MultiTalkerObserver extends TalkerObserver {
 class DebugFileLogObserver extends TalkerObserver {
   DebugFileLogObserver({
     this.maxFileSizeBytes = 512 * 1024,
+    this.maxBackupFiles = 3,
+    this.dedupeWindow = const Duration(seconds: 2),
+    this.maxStackTraceLines = 60,
     Set<String>? includedTitles,
   }) : includedTitles =
            includedTitles ?? const {'WARNING', 'ERROR', 'EXCEPTION'};
@@ -429,7 +399,25 @@ class DebugFileLogObserver extends TalkerObserver {
 
   final int maxFileSizeBytes;
 
+  /// Number of rotated backup files to keep.
+  ///
+  /// Example: with `maxBackupFiles=3`, this keeps:
+  /// - debug_errors.log (current)
+  /// - debug_errors.log.1
+  /// - debug_errors.log.2
+  /// - debug_errors.log.3
+  final int maxBackupFiles;
+
+  /// Suppress identical log entries that repeat within this window.
+  final Duration dedupeWindow;
+
+  /// Limits stack trace verbosity written to file.
+  final int maxStackTraceLines;
+
   File? _logFile;
+  _RollingFileWriter? _writer;
+
+  final Map<String, _DedupeEntry> _dedupe = <String, _DedupeEntry>{};
   bool _isInitialized = false;
   bool _initStarted = false;
 
@@ -447,18 +435,17 @@ class DebugFileLogObserver extends TalkerObserver {
     try {
       final dir = await getApplicationSupportDirectory();
       _logFile = File('${dir.path}/debug_errors.log');
+      _writer = _RollingFileWriter(
+        file: _logFile!,
+        maxFileSizeBytes: maxFileSizeBytes,
+        maxBackupFiles: maxBackupFiles,
+        headerLabel: 'Log',
+      );
       _isInitialized = true;
 
       debugPrint('Debug log file: ${_logFile!.path}');
 
-      if (await _logFile!.exists()) {
-        final size = await _logFile!.length();
-        if (size > maxFileSizeBytes) {
-          await _logFile!.writeAsString(
-            '--- Log cleared at ${DateTime.now()} (was ${size ~/ 1024} KB) ---\n',
-          );
-        }
-      }
+      await _writer!.init();
     } catch (e) {
       debugPrint('Failed to initialize debug log file: $e');
     }
@@ -503,9 +490,41 @@ class DebugFileLogObserver extends TalkerObserver {
     Object? error,
     StackTrace? stackTrace,
   ) {
-    if (!_isInitialized || _logFile == null) return;
+    if (!_isInitialized || _writer == null) return;
 
     try {
+      final dedupeKey = _buildDedupeKey(
+        level: level,
+        message: message,
+        error: error,
+        stackTrace: stackTrace,
+      );
+
+      final now = DateTime.now();
+      final previous = _dedupe[dedupeKey];
+      if (previous != null) {
+        final elapsed = now.difference(previous.lastWrittenAt);
+        if (elapsed < dedupeWindow) {
+          previous.suppressedCount++;
+          _pruneDedupe(now);
+          return;
+        }
+
+        if (previous.suppressedCount > 0) {
+          _writer!.write(
+            _formatSuppressionLine(
+              level: level,
+              suppressedCount: previous.suppressedCount,
+              since: previous.lastWrittenAt,
+            ),
+          );
+          previous.suppressedCount = 0;
+        }
+        previous.lastWrittenAt = now;
+      } else {
+        _dedupe[dedupeKey] = _DedupeEntry(lastWrittenAt: now);
+      }
+
       final buffer = StringBuffer()
         ..writeln('[$level] ${DateTime.now().toIso8601String()}')
         ..writeln(message ?? 'No message');
@@ -514,109 +533,212 @@ class DebugFileLogObserver extends TalkerObserver {
         buffer.writeln('Error: $error');
       }
       if (stackTrace != null) {
-        buffer.writeln('StackTrace:\n$stackTrace');
+        final stack = _truncateStackTrace(
+          stackTrace,
+          maxLines: maxStackTraceLines,
+        );
+        buffer.writeln('StackTrace:\n$stack');
       }
       buffer.writeln('---');
 
-      _logFile!.writeAsStringSync(
-        buffer.toString(),
-        mode: FileMode.append,
-        flush: true,
-      );
+      _writer!.write(buffer.toString());
+      _pruneDedupe(now);
     } catch (e) {
       debugPrint('Failed to write to debug log: $e');
     }
   }
 
   Future<void> clearLog() async {
-    if (_logFile != null && await _logFile!.exists()) {
-      await _logFile!.writeAsString(
-        '--- Log manually cleared at ${DateTime.now()} ---\n',
-      );
-    }
+    final writer = _writer;
+    if (writer == null) return;
+    await writer.clear('Log manually cleared at ${DateTime.now()}');
   }
 
   String? get logFilePath => _logFile?.path;
+
+  String _buildDedupeKey({
+    required String level,
+    required String? message,
+    required Object? error,
+    required StackTrace? stackTrace,
+  }) {
+    final m = message ?? '';
+    final e = error?.toString() ?? '';
+    final s = stackTrace == null
+        ? ''
+        : stackTrace.toString().split('\n').take(3).join('\n');
+    return '$level\n$m\n$e\n$s';
+  }
+
+  String _formatSuppressionLine({
+    required String level,
+    required int suppressedCount,
+    required DateTime since,
+  }) {
+    return '[${level.toUpperCase()}] ${DateTime.now().toIso8601String()}\n'
+        'Suppressed $suppressedCount duplicate entries since '
+        '${since.toIso8601String()}\n---\n';
+  }
+
+  void _pruneDedupe(DateTime now) {
+    if (_dedupe.length <= 500) return;
+    final cutoff = now.subtract(const Duration(minutes: 10));
+    _dedupe.removeWhere((_, e) => e.lastWrittenAt.isBefore(cutoff));
+  }
 }
 
-class DebugPerfFileLogObserver extends TalkerObserver {
-  DebugPerfFileLogObserver({
-    this.maxFileSizeBytes = 1024 * 1024,
-  });
+class _DedupeEntry {
+  _DedupeEntry({required this.lastWrittenAt});
 
-  final int maxFileSizeBytes;
+  DateTime lastWrittenAt;
+  int suppressedCount = 0;
+}
 
-  File? _logFile;
-  bool _isInitialized = false;
-  bool _initStarted = false;
+class _RollingFileWriter {
+  _RollingFileWriter({
+    required File file,
+    required int maxFileSizeBytes,
+    required int maxBackupFiles,
+    required String headerLabel,
+  }) : _file = file,
+       _maxFileSizeBytes = maxFileSizeBytes,
+       _maxBackupFiles = maxBackupFiles,
+       _headerLabel = headerLabel;
 
-  static bool get isSupported => !kIsWeb;
+  final File _file;
+  final int _maxFileSizeBytes;
+  final int _maxBackupFiles;
+  final String _headerLabel;
 
-  Future<void> _initFile() async {
-    if (_initStarted) return;
-    _initStarted = true;
+  int _approxSizeBytes = 0;
+  bool _initialized = false;
 
-    if (!isSupported) {
-      debugPrint('Debug perf file logging not available on web platform');
+  Future<void> init() async {
+    if (_initialized) return;
+    try {
+      if (await _file.exists()) {
+        _approxSizeBytes = await _file.length();
+      } else {
+        await _file.create(recursive: true);
+        _approxSizeBytes = 0;
+      }
+      _initialized = true;
+
+      if (_maxFileSizeBytes > 0 && _approxSizeBytes > _maxFileSizeBytes) {
+        await _rotate(reason: 'was ${_approxSizeBytes ~/ 1024} KB');
+      }
+
+      await _append(
+        '--- $_headerLabel started at ${DateTime.now()} ---\n',
+      );
+    } catch (_) {
+      // Best-effort only.
+    }
+  }
+
+  void write(String text) {
+    if (!_initialized) return;
+    try {
+      _file.writeAsStringSync(text, mode: FileMode.append, flush: true);
+      _approxSizeBytes += utf8.encode(text).length;
+
+      if (_maxFileSizeBytes > 0 && _approxSizeBytes > _maxFileSizeBytes) {
+        _rotateSync(reason: 'size ${_approxSizeBytes ~/ 1024} KB');
+      }
+    } catch (_) {
+      // Best-effort only.
+    }
+  }
+
+  Future<void> clear(String reason) async {
+    if (!_initialized) return;
+    try {
+      await _rotateFilesAsync();
+      final header =
+          '--- $_headerLabel cleared at ${DateTime.now()} ($reason) ---\n';
+      await _file.writeAsString(header, mode: FileMode.write);
+      _approxSizeBytes = utf8.encode(header).length;
+    } catch (_) {
+      // Best-effort only.
+    }
+  }
+
+  Future<void> _append(String text) async {
+    await _file.writeAsString(text, mode: FileMode.append);
+    _approxSizeBytes += utf8.encode(text).length;
+  }
+
+  Future<void> _rotate({required String reason}) async {
+    await _rotateFilesAsync();
+    final header =
+        '--- $_headerLabel rotated at ${DateTime.now()} ($reason) ---\n';
+    await _file.writeAsString(header, mode: FileMode.write);
+    _approxSizeBytes = utf8.encode(header).length;
+  }
+
+  void _rotateSync({required String reason}) {
+    try {
+      _rotateFilesSync();
+      final header =
+          '--- $_headerLabel rotated at ${DateTime.now()} ($reason) ---\n';
+      _file.writeAsStringSync(header, mode: FileMode.write, flush: true);
+      _approxSizeBytes = utf8.encode(header).length;
+    } catch (_) {
+      // Best-effort only.
+    }
+  }
+
+  Future<void> _rotateFilesAsync() async {
+    if (_maxBackupFiles <= 0) {
+      await _file.writeAsString('', mode: FileMode.write);
       return;
     }
 
-    try {
-      final dir = await getApplicationSupportDirectory();
-      _logFile = File('${dir.path}/debug_perf.log');
-      _isInitialized = true;
-
-      debugPrint('Debug perf log file: ${_logFile!.path}');
-
-      if (await _logFile!.exists()) {
-        final size = await _logFile!.length();
-        if (size > maxFileSizeBytes) {
-          await _logFile!.writeAsString(
-            '--- Perf log cleared at ${DateTime.now()} (was ${size ~/ 1024} KB) ---\n',
-          );
-        }
+    for (var i = _maxBackupFiles; i >= 1; i--) {
+      final src = File('${_file.path}.${i - 1}');
+      final dst = File('${_file.path}.$i');
+      if (await dst.exists()) {
+        await dst.delete();
       }
-    } catch (e) {
-      debugPrint('Failed to initialize debug perf log file: $e');
+      if (await src.exists()) {
+        await src.rename(dst.path);
+      }
+    }
+
+    if (await _file.exists()) {
+      await _file.rename('${_file.path}.0');
     }
   }
 
-  @override
-  void onLog(TalkerData log) {
-    _ensureInitialized();
+  void _rotateFilesSync() {
+    if (_maxBackupFiles <= 0) {
+      _file.writeAsStringSync('', mode: FileMode.write, flush: true);
+      return;
+    }
 
-    final title = (log.title ?? 'LOG').toUpperCase();
-    if (title != 'PERF') return;
+    for (var i = _maxBackupFiles; i >= 1; i--) {
+      final src = File('${_file.path}.${i - 1}');
+      final dst = File('${_file.path}.$i');
+      if (dst.existsSync()) {
+        dst.deleteSync();
+      }
+      if (src.existsSync()) {
+        src.renameSync(dst.path);
+      }
+    }
 
-    _writeLog('PERF', log.message);
-  }
-
-  void _ensureInitialized() {
-    if (!_initStarted) {
-      _initFile();
+    if (_file.existsSync()) {
+      _file.renameSync('${_file.path}.0');
     }
   }
+}
 
-  void _writeLog(String level, String? message) {
-    if (!_isInitialized || _logFile == null) return;
-
-    try {
-      final buffer = StringBuffer()
-        ..writeln('[$level] ${DateTime.now().toIso8601String()}')
-        ..writeln(message ?? 'No message')
-        ..writeln('---');
-
-      _logFile!.writeAsStringSync(
-        buffer.toString(),
-        mode: FileMode.append,
-        flush: true,
-      );
-    } catch (e) {
-      debugPrint('Failed to write to debug perf log: $e');
-    }
-  }
-
-  String? get logFilePath => _logFile?.path;
+String _truncateStackTrace(StackTrace stackTrace, {required int maxLines}) {
+  if (maxLines <= 0) return '<omitted>';
+  final lines = stackTrace.toString().split('\n');
+  if (lines.length <= maxLines) return stackTrace.toString();
+  final kept = lines.take(maxLines).join('\n');
+  return '$kept\n… (${lines.length - maxLines} more lines)';
 }
 
 class AppRouteObserver extends NavigatorObserver {

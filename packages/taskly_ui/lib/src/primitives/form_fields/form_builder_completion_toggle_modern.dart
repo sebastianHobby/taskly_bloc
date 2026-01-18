@@ -11,20 +11,38 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 class FormBuilderCompletionToggleModern extends StatelessWidget {
   const FormBuilderCompletionToggleModern({
     required this.name,
-    this.label,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.iconBackgroundColor,
+    required this.iconColor,
     this.initialValue = false,
     this.validator,
     this.enabled = true,
-    this.entityType = CompletionEntityType.task,
     super.key,
   });
 
   final String name;
-  final String? label;
+
+  /// Primary label shown next to the toggle.
+  ///
+  /// Shared UI must not hardcode user-facing strings; provide localized text
+  /// from the app.
+  final String title;
+
+  /// Secondary label shown under [title].
+  ///
+  /// Shared UI must not hardcode user-facing strings; provide localized text
+  /// from the app.
+  final String subtitle;
+
+  final IconData icon;
+  final Color iconBackgroundColor;
+  final Color iconColor;
+
   final bool initialValue;
   final String? Function(bool?)? validator;
   final bool enabled;
-  final CompletionEntityType entityType;
 
   @override
   Widget build(BuildContext context) {
@@ -47,13 +65,13 @@ class FormBuilderCompletionToggleModern extends StatelessWidget {
               margin: const EdgeInsets.only(right: 12),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _getIconBackgroundColor(colorScheme),
+                color: iconBackgroundColor,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
-                _getIconData(),
+                icon,
                 size: 20,
-                color: _getIconColor(colorScheme),
+                color: iconColor,
               ),
             ),
             Expanded(
@@ -61,12 +79,12 @@ class FormBuilderCompletionToggleModern extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    label ?? _getDefaultLabel(),
+                    title,
                     style: theme.textTheme.titleSmall,
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    _getSubtitle(),
+                    subtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
@@ -109,45 +127,4 @@ class FormBuilderCompletionToggleModern extends StatelessWidget {
       ),
     );
   }
-
-  IconData _getIconData() {
-    return switch (entityType) {
-      CompletionEntityType.task => Icons.task_alt,
-      CompletionEntityType.project => Icons.folder_special,
-    };
-  }
-
-  Color _getIconBackgroundColor(ColorScheme colorScheme) {
-    return switch (entityType) {
-      CompletionEntityType.task => colorScheme.primaryContainer,
-      CompletionEntityType.project => colorScheme.secondaryContainer,
-    };
-  }
-
-  Color _getIconColor(ColorScheme colorScheme) {
-    return switch (entityType) {
-      CompletionEntityType.task => colorScheme.onPrimaryContainer,
-      CompletionEntityType.project => colorScheme.onSecondaryContainer,
-    };
-  }
-
-  String _getDefaultLabel() {
-    return switch (entityType) {
-      CompletionEntityType.task => 'Mark as completed',
-      CompletionEntityType.project => 'Mark project as completed',
-    };
-  }
-
-  String _getSubtitle() {
-    return switch (entityType) {
-      CompletionEntityType.task => 'Toggle when the task is finished',
-      CompletionEntityType.project => 'Toggle when the project is finished',
-    };
-  }
-}
-
-/// Different entity types for completion toggles.
-enum CompletionEntityType {
-  task,
-  project,
 }

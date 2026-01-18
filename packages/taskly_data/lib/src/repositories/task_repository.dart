@@ -404,8 +404,12 @@ class TaskRepository implements TaskRepositoryContract {
   }) async {
     await FailureGuard.run(
       () async {
+        final normalizedProjectId = switch (projectId?.trim()) {
+          null || '' => null,
+          final v => v,
+        };
         talker.debug(
-          '[TaskRepository] create: name="$name", projectId=$projectId',
+          '[TaskRepository] create: name="$name", projectId=$normalizedProjectId',
         );
         final now = DateTime.now();
         final id = idGenerator.taskId();
@@ -414,6 +418,7 @@ class TaskRepository implements TaskRepositoryContract {
         final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
         final normalizedValueIds = (valueIds ?? const <String>[])
+            .map((v) => v.trim())
             .where((v) => v.isNotEmpty)
             .toList();
         if (normalizedValueIds.length > 2) {
@@ -447,7 +452,7 @@ class TaskRepository implements TaskRepositoryContract {
                   completed: drift_pkg.Value(completed),
                   startDate: drift_pkg.Value(normalizedStartDate),
                   deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
-                  projectId: drift_pkg.Value(projectId),
+                  projectId: drift_pkg.Value(normalizedProjectId),
                   priority: drift_pkg.Value(priority),
                   isPinned: const drift_pkg.Value(false),
                   repeatIcalRrule: repeatIcalRrule == null
@@ -495,6 +500,10 @@ class TaskRepository implements TaskRepositoryContract {
   }) async {
     await FailureGuard.run(
       () async {
+        final normalizedProjectId = switch (projectId?.trim()) {
+          null || '' => null,
+          final v => v,
+        };
         talker.debug('[TaskRepository] update: id=$id, name="$name"');
         final existing = await (driftDb.select(
           driftDb.taskTable,
@@ -513,7 +522,10 @@ class TaskRepository implements TaskRepositoryContract {
 
         List<String>? normalizedValueIds;
         if (valueIds != null) {
-          normalizedValueIds = valueIds.where((v) => v.isNotEmpty).toList();
+          normalizedValueIds = valueIds
+              .map((v) => v.trim())
+              .where((v) => v.isNotEmpty)
+              .toList();
           if (normalizedValueIds.length > 2) {
             throw RepositoryValidationException(
               'Tasks may have at most two override values (primary + optional secondary).',
@@ -546,7 +558,7 @@ class TaskRepository implements TaskRepositoryContract {
                   completed: drift_pkg.Value(completed),
                   startDate: drift_pkg.Value(normalizedStartDate),
                   deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
-                  projectId: drift_pkg.Value(projectId),
+                  projectId: drift_pkg.Value(normalizedProjectId),
                   priority: drift_pkg.Value(priority),
                   isPinned: isPinned == null
                       ? drift_pkg.Value(existing.isPinned)

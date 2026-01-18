@@ -1,72 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:rrule/rrule.dart';
 
 /// A chip widget for displaying and editing recurrence rules.
-class FormRecurrenceChip extends StatefulWidget {
+///
+/// This is a render-only widget. Any RRULE parsing and localization must be
+/// handled by the app and passed in as [label]/[emptyLabel].
+class FormRecurrenceChip extends StatelessWidget {
   const FormRecurrenceChip({
-    required this.rrule,
     required this.onTap,
+    required this.emptyLabel,
+    this.hasValue = false,
+    this.label,
     this.onClear,
     super.key,
   });
 
-  final String? rrule;
+  final bool hasValue;
+  final String? label;
+
+  /// Label shown when there is no recurrence rule.
+  ///
+  /// Shared UI must not hardcode user-facing strings; provide localized text
+  /// from the app.
+  final String emptyLabel;
+
   final VoidCallback onTap;
   final VoidCallback? onClear;
-
-  @override
-  State<FormRecurrenceChip> createState() => _FormRecurrenceChipState();
-}
-
-class _FormRecurrenceChipState extends State<FormRecurrenceChip> {
-  String? _label;
-
-  Future<String> _getLabel(String rruleString) async {
-    final l10n = await RruleL10nEn.create();
-    final recurrenceRule = RecurrenceRule.fromString(rruleString);
-    final String labelStr = recurrenceRule.toText(l10n: l10n);
-    return labelStr;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.rrule != null && widget.rrule!.isNotEmpty) {
-      _loadLabel();
-    }
-  }
-
-  @override
-  void didUpdateWidget(FormRecurrenceChip oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Reload label if rrule changed
-    if (oldWidget.rrule != widget.rrule) {
-      _label = null;
-      if (widget.rrule != null && widget.rrule!.isNotEmpty) {
-        _loadLabel();
-      } else {
-        setState(() {
-          _label = null;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadLabel() async {
-    final label = await _getLabel(widget.rrule!);
-    if (mounted) {
-      setState(() {
-        _label = label;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final hasValue = widget.rrule != null && widget.rrule!.isNotEmpty;
+    final resolvedLabel = (hasValue && label != null && label!.isNotEmpty)
+        ? label!
+        : emptyLabel;
 
     return InputChip(
       avatar: Icon(
@@ -74,16 +41,16 @@ class _FormRecurrenceChipState extends State<FormRecurrenceChip> {
         size: 18,
         color: hasValue ? colorScheme.primary : colorScheme.onSurfaceVariant,
       ),
-      label: Text(_label ?? 'Repeat'),
-      deleteIcon: hasValue && widget.onClear != null
+      label: Text(resolvedLabel),
+      deleteIcon: hasValue && onClear != null
           ? Icon(
               Icons.close,
               size: 18,
               color: colorScheme.onSurfaceVariant,
             )
           : null,
-      onDeleted: hasValue && widget.onClear != null ? widget.onClear : null,
-      onPressed: widget.onTap,
+      onDeleted: hasValue && onClear != null ? onClear : null,
+      onPressed: onTap,
       side: BorderSide(
         color: hasValue
             ? colorScheme.primary.withValues(alpha: 0.5)

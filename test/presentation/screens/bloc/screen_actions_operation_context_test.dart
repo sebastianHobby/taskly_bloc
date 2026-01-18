@@ -88,7 +88,7 @@ void main() {
         expect(captured, isNotNull);
 
         expect(captured!.correlationId, isNotEmpty);
-        expect(captured.feature, 'usm');
+        expect(captured.feature, 'screen_actions');
         expect(captured.screen, 'screen_actions');
         expect(captured.intent, 'task_completion_changed');
         expect(captured.operation, 'complete_occurrence');

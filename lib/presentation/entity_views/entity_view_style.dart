@@ -1,6 +1,6 @@
 /// Shared style enums for entity-level views.
 ///
-/// These replace USM-specific style types and keep view configuration local
+/// These keep view configuration local
 /// to the presentation layer.
 library;
 

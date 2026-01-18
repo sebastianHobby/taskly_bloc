@@ -6,7 +6,9 @@ import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_ui/taskly_ui.dart';
@@ -39,6 +41,14 @@ class InboxView extends StatelessWidget {
     );
   }
 
+  Future<void> _openNewProjectEditor(BuildContext context) {
+    return EditorLauncher.fromGetIt().openProjectEditor(
+      context,
+      projectId: null,
+      showDragHandle: true,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isCompact = WindowSizeClass.of(context).isCompact;
@@ -46,21 +56,22 @@ class InboxView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Inbox'),
-        actions: [
-          if (!isCompact)
-            IconButton(
-              tooltip: context.l10n.createTaskTooltip,
-              onPressed: () => _openNewTaskEditor(context),
-              icon: const Icon(Icons.add),
-            ),
-        ],
+        actions: TasklyAppBarActions.withAttentionBell(
+          context,
+          actions: [
+            if (!isCompact)
+              EntityAddMenuButton(
+                onCreateTask: () => _openNewTaskEditor(context),
+                onCreateProject: () => _openNewProjectEditor(context),
+              ),
+          ],
+        ),
       ),
       floatingActionButton: isCompact
-          ? FloatingActionButton(
-              tooltip: context.l10n.createTaskTooltip,
-              onPressed: () => _openNewTaskEditor(context),
-              heroTag: 'create_task_fab_inbox',
-              child: const Icon(Icons.add),
+          ? EntityAddSpeedDial(
+              heroTag: 'add_speed_dial_inbox',
+              onCreateTask: () => _openNewTaskEditor(context),
+              onCreateProject: () => _openNewProjectEditor(context),
             )
           : null,
       body: BlocBuilder<InboxFeedBloc, InboxFeedState>(
@@ -69,6 +80,7 @@ class InboxView extends StatelessWidget {
             InboxFeedLoading() => const FeedBody.loading(),
             InboxFeedError(:final message) => FeedBody.error(
               message: message,
+              retryLabel: context.l10n.retryButton,
               onRetry: () => context.read<InboxFeedBloc>().add(
                 const InboxFeedRetryRequested(),
               ),

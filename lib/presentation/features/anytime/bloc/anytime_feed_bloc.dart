@@ -119,7 +119,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
             (event) => event is HomeDayBoundaryCrossed || event is AppResumed,
           )
           .map((_) => _dayKeyService.todayDayKeyUtc()),
-    ]).distinct();
+    ]).distinct().shareValue();
 
     final allocatedRefsStream = dayKeyStream.switchMap(
       _allocationSnapshotRepository.watchLatestTaskRefsForUtcDay,

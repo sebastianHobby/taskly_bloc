@@ -178,8 +178,16 @@ class ProjectView extends StatelessWidget {
             ? (Project p) => Routing.toEntity(context, EntityType.project, p.id)
             : null);
 
-    final titlePriorityPrefix = _priorityTitlePrefix(context);
-    final titleFontWeight = _priorityTitleWeight();
+    final now = getIt<NowService>().nowLocal();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final start = project.startDate;
+    final startDay = start == null
+        ? null
+        : DateTime(start.year, start.month, start.day);
+    final listRowStartDate = (startDay != null && startDay.isAfter(today))
+        ? start
+        : null;
 
     return Container(
       key: Key('project-${project.id}'),
@@ -224,10 +232,6 @@ class ProjectView extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (titlePriorityPrefix != null) ...[
-                              titlePriorityPrefix,
-                              const SizedBox(width: 8),
-                            ],
                             if (titlePrefix != null) ...[
                               titlePrefix!,
                               const SizedBox(width: 8),
@@ -236,7 +240,6 @@ class ProjectView extends StatelessWidget {
                               child: Text(
                                 project.name,
                                 style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: titleFontWeight,
                                   decoration: project.completed
                                       ? TextDecoration.lineThrough
                                       : null,
@@ -257,7 +260,7 @@ class ProjectView extends StatelessWidget {
                         _MetaLine(
                           primaryValue: project.primaryValue,
                           formatDate: _formatMonthDay,
-                          startDate: project.startDate,
+                          startDate: listRowStartDate,
                           deadlineDate: project.deadlineDate,
                           isOverdue: isOverdue,
                           isDueToday: isDueToday,
@@ -266,14 +269,20 @@ class ProjectView extends StatelessWidget {
                           showOnlyDeadlineDate: false,
                           hasRepeat: project.repeatIcalRrule != null,
                           secondaryValues: project.secondaryValues,
+                          secondaryValuePresentation:
+                              _SecondaryValuePresentation
+                                  .singleOutlinedIconOnly,
                           priority: project.priority,
                           metaDensity: agendaMetaDensity,
                           priorityEncoding: agendaPriorityEncoding,
-                          primaryValueIconOnly: agendaPrimaryValueIconOnly,
+                          primaryValueIconOnly: false,
                           maxSecondaryValues: agendaMaxSecondaryValues,
                           collapseSecondaryValuesToCount: false,
                           showRepeatOnRight: true,
                           showBothDatesIfPresent: true,
+                          showPriorityFlagOnRight: true,
+                          enableRightOverflowDemotion: true,
+                          showOverflowIndicatorOnRight: true,
                           onTapValues: () {
                             if (!tileCapabilities.canAlignValues) return;
                             final dispatcher = context
@@ -338,6 +347,14 @@ class ProjectView extends StatelessWidget {
                 ],
               ),
             ),
+            if (project.isPinned)
+              Positioned(
+                left: 0,
+                top: compact ? 12 : 14,
+                child: IgnorePointer(
+                  child: _PinnedGutterMarker(color: scheme.primary),
+                ),
+              ),
             if (_hasKnownProgress)
               Positioned(
                 left: 16,
@@ -376,6 +393,17 @@ class ProjectView extends StatelessWidget {
         (tileCapabilities.canOpenDetails
             ? (Project p) => Routing.toEntity(context, EntityType.project, p.id)
             : null);
+
+    final now = getIt<NowService>().nowLocal();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final start = project.startDate;
+    final startDay = start == null
+        ? null
+        : DateTime(start.year, start.month, start.day);
+    final agendaStartDate = (startDay != null && startDay.isAfter(today))
+        ? start
+        : null;
 
     final showOverflowActions = _resolveAgendaActionsVisibility(context);
 
@@ -463,7 +491,7 @@ class ProjectView extends StatelessWidget {
                                 child: _MetaLineWithExpansion(
                                   primaryValue: project.primaryValue,
                                   formatDate: _formatMonthDay,
-                                  startDate: project.startDate,
+                                  startDate: agendaStartDate,
                                   deadlineDate: project.deadlineDate,
                                   isOverdue: isOverdue,
                                   isDueToday: isDueToday,
@@ -474,12 +502,19 @@ class ProjectView extends StatelessWidget {
                                   showOnlyDeadlineDate: agendaInProgressStyle,
                                   hasRepeat: project.repeatIcalRrule != null,
                                   secondaryValues: project.secondaryValues,
+                                  secondaryValuePresentation:
+                                      _SecondaryValuePresentation
+                                          .singleOutlinedIconOnly,
                                   priority: project.priority,
                                   metaDensity: agendaMetaDensity,
                                   priorityEncoding: agendaPriorityEncoding,
                                   primaryValueIconOnly:
                                       agendaPrimaryValueIconOnly,
                                   maxSecondaryValues: agendaMaxSecondaryValues,
+                                  showBothDatesIfPresent: true,
+                                  showPriorityFlagOnRight: true,
+                                  enableRightOverflowDemotion: true,
+                                  showOverflowIndicatorOnRight: true,
                                   onTapValues: () {
                                     if (!tileCapabilities.canAlignValues) {
                                       return;
@@ -889,9 +924,13 @@ class _MetaLine extends StatelessWidget {
     this.primaryValueIconOnly = false,
     this.maxSecondaryValues = 2,
     this.expanded = true,
+    this.secondaryValuePresentation = _SecondaryValuePresentation.dotsCluster,
     this.collapseSecondaryValuesToCount = false,
     this.showRepeatOnRight = false,
     this.showBothDatesIfPresent = false,
+    this.showPriorityFlagOnRight = false,
+    this.enableRightOverflowDemotion = false,
+    this.showOverflowIndicatorOnRight = false,
     this.onTapValues,
   });
 
@@ -913,9 +952,13 @@ class _MetaLine extends StatelessWidget {
   final bool primaryValueIconOnly;
   final int maxSecondaryValues;
   final bool expanded;
+  final _SecondaryValuePresentation secondaryValuePresentation;
   final bool collapseSecondaryValuesToCount;
   final bool showRepeatOnRight;
   final bool showBothDatesIfPresent;
+  final bool showPriorityFlagOnRight;
+  final bool enableRightOverflowDemotion;
+  final bool showOverflowIndicatorOnRight;
   final VoidCallback? onTapValues;
 
   Color _priorityColor(ColorScheme scheme, int priority) {
@@ -980,53 +1023,73 @@ class _MetaLine extends StatelessWidget {
       }
 
       if (secondaryValues.isNotEmpty) {
-        final allNames = secondaryValues.map((v) => v.name).join(', ');
-        if (collapseSecondaryValuesToCount || !effectiveExpanded) {
-          final countPill = Tooltip(
-            message: allNames,
-            child: _CountPill(
-              label: '+${secondaryValues.length}',
-              onTap: null,
-            ),
-          );
+        switch (secondaryValuePresentation) {
+          case _SecondaryValuePresentation.dotsCluster:
+            final allNames = secondaryValues.map((v) => v.name).join(', ');
+            if (collapseSecondaryValuesToCount || !effectiveExpanded) {
+              final countPill = Tooltip(
+                message: allNames,
+                child: _CountPill(
+                  label: '+${secondaryValues.length}',
+                  onTap: null,
+                ),
+              );
 
-          if (layout == _MetaLineLayout.splitPinnedDates) {
-            valueLineChildren.add(countPill);
-          } else {
-            leftChildren.add(countPill);
-          }
-        } else {
-          final remaining =
-              secondaryValues.length -
-              secondaryValues.take(maxSecondaryValues).length;
+              if (layout == _MetaLineLayout.splitPinnedDates) {
+                valueLineChildren.add(countPill);
+              } else {
+                leftChildren.add(countPill);
+              }
+            } else {
+              final remaining =
+                  secondaryValues.length -
+                  secondaryValues.take(maxSecondaryValues).length;
 
-          final dots = ValueDotsCluster(
-            values: secondaryValues,
-            maxDots: maxSecondaryValues,
-            onTap: onTapValues,
-          );
+              final dots = ValueDotsCluster(
+                values: secondaryValues,
+                maxDots: maxSecondaryValues,
+                onTap: onTapValues,
+              );
 
-          if (layout == _MetaLineLayout.splitPinnedDates) {
-            valueLineChildren.add(dots);
-          } else {
-            leftChildren.add(dots);
-          }
+              if (layout == _MetaLineLayout.splitPinnedDates) {
+                valueLineChildren.add(dots);
+              } else {
+                leftChildren.add(dots);
+              }
 
-          if (remaining > 0) {
-            final remainingPill = Tooltip(
-              message: allNames,
-              child: _CountPill(
-                label: '+$remaining',
-                onTap: null,
+              if (remaining > 0) {
+                final remainingPill = Tooltip(
+                  message: allNames,
+                  child: _CountPill(
+                    label: '+$remaining',
+                    onTap: null,
+                  ),
+                );
+
+                if (layout == _MetaLineLayout.splitPinnedDates) {
+                  valueLineChildren.add(remainingPill);
+                } else {
+                  leftChildren.add(remainingPill);
+                }
+              }
+            }
+          case _SecondaryValuePresentation.singleOutlinedIconOnly:
+            final v = secondaryValues.first;
+            final iconOnlyChip = Tooltip(
+              message: v.name,
+              child: ValueChip(
+                data: v.toChipData(context),
+                variant: ValueChipVariant.outlined,
+                iconOnly: true,
+                onTap: onTapValues,
               ),
             );
 
             if (layout == _MetaLineLayout.splitPinnedDates) {
-              valueLineChildren.add(remainingPill);
+              valueLineChildren.add(iconOnlyChip);
             } else {
-              leftChildren.add(remainingPill);
+              leftChildren.add(iconOnlyChip);
             }
-          }
         }
       }
     }
@@ -1048,7 +1111,8 @@ class _MetaLine extends StatelessWidget {
     }
 
     final p = priority;
-    if (p != null &&
+    if (!showPriorityFlagOnRight &&
+        p != null &&
         priorityEncoding == AgendaPriorityEncoding.explicitPill) {
       final priorityPill = Tooltip(
         message: 'Priority P$p',
@@ -1162,12 +1226,32 @@ class _MetaLine extends StatelessWidget {
             );
           }
 
+          final statusTokens = <Widget>[];
+          if (showPriorityFlagOnRight && (p == 1 || p == 2)) {
+            statusTokens.add(
+              Tooltip(
+                message: 'Priority P$p',
+                child: _PriorityFlag(color: _priorityColor(scheme, p!)),
+              ),
+            );
+          }
+          if (hasRepeat && showRepeatOnRight && repeatIcon != null) {
+            statusTokens.add(repeatIcon);
+          }
+
+          final showStatusTokens =
+              !enableRightOverflowDemotion || constraints.maxWidth >= 360;
+          final showOverflowIndicator =
+              showOverflowIndicatorOnRight && !showStatusTokens;
+
           final rightTokens = <Widget>[];
-          if (hasRepeat && showRepeatOnRight && effectiveExpanded) {
+          if (showStatusTokens) {
+            rightTokens.addAll(statusTokens);
+          } else if (showOverflowIndicator && statusTokens.isNotEmpty) {
             rightTokens.add(
               Icon(
-                Icons.sync_rounded,
-                size: 14,
+                Icons.more_horiz_rounded,
+                size: 16,
                 color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             );
@@ -1188,6 +1272,7 @@ class _MetaLine extends StatelessWidget {
               if (rightTokens.isNotEmpty) ...[
                 const SizedBox(width: 12),
                 Wrap(
+                  alignment: WrapAlignment.end,
                   spacing: 12,
                   runSpacing: 6,
                   crossAxisAlignment: WrapCrossAlignment.center,
@@ -1202,9 +1287,50 @@ class _MetaLine extends StatelessWidget {
   }
 }
 
+enum _SecondaryValuePresentation {
+  dotsCluster,
+  singleOutlinedIconOnly,
+}
+
 enum _MetaLineLayout {
   singleWrap,
   splitPinnedDates,
+}
+
+class _PinnedGutterMarker extends StatelessWidget {
+  const _PinnedGutterMarker({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 3,
+      height: 16,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(999),
+      ),
+    );
+  }
+}
+
+class _PriorityFlag extends StatelessWidget {
+  const _PriorityFlag({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 6,
+      height: 12,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
 }
 
 class _IconOnlyValuesCluster extends StatelessWidget {
@@ -1310,11 +1436,16 @@ class _MetaLineWithExpansion extends StatefulWidget {
   const _MetaLineWithExpansion({
     required this.formatDate,
     required this.secondaryValues,
+    required this.secondaryValuePresentation,
     required this.priority,
     required this.metaDensity,
     required this.priorityEncoding,
     required this.primaryValueIconOnly,
     required this.maxSecondaryValues,
+    required this.showBothDatesIfPresent,
+    required this.showPriorityFlagOnRight,
+    required this.enableRightOverflowDemotion,
+    required this.showOverflowIndicatorOnRight,
     this.primaryValue,
     this.startDate,
     this.deadlineDate,
@@ -1338,11 +1469,16 @@ class _MetaLineWithExpansion extends StatefulWidget {
   final bool showOnlyDeadlineDate;
   final String Function(BuildContext, DateTime) formatDate;
   final List<Value> secondaryValues;
+  final _SecondaryValuePresentation secondaryValuePresentation;
   final int? priority;
   final AgendaMetaDensity metaDensity;
   final AgendaPriorityEncoding priorityEncoding;
   final bool primaryValueIconOnly;
   final int maxSecondaryValues;
+  final bool showBothDatesIfPresent;
+  final bool showPriorityFlagOnRight;
+  final bool enableRightOverflowDemotion;
+  final bool showOverflowIndicatorOnRight;
   final VoidCallback? onTapValues;
 
   @override
@@ -1357,11 +1493,24 @@ class _MetaLineWithExpansionState extends State<_MetaLineWithExpansion> {
       return false;
     }
 
-    return widget.secondaryValues.isNotEmpty ||
-        widget.hasRepeat ||
-        (widget.priority != null &&
-            widget.priorityEncoding == AgendaPriorityEncoding.explicitPill) ||
-        (!widget.showOnlyDeadlineDate && widget.startDate != null);
+    final canRevealMoreSecondaryValues =
+        widget.secondaryValuePresentation ==
+            _SecondaryValuePresentation.dotsCluster &&
+        widget.secondaryValues.isNotEmpty;
+
+    final canRevealPriorityPill =
+        !widget.showPriorityFlagOnRight &&
+        widget.priority != null &&
+        widget.priorityEncoding == AgendaPriorityEncoding.explicitPill;
+
+    final canRevealRepeat = widget.hasRepeat;
+    final canRevealStartDate =
+        !widget.showOnlyDeadlineDate && widget.startDate != null;
+
+    return canRevealMoreSecondaryValues ||
+        canRevealRepeat ||
+        canRevealPriorityPill ||
+        canRevealStartDate;
   }
 
   @override
@@ -1388,12 +1537,17 @@ class _MetaLineWithExpansionState extends State<_MetaLineWithExpansion> {
             hasRepeat: widget.hasRepeat,
             showRepeatOnRight: true,
             secondaryValues: widget.secondaryValues,
+            secondaryValuePresentation: widget.secondaryValuePresentation,
             priority: widget.priority,
             metaDensity: widget.metaDensity,
             priorityEncoding: widget.priorityEncoding,
             primaryValueIconOnly: widget.primaryValueIconOnly,
             maxSecondaryValues: widget.maxSecondaryValues,
             expanded: effectiveExpanded,
+            showBothDatesIfPresent: widget.showBothDatesIfPresent,
+            showPriorityFlagOnRight: widget.showPriorityFlagOnRight,
+            enableRightOverflowDemotion: widget.enableRightOverflowDemotion,
+            showOverflowIndicatorOnRight: widget.showOverflowIndicatorOnRight,
             onTapValues: widget.onTapValues,
           ),
         ),

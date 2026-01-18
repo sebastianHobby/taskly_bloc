@@ -7,6 +7,7 @@ import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_priori
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/form_date_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
+import 'package:taskly_bloc/presentation/widgets/rrule_form_recurrence_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui.dart';
@@ -309,10 +310,13 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                     FormBuilderField<String?>(
                       name: ProjectFieldKeys.repeatIcalRrule.id,
                       builder: (field) {
-                        return FormRecurrenceChip(
-                          rrule: field.value?.isEmpty ?? true
-                              ? null
-                              : field.value,
+                        final rrule = field.value?.isEmpty ?? true
+                            ? null
+                            : field.value;
+
+                        return RruleFormRecurrenceChip(
+                          rrule: rrule,
+                          emptyLabel: context.l10n.recurrenceRepeatTitle,
                           onTap: () async {
                             final repeatFromCompletionField =
                                 widget
@@ -397,7 +401,6 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                   ],
                 ),
               ),
-
               const SizedBox(height: 16),
 
               // Priority

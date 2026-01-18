@@ -30,6 +30,12 @@ final class AnytimeNavigateToTaskNew extends AnytimeScreenEffect {
   final String? defaultValueId;
 }
 
+final class AnytimeOpenProjectNew extends AnytimeScreenEffect {
+  const AnytimeOpenProjectNew({required this.openToValues});
+
+  final bool openToValues;
+}
+
 sealed class AnytimeScreenEvent {
   const AnytimeScreenEvent();
 }
@@ -46,6 +52,10 @@ final class AnytimeFocusOnlySet extends AnytimeScreenEvent {
 
 final class AnytimeCreateTaskRequested extends AnytimeScreenEvent {
   const AnytimeCreateTaskRequested();
+}
+
+final class AnytimeCreateProjectRequested extends AnytimeScreenEvent {
+  const AnytimeCreateProjectRequested();
 }
 
 final class AnytimeTaskTapped extends AnytimeScreenEvent {
@@ -95,6 +105,17 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           effect: AnytimeNavigateToTaskNew(
             defaultProjectId: defaultProjectId,
             defaultValueId: defaultValueId,
+          ),
+        ),
+      );
+    });
+
+    on<AnytimeCreateProjectRequested>((event, emit) {
+      emit(
+        AnytimeScreenReady(
+          focusOnly: state.focusOnly,
+          effect: AnytimeOpenProjectNew(
+            openToValues: _scope is AnytimeValueScope,
           ),
         ),
       );

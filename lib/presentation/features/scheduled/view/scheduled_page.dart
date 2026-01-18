@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_feed_bloc.dart';
+import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_ui/taskly_ui.dart';
 
 class ScheduledPage extends StatelessWidget {
@@ -18,12 +24,17 @@ class ScheduledPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => ScheduledFeedBloc(
-        scheduledOccurrencesService: getIt(),
-        homeDayService: getIt(),
-        scope: scope,
-      ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => ScheduledScreenBloc()),
+        BlocProvider(
+          create: (_) => ScheduledFeedBloc(
+            scheduledOccurrencesService: getIt(),
+            homeDayService: getIt(),
+            scope: scope,
+          ),
+        ),
+      ],
       child: _ScheduledView(scope: scope),
     );
   }
@@ -67,37 +78,97 @@ class _ScheduledViewState extends State<_ScheduledView> {
   Widget build(BuildContext context) {
     final scope = widget.scope;
     final showScopeHeader = scope is! GlobalScheduledScope;
-    final today = getIt<HomeDayService>().todayDayKeyUtc();
+    final isCompact = WindowSizeClass.of(context).isCompact;
+    final todayUtc = getIt<HomeDayService>().todayDayKeyUtc();
+    final today = DateTime(todayUtc.year, todayUtc.month, todayUtc.day);
 
-    return BlocListener<ScheduledFeedBloc, ScheduledFeedState>(
-      listenWhen: (previous, current) => current is ScheduledFeedLoaded,
-      listener: (context, state) {
-        if (state is! ScheduledFeedLoaded) return;
-        if (state.scrollToTodaySignal == _lastScrollToTodaySignal) return;
-        _lastScrollToTodaySignal = state.scrollToTodaySignal;
-        _scrollToTodayIfPresent();
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<ScheduledFeedBloc, ScheduledFeedState>(
+          listenWhen: (previous, current) => current is ScheduledFeedLoaded,
+          listener: (context, state) {
+            if (state is! ScheduledFeedLoaded) return;
+            if (state.scrollToTodaySignal == _lastScrollToTodaySignal) return;
+            _lastScrollToTodaySignal = state.scrollToTodaySignal;
+            _scrollToTodayIfPresent();
+          },
+        ),
+        BlocListener<ScheduledScreenBloc, ScheduledScreenState>(
+          listenWhen: (prev, next) => prev.effect != next.effect,
+          listener: (context, state) async {
+            final effect = state.effect;
+            if (effect == null) return;
+
+            switch (effect) {
+              case ScheduledOpenTaskNew(:final defaultDeadlineDay):
+                await EditorLauncher.fromGetIt().openTaskEditor(
+                  context,
+                  taskId: null,
+                  defaultDeadlineDate: defaultDeadlineDay,
+                  showDragHandle: true,
+                );
+              case ScheduledOpenProjectNew():
+                await EditorLauncher.fromGetIt().openProjectEditor(
+                  context,
+                  projectId: null,
+                  showDragHandle: true,
+                );
+            }
+
+            if (context.mounted) {
+              context.read<ScheduledScreenBloc>().add(
+                const ScheduledEffectHandled(),
+              );
+            }
+          },
+        ),
+      ],
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Scheduled'),
-          actions: [
-            IconButton(
-              tooltip: 'Jump to today',
-              icon: const Icon(Icons.today),
-              onPressed: () {
-                context.read<ScheduledFeedBloc>().add(
-                  const ScheduledJumpToTodayRequested(),
-                );
-              },
-            ),
-          ],
+          actions: TasklyAppBarActions.withAttentionBell(
+            context,
+            actions: [
+              if (!isCompact)
+                EntityAddMenuButton(
+                  onCreateTask: () => context.read<ScheduledScreenBloc>().add(
+                    ScheduledCreateTaskForDayRequested(day: today),
+                  ),
+                  onCreateProject: () =>
+                      context.read<ScheduledScreenBloc>().add(
+                        const ScheduledCreateProjectRequested(),
+                      ),
+                ),
+              IconButton(
+                tooltip: 'Jump to today',
+                icon: const Icon(Icons.today),
+                onPressed: () {
+                  context.read<ScheduledFeedBloc>().add(
+                    const ScheduledJumpToTodayRequested(),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
+        floatingActionButton: isCompact
+            ? EntityAddSpeedDial(
+                heroTag: 'add_speed_dial_scheduled',
+                onCreateTask: () => context.read<ScheduledScreenBloc>().add(
+                  ScheduledCreateTaskForDayRequested(day: today),
+                ),
+                onCreateProject: () => context.read<ScheduledScreenBloc>().add(
+                  const ScheduledCreateProjectRequested(),
+                ),
+              )
+            : null,
         body: BlocBuilder<ScheduledFeedBloc, ScheduledFeedState>(
           builder: (context, state) {
             final feed = switch (state) {
               ScheduledFeedLoading() => const FeedBody.loading(),
               ScheduledFeedError(:final message) => FeedBody.error(
                 message: message,
+                retryLabel: context.l10n.retryButton,
                 onRetry: () => context.read<ScheduledFeedBloc>().add(
                   const ScheduledFeedRetryRequested(),
                 ),

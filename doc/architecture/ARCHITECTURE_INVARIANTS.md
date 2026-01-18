@@ -254,6 +254,9 @@ Normative rules:
   - Examples: stream `.listen(...)` callbacks, `future.then(...)`, timers.
 - For stream-backed screens, bind streams using `await emit.forEach(...)` or
   `await emit.onEach(...)`.
+- If an upstream stream is consumed by multiple downstream subscriptions, it
+  must be broadcast/shared (for example via RxDart `share`/`shareReplay`) so it
+  is safe to listen to more than once.
 - After any `await` point, do not emit unless the handler is still active.
   - Check `if (emit.isDone) return;` before emitting.
 
@@ -268,6 +271,29 @@ Rationale:
 
 - All domain writes must go through a small set of explicit **use-cases** (or an
   equivalent feature write facade) rather than ad-hoc writes from screens.
+
+### 4.1.1 Nullable identifiers are canonicalized (strict)
+
+Some domain relationships are optional (for example: a task may have no
+project).
+
+Normative rules:
+
+- The canonical persisted representation for “no related entity” is **SQL
+  `NULL`**.
+- Do not store sentinel values such as empty strings (`''`) or whitespace for
+  optional IDs.
+- All write boundaries (domain commands/use-cases and data repositories) must
+  defensively **normalize** optional IDs so that `''`/whitespace becomes
+  `null`.
+
+Rationale:
+
+- Query semantics depend on correct nullability (for example, Inbox-style
+  queries often use `IS NULL`).
+- UI normalization is not sufficient: other write paths (import, migrations,
+  background jobs, future features) must not be able to introduce non-null
+  sentinels that silently break filters.
 
 ### 4.3 Recurrence command boundary (strict)
 

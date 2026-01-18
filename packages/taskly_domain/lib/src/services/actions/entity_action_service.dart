@@ -17,8 +17,8 @@ enum EntityActionType {
 
 /// Service for performing actions on entities (tasks, projects, etc.).
 ///
-/// This service is used by the unified screen model to handle entity
-/// mutations without coupling to any specific bloc or screen.
+/// This service centralizes entity mutations so screens and BLoCs can invoke
+/// actions without coupling to a specific feature flow.
 class EntityActionService {
   EntityActionService({
     required TaskRepositoryContract taskRepository,

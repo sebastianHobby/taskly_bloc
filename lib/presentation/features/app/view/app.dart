@@ -212,7 +212,6 @@ class _AuthenticatedApp extends StatelessWidget {
         Provider<NavigationBadgeService>(
           create: (_) => NavigationBadgeService(
             taskRepository: getIt<TaskRepositoryContract>(),
-            nowService: getIt<NowService>(),
           ),
         ),
 

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_core/logging.dart';
 
 import 'fallback_values.dart';
 

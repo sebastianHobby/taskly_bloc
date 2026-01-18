@@ -4,7 +4,6 @@ import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/scaffold_with_nested_navigation.dart';
 import 'package:taskly_core/logging.dart';
-import 'package:taskly_bloc/core/performance/performance_route_observer.dart';
 import 'package:taskly_bloc/presentation/routing/not_found_route_page.dart';
 import 'package:taskly_bloc/presentation/routing/route_codec.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_editor_route_page.dart';
@@ -42,7 +41,6 @@ final router = GoRouter(
   observers: [
     TalkerRouteObserver(talkerRaw),
     appRouteObserver,
-    PerformanceRouteObserver(),
   ],
   errorBuilder: (_, state) => NotFoundRoutePage(
     message: 'Page not found',

@@ -7,4 +7,3 @@ library;
 
 export 'src/logging/app_log.dart';
 export 'src/logging/logging.dart';
-export 'src/logging/perf_phase_timer.dart';

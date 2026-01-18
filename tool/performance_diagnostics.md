@@ -2,9 +2,11 @@
 
 ## 📊 Viewing Performance Logs
 
-Performance logs are now instrumented throughout the scheduled screen. Logs are written to **both** Dart DevTools and the **Talker log file** for persistent analysis.
+Performance logs are now instrumented throughout the scheduled screen. Logs are written to **Dart DevTools** by default. File-based Talker perf logs are **opt-in** to prevent log growth.
 
 ### Option 1: Talker Logs (Recommended for Persistent Analysis)
+> Note: Talker perf file logs are disabled by default. Enable them with:
+> `--dart-define=ENABLE_PERF_FILE_LOGS=true`
 1. Navigate to your app's data directory
 2. Open the Talker log file (usually in app documents/logs)
 3. Search for `[Perf]` entries

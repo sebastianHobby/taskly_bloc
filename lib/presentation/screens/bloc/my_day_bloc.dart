@@ -49,8 +49,7 @@ final class MyDaySummary {
 
 final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
   MyDayBloc({
-    required AllocationSnapshotRepositoryContract
-    allocationSnapshotRepository,
+    required AllocationSnapshotRepositoryContract allocationSnapshotRepository,
     required AllocationOrchestrator allocationOrchestrator,
     required TaskRepositoryContract taskRepository,
     required ValueRepositoryContract valueRepository,
@@ -115,23 +114,21 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         .watchLatestForUtcDay(dayKeyUtc)
         .switchMap((snapshot) {
           if (snapshot == null) {
-            return _allocationOrchestrator
-                .watchAllocation()
-                .combineLatest(
-                  values$,
-                  (allocation, values) => _buildFromAllocation(
-                    allocation,
-                    values,
-                  ),
-                );
+            return Rx.combineLatest2<
+              AllocationResult,
+              List<Value>,
+              _MyDayViewModel
+            >(
+              _allocationOrchestrator.watchAllocation(),
+              values$,
+              _buildFromAllocation,
+            );
           }
 
           final refs$ = _allocationSnapshotRepository
               .watchLatestTaskRefsForUtcDay(dayKeyUtc)
               .startWith(const <AllocationSnapshotTaskRef>[]);
-          final tasks$ = _taskRepository
-              .watchAll()
-              .startWith(const <Task>[]);
+          final tasks$ = _taskRepository.watchAll().startWith(const <Task>[]);
 
           return Rx.combineLatest3<
             List<AllocationSnapshotTaskRef>,
@@ -142,7 +139,7 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
             refs$,
             tasks$,
             values$,
-            (refs, tasks, values) => _buildFromSnapshot(refs, tasks, values),
+            _buildFromSnapshot,
           );
         });
   }

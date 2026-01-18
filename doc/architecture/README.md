@@ -41,6 +41,12 @@ non-UI streams directly.
 If an exception starts to depend on domain/data or becomes shared across screens,
 promote it into a BLoC (or lower layer) and expose a BLoC state instead.
 
+Related invariants/guides:
+- Stream subscription lifecycle + safe fan-out: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md)
+  (section 3.1) and [BLOC_GUIDELINES.md](BLOC_GUIDELINES.md) (Rx fan-out).
+- Nullable identifiers canonicalization (for example “no project = NULL”):
+  [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section 4.1.1).
+
 ### 1.1.2 UI composition model (4-tier)
 
 All UI in Taskly uses a consistent 4-tier composition model:

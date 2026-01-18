@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_priori
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/form_date_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
+import 'package:taskly_bloc/presentation/widgets/rrule_form_recurrence_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui.dart';
@@ -29,6 +30,8 @@ class TaskForm extends StatefulWidget {
     this.availableValues = const [],
     this.defaultProjectId,
     this.defaultValueIds,
+    this.defaultStartDate,
+    this.defaultDeadlineDate,
     this.openToValues = false,
     this.openToProjectPicker = false,
     this.onDelete,
@@ -47,6 +50,12 @@ class TaskForm extends StatefulWidget {
   final List<Value> availableValues;
   final String? defaultProjectId;
   final List<String>? defaultValueIds;
+
+  /// Optional start date to prefill when creating a new task.
+  final DateTime? defaultStartDate;
+
+  /// Optional deadline date to prefill when creating a new task.
+  final DateTime? defaultDeadlineDate;
 
   /// When true, scrolls to the values section and opens the values sheet.
   final bool openToValues;
@@ -202,8 +211,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       TaskFieldKeys.name.id: widget.initialData?.name ?? '',
       TaskFieldKeys.description.id: widget.initialData?.description ?? '',
       TaskFieldKeys.completed.id: widget.initialData?.completed ?? false,
-      TaskFieldKeys.startDate.id: widget.initialData?.startDate,
-      TaskFieldKeys.deadlineDate.id: widget.initialData?.deadlineDate,
+      TaskFieldKeys.startDate.id:
+          widget.initialData?.startDate ?? widget.defaultStartDate,
+      TaskFieldKeys.deadlineDate.id:
+          widget.initialData?.deadlineDate ?? widget.defaultDeadlineDate,
       TaskFieldKeys.projectId.id:
           widget.initialData?.projectId ?? widget.defaultProjectId ?? '',
       TaskFieldKeys.priority.id: widget.initialData?.priority,
@@ -446,8 +457,9 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                     FormBuilderField<String?>(
                       name: TaskFieldKeys.repeatIcalRrule.id,
                       builder: (field) {
-                        return FormRecurrenceChip(
+                        return RruleFormRecurrenceChip(
                           rrule: field.value,
+                          emptyLabel: context.l10n.recurrenceRepeatTitle,
                           onTap: () async {
                             final repeatFromCompletionField = widget
                                 .formKey

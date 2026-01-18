@@ -214,7 +214,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     Map<String, Object?> extraFields = const <String, Object?>{},
   }) {
     return _contextFactory.create(
-      feature: 'usm',
+      feature: 'screen_actions',
       screen: 'screen_actions',
       intent: intent,
       operation: operation,
@@ -535,7 +535,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     Emitter<ScreenActionsState> emit,
   ) async {
     final context = _contextFactory.create(
-      feature: 'usm',
+      feature: 'screen_actions',
       screen: 'screen_actions',
       intent: 'delete_entity',
       operation: 'delete',

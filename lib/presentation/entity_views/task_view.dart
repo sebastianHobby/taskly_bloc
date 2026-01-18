@@ -197,8 +197,16 @@ class TaskView extends StatelessWidget {
             ? (Task task) => Routing.toEntity(context, EntityType.task, task.id)
             : null);
 
-    final titlePriorityPrefix = _priorityTitlePrefix(context);
-    final titleFontWeight = _priorityTitleWeight();
+    final now = getIt<NowService>().nowLocal();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final start = effectiveStartDate;
+    final startDay = start == null
+        ? null
+        : DateTime(start.year, start.month, start.day);
+    final listRowStartDate = (startDay != null && startDay.isAfter(today))
+        ? start
+        : null;
 
     return Container(
       key: Key('task-${task.id}'),
@@ -215,124 +223,139 @@ class TaskView extends StatelessWidget {
       ),
       child: InkWell(
         onTap: resolvedOnTap == null ? null : () => resolvedOnTap(task),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: compact ? 10 : 12,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox.square(
-                dimension: 44,
-                child: Center(
-                  child: _TaskCheckbox(
-                    completed: isCompleted,
-                    isOverdue: isOverdue,
-                    onChanged: tileCapabilities.canToggleCompletion
-                        ? (value) => _dispatchCompletion(context, value)
-                        : null,
-                    taskName: task.name,
-                  ),
-                ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: compact ? 10 : 12,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox.square(
+                    dimension: 44,
+                    child: Center(
+                      child: _TaskCheckbox(
+                        completed: isCompleted,
+                        isOverdue: isOverdue,
+                        onChanged: tileCapabilities.canToggleCompletion
+                            ? (value) => _dispatchCompletion(context, value)
+                            : null,
+                        taskName: task.name,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (titlePriorityPrefix != null) ...[
-                          titlePriorityPrefix,
-                          const SizedBox(width: 8),
-                        ],
-                        if (titlePrefix != null) ...[
-                          titlePrefix!,
-                          const SizedBox(width: 8),
-                        ],
-                        Expanded(
-                          child: Text(
-                            task.name,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: titleFontWeight,
-                              decoration: isCompleted
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                              color: isCompleted
-                                  ? scheme.onSurface.withValues(alpha: 0.5)
-                                  : scheme.onSurface,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (titlePrefix != null) ...[
+                              titlePrefix!,
+                              const SizedBox(width: 8),
+                            ],
+                            Expanded(
+                              child: Text(
+                                task.name,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  decoration: isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  color: isCompleted
+                                      ? scheme.onSurface.withValues(alpha: 0.5)
+                                      : scheme.onSurface,
+                                ),
+                                maxLines: compact ? 1 : 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            maxLines: compact ? 1 : 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          ],
+                        ),
+                        _MetaLine(
+                          primaryValue: effectivePrimaryValue,
+                          projectName: task.project?.name,
+                          projectId: task.projectId,
+                          showProjectPill: false,
+                          startDate: listRowStartDate,
+                          deadlineDate: effectiveDeadlineDate,
+                          isOverdue: isOverdue,
+                          isDueToday: isDueToday,
+                          isDueSoon: isDueSoon,
+                          formatDate: DateLabelFormatter.format,
+                          hasRepeat: task.repeatIcalRrule != null,
+                          secondaryValues: effectiveSecondaryValues,
+                          secondaryValuePresentation:
+                              _SecondaryValuePresentation
+                                  .singleOutlinedIconOnly,
+                          priority: task.priority,
+                          showPriorityFlagOnRight: true,
+                          enableRightOverflowDemotion: true,
+                          showOverflowIndicatorOnRight: true,
+                          priorityEncoding: agendaPriorityEncoding,
+                          primaryValueIconOnly: false,
+                          collapseSecondaryValuesToCount: false,
+                          showRepeatOnRight: true,
+                          showBothDatesIfPresent: true,
+                          onTapValues: () {
+                            if (!tileCapabilities.canAlignValues) return;
+                            final dispatcher = context
+                                .read<TileIntentDispatcher>();
+                            unawaited(
+                              dispatcher.dispatch(
+                                context,
+                                TileIntentOpenEditor(
+                                  entityType: EntityType.task,
+                                  entityId: task.id,
+                                  openToValues: true,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
-                    _MetaLine(
-                      primaryValue: effectivePrimaryValue,
-                      projectName: task.project?.name,
-                      projectId: task.projectId,
-                      startDate: effectiveStartDate,
-                      deadlineDate: effectiveDeadlineDate,
-                      isOverdue: isOverdue,
-                      isDueToday: isDueToday,
-                      isDueSoon: isDueSoon,
-                      formatDate: DateLabelFormatter.format,
-                      hasRepeat: task.repeatIcalRrule != null,
-                      secondaryValues: effectiveSecondaryValues,
-                      priority: task.priority,
-                      priorityEncoding: agendaPriorityEncoding,
-                      primaryValueIconOnly: false,
-                      collapseSecondaryValuesToCount: false,
-                      showRepeatOnRight: true,
-                      showBothDatesIfPresent: true,
-                      onTapValues: () {
-                        if (!tileCapabilities.canAlignValues) return;
-                        final dispatcher = context.read<TileIntentDispatcher>();
-                        unawaited(
-                          dispatcher.dispatch(
-                            context,
-                            TileIntentOpenEditor(
-                              entityType: EntityType.task,
-                              entityId: task.id,
-                              openToValues: true,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 72,
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (trailing != null) ...[
-                        trailing!,
-                        const SizedBox(width: 8),
-                      ],
-                      _TaskTodayStatusMenuButton(
-                        taskId: task.id,
-                        taskName: task.name,
-                        isPinnedToMyDay: task.isPinned,
-                        isInMyDayAuto: isInFocus,
-                        isRepeating: task.isRepeating,
-                        seriesEnded: task.seriesEnded,
-                        tileCapabilities: tileCapabilities,
-                      ),
-                    ],
                   ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 72,
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (trailing != null) ...[
+                            trailing!,
+                            const SizedBox(width: 8),
+                          ],
+                          _TaskTodayStatusMenuButton(
+                            taskId: task.id,
+                            taskName: task.name,
+                            isPinnedToMyDay: task.isPinned,
+                            isInMyDayAuto: isInFocus,
+                            isRepeating: task.isRepeating,
+                            seriesEnded: task.seriesEnded,
+                            tileCapabilities: tileCapabilities,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (task.isPinned)
+              Positioned(
+                left: 0,
+                top: compact ? 12 : 14,
+                child: IgnorePointer(
+                  child: _PinnedGutterMarker(color: scheme.primary),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -356,6 +379,18 @@ class TaskView extends StatelessWidget {
       completed: isCompleted,
     );
     final isDueSoon = _isDueSoon(effectiveDeadlineDate, completed: isCompleted);
+
+    final now = getIt<NowService>().nowLocal();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final start = effectiveStartDate;
+    final startDay = start == null
+        ? null
+        : DateTime(start.year, start.month, start.day);
+    final agendaStartDate =
+        (startDay != null && startDay.isAfter(today) && !agendaInProgressStyle)
+        ? start
+        : null;
 
     final effectiveAccent = accentColor ?? (isInFocus ? scheme.primary : null);
     final outline = scheme.outlineVariant.withValues(alpha: 0.35);
@@ -457,12 +492,15 @@ class TaskView extends StatelessWidget {
                               primaryValue: effectivePrimaryValue,
                               projectName: task.project?.name,
                               projectId: task.projectId,
-                              startDate: effectiveStartDate,
+                              showProjectPill: false,
+                              startDate: agendaStartDate,
                               deadlineDate: effectiveDeadlineDate,
                               isOverdue: isOverdue,
                               isDueToday: isDueToday,
                               isDueSoon: isDueSoon,
-                              showDates: !agendaInProgressStyle,
+                              showDates:
+                                  !agendaInProgressStyle ||
+                                  agendaShowDeadlineChipOnOngoing,
                               formatDate: DateLabelFormatter.format,
                               hasRepeat: task.repeatIcalRrule != null,
                               secondaryValues: effectiveSecondaryValues,
@@ -471,9 +509,15 @@ class TaskView extends StatelessWidget {
                               primaryValueIconOnly: agendaPrimaryValueIconOnly,
                               maxSecondaryValues: agendaMaxSecondaryValues,
                               metaDensity: agendaMetaDensity,
+                              secondaryValuePresentation:
+                                  _SecondaryValuePresentation
+                                      .singleOutlinedIconOnly,
                               collapseSecondaryValuesToCount: false,
                               showRepeatOnRight: true,
-                              showBothDatesIfPresent: false,
+                              showBothDatesIfPresent: true,
+                              showPriorityFlagOnRight: true,
+                              enableRightOverflowDemotion: true,
+                              showOverflowIndicatorOnRight: true,
                               onTapValues: () {
                                 if (!tileCapabilities.canAlignValues) return;
                                 final dispatcher = context
@@ -756,6 +800,7 @@ class _MetaLine extends StatelessWidget {
     this.primaryValue,
     this.projectName,
     this.projectId,
+    this.showProjectPill = true,
     this.startDate,
     this.deadlineDate,
     this.isOverdue = false,
@@ -767,15 +812,20 @@ class _MetaLine extends StatelessWidget {
     this.priorityEncoding = AgendaPriorityEncoding.explicitPill,
     this.primaryValueIconOnly = false,
     this.maxSecondaryValues = 2,
+    this.secondaryValuePresentation = _SecondaryValuePresentation.dotsCluster,
     this.collapseSecondaryValuesToCount = false,
     this.showRepeatOnRight = false,
     this.showBothDatesIfPresent = false,
+    this.showPriorityFlagOnRight = false,
+    this.enableRightOverflowDemotion = false,
+    this.showOverflowIndicatorOnRight = false,
     this.onTapValues,
   });
 
   final Value? primaryValue;
   final String? projectName;
   final String? projectId;
+  final bool showProjectPill;
   final DateTime? startDate;
   final DateTime? deadlineDate;
   final _MetaLineLayout layout;
@@ -791,9 +841,13 @@ class _MetaLine extends StatelessWidget {
   final int? priority;
   final bool primaryValueIconOnly;
   final int maxSecondaryValues;
+  final _SecondaryValuePresentation secondaryValuePresentation;
   final bool collapseSecondaryValuesToCount;
   final bool showRepeatOnRight;
   final bool showBothDatesIfPresent;
+  final bool showPriorityFlagOnRight;
+  final bool enableRightOverflowDemotion;
+  final bool showOverflowIndicatorOnRight;
   final VoidCallback? onTapValues;
 
   Color _priorityColor(ColorScheme scheme, int p) =>
@@ -839,59 +893,80 @@ class _MetaLine extends StatelessWidget {
     }
 
     if (secondaryValues.isNotEmpty) {
-      final allNames = secondaryValues.map((v) => v.name).join(', ');
-      if (collapseSecondaryValuesToCount || !effectiveExpanded) {
-        final countPill = Tooltip(
-          message: allNames,
-          child: _CountPill(
-            label: '+${secondaryValues.length}',
-            onTap: onTapValues,
-          ),
-        );
+      switch (secondaryValuePresentation) {
+        case _SecondaryValuePresentation.dotsCluster:
+          final allNames = secondaryValues.map((v) => v.name).join(', ');
+          if (collapseSecondaryValuesToCount || !effectiveExpanded) {
+            final countPill = Tooltip(
+              message: allNames,
+              child: _CountPill(
+                label: '+${secondaryValues.length}',
+                onTap: onTapValues,
+              ),
+            );
 
-        if (layout == _MetaLineLayout.splitPinnedDates) {
-          valueLineChildren.add(countPill);
-        } else {
-          leftChildren.add(countPill);
-        }
-      } else {
-        final remaining =
-            secondaryValues.length -
-            secondaryValues.take(maxSecondaryValues).length;
+            if (layout == _MetaLineLayout.splitPinnedDates) {
+              valueLineChildren.add(countPill);
+            } else {
+              leftChildren.add(countPill);
+            }
+          } else {
+            final remaining =
+                secondaryValues.length -
+                secondaryValues.take(maxSecondaryValues).length;
 
-        final dots = ValueDotsCluster(
-          values: secondaryValues,
-          maxDots: maxSecondaryValues,
-          onTap: onTapValues,
-        );
+            final dots = ValueDotsCluster(
+              values: secondaryValues,
+              maxDots: maxSecondaryValues,
+              onTap: onTapValues,
+            );
 
-        if (layout == _MetaLineLayout.splitPinnedDates) {
-          valueLineChildren.add(dots);
-        } else {
-          leftChildren.add(dots);
-        }
+            if (layout == _MetaLineLayout.splitPinnedDates) {
+              valueLineChildren.add(dots);
+            } else {
+              leftChildren.add(dots);
+            }
 
-        if (remaining > 0) {
-          final remainingPill = Tooltip(
-            message: allNames,
-            child: _CountPill(
-              label: '+$remaining',
+            if (remaining > 0) {
+              final remainingPill = Tooltip(
+                message: allNames,
+                child: _CountPill(
+                  label: '+$remaining',
+                  onTap: onTapValues,
+                ),
+              );
+
+              if (layout == _MetaLineLayout.splitPinnedDates) {
+                valueLineChildren.add(remainingPill);
+              } else {
+                leftChildren.add(remainingPill);
+              }
+            }
+          }
+        case _SecondaryValuePresentation.singleOutlinedIconOnly:
+          final v = secondaryValues.first;
+          final iconOnlyChip = Tooltip(
+            message: v.name,
+            child: ValueChip(
+              data: v.toChipData(context),
+              variant: ValueChipVariant.outlined,
+              iconOnly: true,
               onTap: onTapValues,
             ),
           );
 
           if (layout == _MetaLineLayout.splitPinnedDates) {
-            valueLineChildren.add(remainingPill);
+            valueLineChildren.add(iconOnlyChip);
           } else {
-            leftChildren.add(remainingPill);
+            leftChildren.add(iconOnlyChip);
           }
-        }
       }
     }
 
     final p = priority;
-    if (p != null &&
-      priorityEncoding == AgendaPriorityEncoding.explicitPill) {
+    if (!showPriorityFlagOnRight &&
+        p != null &&
+        priorityEncoding == AgendaPriorityEncoding.explicitPill) {
       final priorityPill = Tooltip(
         message: 'Priority P$p',
         child: _CountPill(
@@ -907,28 +982,30 @@ class _MetaLine extends StatelessWidget {
       }
     }
 
-    final pName = projectName?.trim();
-    if (pName != null && pName.isNotEmpty) {
-      final projectPill = ProjectPill(
-        projectName: pName,
-        onTap: projectId == null
-            ? null
-            : () {
-                Routing.toEntity(context, EntityType.project, projectId!);
-              },
-      );
+    if (showProjectPill) {
+      final pName = projectName?.trim();
+      if (pName != null && pName.isNotEmpty) {
+        final projectPill = ProjectPill(
+          projectName: pName,
+          onTap: projectId == null
+              ? null
+              : () {
+                  Routing.toEntity(context, EntityType.project, projectId!);
+                },
+        );
 
-      if (layout == _MetaLineLayout.splitPinnedDates) {
-        otherMetaChildren.add(projectPill);
-      } else {
-        leftChildren.add(projectPill);
-      }
-    } else if (projectId == null || projectId!.isEmpty) {
-      const inboxPill = ProjectPill(projectName: 'Inbox');
-      if (layout == _MetaLineLayout.splitPinnedDates) {
-        otherMetaChildren.add(inboxPill);
-      } else {
-        leftChildren.add(inboxPill);
+        if (layout == _MetaLineLayout.splitPinnedDates) {
+          otherMetaChildren.add(projectPill);
+        } else {
+          leftChildren.add(projectPill);
+        }
+      } else if (projectId == null || projectId!.isEmpty) {
+        const inboxPill = ProjectPill(projectName: 'Inbox');
+        if (layout == _MetaLineLayout.splitPinnedDates) {
+          otherMetaChildren.add(inboxPill);
+        } else {
+          leftChildren.add(inboxPill);
+        }
       }
     }
 
@@ -986,6 +1063,24 @@ class _MetaLine extends StatelessWidget {
                 )
               : null;
 
+          final statusTokens = <Widget>[];
+          if (showPriorityFlagOnRight && (p == 1 || p == 2)) {
+            statusTokens.add(
+              Tooltip(
+                message: 'Priority P$p',
+                child: _PriorityFlag(color: _priorityColor(scheme, p!)),
+              ),
+            );
+          }
+          if (hasRepeat && showRepeatOnRight && repeatIcon != null) {
+            statusTokens.add(repeatIcon);
+          }
+
+          final showStatusTokens =
+              !enableRightOverflowDemotion || constraints.maxWidth >= 360;
+          final showOverflowIndicator =
+              showOverflowIndicatorOnRight && !showStatusTokens;
+
           if (layout == _MetaLineLayout.splitPinnedDates) {
             final line1Left = valueLineChildren;
 
@@ -1040,8 +1135,16 @@ class _MetaLine extends StatelessWidget {
           }
 
           final rightTokens = <Widget>[];
-          if (hasRepeat && showRepeatOnRight && repeatIcon != null) {
-            rightTokens.add(repeatIcon);
+          if (showStatusTokens) {
+            rightTokens.addAll(statusTokens);
+          } else if (showOverflowIndicator && statusTokens.isNotEmpty) {
+            rightTokens.add(
+              Icon(
+                Icons.more_horiz_rounded,
+                size: 16,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+              ),
+            );
           }
           rightTokens.addAll(dateTokens);
 
@@ -1059,6 +1162,7 @@ class _MetaLine extends StatelessWidget {
               if (rightTokens.isNotEmpty) ...[
                 const SizedBox(width: 12),
                 Wrap(
+                  alignment: WrapAlignment.end,
                   spacing: 12,
                   runSpacing: 6,
                   crossAxisAlignment: WrapCrossAlignment.center,
@@ -1073,9 +1177,50 @@ class _MetaLine extends StatelessWidget {
   }
 }
 
+enum _SecondaryValuePresentation {
+  dotsCluster,
+  singleOutlinedIconOnly,
+}
+
 enum _MetaLineLayout {
   singleWrap,
   splitPinnedDates,
+}
+
+class _PinnedGutterMarker extends StatelessWidget {
+  const _PinnedGutterMarker({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 3,
+      height: 16,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(999),
+      ),
+    );
+  }
+}
+
+class _PriorityFlag extends StatelessWidget {
+  const _PriorityFlag({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 6,
+      height: 12,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
 }
 
 Color _priorityColorFor(ColorScheme scheme, int p) {

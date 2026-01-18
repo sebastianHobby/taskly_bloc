@@ -4,7 +4,7 @@ import 'package:taskly_domain/analytics.dart';
 
 /// FormBuilder field for selecting entity type.
 ///
-/// Displays chip options for task, project, and label entity types.
+/// Displays chip options for task, project, and value entity types.
 class FormBuilderEntityTypePicker
     extends FormBuilderFieldDecoration<EntityType> {
   FormBuilderEntityTypePicker({
@@ -91,12 +91,6 @@ class _EntityTypeSelector extends StatelessWidget {
         return 'Projects';
       case EntityType.value:
         return 'Values';
-      case EntityType.goal:
-        return 'Goals';
-      case EntityType.journal:
-        return 'Journal Entries';
-      case EntityType.tracker:
-        return 'Trackers';
     }
   }
 
@@ -108,12 +102,6 @@ class _EntityTypeSelector extends StatelessWidget {
         return Icons.folder_outlined;
       case EntityType.value:
         return Icons.loyalty_outlined;
-      case EntityType.goal:
-        return Icons.flag_outlined;
-      case EntityType.journal:
-        return Icons.edit_note;
-      case EntityType.tracker:
-        return Icons.checklist;
     }
   }
 }

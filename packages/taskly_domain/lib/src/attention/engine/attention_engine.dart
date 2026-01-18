@@ -427,18 +427,26 @@ class AttentionEngine implements AttentionEngineContract {
 
     // Reviews use rule key as entity id.
     final entityId = rule.ruleKey;
-    final lastResolution = await _attentionRepository.getLatestResolution(
-      rule.id,
-      entityId,
-    );
+    // Use the most recent *reviewed* resolution to compute due-ness.
+    // Snoozes should only suppress visibility temporarily; they shouldn't
+    // reset the review cadence.
+    final resolutions = await _attentionRepository
+        .watchResolutionsForRule(rule.id)
+        .first;
+
+    AttentionResolution? lastReviewed;
+    for (final r in resolutions) {
+      if (r.entityId != entityId) continue;
+      if (r.resolutionAction == AttentionResolutionAction.reviewed) {
+        lastReviewed = r;
+        break;
+      }
+    }
 
     final now = inputs.now;
-    final overdueDays = switch (lastResolution?.resolutionAction) {
-      null => 1000000,
-      AttentionResolutionAction.reviewed =>
-        now.difference(lastResolution!.resolvedAt).inDays - frequencyDays,
-      _ => 1000000,
-    };
+    final overdueDays = lastReviewed == null
+        ? 1000000
+        : now.difference(lastReviewed.resolvedAt).inDays - frequencyDays;
 
     if (overdueDays < 0) return const <_EvaluatedItem>[];
 

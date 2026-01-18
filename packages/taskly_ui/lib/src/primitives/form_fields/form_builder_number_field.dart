@@ -6,10 +6,13 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 ///
 /// Provides a consistent number input experience with:
 /// - Integer or decimal support
-/// - Min/max validation
+/// - Optional min/max validation (with app-provided error messages)
 /// - Compact or standard sizing
 /// - Optional unit suffix
-class FormBuilderNumberField extends StatelessWidget {
+///
+/// Note: This widget owns a [TextEditingController] to avoid recreating it in
+/// build (cursor jumps / extra allocations).
+class FormBuilderNumberField extends StatefulWidget {
   const FormBuilderNumberField({
     required this.name,
     this.label,
@@ -22,6 +25,8 @@ class FormBuilderNumberField extends StatelessWidget {
     this.onChanged,
     this.enabled = true,
     this.validator,
+    this.minErrorTextBuilder,
+    this.maxErrorTextBuilder,
     super.key,
   });
 
@@ -58,72 +63,134 @@ class FormBuilderNumberField extends StatelessWidget {
   /// Custom validator
   final String? Function(num?)? validator;
 
+  /// Error text builder used when [min] is violated.
+  ///
+  /// Shared UI must not hardcode user-facing strings; provide a localized
+  /// message from the app.
+  final String Function(num min)? minErrorTextBuilder;
+
+  /// Error text builder used when [max] is violated.
+  ///
+  /// Shared UI must not hardcode user-facing strings; provide a localized
+  /// message from the app.
+  final String Function(num max)? maxErrorTextBuilder;
+
+  @override
+  State<FormBuilderNumberField> createState() => _FormBuilderNumberFieldState();
+}
+
+class _FormBuilderNumberFieldState extends State<FormBuilderNumberField> {
+  late final TextEditingController _controller;
+  String? _lastTextSetByUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.initialValue?.toString() ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _syncControllerWithValue(num? value) {
+    final nextText = value?.toString() ?? '';
+
+    // Avoid overwriting in the same frame where the user typed.
+    if (_lastTextSetByUser == nextText) {
+      return;
+    }
+
+    if (_controller.text != nextText) {
+      _controller.value = _controller.value.copyWith(
+        text: nextText,
+        selection: TextSelection.collapsed(offset: nextText.length),
+        composing: TextRange.empty,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    assert(
+      widget.min == null || widget.minErrorTextBuilder != null,
+      'When min is provided, minErrorTextBuilder must be provided (taskly_ui '
+      'does not hardcode user-facing strings).',
+    );
+    assert(
+      widget.max == null || widget.maxErrorTextBuilder != null,
+      'When max is provided, maxErrorTextBuilder must be provided (taskly_ui '
+      'does not hardcode user-facing strings).',
+    );
+
     return FormBuilderField<num>(
-      name: name,
-      initialValue: initialValue,
-      enabled: enabled,
+      name: widget.name,
+      initialValue: widget.initialValue,
+      enabled: widget.enabled,
       validator: (value) {
-        if (validator != null) {
-          final customError = validator!(value);
+        if (widget.validator != null) {
+          final customError = widget.validator!(value);
           if (customError != null) return customError;
         }
         if (value != null) {
-          if (min != null && value < min!) {
-            return 'Must be at least $min';
+          if (widget.min != null && value < widget.min!) {
+            return widget.minErrorTextBuilder!(widget.min!);
           }
-          if (max != null && value > max!) {
-            return 'Must be at most $max';
+          if (widget.max != null && value > widget.max!) {
+            return widget.maxErrorTextBuilder!(widget.max!);
           }
         }
         return null;
       },
       builder: (field) {
-        final textController = TextEditingController(
-          text: field.value?.toString() ?? '',
-        );
+        _syncControllerWithValue(field.value);
+
+        final allowSigned = widget.min != null && widget.min! < 0;
+        final inputRegex = widget.allowDecimal
+            ? RegExp(allowSigned ? r'[-\d.]' : r'[\d.]')
+            : RegExp(allowSigned ? r'[-\d]' : r'\d');
 
         return SizedBox(
-          width: compact ? 80 : null,
+          width: widget.compact ? 80 : null,
           child: TextField(
-            controller: textController,
-            enabled: enabled,
+            controller: _controller,
+            enabled: widget.enabled,
             keyboardType: TextInputType.numberWithOptions(
-              decimal: allowDecimal,
-              signed: min != null && min! < 0,
+              decimal: widget.allowDecimal,
+              signed: allowSigned,
             ),
             inputFormatters: [
-              if (allowDecimal)
-                FilteringTextInputFormatter.allow(RegExp(r'[\d.]'))
-              else
-                FilteringTextInputFormatter.digitsOnly,
+              FilteringTextInputFormatter.allow(inputRegex),
             ],
-            textAlign: compact ? TextAlign.center : TextAlign.start,
+            textAlign: widget.compact ? TextAlign.center : TextAlign.start,
             style: theme.textTheme.bodyMedium,
             decoration: InputDecoration(
-              labelText: compact ? null : label,
-              hintText: compact ? label : null,
-              suffixText: unit,
+              labelText: widget.compact ? null : widget.label,
+              hintText: widget.compact ? widget.label : null,
+              suffixText: widget.unit,
               filled: true,
               fillColor: colorScheme.surfaceContainerLow,
-              isDense: compact,
-              contentPadding: compact
+              isDense: widget.compact,
+              contentPadding: widget.compact
                   ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
                   : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(compact ? 8 : 12),
+                borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),
                 borderSide: BorderSide.none,
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(compact ? 8 : 12),
+                borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),
                 borderSide: BorderSide.none,
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(compact ? 8 : 12),
+                borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),
                 borderSide: BorderSide(
                   color: colorScheme.primary,
                   width: 1.5,
@@ -132,11 +199,12 @@ class FormBuilderNumberField extends StatelessWidget {
               errorText: field.errorText,
             ),
             onChanged: (text) {
-              final parsed = allowDecimal
+              _lastTextSetByUser = text;
+              final parsed = widget.allowDecimal
                   ? double.tryParse(text)
                   : int.tryParse(text);
               field.didChange(parsed);
-              onChanged?.call(parsed);
+              widget.onChanged?.call(parsed);
             },
           ),
         );

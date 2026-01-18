@@ -66,6 +66,12 @@ class ErrorStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    assert(
+      onRetry == null || retryLabel != null,
+      'When onRetry is provided, retryLabel must be provided (taskly_ui does not '
+      'hardcode user-facing strings).',
+    );
+
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -105,7 +111,7 @@ class ErrorStateWidget extends StatelessWidget {
                   children: [
                     const Icon(Icons.refresh, size: 18),
                     const SizedBox(width: 8),
-                    Text(retryLabel ?? 'Retry'),
+                    Text(retryLabel!),
                   ],
                 ),
               ),
