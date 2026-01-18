@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
 enum TrackerEditorSegment { yesNo, rating, number, choice }
 
@@ -352,7 +354,7 @@ class _TrackerEditorSheetState extends State<_TrackerEditorSheet> {
       }
     }
 
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = getIt<NowService>().nowUtc();
     final existing = widget.initialDefinition;
 
     final (valueType, valueKind) = switch (_segment) {

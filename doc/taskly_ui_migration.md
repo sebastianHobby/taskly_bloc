@@ -113,6 +113,106 @@ Known integration note:
   are supplied by the app (avoid defining default categories/constants inside
   `taskly_ui`).
 
+### 4.1 Priority 0 — `lib/presentation/widgets/` inventory (move/keep decisions)
+
+Treat everything under `lib/presentation/widgets/` as **legacy shared UI**.
+
+Goal: migrate only truly reusable **Primitives / Entities / Sections** into
+`packages/taskly_ui` (pure UI). Anything that is screen/interpreter/BLoC/
+navigation/dialog policy stays in the app presentation layer.
+
+Legend:
+- **Move → `taskly_ui`**: intended shared UI; must be pure UI, l10n-agnostic,
+  and “data in / events out”.
+- **Keep (app-only)**: not allowed in `taskly_ui` (navigation/dialog/BLoC) or
+  intentionally app-owned policy.
+- **Needs decision**: requires a product/architecture decision before moving
+  (usually because of dependencies or policy ownership).
+
+#### Keep (app-only): not allowed in `taskly_ui`
+
+- Interpreter/BLoC wiring (must stay app-owned):
+  - `lib/presentation/widgets/section_widget.dart`
+- Navigation/dialog helpers (must stay app-owned):
+  - `lib/presentation/widgets/delete_confirmation.dart`
+  - `lib/presentation/widgets/sign_out_confirmation.dart`
+  - `lib/presentation/widgets/recurrence_picker.dart`
+  - `lib/presentation/widgets/values_alignment/values_alignment_sheet.dart`
+  - `lib/presentation/widgets/wolt_modal_helpers.dart`
+  - `lib/presentation/widgets/next_action_indicator.dart`
+
+#### Keep (app-owned “form infrastructure”)
+
+These are presentation-layer form widgets (FormBuilder-first) and may depend on
+domain, app policy, and validation mapping. Keep them in the app unless we
+explicitly choose to allow `flutter_form_builder` inside `taskly_ui`.
+
+- FormBuilder fields (app-owned):
+  - `lib/presentation/widgets/form_fields/*`
+  - `lib/presentation/widgets/form_fields/form_fields.dart`
+  - `lib/presentation/widgets/form_fields/form_section_header.dart`
+
+#### Moved → `taskly_ui` (Primitives): done
+
+- `packages/taskly_ui/lib/src/primitives/project_pill.dart`
+  - Now l10n-agnostic via `semanticsLabel`/`tooltipMessage` inputs.
+- `packages/taskly_ui/lib/src/primitives/taskly_badge.dart`
+- `packages/taskly_ui/lib/src/primitives/taskly_header.dart`
+
+#### Needs decision (Primitives): dependency/policy questions
+
+- `lib/presentation/widgets/taskly/taskly_card.dart`
+  - Long-term shared Primitive but currently depends on app ThemeExtension.
+  - Direction: move the ThemeExtension type (“design tokens”) into `taskly_ui`
+    and have the app provide values.
+- `lib/presentation/widgets/priority_flag.dart`
+  - Uses app color constants and hardcoded semantics strings.
+  - Decide: keep app-only vs move with parameterized labels and token-based
+    colors.
+- `lib/presentation/widgets/color_picker/color_picker_field.dart`
+  - Depends on `flex_color_picker`.
+  - Decide: keep app-only vs allow this dependency in `taskly_ui`.
+
+#### Move later → `taskly_ui` (Entities/Sections via VMs): domain-coupled today
+
+These currently import domain types and/or app utilities. The target is a split:
+render-only widgets in `taskly_ui` that accept UI view-models + callbacks, with
+thin adapters in the app mapping domain + l10n into VMs.
+
+- `lib/presentation/widgets/value_chip.dart` → Entity (`ValueChipVm`)
+- `lib/presentation/widgets/value_dots_cluster.dart` → Entity
+- `lib/presentation/widgets/values_footer.dart` → Section (composed chips)
+- `lib/presentation/widgets/entity_header.dart` → Section (composed entity UI)
+
+#### Needs refactor first (before any move)
+
+- `lib/presentation/widgets/date_chip.dart`
+  - Mixes UI with RRULE parsing/logging/l10n.
+  - Target: move a generic icon+label chip primitive into `taskly_ui` and keep
+    RRULE parsing + localized labels in the app.
+- `lib/presentation/widgets/form_date_chip.dart`
+  - Uses DI/time service and hardcoded English strings; not suitable for
+    `taskly_ui` as-is.
+- Filters (potentially reusable, but currently stringly-typed / app-dependent):
+  - `lib/presentation/widgets/filters/entity_multi_select.dart` (has default
+    English strings)
+  - `lib/presentation/widgets/filters/selection_mode_choice.dart` (labels come
+    from `filter_enums.dart` which hardcodes English)
+  - `lib/presentation/widgets/filters/filter_enums.dart` (hardcoded labels)
+  - `lib/presentation/widgets/filters/date_range_filter.dart` (depends on
+    `FormDateChip` + uses `showDatePicker`)
+  - `lib/presentation/widgets/filters/filters.dart` (barrel)
+
+#### Already migrated / not in this inventory
+
+The following shared primitives/sections/templates are already in `taskly_ui`
+and exported via `packages/taskly_ui/lib/taskly_ui.dart`:
+- `ContentConstraint` / `SliverContentConstraint`, `SliverSeparatedList`,
+  `SwipeToDelete`, `ModalChromeScope`
+- `EmptyStateWidget`, `ErrorStateWidget`, `LoadingStateWidget`, `FeedBody`,
+  `SettingsSectionCard`, `IconPickerDialog`
+- `FormShell`
+
 
 ## 5) Migration Strategy Overview
 
@@ -163,6 +263,16 @@ If we need custom tokens:
 
 - No navigation in `taskly_ui`.
 - Express intent via callbacks (e.g., `onTap`, `onRetry`, `onSelect`).
+
+### 6.5 Forms (preference)
+
+App screens should prefer `flutter_form_builder` for all forms/editors.
+
+- Widgets own the `FormBuilder` state/key and compose field widgets.
+- BLoCs own entity subscriptions/snapshots, validation policy, and save/delete
+  intents.
+- Do not pass `Map<String, dynamic>` or raw string field names into BLoCs;
+  prefer typed draft/value objects at the widget → BLoC boundary.
 
 
 ## 7) Phased Work Plan (Backlog)

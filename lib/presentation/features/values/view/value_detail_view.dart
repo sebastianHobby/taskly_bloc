@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_feedback.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
@@ -40,6 +41,7 @@ class ValueDetailSheetPage extends StatelessWidget {
       create: (context) => ValueDetailBloc(
         valueRepository: valueRepository,
         valueId: valueId,
+        errorReporter: context.read<AppErrorReporter>(),
       ),
       lazy: false,
       child: ValueDetailSheetView(

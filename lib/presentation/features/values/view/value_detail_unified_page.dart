@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -32,9 +33,10 @@ class ValueDetailUnifiedPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<ValueDetailBloc>(
-      create: (_) => ValueDetailBloc(
+      create: (context) => ValueDetailBloc(
         valueRepository: getIt<ValueRepositoryContract>(),
         valueId: valueId,
+        errorReporter: context.read<AppErrorReporter>(),
       ),
       child: _ValueDetailContent(valueId: valueId),
     );

@@ -41,9 +41,9 @@ final class JournalTodayError extends JournalTodayState {
 class JournalTodayBloc extends Cubit<JournalTodayState> {
   JournalTodayBloc({
     required JournalRepositoryContract repository,
-    DateTime Function()? nowUtc,
+    required DateTime Function() nowUtc,
   }) : _repository = repository,
-       _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
+       _nowUtc = nowUtc,
        super(const JournalTodayLoading()) {
     _subscribe();
   }

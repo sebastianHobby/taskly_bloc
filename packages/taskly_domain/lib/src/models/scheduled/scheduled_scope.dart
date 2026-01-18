@@ -1,11 +1,6 @@
+/// Optional scope filter for scheduled occurrences.
 sealed class ScheduledScope {
   const ScheduledScope();
-
-  const factory ScheduledScope.global() = GlobalScheduledScope;
-  const factory ScheduledScope.project({required String projectId}) =
-      ProjectScheduledScope;
-  const factory ScheduledScope.value({required String valueId}) =
-      ValueScheduledScope;
 }
 
 final class GlobalScheduledScope extends ScheduledScope {

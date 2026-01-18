@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme_mode.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/preferences.dart';
@@ -112,7 +113,9 @@ class GlobalSettingsBloc
     extends Bloc<GlobalSettingsEvent, GlobalSettingsState> {
   GlobalSettingsBloc({
     required SettingsRepositoryContract settingsRepository,
+    required NowService nowService,
   }) : _settingsRepository = settingsRepository,
+       _nowService = nowService,
        super(const GlobalSettingsState()) {
     on<GlobalSettingsStarted>(_onStarted, transformer: droppable());
     on<GlobalSettingsThemeModeChanged>(
@@ -143,6 +146,7 @@ class GlobalSettingsBloc
   }
 
   final SettingsRepositoryContract _settingsRepository;
+  final NowService _nowService;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
   StreamSubscription<GlobalSettings>? _subscription;
@@ -226,7 +230,7 @@ class GlobalSettingsBloc
     Emitter<GlobalSettingsState> emit,
   ) async {
     final updated = state.settings.copyWith(themeMode: event.themeMode);
-    final startedAtUtc = DateTime.now().toUtc();
+    final startedAtUtc = _nowService.nowUtc();
     talker.warning(
       '[settings.global] ThemeMode change requested\n'
       '  at=$startedAtUtc\n'
@@ -248,7 +252,7 @@ class GlobalSettingsBloc
       );
       talker.warning(
         '[settings.global] ThemeMode persisted\n'
-        '  at=${DateTime.now().toUtc()}\n'
+        '  at=${_nowService.nowUtc()}\n'
         '  value=${event.themeMode}',
       );
     } catch (e, st) {

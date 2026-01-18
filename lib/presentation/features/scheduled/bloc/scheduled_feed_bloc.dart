@@ -1,11 +1,9 @@
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
-import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
-import 'package:taskly_bloc/domain/screens/runtime/agenda_scope.dart';
-import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
+import 'package:intl/intl.dart';
+import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/row_key.dart';
-import 'package:taskly_bloc/presentation/features/scheduled/model/scheduled_scope.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 
 sealed class ScheduledFeedEvent {
@@ -42,10 +40,10 @@ final class ScheduledFeedError extends ScheduledFeedState {
 
 class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
   ScheduledFeedBloc({
-    required AgendaSectionDataService agendaDataService,
+    required ScheduledOccurrencesService scheduledOccurrencesService,
     required HomeDayService homeDayService,
     ScheduledScope scope = const GlobalScheduledScope(),
-  }) : _agendaDataService = agendaDataService,
+  }) : _scheduledOccurrencesService = scheduledOccurrencesService,
        _homeDayService = homeDayService,
        _scope = scope,
        super(const ScheduledFeedLoading()) {
@@ -58,7 +56,7 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     add(const ScheduledFeedStarted());
   }
 
-  final AgendaSectionDataService _agendaDataService;
+  final ScheduledOccurrencesService _scheduledOccurrencesService;
   final HomeDayService _homeDayService;
   final ScheduledScope _scope;
 
@@ -82,17 +80,15 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     final rangeStart = todayDayKeyUtc;
     final rangeEnd = todayDayKeyUtc.add(const Duration(days: 30));
 
-    await emit.forEach<AgendaData>(
-      _agendaDataService.watchAgendaData(
-        referenceDate: todayDayKeyUtc,
-        focusDate: todayDayKeyUtc,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-        scope: _toAgendaScope(_scope),
+    await emit.forEach<ScheduledOccurrencesResult>(
+      _scheduledOccurrencesService.watchScheduledOccurrences(
+        rangeStartDay: rangeStart,
+        rangeEndDay: rangeEnd,
+        scope: _scope,
       ),
-      onData: (agenda) {
+      onData: (result) {
         try {
-          return ScheduledFeedLoaded(rows: _mapToRows(agenda));
+          return ScheduledFeedLoaded(rows: _mapToRows(result));
         } catch (e) {
           return ScheduledFeedError(message: e.toString());
         }
@@ -103,22 +99,12 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     );
   }
 
-  AgendaScope? _toAgendaScope(ScheduledScope scope) {
-    return switch (scope) {
-      GlobalScheduledScope() => null,
-      ProjectScheduledScope(:final projectId) => AgendaScope.project(
-        projectId: projectId,
-      ),
-      ValueScheduledScope(:final valueId) => AgendaScope.value(
-        valueId: valueId,
-      ),
-    };
-  }
+  static const int _nearTermDays = 7;
 
-  List<ListRowUiModel> _mapToRows(AgendaData data) {
+  List<ListRowUiModel> _mapToRows(ScheduledOccurrencesResult result) {
     final rows = <ListRowUiModel>[];
 
-    if (data.overdueItems.isNotEmpty) {
+    if (result.overdue.isNotEmpty) {
       rows.add(
         BucketHeaderRowUiModel(
           rowKey: RowKey.v1(
@@ -131,15 +117,27 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
         ),
       );
 
-      final overdueSorted = [...data.overdueItems]..sort(_compareAgendaItems);
+      final overdueSorted = [...result.overdue]..sort(_compareOccurrences);
 
       for (final item in overdueSorted) {
         rows.add(_itemRow(item, bucket: 'Overdue', date: null));
       }
     }
 
+    final itemsByDate = <DateTime, List<ScheduledOccurrence>>{};
+    for (final occurrence in result.occurrences) {
+      final day = _normalizeDate(occurrence.ref.localDay);
+      (itemsByDate[day] ??= <ScheduledOccurrence>[]).add(occurrence);
+    }
+
+    final groups = _generateDateGroups(
+      itemsByDate: itemsByDate,
+      today: result.rangeStartDay,
+      nearTermDays: _nearTermDays,
+    );
+
     String? lastBucket;
-    for (final group in data.groups) {
+    for (final group in groups) {
       final bucket = group.semanticLabel;
       if (bucket != lastBucket) {
         rows.add(
@@ -187,7 +185,7 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
         continue;
       }
 
-      final itemsSorted = [...group.items]..sort(_compareAgendaItems);
+      final itemsSorted = [...group.items]..sort(_compareOccurrences);
       for (final item in itemsSorted) {
         rows.add(_itemRow(item, bucket: bucket, date: group.date));
       }
@@ -196,18 +194,19 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     return rows;
   }
 
-  AgendaEntityRowUiModel _itemRow(
-    AgendaItem item, {
+  ScheduledEntityRowUiModel _itemRow(
+    ScheduledOccurrence item, {
     required String bucket,
     required DateTime? date,
   }) {
-    final entityId = item.entityId;
-    final tag = item.tag;
+    final entityId = item.ref.entityId;
+    final tag = item.ref.tag;
+    final rowType = item.ref.entityType == EntityType.task ? 'task' : 'project';
 
-    return AgendaEntityRowUiModel(
+    return ScheduledEntityRowUiModel(
       rowKey: RowKey.v1(
         screen: 'scheduled',
-        rowType: item.isTask ? 'task' : 'project',
+        rowType: rowType,
         params: <String, String>{
           'id': entityId,
           if (date != null) 'date': _dateKey(date),
@@ -216,26 +215,26 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
         },
       ),
       depth: 0,
-      item: item,
+      occurrence: item,
     );
   }
 
-  int _compareAgendaItems(AgendaItem a, AgendaItem b) {
-    final aPinned = a.isTask
+  int _compareOccurrences(ScheduledOccurrence a, ScheduledOccurrence b) {
+    final aPinned = a.ref.entityType == EntityType.task
         ? (a.task?.isPinned ?? false)
         : (a.project?.isPinned ?? false);
-    final bPinned = b.isTask
+    final bPinned = b.ref.entityType == EntityType.task
         ? (b.task?.isPinned ?? false)
         : (b.project?.isPinned ?? false);
     if (aPinned != bPinned) return aPinned ? -1 : 1;
 
     // Tasks before projects.
-    if (a.isTask != b.isTask) {
-      return a.isTask ? -1 : 1;
+    if (a.ref.entityType != b.ref.entityType) {
+      return a.ref.entityType == EntityType.task ? -1 : 1;
     }
 
-    final aTagRank = _tagRank(a.tag);
-    final bTagRank = _tagRank(b.tag);
+    final aTagRank = _tagRank(a.ref.tag);
+    final bTagRank = _tagRank(b.ref.tag);
     if (aTagRank != bTagRank) return aTagRank.compareTo(bTagRank);
 
     final aName = a.name.toLowerCase();
@@ -243,15 +242,83 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     final nameCmp = aName.compareTo(bName);
     if (nameCmp != 0) return nameCmp;
 
-    return a.entityId.compareTo(b.entityId);
+    return a.ref.entityId.compareTo(b.ref.entityId);
   }
 
-  int _tagRank(AgendaDateTag tag) {
+  int _tagRank(ScheduledDateTag tag) {
     return switch (tag) {
-      AgendaDateTag.due => 0,
-      AgendaDateTag.starts => 1,
-      AgendaDateTag.inProgress => 2,
+      ScheduledDateTag.due => 0,
+      ScheduledDateTag.starts => 1,
+      ScheduledDateTag.ongoing => 2,
     };
+  }
+
+  List<_ScheduledDateGroup> _generateDateGroups({
+    required Map<DateTime, List<ScheduledOccurrence>> itemsByDate,
+    required DateTime today,
+    required int nearTermDays,
+  }) {
+    final groups = <_ScheduledDateGroup>[];
+
+    for (var i = 0; i <= nearTermDays; i++) {
+      final date = today.add(Duration(days: i));
+      final items = itemsByDate[_normalizeDate(date)] ?? const [];
+      groups.add(
+        _ScheduledDateGroup(
+          date: date,
+          semanticLabel: _getSemanticLabel(date, today),
+          formattedHeader: _formatHeader(date),
+          items: items,
+          isEmpty: items.isEmpty,
+        ),
+      );
+    }
+
+    final futureDates =
+        itemsByDate.keys
+            .where((d) => d.isAfter(today.add(Duration(days: nearTermDays))))
+            .toList()
+          ..sort();
+
+    for (final date in futureDates) {
+      groups.add(
+        _ScheduledDateGroup(
+          date: date,
+          semanticLabel: _getSemanticLabel(date, today),
+          formattedHeader: _formatHeader(date),
+          items: itemsByDate[date] ?? const [],
+          isEmpty: false,
+        ),
+      );
+    }
+
+    return groups;
+  }
+
+  String _getSemanticLabel(DateTime date, DateTime today) {
+    final diff = _normalizeDate(date).difference(_normalizeDate(today)).inDays;
+
+    if (diff < 0) return 'Overdue';
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Tomorrow';
+
+    final daysUntilEndOfWeek = 6 - today.weekday; // Saturday = 6
+    if (diff <= daysUntilEndOfWeek && daysUntilEndOfWeek >= 0) {
+      return 'This Week';
+    }
+
+    final daysUntilEndOfNextWeek = daysUntilEndOfWeek + 7;
+    if (diff <= daysUntilEndOfNextWeek) return 'Next Week';
+
+    return 'Later';
+  }
+
+  String _formatHeader(DateTime date) {
+    return DateFormat('E, MMM d').format(date);
+  }
+
+  DateTime _normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
   }
 
   String _dateKey(DateTime date) {
@@ -260,4 +327,20 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     final d = date.day.toString().padLeft(2, '0');
     return '$y-$m-$d';
   }
+}
+
+class _ScheduledDateGroup {
+  const _ScheduledDateGroup({
+    required this.date,
+    required this.semanticLabel,
+    required this.formattedHeader,
+    required this.items,
+    required this.isEmpty,
+  });
+
+  final DateTime date;
+  final String semanticLabel;
+  final String formattedHeader;
+  final List<ScheduledOccurrence> items;
+  final bool isEmpty;
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -36,9 +37,10 @@ class ProjectDetailUnifiedPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<ProjectDetailBloc>(
-      create: (_) => ProjectDetailBloc(
+      create: (context) => ProjectDetailBloc(
         projectRepository: getIt<ProjectRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
+        errorReporter: context.read<AppErrorReporter>(),
       )..add(ProjectDetailEvent.loadById(projectId: projectId)),
       child: _ProjectDetailContent(projectId: projectId),
     );

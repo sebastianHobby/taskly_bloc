@@ -52,7 +52,7 @@ class TasklyHeader extends StatelessWidget {
             ],
           ),
         ),
-        ?trailing,
+        if (trailing != null) trailing!,
       ],
     );
   }

@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
@@ -51,8 +52,10 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
     with DetailBlocMixin<ValueDetailEvent, ValueDetailState, Value> {
   ValueDetailBloc({
     required ValueRepositoryContract valueRepository,
+    required AppErrorReporter errorReporter,
     String? valueId,
   }) : _valueRepository = valueRepository,
+       _errorReporter = errorReporter,
        _commandHandler = ValueCommandHandler(valueRepository: valueRepository),
        super(const ValueDetailState.initial()) {
     on<_ValueDetailLoadById>(_onGet, transformer: restartable());
@@ -66,6 +69,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
   }
 
   final ValueRepositoryContract _valueRepository;
+  final AppErrorReporter _errorReporter;
   final ValueCommandHandler _commandHandler;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
@@ -109,6 +113,43 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
   ValueDetailState createOperationFailureState(DetailBlocError<Value> error) =>
       ValueDetailState.operationFailure(errorDetails: error);
 
+  void _reportIfUnexpectedOrUnmapped(
+    Object error,
+    StackTrace stackTrace, {
+    required OperationContext context,
+    required String message,
+  }) {
+    if (error is AppFailure && error.reportAsUnexpected) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unexpected failure)',
+      );
+      return;
+    }
+
+    if (error is! AppFailure) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unmapped exception)',
+      );
+    }
+  }
+
+  DetailBlocError<Value> _toUiSafeError(Object error, StackTrace? stackTrace) {
+    if (error is AppFailure) {
+      return DetailBlocError<Value>(
+        error: error.uiMessage(),
+        stackTrace: stackTrace,
+      );
+    }
+
+    return DetailBlocError<Value>(error: error, stackTrace: stackTrace);
+  }
+
   Future<void> _onGet(
     _ValueDetailLoadById event,
     Emitter<ValueDetailState> emit,
@@ -133,6 +174,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
       emit,
       EntityOperation.create,
       () => _commandHandler.handleCreate(event.command, context: context),
+      context: context,
     );
   }
 
@@ -149,6 +191,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
       emit,
       EntityOperation.update,
       () => _commandHandler.handleUpdate(event.command, context: context),
+      context: context,
     );
   }
 
@@ -161,18 +204,27 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
       operation: 'values.delete',
       entityId: event.id,
     );
-    await executeOperation(
-      emit,
-      EntityOperation.delete,
-      () => _valueRepository.delete(event.id, context: context),
-    );
+    try {
+      await _valueRepository.delete(event.id, context: context);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      emit(createOperationSuccessState(EntityOperation.delete));
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: 'Value delete failed',
+      );
+      emit(createOperationFailureState(_toUiSafeError(error, stackTrace)));
+    }
   }
 
   Future<void> _executeValidatedCommand(
     Emitter<ValueDetailState> emit,
     EntityOperation operation,
-    Future<CommandResult> Function() execute,
-  ) async {
+    Future<CommandResult> Function() execute, {
+    required OperationContext context,
+  }) async {
     try {
       final result = await execute();
       switch (result) {
@@ -183,9 +235,15 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
           emit(ValueDetailState.validationFailure(failure: failure));
       }
     } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: 'Value ${operation.name} failed',
+      );
       emit(
         createOperationFailureState(
-          DetailBlocError<Value>(error: error, stackTrace: stackTrace),
+          _toUiSafeError(error, stackTrace),
         ),
       );
     }

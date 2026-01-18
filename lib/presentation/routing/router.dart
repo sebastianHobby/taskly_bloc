@@ -16,7 +16,8 @@ import 'package:taskly_bloc/presentation/features/values/view/values_page.dart';
 import 'package:taskly_bloc/presentation/features/inbox/view/inbox_page.dart';
 import 'package:taskly_bloc/presentation/features/anytime/view/anytime_page.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
-import 'package:taskly_bloc/presentation/features/scheduled/model/scheduled_scope.dart';
+import 'package:taskly_domain/taskly_domain.dart'
+    show ProjectScheduledScope, ValueScheduledScope;
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_mvp_page.dart';
 import 'package:taskly_bloc/presentation/features/attention/view/attention_inbox_page.dart';

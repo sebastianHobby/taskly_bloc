@@ -6,6 +6,6 @@ export 'value_dots_cluster.dart';
 export 'values_footer.dart';
 export 'next_action_indicator.dart';
 export 'pinned_indicator.dart';
-export 'priority_flag.dart';
-export 'project_pill.dart';
+export 'package:taskly_ui/taskly_ui.dart' show PriorityFlag;
+export 'package:taskly_ui/taskly_ui.dart' show ProjectPill;
 export 'section_widget.dart';

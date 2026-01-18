@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
@@ -72,8 +73,10 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
   ProjectDetailBloc({
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
+    required AppErrorReporter errorReporter,
   }) : _projectRepository = projectRepository,
        _valueRepository = valueRepository,
+       _errorReporter = errorReporter,
        _commandHandler = ProjectCommandHandler(
          projectRepository: projectRepository,
        ),
@@ -94,6 +97,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
 
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
+  final AppErrorReporter _errorReporter;
   final ProjectCommandHandler _commandHandler;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
@@ -137,6 +141,46 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
   ProjectDetailState createOperationFailureState(
     DetailBlocError<Project> error,
   ) => ProjectDetailState.operationFailure(errorDetails: error);
+
+  void _reportIfUnexpectedOrUnmapped(
+    Object error,
+    StackTrace stackTrace, {
+    required OperationContext context,
+    required String message,
+  }) {
+    if (error is AppFailure && error.reportAsUnexpected) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unexpected failure)',
+      );
+      return;
+    }
+
+    if (error is! AppFailure) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unmapped exception)',
+      );
+    }
+  }
+
+  DetailBlocError<Project> _toUiSafeError(
+    Object error,
+    StackTrace? stackTrace,
+  ) {
+    if (error is AppFailure) {
+      return DetailBlocError<Project>(
+        error: error.uiMessage(),
+        stackTrace: stackTrace,
+      );
+    }
+
+    return DetailBlocError<Project>(error: error, stackTrace: stackTrace);
+  }
 
   Future<void> _onGet(
     String projectId,
@@ -188,6 +232,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
       emit,
       EntityOperation.update,
       () => _commandHandler.handleUpdate(event.command, context: context),
+      context: context,
     );
   }
 
@@ -200,10 +245,20 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
       operation: 'projects.delete',
       entityId: event.id,
     );
-    await executeDeleteOperation(
-      emit,
-      () => _projectRepository.delete(event.id, context: context),
-    );
+
+    try {
+      await _projectRepository.delete(event.id, context: context);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      emit(createOperationSuccessState(EntityOperation.delete));
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: 'Project delete failed',
+      );
+      emit(createOperationFailureState(_toUiSafeError(error, stackTrace)));
+    }
   }
 
   Future<void> _onCreate(
@@ -218,6 +273,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
       emit,
       EntityOperation.create,
       () => _commandHandler.handleCreate(event.command, context: context),
+      context: context,
     );
   }
 
@@ -225,13 +281,14 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     _ProjectDetailSetPinned event,
     Emitter<ProjectDetailState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'project_set_pinned_requested',
+      operation: 'projects.setPinned',
+      entityId: event.id,
+      extraFields: <String, Object?>{'isPinned': event.isPinned},
+    );
+
     try {
-      final context = _newContext(
-        intent: 'project_set_pinned_requested',
-        operation: 'projects.setPinned',
-        entityId: event.id,
-        extraFields: <String, Object?>{'isPinned': event.isPinned},
-      );
       await _projectRepository.setPinned(
         id: event.id,
         isPinned: event.isPinned,
@@ -265,10 +322,16 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
         ),
       );
     } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: 'Project setPinned failed',
+      );
       emit(
         ProjectDetailState.operationFailure(
           errorDetails: DetailBlocError<Project>(
-            error: error,
+            error: error is AppFailure ? error.uiMessage() : error,
             stackTrace: stackTrace,
           ),
         ),
@@ -279,8 +342,9 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
   Future<void> _executeValidatedCommand(
     Emitter<ProjectDetailState> emit,
     EntityOperation operation,
-    Future<CommandResult> Function() execute,
-  ) async {
+    Future<CommandResult> Function() execute, {
+    required OperationContext context,
+  }) async {
     try {
       final result = await execute();
       switch (result) {
@@ -291,9 +355,15 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
           emit(ProjectDetailState.validationFailure(failure: failure));
       }
     } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: 'Project ${operation.name} failed',
+      );
       emit(
         createOperationFailureState(
-          DetailBlocError<Project>(error: error, stackTrace: stackTrace),
+          _toUiSafeError(error, stackTrace),
         ),
       );
     }

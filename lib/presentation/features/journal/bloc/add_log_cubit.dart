@@ -74,9 +74,9 @@ class AddLogCubit extends Cubit<AddLogState> {
   AddLogCubit({
     required JournalRepositoryContract repository,
     required Set<String> preselectedTrackerIds,
-    DateTime Function()? nowUtc,
+    required DateTime Function() nowUtc,
   }) : _repository = repository,
-       _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
+       _nowUtc = nowUtc,
        super(AddLogState.initial(preselectedTrackerIds)) {
     _subscribeQuickAdd();
   }

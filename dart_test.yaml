@@ -21,6 +21,10 @@ tags:
   slow:
     timeout: 120s
 
+  # Known flaky tests (quarantined; excluded from default presets)
+  flaky:
+    timeout: 60s
+
   # Repository tests - database-backed tests
   repository:
     timeout: 60s
@@ -44,7 +48,7 @@ tags:
 presets:
   # Run only fast unit tests (for CI quick checks)
   fast:
-    exclude-tags: [integration, slow, repository]
+    exclude-tags: [integration, slow, repository, flaky]
     
   # Run integration tests only
   integration:
@@ -56,7 +60,7 @@ presets:
     
   # Run all tests except slow ones
   quick:
-    exclude-tags: [slow]
+    exclude-tags: [slow, flaky]
 
   # Run all database-related tests
   database:

@@ -9,6 +9,8 @@ class ProjectPill extends StatelessWidget {
     required this.projectName,
     this.isTertiary = false,
     this.maxWidth = 160,
+    this.tooltipMessage,
+    this.semanticsLabel,
     this.onTap,
     super.key,
   });
@@ -21,6 +23,17 @@ class ProjectPill extends StatelessWidget {
 
   /// Max width before ellipsis.
   final double maxWidth;
+
+  /// Optional tooltip message.
+  ///
+  /// If not provided, defaults to [projectName].
+  final String? tooltipMessage;
+
+  /// Optional semantics label.
+  ///
+  /// Do not hardcode user-facing strings in shared UI; provide a localized
+  /// label from the app if desired.
+  final String? semanticsLabel;
 
   /// Optional tap handler.
   ///
@@ -84,14 +97,16 @@ class ProjectPill extends StatelessWidget {
             child: pill,
           );
 
+    final semanticsWrapped = Semantics(
+      label: semanticsLabel,
+      value: projectName,
+      button: onTap != null,
+      child: interactive,
+    );
+
     return Tooltip(
-      message: projectName,
-      child: Semantics(
-        label: 'Project',
-        value: projectName,
-        button: onTap != null,
-        child: interactive,
-      ),
+      message: tooltipMessage ?? projectName,
+      child: semanticsWrapped,
     );
   }
 }

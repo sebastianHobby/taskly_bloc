@@ -10,6 +10,8 @@ class ColorPickerField extends StatelessWidget {
     required this.color,
     required this.onColorChanged,
     this.label,
+    this.dialogTitle,
+    this.colorNameBuilder,
     this.enabled = true,
     this.showMaterialName = false,
     this.enableOpacity = false,
@@ -19,12 +21,26 @@ class ColorPickerField extends StatelessWidget {
   final Color color;
   final ValueChanged<Color> onColorChanged;
   final String? label;
+
+  /// Optional dialog title widget.
+  ///
+  /// Shared UI must not hardcode user-facing strings; if you want a title,
+  /// pass a localized widget from the app.
+  final Widget? dialogTitle;
+
+  /// Optional label for the current color.
+  ///
+  /// If not provided, a non-localized hex code is shown.
+  final String Function(Color color)? colorNameBuilder;
   final bool enabled;
   final bool showMaterialName;
   final bool enableOpacity;
 
   @override
   Widget build(BuildContext context) {
+    final displayName =
+        colorNameBuilder?.call(color) ?? _defaultColorLabel(color);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -63,7 +79,7 @@ class ColorPickerField extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  ColorTools.nameThatColor(color),
+                  displayName,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ],
@@ -78,7 +94,7 @@ class ColorPickerField extends StatelessWidget {
     final pickedColor = await showColorPickerDialog(
       context,
       color,
-      title: Text(label ?? 'Select color'),
+      title: dialogTitle,
       pickersEnabled: const <ColorPickerType, bool>{
         ColorPickerType.primary: true,
         ColorPickerType.accent: true,
@@ -99,5 +115,10 @@ class ColorPickerField extends StatelessWidget {
     if (pickedColor != color) {
       onColorChanged(pickedColor);
     }
+  }
+
+  String _defaultColorLabel(Color color) {
+    final hex = color.value.toRadixString(16).toUpperCase().padLeft(8, '0');
+    return '#$hex';
   }
 }

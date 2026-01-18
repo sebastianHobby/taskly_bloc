@@ -11,6 +11,8 @@ import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
 /// A modern form for creating or editing tasks.
 ///
@@ -170,7 +172,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     DateTime? initialDate,
     ValueChanged<DateTime?> onDateSelected,
   ) async {
-    final now = DateTime.now();
+    final now = getIt<NowService>().nowLocal();
     final picked = await showDatePicker(
       context: context,
       initialDate: initialDate ?? now,

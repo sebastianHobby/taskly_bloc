@@ -23,6 +23,7 @@ import 'package:taskly_bloc/presentation/features/navigation/services/navigation
 import 'package:taskly_bloc/presentation/routing/router.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
@@ -46,63 +47,69 @@ class App extends StatelessWidget {
   static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
+  static final AppErrorReporter errorReporter = AppErrorReporter(
+    messengerKey: scaffoldMessengerKey,
+  );
+
   @override
   Widget build(BuildContext context) {
     // GlobalSettingsBloc is provided at the root level, before AuthBloc,
     // so that theme/locale settings are available on all screens.
-    return BlocProvider<GlobalSettingsBloc>(
-      lazy: false, // Start immediately to load settings
-      create: (_) => GlobalSettingsBloc(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-      )..add(const GlobalSettingsEvent.started()),
-      child: BlocProvider<AuthBloc>(
-        lazy: false, // Immediate creation to check auth state
-        create: (context) {
-          talker.debug('[app] Creating AuthBloc...');
-          try {
-            final bloc = AuthBloc(
-              authRepository: getIt<AuthRepositoryContract>(),
-              errorReporter: AppErrorReporter(
-                messengerKey: App.scaffoldMessengerKey,
-              ),
-            )..add(const AuthSubscriptionRequested());
-            talker.debug('[app] AuthBloc created successfully');
-            return bloc;
-          } catch (e, st) {
-            talker.handle(e, st, '[app] AuthBloc creation FAILED');
-            rethrow;
-          }
-        },
-        child: BlocListener<AuthBloc, AppAuthState>(
-          listenWhen: (previous, current) {
-            final becameAuthenticated =
-                previous.status != AuthStatus.authenticated &&
-                current.status == AuthStatus.authenticated;
-
-            final leftAuthenticated =
-                previous.status == AuthStatus.authenticated &&
-                current.status != AuthStatus.authenticated;
-
-            return becameAuthenticated || leftAuthenticated;
-          },
-          listener: (context, state) {
-            final coordinator = getIt<AuthenticatedAppServicesCoordinator>();
-
-            if (state.status == AuthStatus.authenticated) {
-              unawaited(coordinator.start());
-            } else {
-              unawaited(coordinator.stop());
+    return Provider<AppErrorReporter>.value(
+      value: App.errorReporter,
+      child: BlocProvider<GlobalSettingsBloc>(
+        lazy: false, // Start immediately to load settings
+        create: (_) => GlobalSettingsBloc(
+          settingsRepository: getIt<SettingsRepositoryContract>(),
+          nowService: getIt<NowService>(),
+        )..add(const GlobalSettingsEvent.started()),
+        child: BlocProvider<AuthBloc>(
+          lazy: false, // Immediate creation to check auth state
+          create: (context) {
+            talker.debug('[app] Creating AuthBloc...');
+            try {
+              final bloc = AuthBloc(
+                authRepository: getIt<AuthRepositoryContract>(),
+                errorReporter: context.read<AppErrorReporter>(),
+              )..add(const AuthSubscriptionRequested());
+              talker.debug('[app] AuthBloc created successfully');
+              return bloc;
+            } catch (e, st) {
+              talker.handle(e, st, '[app] AuthBloc creation FAILED');
+              rethrow;
             }
           },
-          child: BlocBuilder<AuthBloc, AppAuthState>(
-            builder: (context, authState) {
-              return switch (authState.status) {
-                AuthStatus.initial ||
-                AuthStatus.loading => const _ThemedApp(child: SplashScreen()),
-                AuthStatus.authenticated => const _AuthenticatedApp(),
-                AuthStatus.unauthenticated => const _UnauthenticatedApp(),
-              };
+          child: BlocListener<AuthBloc, AppAuthState>(
+            listenWhen: (previous, current) {
+              final becameAuthenticated =
+                  previous.status != AuthStatus.authenticated &&
+                  current.status == AuthStatus.authenticated;
+
+              final leftAuthenticated =
+                  previous.status == AuthStatus.authenticated &&
+                  current.status != AuthStatus.authenticated;
+
+              return becameAuthenticated || leftAuthenticated;
             },
+            listener: (context, state) {
+              final coordinator = getIt<AuthenticatedAppServicesCoordinator>();
+
+              if (state.status == AuthStatus.authenticated) {
+                unawaited(coordinator.start());
+              } else {
+                unawaited(coordinator.stop());
+              }
+            },
+            child: BlocBuilder<AuthBloc, AppAuthState>(
+              builder: (context, authState) {
+                return switch (authState.status) {
+                  AuthStatus.initial ||
+                  AuthStatus.loading => const _ThemedApp(child: SplashScreen()),
+                  AuthStatus.authenticated => const _AuthenticatedApp(),
+                  AuthStatus.unauthenticated => const _UnauthenticatedApp(),
+                };
+              },
+            ),
           ),
         ),
       ),
@@ -204,6 +211,7 @@ class _AuthenticatedApp extends StatelessWidget {
           create: (_) => NavigationBadgeService(
             taskRepository: getIt<TaskRepositoryContract>(),
             projectRepository: getIt<ProjectRepositoryContract>(),
+            nowService: getIt<NowService>(),
           ),
         ),
 
@@ -284,7 +292,7 @@ class _ScreenActionsFailureSnackBarListenerState
           entityId: state.entityId,
         );
 
-        final now = DateTime.now();
+        final now = getIt<NowService>().nowLocal();
         final lastAt = _lastShownAt[dedupeKey];
         if (lastAt != null && now.difference(lastAt).inMilliseconds < 2000) {
           return;

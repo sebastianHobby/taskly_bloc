@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 
@@ -24,7 +25,7 @@ class MyDayFocusModeRequiredPage extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
-    final now = DateTime.now();
+    final now = getIt<NowService>().nowLocal();
     final dateLabel = DateFormat('EEEE, MMM d').format(now).toUpperCase();
 
     return BlocProvider<MyDayGateBloc>(
@@ -43,9 +44,10 @@ class _MyDayFocusModeRequiredView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = this.theme ?? Theme.of(context);
+    final now = getIt<NowService>().nowLocal();
     final dateLabel =
         this.dateLabel ??
-        DateFormat('EEEE, MMM d').format(DateTime.now()).toUpperCase();
+      DateFormat('EEEE, MMM d').format(now).toUpperCase();
 
     return BlocBuilder<MyDayGateBloc, MyDayGateState>(
       builder: (context, state) {

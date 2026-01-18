@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_host_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
@@ -68,11 +69,12 @@ class _TaskEditorFullPage extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: BlocProvider(
-          create: (_) => TaskDetailBloc(
+          create: (context) => TaskDetailBloc(
             taskId: taskId,
             taskRepository: taskRepository,
             projectRepository: projectRepository,
             valueRepository: valueRepository,
+            errorReporter: context.read<AppErrorReporter>(),
           ),
           child: TaskDetailSheet(
             defaultProjectId: defaultProjectId,
