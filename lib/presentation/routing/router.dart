@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/scaffold_with_nested_navigation.dart';
-import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/core/performance/performance_route_observer.dart';
 import 'package:taskly_bloc/presentation/routing/not_found_route_page.dart';
 import 'package:taskly_bloc/presentation/routing/route_codec.dart';
@@ -19,7 +19,7 @@ import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_sc
 import 'package:taskly_domain/taskly_domain.dart'
     show ProjectScheduledScope, ValueScheduledScope;
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
-import 'package:taskly_bloc/presentation/screens/view/my_day_mvp_page.dart';
+import 'package:taskly_bloc/presentation/screens/view/my_day_page.dart';
 import 'package:taskly_bloc/presentation/features/attention/view/attention_inbox_page.dart';
 import 'package:taskly_bloc/presentation/features/attention/view/attention_rules_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_route_page.dart';
@@ -100,7 +100,7 @@ final router = GoRouter(
         GoRoute(
           path: Routing.screenPath('my_day'),
           builder: (_, __) {
-            return const MyDayMvpPage();
+            return const MyDayPage();
           },
         ),
         GoRoute(

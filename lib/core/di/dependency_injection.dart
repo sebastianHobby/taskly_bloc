@@ -2,16 +2,10 @@
 library;
 
 import 'package:get_it/get_it.dart';
-import 'package:taskly_bloc/data/services/occurrence_stream_expander.dart';
-import 'package:taskly_bloc/data/services/occurrence_write_helper.dart';
 import 'package:taskly_data/data_stack.dart';
 import 'package:taskly_data/db.dart';
 import 'package:taskly_data/id.dart';
 import 'package:taskly_domain/taskly_domain.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
-import 'package:taskly_bloc/domain/screens/runtime/entity_grouper.dart';
-import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
-import 'package:taskly_bloc/domain/screens/runtime/trigger_evaluator.dart';
 import 'package:taskly_domain/attention.dart'
     as attention_engine_v2
     show AttentionEngineContract;
@@ -21,23 +15,10 @@ import 'package:taskly_domain/attention.dart'
 import 'package:taskly_domain/attention.dart'
     as attention_engine_v2_impl
     show AttentionEngine;
-import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_inbox_section_interpreter_v1.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_history_list_module_interpreter_v1.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_manage_trackers_module_interpreter_v1.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_today_composer_module_interpreter_v1.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_today_entries_module_interpreter_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_ranked_tasks_v1_module_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_hero_v1_module_interpreter.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_inbox_bloc.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_rules_cubit.dart';
@@ -50,6 +31,7 @@ import 'package:taskly_bloc/presentation/features/settings/bloc/settings_mainten
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
 
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -79,22 +61,9 @@ Future<void> setupDependencies() async {
         nowService: getIt<NowService>(),
       ),
     )
-    // Register occurrence stream expander for reading occurrences
-    ..registerLazySingleton<OccurrenceStreamExpanderContract>(
-      OccurrenceStreamExpander.new,
-    )
-    // Register occurrence write helper for writing occurrences
-    ..registerLazySingleton<OccurrenceWriteHelperContract>(
-      () => OccurrenceWriteHelper(
-        driftDb: getIt<AppDatabase>(),
-        idGenerator: getIt<IdGenerator>(),
-      ),
-    )
     // Bind taskly_data implementations to taskly_domain contracts.
     ..registerSingleton<TasklyDataBindings>(
       dataStack.createBindings(
-        occurrenceExpander: getIt<OccurrenceStreamExpanderContract>(),
-        occurrenceWriteHelper: getIt<OccurrenceWriteHelperContract>(),
         clock: getIt<Clock>(),
       ),
     )
@@ -196,36 +165,12 @@ Future<void> setupDependencies() async {
         occurrenceCommandService: getIt<OccurrenceCommandService>(),
       ),
     )
-    ..registerLazySingleton<AgendaSectionDataService>(
-      () => AgendaSectionDataService(
-        taskRepository: getIt<TaskRepositoryContract>(),
-        projectRepository: getIt<ProjectRepositoryContract>(),
-        dayKeyService: getIt<HomeDayKeyService>(),
-        clock: getIt<Clock>(),
-      ),
-    )
     ..registerLazySingleton<ScheduledOccurrencesService>(
       () => ScheduledOccurrencesService(
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
       ),
     )
-    ..registerLazySingleton<SectionDataService>(
-      () => SectionDataService(
-        taskRepository: getIt<TaskRepositoryContract>(),
-        projectRepository: getIt<ProjectRepositoryContract>(),
-        agendaDataService: getIt<AgendaSectionDataService>(),
-        allocationSnapshotRepository:
-            getIt<AllocationSnapshotRepositoryContract>(),
-        analyticsService: getIt<AnalyticsService>(),
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-        valueRepository: getIt<ValueRepositoryContract>(),
-        dayKeyService: getIt<HomeDayKeyService>(),
-      ),
-    )
-    ..registerLazySingleton<ScreenQueryBuilder>(ScreenQueryBuilder.new)
-    ..registerLazySingleton<EntityGrouper>(EntityGrouper.new)
-    ..registerLazySingleton<TriggerEvaluator>(TriggerEvaluator.new)
     ..registerLazySingleton<TaskStatsCalculator>(TaskStatsCalculator.new)
     // Attention repository binding is owned by taskly_data module.
     ..registerLazySingleton<attention_engine_v2_impl.AttentionEngine>(
@@ -316,6 +261,17 @@ Future<void> setupDependencies() async {
         valueRepository: getIt<ValueRepositoryContract>(),
       ),
     )
+    ..registerFactory<MyDayBloc>(
+      () => MyDayBloc(
+        allocationSnapshotRepository:
+            getIt<AllocationSnapshotRepositoryContract>(),
+        allocationOrchestrator: getIt<AllocationOrchestrator>(),
+        taskRepository: getIt<TaskRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
+        temporalTriggerService: getIt<TemporalTriggerService>(),
+      ),
+    )
     ..registerFactory<MyDayHeaderBloc>(
       () => MyDayHeaderBloc(
         settingsRepository: getIt<SettingsRepositoryContract>(),
@@ -327,56 +283,11 @@ Future<void> setupDependencies() async {
         allocationSnapshotCoordinator: getIt<AllocationSnapshotCoordinator>(),
       ),
     )
-    ..registerLazySingleton<DataListSectionInterpreterV2>(
-      () => DataListSectionInterpreterV2(
-        templateId: SectionTemplateId.taskListV2,
-        sectionDataService: getIt<SectionDataService>(),
-      ),
-      instanceName: SectionTemplateId.taskListV2,
-    )
-    ..registerLazySingleton<DataListSectionInterpreterV2>(
-      () => DataListSectionInterpreterV2(
-        templateId: SectionTemplateId.valueListV2,
-        sectionDataService: getIt<SectionDataService>(),
-      ),
-      instanceName: SectionTemplateId.valueListV2,
-    )
-    ..registerLazySingleton<InterleavedListSectionInterpreterV2>(
-      () => InterleavedListSectionInterpreterV2(
-        sectionDataService: getIt<SectionDataService>(),
-      ),
-      instanceName: SectionTemplateId.interleavedListV2,
-    )
     ..registerLazySingleton<HierarchyValueProjectTaskSectionInterpreterV2>(
       () => HierarchyValueProjectTaskSectionInterpreterV2(
         sectionDataService: getIt<SectionDataService>(),
       ),
       instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
-    )
-    ..registerLazySingleton<AgendaSectionInterpreterV2>(
-      () => AgendaSectionInterpreterV2(
-        sectionDataService: getIt<SectionDataService>(),
-      ),
-      instanceName: SectionTemplateId.agendaV2,
-    )
-    ..registerLazySingleton<AttentionBannerSectionInterpreterV2>(
-      () => AttentionBannerSectionInterpreterV2(
-        engine: getIt<attention_engine_v2.AttentionEngineContract>(),
-        todayProgressService: getIt<TodayProgressService>(),
-      ),
-      instanceName: SectionTemplateId.attentionBannerV2,
-    )
-    ..registerLazySingleton<AttentionInboxSectionInterpreterV1>(
-      AttentionInboxSectionInterpreterV1.new,
-      instanceName: SectionTemplateId.attentionInboxV1,
-    )
-    ..registerLazySingleton<EntityHeaderSectionInterpreter>(
-      () => EntityHeaderSectionInterpreter(
-        projectRepository: getIt<ProjectRepositoryContract>(),
-        valueRepository: getIt<ValueRepositoryContract>(),
-        taskRepository: getIt<TaskRepositoryContract>(),
-      ),
-      instanceName: SectionTemplateId.entityHeader,
     )
     ..registerLazySingleton<MyDayRankedTasksV1ModuleInterpreter>(
       () => MyDayRankedTasksV1ModuleInterpreter(
@@ -386,33 +297,5 @@ Future<void> setupDependencies() async {
             ),
       ),
     )
-    ..registerLazySingleton<MyDayHeroV1ModuleInterpreter>(
-      () => MyDayHeroV1ModuleInterpreter(
-        hierarchyValueProjectTaskInterpreter:
-            getIt<HierarchyValueProjectTaskSectionInterpreterV2>(
-              instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
-            ),
-      ),
-    )
-    ..registerLazySingleton<JournalTodayComposerModuleInterpreterV1>(
-      () => JournalTodayComposerModuleInterpreterV1(
-        repository: getIt<JournalRepositoryContract>(),
-      ),
-    )
-    ..registerLazySingleton<JournalTodayEntriesModuleInterpreterV1>(
-      () => JournalTodayEntriesModuleInterpreterV1(
-        repository: getIt<JournalRepositoryContract>(),
-      ),
-    )
-    ..registerLazySingleton<JournalHistoryListModuleInterpreterV1>(
-      () => JournalHistoryListModuleInterpreterV1(
-        repository: getIt<JournalRepositoryContract>(),
-        dayKeyService: getIt<HomeDayKeyService>(),
-      ),
-    )
-    ..registerLazySingleton<JournalManageTrackersModuleInterpreterV1>(
-      () => JournalManageTrackersModuleInterpreterV1(
-        repository: getIt<JournalRepositoryContract>(),
-      ),
-    );
+    ;
 }

@@ -5,7 +5,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
-import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/errors.dart';
 import 'package:taskly_domain/telemetry.dart';

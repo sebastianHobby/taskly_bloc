@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';

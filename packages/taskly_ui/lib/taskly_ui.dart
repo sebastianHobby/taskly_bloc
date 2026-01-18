@@ -12,7 +12,6 @@ export 'src/primitives/delete_confirmation.dart';
 export 'src/primitives/form_fields/form_fields.dart';
 export 'src/primitives/form_recurrence_chip.dart';
 export 'src/primitives/form_section_header.dart';
-export 'src/primitives/icon_picker/icon_catalog.dart';
 export 'src/primitives/modal_chrome_scope.dart';
 export 'src/primitives/pinned_indicator.dart';
 export 'src/primitives/project_pill.dart';

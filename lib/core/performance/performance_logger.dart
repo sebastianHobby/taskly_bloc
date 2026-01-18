@@ -1,7 +1,7 @@
 import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
-import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_core/logging.dart';
 
 import 'package:taskly_bloc/core/performance/performance_trace_context.dart';
 import 'package:taskly_bloc/core/performance/screen_performance_trace.dart';
