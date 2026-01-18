@@ -93,6 +93,15 @@ Guidelines:
 - Map failures into deterministic error states; do not leak raw exceptions as a
   normal control flow mechanism.
 
+For recurrence (tasks/projects with RRULEs):
+
+- Do not compute or “guess” occurrence keys (dates) in UI code for writes.
+- Prefer calling a domain command service that resolves the target occurrence
+  (for example "complete next occurrence") and then performs the mutation.
+- If a screen needs to *display* a single representative occurrence in a
+  non-date feed, use a shared domain selector/helper rather than duplicating
+  selection logic across BLoCs.
+
 ### 2.3 "Gate" BLoC (routing / readiness)
 
 Use this when a screen depends on app readiness, auth state, or feature flags.

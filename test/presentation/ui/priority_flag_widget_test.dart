@@ -16,22 +16,24 @@ void main() {
       tester,
     ) async {
       final semantics = tester.ensureSemantics();
-      addTearDown(semantics.dispose);
-
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: PriorityFlag(
-              priority: 2,
-              semanticsLabel: 'Priority',
-              semanticsValue: '2',
+      try {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: PriorityFlag(
+                priority: 2,
+                semanticsLabel: 'Priority',
+                semanticsValue: '2',
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      expect(find.byIcon(Icons.flag), findsOneWidget);
-      expect(find.bySemanticsLabel('Priority'), findsOneWidget);
+        expect(find.byIcon(Icons.flag), findsOneWidget);
+        expect(find.bySemanticsLabel('Priority'), findsOneWidget);
+      } finally {
+        semantics.dispose();
+      }
     },
   );
 

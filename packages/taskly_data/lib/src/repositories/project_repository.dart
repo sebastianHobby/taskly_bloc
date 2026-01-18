@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' as drift_pkg;
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
+import 'package:taskly_data/src/infrastructure/powersync/crud_metadata.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/mappers/drift_to_domain.dart';
@@ -574,6 +575,8 @@ class ProjectRepository implements ProjectRepositoryContract {
         final normalizedStartDate = dateOnlyOrNull(startDate);
         final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
+        final psMetadata = encodeCrudMetadata(context);
+
         await driftDb.transaction(() async {
           await _createProject(
             ProjectTableCompanion(
@@ -589,6 +592,9 @@ class ProjectRepository implements ProjectRepositoryContract {
               priority: drift_pkg.Value(priority),
               primaryValueId: drift_pkg.Value(primaryValueId),
               secondaryValueId: drift_pkg.Value(secondaryValueId),
+              psMetadata: psMetadata == null
+                  ? const drift_pkg.Value<String?>.absent()
+                  : drift_pkg.Value(psMetadata),
               createdAt: drift_pkg.Value(now),
               updatedAt: drift_pkg.Value(now),
             ),
@@ -661,6 +667,8 @@ class ProjectRepository implements ProjectRepositoryContract {
         final normalizedStartDate = dateOnlyOrNull(startDate);
         final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
+        final psMetadata = encodeCrudMetadata(context);
+
         await driftDb.transaction(() async {
           await _updateProject(
             ProjectTableCompanion(
@@ -693,6 +701,9 @@ class ProjectRepository implements ProjectRepositoryContract {
                           ? normalizedValueIds[1]
                           : null,
                     ),
+              psMetadata: psMetadata == null
+                  ? const drift_pkg.Value<String?>.absent()
+                  : drift_pkg.Value(psMetadata),
               updatedAt: drift_pkg.Value(now),
             ),
           );
@@ -715,11 +726,16 @@ class ProjectRepository implements ProjectRepositoryContract {
         talker.debug(
           '[ProjectRepository] setPinned: id=$id, isPinned=$isPinned',
         );
+
+        final psMetadata = encodeCrudMetadata(context);
         await (driftDb.update(
           driftDb.projectTable,
         )..where((t) => t.id.equals(id))).write(
           ProjectTableCompanion(
             isPinned: drift_pkg.Value(isPinned),
+            psMetadata: psMetadata == null
+                ? const drift_pkg.Value<String?>.absent()
+                : drift_pkg.Value(psMetadata),
             updatedAt: drift_pkg.Value(DateTime.now()),
           ),
         );
@@ -738,6 +754,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     return FailureGuard.run(
       () async {
         talker.debug('[ProjectRepository] delete: id=$id');
+
         await _deleteProject(ProjectTableCompanion(id: drift_pkg.Value(id)));
       },
       area: 'data.project',

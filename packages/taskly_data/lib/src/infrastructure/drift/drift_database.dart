@@ -65,6 +65,11 @@ class ProjectTable extends Table {
       .named('secondary_value_id')
       .references(ValueTable, #id, onDelete: KeyAction.setNull)();
 
+  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
+  ///
+  /// This should generally be treated as internal (not part of domain state).
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -130,6 +135,11 @@ class TaskTable extends Table {
       .named('override_secondary_value_id')
       .references(ValueTable, #id, onDelete: KeyAction.setNull)();
 
+  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
+  ///
+  /// This should generally be treated as internal (not part of domain state).
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -151,6 +161,11 @@ class ValueTable extends Table {
   /// Priority level (low, medium, high)
   TextColumn get priority =>
       textEnum<ValuePriority>().nullable().named('priority')();
+
+  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
+  ///
+  /// This should generally be treated as internal (not part of domain state).
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
 
   @override
   List<String> get customConstraints => [

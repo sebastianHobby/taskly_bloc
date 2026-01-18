@@ -9,7 +9,9 @@
 > This document consolidates the locked decisions in
 > `doc/taskly_migration_outline.md` into an implementer-facing contract.
 >
-> It does **not** introduce new product behavior.
+> It does **not** prescribe screen/product behavior such as *which* occurrence a
+> user intent should target. That selection belongs in domain-level command
+> services (see `doc/architecture/ARCHITECTURE_INVARIANTS.md`, section 4.3).
 
 ## 1) Core invariants
 

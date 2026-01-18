@@ -244,6 +244,34 @@ Rationale:
 - All domain writes must go through a small set of explicit **use-cases** (or an
   equivalent feature write facade) rather than ad-hoc writes from screens.
 
+### 4.3 Recurrence command boundary (strict)
+
+Recurring entities (tasks/projects with RRULEs) have *virtual occurrences*.
+Selecting which occurrence a user intent should target is a **domain concern**.
+
+Normative rules:
+
+- Presentation must not “guess” recurrence occurrence keys (dates) when
+  performing a write.
+  - If a screen already has explicit occurrence data (for example, Scheduled
+    agenda rows), it may pass those occurrence keys through.
+  - If a screen does **not** have occurrence keys (for example, Anytime feeds
+    that list base entities), it must call a domain command service that
+    resolves the target occurrence before writing.
+- Default completion semantics for recurring entities are:
+  - **Complete** = complete the **next uncompleted** occurrence relative to the
+    current home day key.
+  - **Complete series** = an explicit separate action that ends the series.
+- All recurrence writes must still flow through the existing recurrence write
+  surface (repositories/write-helper) so the storage + sync contract is
+  enforced in one place.
+
+Rationale:
+
+- Keeps product semantics consistent across screens.
+- Prevents subtle bugs from duplicating occurrence-selection logic in UI.
+- Preserves the offline-first recurrence storage contract.
+
 ### 4.2 Transactionality
 
 - If a write touches multiple tables, it must be **atomic** using a database

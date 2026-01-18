@@ -54,15 +54,21 @@ final class TaskRowUiModel extends ListRowUiModel {
   final Task task;
 }
 
-/// Scheduled-only: high-level bucket header (Today/This Week/Next Week/Later).
+/// Scheduled-only: high-level bucket header (This Week/Next Week/Later).
 final class BucketHeaderRowUiModel extends ListRowUiModel {
   const BucketHeaderRowUiModel({
     required super.rowKey,
     required super.depth,
+    required this.bucketKey,
     required this.title,
+    required this.isCollapsed,
   });
 
+  final String bucketKey;
   final String title;
+
+  /// Whether the bucket's child rows are currently hidden.
+  final bool isCollapsed;
 }
 
 /// Scheduled-only: per-day header (e.g. "Mon, Jan 15").

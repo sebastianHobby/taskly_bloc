@@ -1,4 +1,5 @@
-elinimport 'package:go_router/go_router.dart';
+import 'package:go_router/go_router.dart';
+
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/scaffold_with_nested_navigation.dart';
@@ -117,7 +118,7 @@ final router = GoRouter(
             operation: 'route_param_decode_project_anytime_scope',
           ),
           builder: (_, state) {
-            final id = state.pathParameters['id'];
+            final id = state.pathParameters['id']!;
             return AnytimePage(
               scope: AnytimeScope.project(projectId: id),
             );
@@ -132,7 +133,7 @@ final router = GoRouter(
             operation: 'route_param_decode_value_anytime_scope',
           ),
           builder: (_, state) {
-            final id = state.pathParameters['id'];
+            final id = state.pathParameters['id']!;
             return AnytimePage(
               scope: AnytimeScope.value(valueId: id),
             );
@@ -153,7 +154,7 @@ final router = GoRouter(
             operation: 'route_param_decode_project_scheduled_scope',
           ),
           builder: (_, state) {
-            final id = state.pathParameters['id'];
+            final id = state.pathParameters['id']!;
             return ScheduledPage(
               scope: ProjectScheduledScope(projectId: id),
             );
@@ -168,7 +169,7 @@ final router = GoRouter(
             operation: 'route_param_decode_value_scheduled_scope',
           ),
           builder: (_, state) {
-            final id = state.pathParameters['id'];
+            final id = state.pathParameters['id']!;
             return ScheduledPage(
               scope: ValueScheduledScope(valueId: id),
             );

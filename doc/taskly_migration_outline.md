@@ -31,6 +31,12 @@
   - Global `/scheduled` remains header-free.
   - Missing/deleted scope entity shows an inline header error but keeps the feed route usable (offline-first).
 
+- **Scheduled buckets + collapse + jump-to-today (DEC-079A, DEC-085B, DEC-112A, DEC-122A, DEC-193A)**: implemented optional high-level bucket headers and ephemeral collapse.
+  - Buckets used in MVP: `This Week` / `Next Week` / `Later` (no `Today` bucket).
+  - Buckets are shown only when they actually partition the rendered list (i.e., at least two distinct buckets are present in the current range).
+  - `Later` is never shown as the only bucket (if only one bucket exists, bucket headers are omitted entirely).
+  - Jump-to-today expands today’s bucket if collapsed, then scrolls to today’s `DateHeaderRow`.
+
 - **Project picker modal flow (DEC-148B–DEC-163A)**: replaced the ad-hoc “move to project” selection dialog with a real Project Picker flow.
   - Adaptive modal container (sheet on narrow layouts, dialog on wider layouts).
   - Picker is BLoC-owned: subscribes to projects, supports name search, and uses deterministic ordering (name → id).
@@ -59,6 +65,13 @@
   - Invalid deep links redirect to `/not-found` and emit structured logs.
 
 - **Domain time source (DEC-053A)**: introduced `Clock` (`systemClock`) in `taskly_domain` and migrated core domain time-boundary services to accept an injected clock.
+
+- **Sync anomaly pipeline (DEC-063A/DEC-064A)**: implemented end-to-end diagnostics for non-retryable PowerSync/Supabase upload anomalies.
+  - `taskly_domain` defines `SyncAnomaly` + `SyncAnomalyStream` (domain-facing contract).
+  - `taskly_data` emits anomalies from the PowerSync upload connector and exposes a broadcast anomaly stream from `TasklyDataStack`.
+  - Presentation subscribes via a small BLoC and surfaces a debug-only snackbar using the existing global scaffold messenger pipeline.
+  - PowerSync optional metadata tracking is enabled for high-value tables (tasks/projects, recurrence exceptions + completion history, trackers, journal entries, attention/allocation, pending notifications, user profiles), and anomaly emission extracts `cid` (correlation id) from `CrudEntry.metadata` when present.
+  - Follow-up (not yet implemented): populate metadata at write call-sites consistently so correlation ids appear on all queued CRUD operations.
 
 ### 2026-01-17
 
@@ -306,8 +319,8 @@ Implementation follow-ups to keep in mind:
 - Selection state: screen-local ephemeral state in BLoC; resets on route change; no global store (DEC-061A).
 - Offline-first conflict policy (MVP): do not surface sync conflicts in prod UX; log via AppErrorReporter, and only show user-facing errors when a user action fails. In debug builds, also show a snackbar/toast when a true conflict/merge situation is detected (including data rejected from Supabase but persisted in PowerSync), and log full details (DEC-062A).
 
-- Sync conflict detection: `taskly_data` emits a typed `SyncAnomaly` stream (domain-facing contract) with cases like `supabaseRejectedButLocalApplied` / `conflictResolvedWithRemote` / `conflictResolvedWithLocal`; includes `correlationId` + entity refs (DEC-063A).
-- Debug conflict snackbar trigger: `AppLifecycleBloc` subscribes to `SyncAnomaly` and triggers debug snackbar via intent dispatcher/effects (DEC-064A).
+- Sync conflict detection: `taskly_data` emits a typed `SyncAnomaly` stream (domain-facing contract) with cases like `supabaseRejectedButLocalApplied` / `conflictResolvedWithRemote` / `conflictResolvedWithLocal`; includes `correlationId` + entity refs (DEC-063A). **Status:** implemented (see progress log 2026-01-18).
+- Debug conflict snackbar trigger: authenticated app presentation subscribes to `SyncAnomaly` via a BLoC and triggers a debug-only snackbar using the existing global snackbar/error pipeline (DEC-064A). **Status:** implemented (see progress log 2026-01-18).
 - NotFound “Go Home”: navigate to last-known shell route when available, else `/my-day` (DEC-065B).
 
 - Post-USM BLoC ownership: hybrid — each screen has a screen-level BLoC for scope + orchestration; heavy/reusable sections may have their own BLoCs (DEC-066C).
@@ -320,7 +333,7 @@ Implementation follow-ups to keep in mind:
 
 - Feed row mapping ownership (MVP): each feed’s main list section BLoC owns domain subscriptions, hierarchy expansion, and mapping into `AsyncSectionState<List<ListRowUiModel>>`; the Screen BLoC remains focused on orchestration, selection, persisted filters, and UI effects (DEC-100B).
 
-- Scheduled ordering + buckets (MVP): Scheduled main feed section BLoC is responsible for deterministic ordering and for constructing DateHeader rows plus optional BucketHeader rows (Today/This Week/Next Week/Later) per the locked agenda semantics and bucket rules (DEC-101B).
+- Scheduled ordering + buckets (MVP): Scheduled main feed section BLoC is responsible for deterministic ordering and for constructing DateHeader rows plus optional BucketHeader rows (`This Week` / `Next Week` / `Later`) per the locked agenda semantics and bucket rules (DEC-101B).
 
 - Anytime grouping (MVP): Anytime supports header-row grouping using the shared row model (Value → Project → Task; scoped variants still show the scope header row for user orientation). Grouping is fixed (not user-configurable/persisted) to keep secondary filter persistence minimal (DEC-102B).
 
@@ -408,7 +421,8 @@ Implementation follow-ups to keep in mind:
 - Group header behavior: configurable per screen/section between structural-only vs tappable-to-scope headers; tappable headers navigate to scope, with edits/actions via overflow as needed (DEC-073C).
 - Scheduled semantics on rows: attach explicit `agendaMeta` (date + tag Starts/Ongoing/Due) to `taskRow`/`projectRow` variants; Scheduled BLoC owns deterministic ordering per locked agenda rules (DEC-074A).
 
-- Scheduled optional buckets (MVP): implement Today/This Week/Next Week/Later as an additional header row variant in the shared row union (not separate sections); bucket collapse state remains ephemeral (not persisted) (DEC-085B).
+- Scheduled optional buckets (MVP): implement `This Week` / `Next Week` / `Later` as an additional header row variant in the shared row union (not separate sections); bucket collapse state remains ephemeral (not persisted) (DEC-085B).
+  - Buckets are shown only when they partition the list (at least two bucket keys are present); otherwise bucket headers are omitted.
 
 - Scheduled bucket header row contract + collapse: bucket headers are purely structural list rows with `bucketKey`, `title`, optional range metadata, and ephemeral `isCollapsed`. Collapsing hides all rows until the next bucket header (including the date headers within the bucket). Jump-to-today may expand the bucket containing today if collapsed (DEC-112A).
 
@@ -425,7 +439,7 @@ Implementation follow-ups to keep in mind:
 - Overflow action composition (MVP): use a hybrid model — centralize action definitions (IDs/labels/icons/order) in a shared “action catalog”, while each screen/section BLoC decides availability based on domain capabilities (editable/read-only, etc.) and screen context. The UI builds overflow menus from the emitted action IDs and routes selections to the intent dispatcher (DEC-126C). Foundation implemented: `TileOverflowActionCatalog` + `TileIntentDispatcher` wiring for task/project tile overflows and entity detail AppBar overflow delete (with optional pop-on-success).
 
 - Scheduled range UX: range preset is screen state and drives the domain query window; preset is persisted per DEC-077B and UI may “jump to today” without changing the preset (DEC-078A).
-- Scheduled grouping: preserve day-group semantics, with optional higher-level UI buckets (Today/This Week/Next Week/Later) that contain day groups; bucket collapse state is ephemeral (not persisted) (DEC-079A).
+- Scheduled grouping: preserve day-group semantics, with optional higher-level UI buckets (`This Week` / `Next Week` / `Later`) that contain day groups; bucket collapse state is ephemeral (not persisted) (DEC-079A).
 - Scheduled filtering: only entity type filter (All/Tasks/Projects); Starts/Ongoing/Due tags are always shown and not user-filterable (DEC-080C).
 
 - Scheduled “smallest preset includes today” definition (MVP): when jump-to-today needs to expand the range to include today (DEC-194B), choose the first preset that includes today from this priority order: `day → week → month → 90d → year` (DEC-198A).

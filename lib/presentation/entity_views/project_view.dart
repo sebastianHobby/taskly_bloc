@@ -320,6 +320,8 @@ class ProjectView extends StatelessWidget {
                               projectName: project.name,
                               isPinnedToMyDay: project.isPinned,
                               isInMyDayAuto: isInMyDayAuto,
+                              isRepeating: project.isRepeating,
+                              seriesEnded: project.seriesEnded,
                               tileCapabilities: tileCapabilities,
                             ),
                           ],
@@ -527,6 +529,8 @@ class ProjectView extends StatelessWidget {
                               projectName: project.name,
                               isPinnedToMyDay: project.isPinned,
                               isInMyDayAuto: isInMyDayAuto,
+                              isRepeating: project.isRepeating,
+                              seriesEnded: project.seriesEnded,
                               tileCapabilities: tileCapabilities,
                             )
                           else
@@ -536,6 +540,8 @@ class ProjectView extends StatelessWidget {
                                 projectName: project.name,
                                 isPinnedToMyDay: project.isPinned,
                                 isInMyDayAuto: isInMyDayAuto,
+                                isRepeating: project.isRepeating,
+                                seriesEnded: project.seriesEnded,
                                 tileCapabilities: tileCapabilities,
                               ),
                             ),
@@ -1456,6 +1462,8 @@ class _ProjectTodayStatusMenuButton extends StatelessWidget {
     required this.projectName,
     required this.isPinnedToMyDay,
     required this.isInMyDayAuto,
+    required this.isRepeating,
+    required this.seriesEnded,
     required this.tileCapabilities,
   });
 
@@ -1463,6 +1471,8 @@ class _ProjectTodayStatusMenuButton extends StatelessWidget {
   final String projectName;
   final bool isPinnedToMyDay;
   final bool isInMyDayAuto;
+  final bool isRepeating;
+  final bool seriesEnded;
   final EntityTileCapabilities tileCapabilities;
 
   @override
@@ -1497,6 +1507,8 @@ class _ProjectTodayStatusMenuButton extends StatelessWidget {
       projectId: projectId,
       projectName: projectName,
       isPinnedToMyDay: isPinnedToMyDay,
+      isRepeating: isRepeating,
+      seriesEnded: seriesEnded,
       tileCapabilities: tileCapabilities,
     );
 

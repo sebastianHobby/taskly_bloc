@@ -2,6 +2,7 @@ import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
 
 /// Actions that can be performed on entities.
@@ -24,15 +25,18 @@ class EntityActionService {
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
     required AllocationOrchestrator allocationOrchestrator,
+    required OccurrenceCommandService occurrenceCommandService,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
-       _allocationOrchestrator = allocationOrchestrator;
+       _allocationOrchestrator = allocationOrchestrator,
+       _occurrenceCommandService = occurrenceCommandService;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
   final AllocationOrchestrator _allocationOrchestrator;
+  final OccurrenceCommandService _occurrenceCommandService;
 
   // ===========================================================================
   // TASK ACTIONS
@@ -48,7 +52,7 @@ class EntityActionService {
     OperationContext? context,
   }) async {
     talker.serviceLog('EntityActionService', 'completeTask: $taskId');
-    await _taskRepository.completeOccurrence(
+    await _occurrenceCommandService.completeTask(
       taskId: taskId,
       occurrenceDate: occurrenceDate,
       originalOccurrenceDate: originalOccurrenceDate,
@@ -63,9 +67,21 @@ class EntityActionService {
     OperationContext? context,
   }) async {
     talker.serviceLog('EntityActionService', 'uncompleteTask: $taskId');
-    await _taskRepository.uncompleteOccurrence(
+    await _occurrenceCommandService.uncompleteTask(
       taskId: taskId,
       occurrenceDate: occurrenceDate,
+      context: context,
+    );
+  }
+
+  /// Complete a task series (end recurrence).
+  Future<void> completeTaskSeries(
+    String taskId, {
+    OperationContext? context,
+  }) async {
+    talker.serviceLog('EntityActionService', 'completeTaskSeries: $taskId');
+    await _occurrenceCommandService.completeTaskSeries(
+      taskId: taskId,
       context: context,
     );
   }
@@ -128,7 +144,7 @@ class EntityActionService {
     OperationContext? context,
   }) async {
     talker.serviceLog('EntityActionService', 'completeProject: $projectId');
-    await _projectRepository.completeOccurrence(
+    await _occurrenceCommandService.completeProject(
       projectId: projectId,
       occurrenceDate: occurrenceDate,
       originalOccurrenceDate: originalOccurrenceDate,
@@ -143,9 +159,24 @@ class EntityActionService {
     OperationContext? context,
   }) async {
     talker.serviceLog('EntityActionService', 'uncompleteProject: $projectId');
-    await _projectRepository.uncompleteOccurrence(
+    await _occurrenceCommandService.uncompleteProject(
       projectId: projectId,
       occurrenceDate: occurrenceDate,
+      context: context,
+    );
+  }
+
+  /// Complete a project series (end recurrence).
+  Future<void> completeProjectSeries(
+    String projectId, {
+    OperationContext? context,
+  }) async {
+    talker.serviceLog(
+      'EntityActionService',
+      'completeProjectSeries: $projectId',
+    );
+    await _occurrenceCommandService.completeProjectSeries(
+      projectId: projectId,
       context: context,
     );
   }

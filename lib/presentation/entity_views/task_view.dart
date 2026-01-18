@@ -113,24 +113,24 @@ class TaskView extends StatelessWidget {
   /// Optional end date for the in-progress end-day marker.
   final DateTime? endDate;
 
-  bool _isOverdue(DateTime? deadline) {
-    if (deadline == null || task.completed) return false;
+  bool _isOverdue(DateTime? deadline, {required bool completed}) {
+    if (deadline == null || completed) return false;
     final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
     return deadlineDay.isBefore(today);
   }
 
-  bool _isDueToday(DateTime? deadline) {
-    if (deadline == null || task.completed) return false;
+  bool _isDueToday(DateTime? deadline, {required bool completed}) {
+    if (deadline == null || completed) return false;
     final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
     return deadlineDay.isAtSameMomentAs(today);
   }
 
-  bool _isDueSoon(DateTime? deadline) {
-    if (deadline == null || task.completed) return false;
+  bool _isDueSoon(DateTime? deadline, {required bool completed}) {
+    if (deadline == null || completed) return false;
     final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
@@ -175,12 +175,20 @@ class TaskView extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
+    final isCompleted = task.occurrence?.isCompleted ?? task.completed;
+    final effectiveStartDate = task.occurrence?.date ?? task.startDate;
+    final effectiveDeadlineDate =
+        task.occurrence?.deadline ?? task.deadlineDate;
+
     final effectivePrimaryValue = task.effectivePrimaryValue;
     final effectiveSecondaryValues = task.effectiveSecondaryValues;
 
-    final isOverdue = _isOverdue(task.deadlineDate);
-    final isDueToday = _isDueToday(task.deadlineDate);
-    final isDueSoon = _isDueSoon(task.deadlineDate);
+    final isOverdue = _isOverdue(effectiveDeadlineDate, completed: isCompleted);
+    final isDueToday = _isDueToday(
+      effectiveDeadlineDate,
+      completed: isCompleted,
+    );
+    final isDueSoon = _isDueSoon(effectiveDeadlineDate, completed: isCompleted);
 
     final resolvedOnTap =
         onTap ??
@@ -194,7 +202,7 @@ class TaskView extends StatelessWidget {
     return Container(
       key: Key('task-${task.id}'),
       decoration: BoxDecoration(
-        color: task.completed
+        color: isCompleted
             ? scheme.surfaceContainerLowest.withValues(alpha: 0.5)
             : scheme.surface,
         border: Border(
@@ -218,7 +226,7 @@ class TaskView extends StatelessWidget {
                 dimension: 44,
                 child: Center(
                   child: _TaskCheckbox(
-                    completed: task.completed,
+                    completed: isCompleted,
                     isOverdue: isOverdue,
                     onChanged: tileCapabilities.canToggleCompletion
                         ? (value) => _dispatchCompletion(context, value)
@@ -248,10 +256,10 @@ class TaskView extends StatelessWidget {
                             task.name,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: titleFontWeight,
-                              decoration: task.completed
+                              decoration: isCompleted
                                   ? TextDecoration.lineThrough
                                   : null,
-                              color: task.completed
+                              color: isCompleted
                                   ? scheme.onSurface.withValues(alpha: 0.5)
                                   : scheme.onSurface,
                             ),
@@ -265,8 +273,8 @@ class TaskView extends StatelessWidget {
                       primaryValue: effectivePrimaryValue,
                       projectName: task.project?.name,
                       projectId: task.projectId,
-                      startDate: task.startDate,
-                      deadlineDate: task.deadlineDate,
+                      startDate: effectiveStartDate,
+                      deadlineDate: effectiveDeadlineDate,
                       isOverdue: isOverdue,
                       isDueToday: isDueToday,
                       isDueSoon: isDueSoon,
@@ -314,6 +322,8 @@ class TaskView extends StatelessWidget {
                         taskName: task.name,
                         isPinnedToMyDay: task.isPinned,
                         isInMyDayAuto: isInFocus,
+                        isRepeating: task.isRepeating,
+                        seriesEnded: task.seriesEnded,
                         tileCapabilities: tileCapabilities,
                       ),
                     ],
@@ -331,12 +341,20 @@ class TaskView extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
+    final isCompleted = task.occurrence?.isCompleted ?? task.completed;
+    final effectiveStartDate = task.occurrence?.date ?? task.startDate;
+    final effectiveDeadlineDate =
+        task.occurrence?.deadline ?? task.deadlineDate;
+
     final effectivePrimaryValue = task.effectivePrimaryValue;
     final effectiveSecondaryValues = task.effectiveSecondaryValues;
 
-    final isOverdue = _isOverdue(task.deadlineDate);
-    final isDueToday = _isDueToday(task.deadlineDate);
-    final isDueSoon = _isDueSoon(task.deadlineDate);
+    final isOverdue = _isOverdue(effectiveDeadlineDate, completed: isCompleted);
+    final isDueToday = _isDueToday(
+      effectiveDeadlineDate,
+      completed: isCompleted,
+    );
+    final isDueSoon = _isDueSoon(effectiveDeadlineDate, completed: isCompleted);
 
     final effectiveAccent = accentColor ?? (isInFocus ? scheme.primary : null);
     final outline = scheme.outlineVariant.withValues(alpha: 0.35);
@@ -383,7 +401,7 @@ class TaskView extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: _TaskCheckbox(
-                    completed: task.completed,
+                    completed: isCompleted,
                     isOverdue: isOverdue,
                     onChanged: tileCapabilities.canToggleCompletion
                         ? (value) => _dispatchCompletion(context, value)
@@ -412,10 +430,10 @@ class TaskView extends StatelessWidget {
                               task.name,
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: titleFontWeight,
-                                decoration: task.completed
+                                decoration: isCompleted
                                     ? TextDecoration.lineThrough
                                     : null,
-                                color: task.completed
+                                color: isCompleted
                                     ? scheme.onSurface.withValues(alpha: 0.5)
                                     : scheme.onSurface,
                               ),
@@ -438,8 +456,8 @@ class TaskView extends StatelessWidget {
                               primaryValue: effectivePrimaryValue,
                               projectName: task.project?.name,
                               projectId: task.projectId,
-                              startDate: task.startDate,
-                              deadlineDate: task.deadlineDate,
+                              startDate: effectiveStartDate,
+                              deadlineDate: effectiveDeadlineDate,
                               isOverdue: isOverdue,
                               isDueToday: isDueToday,
                               isDueSoon: isDueSoon,
@@ -490,6 +508,8 @@ class TaskView extends StatelessWidget {
                                       taskName: task.name,
                                       isPinnedToMyDay: task.isPinned,
                                       isInMyDayAuto: isInFocus,
+                                      isRepeating: task.isRepeating,
+                                      seriesEnded: task.seriesEnded,
                                       compact: true,
                                       tileCapabilities: tileCapabilities,
                                     ),
@@ -1118,6 +1138,8 @@ class _TaskTodayStatusMenuButton extends StatelessWidget {
     required this.taskName,
     required this.isPinnedToMyDay,
     required this.isInMyDayAuto,
+    required this.isRepeating,
+    required this.seriesEnded,
     required this.tileCapabilities,
     this.compact = false,
   });
@@ -1126,6 +1148,8 @@ class _TaskTodayStatusMenuButton extends StatelessWidget {
   final String taskName;
   final bool isPinnedToMyDay;
   final bool isInMyDayAuto;
+  final bool isRepeating;
+  final bool seriesEnded;
   final EntityTileCapabilities tileCapabilities;
   final bool compact;
 
@@ -1165,6 +1189,8 @@ class _TaskTodayStatusMenuButton extends StatelessWidget {
       taskId: taskId,
       taskName: taskName,
       isPinnedToMyDay: isPinnedToMyDay,
+      isRepeating: isRepeating,
+      seriesEnded: seriesEnded,
       tileCapabilities: tileCapabilities,
     );
 

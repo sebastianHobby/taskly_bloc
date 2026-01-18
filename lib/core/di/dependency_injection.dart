@@ -180,6 +180,13 @@ Future<void> setupDependencies() async {
         temporalTriggerService: getIt<TemporalTriggerService>(),
       ),
     )
+    ..registerLazySingleton<OccurrenceCommandService>(
+      () => OccurrenceCommandService(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
+      ),
+    )
     // Entity action service for unified screen model
     ..registerLazySingleton<EntityActionService>(
       () => EntityActionService(
@@ -187,6 +194,7 @@ Future<void> setupDependencies() async {
         projectRepository: getIt<ProjectRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
+        occurrenceCommandService: getIt<OccurrenceCommandService>(),
       ),
     )
     ..registerLazySingleton<AgendaSectionDataService>(

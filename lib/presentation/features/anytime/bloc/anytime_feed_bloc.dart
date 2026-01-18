@@ -81,6 +81,8 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   final AnytimeScope? _scope;
 
   List<Task> _latestTasks = const <Task>[];
+  Map<String, OccurrenceData> _nextTaskOccurrenceById =
+      const <String, OccurrenceData>{};
   Set<String> _allocatedTaskIds = const <String>{};
   bool _focusOnly = false;
 
@@ -123,6 +125,26 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       _allocationSnapshotRepository.watchLatestTaskRefsForUtcDay,
     );
 
+    final nextOccurrenceByTaskIdStream = dayKeyStream.switchMap((dayKey) {
+      // Anytime is not date-scoped, but "Complete" should target the next
+      // occurrence for repeating tasks. We maintain a map of the next
+      // uncompleted occurrence per task id.
+      //
+      // Keep the range wide enough to catch rolling schedules.
+      final rangeStart = dayKey.subtract(const Duration(days: 365));
+      final rangeEnd = dayKey.add(const Duration(days: 730));
+
+      return _taskRepository
+          .watchOccurrences(rangeStart: rangeStart, rangeEnd: rangeEnd)
+          .map(
+            (occurrences) =>
+                NextOccurrenceSelector.nextUncompletedTaskOccurrenceByTaskId(
+                  expandedTasks: occurrences,
+                  asOfDay: dayKey,
+                ),
+          );
+    });
+
     await Future.wait<void>([
       emit.onEach<List<Task>>(
         _taskRepository.watchAll(query),
@@ -141,6 +163,16 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
             for (final r in refs)
               if (r.taskId.trim().isNotEmpty) r.taskId,
           };
+          _emitRows(emit);
+        },
+        onError: (error, stackTrace) {
+          emit(AnytimeFeedError(message: error.toString()));
+        },
+      ),
+      emit.onEach<Map<String, OccurrenceData>>(
+        nextOccurrenceByTaskIdStream,
+        onData: (map) {
+          _nextTaskOccurrenceById = map;
           _emitRows(emit);
         },
         onError: (error, stackTrace) {
@@ -176,11 +208,24 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
           ? _latestTasks.where((t) => _allocatedTaskIds.contains(t.id)).toList()
           : _latestTasks;
 
-      final rows = _mapToRows(tasks);
+      final tasksWithNextOccurrence = tasks
+          .map(_decorateWithNextOccurrence)
+          .toList(growable: false);
+
+      final rows = _mapToRows(tasksWithNextOccurrence);
       emit(AnytimeFeedLoaded(rows: rows));
     } catch (e) {
       emit(AnytimeFeedError(message: e.toString()));
     }
+  }
+
+  Task _decorateWithNextOccurrence(Task task) {
+    if (!task.isRepeating || task.seriesEnded) return task;
+
+    final next = _nextTaskOccurrenceById[task.id];
+    if (next == null) return task;
+
+    return task.copyWith(occurrence: next);
   }
 
   List<ListRowUiModel> _mapToRows(List<Task> tasks) {
@@ -342,8 +387,8 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   int _compareTasks(Task a, Task b) {
     if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
 
-    final ad = a.deadlineDate;
-    final bd = b.deadlineDate;
+    final ad = a.occurrence?.deadline ?? a.deadlineDate;
+    final bd = b.occurrence?.deadline ?? b.deadlineDate;
     if (ad == null && bd != null) return 1;
     if (ad != null && bd == null) return -1;
     if (ad != null && bd != null) {
