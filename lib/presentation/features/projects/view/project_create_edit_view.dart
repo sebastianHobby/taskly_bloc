@@ -10,12 +10,13 @@ import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_feedback.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
-import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
+import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_form.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 class ProjectEditSheetPage extends StatelessWidget {
   const ProjectEditSheetPage({
@@ -331,11 +332,22 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                 );
               },
               onDelete: () async {
-                final confirmed = await showDeleteConfirmationDialog(
-                  context: context,
+                final confirmed = await ConfirmationDialog.show(
+                  context,
                   title: context.l10n.deleteProjectAction,
-                  itemName: project.name,
-                  description: context.l10n.deleteProjectCascadeDescription,
+                  confirmLabel: context.l10n.deleteLabel,
+                  cancelLabel: context.l10n.cancelLabel,
+                  isDestructive: true,
+                  icon: Icons.delete_outline_rounded,
+                  iconColor: Theme.of(context).colorScheme.error,
+                  iconBackgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.errorContainer.withValues(alpha: 0.3),
+                  content: buildDeleteConfirmationContent(
+                    context,
+                    itemName: project.name,
+                    description: context.l10n.deleteProjectCascadeDescription,
+                  ),
                 );
                 if (confirmed && context.mounted) {
                   context.read<ProjectDetailBloc>().add(

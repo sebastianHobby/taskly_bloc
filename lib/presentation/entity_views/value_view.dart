@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
-    as domain;
+import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
@@ -47,7 +46,7 @@ class ValueView extends StatelessWidget {
   final Value value;
 
   /// Statistics for the value. Optional in compact mode to show "not ranked".
-  final domain.ValueStats? stats;
+  final ValueStats? stats;
 
   /// Rank of this value (optional since ranking feature was removed).
   final int? rank;
@@ -503,7 +502,7 @@ class _CompactGapIndicator extends StatelessWidget {
     required this.colorScheme,
   });
 
-  final domain.ValueStats stats;
+  final ValueStats stats;
   final ColorScheme colorScheme;
 
   @override
@@ -590,7 +589,7 @@ class _StatsRow extends StatelessWidget {
     required this.colorScheme,
   });
 
-  final domain.ValueStats stats;
+  final ValueStats stats;
   final ColorScheme colorScheme;
 
   @override

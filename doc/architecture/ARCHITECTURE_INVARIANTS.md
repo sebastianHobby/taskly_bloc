@@ -144,8 +144,10 @@ Normative rules:
 
 - `taskly_ui` must remain **pure UI**: no BLoCs/Cubits, no repositories/services,
   no use-cases, no DI, and no stream subscriptions.
-- `taskly_ui` must not perform navigation or import app routing (`go_router`,
-  `Routing`, etc.).
+- `taskly_ui` must not perform **app routing** or import app routing
+  (`go_router`, `Routing`, etc.). “Navigation” here means pushing app routes
+  (for example, `GoRouter` or `Navigator` route pushes), not presenting
+  UI-only overlays like dialogs or bottom sheets.
 - Reusable UI must follow **data in / events out** APIs (props + callbacks).
 - App code must not deep-import `taskly_ui` internals; import only
   `package:taskly_ui/taskly_ui.dart`.
@@ -190,10 +192,11 @@ Normative rules:
 - Shared UI APIs must be **data in / events out**:
   - render from immutable inputs (props/view-models)
   - report user intent only via callbacks
-  - no app side-effects (no writes, no navigation)
+  - no app side-effects (no writes, no app-route navigation)
 
 - `taskly_ui` must remain pure UI (see 2.1): no BLoCs/Cubits, repositories,
-  services/use-cases, DI wiring, or stream subscriptions; no routing/navigation.
+  services/use-cases, DI wiring, or stream subscriptions; no app routing or
+  route pushes.
 
 - `taskly_ui` source layout must reflect the 4-tier taxonomy:
   - `packages/taskly_ui/lib/src/primitives/`

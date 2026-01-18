@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
-    as domain;
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/value_needs_attention_sheet.dart';
 
@@ -13,7 +12,7 @@ class ValueNeedsAttentionBadge extends StatelessWidget {
   });
 
   final Value value;
-  final domain.ValueStats stats;
+  final ValueStats stats;
 
   @override
   Widget build(BuildContext context) {

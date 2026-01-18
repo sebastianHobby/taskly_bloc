@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_bloc/domain/entity_views/tile_capabilities/entity_tile_capabilities.dart';
 
 part 'screen_item.freezed.dart';
 

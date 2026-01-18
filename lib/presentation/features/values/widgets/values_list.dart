@@ -3,10 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_list_bloc.dart';
-import 'package:taskly_bloc/presentation/widgets/value_chip.dart';
+import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_ui/taskly_ui.dart';
 
 class ValuesListView extends StatelessWidget {
@@ -30,11 +31,22 @@ class ValuesListView extends StatelessWidget {
             itemKey: ValueKey(value.id),
             enabled: enableSwipeToDelete,
             deleteLabel: context.l10n.deleteLabel,
-            confirmDismiss: () => showDeleteConfirmationDialog(
-              context: context,
+            confirmDismiss: () => ConfirmationDialog.show(
+              context,
               title: context.l10n.deleteValue,
-              itemName: value.name,
-              description: context.l10n.deleteValueCascadeDescription,
+              confirmLabel: context.l10n.deleteLabel,
+              cancelLabel: context.l10n.cancelLabel,
+              isDestructive: true,
+              icon: Icons.delete_outline_rounded,
+              iconColor: Theme.of(context).colorScheme.error,
+              iconBackgroundColor: Theme.of(
+                context,
+              ).colorScheme.errorContainer.withValues(alpha: 0.3),
+              content: buildDeleteConfirmationContent(
+                context,
+                itemName: value.name,
+                description: context.l10n.deleteValueCascadeDescription,
+              ),
             ),
             onDismissed: () {
               context.read<ValueListBloc>().add(
@@ -48,7 +60,7 @@ class ValuesListView extends StatelessWidget {
             child: ListTile(
               title: Text(value.name),
               leading: ValueChip(
-                value: value,
+                data: value.toChipData(context),
                 variant: ValueChipVariant.outlined,
                 iconOnly: true,
               ),

@@ -2,7 +2,7 @@
 library;
 
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 

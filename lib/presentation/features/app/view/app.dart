@@ -9,7 +9,7 @@ import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/analytics.dart';
-import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_bloc/presentation/features/app/view/splash_screen.dart';
