@@ -19,6 +19,12 @@
 
 ### 2026-01-18
 
+- **Package E (domain cleanup)**: moved remaining domain-owned tile capabilities, action service, and analytics DTOs into `taskly_domain`.
+  - `EntityTileCapabilities` + override model now live under `taskly_domain` models and are exported via `taskly_domain` public API.
+  - `EntityTileCapabilitiesResolver` moved to `taskly_domain` services.
+  - `EntityActionService` moved to `taskly_domain` services and now uses `taskly_core` logging (removed app `talker_service`).
+  - `ValueStats` moved to `taskly_domain` analytics and imports updated throughout app/tests.
+
 - **UI “today” contract (DEC-216C)**: completed the presentation migration away from direct `DateTime.now()` usage.
   - Remaining `DateTime.now()` usage is centralized in the presentation time boundary (`NowService`).
   - Added a presentation guardrail: `dart run tool/no_datetime_now_in_presentation.dart` (also wired into `tool/guardrails.dart`).

@@ -10,7 +10,6 @@ import 'package:taskly_domain/settings.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
-import 'package:taskly_bloc/presentation/widgets/sign_out_confirmation.dart';
 import 'package:taskly_bloc/presentation/features/attention/widgets/attention_bell_icon_button.dart';
 import 'package:taskly_bloc/presentation/features/settings/widgets/accent_palette_gallery.dart';
 import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
@@ -630,7 +629,25 @@ class _SignOutItem extends StatelessWidget {
   }
 
   Future<void> _performSignOut(BuildContext context) async {
-    final confirmed = await showSignOutConfirmationDialog(context: context);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final confirmed = await ConfirmationDialog.show(
+      context,
+      title: 'Sign Out?',
+      confirmLabel: 'Sign Out',
+      cancelLabel: 'Cancel',
+      content: Text(
+        "You'll need to sign in again to access your tasks and projects.",
+        textAlign: TextAlign.center,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+      ),
+      icon: Icons.logout_rounded,
+      iconColor: colorScheme.primary,
+      iconBackgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.3),
+    );
     if (!confirmed || !context.mounted) return;
 
     await HapticFeedback.lightImpact();
