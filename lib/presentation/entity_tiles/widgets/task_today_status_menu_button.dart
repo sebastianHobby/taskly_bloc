@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
 import 'package:taskly_core/logging.dart';
-import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/core.dart';
 
 class TaskTodayStatusMenuButton extends StatelessWidget {
   const TaskTodayStatusMenuButton({
@@ -47,14 +47,18 @@ class TaskTodayStatusMenuButton extends StatelessWidget {
 
     final statusWidget = (statusIcon == null)
         ? null
-        : Tooltip(
-            message: statusLabel,
-            child: Semantics(
-              label: statusLabel,
-              child: Icon(
-                statusIcon,
-                size: compact ? 18 : 20,
-                color: iconColor,
+        : GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {},
+            child: Tooltip(
+              message: statusLabel,
+              child: Semantics(
+                label: statusLabel,
+                child: Icon(
+                  statusIcon,
+                  size: compact ? 18 : 20,
+                  color: iconColor,
+                ),
               ),
             ),
           );

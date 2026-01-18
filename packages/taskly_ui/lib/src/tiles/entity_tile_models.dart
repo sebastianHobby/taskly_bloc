@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:taskly_ui/src/entities/value_chip.dart';
+import 'package:taskly_ui/src/primitives/value_chip.dart';
 
 enum EntitySecondaryValuePresentation {
   dotsCluster,
@@ -109,30 +109,6 @@ class TaskTileModel {
   final String? checkboxSemanticLabel;
 }
 
-class TaskAgendaCardModel {
-  const TaskAgendaCardModel({
-    required this.base,
-    this.accentColor,
-    this.inProgressStyle = false,
-    this.endDayLabel,
-    this.backgroundBlendPrimary = false,
-  });
-
-  final TaskTileModel base;
-
-  /// Optional accent color for the left stripe.
-  final Color? accentColor;
-
-  /// If true, render as an in-progress card (dashed outline + end marker).
-  final bool inProgressStyle;
-
-  /// A short label shown in the end-day marker (app-formatted, e.g. "Tue").
-  final String? endDayLabel;
-
-  /// If true, blend a subtle primary tint into the background.
-  final bool backgroundBlendPrimary;
-}
-
 class ProjectTileModel {
   const ProjectTileModel({
     required this.id,
@@ -160,18 +136,4 @@ class ProjectTileModel {
 
   /// Mirrors legacy behavior: show a small done/total label under actions.
   final bool showTrailingProgressLabel;
-}
-
-class ProjectAgendaCardModel {
-  const ProjectAgendaCardModel({
-    required this.base,
-    this.accentColor,
-    this.inProgressStyle = false,
-    this.endDayLabel,
-  });
-
-  final ProjectTileModel base;
-  final Color? accentColor;
-  final bool inProgressStyle;
-  final String? endDayLabel;
 }

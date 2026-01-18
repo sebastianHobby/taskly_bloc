@@ -62,7 +62,7 @@ class EntityAddSpeedDial extends StatelessWidget {
 
   final VoidCallback onCreateTask;
   final VoidCallback onCreateProject;
-  final Object? heroTag;
+  final String? heroTag;
 
   @override
   Widget build(BuildContext context) {

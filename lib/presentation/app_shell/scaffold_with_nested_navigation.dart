@@ -35,10 +35,10 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
 
     const primaryNavigationKeys = <String>[
       'my_day',
-      'inbox',
       'scheduled',
       'someday',
       'journal',
+      'inbox',
       'values',
       'review_inbox',
       'settings',
@@ -57,10 +57,10 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
 
     const sortOrders = <String, int>{
       'my_day': 0,
-      'inbox': 1,
-      'scheduled': 2,
-      'someday': 3,
-      'journal': 4,
+      'scheduled': 1,
+      'someday': 2,
+      'journal': 3,
+      'inbox': 4,
       'values': 5,
       'review_inbox': 9,
       'settings': 100,

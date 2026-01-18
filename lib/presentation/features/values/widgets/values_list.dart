@@ -7,6 +7,7 @@ import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.d
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_list_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
+import 'package:taskly_bloc/presentation/widgets/value_chip.dart';
 import 'package:taskly_ui/taskly_ui.dart';
 
 class ValuesListView extends StatelessWidget {

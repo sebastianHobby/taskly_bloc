@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
+import 'package:taskly_bloc/presentation/entity_tiles/widgets/task_today_status_menu_button.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
-import 'package:taskly_bloc/presentation/entity_tiles/widgets/widgets.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
-import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
 import 'package:taskly_ui/taskly_ui.dart';
 
 class MyDayTaskListSection extends StatefulWidget {
@@ -24,18 +23,7 @@ class MyDayTaskListSection extends StatefulWidget {
 }
 
 class _MyDayTaskListSectionState extends State<MyDayTaskListSection> {
-  String? _expandedTaskId;
   bool _mixExpanded = false;
-
-  @override
-  void didUpdateWidget(covariant MyDayTaskListSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    final expandedId = _expandedTaskId;
-    if (expandedId != null && !widget.tasks.any((t) => t.id == expandedId)) {
-      _expandedTaskId = null;
-    }
-  }
 
   Widget _buildMixRow(BuildContext context, MyDayMixVm mix) {
     final theme = Theme.of(context);
@@ -238,90 +226,34 @@ class _MyDayTaskListSectionState extends State<MyDayTaskListSection> {
 
           final task = tasks[taskIndex];
 
-          final isExpanded = _expandedTaskId == task.id;
-          final rankLabel = '${taskIndex + 1}';
+          return Builder(
+            builder: (context) {
+              final tileCapabilities = EntityTileCapabilitiesResolver.forTask(
+                task,
+              );
 
-          final titlePrefix = SizedBox(
-            width: 28,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                rankLabel,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
+              return TaskListRowTile(
+                model: buildTaskListRowTileModel(
+                  context,
+                  task: task,
+                  tileCapabilities: tileCapabilities,
                 ),
-              ),
-            ),
-          );
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Builder(
-                builder: (context) {
-                  final tileCapabilities =
-                      EntityTileCapabilitiesResolver.forTask(task);
-
-                  return TaskListRowTile(
-                    model: buildTaskListRowTileModel(
-                      context,
-                      task: task,
-                      tileCapabilities: tileCapabilities,
-                    ),
-                    titlePrefix: titlePrefix,
-                    onTap: () {
-                      setState(() {
-                        _expandedTaskId = _expandedTaskId == task.id
-                            ? null
-                            : task.id;
-                      });
-                    },
-                    onToggleCompletion: buildTaskToggleCompletionHandler(
-                      context,
-                      task: task,
-                      tileCapabilities: tileCapabilities,
-                    ),
-                    trailing: TaskTodayStatusMenuButton(
-                      taskId: task.id,
-                      taskName: task.name,
-                      isPinnedToMyDay: task.isPinned,
-                      isInMyDayAuto: true,
-                      isRepeating: task.isRepeating,
-                      seriesEnded: task.seriesEnded,
-                      tileCapabilities: tileCapabilities,
-                    ),
-                  );
-                },
-              ),
-              AnimatedCrossFade(
-                firstChild: const SizedBox.shrink(),
-                secondChild: Padding(
-                  padding: const EdgeInsets.fromLTRB(56, 0, 16, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (task.description != null &&
-                          task.description!.trim().isNotEmpty) ...[
-                        Text(
-                          task.description!,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 10),
-                      ],
-                      ValuesFooter(
-                        primaryValue: task.effectivePrimaryValue,
-                        secondaryValues: task.effectiveSecondaryValues,
-                      ),
-                    ],
-                  ),
+                onToggleCompletion: buildTaskToggleCompletionHandler(
+                  context,
+                  task: task,
+                  tileCapabilities: tileCapabilities,
                 ),
-                crossFadeState: isExpanded
-                    ? CrossFadeState.showSecond
-                    : CrossFadeState.showFirst,
-                duration: const Duration(milliseconds: 180),
-              ),
-            ],
+                trailing: TaskTodayStatusMenuButton(
+                  taskId: task.id,
+                  taskName: task.name,
+                  isPinnedToMyDay: task.isPinned,
+                  isInMyDayAuto: true,
+                  isRepeating: task.isRepeating,
+                  seriesEnded: task.seriesEnded,
+                  tileCapabilities: tileCapabilities,
+                ),
+              );
+            },
           );
         },
         childCount: 1 + (tasks.isEmpty ? 1 : tasks.length),
