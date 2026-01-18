@@ -1,5 +1,5 @@
 import 'package:taskly_domain/analytics.dart';
-import 'package:taskly_bloc/domain/entity_views/tile_capabilities/entity_tile_capabilities.dart';
+import 'package:taskly_domain/core.dart';
 
 sealed class TileIntent {
   const TileIntent();

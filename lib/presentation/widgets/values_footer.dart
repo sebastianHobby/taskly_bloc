@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_bloc/presentation/widgets/value_chip.dart';
+import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 /// A shared footer widget to display Primary and Secondary values for tasks and projects.
 ///
@@ -32,14 +33,14 @@ class ValuesFooter extends StatelessWidget {
       children: [
         if (primary != null)
           ValueChip(
-            value: primary,
+            data: primary.toChipData(context),
             variant: ValueChipVariant.solid,
             iconOnly: false,
             // You might add rank here if available in context, or keep generic
           ),
         ...secondaryValues.map(
           (value) => ValueChip(
-            value: value,
+            data: value.toChipData(context),
             variant: ValueChipVariant.outlined,
             iconOnly: true,
           ),

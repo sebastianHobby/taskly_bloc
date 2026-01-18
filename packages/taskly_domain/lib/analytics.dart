@@ -11,6 +11,7 @@ export 'src/analytics/model/mood_summary.dart';
 export 'src/analytics/model/stat_result.dart';
 export 'src/analytics/model/task_stat_type.dart';
 export 'src/analytics/model/trend_data.dart';
+export 'src/analytics/model/value_stats.dart';
 
 export 'src/services/analytics/analytics_service.dart';
 export 'src/services/analytics/correlation_calculator.dart';

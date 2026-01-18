@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
-import 'package:taskly_bloc/domain/entity_views/tile_capabilities/entity_tile_capabilities_resolver.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';

@@ -3,8 +3,8 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/date_display_utils.dart';
-import 'package:taskly_bloc/presentation/widgets/date_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 /// A reusable header widget for entity detail pages (projects, labels).
 ///

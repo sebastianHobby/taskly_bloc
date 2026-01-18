@@ -1,7 +1,6 @@
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
-
-import 'package:taskly_bloc/domain/entity_views/tile_capabilities/entity_tile_capabilities.dart';
+import 'package:taskly_domain/src/models/workflow/entity_tile_capabilities.dart';
 
 /// Resolves baseline tile capabilities from an entity model.
 ///

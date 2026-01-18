@@ -18,3 +18,5 @@ export 'src/services/values/effective_values.dart';
 export 'src/services/time/app_lifecycle_service.dart';
 export 'src/services/time/home_day_key_service.dart';
 export 'src/services/time/temporal_trigger_service.dart';
+export 'src/services/actions/entity_action_service.dart';
+export 'src/services/capabilities/entity_tile_capabilities_resolver.dart';

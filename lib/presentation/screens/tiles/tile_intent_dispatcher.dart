@@ -5,15 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/domain/entity_views/tile_capabilities/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/project_picker/project_picker.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
-import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
+import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 abstract class TileIntentDispatcher {
   Future<void> dispatch(BuildContext context, TileIntent intent);
@@ -150,11 +151,22 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
       ),
     };
 
-    final confirmed = await showDeleteConfirmationDialog(
-      context: context,
+    final confirmed = await ConfirmationDialog.show(
+      context,
       title: title,
-      itemName: intent.entityName,
-      description: description,
+      confirmLabel: l10n.deleteLabel,
+      cancelLabel: l10n.cancelLabel,
+      isDestructive: true,
+      icon: Icons.delete_outline_rounded,
+      iconColor: Theme.of(context).colorScheme.error,
+      iconBackgroundColor: Theme.of(
+        context,
+      ).colorScheme.errorContainer.withValues(alpha: 0.3),
+      content: buildDeleteConfirmationContent(
+        context,
+        itemName: intent.entityName,
+        description: description,
+      ),
     );
 
     if (!confirmed || !context.mounted) return;

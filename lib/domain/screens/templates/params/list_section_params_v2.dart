@@ -1,6 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
-import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart';
+import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 
 part 'list_section_params_v2.freezed.dart';

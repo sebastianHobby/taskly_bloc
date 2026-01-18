@@ -101,7 +101,9 @@ Normative boundaries for `taskly_ui`:
 - `taskly_ui` is **pure UI** (widgets + small UI helpers).
 - `taskly_ui` must not contain BLoCs/Cubits, subscribe to domain/data streams,
   or call repositories/services/use-cases.
-- `taskly_ui` must not perform navigation (no app routing, no `go_router`).
+- `taskly_ui` must not perform **app routing** (no `go_router`, no route
+  pushes). “Navigation” here means app routes; UI-only overlays like dialogs
+  or bottom sheets are fine.
 - Interactivity is expressed as **callbacks / UI events** that are handled by
   the app-owned screen/BLoC.
 

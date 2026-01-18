@@ -8,17 +8,18 @@ import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_bloc/domain/entity_views/tile_capabilities/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/presentation/shared/formatters/date_label_formatter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
+import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 enum TaskViewVariant {
   /// Default list-row style used across most list templates.
@@ -823,7 +824,7 @@ class _MetaLine extends StatelessWidget {
       final valueChip = Tooltip(
         message: pValue.name,
         child: ValueChip(
-          value: pValue,
+          data: pValue.toChipData(context),
           variant: ValueChipVariant.solid,
           iconOnly: primaryValueIconOnly,
           onTap: onTapValues,

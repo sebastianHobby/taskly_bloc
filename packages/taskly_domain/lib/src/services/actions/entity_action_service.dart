@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -51,7 +51,7 @@ class EntityActionService {
     DateTime? originalOccurrenceDate,
     OperationContext? context,
   }) async {
-    talker.serviceLog('EntityActionService', 'completeTask: $taskId');
+    AppLog.routine('domain.entity_actions', 'completeTask: $taskId');
     await _occurrenceCommandService.completeTask(
       taskId: taskId,
       occurrenceDate: occurrenceDate,
@@ -66,7 +66,7 @@ class EntityActionService {
     DateTime? occurrenceDate,
     OperationContext? context,
   }) async {
-    talker.serviceLog('EntityActionService', 'uncompleteTask: $taskId');
+    AppLog.routine('domain.entity_actions', 'uncompleteTask: $taskId');
     await _occurrenceCommandService.uncompleteTask(
       taskId: taskId,
       occurrenceDate: occurrenceDate,
@@ -79,7 +79,7 @@ class EntityActionService {
     String taskId, {
     OperationContext? context,
   }) async {
-    talker.serviceLog('EntityActionService', 'completeTaskSeries: $taskId');
+    AppLog.routine('domain.entity_actions', 'completeTaskSeries: $taskId');
     await _occurrenceCommandService.completeTaskSeries(
       taskId: taskId,
       context: context,
@@ -88,19 +88,19 @@ class EntityActionService {
 
   /// Delete a task.
   Future<void> deleteTask(String taskId, {OperationContext? context}) async {
-    talker.serviceLog('EntityActionService', 'deleteTask: $taskId');
+    AppLog.routine('domain.entity_actions', 'deleteTask: $taskId');
     await _taskRepository.delete(taskId, context: context);
   }
 
   /// Pin a task for allocation.
   Future<void> pinTask(String taskId, {OperationContext? context}) async {
-    talker.serviceLog('EntityActionService', 'pinTask: $taskId');
+    AppLog.routine('domain.entity_actions', 'pinTask: $taskId');
     await _allocationOrchestrator.pinTask(taskId, context: context);
   }
 
   /// Unpin a task from allocation.
   Future<void> unpinTask(String taskId, {OperationContext? context}) async {
-    talker.serviceLog('EntityActionService', 'unpinTask: $taskId');
+    AppLog.routine('domain.entity_actions', 'unpinTask: $taskId');
     await _allocationOrchestrator.unpinTask(taskId, context: context);
   }
 
@@ -110,8 +110,8 @@ class EntityActionService {
     String? targetProjectId, {
     OperationContext? context,
   }) async {
-    talker.serviceLog(
-      'EntityActionService',
+    AppLog.routine(
+      'domain.entity_actions',
       'moveTask: $taskId -> $targetProjectId',
     );
     final task = await _taskRepository.getById(taskId);
@@ -143,7 +143,7 @@ class EntityActionService {
     DateTime? originalOccurrenceDate,
     OperationContext? context,
   }) async {
-    talker.serviceLog('EntityActionService', 'completeProject: $projectId');
+    AppLog.routine('domain.entity_actions', 'completeProject: $projectId');
     await _occurrenceCommandService.completeProject(
       projectId: projectId,
       occurrenceDate: occurrenceDate,
@@ -158,7 +158,7 @@ class EntityActionService {
     DateTime? occurrenceDate,
     OperationContext? context,
   }) async {
-    talker.serviceLog('EntityActionService', 'uncompleteProject: $projectId');
+    AppLog.routine('domain.entity_actions', 'uncompleteProject: $projectId');
     await _occurrenceCommandService.uncompleteProject(
       projectId: projectId,
       occurrenceDate: occurrenceDate,
@@ -171,8 +171,8 @@ class EntityActionService {
     String projectId, {
     OperationContext? context,
   }) async {
-    talker.serviceLog(
-      'EntityActionService',
+    AppLog.routine(
+      'domain.entity_actions',
       'completeProjectSeries: $projectId',
     );
     await _occurrenceCommandService.completeProjectSeries(
@@ -186,13 +186,13 @@ class EntityActionService {
     String projectId, {
     OperationContext? context,
   }) async {
-    talker.serviceLog('EntityActionService', 'deleteProject: $projectId');
+    AppLog.routine('domain.entity_actions', 'deleteProject: $projectId');
     await _projectRepository.delete(projectId, context: context);
   }
 
   /// Pin a project for allocation.
   Future<void> pinProject(String projectId, {OperationContext? context}) async {
-    talker.serviceLog('EntityActionService', 'pinProject: $projectId');
+    AppLog.routine('domain.entity_actions', 'pinProject: $projectId');
     await _allocationOrchestrator.pinProject(projectId, context: context);
   }
 
@@ -201,7 +201,7 @@ class EntityActionService {
     String projectId, {
     OperationContext? context,
   }) async {
-    talker.serviceLog('EntityActionService', 'unpinProject: $projectId');
+    AppLog.routine('domain.entity_actions', 'unpinProject: $projectId');
     await _allocationOrchestrator.unpinProject(projectId, context: context);
   }
 
@@ -211,7 +211,7 @@ class EntityActionService {
 
   /// Delete a value.
   Future<void> deleteValue(String valueId, {OperationContext? context}) async {
-    talker.serviceLog('EntityActionService', 'deleteValue: $valueId');
+    AppLog.routine('domain.entity_actions', 'deleteValue: $valueId');
     await _valueRepository.delete(valueId, context: context);
   }
 
