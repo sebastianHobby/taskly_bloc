@@ -324,7 +324,6 @@ Future<void> setupDependencies() async {
     ..registerFactory<SettingsMaintenanceCubit>(
       () => SettingsMaintenanceCubit(
         templateDataService: getIt<TemplateDataService>(),
-        localDataMaintenanceService: getIt<LocalDataMaintenanceService>(),
         allocationSnapshotCoordinator: getIt<AllocationSnapshotCoordinator>(),
       ),
     )

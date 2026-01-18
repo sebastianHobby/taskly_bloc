@@ -49,7 +49,7 @@ const schema = Schema([
     Column.text('user_id'),
     Column.text('icon_name'),
     Column.text('priority'),
-  ]),
+  ], trackMetadata: true),
   Table(
     'user_profiles',
     [

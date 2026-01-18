@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
-import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
+import 'package:taskly_bloc/presentation/widgets/taskly/taskly_card.dart';
 
 class ProjectCard extends StatelessWidget {
   const ProjectCard({

@@ -4,7 +4,6 @@ import 'package:taskly_domain/services.dart';
 
 enum SettingsMaintenanceAction {
   generateTemplateData,
-  clearLocalData,
 }
 
 sealed class SettingsMaintenanceStatus {
@@ -49,15 +48,12 @@ final class SettingsMaintenanceState {
 class SettingsMaintenanceCubit extends Cubit<SettingsMaintenanceState> {
   SettingsMaintenanceCubit({
     required TemplateDataService templateDataService,
-    required LocalDataMaintenanceService localDataMaintenanceService,
     required AllocationSnapshotCoordinator allocationSnapshotCoordinator,
   }) : _templateDataService = templateDataService,
-       _localDataMaintenanceService = localDataMaintenanceService,
        _allocationSnapshotCoordinator = allocationSnapshotCoordinator,
        super(SettingsMaintenanceState.idle());
 
   final TemplateDataService _templateDataService;
-  final LocalDataMaintenanceService _localDataMaintenanceService;
   final AllocationSnapshotCoordinator _allocationSnapshotCoordinator;
 
   Future<void> generateTemplateData() async {
@@ -90,41 +86,6 @@ class SettingsMaintenanceCubit extends Cubit<SettingsMaintenanceState> {
           status: SettingsMaintenanceFailure(
             action: SettingsMaintenanceAction.generateTemplateData,
             message: 'Failed to generate template data: $e',
-          ),
-        ),
-      );
-
-      emit(SettingsMaintenanceState.idle());
-    }
-  }
-
-  Future<void> clearLocalData() async {
-    emit(
-      const SettingsMaintenanceState(
-        status: SettingsMaintenanceRunning(
-          SettingsMaintenanceAction.clearLocalData,
-        ),
-      ),
-    );
-
-    try {
-      await _localDataMaintenanceService.clearLocalData();
-
-      emit(
-        const SettingsMaintenanceState(
-          status: SettingsMaintenanceSuccess(
-            SettingsMaintenanceAction.clearLocalData,
-          ),
-        ),
-      );
-
-      emit(SettingsMaintenanceState.idle());
-    } catch (e) {
-      emit(
-        SettingsMaintenanceState(
-          status: SettingsMaintenanceFailure(
-            action: SettingsMaintenanceAction.clearLocalData,
-            message: 'Failed to clear data: $e',
           ),
         ),
       );

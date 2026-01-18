@@ -6,7 +6,6 @@ import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_
 import 'package:taskly_bloc/presentation/features/values/widgets/value_needs_attention_badge.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
 import 'package:taskly_ui/taskly_ui.dart';
-import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
 class ValueListRendererV2 extends StatelessWidget {
   const ValueListRendererV2({

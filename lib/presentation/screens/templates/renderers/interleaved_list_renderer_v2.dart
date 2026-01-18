@@ -17,7 +17,6 @@ import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_ui/taskly_ui.dart';
-import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
 enum InterleavedListRenderModeV2 {
   flat,

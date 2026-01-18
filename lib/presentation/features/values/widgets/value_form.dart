@@ -4,8 +4,8 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
+import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_bloc/presentation/widgets/form_fields/form_fields.dart';
 import 'package:taskly_ui/taskly_ui.dart';
 
 /// A modern form for creating or editing values.
