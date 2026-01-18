@@ -5,3 +5,4 @@
 library;
 
 export 'src/telemetry/operation_context.dart';
+export 'src/telemetry/sync_anomaly.dart';

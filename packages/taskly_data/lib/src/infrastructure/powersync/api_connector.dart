@@ -1,5 +1,7 @@
 // This file performs setup of the PowerSync database
 
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
@@ -16,6 +18,7 @@ import 'package:taskly_data/src/infrastructure/powersync/schema.dart';
 import 'package:taskly_data/src/infrastructure/powersync/upload_data_normalizer.dart'
     as upload_normalizer;
 import 'package:taskly_domain/attention.dart';
+import 'package:taskly_domain/telemetry.dart';
 
 /// Postgres Response codes that we cannot recover from by retrying.
 /// Note: 23505 (unique violation) is handled separately in _handle23505.
@@ -31,30 +34,40 @@ final List<RegExp> fatalResponseCodes = [
   RegExp(r'^42501$'),
 ];
 
-/// PostgREST error codes that indicate schema mismatch (table doesn't exist).
-/// PGRST205: Could not find the table in the schema cache
-const _schemaNotFoundCode = 'PGRST205';
+    final metadataJson = op.metadata;
+    if (metadataJson != null && metadataJson.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(metadataJson);
+        if (decoded is Map) {
+          final cid = decoded['cid'];
+          if (cid is String && cid.trim().isNotEmpty) {
+            correlationId = cid;
+          }
 
-Map<String, dynamic> _normalizeUploadData(
-  String table,
-  String rowId,
-  UpdateType opType,
-  Map<String, dynamic> data,
-) {
-  return upload_normalizer.normalizeUploadData(
-    table: table,
-    rowId: rowId,
-    opType: opType,
-    data: data,
-    logError: talker.error,
-  );
+          final src = decoded['src'];
+          if (src is String && src.trim().isNotEmpty) {
+            source = src;
+          }
+
+          final ts = decoded['ts'];
+          if (ts is String && ts.trim().isNotEmpty) {
+            occurredAt = ts;
+          }
+        }
+      } catch (_) {
+        // Ignore metadata parse failures; anomalies still publish without cid.
+      }
+    }
 }
 
 /// Use Supabase for authentication and data upload.
 class SupabaseConnector extends PowerSyncBackendConnector {
-  SupabaseConnector(this.db);
+  SupabaseConnector(this.db, {void Function(SyncAnomaly anomaly)? onAnomaly})
+    : _onAnomaly = onAnomaly;
 
   PowerSyncDatabase db;
+
+  final void Function(SyncAnomaly anomaly)? _onAnomaly;
 
   Future<void>? _refreshFuture;
 
@@ -215,6 +228,21 @@ class SupabaseConnector extends PowerSyncBackendConnector {
           'operation for ${lastOp?.table}/${lastOp?.id}.\n'
           'This is expected after schema migrations.',
         );
+
+        final op = lastOp;
+        if (op != null) {
+          _emitAnomaly(
+            kind: SyncAnomalyKind.supabaseRejectedButLocalApplied,
+            reason: SyncAnomalyReason.schemaNotFound,
+            op: op,
+            remoteCode: e.code,
+            remoteMessage: e.message,
+            details: <String, Object?>{
+              'transactionOps': transaction.crud.length,
+              'lastOpIndex': lastOpIndex,
+            },
+          );
+        }
         await transaction.complete();
       } else if (e.code != null &&
           fatalResponseCodes.any((re) => re.hasMatch(e.code!))) {
@@ -246,6 +274,23 @@ class SupabaseConnector extends PowerSyncBackendConnector {
           '  postgrest.details=${e.details ?? "<null>"}\n'
           '  postgrest.hint=${e.hint ?? "<null>"}',
         );
+
+        final op = lastOp;
+        if (op != null) {
+          _emitAnomaly(
+            kind: SyncAnomalyKind.supabaseRejectedButLocalApplied,
+            reason: SyncAnomalyReason.fatalRemoteRejection,
+            op: op,
+            remoteCode: e.code,
+            remoteMessage: e.message,
+            details: <String, Object?>{
+              'transactionOps': transaction.crud.length,
+              'lastOpIndex': lastOpIndex,
+              'postgrestDetails': e.details,
+              'postgrestHint': e.hint,
+            },
+          );
+        }
 
         await transaction.complete();
       } else {
@@ -290,6 +335,16 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         } else {
           // Bug: Different ID has same natural key
           // This means v5 inputs are inconsistent across devices
+          _emitAnomaly(
+            kind: SyncAnomalyKind.supabaseRejectedButLocalApplied,
+            reason: SyncAnomalyReason.naturalKeyConflictDifferentId,
+            op: op,
+            remoteCode: e.code,
+            remoteMessage: e.message,
+            details: <String, Object?>{
+              'naturalKey': _extractNaturalKeyInfo(table, op.opData),
+            },
+          );
           _logNaturalKeyConflict(table, op);
         }
       } catch (queryError) {
@@ -305,6 +360,14 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         '[powersync] UNEXPECTED 23505 on v4 table $table/$id!\n'
         'UUID collision or constraint misconfiguration.\n'
         'Error: ${e.message}',
+      );
+
+      _emitAnomaly(
+        kind: SyncAnomalyKind.supabaseRejectedButLocalApplied,
+        reason: SyncAnomalyReason.unexpectedUniqueViolation,
+        op: op,
+        remoteCode: e.code,
+        remoteMessage: e.message,
       );
     }
   }
@@ -354,6 +417,65 @@ class SupabaseConnector extends PowerSyncBackendConnector {
             ' date="${data['snapshot_date']}"',
       _ => data.toString(),
     };
+  }
+
+  void _emitAnomaly({
+    required SyncAnomalyKind kind,
+    required CrudEntry op,
+    SyncAnomalyReason? reason,
+    String? remoteCode,
+    String? remoteMessage,
+    Map<String, Object?>? details,
+  }) {
+    final onAnomaly = _onAnomaly;
+    if (onAnomaly == null) return;
+
+    String? correlationId;
+    String? source;
+    String? occurredAt;
+
+    final metadata = op.metadata;
+    if (metadata is Map) {
+      final cid = metadata['cid'];
+      if (cid.trim().isNotEmpty) {
+        correlationId = cid;
+      }
+
+      final src = metadata['src'];
+      if (src.trim().isNotEmpty) {
+        source = src;
+      }
+
+      final ts = metadata['ts'];
+      if (ts.trim().isNotEmpty) {
+        occurredAt = ts;
+      }
+    }
+
+    final mergedDetails = <String, Object?>{
+      'src': ?source,
+      'ts': ?occurredAt,
+      ...?details,
+    };
+
+    final anomaly = SyncAnomaly(
+      kind: kind,
+      occurredAt: DateTime.now(),
+      table: op.table,
+      rowId: op.id,
+      operation: op.op.name,
+      reason: reason,
+      remoteCode: remoteCode,
+      remoteMessage: remoteMessage,
+      correlationId: correlationId,
+      details: mergedDetails.isEmpty ? null : mergedDetails,
+    );
+
+    try {
+      onAnomaly(anomaly);
+    } catch (e, st) {
+      talker.handle(e, st, '[powersync] Failed to publish SyncAnomaly');
+    }
   }
 }
 

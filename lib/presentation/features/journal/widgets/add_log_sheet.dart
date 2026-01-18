@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/add_log_cubit.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -41,7 +44,12 @@ class _AddLogSheetState extends State<AddLogSheet> {
   void initState() {
     super.initState();
 
-    _cubit = getIt<AddLogCubit>(param1: widget.preselectedTrackerIds);
+    _cubit = AddLogCubit(
+      repository: getIt<JournalRepositoryContract>(),
+      errorReporter: context.read<AppErrorReporter>(),
+      preselectedTrackerIds: widget.preselectedTrackerIds,
+      nowUtc: getIt<NowService>().nowUtc,
+    );
     _noteController.addListener(() {
       _cubit.noteChanged(_noteController.text);
     });

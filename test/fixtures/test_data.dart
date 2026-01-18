@@ -60,7 +60,7 @@ class TestData {
     List<Value>? values,
     OccurrenceData? occurrence,
   }) {
-    final resolvedNow = now ?? DateTime.now();
+    final resolvedNow = now ?? TestConstants.referenceDate;
     return Task(
       id: id ?? _nextId('task'),
       createdAt: createdAt ?? resolvedNow,
@@ -98,7 +98,7 @@ class TestData {
     List<Value>? values,
     OccurrenceData? occurrence,
   }) {
-    final resolvedNow = now ?? DateTime.now();
+    final resolvedNow = now ?? TestConstants.referenceDate;
     return Project(
       id: id ?? _nextId('project'),
       createdAt: createdAt ?? resolvedNow,
@@ -127,7 +127,7 @@ class TestData {
     DateTime? updatedAt,
     DateTime? now,
   }) {
-    final resolvedNow = now ?? DateTime.now();
+    final resolvedNow = now ?? TestConstants.referenceDate;
     return Value(
       id: id ?? _nextId('value'),
       createdAt: createdAt ?? resolvedNow,
@@ -152,7 +152,7 @@ class TestData {
     DateTime? now,
   }) {
     return OccurrenceData(
-      date: date ?? (now ?? DateTime.now()),
+      date: date ?? (now ?? TestConstants.referenceDate),
       deadline: deadline,
       originalDate: originalDate,
       isRescheduled: isRescheduled,
@@ -238,7 +238,7 @@ class TestData {
     double? confidence,
     bool isPositive = true,
   }) {
-    final resolvedNow = now ?? DateTime.now();
+    final resolvedNow = now ?? TestConstants.referenceDate;
     return AnalyticsInsight(
       id: id ?? _nextId('insight'),
       insightType: insightType,
@@ -259,7 +259,7 @@ class TestData {
     DateTime? end,
     DateTime? now,
   }) {
-    final resolvedNow = now ?? DateTime.now();
+    final resolvedNow = now ?? TestConstants.referenceDate;
     return DateRange(
       start: start ?? resolvedNow.subtract(const Duration(days: 7)),
       end: end ?? resolvedNow,
@@ -277,7 +277,7 @@ class TestData {
 
   // === Pre-built Sample Entities ===
   // These are ready-to-use entities with sensible defaults,
-  // eliminating the need for inline DateTime.now() calls in tests.
+  // eliminating the need for any wall-clock time in tests.
 
   static Task sampleTask() => task(
     id: 'sample-task-1',
@@ -337,7 +337,7 @@ class TestData {
       id: id,
       name: name,
       completed: true,
-      updatedAt: completedAt ?? (now ?? DateTime.now()),
+      updatedAt: completedAt ?? (now ?? TestConstants.referenceDate),
     );
   }
 
@@ -348,7 +348,7 @@ class TestData {
     int daysOverdue = 1,
     DateTime? now,
   }) {
-    final resolvedNow = now ?? DateTime.now();
+    final resolvedNow = now ?? TestConstants.referenceDate;
     return task(
       id: id,
       name: name,
@@ -366,7 +366,7 @@ class TestData {
       id: id,
       name: name,
       repeatIcalRrule: 'FREQ=DAILY',
-      startDate: now ?? DateTime.now(),
+      startDate: now ?? TestConstants.referenceDate,
     );
   }
 
@@ -380,7 +380,7 @@ class TestData {
       id: id,
       name: name,
       repeatIcalRrule: 'FREQ=WEEKLY',
-      startDate: now ?? DateTime.now(),
+      startDate: now ?? TestConstants.referenceDate,
     );
   }
 
@@ -421,7 +421,7 @@ class TestData {
     return task(
       id: id,
       name: name,
-      deadlineDate: now ?? DateTime.now(),
+      deadlineDate: now ?? TestConstants.referenceDate,
     );
   }
 
@@ -431,7 +431,7 @@ class TestData {
     String name = 'Due Tomorrow',
     DateTime? now,
   }) {
-    final resolvedNow = now ?? DateTime.now();
+    final resolvedNow = now ?? TestConstants.referenceDate;
     return task(
       id: id,
       name: name,

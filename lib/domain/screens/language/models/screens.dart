@@ -4,6 +4,5 @@ export 'display_config.dart';
 export 'fab_operation.dart';
 export 'screen_chrome.dart';
 export 'screen_gate_config.dart';
-export 'screen_spec.dart';
 export 'screen_source.dart';
 export 'trigger_config.dart';

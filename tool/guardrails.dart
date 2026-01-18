@@ -26,6 +26,18 @@ Future<void> main(List<String> args) async {
       name: 'Enforce layering via imports',
       script: 'tool/no_layering_violations.dart',
     ),
+    const _Guardrail(
+      name: 'Block DateTime.now() usage in tests',
+      script: 'tool/no_wall_clock_in_tests.dart',
+    ),
+    const _Guardrail(
+      name: 'Enforce safe test wrappers in new tests',
+      script: 'tool/no_raw_test_wrappers.dart',
+    ),
+    const _Guardrail(
+      name: 'Enforce test directory/tag contract',
+      script: 'tool/no_test_directory_tag_violations.dart',
+    ),
   ];
 
   for (final guardrail in guardrails) {

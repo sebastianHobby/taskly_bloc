@@ -1,5 +1,4 @@
-import 'package:flutter/widgets.dart';
-import 'package:go_router/go_router.dart';
+elinimport 'package:go_router/go_router.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/scaffold_with_nested_navigation.dart';
@@ -31,11 +30,12 @@ import 'package:taskly_bloc/presentation/features/trackers/view/trackers_page.da
 /// Uses convention-based routing with a small set of patterns:
 /// - **System screens (explicit)**: concrete paths like `/my-day`, `/anytime`,
 ///   `/scheduled`, etc.
-/// - **Entity detail (legacy entrypoints)**: `/<entityType>/:id`
-///   - Project/value details redirect to their editor routes.
 /// - **Entity editors (NAV-01)**: `/<entityType>/new` and `/<entityType>/:id/edit`
 /// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
-/// Note: legacy USM entrypoints should be removed as features migrate.
+///
+/// Note: legacy entity detail routes like `/project/:id` and `/value/:id` are
+/// intentionally not supported (no redirects); the canonical entrypoints are the
+/// editor routes.
 final router = GoRouter(
   initialLocation: Routing.screenPath('my_day'),
   observers: [
@@ -117,7 +117,7 @@ final router = GoRouter(
             operation: 'route_param_decode_project_anytime_scope',
           ),
           builder: (_, state) {
-            final id = state.pathParameters['id']!;
+            final id = state.pathParameters['id'];
             return AnytimePage(
               scope: AnytimeScope.project(projectId: id),
             );
@@ -132,7 +132,7 @@ final router = GoRouter(
             operation: 'route_param_decode_value_anytime_scope',
           ),
           builder: (_, state) {
-            final id = state.pathParameters['id']!;
+            final id = state.pathParameters['id'];
             return AnytimePage(
               scope: AnytimeScope.value(valueId: id),
             );
@@ -153,7 +153,7 @@ final router = GoRouter(
             operation: 'route_param_decode_project_scheduled_scope',
           ),
           builder: (_, state) {
-            final id = state.pathParameters['id']!;
+            final id = state.pathParameters['id'];
             return ScheduledPage(
               scope: ProjectScheduledScope(projectId: id),
             );
@@ -168,7 +168,7 @@ final router = GoRouter(
             operation: 'route_param_decode_value_scheduled_scope',
           ),
           builder: (_, state) {
-            final id = state.pathParameters['id']!;
+            final id = state.pathParameters['id'];
             return ScheduledPage(
               scope: ValueScheduledScope(valueId: id),
             );
@@ -276,40 +276,6 @@ final router = GoRouter(
           builder: (_, state) => ValueEditorRoutePage(
             valueId: state.pathParameters['id'],
           ),
-        ),
-
-        // === LEGACY ENTITY DETAIL ROUTES (redirect to editor) ===
-        GoRoute(
-          path: '/project/:id',
-          redirect: (_, state) {
-            final invalid = RouteCodec.redirectIfInvalidUuidParam(
-              state,
-              paramName: 'id',
-              entityType: 'project',
-              operation: 'route_redirect_project_detail_to_edit',
-            );
-            if (invalid != null) return invalid;
-
-            final id = state.pathParameters['id']!;
-            return '/project/$id/edit';
-          },
-          builder: (_, __) => const SizedBox.shrink(),
-        ),
-        GoRoute(
-          path: '/value/:id',
-          redirect: (_, state) {
-            final invalid = RouteCodec.redirectIfInvalidUuidParam(
-              state,
-              paramName: 'id',
-              entityType: 'value',
-              operation: 'route_redirect_value_detail_to_edit',
-            );
-            if (invalid != null) return invalid;
-
-            final id = state.pathParameters['id']!;
-            return '/value/$id/edit';
-          },
-          builder: (_, __) => const SizedBox.shrink(),
         ),
 
         // === OTHER SYSTEM SCREENS (explicit; no catch-all) ===

@@ -2,8 +2,12 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/taskly_domain.dart'
+    show AppFailure, OperationContext;
 import 'package:taskly_domain/time.dart';
 
 sealed class AddLogStatus {
@@ -73,16 +77,67 @@ final class AddLogState {
 class AddLogCubit extends Cubit<AddLogState> {
   AddLogCubit({
     required JournalRepositoryContract repository,
+    required AppErrorReporter errorReporter,
     required Set<String> preselectedTrackerIds,
     required DateTime Function() nowUtc,
   }) : _repository = repository,
+       _errorReporter = errorReporter,
        _nowUtc = nowUtc,
        super(AddLogState.initial(preselectedTrackerIds)) {
     _subscribeQuickAdd();
   }
 
   final JournalRepositoryContract _repository;
+  final AppErrorReporter _errorReporter;
   final DateTime Function() _nowUtc;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
+
+  OperationContext _newContext({
+    required String intent,
+    required String operation,
+    Map<String, Object?> extraFields = const <String, Object?>{},
+  }) {
+    return _contextFactory.create(
+      feature: 'journal',
+      screen: 'add_log_sheet',
+      intent: intent,
+      operation: operation,
+      entityType: 'journal_entry',
+      extraFields: extraFields,
+    );
+  }
+
+  void _reportIfUnexpectedOrUnmapped(
+    Object error,
+    StackTrace stackTrace, {
+    required OperationContext context,
+    required String message,
+  }) {
+    if (error is AppFailure && error.reportAsUnexpected) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unexpected failure)',
+      );
+      return;
+    }
+
+    if (error is! AppFailure) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unmapped exception)',
+      );
+    }
+  }
+
+  String _uiMessageFor(Object error, {required String fallback}) {
+    if (error is AppFailure) return error.uiMessage();
+    return fallback;
+  }
 
   StreamSubscription<
     ({List<TrackerDefinition> defs, List<TrackerPreference> prefs})
@@ -128,6 +183,14 @@ class AddLogCubit extends Cubit<AddLogState> {
 
     emit(state.copyWith(status: const AddLogSaving()));
 
+    final context = _newContext(
+      intent: 'save',
+      operation: 'journal.add_log.save',
+      extraFields: <String, Object?>{
+        'selectedTrackerCount': state.selectedTrackerIds.length,
+      },
+    );
+
     try {
       final nowUtc = _nowUtc();
       final dayUtc = dateOnly(nowUtc);
@@ -144,7 +207,10 @@ class AddLogCubit extends Cubit<AddLogState> {
         deletedAt: null,
       );
 
-      final entryId = await _repository.upsertJournalEntry(entry);
+      final entryId = await _repository.upsertJournalEntry(
+        entry,
+        context: context,
+      );
 
       String? moodTrackerId;
       for (final t in _latestDefs) {
@@ -170,6 +236,7 @@ class AddLogCubit extends Cubit<AddLogState> {
           occurredAt: nowUtc,
           recordedAt: nowUtc,
         ),
+        context: context,
       );
 
       // Selected quick-add trackers (best-effort boolean set=true)
@@ -186,12 +253,29 @@ class AddLogCubit extends Cubit<AddLogState> {
             occurredAt: nowUtc,
             recordedAt: nowUtc,
           ),
+          context: context,
         );
       }
 
       emit(state.copyWith(status: const AddLogSaved()));
-    } catch (e) {
-      emit(state.copyWith(status: AddLogError('Failed to save log: $e')));
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[AddLogCubit] save failed',
+      );
+
+      emit(
+        state.copyWith(
+          status: AddLogError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to save log. Please try again.',
+            ),
+          ),
+        ),
+      );
     }
   }
 
@@ -240,10 +324,29 @@ class AddLogCubit extends Cubit<AddLogState> {
 
         emit(state.copyWith(quickAddTrackers: quickAdd));
       },
-      onError: (Object e) {
+      onError: (Object e, StackTrace st) {
         // Non-fatal; keep sheet usable for mood+note.
+        final context = _newContext(
+          intent: 'trackers_stream_error',
+          operation: 'journal.watchTrackerDefinitions+preferences',
+        );
+
+        _reportIfUnexpectedOrUnmapped(
+          e,
+          st,
+          context: context,
+          message: '[AddLogCubit] trackers stream error',
+        );
+
         emit(
-          state.copyWith(status: AddLogError('Failed to load trackers: $e')),
+          state.copyWith(
+            status: AddLogError(
+              _uiMessageFor(
+                e,
+                fallback: 'Failed to load trackers. Please try again.',
+              ),
+            ),
+          ),
         );
       },
     );

@@ -2,8 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
-import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
 
 /// Single source of truth for navigation conventions and screen building.
 ///
@@ -15,12 +13,10 @@ import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.d
 /// The app uses convention-based routing with a small set of patterns:
 ///
 /// - **System screens (explicit)**: concrete paths like `/my-day`, `/anytime`,
-///   `/scheduled`, etc. → handled by [buildScreen]
+///   `/scheduled`, etc.
 ///   - URL segments use hyphens (`my_day` ? `/my-day`).
 ///   - The canonical Anytime URL segment is `anytime`, which maps to the
 ///     legacy system screen key `someday`.
-/// - **Entity detail (legacy entrypoints)**: `/<entityType>/:id`
-///   - Project/value details redirect to their editor routes.
 /// - **Entity editors (NAV-01)**: `/<entityType>/new` and `/<entityType>/:id/edit`
 ///   - Tasks are editor-only: `/task/:id` redirects to `/task/:id/edit`.
 /// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
@@ -28,8 +24,11 @@ import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.d
 /// Screen paths use convention: `screenKey` ? `/${screenKey}` with
 /// underscores converted to hyphens (e.g., `my_day` ? `/my-day`).
 ///
-/// Entity paths use convention: `/${entityType}/${id}`
-/// (e.g., `/project/xyz-456`, `/value/xyz-456`).
+/// Entity paths use convention: `/${entityType}/${id}`.
+///
+/// Note: legacy entity detail routes like `/project/:id` and `/value/:id` are
+/// intentionally not supported (no redirects); the canonical entrypoints are the
+/// editor routes (`/project/:id/edit`, `/value/:id/edit`).
 abstract final class Routing {
   // === PATH UTILITIES ===
 
@@ -48,7 +47,7 @@ abstract final class Routing {
     return segment.replaceAll('-', '_');
   }
 
-  /// Returns true when [screenKey] maps to a known typed system screen.
+  /// Returns true when [screenKey] is a top-level navigation destination.
   ///
   /// This is used by the authenticated app shell to decide whether a location
   /// should count as an active navigation destination.
@@ -197,7 +196,7 @@ abstract final class Routing {
   static void toValueEdit(BuildContext context, String valueId) =>
       GoRouter.of(context).push('/value/$valueId/edit');
 
-  // === JOURNAL ENTRY EDITOR ROUTES (Journal Today-first / USM) ===
+  // === JOURNAL ENTRY EDITOR ROUTES (Journal Today-first) ===
 
   static void toJournalEntryNew(
     BuildContext context, {
@@ -231,24 +230,4 @@ abstract final class Routing {
     String id,
   ) =>
       () => toEntity(context, type, id);
-
-  /// Build a screen widget by screenKey.
-  ///
-  /// Uses the typed ScreenSpec rendering path for system screens.
-  ///
-  /// This is the single entry point for all screen construction.
-  static Widget buildScreen(String screenKey) {
-    final systemSpec = SystemScreenSpecs.getByKey(screenKey);
-    if (systemSpec != null) {
-      return UnifiedScreenPageFromSpec(
-        key: ValueKey('screen_$screenKey'),
-        spec: systemSpec,
-      );
-    }
-
-    return Center(
-      key: ValueKey('screen_not_found_$screenKey'),
-      child: Text('Screen not found: $screenKey'),
-    );
-  }
 }

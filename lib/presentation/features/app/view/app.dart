@@ -29,6 +29,8 @@ import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart'
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/shared/sync/sync_anomaly_bloc.dart';
+import 'package:taskly_domain/telemetry.dart';
 
 /// Root application widget with auth-gated UI.
 ///
@@ -211,7 +213,6 @@ class _AuthenticatedApp extends StatelessWidget {
         Provider<NavigationBadgeService>(
           create: (_) => NavigationBadgeService(
             taskRepository: getIt<TaskRepositoryContract>(),
-            projectRepository: getIt<ProjectRepositoryContract>(),
             nowService: getIt<NowService>(),
           ),
         ),
@@ -223,11 +224,19 @@ class _AuthenticatedApp extends StatelessWidget {
           ),
         ),
       ],
-      child: BlocProvider<ScreenActionsBloc>(
-        create: (context) => ScreenActionsBloc(
-          entityActionService: getIt<EntityActionService>(),
-          errorReporter: context.read<AppErrorReporter>(),
-        ),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<ScreenActionsBloc>(
+            create: (context) => ScreenActionsBloc(
+              entityActionService: getIt<EntityActionService>(),
+              errorReporter: context.read<AppErrorReporter>(),
+            ),
+          ),
+          BlocProvider<SyncAnomalyBloc>(
+            lazy: false,
+            create: (_) => SyncAnomalyBloc(source: getIt<SyncAnomalyStream>()),
+          ),
+        ],
         child: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
           builder: (context, state) {
             final settings = state.settings;
@@ -245,13 +254,18 @@ class _AuthenticatedApp extends StatelessWidget {
               routerConfig: router,
               debugShowCheckedModeBanner: false,
               builder: (context, child) {
-                return _ScreenActionsFailureSnackBarListener(
+                return _SyncAnomalySnackBarListener(
                   scaffoldMessengerKey: App.scaffoldMessengerKey,
-                  child: MediaQuery(
-                    data: MediaQuery.of(context).copyWith(
-                      textScaler: TextScaler.linear(settings.textScaleFactor),
+                  child: _ScreenActionsFailureSnackBarListener(
+                    scaffoldMessengerKey: App.scaffoldMessengerKey,
+                    child: MediaQuery(
+                      data: MediaQuery.of(context).copyWith(
+                        textScaler: TextScaler.linear(
+                          settings.textScaleFactor,
+                        ),
+                      ),
+                      child: _NotificationsBootstrapper(child: child!),
                     ),
-                    child: _NotificationsBootstrapper(child: child!),
                   ),
                 );
               },
@@ -259,6 +273,58 @@ class _AuthenticatedApp extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+class _SyncAnomalySnackBarListener extends StatefulWidget {
+  const _SyncAnomalySnackBarListener({
+    required this.scaffoldMessengerKey,
+    required this.child,
+  });
+
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey;
+  final Widget child;
+
+  @override
+  State<_SyncAnomalySnackBarListener> createState() =>
+      _SyncAnomalySnackBarListenerState();
+}
+
+class _SyncAnomalySnackBarListenerState
+    extends State<_SyncAnomalySnackBarListener> {
+  DateTime? _lastShownAt;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<SyncAnomalyBloc, SyncAnomalyState>(
+      listenWhen: (previous, current) => previous.sequence != current.sequence,
+      listener: (context, state) {
+        if (!kDebugMode) return;
+
+        final anomaly = state.lastAnomaly;
+        if (anomaly == null) return;
+
+        final now = DateTime.now();
+        final last = _lastShownAt;
+        if (last != null && now.difference(last) < const Duration(seconds: 2)) {
+          return;
+        }
+        _lastShownAt = now;
+
+        final messenger = widget.scaffoldMessengerKey.currentState;
+        if (messenger == null) return;
+
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('Sync anomaly: ${anomaly.debugSummary()}'),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+      },
+      child: widget.child,
     );
   }
 }

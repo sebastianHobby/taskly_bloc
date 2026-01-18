@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_cubit.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -41,9 +43,12 @@ class _JournalEntryEditorRoutePageState
   @override
   Widget build(BuildContext context) {
     return BlocProvider<JournalEntryEditorCubit>(
-      create: (_) => getIt<JournalEntryEditorCubit>(
-        param1: widget.entryId,
-        param2: widget.preselectedTrackerIds,
+      create: (context) => JournalEntryEditorCubit(
+        repository: getIt<JournalRepositoryContract>(),
+        errorReporter: context.read<AppErrorReporter>(),
+        entryId: widget.entryId,
+        preselectedTrackerIds: widget.preselectedTrackerIds,
+        nowUtc: getIt<NowService>().nowUtc,
       ),
       child: BlocConsumer<JournalEntryEditorCubit, JournalEntryEditorState>(
         listenWhen: (prev, next) =>

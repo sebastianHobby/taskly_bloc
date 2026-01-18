@@ -1,9 +1,7 @@
 # Test Directory
 
-This directory contains all tests for the Taskly application, organized by test type and feature.
-# Test Directory
-
-This directory contains all tests for the Taskly application, organized by test type and feature.
+This directory contains all tests for the Taskly application, organized by the
+testing architecture directory contract.
 
 ## Directory Structure
 
@@ -14,6 +12,8 @@ test/
 ├── domain/             # Domain models, queries, and business logic tests
 ├── presentation/       # BLoC and UI tests
 ├── integration/        # Integration tests with real database
+├── integration_test/   # Local-stack pipeline tests (Supabase + PowerSync)
+├── contracts/          # Shared contract tests across implementations
 ├── diagnosis/          # Debugging and investigation tests
 ├── helpers/            # Shared test utilities and helpers
 ├── mocks/              # Mock implementations
@@ -33,13 +33,9 @@ Tests using real in-memory database. Located in `integration/`.
 - **Coverage:** End-to-end CRUD operations, cross-feature workflows
 
 ### Widget Tests
-Flutter widget tests. Located in `presentation/features/*/widgets/`.
+Flutter widget tests. Located in `test/presentation/**`.
 - **Run:** `flutter test --tags=widget`
 - **Coverage:** UI components, form validation, user interactions
-
-Note: as part of the target-state testing architecture, widget tests live under
-`test/presentation/**`. Prefer moving legacy paths toward this directory
-contract.
 
 ### Diagnosis Tests
 Investigation and debugging tests. Located in `diagnosis/`.
@@ -106,6 +102,33 @@ For convenience, use the VS Code task `flutter_test_report` which runs the test
 suite and copies `test/last_run.json` to a dated file under `test/`.
 
 ## Writing Tests
+
+### Canonical templates (seed tests)
+
+When adding a new test, start from one of the seed templates and adapt it:
+
+- `test/domain/test_data_seed_test.dart` — deterministic fixtures + `testSafe`.
+- `test/core/operation_context_seed_test.dart` — OperationContext propagation
+  helpers + `testSafe`.
+- `test/presentation/ui/priority_flag_widget_test.dart` — widget test template
+  using `testWidgetsSafe`.
+
+### Mandatory tags (directory-driven)
+
+Tests must declare their primary tag via a file-level `@Tags([...])` annotation
+so presets and policies are enforceable.
+
+Examples:
+
+```dart
+@Tags(['unit'])
+library;
+```
+
+```dart
+@Tags(['widget'])
+library;
+```
 
 ### Recommended imports + environment setup
 

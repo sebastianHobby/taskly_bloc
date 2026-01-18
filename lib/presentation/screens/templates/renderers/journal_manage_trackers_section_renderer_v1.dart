@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_trackers_cubit.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/tracker_editor_sheet.dart';
@@ -41,7 +43,11 @@ final class _JournalManageTrackersSectionRendererV1State
   @override
   Widget build(BuildContext context) {
     return BlocProvider<JournalManageTrackersCubit>(
-      create: (_) => getIt<JournalManageTrackersCubit>(),
+      create: (context) => JournalManageTrackersCubit(
+        repository: getIt<JournalRepositoryContract>(),
+        errorReporter: context.read<AppErrorReporter>(),
+        nowUtc: getIt<NowService>().nowUtc,
+      ),
       child:
           BlocListener<JournalManageTrackersCubit, JournalManageTrackersState>(
             listenWhen: (prev, next) =>

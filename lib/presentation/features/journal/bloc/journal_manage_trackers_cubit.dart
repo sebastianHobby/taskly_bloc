@@ -1,6 +1,10 @@
 import 'package:bloc/bloc.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/taskly_domain.dart'
+    show AppFailure, OperationContext;
 
 sealed class JournalManageTrackersStatus {
   const JournalManageTrackersStatus();
@@ -36,13 +40,66 @@ final class JournalManageTrackersState {
 class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
   JournalManageTrackersCubit({
     required JournalRepositoryContract repository,
+    required AppErrorReporter errorReporter,
     required DateTime Function() nowUtc,
   }) : _repository = repository,
+       _errorReporter = errorReporter,
        _nowUtc = nowUtc,
        super(JournalManageTrackersState.initial());
 
   final JournalRepositoryContract _repository;
+  final AppErrorReporter _errorReporter;
   final DateTime Function() _nowUtc;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
+
+  OperationContext _newContext({
+    required String intent,
+    required String operation,
+    String? trackerId,
+    Map<String, Object?> extraFields = const <String, Object?>{},
+  }) {
+    return _contextFactory.create(
+      feature: 'journal',
+      screen: 'journal_manage_trackers',
+      intent: intent,
+      operation: operation,
+      entityType: 'tracker_definition',
+      entityId: trackerId,
+      extraFields: extraFields,
+    );
+  }
+
+  void _reportIfUnexpectedOrUnmapped(
+    Object error,
+    StackTrace stackTrace, {
+    required OperationContext context,
+    required String message,
+  }) {
+    if (error is AppFailure && error.reportAsUnexpected) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unexpected failure)',
+      );
+      return;
+    }
+
+    if (error is! AppFailure) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unmapped exception)',
+      );
+    }
+  }
+
+  String _uiMessageFor(Object error, {required String fallback}) {
+    if (error is AppFailure) return error.uiMessage();
+    return fallback;
+  }
 
   Future<List<TrackerDefinitionChoice>> getChoices(String trackerId) async {
     final trimmed = trackerId.trim();
@@ -65,6 +122,12 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
     if (trimmed.isEmpty) return;
 
     emit(state.copyWith(status: const JournalManageTrackersSaving()));
+
+    final context = _newContext(
+      intent: 'create_tracker',
+      operation: 'journal.saveTrackerDefinition',
+      extraFields: <String, Object?>{'sortOrder': sortOrder},
+    );
 
     try {
       final nowUtc = _nowUtc();
@@ -98,13 +161,26 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
           unitKind: null,
           userId: null,
         ),
+        context: context,
       );
 
       emit(state.copyWith(status: const JournalManageTrackersIdle()));
-    } catch (e) {
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalManageTrackersCubit] createTracker failed',
+      );
+
       emit(
         state.copyWith(
-          status: JournalManageTrackersError('Failed to create tracker: $e'),
+          status: JournalManageTrackersError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to create tracker. Please try again.',
+            ),
+          ),
         ),
       );
     }
@@ -116,13 +192,32 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
     if (definition.systemKey != null) return;
 
     emit(state.copyWith(status: const JournalManageTrackersSaving()));
+
+    final context = _newContext(
+      intent: 'save_tracker',
+      operation: 'journal.saveTrackerDefinition',
+      trackerId: definition.id.isEmpty ? null : definition.id,
+    );
+
     try {
-      await _repository.saveTrackerDefinition(definition);
+      await _repository.saveTrackerDefinition(definition, context: context);
       emit(state.copyWith(status: const JournalManageTrackersIdle()));
-    } catch (e) {
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalManageTrackersCubit] upsertTrackerDefinition failed',
+      );
+
       emit(
         state.copyWith(
-          status: JournalManageTrackersError('Failed to save tracker: $e'),
+          status: JournalManageTrackersError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to save tracker. Please try again.',
+            ),
+          ),
         ),
       );
     }
@@ -139,8 +234,19 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
 
     emit(state.copyWith(status: const JournalManageTrackersSaving()));
 
+    final context = _newContext(
+      intent: 'save_tracker_from_editor',
+      operation: 'journal.saveTrackerDefinition',
+      trackerId: definition.id.isEmpty ? null : definition.id,
+      extraFields: <String, Object?>{
+        'choicesCount': choices.length,
+        'pinned': pinned,
+        'showInQuickAdd': showInQuickAdd,
+      },
+    );
+
     try {
-      await _repository.saveTrackerDefinition(definition);
+      await _repository.saveTrackerDefinition(definition, context: context);
 
       final trackerId = definition.id.isNotEmpty
           ? definition.id
@@ -157,6 +263,7 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
         trackerId: trackerId,
         existing: existingChoices,
         desired: choices,
+        context: context,
       );
 
       await _savePreference(
@@ -164,13 +271,26 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
         existing: existingPreference,
         pinned: pinned,
         showInQuickAdd: showInQuickAdd,
+        context: context,
       );
 
       emit(state.copyWith(status: const JournalManageTrackersIdle()));
-    } catch (e) {
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalManageTrackersCubit] upsertTrackerFromEditor failed',
+      );
+
       emit(
         state.copyWith(
-          status: JournalManageTrackersError('Failed to save tracker: $e'),
+          status: JournalManageTrackersError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to save tracker. Please try again.',
+            ),
+          ),
         ),
       );
     }
@@ -196,6 +316,7 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
     required String trackerId,
     required List<TrackerDefinitionChoice> existing,
     required List<TrackerDefinitionChoice> desired,
+    required OperationContext context,
   }) async {
     final nowUtc = _nowUtc();
     final existingByKey = {
@@ -223,6 +344,7 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
           isActive: true,
           userId: prev?.userId,
         ),
+        context: context,
       );
       sort += 10;
     }
@@ -232,6 +354,7 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
       if (!desiredKeys.contains(prev.choiceKey) && prev.isActive) {
         await _repository.saveTrackerDefinitionChoice(
           prev.copyWith(isActive: false, updatedAt: nowUtc),
+          context: context,
         );
       }
     }
@@ -242,11 +365,19 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
     required TrackerPreference? existing,
     required bool pinned,
   }) async {
+    final context = _newContext(
+      intent: 'set_pinned',
+      operation: 'journal.saveTrackerPreference',
+      trackerId: definition.id,
+      extraFields: <String, Object?>{'pinned': pinned},
+    );
+
     await _savePreference(
       definition: definition,
       existing: existing,
       pinned: pinned,
       showInQuickAdd: existing?.showInQuickAdd,
+      context: context,
     );
   }
 
@@ -255,11 +386,19 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
     required TrackerPreference? existing,
     required bool showInQuickAdd,
   }) async {
+    final context = _newContext(
+      intent: 'set_show_in_quick_add',
+      operation: 'journal.saveTrackerPreference',
+      trackerId: definition.id,
+      extraFields: <String, Object?>{'showInQuickAdd': showInQuickAdd},
+    );
+
     await _savePreference(
       definition: definition,
       existing: existing,
       pinned: existing?.pinned,
       showInQuickAdd: showInQuickAdd,
+      context: context,
     );
   }
 
@@ -270,16 +409,37 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
     if (definition.systemKey != null) return;
 
     emit(state.copyWith(status: const JournalManageTrackersSaving()));
+
+    final context = _newContext(
+      intent: 'set_outcome',
+      operation: 'journal.saveTrackerDefinition',
+      trackerId: definition.id,
+      extraFields: <String, Object?>{'isOutcome': isOutcome},
+    );
+
     try {
       final nowUtc = _nowUtc();
       await _repository.saveTrackerDefinition(
         definition.copyWith(isOutcome: isOutcome, updatedAt: nowUtc),
+        context: context,
       );
       emit(state.copyWith(status: const JournalManageTrackersIdle()));
-    } catch (e) {
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalManageTrackersCubit] setOutcome failed',
+      );
+
       emit(
         state.copyWith(
-          status: JournalManageTrackersError('Failed to update tracker: $e'),
+          status: JournalManageTrackersError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to update tracker. Please try again.',
+            ),
+          ),
         ),
       );
     }
@@ -292,16 +452,37 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
     if (definition.systemKey != null) return;
 
     emit(state.copyWith(status: const JournalManageTrackersSaving()));
+
+    final context = _newContext(
+      intent: 'set_archived',
+      operation: 'journal.saveTrackerDefinition',
+      trackerId: definition.id,
+      extraFields: <String, Object?>{'archived': archived},
+    );
+
     try {
       final nowUtc = _nowUtc();
       await _repository.saveTrackerDefinition(
         definition.copyWith(isActive: !archived, updatedAt: nowUtc),
+        context: context,
       );
       emit(state.copyWith(status: const JournalManageTrackersIdle()));
-    } catch (e) {
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalManageTrackersCubit] setArchived failed',
+      );
+
       emit(
         state.copyWith(
-          status: JournalManageTrackersError('Failed to update tracker: $e'),
+          status: JournalManageTrackersError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to update tracker. Please try again.',
+            ),
+          ),
         ),
       );
     }
@@ -313,13 +494,32 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
     if (definition.systemKey != null) return;
 
     emit(state.copyWith(status: const JournalManageTrackersSaving()));
+
+    final context = _newContext(
+      intent: 'delete_tracker_and_data',
+      operation: 'journal.deleteTrackerAndData',
+      trackerId: definition.id,
+    );
+
     try {
-      await _repository.deleteTrackerAndData(definition.id);
+      await _repository.deleteTrackerAndData(definition.id, context: context);
       emit(state.copyWith(status: const JournalManageTrackersIdle()));
-    } catch (e) {
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalManageTrackersCubit] deleteTrackerAndData failed',
+      );
+
       emit(
         state.copyWith(
-          status: JournalManageTrackersError('Failed to delete tracker: $e'),
+          status: JournalManageTrackersError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to delete tracker. Please try again.',
+            ),
+          ),
         ),
       );
     }
@@ -329,20 +529,40 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
     required List<TrackerDefinition> ordered,
   }) async {
     emit(state.copyWith(status: const JournalManageTrackersSaving()));
+
+    final context = _newContext(
+      intent: 'reorder_definitions',
+      operation: 'journal.saveTrackerDefinition',
+      extraFields: <String, Object?>{'count': ordered.length},
+    );
+
     try {
       final nowUtc = _nowUtc();
       var sort = 100;
       for (final d in ordered) {
         await _repository.saveTrackerDefinition(
           d.copyWith(sortOrder: sort, updatedAt: nowUtc),
+          context: context,
         );
         sort += 10;
       }
       emit(state.copyWith(status: const JournalManageTrackersIdle()));
-    } catch (e) {
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalManageTrackersCubit] reorderDefinitions failed',
+      );
+
       emit(
         state.copyWith(
-          status: JournalManageTrackersError('Failed to reorder: $e'),
+          status: JournalManageTrackersError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to reorder trackers. Please try again.',
+            ),
+          ),
         ),
       );
     }
@@ -351,6 +571,7 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
   Future<void> _savePreference({
     required TrackerDefinition definition,
     required TrackerPreference? existing,
+    required OperationContext context,
     bool? pinned,
     bool? showInQuickAdd,
   }) async {
@@ -379,13 +600,26 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
           showInQuickAdd: showInQuickAdd ?? pref.showInQuickAdd,
           updatedAt: nowUtc,
         ),
+        context: context,
       );
 
       emit(state.copyWith(status: const JournalManageTrackersIdle()));
-    } catch (e) {
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalManageTrackersCubit] savePreference failed',
+      );
+
       emit(
         state.copyWith(
-          status: JournalManageTrackersError('Failed to save preference: $e'),
+          status: JournalManageTrackersError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to save preference. Please try again.',
+            ),
+          ),
         ),
       );
     }

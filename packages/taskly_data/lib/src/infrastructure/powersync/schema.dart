@@ -23,7 +23,7 @@ const schema = Schema([
     Column.integer('pinned'),
     Column.text('override_primary_value_id'),
     Column.text('override_secondary_value_id'),
-  ]),
+  ], trackMetadata: true),
   Table('projects', [
     Column.text('name'),
     Column.text('description'),
@@ -40,7 +40,7 @@ const schema = Schema([
     Column.integer('pinned'),
     Column.text('primary_value_id'),
     Column.text('secondary_value_id'),
-  ]),
+  ], trackMetadata: true),
   Table('values', [
     Column.text('name'),
     Column.text('color'),
@@ -59,6 +59,7 @@ const schema = Schema([
       Column.text('updated_at'),
     ],
     ignoreEmptyUpdates: true,
+    trackMetadata: true,
   ),
   Table('pending_notifications', [
     Column.text('user_id'),
@@ -69,7 +70,7 @@ const schema = Schema([
     Column.text('delivered_at'),
     Column.text('seen_at'),
     Column.text('screen_key'),
-  ]),
+  ], trackMetadata: true),
   Table('attention_rules', [
     Column.text('rule_key'),
     Column.text('user_id'),
@@ -83,7 +84,7 @@ const schema = Schema([
     Column.text('created_at'),
     Column.text('updated_at'),
     Column.text('source'),
-  ]),
+  ], trackMetadata: true),
   Table('attention_rule_runtime_state', [
     Column.text('user_id'),
     Column.text('rule_id'),
@@ -96,7 +97,7 @@ const schema = Schema([
     Column.text('metadata'),
     Column.text('created_at'),
     Column.text('updated_at'),
-  ]),
+  ], trackMetadata: true),
   Table('task_completion_history', [
     Column.text('task_id'),
     Column.text('occurrence_date'),
@@ -106,7 +107,7 @@ const schema = Schema([
     Column.text('user_id'),
     Column.text('created_at'),
     Column.text('updated_at'),
-  ]),
+  ], trackMetadata: true),
   Table('project_completion_history', [
     Column.text('project_id'),
     Column.text('occurrence_date'),
@@ -116,7 +117,7 @@ const schema = Schema([
     Column.text('user_id'),
     Column.text('created_at'),
     Column.text('updated_at'),
-  ]),
+  ], trackMetadata: true),
   Table('task_recurrence_exceptions', [
     Column.text('task_id'),
     Column.text('original_date'),
@@ -126,7 +127,7 @@ const schema = Schema([
     Column.text('created_at'),
     Column.text('updated_at'),
     Column.text('user_id'),
-  ]),
+  ], trackMetadata: true),
   Table('project_recurrence_exceptions', [
     Column.text('project_id'),
     Column.text('original_date'),
@@ -136,7 +137,7 @@ const schema = Schema([
     Column.text('created_at'),
     Column.text('updated_at'),
     Column.text('user_id'),
-  ]),
+  ], trackMetadata: true),
   Table('attention_resolutions', [
     Column.text('user_id'),
     Column.text('rule_id'),
@@ -146,7 +147,7 @@ const schema = Schema([
     Column.text('resolution_action'),
     Column.text('action_details'),
     Column.text('created_at'),
-  ]),
+  ], trackMetadata: true),
   Table('attention_condition_states', [
     Column.text('user_id'),
     Column.text('entity_type'),
@@ -157,7 +158,7 @@ const schema = Schema([
     Column.text('last_cleared_at'),
     Column.text('created_at'),
     Column.text('updated_at'),
-  ]),
+  ], trackMetadata: true),
 
   // Allocation snapshots (daily, allocated membership only)
   Table('allocation_snapshots', [
@@ -168,7 +169,7 @@ const schema = Schema([
     Column.integer('candidate_pool_count_at_generation'),
     Column.text('created_at'),
     Column.text('updated_at'),
-  ]),
+  ], trackMetadata: true),
   Table('allocation_snapshot_entries', [
     Column.text('user_id'),
     Column.text('snapshot_id'),
@@ -180,7 +181,7 @@ const schema = Schema([
     Column.real('allocation_score'),
     Column.text('created_at'),
     Column.text('updated_at'),
-  ]),
+  ], trackMetadata: true),
   Table('analytics_snapshots', [
     Column.text('user_id'),
     Column.text('entity_type'),
@@ -232,7 +233,7 @@ const schema = Schema([
     Column.text('deleted_at'),
     Column.text('occurred_at'),
     Column.text('local_date'),
-  ]),
+  ], trackMetadata: true),
 
   // Tracker model (OPT-A): event-log + projections
   Table('tracker_definitions', [
@@ -261,7 +262,7 @@ const schema = Schema([
     Column.integer('is_outcome'),
     Column.integer('is_insight_enabled'),
     Column.integer('higher_is_better'),
-  ]),
+  ], trackMetadata: true),
   Table('tracker_preferences', [
     Column.text('user_id'),
     Column.text('tracker_id'),
@@ -272,7 +273,7 @@ const schema = Schema([
     Column.text('color'),
     Column.text('created_at'),
     Column.text('updated_at'),
-  ]),
+  ], trackMetadata: true),
   Table('tracker_definition_choices', [
     Column.text('user_id'),
     Column.text('tracker_id'),
@@ -293,7 +294,7 @@ const schema = Schema([
     Column.text('value'),
     Column.text('occurred_at'),
     Column.text('recorded_at'),
-  ]),
+  ], trackMetadata: true),
   Table('tracker_state_day', [
     Column.text('user_id'),
     Column.text('anchor_type'),

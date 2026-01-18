@@ -1,109 +1,48 @@
 import 'package:taskly_domain/contracts.dart';
-import 'package:taskly_bloc/domain/screens/language/models/badge_config.dart';
-import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_domain/queries.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
 /// Service for computing badge counts for navigation screens.
 ///
-/// Badge counts are computed based on the screen's [BadgeConfig]:
-/// - [BadgeFromFirstSection]: Uses the first data section's query
-/// - [CustomBadgeConfig]: Uses a custom task or project query
-/// - [NoBadge]: No badge shown
+/// Post-USM, badges are computed explicitly by screen key.
 class NavigationBadgeService {
   NavigationBadgeService({
     required TaskRepositoryContract taskRepository,
-    required ProjectRepositoryContract projectRepository,
     required NowService nowService,
   }) : _taskRepository = taskRepository,
-       _projectRepository = projectRepository,
        _nowService = nowService;
 
   final TaskRepositoryContract _taskRepository;
-  final ProjectRepositoryContract _projectRepository;
   final NowService _nowService;
 
   final Map<String, Stream<int>?> _badgeStreamCache = {};
 
   /// Returns a stream of badge counts for a given system [screenKey].
-  ///
-  /// For screens that have migrated off USM (and no longer have a typed
-  /// [ScreenSpec] in [SystemScreenSpecs]), this returns null.
   Stream<int>? badgeStreamForScreenKey(String screenKey) {
-    final spec = SystemScreenSpecs.getByKey(screenKey);
-    if (spec == null) return null;
-    return badgeStreamFor(spec);
-  }
-
-  /// Returns a stream of badge counts for the given screen.
-  ///
-  /// Returns null if the screen should not display a badge.
-  Stream<int>? badgeStreamFor(ScreenSpec screen) {
-    final screenKey = screen.screenKey;
+    final normalized = screenKey.replaceAll('-', '_');
     if (_badgeStreamCache.containsKey(screenKey)) {
       return _badgeStreamCache[screenKey];
     }
 
-    final stream = switch (screen.chrome.badgeConfig) {
-      NoBadge() => null,
-      CustomBadgeConfig(:final taskQuery, :final projectQuery) =>
-        _streamForCustomConfig(taskQuery, projectQuery),
-      BadgeFromFirstSection() => _streamForFirstSection(screen),
+    // Keep this intentionally small and explicit.
+    // Add more mappings as we introduce navigation badges outside USM.
+    final stream = switch (normalized) {
+      'scheduled' => _taskRepository.watchAllCount(
+        _buildTaskQueryFromAgendaParams(
+          AgendaSectionParamsV2(
+            dateField: AgendaDateFieldV2.deadlineDate,
+            layout: AgendaLayoutV2.dayCardsFeed,
+          ),
+          now: _nowService.nowLocal(),
+        ),
+      ),
+      _ => null,
     };
 
     _badgeStreamCache[screenKey] = stream;
     return stream;
-  }
-
-  /// Get badge stream from a custom badge config.
-  Stream<int>? _streamForCustomConfig(
-    TaskQuery? taskQuery,
-    ProjectQuery? projectQuery,
-  ) {
-    if (taskQuery != null) {
-      return _taskRepository.watchAllCount(taskQuery);
-    }
-    if (projectQuery != null) {
-      return _projectRepository.watchAllCount(projectQuery);
-    }
-    return null;
-  }
-
-  /// Get badge stream from the first data section of a screen.
-  Stream<int>? _streamForFirstSection(ScreenSpec screen) {
-    final target = _findFirstBadgeTarget(screen.modules);
-    return switch (target) {
-      _BadgeTask(:final query) => _taskRepository.watchAllCount(query),
-      _BadgeProject(:final query) => _projectRepository.watchAllCount(query),
-      _BadgeNone() || null => null,
-    };
-  }
-
-  _BadgeTarget? _findFirstBadgeTarget(SlottedModules modules) {
-    final ordered = <ScreenModuleSpec>[...modules.header, ...modules.primary];
-
-    for (final module in ordered) {
-      final target = switch (module) {
-        ScreenModuleTaskListV2(:final params) => _badgeTargetFromListParams(
-          params,
-        ),
-        ScreenModuleValueListV2(:final params) => _badgeTargetFromListParams(
-          params,
-        ),
-        ScreenModuleAgendaV2(:final params) => _BadgeTask(
-          _buildTaskQueryFromAgendaParams(params, now: _nowService.nowLocal()),
-        ),
-        _ => null,
-      };
-
-      if (target != null) return target;
-    }
-
-    return null;
   }
 
   TaskQuery _buildTaskQueryFromAgendaParams(
@@ -152,69 +91,4 @@ class NavigationBadgeService {
 
     return TaskQuery(filter: withDateFilter);
   }
-
-  _BadgeTarget? _badgeTargetFromListParams(ListSectionParamsV2 params) {
-    final config = params.config;
-
-    return switch (config) {
-      TaskDataConfig(:final query) => _BadgeTask(query),
-      ProjectDataConfig(:final query) => _BadgeProject(query),
-      AllocationSnapshotTasksTodayDataConfig() => const _BadgeNone(),
-      ValueDataConfig() || JournalDataConfig() => const _BadgeNone(),
-    };
-  }
-
-  /// Returns the task query for badge counting if the screen has task data.
-  TaskQuery? getTaskQueryForScreen(ScreenSpec screen) {
-    return switch (screen.chrome.badgeConfig) {
-      NoBadge() => null,
-      CustomBadgeConfig(:final taskQuery) => taskQuery,
-      BadgeFromFirstSection() => _getTaskQueryFromFirstSection(screen),
-    };
-  }
-
-  TaskQuery? _getTaskQueryFromFirstSection(ScreenSpec screen) {
-    final target = _findFirstBadgeTarget(screen.modules);
-    return switch (target) {
-      _BadgeTask(:final query) => query,
-      _ => null,
-    };
-  }
-
-  /// Returns the project query for badge counting if the screen has project data.
-  ProjectQuery? getProjectQueryForScreen(ScreenSpec screen) {
-    return switch (screen.chrome.badgeConfig) {
-      NoBadge() => null,
-      CustomBadgeConfig(:final projectQuery) => projectQuery,
-      BadgeFromFirstSection() => _getProjectQueryFromFirstSection(screen),
-    };
-  }
-
-  ProjectQuery? _getProjectQueryFromFirstSection(ScreenSpec screen) {
-    final target = _findFirstBadgeTarget(screen.modules);
-    return switch (target) {
-      _BadgeProject(:final query) => query,
-      _ => null,
-    };
-  }
-}
-
-sealed class _BadgeTarget {
-  const _BadgeTarget();
-}
-
-final class _BadgeTask extends _BadgeTarget {
-  const _BadgeTask(this.query);
-
-  final TaskQuery query;
-}
-
-final class _BadgeProject extends _BadgeTarget {
-  const _BadgeProject(this.query);
-
-  final ProjectQuery query;
-}
-
-final class _BadgeNone extends _BadgeTarget {
-  const _BadgeNone();
 }

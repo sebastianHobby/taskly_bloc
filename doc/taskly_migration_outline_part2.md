@@ -40,8 +40,8 @@ Phase 2 is considered done when:
 
 1) The app shell continues to work across all platforms, with auth + sync
    functioning from day 1.
-2) Remaining USM entrypoints are either removed or clearly isolated behind a
-   short-lived strangler boundary, with explicit routes/screens taking over.
+2) USM screen entrypoints are removed (no runtime screen interpreter), and
+  explicit routes/screens own navigation.
 3) The extracted packages (`taskly_core`, `taskly_domain`, `taskly_data`) are
    the primary dependency surface for the app layer (with implementation hidden
    under each packages `lib/src`).
@@ -58,8 +58,8 @@ Phase 2 is considered done when:
 ### WS-1: Complete the USM strangler (explicit screens everywhere)
 
 **Scope**
-- Convert remaining shell routes still backed by USM `ScreenSpec` to explicit
-  Flutter pages.
+- Ensure no shell route depends on a runtime screen interpreter (no `ScreenSpec`
+  routing), and that navigation remains explicit.
 - Ensure all new/converted screens follow the BLoC-only presentation boundary.
 - Standardize common feed rendering primitives (row model, row keys,
   grouping/headers) without reintroducing runtime screen interpretation.
@@ -92,6 +92,14 @@ As of 2026-01-18, `packages/taskly_ui` exists and is the home for pure UI
 primitives (and future entities/sections) that are reused across screens.
 Continue migrating shared UI there incrementally while keeping screens,
 routing, and BLoCs in the app.
+
+**Status note (2026-01-18)**
+
+- Legacy Project/Value entity “detail” entrypoints no longer depend on USM.
+  - Legacy `/project/:id` and `/value/:id` routes were removed (no redirects under Q3).
+  - Navigation uses the canonical editor routes (`/project/:id/edit`, `/value/:id/edit`).
+  - USM-backed unified Project/Value detail pages + ScreenSpec catalog/runtime were deleted.
+  - Routing indirection/bootstrapping for entity detail builders was removed.
 
 
 ### WS-2: Package API hardening (public surfaces + hidden internals)
@@ -148,7 +156,8 @@ routing, and BLoCs in the app.
 
 **Status (Jan 2026 snapshot)**
 - Migrated beyond Auth: task/project/value editors, global tile actions (`ScreenActionsBloc`), global settings, focus setup, and values list.
-- Remaining likely hotspots: Journal flows (add log, entry editor, tracker CRUD/prefs), feed-level blocks/Cubits that still catch raw exceptions and surface strings, and any background/maintenance write flows.
+- Migrated Journal slice: add log, entry editor, tracker CRUD/prefs flows now propagate `OperationContext` and report unexpected/unmapped failures via `AppErrorReporter`.
+- Remaining likely hotspots: feed-level blocks/Cubits that still catch raw exceptions and surface strings, and any background/maintenance write flows.
 
 
 ### WS-5 (optional / stretch): Recurrence foundations (if Phase 2 includes it)

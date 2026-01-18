@@ -135,6 +135,32 @@ Notes:
 - Pipeline tests must self-skip if the environment is not pointing at a local
   stack.
 
+### 4.1 Canonical templates (seed suite)
+
+This repo intentionally keeps a small set of **seed tests** that act as
+copy/paste templates for new tests and as living examples of the invariants
+above.
+
+Use these as the starting point when creating new tests:
+
+- `test/domain/test_data_seed_test.dart`
+  - Demonstrates TG-001 (no wall-clock): `TestData` defaults to
+    `TestConstants.referenceDate`.
+  - Demonstrates explicit time parameters in helpers (for example
+    `isToday(now: ...)`).
+  - Uses safe wrappers: `testSafe` (TG-002).
+
+- `test/core/operation_context_seed_test.dart`
+  - Demonstrates TG-006 (OperationContext propagation) using
+    `TestOperationContextFactory`, `OperationContextSpy`, and
+    `expectOperationContextForwarded`.
+  - Uses safe wrappers: `testSafe` (TG-002).
+
+- `test/presentation/ui/priority_flag_widget_test.dart`
+  - Demonstrates TG-002 for widget tests using `testWidgetsSafe`.
+  - Demonstrates hermetic widget testing patterns (no repository access;
+    Material wrapper; explicit semantics assertions).
+
 ## 5) Suites, tags, and presets
 
 Canonical tags, presets, timeouts, and `file_reporters` live in `dart_test.yaml`.

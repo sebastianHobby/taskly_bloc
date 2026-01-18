@@ -44,11 +44,15 @@ tags:
   pipeline:
     timeout: 180s
 
+  # Ad-hoc repro/diagnostics (not part of default presets)
+  diagnosis:
+    timeout: 60s
+
 # Define test name patterns
 presets:
   # Run only fast unit tests (for CI quick checks)
   fast:
-    exclude-tags: [integration, slow, repository, flaky]
+    exclude-tags: [integration, slow, repository, flaky, pipeline, diagnosis]
     
   # Run integration tests only
   integration:
@@ -60,7 +64,7 @@ presets:
     
   # Run all tests except slow ones
   quick:
-    exclude-tags: [slow, flaky]
+    exclude-tags: [slow, flaky, pipeline, diagnosis]
 
   # Run all database-related tests
   database:
@@ -68,7 +72,7 @@ presets:
 
   # Run everything except local-stack pipeline tests
   no_pipeline:
-    exclude-tags: [pipeline]
+    exclude-tags: [pipeline, diagnosis]
 
 # Automatically apply tags based on file paths
 on_os:

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_trackers_cubit.dart';
 
@@ -11,7 +13,11 @@ class JournalTrackersPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<JournalTrackersCubit>(
-      create: (_) => getIt<JournalTrackersCubit>(),
+      create: (context) => JournalTrackersCubit(
+        repository: getIt<JournalRepositoryContract>(),
+        errorReporter: context.read<AppErrorReporter>(),
+        nowUtc: getIt<NowService>().nowUtc,
+      ),
       child: BlocBuilder<JournalTrackersCubit, JournalTrackersState>(
         builder: (context, state) {
           return switch (state) {
