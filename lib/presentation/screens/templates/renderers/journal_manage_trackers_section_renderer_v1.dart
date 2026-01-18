@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_trackers_cubit.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/tracker_editor_sheet.dart';
@@ -302,7 +303,7 @@ final class _JournalManageTrackersSectionRendererV1State
     BuildContext context, {
     required int sortBase,
   }) async {
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = getIt<NowService>().nowUtc();
     final result = await showTrackerEditorSheet(context: context);
     if (!context.mounted) return;
     if (result == null) return;
@@ -349,7 +350,7 @@ final class _JournalManageTrackersSectionRendererV1State
     if (result == null) return;
 
     await cubit.upsertTrackerFromEditor(
-      definition: result.definition.copyWith(updatedAt: DateTime.now().toUtc()),
+      definition: result.definition.copyWith(updatedAt: getIt<NowService>().nowUtc()),
       pinned: result.pinned,
       showInQuickAdd: result.showInQuickAdd,
       existingPreference: preference,

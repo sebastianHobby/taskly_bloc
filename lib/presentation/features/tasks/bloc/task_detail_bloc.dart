@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
@@ -72,11 +73,13 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
+    required AppErrorReporter errorReporter,
     String? taskId,
     bool autoLoad = true,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
+       _errorReporter = errorReporter,
        _commandHandler = TaskCommandHandler(taskRepository: taskRepository),
        super(const TaskDetailState.initial()) {
     on<_TaskDetailLoadInitialData>(
@@ -101,6 +104,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
+  final AppErrorReporter _errorReporter;
   final TaskCommandHandler _commandHandler;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
@@ -137,6 +141,43 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   @override
   TaskDetailState createOperationFailureState(DetailBlocError<Task> error) =>
       TaskDetailState.operationFailure(errorDetails: error);
+
+  void _reportIfUnexpectedOrUnmapped(
+    Object error,
+    StackTrace stackTrace, {
+    required OperationContext context,
+    required String message,
+  }) {
+    if (error is AppFailure && error.reportAsUnexpected) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unexpected failure)',
+      );
+      return;
+    }
+
+    if (error is! AppFailure) {
+      _errorReporter.reportUnexpected(
+        error,
+        stackTrace,
+        context: context,
+        message: '$message (unmapped exception)',
+      );
+    }
+  }
+
+  DetailBlocError<Task> _toUiSafeError(Object error, StackTrace? stackTrace) {
+    if (error is AppFailure) {
+      return DetailBlocError<Task>(
+        error: error.uiMessage(),
+        stackTrace: stackTrace,
+      );
+    }
+
+    return DetailBlocError<Task>(error: error, stackTrace: stackTrace);
+  }
 
   Future<void> _onLoadInitialData(
     _TaskDetailLoadInitialData event,
@@ -218,6 +259,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
       emit,
       EntityOperation.create,
       () => _commandHandler.handleCreate(event.command, context: context),
+      context: context,
     );
   }
 
@@ -234,6 +276,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
       emit,
       EntityOperation.update,
       () => _commandHandler.handleUpdate(event.command, context: context),
+      context: context,
     );
   }
 
@@ -246,24 +289,34 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
       operation: 'tasks.delete',
       entityId: event.id,
     );
-    await executeDeleteOperation(
-      emit,
-      () => _taskRepository.delete(event.id, context: context),
-    );
+
+    try {
+      await _taskRepository.delete(event.id, context: context);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      emit(createOperationSuccessState(EntityOperation.delete));
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: 'Task delete failed',
+      );
+      emit(createOperationFailureState(_toUiSafeError(error, stackTrace)));
+    }
   }
 
   Future<void> _onSetPinned(
     _TaskDetailSetPinned event,
     Emitter<TaskDetailState> emit,
   ) async {
-    try {
-      final context = _newContext(
-        intent: 'task_set_pinned_requested',
-        operation: 'tasks.setPinned',
-        entityId: event.id,
-        extraFields: <String, Object?>{'isPinned': event.isPinned},
-      );
+    final context = _newContext(
+      intent: 'task_set_pinned_requested',
+      operation: 'tasks.setPinned',
+      entityId: event.id,
+      extraFields: <String, Object?>{'isPinned': event.isPinned},
+    );
 
+    try {
       await _taskRepository.setPinned(
         id: event.id,
         isPinned: event.isPinned,
@@ -297,10 +350,16 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
         ),
       );
     } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: 'Task setPinned failed',
+      );
       emit(
         TaskDetailState.operationFailure(
           errorDetails: DetailBlocError<Task>(
-            error: error,
+            error: error is AppFailure ? error.uiMessage() : error,
             stackTrace: stackTrace,
           ),
         ),
@@ -311,8 +370,9 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   Future<void> _executeValidatedCommand(
     Emitter<TaskDetailState> emit,
     EntityOperation operation,
-    Future<CommandResult> Function() execute,
-  ) async {
+    Future<CommandResult> Function() execute, {
+    required OperationContext context,
+  }) async {
     try {
       final result = await execute();
       switch (result) {
@@ -323,9 +383,15 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
           emit(TaskDetailState.validationFailure(failure: failure));
       }
     } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: 'Task ${operation.name} failed',
+      );
       emit(
         createOperationFailureState(
-          DetailBlocError<Task>(error: error, stackTrace: stackTrace),
+          _toUiSafeError(error, stackTrace),
         ),
       );
     }

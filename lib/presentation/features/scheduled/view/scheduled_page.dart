@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 import 'package:taskly_bloc/domain/entity_views/tile_capabilities/entity_tile_capabilities_resolver.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_feed_bloc.dart';
-import 'package:taskly_bloc/presentation/features/scheduled/model/scheduled_scope.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_ui/taskly_ui.dart';
@@ -20,7 +19,7 @@ class ScheduledPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => ScheduledFeedBloc(
-        agendaDataService: getIt(),
+        scheduledOccurrencesService: getIt(),
         homeDayService: getIt(),
         scope: scope,
       ),
@@ -100,43 +99,45 @@ class _ScheduledRow extends StatelessWidget {
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ),
-      AgendaEntityRowUiModel(:final item) => Padding(
+      ScheduledEntityRowUiModel(:final occurrence) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: _AgendaEntityTile(item: item),
+        child: _ScheduledOccurrenceTile(occurrence: occurrence),
       ),
       _ => const SizedBox.shrink(),
     };
   }
 }
 
-class _AgendaEntityTile extends StatelessWidget {
-  const _AgendaEntityTile({required this.item});
+class _ScheduledOccurrenceTile extends StatelessWidget {
+  const _ScheduledOccurrenceTile({required this.occurrence});
 
-  final AgendaItem item;
+  final ScheduledOccurrence occurrence;
 
   @override
   Widget build(BuildContext context) {
-    final isInProgress = item.tag == AgendaDateTag.inProgress;
+    final isOngoing = occurrence.ref.tag == ScheduledDateTag.ongoing;
 
-    if (item.isTask && item.task != null) {
-      final task = item.task!;
+    if (occurrence.ref.entityType == EntityType.task &&
+        occurrence.task != null) {
+      final task = occurrence.task!;
       return TaskView(
         task: task,
         tileCapabilities: EntityTileCapabilitiesResolver.forTask(task),
         variant: TaskViewVariant.agendaCard,
-        agendaInProgressStyle: isInProgress,
+        agendaInProgressStyle: isOngoing,
         endDate: task.deadlineDate,
         onTap: (_) => Routing.toTaskEdit(context, task.id),
       );
     }
 
-    if (item.isProject && item.project != null) {
-      final project = item.project!;
+    if (occurrence.ref.entityType == EntityType.project &&
+        occurrence.project != null) {
+      final project = occurrence.project!;
       return ProjectView(
         project: project,
         tileCapabilities: EntityTileCapabilitiesResolver.forProject(project),
         variant: ProjectViewVariant.agendaCard,
-        agendaInProgressStyle: isInProgress,
+        agendaInProgressStyle: isOngoing,
         endDate: project.deadlineDate,
         onTap: (_) => Routing.toProjectEdit(context, project.id),
       );

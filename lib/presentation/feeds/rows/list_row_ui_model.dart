@@ -1,4 +1,5 @@
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/taskly_domain.dart' show ScheduledOccurrence;
 
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 
@@ -97,4 +98,15 @@ final class AgendaEntityRowUiModel extends ListRowUiModel {
   });
 
   final AgendaItem item;
+}
+
+/// Scheduled-only: a scheduled occurrence row (task or project).
+final class ScheduledEntityRowUiModel extends ListRowUiModel {
+  const ScheduledEntityRowUiModel({
+    required super.rowKey,
+    required super.depth,
+    required this.occurrence,
+  });
+
+  final ScheduledOccurrence occurrence;
 }

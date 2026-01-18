@@ -43,6 +43,21 @@ UI events -> BLoC events -> domain/services/repositories
 DB/reactive streams -> BLoC state -> widgets
 ```
 
+## 3.1 Forms (FormBuilder-first preference)
+
+All editor/detail screens should prefer `flutter_form_builder` for forms.
+
+- The **widget** owns the `FormBuilder` key/state and composes field widgets.
+- The **BLoC** owns entity subscriptions/snapshots, validation policy, and
+  save/delete intents.
+- Keep the widget → BLoC boundary strongly typed:
+  - do not pass `Map<String, dynamic>` as the draft model
+  - do not let raw string field names become a “protocol” into BLoCs
+
+Rationale:
+- Keeps validation + save flows consistent across entities.
+- Keeps repositories/services out of widgets (BLoC boundary rule).
+
 ## 4) Cross-Feature Reuse
 
 Reuse should come from **shared widgets/components** and **shared domain/data

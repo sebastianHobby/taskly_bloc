@@ -6,6 +6,7 @@ import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_param
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
 /// Service for computing badge counts for navigation screens.
 ///
@@ -17,11 +18,14 @@ class NavigationBadgeService {
   NavigationBadgeService({
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
+    required NowService nowService,
   }) : _taskRepository = taskRepository,
-       _projectRepository = projectRepository;
+       _projectRepository = projectRepository,
+       _nowService = nowService;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
+  final NowService _nowService;
 
   final Map<String, Stream<int>?> _badgeStreamCache = {};
 
@@ -91,7 +95,7 @@ class NavigationBadgeService {
           params,
         ),
         ScreenModuleAgendaV2(:final params) => _BadgeTask(
-          _buildTaskQueryFromAgendaParams(params, now: DateTime.now()),
+          _buildTaskQueryFromAgendaParams(params, now: _nowService.nowLocal()),
         ),
         _ => null,
       };

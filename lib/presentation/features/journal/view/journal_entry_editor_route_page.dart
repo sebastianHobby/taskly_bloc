@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_cubit.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -115,7 +116,7 @@ class _JournalEntryEditorRoutePageState
                   : ListView(
                       padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
                       children: [
-                        _TodayHeader(now: DateTime.now()),
+                        _TodayHeader(now: getIt<NowService>().nowLocal()),
                         const SizedBox(height: 12),
                         _SectionCard(
                           title: 'Mood',

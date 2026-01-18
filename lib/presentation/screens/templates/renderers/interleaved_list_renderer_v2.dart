@@ -15,6 +15,8 @@ import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
 import 'package:taskly_bloc/presentation/screens/templates/widgets/section_filter_bar_v2.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_ui/taskly_ui.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
@@ -332,8 +334,9 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     if (!_isAllocationSnapshotTasksToday) return null;
 
     final scheme = Theme.of(context).colorScheme;
+    final now = getIt<NowService>().nowLocal();
     final label = MaterialLocalizations.of(context).formatFullDate(
-      DateTime.now(),
+      now,
     );
 
     return Padding(
@@ -541,7 +544,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
   }
 
   bool _isAfterTodayLocal(DateTime date) {
-    final now = DateTime.now();
+    final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final day = DateTime(date.year, date.month, date.day);
     return day.isAfter(today);

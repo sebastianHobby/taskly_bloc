@@ -1,6 +1,9 @@
 # Test Directory
 
 This directory contains all tests for the Taskly application, organized by test type and feature.
+# Test Directory
+
+This directory contains all tests for the Taskly application, organized by test type and feature.
 
 ## Directory Structure
 
@@ -33,6 +36,10 @@ Tests using real in-memory database. Located in `integration/`.
 Flutter widget tests. Located in `presentation/features/*/widgets/`.
 - **Run:** `flutter test --tags=widget`
 - **Coverage:** UI components, form validation, user interactions
+
+Note: as part of the target-state testing architecture, widget tests live under
+`test/presentation/**`. Prefer moving legacy paths toward this directory
+contract.
 
 ### Diagnosis Tests
 Investigation and debugging tests. Located in `diagnosis/`.
@@ -115,6 +122,15 @@ void main() {
 
 Why:
 - `setUpAllTestEnvironment` ensures the test binding is initialized, talker is
+
+### VS Code tasks (recommended)
+
+These tasks are defined in the workspace and are preferred over ad-hoc command
+variants:
+
+- `flutter_test_report` — runs tests and snapshots `test/last_run.json`
+- `flutter_test_machine` — raw `flutter test --machine`
+- `flutter_test_expanded` — human-readable failures
   ready, and mocktail fallback values are registered.
 - `setUpTestEnvironment` keeps per-test setup small and consistent.
 
@@ -201,6 +217,16 @@ void main() {
 ```
 
 #### Custom Matchers
+
+## Typical Developer Loop
+
+```text
+1) flutter analyze
+2) small loop: flutter test --preset=fast
+3) broader loop (before merging): flutter test --preset=quick or --preset=database
+4) when touching sync/persistence pipelines: run tag=pipeline intentionally
+5) when failures happen: inspect test/last_run.json artifacts
+```
 ```dart
 expect(state, isLoadingState());
 expect(state, isSuccessState());
@@ -226,6 +252,9 @@ class MyBlocTest extends BaseBlocTest<MyBloc, MyState> {
 }
 ```
 
+New tests must use the repo’s safe wrappers (see the target-state testing
+architecture in `doc/architecture/TESTING_ARCHITECTURE.md`). The intent is to
+avoid hung tests and ensure consistent timeouts/diagnostics.
 ### Mock Setup
 
 #### Using Mocktail

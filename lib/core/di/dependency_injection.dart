@@ -203,6 +203,12 @@ Future<void> setupDependencies() async {
         clock: getIt<Clock>(),
       ),
     )
+    ..registerLazySingleton<ScheduledOccurrencesService>(
+      () => ScheduledOccurrencesService(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+      ),
+    )
     ..registerLazySingleton<SectionDataService>(
       () => SectionDataService(
         taskRepository: getIt<TaskRepositoryContract>(),
@@ -291,7 +297,10 @@ Future<void> setupDependencies() async {
       ),
     )
     ..registerFactory<JournalTodayBloc>(
-      () => JournalTodayBloc(repository: getIt<JournalRepositoryContract>()),
+      () => JournalTodayBloc(
+        repository: getIt<JournalRepositoryContract>(),
+        nowUtc: getIt<NowService>().nowUtc,
+      ),
     )
     ..registerFactory<JournalHistoryBloc>(
       () => JournalHistoryBloc(
@@ -303,6 +312,7 @@ Future<void> setupDependencies() async {
       (preselectedTrackerIds, _) => AddLogCubit(
         repository: getIt<JournalRepositoryContract>(),
         preselectedTrackerIds: preselectedTrackerIds,
+        nowUtc: getIt<NowService>().nowUtc,
       ),
     )
     ..registerFactoryParam<JournalEntryEditorCubit, String?, Set<String>>(
@@ -310,6 +320,7 @@ Future<void> setupDependencies() async {
         repository: getIt<JournalRepositoryContract>(),
         entryId: entryId,
         preselectedTrackerIds: preselectedTrackerIds,
+        nowUtc: getIt<NowService>().nowUtc,
       ),
     )
     ..registerFactory<JournalManageTrackersCubit>(

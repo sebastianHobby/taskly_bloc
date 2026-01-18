@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_trackers_cubit.dart';
 
@@ -170,7 +171,7 @@ class _TrackerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now().toUtc();
+    final now = getIt<NowService>().nowUtc();
 
     final pref =
         preference ??
@@ -206,7 +207,7 @@ class _TrackerRow extends StatelessWidget {
                     onChanged(
                       pref.copyWith(
                         isActive: value,
-                        updatedAt: DateTime.now().toUtc(),
+                        updatedAt: getIt<NowService>().nowUtc(),
                       ),
                     );
                   },
@@ -234,7 +235,7 @@ class _TrackerRow extends StatelessWidget {
                       onChanged(
                         pref.copyWith(
                           pinned: value,
-                          updatedAt: DateTime.now().toUtc(),
+                          updatedAt: getIt<NowService>().nowUtc(),
                         ),
                       );
                     },
@@ -250,7 +251,7 @@ class _TrackerRow extends StatelessWidget {
                       onChanged(
                         pref.copyWith(
                           showInQuickAdd: value,
-                          updatedAt: DateTime.now().toUtc(),
+                          updatedAt: getIt<NowService>().nowUtc(),
                         ),
                       );
                     },

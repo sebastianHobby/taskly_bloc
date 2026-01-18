@@ -96,10 +96,10 @@ class JournalEntryEditorCubit extends Cubit<JournalEntryEditorState> {
     required JournalRepositoryContract repository,
     required String? entryId,
     required Set<String> preselectedTrackerIds,
-    DateTime Function()? nowUtc,
+    required DateTime Function() nowUtc,
   }) : _repository = repository,
        _preselectedTrackerIds = preselectedTrackerIds,
-       _nowUtc = nowUtc ?? (() => DateTime.now().toUtc()),
+       _nowUtc = nowUtc,
        super(JournalEntryEditorState.initial(entryId: entryId)) {
     _init();
   }

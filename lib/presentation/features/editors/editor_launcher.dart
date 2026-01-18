@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
@@ -65,11 +66,12 @@ class EditorLauncher {
       showDragHandle: effectiveShowDragHandle,
       childBuilder: (modalContext) {
         return BlocProvider(
-          create: (_) => TaskDetailBloc(
+          create: (context) => TaskDetailBloc(
             taskId: taskId,
             taskRepository: taskRepository,
             projectRepository: _projectRepository,
             valueRepository: _valueRepository,
+            errorReporter: context.read<AppErrorReporter>(),
           ),
           child: TaskDetailSheet(
             defaultProjectId: defaultProjectId,

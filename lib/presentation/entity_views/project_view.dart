@@ -15,6 +15,8 @@ import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_cata
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 import 'package:taskly_core/logging.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
 enum ProjectViewVariant {
   /// Default list-row style used across most list templates.
@@ -125,7 +127,7 @@ class ProjectView extends StatelessWidget {
 
   bool _isOverdue(DateTime? deadline) {
     if (deadline == null || project.completed) return false;
-    final now = DateTime.now();
+    final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
     return deadlineDay.isBefore(today);
@@ -133,7 +135,7 @@ class ProjectView extends StatelessWidget {
 
   bool _isDueToday(DateTime? deadline) {
     if (deadline == null || project.completed) return false;
-    final now = DateTime.now();
+    final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
     return deadlineDay.isAtSameMomentAs(today);
@@ -141,7 +143,7 @@ class ProjectView extends StatelessWidget {
 
   bool _isDueSoon(DateTime? deadline) {
     if (deadline == null || project.completed) return false;
-    final now = DateTime.now();
+    final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
     final daysUntil = deadlineDay.difference(today).inDays;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
 /// Card highlighting the recommended next task for a project.
 ///
@@ -116,7 +118,7 @@ class _DeadlineChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final now = DateTime.now();
+    final now = getIt<NowService>().nowLocal();
     final today = DateTime(now.year, now.month, now.day);
     final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
     final daysUntil = deadlineDay.difference(today).inDays;

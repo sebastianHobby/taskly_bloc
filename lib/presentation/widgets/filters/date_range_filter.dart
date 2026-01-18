@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/widgets/form_date_chip.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
 /// Unified date range filter with consistent styling.
 ///
@@ -100,9 +102,10 @@ class DateRangeFilter extends StatelessWidget {
     DateTime? initial,
     ValueChanged<DateTime?> onChanged,
   ) async {
+    final now = getIt<NowService>().nowLocal();
     final picked = await showDatePicker(
       context: context,
-      initialDate: initial ?? DateTime.now(),
+      initialDate: initial ?? now,
       firstDate: firstDate ?? DateTime(2020),
       lastDate: lastDate ?? DateTime(2030),
     );

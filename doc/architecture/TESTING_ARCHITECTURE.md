@@ -2,254 +2,177 @@
 
 > Audience: developers + architects
 >
-> Scope: how testing is structured in this repo (where tests live, how suites are
-> selected, and how the existing tooling records artifacts and performance).
+> Scope (target state): the **architecture** of tests in this repo — invariants,
+> taxonomy, and enforcement. Operational “how to run tests” details belong in
+> `test/README.md` so this doc stays stable as tooling evolves.
 
-## 1) Executive Summary
+## 1) Goals
 
-Taskly’s testing architecture is designed around three goals:
+Testing in Taskly optimizes for three outcomes:
 
-1) **Fast feedback** for everyday development (unit + widget tests).
-2) **High-confidence integration checks** for persistence and cross-component
+1) **Fast feedback** for everyday development (unit + widget).
+2) **High-confidence integration checks** for persistence and multi-component
    flows.
-3) **Reproducible diagnostics** when something fails (recorded artifacts,
-   consistent tagging, and stable conventions).
+3) **Reproducible diagnostics** when something fails.
 
 Core principles:
 
-- **Layer-aligned tests**: write tests at the lowest layer that provides the
-  needed confidence (domain → data → presentation).
-- **Hermetic by default**: unit/widget tests should not require network access.
-- **Explicit “real stack” boundaries**: tests that touch real DBs and local
-  Supabase/PowerSync are tagged and run intentionally.
-- **Artifact-first**: failure output and machine output are captured so failures
-  can be debugged after the fact.
+- **Layer-aligned tests**: test at the lowest layer that gives confidence.
+- **Hermetic-by-default**: unit/widget tests do not require network.
+- **Explicit real-stack boundaries**: pipeline tests are opt-in and tagged.
+- **Artifact-first**: structured output exists to debug failures.
 
-## 2) Where Things Live (Folder Map)
+## 2) Non-goals
 
-The test suite is organized under `test/` by layer and test type:
+- Do not test Flutter framework behavior itself (prefer unit tests of our logic
+  and widget tests of our composition/wiring).
+- Do not make the fast loop depend on external services.
+- Do not let tests become an architectural escape hatch (tests must follow the
+  same layering boundaries as production code).
 
-- `test/core/` — cross-cutting utilities/services
-- `test/domain/` — domain models, queries, use-cases, business logic
-- `test/data/` — repository and data-layer tests
-- `test/presentation/` — BLoC and UI/widget tests
-- `test/integration/` — integration tests (real DB or multi-component)
-- `test/contracts/` — contract-style tests (shared expectations)
-- `test/integration_test/` — integration_test-style / harness-style tests
-- `test/helpers/` — shared test utilities (builders, contexts)
-- `test/mocks/` — mock implementations
-- `test/fixtures/` — test data builders and fixtures
+## 3) Testing Invariants (Normative)
 
-For a detailed directory guide (and examples), see: `test/README.md`.
+This section defines **non-negotiable** rules for tests in this repo.
 
-## 3) Test Types (and when to use which)
+### TG-001-A — Hermetic-by-default for unit/widget tests
 
-### 3.1 Unit tests (tag: `unit`)
+**Invariant:** tests tagged `unit` or `widget` must be hermetic. They must not:
 
-Use unit tests when you can validate behavior without real IO:
+- require network access
+- touch a real Supabase/PowerSync stack
+- require non-temp filesystem state
+- depend on wall-clock time (`DateTime.now()`)
 
-- domain services and rules
-- pure mapping/validation logic
-- state machines and reducers
+If the behavior requires real persistence/network, it must be tested under an
+explicit tag such as `integration`, `repository`, or `pipeline`.
 
-Expected characteristics:
+### TG-002-A — Mandatory safe wrappers for new tests
 
-- fast
-- deterministic
-- uses fakes/stubs/mocks as needed
+**Invariant:** new tests must use the repo’s “safe wrappers” instead of raw
+`test()` / `testWidgets()` / `blocTest()`.
 
-### 3.2 Widget tests (tag: `widget`)
+This is the primary defense against hung tests and ensures consistent timeout
+and diagnostics behavior across the suite.
 
-Use widget tests to validate UI composition and interaction logic without
-spinning up full platform integrations:
+### TG-003-A — No leaked resources after a test
 
-- widget composition and layout behavior
-- form validation
-- BLoC/widget wiring
+**Invariant:** every resource created in a test must be cleaned up
+deterministically.
 
-### 3.3 Integration tests (tag: `integration`)
+Examples include (non-exhaustive):
 
-Use integration tests when correctness depends on real persistence or multiple
-components working together:
+- `StreamController`s, stream subscriptions
+- timers
+- BLoCs
+- database handles
 
-- repository implementations against a real/in-memory database
-- multi-step domain workflows that cross boundaries
+Cleanup must be registered immediately using `addTearDown(...)` (or test helper
+APIs built on top of it).
 
-### 3.4 Pipeline / local stack tests (tag: `pipeline`)
+### TG-004-A — Presentation boundary holds in tests
 
-These are “real stack” tests that may involve the local Supabase + PowerSync
-pipeline (network + services). They are slower and should be run intentionally.
+**Invariant:** widget tests must not call repositories/services directly and
+must not subscribe to domain/data streams from widget code.
 
-Note: pipeline tests in this repo are written to only execute when the
-environment points at a *local* stack (e.g. `SUPABASE_URL` and `POWERSYNC_URL`
-are `localhost`/`127.0.0.1`). In environments that provide non-local URLs (like
-Supabase Cloud), they will self-skip.
+In widget tests, repositories are mocked/faked behind the BLoC and the widget
+renders BLoC state.
 
-## 4) Tagging, Presets, and Selective Execution
+### TG-005-A — Tagging is directory-driven and enforceable
 
-The repo uses `dart_test.yaml` to define and standardize test tags and presets.
+**Invariant:** test type is determined by directory and must align with tags
+and presets.
 
-### 4.1 Common tags
+If a test does not fit the directory contract, move it or change its tag.
 
-- `unit` — fast, isolated tests
-- `widget` — Flutter widget tests
-- `integration` — slower tests with real DB or multi-component flows
-- `repository` — DB-backed repository tests
-- `slow` — known-slow tests
-- feature tags (examples): `tasks`, `journal`, `parity`
-- `pipeline` — local-stack pipeline tests
+### TG-006-A — OperationContext propagation is verified for write flows
 
-### 4.2 Presets
+**Invariant:** any test that validates a user-initiated write path must assert:
 
-Presets allow consistent suite selection (examples):
+- the `OperationContext` is created at the presentation boundary (typically the
+  BLoC handler interpreting user intent), and
+- the same context (correlation id) is passed through domain/data write APIs.
 
-- `--preset=fast` — excludes `integration`, `slow`, `repository`
-- `--preset=integration` — includes only `integration`
-- `--preset=quick` — excludes `slow`
-- `--preset=database` — includes `integration` and `repository`
+### TG-007-A — No `src/` deep imports in tests across packages
 
-This enables a stable “small loop / big loop” workflow:
+**Invariant:** tests outside a package must not import
+`package:<local_package>/src/...`.
 
-- small loop: run `fast`
-- big loop: run `quick` or `database`
-- targeted confidence: run `integration` / `repository` / `pipeline`
+Tests may import only public APIs (`package:<pkg>/<pkg>.dart` or other `lib/`
+entrypoints).
 
-## 5) Test Output Files (file_reporters)
+### TG-008-A — Flakiness policy: quarantine over retries
 
-This repo uses the Dart test runner’s `file_reporters` configuration to write
-structured output to disk during test runs.
+**Invariant:** flaky tests must be quarantined and kept out of default presets.
 
-Configured in:
+- Use an explicit tag (`flaky`) and exclude it from `fast/quick`.
+- Do not enable global retries by default to mask nondeterminism.
 
-- `dart_test.yaml`
+### TG-009-A — Performance budgets are manually enforced per preset
 
-Default output:
+**Invariant:** tests that meaningfully slow the developer loop must be tagged
+`slow` and excluded from `--preset=fast`.
 
-- `test/last_run.json` (JSON reporter)
+Use timing artifacts (for example `test/last_run.json`) to identify regressions.
 
-### 5.2 VS Code tasks
+## 4) Taxonomy: where tests live (directory contract)
 
-The workspace defines tasks for common runs:
+This contract is intended to keep tests discoverable and enforceable.
 
-- `flutter_test_report` — runs tests and copies `test/last_run.json` to a dated
-  file under `test/`
-- `flutter_test_machine` — raw `flutter test --machine`
-- `flutter_test_expanded` — human-readable failures
+| Directory | Primary tags | IO policy | Typical scope |
+| --- | --- | --- | --- |
+| `test/core/**` | `unit` | hermetic | cross-cutting pure logic |
+| `test/domain/**` | `unit` | hermetic | domain rules, reducers, mapping |
+| `test/presentation/**` | `widget` (or `unit` for pure BLoC/state) | hermetic | widget composition + BLoC wiring |
+| `test/data/**` | `repository` / `integration` | local DB only | repository behavior against real DB |
+| `test/integration/**` | `integration` | local DB only | multi-component flows without network |
+| `test/integration_test/**` | `pipeline` | local stack only | local Supabase/PowerSync pipeline |
+| `test/contracts/**` | `unit` | hermetic | shared expectations across impls |
+| `test/diagnosis/**` | `diagnosis` (optional) | varies | repros/investigations (not default) |
 
-(These tasks are defined in the VS Code workspace configuration and should be
-preferred over ad-hoc command variants.)
+Notes:
 
-## 6) Coverage
+- “local DB only” means no network; use in-memory or ephemeral on-disk DB.
+- Pipeline tests must self-skip if the environment is not pointing at a local
+  stack.
 
-Coverage is generated with Flutter’s built-in support and then optionally
-filtered to match what the repo considers “meaningful coverage”.
+## 5) Suites, tags, and presets
 
-### 6.1 Files excluded from coverage
+Canonical tags, presets, timeouts, and `file_reporters` live in `dart_test.yaml`.
+This document defines *policy*; `dart_test.yaml` defines *execution*.
 
-The repo uses:
+## 6) Artifacts (diagnostics and coverage)
 
-- `tool/coverage_filter.dart`
+### 6.1 Structured test output
 
-to filter `coverage/lcov.info` into:
+The suite writes structured output to:
 
-- `coverage/lcov_filtered.info`
+- `test/last_run.json`
 
-Typical exclusions include generated files (`*.g.dart`, `*.freezed.dart`),
-localization, some infrastructure wiring, and declarative configuration.
+This is part of the architecture because it enables reproducible debugging.
 
-## 7) Quality Bar and Conventions
+### 6.2 Coverage
 
-## 7) Safe Test Patterns & Helpers (Preventing Hangs/Timeouts)
+Coverage can be generated and filtered via repo tooling.
 
-This repo contains a small set of “safe defaults” for writing tests.
+- Filter script: `tool/coverage_filter.dart`
+- Summary script: `tool/coverage_summary.dart`
 
-The intent is to prevent the most common failure mode in Flutter tests:
-**a test that never completes because a stream/animation keeps scheduling
-frames**.
+## 7) Enforcement and guardrails
 
-### 7.1 Use the safe test wrappers
+Guardrails should be cheap, predictable, and aligned with the invariants.
+Enforcement targets include:
 
-Prefer the wrappers in `test/helpers/` over raw `test()` / `testWidgets()`:
+- Directory ↔ tag contract (TG-005-A)
+- No `src/` deep imports (TG-007-A)
+- Preset exclusions for `flaky` and `slow` (TG-008-A, TG-009-A)
 
-- `testWidgetsSafe(...)` in `test/helpers/test_helpers.dart`
-  - enforces a *hard* timeout on total test duration
-  - provides a targeted error message when a widget test hangs
-- `testSafe(...)` in `test/helpers/test_helpers.dart`
-  - same idea for async unit tests
-- `blocTestSafe(...)` in `test/helpers/bloc_test_patterns.dart`
-  - wraps `bloc_test` with timeout protection (especially around `act()`)
-  - initializes logging (`Talker`) for tests
-- `testContract(...)` in `test/helpers/contract_test_helpers.dart`
-  - contract tests should be fast and have a short, explicit timeout
+Layering invariants are already enforced by repo guardrails (see
+`tool/no_layering_violations.dart`).
 
-### 7.2 Widget tests: avoid `pumpAndSettle()` when streams are involved
+## 8) Anti-patterns (do not introduce)
 
-In this codebase, many widgets are backed by BLoCs that subscribe to streams.
-Those streams can keep scheduling frames, which makes `pumpAndSettle()` hang.
-
-Preferred patterns:
-
-- Use `tester.pumpForStream()` (extension in `test/helpers/test_helpers.dart`)
-  to process a bounded number of frames.
-- Use `tester.pumpUntilFound(finder)` for “wait until X appears” assertions.
-
-Helper entry points you’ll see in tests:
-
-- `pumpLocalizedApp(...)` / `pumpLocalizedRouterApp(...)` in
-  `test/helpers/pump_app.dart` (theme + l10n + MaterialApp)
-- `WidgetTester.pumpApp(...)` / `pumpWidgetWithBloc(...)` in
-  `test/helpers/widget_test_helpers.dart` (MaterialApp + localizations + BLoC)
-
-### 7.3 BLoC tests: prefer state-driven streams that replay the latest value
-
-Hangs in BLoC tests commonly come from race conditions with streams:
-
-1) a test emits data into a stream controller
-2) the bloc subscribes *after* the emit
-3) the data is missed, so the expected states never arrive
-
-Use stream helpers designed for this:
-
-- `TestStreamController<T>` in `test/helpers/bloc_test_patterns.dart`
-  - backed by `BehaviorSubject` so late subscribers still receive the latest
-    value
-- Stream waiting helpers in `test/helpers/bloc_test_helpers.dart`
-  - `waitForStreamEmissions(...)`
-  - `waitForStreamMatch(...)`
-  - `expectStreamEmits(...)` / `expectStreamEmitsInOrder(...)`
-
-### 7.4 Standard test setup templates
-
-To reduce boilerplate and keep tests consistent, the repo provides reusable
-templates:
-
-- `TestData` (Object Mother) in `test/fixtures/test_data.dart`
-  - central place to build domain objects with sensible defaults
-- `registerAllFallbackValues()` in `test/helpers/fallback_values.dart`
-  - required for `mocktail` when using `any()` with domain objects
-  - typically called once per test file via `setUpAll(registerAllFallbackValues)`
-- `BlocTestContext` in `test/helpers/bloc_test_helpers.dart`
-  - pre-wires common repository mocks and default stubs
-
-### 7.5 Concurrency, timeouts, and suite-level safety nets
-
-Suite-wide defaults live in `dart_test.yaml`:
-
-- global timeout safety net
-- per-tag timeouts (`slow`, `pipeline`, etc.)
-- concurrency configuration
-
-If a test hangs, fix the underlying cause (unclosed streams, infinite
-animations, missing stubs) rather than increasing timeouts.
-
----
-
-## Appendix A — Typical Developer Loop
-
-```text
-1) flutter analyze
-2) small loop: run preset=fast (unit/widget)
-3) big loop (before merging): run preset=quick or database
-4) when touching sync/persistence pipelines: run tag=pipeline intentionally
-5) when a failure happens: use the `file_reporters` outputs under test/last_run*.json
-```
+- Widget tests that call repositories/services directly.
+- Widget tests that use unbounded `pumpAndSettle()` for stream-backed UI.
+- Tests that rely on `DateTime.now()` or environment time.
+- Tests that leak stream subscriptions/timers/BLoCs.
+- Tests that import `package:<local>/src/...` across packages.
