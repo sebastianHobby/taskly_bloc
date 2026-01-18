@@ -38,25 +38,31 @@ Future<bool> prePush() async {
     return false;
   }
 
-  // 4. Enforce USM tile action guardrails (no DI/mutations/SnackBars in tiles)
+  // 4. Block DateTime.now() usage in presentation
+  if (!await _checkNoDateTimeNowInPresentation()) {
+    _printFailure();
+    return false;
+  }
+
+  // 5. Enforce USM tile action guardrails (no DI/mutations/SnackBars in tiles)
   if (!await _runUsmTileActionGuardrail()) {
     _printFailure();
     return false;
   }
 
-  // 5. Run flutter analyze (no warnings allowed)
+  // 6. Run flutter analyze (no warnings allowed)
   if (!await _runAnalyze()) {
     _printFailure();
     return false;
   }
 
-  // 6. Validate IdGenerator table registration
+  // 7. Validate IdGenerator table registration
   if (!await _validateTableRegistration()) {
     _printFailure();
     return false;
   }
 
-  // 7. Run tests with coverage (staged gate; filtered lcov)
+  // 8. Run tests with coverage (staged gate; filtered lcov)
   if (!await _runTestsWithCoverage()) {
     _printFailure();
     return false;
@@ -64,6 +70,41 @@ Future<bool> prePush() async {
 
   print('\n✅ All pre-push checks passed!');
   return true;
+}
+
+Future<bool> _checkNoDateTimeNowInPresentation() async {
+  print('🕒 Checking for DateTime.now() in presentation...');
+
+  try {
+    final result = await Process.run(
+      'dart',
+      ['run', 'tool/no_datetime_now_in_presentation.dart'],
+      runInShell: true,
+    );
+
+    final stdout = (result.stdout as String).trim();
+    final stderr = (result.stderr as String).trim();
+
+    if (result.exitCode != 0) {
+      print('   ❌ Presentation DateTime.now guardrail failed:\n');
+      if (stdout.isNotEmpty) {
+        final indented = stdout.split('\n').map((l) => '   $l').join('\n');
+        print(indented);
+      }
+      if (stderr.isNotEmpty) {
+        final indented = stderr.split('\n').map((l) => '   $l').join('\n');
+        print(indented);
+      }
+      print('');
+      return false;
+    }
+
+    print('   ✓ No DateTime.now() usage found in presentation.');
+    return true;
+  } catch (e) {
+    print('   ⚠️  Could not run presentation DateTime.now guardrail: $e');
+    return false;
+  }
 }
 
 Future<bool> _checkNoLocalPackageSrcDeepImports() async {

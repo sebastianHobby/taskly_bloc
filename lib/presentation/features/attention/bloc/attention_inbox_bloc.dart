@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_data/id.dart';
 import 'package:taskly_domain/attention.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:uuid/uuid.dart';
 
 part 'attention_inbox_bloc.freezed.dart';
@@ -196,10 +197,12 @@ class AttentionInboxBloc
     required AttentionEngineContract engine,
     required AttentionRepositoryContract repository,
     required IdGenerator idGenerator,
+    required NowService nowService,
     Duration undoWindow = const Duration(seconds: 5),
   }) : _engine = engine,
        _repository = repository,
        _idGenerator = idGenerator,
+       _nowService = nowService,
        _undoWindow = undoWindow,
        super(
          AttentionInboxState.loading(
@@ -232,6 +235,7 @@ class AttentionInboxBloc
   final AttentionEngineContract _engine;
   final AttentionRepositoryContract _repository;
   final IdGenerator _idGenerator;
+  final NowService _nowService;
   final Duration _undoWindow;
 
   final _uuid = const Uuid();
@@ -545,14 +549,11 @@ class AttentionInboxBloc
 
     try {
       for (final item in pending.items) {
-        final now = DateTime.now();
+        final now = _nowService.nowUtc();
 
         final details = switch (pending.action) {
           AttentionResolutionAction.snoozed => <String, dynamic>{
-            'snooze_until': now
-                .toUtc()
-                .add(const Duration(days: 1))
-                .toIso8601String(),
+            'snooze_until': now.add(const Duration(days: 1)).toIso8601String(),
           },
           AttentionResolutionAction.dismissed => _dismissDetails(item),
           AttentionResolutionAction.reviewed ||

@@ -223,8 +223,9 @@ class _AuthenticatedApp extends StatelessWidget {
         ),
       ],
       child: BlocProvider<ScreenActionsBloc>(
-        create: (_) => ScreenActionsBloc(
+        create: (context) => ScreenActionsBloc(
           entityActionService: getIt<EntityActionService>(),
+          errorReporter: context.read<AppErrorReporter>(),
         ),
         child: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
           builder: (context, state) {
@@ -282,7 +283,10 @@ class _ScreenActionsFailureSnackBarListenerState
   @override
   Widget build(BuildContext context) {
     return BlocListener<ScreenActionsBloc, ScreenActionsState>(
-      listenWhen: (previous, current) => current is ScreenActionsFailureState,
+      listenWhen: (previous, current) {
+        return current is ScreenActionsFailureState &&
+            current.shouldShowSnackBar;
+      },
       listener: (context, state) {
         if (state is! ScreenActionsFailureState) return;
 

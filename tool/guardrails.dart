@@ -19,6 +19,10 @@ Future<void> main(List<String> args) async {
       script: 'tool/no_datetime_now_in_domain_data.dart',
     ),
     const _Guardrail(
+      name: 'Block DateTime.now() in presentation',
+      script: 'tool/no_datetime_now_in_presentation.dart',
+    ),
+    const _Guardrail(
       name: 'Enforce layering via imports',
       script: 'tool/no_layering_violations.dart',
     ),

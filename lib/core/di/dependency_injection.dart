@@ -281,6 +281,7 @@ Future<void> setupDependencies() async {
         engine: getIt<attention_engine_v2.AttentionEngineContract>(),
         repository: getIt<attention_repo_v2.AttentionRepositoryContract>(),
         idGenerator: getIt<IdGenerator>(),
+        nowService: getIt<NowService>(),
       ),
     )
     ..registerLazySingleton<AttentionBellCubit>(
@@ -326,11 +327,14 @@ Future<void> setupDependencies() async {
     ..registerFactory<JournalManageTrackersCubit>(
       () => JournalManageTrackersCubit(
         repository: getIt<JournalRepositoryContract>(),
+        nowUtc: getIt<NowService>().nowUtc,
       ),
     )
     ..registerFactory<JournalTrackersCubit>(
-      () =>
-          JournalTrackersCubit(repository: getIt<JournalRepositoryContract>()),
+      () => JournalTrackersCubit(
+        repository: getIt<JournalRepositoryContract>(),
+        nowUtc: getIt<NowService>().nowUtc,
+      ),
     )
     ..registerFactory<MyDayGateBloc>(
       () => MyDayGateBloc(

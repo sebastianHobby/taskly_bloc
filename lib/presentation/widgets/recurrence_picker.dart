@@ -461,9 +461,8 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                       final date = await showDatePicker(
                         context: context,
                         initialDate:
-                            _until ??
-                            DateTime.now().add(const Duration(days: 30)),
-                        firstDate: DateTime.now(),
+                            _until ?? now.add(const Duration(days: 30)),
+                        firstDate: now,
                         lastDate: DateTime(2100),
                       );
                       if (date != null) {
@@ -490,8 +489,8 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
               onChanged: (value) async {
                 final date = await showDatePicker(
                   context: context,
-                  initialDate: DateTime.now().add(const Duration(days: 30)),
-                  firstDate: DateTime.now(),
+                  initialDate: now.add(const Duration(days: 30)),
+                  firstDate: now,
                   lastDate: DateTime(2100),
                 );
                 if (date != null) {

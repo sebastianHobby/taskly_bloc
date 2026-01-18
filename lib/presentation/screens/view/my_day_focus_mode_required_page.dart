@@ -46,8 +46,7 @@ class _MyDayFocusModeRequiredView extends StatelessWidget {
     final theme = this.theme ?? Theme.of(context);
     final now = getIt<NowService>().nowLocal();
     final dateLabel =
-        this.dateLabel ??
-      DateFormat('EEEE, MMM d').format(now).toUpperCase();
+        this.dateLabel ?? DateFormat('EEEE, MMM d').format(now).toUpperCase();
 
     return BlocBuilder<MyDayGateBloc, MyDayGateState>(
       builder: (context, state) {

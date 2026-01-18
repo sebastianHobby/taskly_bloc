@@ -34,11 +34,15 @@ final class JournalManageTrackersState {
 }
 
 class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
-  JournalManageTrackersCubit({required JournalRepositoryContract repository})
-    : _repository = repository,
-      super(JournalManageTrackersState.initial());
+  JournalManageTrackersCubit({
+    required JournalRepositoryContract repository,
+    required DateTime Function() nowUtc,
+  }) : _repository = repository,
+       _nowUtc = nowUtc,
+       super(JournalManageTrackersState.initial());
 
   final JournalRepositoryContract _repository;
+  final DateTime Function() _nowUtc;
 
   Future<List<TrackerDefinitionChoice>> getChoices(String trackerId) async {
     final trimmed = trackerId.trim();
@@ -63,7 +67,7 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
     emit(state.copyWith(status: const JournalManageTrackersSaving()));
 
     try {
-      final nowUtc = DateTime.now().toUtc();
+      final nowUtc = _nowUtc();
 
       await _repository.saveTrackerDefinition(
         TrackerDefinition(
@@ -193,7 +197,7 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
     required List<TrackerDefinitionChoice> existing,
     required List<TrackerDefinitionChoice> desired,
   }) async {
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = _nowUtc();
     final existingByKey = {
       for (final c in existing) c.choiceKey: c,
     };
@@ -267,7 +271,7 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
 
     emit(state.copyWith(status: const JournalManageTrackersSaving()));
     try {
-      final nowUtc = DateTime.now().toUtc();
+      final nowUtc = _nowUtc();
       await _repository.saveTrackerDefinition(
         definition.copyWith(isOutcome: isOutcome, updatedAt: nowUtc),
       );
@@ -289,7 +293,7 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
 
     emit(state.copyWith(status: const JournalManageTrackersSaving()));
     try {
-      final nowUtc = DateTime.now().toUtc();
+      final nowUtc = _nowUtc();
       await _repository.saveTrackerDefinition(
         definition.copyWith(isActive: !archived, updatedAt: nowUtc),
       );
@@ -326,7 +330,7 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
   }) async {
     emit(state.copyWith(status: const JournalManageTrackersSaving()));
     try {
-      final nowUtc = DateTime.now().toUtc();
+      final nowUtc = _nowUtc();
       var sort = 100;
       for (final d in ordered) {
         await _repository.saveTrackerDefinition(
@@ -354,7 +358,7 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
 
     emit(state.copyWith(status: const JournalManageTrackersSaving()));
     try {
-      final nowUtc = DateTime.now().toUtc();
+      final nowUtc = _nowUtc();
 
       final pref =
           existing ??

@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
+import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_domain/telemetry.dart';
 
 sealed class ScreenActionsEvent {
@@ -115,7 +117,9 @@ final class ScreenActionsFailureEvent extends ScreenActionsEvent {
 class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
   ScreenActionsBloc({
     required EntityActionService entityActionService,
+    required AppErrorReporter errorReporter,
   }) : _entityActionService = entityActionService,
+       _errorReporter = errorReporter,
        super(const ScreenActionsIdleState()) {
     on<ScreenActionsTaskCompletionChanged>(
       _onTaskCompletionChanged,
@@ -148,8 +152,32 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
   }
 
   final EntityActionService _entityActionService;
+  final AppErrorReporter _errorReporter;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
+
+  bool _isUnexpectedOrUnmapped(Object error) {
+    if (error is AppFailure) {
+      return error.reportAsUnexpected;
+    }
+    return true;
+  }
+
+  void _reportIfUnexpectedOrUnmapped(
+    Object error,
+    StackTrace stackTrace, {
+    required OperationContext context,
+    required String message,
+  }) {
+    if (!_isUnexpectedOrUnmapped(error)) return;
+
+    _errorReporter.reportUnexpected(
+      error,
+      stackTrace,
+      context: context,
+      message: message,
+    );
+  }
 
   OperationContext _newContext({
     required String intent,
@@ -173,20 +201,21 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     ScreenActionsTaskCompletionChanged event,
     Emitter<ScreenActionsState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'task_completion_changed',
+      operation: event.completed
+          ? 'complete_occurrence'
+          : 'uncomplete_occurrence',
+      entityType: EntityType.task,
+      entityId: event.taskId,
+      extraFields: <String, Object?>{
+        'occurrenceDate': event.occurrenceDate?.toIso8601String(),
+        'originalOccurrenceDate': event.originalOccurrenceDate
+            ?.toIso8601String(),
+      },
+    );
+
     try {
-      final context = _newContext(
-        intent: 'task_completion_changed',
-        operation: event.completed
-            ? 'complete_occurrence'
-            : 'uncomplete_occurrence',
-        entityType: EntityType.task,
-        entityId: event.taskId,
-        extraFields: <String, Object?>{
-          'occurrenceDate': event.occurrenceDate?.toIso8601String(),
-          'originalOccurrenceDate': event.originalOccurrenceDate
-              ?.toIso8601String(),
-        },
-      );
       if (event.completed) {
         await _entityActionService.completeTask(
           event.taskId,
@@ -203,11 +232,21 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
       }
       event.completer?.complete();
     } catch (e, st) {
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: 'Task completion change failed',
+      );
+
       talker.handle(e, st, '[ScreenActionsBloc] task completion failed');
+
+      final shouldShowSnackBar = !_isUnexpectedOrUnmapped(e);
       emit(
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.completionFailed,
           fallbackMessage: 'Task update failed',
+          shouldShowSnackBar: shouldShowSnackBar,
           entityType: EntityType.task,
           entityId: event.taskId,
           error: e,
@@ -222,20 +261,21 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     ScreenActionsProjectCompletionChanged event,
     Emitter<ScreenActionsState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'project_completion_changed',
+      operation: event.completed
+          ? 'complete_occurrence'
+          : 'uncomplete_occurrence',
+      entityType: EntityType.project,
+      entityId: event.projectId,
+      extraFields: <String, Object?>{
+        'occurrenceDate': event.occurrenceDate?.toIso8601String(),
+        'originalOccurrenceDate': event.originalOccurrenceDate
+            ?.toIso8601String(),
+      },
+    );
+
     try {
-      final context = _newContext(
-        intent: 'project_completion_changed',
-        operation: event.completed
-            ? 'complete_occurrence'
-            : 'uncomplete_occurrence',
-        entityType: EntityType.project,
-        entityId: event.projectId,
-        extraFields: <String, Object?>{
-          'occurrenceDate': event.occurrenceDate?.toIso8601String(),
-          'originalOccurrenceDate': event.originalOccurrenceDate
-              ?.toIso8601String(),
-        },
-      );
       if (event.completed) {
         await _entityActionService.completeProject(
           event.projectId,
@@ -252,11 +292,21 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
       }
       event.completer?.complete();
     } catch (e, st) {
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: 'Project completion change failed',
+      );
+
       talker.handle(e, st, '[ScreenActionsBloc] project completion failed');
+
+      final shouldShowSnackBar = !_isUnexpectedOrUnmapped(e);
       emit(
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.completionFailed,
           fallbackMessage: 'Project update failed',
+          shouldShowSnackBar: shouldShowSnackBar,
           entityType: EntityType.project,
           entityId: event.projectId,
           error: e,
@@ -271,14 +321,15 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     ScreenActionsTaskPinnedChanged event,
     Emitter<ScreenActionsState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'task_pinned_changed',
+      operation: event.pinned ? 'pin' : 'unpin',
+      entityType: EntityType.task,
+      entityId: event.taskId,
+      extraFields: <String, Object?>{'pinned': event.pinned},
+    );
+
     try {
-      final context = _newContext(
-        intent: 'task_pinned_changed',
-        operation: event.pinned ? 'pin' : 'unpin',
-        entityType: EntityType.task,
-        entityId: event.taskId,
-        extraFields: <String, Object?>{'pinned': event.pinned},
-      );
       if (event.pinned) {
         await _entityActionService.pinTask(event.taskId, context: context);
       } else {
@@ -286,11 +337,21 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
       }
       event.completer?.complete();
     } catch (e, st) {
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: 'Task pin change failed',
+      );
+
       talker.handle(e, st, '[ScreenActionsBloc] task pin failed');
+
+      final shouldShowSnackBar = !_isUnexpectedOrUnmapped(e);
       emit(
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.pinFailed,
           fallbackMessage: 'Task pin failed',
+          shouldShowSnackBar: shouldShowSnackBar,
           entityType: EntityType.task,
           entityId: event.taskId,
           error: e,
@@ -305,14 +366,15 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     ScreenActionsProjectPinnedChanged event,
     Emitter<ScreenActionsState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'project_pinned_changed',
+      operation: event.pinned ? 'pin' : 'unpin',
+      entityType: EntityType.project,
+      entityId: event.projectId,
+      extraFields: <String, Object?>{'pinned': event.pinned},
+    );
+
     try {
-      final context = _newContext(
-        intent: 'project_pinned_changed',
-        operation: event.pinned ? 'pin' : 'unpin',
-        entityType: EntityType.project,
-        entityId: event.projectId,
-        extraFields: <String, Object?>{'pinned': event.pinned},
-      );
       if (event.pinned) {
         await _entityActionService.pinProject(
           event.projectId,
@@ -326,11 +388,21 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
       }
       event.completer?.complete();
     } catch (e, st) {
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: 'Project pin change failed',
+      );
+
       talker.handle(e, st, '[ScreenActionsBloc] project pin failed');
+
+      final shouldShowSnackBar = !_isUnexpectedOrUnmapped(e);
       emit(
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.pinFailed,
           fallbackMessage: 'Project pin failed',
+          shouldShowSnackBar: shouldShowSnackBar,
           entityType: EntityType.project,
           entityId: event.projectId,
           error: e,
@@ -345,15 +417,16 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     ScreenActionsDeleteEntity event,
     Emitter<ScreenActionsState> emit,
   ) async {
+    final context = _contextFactory.create(
+      feature: 'usm',
+      screen: 'screen_actions',
+      intent: 'delete_entity',
+      operation: 'delete',
+      entityType: event.entityType.name,
+      entityId: event.entityId,
+    );
+
     try {
-      final context = _contextFactory.create(
-        feature: 'usm',
-        screen: 'screen_actions',
-        intent: 'delete_entity',
-        operation: 'delete',
-        entityType: event.entityType.name,
-        entityId: event.entityId,
-      );
       await _entityActionService.performAction(
         entityId: event.entityId,
         entityType: event.entityType,
@@ -362,11 +435,21 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
       );
       event.completer?.complete();
     } catch (e, st) {
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: 'Delete entity failed',
+      );
+
       talker.handle(e, st, '[ScreenActionsBloc] delete failed');
+
+      final shouldShowSnackBar = !_isUnexpectedOrUnmapped(e);
       emit(
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.deleteFailed,
           fallbackMessage: 'Delete failed',
+          shouldShowSnackBar: shouldShowSnackBar,
           entityType: event.entityType,
           entityId: event.entityId,
           error: e,
@@ -381,17 +464,18 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     ScreenActionsMoveTaskToProject event,
     Emitter<ScreenActionsState> emit,
   ) async {
+    final targetProjectId = event.targetProjectId.isEmpty
+        ? null
+        : event.targetProjectId;
+    final context = _newContext(
+      intent: 'move_task_to_project',
+      operation: 'move',
+      entityType: EntityType.task,
+      entityId: event.taskId,
+      extraFields: <String, Object?>{'targetProjectId': targetProjectId},
+    );
+
     try {
-      final targetProjectId = event.targetProjectId.isEmpty
-          ? null
-          : event.targetProjectId;
-      final context = _newContext(
-        intent: 'move_task_to_project',
-        operation: 'move',
-        entityType: EntityType.task,
-        entityId: event.taskId,
-        extraFields: <String, Object?>{'targetProjectId': targetProjectId},
-      );
       await _entityActionService.moveTask(
         event.taskId,
         targetProjectId,
@@ -399,11 +483,21 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
       );
       event.completer?.complete();
     } catch (e, st) {
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: 'Move task failed',
+      );
+
       talker.handle(e, st, '[ScreenActionsBloc] move failed');
+
+      final shouldShowSnackBar = !_isUnexpectedOrUnmapped(e);
       emit(
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.moveFailed,
           fallbackMessage: 'Move failed',
+          shouldShowSnackBar: shouldShowSnackBar,
           entityType: EntityType.task,
           entityId: event.taskId,
           error: e,
@@ -422,6 +516,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
       ScreenActionsFailureState(
         failureKind: event.failureKind,
         fallbackMessage: event.fallbackMessage,
+        shouldShowSnackBar: true,
         entityType: event.entityType,
         entityId: event.entityId,
         error: event.error,
