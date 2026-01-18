@@ -30,13 +30,17 @@ final class JournalTrackersError extends JournalTrackersState {
 }
 
 class JournalTrackersCubit extends Cubit<JournalTrackersState> {
-  JournalTrackersCubit({required JournalRepositoryContract repository})
-    : _repository = repository,
-      super(const JournalTrackersLoading()) {
+  JournalTrackersCubit({
+    required JournalRepositoryContract repository,
+    required DateTime Function() nowUtc,
+  }) : _repository = repository,
+       _nowUtc = nowUtc,
+       super(const JournalTrackersLoading()) {
     _subscribe();
   }
 
   final JournalRepositoryContract _repository;
+  final DateTime Function() _nowUtc;
 
   StreamSubscription<JournalTrackersLoaded>? _sub;
 
@@ -53,7 +57,7 @@ class JournalTrackersCubit extends Cubit<JournalTrackersState> {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
 
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = _nowUtc();
 
     await _repository.saveTrackerDefinition(
       TrackerDefinition(

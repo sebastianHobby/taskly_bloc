@@ -350,7 +350,9 @@ final class _JournalManageTrackersSectionRendererV1State
     if (result == null) return;
 
     await cubit.upsertTrackerFromEditor(
-      definition: result.definition.copyWith(updatedAt: getIt<NowService>().nowUtc()),
+      definition: result.definition.copyWith(
+        updatedAt: getIt<NowService>().nowUtc(),
+      ),
       pinned: result.pinned,
       showInQuickAdd: result.showInQuickAdd,
       existingPreference: preference,

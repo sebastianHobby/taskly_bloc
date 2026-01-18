@@ -8,6 +8,7 @@ class TasklyHeader extends StatelessWidget {
     this.trailing,
     this.icon,
   });
+
   final String title;
   final String? subtitle;
   final Widget? trailing;
@@ -52,7 +53,7 @@ class TasklyHeader extends StatelessWidget {
             ],
           ),
         ),
-        if (trailing != null) trailing!,
+        trailing ?? const SizedBox.shrink(),
       ],
     );
   }

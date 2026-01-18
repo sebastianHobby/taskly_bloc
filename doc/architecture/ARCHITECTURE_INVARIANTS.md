@@ -18,16 +18,32 @@
 
 ### 1.1 Dependency direction (strict)
 
-- Allowed dependency direction is: **presentation → domain → data**.
-- The reverse direction is forbidden:
-  - domain must not import presentation
-  - data must not import domain implementation details from presentation
+- **Presentation may depend on Domain.**
+- **Data may depend on Domain** (to implement repository contracts and shared
+  domain policies).
+- **Domain must not depend on Presentation or Data.**
+- **Presentation must not depend on Data.**
+
+Put differently:
+
+- allowed: `presentation -> domain`, `data -> domain`
+- forbidden: `domain -> data`, `domain -> presentation`, `presentation -> data`,
+  `data -> presentation`
+
+Rationale:
+
+- Domain stays pure and stable while implementation details evolve.
+- Data implements Domain-owned contracts.
 
 Guardrail:
 
 - Central runner: [tool/guardrails.dart](../../tool/guardrails.dart)
 - Layering check: [tool/no_layering_violations.dart](../../tool/no_layering_violations.dart)
   - Escape hatch (use sparingly): `// ignore-layering-guardrail`
+
+Note: the current layering guardrail enforces `presentation ↛ data` and
+`domain/data ↛ presentation`. The `domain ↛ data` rule is still normative even
+when it is not yet mechanically enforced.
 
 ### 1.2 `shared/` and `core/` placement
 
@@ -61,6 +77,44 @@ Guardrail:
   - Fails on `import`/`export` of `package:<local>/src/...` from outside that
     local package.
 
+### 1.4 Domain purity (strict, pragmatic)
+
+Domain code must remain *platform-agnostic* and UI-agnostic.
+
+Normative rules:
+
+- Domain must not import Flutter UI framework libraries:
+  - forbidden: `package:flutter/material.dart`, `package:flutter/widgets.dart`,
+    `dart:ui`, any plugin packages (`package:shared_preferences/...`, etc.)
+- Domain must not depend on database, network, or serialization frameworks:
+  - forbidden: Drift table/query APIs, Supabase clients, PostgREST payload
+    models, JSON codecs that are tied to persistence (those belong in Data)
+- Domain may depend on:
+  - Dart SDK libraries (e.g., `dart:core`, `dart:async`, `dart:math`)
+  - pure-Dart utility packages (e.g., `package:meta`, `package:collection`)
+  - other domain packages within this repo (e.g., `taskly_domain` public API)
+
+Pragmatic exception policy:
+
+- If a domain file must import a Flutter SDK library for a narrowly-scoped
+  reason, it must be limited to **`package:flutter/foundation.dart` only**
+  (no widgets/rendering)
+
+Rationale:
+
+- Keeps Domain testable and reusable.
+- Prevents `BuildContext` and widget lifecycle from leaking into business rules.
+
+### 1.5 Dependency injection boundary (strict)
+
+- Do not use service locators (for example `getIt`) in widgets or BLoCs.
+- Service locator usage is allowed only in composition roots:
+  - DI setup (for example `lib/core/di/...`)
+  - app bootstrap
+  - route/screen wiring
+
+Everything else must use constructor injection.
+
 ## 2) Presentation boundary (BLoC-only)
 
 - Widgets/pages must not call repositories/services directly.
@@ -69,6 +123,17 @@ Guardrail:
 
 Allowed exceptions (narrow): ephemeral UI-only state (controllers, focus nodes,
 animations, scroll controllers) that does not represent domain/data state.
+
+### 2.0 Guardrail escape hatch policy (strict)
+
+If you use an `ignore-*-guardrail` escape hatch, it must reference a tracked
+exception document under:
+
+- [doc/architecture/exceptions/](exceptions/)
+
+Required format (example):
+
+- `// ignore-layering-guardrail (see doc/architecture/exceptions/EXC-YYYYMMDD-short-title.md; owner=<name>; expires=YYYY-MM-DD)`
 
 ### 2.1 Shared UI extraction: `packages/taskly_ui` (strict)
 
