@@ -118,3 +118,45 @@ class ProjectTileModel {
   /// Mirrors legacy behavior: show a small done/total label under actions.
   final bool showTrailingProgressLabel;
 }
+
+/// Curated visual variants for value tiles.
+enum ValueTileVariant {
+  /// A standard list-row variant for the Values list.
+  standard,
+
+  /// Screenshot-style card variant used on the system “My Values” screen.
+  myValuesCardV1,
+}
+
+/// UI-only value tile input.
+///
+/// All formatting and user-facing strings must be computed in the app layer
+/// and passed in as plain fields.
+class ValueTileModel {
+  const ValueTileModel({
+    required this.id,
+    required this.title,
+    required this.icon,
+    required this.accentColor,
+    this.loadingLabel,
+    this.firstLineLabel,
+    this.firstLineValue,
+    this.secondLineLabel,
+    this.secondLineValue,
+  });
+
+  final String id;
+  final String title;
+
+  final IconData icon;
+  final Color accentColor;
+
+  /// Rendered when stats lines are not available (app-owned).
+  final String? loadingLabel;
+
+  /// Optional stat lines (app-owned strings).
+  final String? firstLineLabel;
+  final String? firstLineValue;
+  final String? secondLineLabel;
+  final String? secondLineValue;
+}

@@ -15,6 +15,8 @@ export 'src/sections/taskly_standard_tile_list_section.dart';
 
 export 'src/tiles/task_entity_tile.dart';
 export 'src/tiles/project_entity_tile.dart';
+export 'src/tiles/value_entity_tile.dart';
 
 // Reuse existing UI-only models.
-export 'src/tiles/entity_tile_models.dart' show ProjectTileModel, TaskTileModel;
+export 'src/tiles/entity_tile_models.dart'
+    show ProjectTileModel, TaskTileModel, ValueTileModel, ValueTileVariant;
