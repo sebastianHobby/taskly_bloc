@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:taskly_domain/src/core/model/value.dart';
-import 'package:taskly_domain/src/core/model/value_priority.dart';
+import 'package:taskly_domain/core/model/value_priority.dart';
 
 @immutable
 final class ValueDraft {

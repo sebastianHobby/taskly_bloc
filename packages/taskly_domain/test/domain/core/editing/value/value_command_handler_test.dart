@@ -6,7 +6,7 @@ import '../../../../helpers/test_imports.dart';
 import 'package:taskly_domain/src/core/editing/command_result.dart';
 import 'package:taskly_domain/src/core/editing/value/value_command_handler.dart';
 import 'package:taskly_domain/src/core/editing/value/value_commands.dart';
-import 'package:taskly_domain/src/core/model/value_priority.dart';
+import 'package:taskly_domain/core/model/value_priority.dart';
 import 'package:taskly_domain/src/forms/field_key.dart';
 import 'package:taskly_domain/src/interfaces/value_repository_contract.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';

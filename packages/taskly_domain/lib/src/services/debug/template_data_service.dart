@@ -7,7 +7,7 @@ import 'package:taskly_domain/src/interfaces/value_repository_contract.dart';
 import 'package:taskly_domain/src/allocation/model/allocation_config.dart';
 import 'package:taskly_domain/src/allocation/model/focus_mode.dart';
 import 'package:taskly_domain/src/preferences/model/settings_key.dart';
-import 'package:taskly_domain/src/core/model/value_priority.dart';
+import 'package:taskly_domain/core/model/value_priority.dart';
 import 'package:taskly_domain/src/queries/project_query.dart';
 import 'package:taskly_domain/src/queries/task_query.dart';
 import 'package:taskly_domain/src/time/clock.dart';
@@ -299,10 +299,7 @@ class TemplateDataService {
       priority: 1,
       startDate: day(-14),
       deadlineDate: day(21),
-      valueIds: [
-        valueIdByName['Life Admin']!,
-        valueIdByName['Relationships']!,
-      ],
+      valueIds: [valueIdByName['Life Admin']!, valueIdByName['Relationships']!],
     );
     await _projectRepository.create(
       name: 'Home chores',
@@ -524,23 +521,17 @@ class TemplateDataService {
 
   Future<Map<String, String>> _loadValueIdByName() async {
     final values = await _valueRepository.getAll();
-    return {
-      for (final v in values) v.name: v.id,
-    };
+    return {for (final v in values) v.name: v.id};
   }
 
   Future<Map<String, String>> _loadProjectIdByName() async {
     final projects = await _projectRepository.getAll(ProjectQuery.all());
-    return {
-      for (final p in projects) p.name: p.id,
-    };
+    return {for (final p in projects) p.name: p.id};
   }
 
   Future<void> _pinTasksByName(List<String> names) async {
     final tasks = await _taskRepository.getAll(TaskQuery.all());
-    final idByName = <String, String>{
-      for (final t in tasks) t.name: t.id,
-    };
+    final idByName = <String, String>{for (final t in tasks) t.name: t.id};
 
     for (final name in names) {
       final id = idByName[name];

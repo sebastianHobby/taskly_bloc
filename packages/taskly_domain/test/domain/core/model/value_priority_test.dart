@@ -3,7 +3,7 @@ library;
 
 import '../../../helpers/test_imports.dart';
 
-import 'package:taskly_domain/src/core/model/value_priority.dart';
+import 'package:taskly_domain/core/model/value_priority.dart';
 
 void main() {
   testSafe('ValuePriority values expose expected weights', () async {

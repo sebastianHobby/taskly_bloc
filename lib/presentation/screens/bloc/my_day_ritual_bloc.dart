@@ -445,8 +445,10 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
 
     bool isPlanned(Task task) {
       if (_isCompleted(task)) return false;
-      final start = dateOnlyOrNull(task.startDate);
-      final deadline = dateOnlyOrNull(task.deadlineDate);
+      final start = dateOnlyOrNull(task.occurrence?.date ?? task.startDate);
+      final deadline = dateOnlyOrNull(
+        task.occurrence?.deadline ?? task.deadlineDate,
+      );
       final startEligible = start != null && !start.isAfter(today);
       final dueSoon = deadline != null && !deadline.isAfter(dueSoonLimit);
       return startEligible || dueSoon;
