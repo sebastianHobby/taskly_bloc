@@ -336,6 +336,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
               ),
               depth: taskDepth,
               task: task,
+              showProjectLabel: !includeProjectHeader,
             ),
           );
         }

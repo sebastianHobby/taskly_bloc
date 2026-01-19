@@ -3,7 +3,9 @@
 // ignore_for_file: avoid_print
 /// Filters lcov.info to exclude files that shouldn't count toward coverage targets.
 ///
-/// Usage: dart run tool/coverage_filter.dart
+/// Usage:
+/// - dart run tool/coverage_filter.dart
+/// - dart run tool/coverage_filter.dart --package taskly_data
 ///
 /// This script reads coverage/lcov.info, removes excluded files, and writes
 /// to coverage/lcov_filtered.info for reporting.
@@ -72,8 +74,10 @@ final excludedPatterns = [
   RegExp(r'talker_service\.dart$'),
 ];
 
-void main() {
-  final inputFile = File('coverage/lcov.info');
+void main(List<String> args) {
+  final parsed = _parseArgs(args);
+
+  final inputFile = File(parsed.inputPath);
   if (!inputFile.existsSync()) {
     print(
       'Error: coverage/lcov.info not found. Run `flutter test --coverage` first.',
@@ -97,7 +101,12 @@ void main() {
     } else if (line == 'end_of_record') {
       buffer.writeln(line);
 
-      if (currentFile != null && !_isExcluded(currentFile)) {
+      final filePath = currentFile;
+      final isInPackage =
+          parsed.packageName == null ||
+          (filePath != null && _isInPackage(filePath, parsed.packageName!));
+
+      if (filePath != null && isInPackage && !_isExcluded(filePath)) {
         output.write(buffer);
         includedCount++;
       } else {
@@ -110,13 +119,16 @@ void main() {
     }
   }
 
-  final outputFile = File('coverage/lcov_filtered.info');
+  final outputFile = File(parsed.outputPath);
   outputFile.writeAsStringSync(output.toString());
 
   print('Coverage filter complete:');
+  if (parsed.packageName != null) {
+    print('  Package: ${parsed.packageName}');
+  }
   print('  Included: $includedCount files');
   print('  Excluded: $excludedCount files');
-  print('  Output: coverage/lcov_filtered.info');
+  print('  Output: ${parsed.outputPath}');
   print('');
   print('To generate HTML report:');
   print('  genhtml coverage/lcov_filtered.info -o coverage/html');
@@ -129,4 +141,53 @@ bool _isExcluded(String filePath) {
     }
   }
   return false;
+}
+
+bool _isInPackage(String filePath, String packageName) {
+  final normalized = filePath.replaceAll(r'\', '/');
+  if (packageName == 'taskly_bloc') {
+    return normalized.contains('/lib/');
+  }
+
+  return normalized.contains('/packages/$packageName/lib/');
+}
+
+class _Args {
+  const _Args({
+    required this.inputPath,
+    required this.outputPath,
+    required this.packageName,
+  });
+
+  final String inputPath;
+  final String outputPath;
+  final String? packageName;
+}
+
+_Args _parseArgs(List<String> args) {
+  String inputPath = 'coverage/lcov.info';
+  String outputPath = 'coverage/lcov_filtered.info';
+  String? packageName;
+
+  for (var i = 0; i < args.length; i++) {
+    final a = args[i];
+    if (a == '--package' && i + 1 < args.length) {
+      packageName = args[++i];
+      continue;
+    }
+    if (a == '--input' && i + 1 < args.length) {
+      inputPath = args[++i];
+      continue;
+    }
+    if (a == '--output' && i + 1 < args.length) {
+      outputPath = args[++i];
+      continue;
+    }
+  }
+
+  return _Args(
+    inputPath: inputPath,
+    outputPath: outputPath,
+    packageName: packageName,
+  );
 }

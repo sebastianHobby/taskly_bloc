@@ -17,6 +17,7 @@ TaskTileModel buildTaskListRowTileModel(
   BuildContext context, {
   required Task task,
   required EntityTileCapabilities tileCapabilities,
+  bool showProjectLabel = true,
 }) {
   final isCompleted = task.occurrence?.isCompleted ?? task.completed;
 
@@ -40,13 +41,13 @@ TaskTileModel buildTaskListRowTileModel(
       : DateLabelFormatter.format(context, effectiveDeadlineDate);
 
   final meta = EntityMetaLineModel(
+    projectName: showProjectLabel ? task.project?.name : null,
+    showValuesInMetaLine: true,
     primaryValue: task.effectivePrimaryValue?.toChipData(context),
     secondaryValues: task.effectiveSecondaryValues
         .take(1)
         .map((v) => v.toChipData(context))
         .toList(growable: false),
-    secondaryValuePresentation: EntitySecondaryValuePresentation.dotsCluster,
-    maxSecondaryValues: 1,
     startDateLabel: startDateLabel,
     deadlineDateLabel: deadlineDateLabel,
     isOverdue: _isOverdue(
@@ -65,7 +66,6 @@ TaskTileModel buildTaskListRowTileModel(
       today: today,
     ),
     hasRepeat: task.repeatIcalRrule != null,
-    showRepeatOnRight: true,
     showBothDatesIfPresent: true,
     showPriorityMarkerOnRight: true,
     priority: task.priority,
@@ -73,20 +73,26 @@ TaskTileModel buildTaskListRowTileModel(
     priorityPillLabel: task.priority == null
         ? null
         : 'Priority P${task.priority}',
-    enableRightOverflowDemotion: true,
-    showOverflowIndicatorOnRight: true,
-    onTapValues: buildTaskOpenValuesHandler(
-      context,
-      task: task,
-      tileCapabilities: tileCapabilities,
-    ),
   );
+
+  void onTap() {
+    final dispatcher = context.read<TileIntentDispatcher>();
+    unawaited(
+      dispatcher.dispatch(
+        context,
+        TileIntentOpenEditor(
+          entityType: EntityType.task,
+          entityId: task.id,
+        ),
+      ),
+    );
+  }
 
   return TaskTileModel(
     id: task.id,
     title: task.name,
     completed: isCompleted,
-    pinned: task.isPinned,
+    onTap: onTap,
     meta: meta,
     checkboxSemanticLabel: isCompleted
         ? 'Mark "${task.name}" as incomplete'
@@ -119,28 +125,6 @@ ValueChanged<bool?>? buildTaskToggleCompletionHandler(
           scope: tileCapabilities.completionScope,
           occurrenceDate: occurrenceDate,
           originalOccurrenceDate: originalOccurrenceDate,
-        ),
-      ),
-    );
-  };
-}
-
-VoidCallback? buildTaskOpenValuesHandler(
-  BuildContext context, {
-  required Task task,
-  required EntityTileCapabilities tileCapabilities,
-}) {
-  if (!tileCapabilities.canAlignValues) return null;
-
-  return () {
-    final dispatcher = context.read<TileIntentDispatcher>();
-    unawaited(
-      dispatcher.dispatch(
-        context,
-        TileIntentOpenEditor(
-          entityType: EntityType.task,
-          entityId: task.id,
-          openToValues: true,
         ),
       ),
     );

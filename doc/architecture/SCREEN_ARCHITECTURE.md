@@ -109,7 +109,11 @@ Normative boundaries for `taskly_ui`:
 
 Package hygiene (recommended):
 
-- App code should import only `package:taskly_ui/taskly_ui.dart`.
+- App code should import one of the curated public entrypoints (and avoid
+  `package:taskly_ui/src/...` deep imports):
+  - `package:taskly_ui/taskly_ui_catalog.dart` (catalogue tiles/sections)
+  - `package:taskly_ui/taskly_ui_feed.dart` (feed scaffolding)
+  - `package:taskly_ui/taskly_ui.dart` only when you truly need the wider legacy API
 - Keep `taskly_ui` implementation private under `packages/taskly_ui/lib/src/`.
 
 Taxonomy layout (strict):

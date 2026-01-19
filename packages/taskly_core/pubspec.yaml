@@ -12,3 +12,7 @@ dependencies:
   meta: any
   path_provider: any
   talker_flutter: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

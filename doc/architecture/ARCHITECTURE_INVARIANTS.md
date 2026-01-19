@@ -153,8 +153,11 @@ Normative rules:
     catalogs, app analytics/logging dispatch, or any other “do something in the
     app” orchestration.
 - Reusable UI must follow **data in / events out** APIs (props + callbacks).
-- App code must not deep-import `taskly_ui` internals; import only
-  `package:taskly_ui/taskly_ui.dart`.
+- App code must not deep-import `taskly_ui` internals (`package:taskly_ui/src/...`).
+  Import only public entrypoints under `packages/taskly_ui/lib/`:
+  - prefer `package:taskly_ui/taskly_ui_catalog.dart` for catalogue tiles/sections
+  - use `package:taskly_ui/taskly_ui_feed.dart` for feed scaffolding
+  - treat `package:taskly_ui/taskly_ui.dart` as a legacy/wide barrel
 
 Allowed exceptions (narrow):
 

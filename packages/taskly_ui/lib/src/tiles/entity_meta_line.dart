@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:taskly_ui/src/primitives/value_chip.dart';
-import 'package:taskly_ui/src/primitives/value_chip_widget.dart';
 import 'package:taskly_ui/src/primitives/date_chip.dart';
 import 'package:taskly_ui/src/primitives/priority_marker.dart';
+import 'package:taskly_ui/src/primitives/value_chip.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 
 class EntityMetaLine extends StatelessWidget {
@@ -16,54 +15,19 @@ class EntityMetaLine extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    final leftChildren = <Widget>[];
-
-    final primary = model.primaryValue;
-    if (primary != null) {
-      leftChildren.add(
-        Tooltip(
-          message: primary.label,
-          child: ValueChip(
-            data: primary,
-            variant: ValueChipVariant.outlined,
-            iconOnly: model.primaryValueIconOnly,
-            onTap: model.onTapValues,
-          ),
-        ),
-      );
-    }
-
-    if (model.secondaryValues.isNotEmpty) {
-      switch (model.secondaryValuePresentation) {
-        case EntitySecondaryValuePresentation.singleOutlinedIconOnly:
-          final v = model.secondaryValues.first;
-          leftChildren.add(
-            Tooltip(
-              message: v.label,
-              child: ValueChip(
-                data: v,
-                variant: ValueChipVariant.outlined,
-                iconOnly: true,
-                onTap: model.onTapValues,
-              ),
-            ),
-          );
-        case EntitySecondaryValuePresentation.dotsCluster:
-          leftChildren.add(
-            _ValueDotsCluster(
-              values: model.secondaryValues,
-              maxDots: model.maxSecondaryValues,
-              onTap: model.onTapValues,
-            ),
-          );
-      }
-    }
+    final hasAnyValues =
+        model.showValuesInMetaLine &&
+        (model.primaryValue != null || model.secondaryValues.isNotEmpty);
 
     final hasAnyDates =
         model.showDates &&
         (model.startDateLabel != null || model.deadlineDateLabel != null);
 
-    if (leftChildren.isEmpty && !hasAnyDates) {
+    if (!hasAnyValues &&
+        !hasAnyDates &&
+        !model.hasRepeat &&
+        !model.showPriorityMarkerOnRight &&
+        (model.projectName == null || model.projectName!.trim().isEmpty)) {
       return const SizedBox.shrink();
     }
 
@@ -71,6 +35,28 @@ class EntityMetaLine extends StatelessWidget {
       padding: const EdgeInsets.only(top: 6),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          Widget? valueCluster;
+          if (model.showValuesInMetaLine) {
+            final primaryValue = model.primaryValue;
+            final secondaryValue = model.secondaryValues.isEmpty
+                ? null
+                : model.secondaryValues.first;
+
+            if (primaryValue != null || secondaryValue != null) {
+              valueCluster = Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (primaryValue != null)
+                    _ValueIcon(data: primaryValue, useValueColor: true),
+                  if (secondaryValue != null) ...[
+                    const SizedBox(width: 6),
+                    _ValueIcon(data: secondaryValue, useValueColor: false),
+                  ],
+                ],
+              );
+            }
+          }
+
           final dateTokens = <Widget>[];
           if (model.showDates) {
             final shouldShowBoth =
@@ -103,84 +89,80 @@ class EntityMetaLine extends StatelessWidget {
             }
           }
 
-          final statusTokens = <Widget>[];
+          final hasProjectName =
+              model.projectName != null && model.projectName!.trim().isNotEmpty;
+          final hasOtherTokens =
+              hasProjectName ||
+              dateTokens.isNotEmpty ||
+              model.hasRepeat ||
+              (model.showPriorityMarkerOnRight &&
+                  (model.priority == 1 || model.priority == 2) &&
+                  model.priorityColor != null);
 
-          if (model.showPriorityMarkerOnRight) {
-            final p = model.priority;
-            final color = model.priorityColor;
-            if ((p == 1 || p == 2) && color != null) {
-              statusTokens.add(
-                Tooltip(
-                  message: model.priorityPillLabel ?? 'Priority P$p',
-                  child: _TapAbsorber(child: PriorityMarker(color: color)),
+          final tokens = <Widget>[
+            if (valueCluster != null) _TapAbsorber(child: valueCluster),
+            if (valueCluster != null && hasOtherTokens)
+              _TapAbsorber(
+                child: Text(
+                  '•',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    fontSize: 12,
+                    height: 1,
+                  ),
                 ),
-              );
-            }
-          }
-
-          if (model.hasRepeat) {
-            final repeatIcon = _TapAbsorber(
-              child: Icon(
-                Icons.sync_rounded,
-                size: 14,
-                color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
-            );
-
-            if (model.showRepeatOnRight) {
-              statusTokens.add(repeatIcon);
-            } else {
-              leftChildren.add(repeatIcon);
-            }
-          }
-
-          final showStatusTokens =
-              !model.enableRightOverflowDemotion || constraints.maxWidth >= 360;
-          final showOverflowIndicator =
-              model.showOverflowIndicatorOnRight && !showStatusTokens;
-
-          final rightTokens = <Widget>[];
-          if (showStatusTokens) {
-            rightTokens.addAll(statusTokens);
-          } else if (showOverflowIndicator && statusTokens.isNotEmpty) {
-            rightTokens.add(
+            if (hasProjectName)
+              _TapAbsorber(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.folder_outlined,
+                      size: 12,
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.65),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      model.projectName!,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        height: 1.1,
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ...dateTokens,
+            if (model.hasRepeat)
               _TapAbsorber(
                 child: Icon(
-                  Icons.more_horiz_rounded,
-                  size: 16,
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  Icons.sync_rounded,
+                  size: 14,
+                  color: scheme.onSurfaceVariant.withValues(alpha: 0.55),
                 ),
               ),
-            );
-          }
-          rightTokens.addAll(dateTokens);
+            if (model.showPriorityMarkerOnRight)
+              if (model.priority == 1 || model.priority == 2)
+                if (model.priorityColor != null)
+                  Tooltip(
+                    message:
+                        model.priorityPillLabel ??
+                        'Priority P${model.priority}',
+                    child: _TapAbsorber(
+                      child: PriorityMarker(color: model.priorityColor!),
+                    ),
+                  ),
+          ];
 
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Wrap(
-                  spacing:
-                      model.secondaryValuePresentation ==
-                          EntitySecondaryValuePresentation.dotsCluster
-                      ? 6
-                      : 12,
-                  runSpacing: 6,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: leftChildren,
-                ),
-              ),
-              if (rightTokens.isNotEmpty) ...[
-                const SizedBox(width: 12),
-                Wrap(
-                  alignment: WrapAlignment.end,
-                  spacing: 12,
-                  runSpacing: 6,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: rightTokens,
-                ),
-              ],
-            ],
+          return Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: tokens,
           );
         },
       ),
@@ -188,60 +170,35 @@ class EntityMetaLine extends StatelessWidget {
   }
 }
 
-class _ValueDotsCluster extends StatelessWidget {
-  const _ValueDotsCluster({
-    required this.values,
-    required this.maxDots,
-    this.onTap,
-  });
+class _ValueIcon extends StatelessWidget {
+  const _ValueIcon({required this.data, required this.useValueColor});
 
-  final List<ValueChipData> values;
-  final int maxDots;
-  final VoidCallback? onTap;
+  final ValueChipData data;
+  final bool useValueColor;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final color = useValueColor
+        ? data.color.withValues(alpha: 0.95)
+        : scheme.onSurfaceVariant.withValues(alpha: 0.7);
 
-    final dotsToShow = values.take(maxDots).toList(growable: false);
-
-    final content = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(dotsToShow.length, (index) {
-        final v = dotsToShow[index];
-        return Padding(
-          padding: EdgeInsets.only(left: index == 0 ? 0 : 2),
-          child: Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: v.color.withValues(alpha: 0.85),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.35),
-                width: 1,
-              ),
-            ),
+    return Tooltip(
+      message: data.label,
+      child: Container(
+        width: 18,
+        height: 18,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: 0.8), width: 1.25),
+        ),
+        child: Center(
+          child: Icon(
+            data.icon,
+            size: 12,
+            color: color.withValues(alpha: 1),
           ),
-        );
-      }),
-    );
-
-    final tooltip = values.map((v) => v.label).join(', ');
-
-    final result = Tooltip(
-      message: tooltip,
-      child: content,
-    );
-
-    if (onTap == null) return result;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 1),
-        child: result,
+        ),
       ),
     );
   }

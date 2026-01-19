@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
-import 'package:taskly_bloc/presentation/entity_tiles/widgets/task_today_status_menu_button.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_menu.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_ui/taskly_ui_catalog.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
 class MyDayTaskListSection extends StatefulWidget {
   const MyDayTaskListSection({
@@ -232,26 +234,47 @@ class _MyDayTaskListSectionState extends State<MyDayTaskListSection> {
                 task,
               );
 
-              return TaskListRowTile(
-                model: buildTaskListRowTileModel(
-                  context,
-                  task: task,
-                  tileCapabilities: tileCapabilities,
-                ),
+              final overflowActions = TileOverflowActionCatalog.forTask(
+                taskId: task.id,
+                taskName: task.name,
+                isPinnedToMyDay: task.isPinned,
+                isRepeating: task.isRepeating,
+                seriesEnded: task.seriesEnded,
+                tileCapabilities: tileCapabilities,
+              );
+
+              final hasAnyEnabledAction = overflowActions.any((a) => a.enabled);
+
+              final model = buildTaskListRowTileModel(
+                context,
+                task: task,
+                tileCapabilities: tileCapabilities,
+              );
+
+              return TaskEntityTile(
+                model: model,
+                onTap: model.onTap,
+                badges: [
+                  if (task.isPinned)
+                    const BadgeSpec(kind: BadgeKind.pinned, label: 'Pinned'),
+                ],
+                trailing: hasAnyEnabledAction
+                    ? TrailingSpec.overflowButton
+                    : TrailingSpec.none,
                 onToggleCompletion: buildTaskToggleCompletionHandler(
                   context,
                   task: task,
                   tileCapabilities: tileCapabilities,
                 ),
-                trailing: TaskTodayStatusMenuButton(
-                  taskId: task.id,
-                  taskName: task.name,
-                  isPinnedToMyDay: task.isPinned,
-                  isInMyDayAuto: true,
-                  isRepeating: task.isRepeating,
-                  seriesEnded: task.seriesEnded,
-                  tileCapabilities: tileCapabilities,
-                ),
+                onOverflowRequestedAt: hasAnyEnabledAction
+                    ? (pos) => showTileOverflowMenu(
+                        context,
+                        position: pos,
+                        entityTypeLabel: 'task',
+                        entityId: task.id,
+                        actions: overflowActions,
+                      )
+                    : null,
               );
             },
           );

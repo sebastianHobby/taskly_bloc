@@ -2,24 +2,16 @@ import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/primitives/value_chip.dart';
 
-enum EntitySecondaryValuePresentation {
-  dotsCluster,
-  singleOutlinedIconOnly,
-}
-
 /// UI-only meta-line input.
 ///
 /// All formatting and domain semantics should be computed in the app layer and
 /// passed in as plain fields.
 class EntityMetaLineModel {
   const EntityMetaLineModel({
+    this.projectName,
+    this.showValuesInMetaLine = false,
     this.primaryValue,
     this.secondaryValues = const <ValueChipData>[],
-    this.secondaryValuePresentation =
-        EntitySecondaryValuePresentation.singleOutlinedIconOnly,
-    this.primaryValueIconOnly = false,
-    this.maxSecondaryValues = 2,
-    this.collapseSecondaryValuesToCount = false,
     this.showDates = true,
     this.showOnlyDeadlineDate = false,
     this.showBothDatesIfPresent = false,
@@ -29,22 +21,20 @@ class EntityMetaLineModel {
     this.isDueToday = false,
     this.isDueSoon = false,
     this.hasRepeat = false,
-    this.showRepeatOnRight = true,
     this.priority,
     this.priorityPillLabel,
     this.priorityColor,
     this.showPriorityMarkerOnRight = false,
-    this.enableRightOverflowDemotion = false,
-    this.showOverflowIndicatorOnRight = false,
-    this.onTapValues,
   });
 
   final ValueChipData? primaryValue;
   final List<ValueChipData> secondaryValues;
-  final EntitySecondaryValuePresentation secondaryValuePresentation;
-  final bool primaryValueIconOnly;
-  final int maxSecondaryValues;
-  final bool collapseSecondaryValuesToCount;
+
+  /// Optional project name to render inline on the meta line.
+  final String? projectName;
+
+  /// When true, value icons render at the start of the meta line.
+  final bool showValuesInMetaLine;
 
   /// When false, no date chips are rendered.
   final bool showDates;
@@ -67,7 +57,6 @@ class EntityMetaLineModel {
   final bool isDueSoon;
 
   final bool hasRepeat;
-  final bool showRepeatOnRight;
 
   final int? priority;
 
@@ -79,14 +68,6 @@ class EntityMetaLineModel {
 
   /// Shows a small marker on the right (typically only P1/P2).
   final bool showPriorityMarkerOnRight;
-
-  /// If true, on narrow widths status tokens are demoted first.
-  final bool enableRightOverflowDemotion;
-
-  /// If true and tokens are demoted, show a subtle overflow indicator (…).
-  final bool showOverflowIndicatorOnRight;
-
-  final VoidCallback? onTapValues;
 }
 
 class TaskTileModel {
@@ -94,7 +75,7 @@ class TaskTileModel {
     required this.id,
     required this.title,
     required this.completed,
-    required this.pinned,
+    required this.onTap,
     required this.meta,
     this.checkboxSemanticLabel,
   });
@@ -102,7 +83,7 @@ class TaskTileModel {
   final String id;
   final String title;
   final bool completed;
-  final bool pinned;
+  final VoidCallback onTap;
   final EntityMetaLineModel meta;
 
   /// Optional semantics label for the completion toggle (app-owned).

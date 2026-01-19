@@ -11,12 +11,19 @@ import 'package:taskly_domain/taskly_domain.dart' hide Value;
 class JournalRepositoryImpl
     with QueryBuilderMixin
     implements JournalRepositoryContract {
-  JournalRepositoryImpl(this._database, this._idGenerator);
+  JournalRepositoryImpl(
+    this._database,
+    this._idGenerator, {
+    this.clock = systemClock,
+  }) : _predicateMapper = JournalPredicateMapper(clock: clock);
 
   final AppDatabase _database;
   final IdGenerator _idGenerator;
-  final JournalPredicateMapper _predicateMapper =
-      const JournalPredicateMapper();
+
+  @override
+  final Clock clock;
+
+  final JournalPredicateMapper _predicateMapper;
 
   @override
   Stream<List<JournalEntry>> watchJournalEntries({DateRange? range}) {

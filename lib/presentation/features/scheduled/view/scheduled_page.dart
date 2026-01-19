@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
-import 'package:taskly_bloc/presentation/entity_tiles/widgets/widgets.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_feed_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_ui/taskly_ui.dart' hide ProjectTileModel, TaskTileModel;
+import 'package:taskly_ui/taskly_ui_catalog.dart';
 
 class ScheduledPage extends StatelessWidget {
   const ScheduledPage({super.key, this.scope = const GlobalScheduledScope()});
@@ -182,23 +185,11 @@ class _ScheduledViewState extends State<_ScheduledView> {
                         'Add start dates or deadlines to see items here.',
                   ),
                 ),
-              ScheduledFeedLoaded(:final rows) => FeedBody.list(
-                controller: _scrollController,
-                itemCount: rows.length,
-                itemBuilder: (context, index) {
-                  final row = rows[index];
-
-                  final child = _ScheduledRow(row: row);
-                  final withTodayKey =
-                      row is DateHeaderRowUiModel && _isSameDay(row.date, today)
-                      ? KeyedSubtree(key: _todayHeaderKey, child: child)
-                      : child;
-
-                  return KeyedSubtree(
-                    key: ValueKey(row.rowKey),
-                    child: withTodayKey,
-                  );
-                },
+              ScheduledFeedLoaded(:final rows) => _ScheduledAgenda(
+                rows: rows,
+                today: today,
+                scrollController: _scrollController,
+                todayAnchorKey: _todayHeaderKey,
               ),
             };
 
@@ -221,146 +212,196 @@ bool _isSameDay(DateTime a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
-class _ScheduledRow extends StatelessWidget {
-  const _ScheduledRow({required this.row});
+class _ScheduledAgenda extends StatelessWidget {
+  const _ScheduledAgenda({
+    required this.rows,
+    required this.today,
+    required this.scrollController,
+    required this.todayAnchorKey,
+  });
 
-  final ListRowUiModel row;
+  final List<ListRowUiModel> rows;
+  final DateTime today;
+  final ScrollController scrollController;
+  final Key todayAnchorKey;
 
   @override
   Widget build(BuildContext context) {
-    return switch (row) {
-      BucketHeaderRowUiModel(
-        :final bucketKey,
-        :final title,
-        :final isCollapsed,
-      ) =>
-        InkWell(
-          onTap: () => context.read<ScheduledFeedBloc>().add(
-            ScheduledBucketCollapseToggled(bucketKey: bucketKey),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                Icon(
-                  isCollapsed ? Icons.chevron_right : Icons.expand_more,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ],
+    final agendaRows = <TasklyAgendaRowModel>[];
+
+    for (final row in rows) {
+      switch (row) {
+        case BucketHeaderRowUiModel(
+          :final bucketKey,
+          :final title,
+          :final isCollapsed,
+        ):
+          agendaRows.add(
+            TasklyAgendaBucketHeaderRowModel(
+              key: row.rowKey,
+              depth: row.depth,
+              bucketKey: bucketKey,
+              title: title,
+              isCollapsed: isCollapsed,
+              onTap: () => context.read<ScheduledFeedBloc>().add(
+                ScheduledBucketCollapseToggled(bucketKey: bucketKey),
+              ),
             ),
-          ),
-        ),
-      DateHeaderRowUiModel(:final title) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-        child: Text(
-          title,
-          style: Theme.of(context).textTheme.labelLarge,
-        ),
-      ),
-      EmptyDayRowUiModel() => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: Text(
-          'No items',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ),
-      ScheduledEntityRowUiModel(:final occurrence) => _ScheduledOccurrenceTile(
-        occurrence: occurrence,
-      ),
-      _ => const SizedBox.shrink(),
-    };
-  }
-}
+          );
+        case DateHeaderRowUiModel(:final date, :final title):
+          agendaRows.add(
+            TasklyAgendaDateHeaderRowModel(
+              key: row.rowKey,
+              depth: row.depth,
+              day: date,
+              title: title,
+              isTodayAnchor: _isSameDay(date, today),
+            ),
+          );
+        case EmptyDayRowUiModel(:final date):
+          agendaRows.add(
+            TasklyAgendaEmptyDayRowModel(
+              key: row.rowKey,
+              depth: row.depth,
+              day: date,
+              label: 'No items',
+            ),
+          );
+        case ScheduledEntityRowUiModel(:final occurrence):
+          final scheduledTag = occurrence.ref.tag;
 
-class _ScheduledOccurrenceTile extends StatelessWidget {
-  const _ScheduledOccurrenceTile({required this.occurrence});
+          if (occurrence.ref.entityType == EntityType.task &&
+              occurrence.task != null) {
+            final task = occurrence.task!;
+            final tileCapabilities = EntityTileCapabilitiesResolver.forTask(
+              task,
+            );
 
-  final ScheduledOccurrence occurrence;
+            final overflowActions = TileOverflowActionCatalog.forTask(
+              taskId: task.id,
+              taskName: task.name,
+              isPinnedToMyDay: task.isPinned,
+              isRepeating: task.isRepeating,
+              seriesEnded: task.seriesEnded,
+              tileCapabilities: tileCapabilities,
+            );
 
-  @override
-  Widget build(BuildContext context) {
-    final isOngoing = occurrence.ref.tag == ScheduledDateTag.ongoing;
+            final hasAnyEnabledAction = overflowActions.any((a) => a.enabled);
 
-    if (occurrence.ref.entityType == EntityType.task &&
-        occurrence.task != null) {
-      final task = occurrence.task!;
+            agendaRows.add(
+              TasklyAgendaTaskRowModel(
+                key: row.rowKey,
+                depth: row.depth,
+                entityId: task.id,
+                model: buildTaskListRowTileModel(
+                  context,
+                  task: task,
+                  tileCapabilities: tileCapabilities,
+                ),
+                badges: [
+                  BadgeSpec(
+                    kind: switch (scheduledTag) {
+                      ScheduledDateTag.due => BadgeKind.due,
+                      ScheduledDateTag.starts => BadgeKind.starts,
+                      ScheduledDateTag.ongoing => BadgeKind.ongoing,
+                    },
+                    label: scheduledTag.label,
+                  ),
+                  if (task.isPinned)
+                    const BadgeSpec(kind: BadgeKind.pinned, label: 'Pinned'),
+                ],
+                trailing: hasAnyEnabledAction
+                    ? TrailingSpec.overflowButton
+                    : TrailingSpec.none,
+                onToggleCompletion: buildTaskToggleCompletionHandler(
+                  context,
+                  task: task,
+                  tileCapabilities: tileCapabilities,
+                ),
+                onOverflowRequestedAt: hasAnyEnabledAction
+                    ? (Offset pos) async {
+                        await showTileOverflowMenu(
+                          context,
+                          position: pos,
+                          entityTypeLabel: 'task',
+                          entityId: task.id,
+                          actions: overflowActions,
+                        );
+                      }
+                    : null,
+              ),
+            );
+            continue;
+          }
 
-      final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
+          if (occurrence.ref.entityType == EntityType.project &&
+              occurrence.project != null) {
+            final project = occurrence.project!;
+            final tileCapabilities = EntityTileCapabilitiesResolver.forProject(
+              project,
+            );
 
-      return TaskListRowTile(
-        model: buildTaskListRowTileModel(
-          context,
-          task: task,
-          tileCapabilities: tileCapabilities,
-        ),
-        onTap: () => Routing.toTaskEdit(context, task.id),
-        onToggleCompletion: buildTaskToggleCompletionHandler(
-          context,
-          task: task,
-          tileCapabilities: tileCapabilities,
-        ),
-        trailing: TaskTodayStatusMenuButton(
-          taskId: task.id,
-          taskName: task.name,
-          isPinnedToMyDay: task.isPinned,
-          isInMyDayAuto: false,
-          isRepeating: task.isRepeating,
-          seriesEnded: task.seriesEnded,
-          tileCapabilities: tileCapabilities,
-          compact: true,
-        ),
-        statusBadge: isOngoing
-            ? TasklyBadge(
-                label: 'Ongoing',
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                isOutlined: true,
-              )
-            : null,
-      );
+            final overflowActions = TileOverflowActionCatalog.forProject(
+              projectId: project.id,
+              projectName: project.name,
+              isPinnedToMyDay: project.isPinned,
+              isRepeating: project.isRepeating,
+              seriesEnded: project.seriesEnded,
+              tileCapabilities: tileCapabilities,
+            );
+
+            final hasAnyEnabledAction = overflowActions.any((a) => a.enabled);
+
+            agendaRows.add(
+              TasklyAgendaProjectRowModel(
+                key: row.rowKey,
+                depth: row.depth,
+                entityId: project.id,
+                model: buildProjectListRowTileModel(
+                  context,
+                  project: project,
+                  taskCount: project.taskCount,
+                  completedTaskCount: project.completedTaskCount,
+                ),
+                badges: [
+                  BadgeSpec(
+                    kind: switch (scheduledTag) {
+                      ScheduledDateTag.due => BadgeKind.due,
+                      ScheduledDateTag.starts => BadgeKind.starts,
+                      ScheduledDateTag.ongoing => BadgeKind.ongoing,
+                    },
+                    label: scheduledTag.label,
+                  ),
+                ],
+                trailing: hasAnyEnabledAction
+                    ? TrailingSpec.overflowButton
+                    : TrailingSpec.none,
+                onTap: () => Routing.toProjectEdit(context, project.id),
+                onOverflowRequestedAt: hasAnyEnabledAction
+                    ? (Offset pos) async {
+                        await showTileOverflowMenu(
+                          context,
+                          position: pos,
+                          entityTypeLabel: 'project',
+                          entityId: project.id,
+                          actions: overflowActions,
+                        );
+                      }
+                    : null,
+              ),
+            );
+            continue;
+          }
+
+        default:
+          continue;
+      }
     }
 
-    if (occurrence.ref.entityType == EntityType.project &&
-        occurrence.project != null) {
-      final project = occurrence.project!;
-
-      final tileCapabilities = EntityTileCapabilitiesResolver.forProject(
-        project,
-      );
-
-      return ProjectListRowTile(
-        model: buildProjectListRowTileModel(
-          context,
-          project: project,
-          tileCapabilities: tileCapabilities,
-          taskCount: project.taskCount,
-          completedTaskCount: project.completedTaskCount,
-        ),
-        onTap: () => Routing.toProjectEdit(context, project.id),
-        trailing: ProjectTodayStatusMenuButton(
-          projectId: project.id,
-          projectName: project.name,
-          isPinnedToMyDay: project.isPinned,
-          isInMyDayAuto: false,
-          isRepeating: project.isRepeating,
-          seriesEnded: project.seriesEnded,
-          tileCapabilities: tileCapabilities,
-        ),
-        statusBadge: isOngoing
-            ? TasklyBadge(
-                label: 'Ongoing',
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                isOutlined: true,
-              )
-            : null,
-      );
-    }
-
-    return const SizedBox.shrink();
+    return TasklyAgendaSection(
+      rows: agendaRows,
+      controller: scrollController,
+      todayAnchorKey: todayAnchorKey,
+    );
   }
 }
