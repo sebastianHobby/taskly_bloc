@@ -35,6 +35,8 @@ class TaskListRowTile extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
+    final isCompact = MediaQuery.sizeOf(context).width < 420;
+
     return Container(
       key: Key('task-${model.id}'),
       decoration: BoxDecoration(
@@ -53,12 +55,15 @@ class TaskListRowTile extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: isCompact ? 10 : 12,
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox.square(
-                    dimension: 44,
+                    dimension: isCompact ? 40 : 44,
                     child: Center(
                       child: _TaskCompletionCheckbox(
                         completed: model.completed,
@@ -68,7 +73,7 @@ class TaskListRowTile extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: isCompact ? 10 : 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,7 +112,7 @@ class TaskListRowTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   SizedBox(
-                    width: 56,
+                    width: isCompact ? 48 : 56,
                     child: Align(
                       alignment: Alignment.topRight,
                       child: trailing ?? const SizedBox.shrink(),

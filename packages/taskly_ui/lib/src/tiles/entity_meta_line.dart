@@ -15,6 +15,8 @@ class EntityMetaLine extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
+    final isCompact = MediaQuery.sizeOf(context).width < 420;
+
     final hasAnyValues =
         model.showValuesInMetaLine &&
         (model.primaryValue != null || model.secondaryValues.isNotEmpty);
@@ -32,7 +34,7 @@ class EntityMetaLine extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
+      padding: EdgeInsets.only(top: isCompact ? 4 : 6),
       child: LayoutBuilder(
         builder: (context, constraints) {
           Widget? valueCluster;
@@ -91,39 +93,22 @@ class EntityMetaLine extends StatelessWidget {
 
           final hasProjectName =
               model.projectName != null && model.projectName!.trim().isNotEmpty;
-          final hasOtherTokens =
-              hasProjectName ||
-              dateTokens.isNotEmpty ||
-              model.hasRepeat ||
-              (model.showPriorityMarkerOnRight &&
-                  (model.priority == 1 || model.priority == 2) &&
-                  model.priorityColor != null);
 
-          final tokens = <Widget>[
-            if (valueCluster != null) _TapAbsorber(child: valueCluster),
-            if (valueCluster != null && hasOtherTokens)
-              _TapAbsorber(
-                child: Text(
-                  '•',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    fontSize: 12,
-                    height: 1,
-                  ),
-                ),
-              ),
+          final leftTokens = <Widget>[
+            ?valueCluster,
             if (hasProjectName)
-              _TapAbsorber(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.folder_outlined,
-                      size: 12,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.65),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.folder_outlined,
+                    size: 12,
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.65),
+                  ),
+                  const SizedBox(width: 4),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 220),
+                    child: Text(
                       model.projectName!,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: scheme.onSurfaceVariant,
@@ -133,17 +118,18 @@ class EntityMetaLine extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+          ];
+
+          final rightTokens = <Widget>[
             ...dateTokens,
             if (model.hasRepeat)
-              _TapAbsorber(
-                child: Icon(
-                  Icons.sync_rounded,
-                  size: 14,
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.55),
-                ),
+              Icon(
+                Icons.sync_rounded,
+                size: 14,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.55),
               ),
             if (model.showPriorityMarkerOnRight)
               if (model.priority == 1 || model.priority == 2)
@@ -152,17 +138,44 @@ class EntityMetaLine extends StatelessWidget {
                     message:
                         model.priorityPillLabel ??
                         'Priority P${model.priority}',
-                    child: _TapAbsorber(
-                      child: PriorityMarker(color: model.priorityColor!),
-                    ),
+                    child: PriorityMarker(color: model.priorityColor!),
                   ),
           ];
 
-          return Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: tokens,
+          Widget wrapTokens(List<Widget> tokens) {
+            return Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: tokens,
+            );
+          }
+
+          final hasLeft = leftTokens.isNotEmpty;
+          final hasRight = rightTokens.isNotEmpty;
+          if (!hasLeft && !hasRight) return const SizedBox.shrink();
+          if (!hasRight) return wrapTokens(leftTokens);
+          if (!hasLeft) return wrapTokens(rightTokens);
+
+          final useStackedLayout = constraints.maxWidth < 360;
+          if (useStackedLayout) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                wrapTokens(leftTokens),
+                const SizedBox(height: 6),
+                wrapTokens(rightTokens),
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: wrapTokens(leftTokens)),
+              const SizedBox(width: 10),
+              wrapTokens(rightTokens),
+            ],
           );
         },
       ),
@@ -196,21 +209,6 @@ class _ValueIcon extends StatelessWidget {
           child: Icon(data.icon, size: 12, color: color.withValues(alpha: 1)),
         ),
       ),
-    );
-  }
-}
-
-class _TapAbsorber extends StatelessWidget {
-  const _TapAbsorber({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {},
-      child: child,
     );
   }
 }

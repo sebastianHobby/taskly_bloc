@@ -39,6 +39,8 @@ class ProjectListRowTile extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
+    final effectiveCompact = compact || MediaQuery.sizeOf(context).width < 420;
+
     return Container(
       key: Key('project-${model.id}'),
       decoration: BoxDecoration(
@@ -59,13 +61,13 @@ class ProjectListRowTile extends StatelessWidget {
             Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: compact ? 10 : 12,
+                vertical: effectiveCompact ? 10 : 12,
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox.square(
-                    dimension: 44,
+                    dimension: effectiveCompact ? 40 : 44,
                     child: Center(
                       child: Icon(
                         Icons.folder_outlined,
@@ -97,7 +99,7 @@ class ProjectListRowTile extends StatelessWidget {
                                       ? scheme.onSurface.withValues(alpha: 0.5)
                                       : scheme.onSurface,
                                 ),
-                                maxLines: compact ? 1 : 2,
+                                maxLines: effectiveCompact ? 1 : 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -146,7 +148,7 @@ class ProjectListRowTile extends StatelessWidget {
             if (model.pinned)
               Positioned(
                 left: 0,
-                top: compact ? 12 : 14,
+                top: effectiveCompact ? 12 : 14,
                 child: IgnorePointer(
                   child: PinnedGutterMarker(color: scheme.primary),
                 ),

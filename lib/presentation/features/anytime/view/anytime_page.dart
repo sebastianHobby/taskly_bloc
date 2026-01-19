@@ -225,7 +225,7 @@ List<TasklyStandardTileListRowModel> _buildStandardRows(
             TasklyStandardTileListHeaderRowModel(
               key: row.rowKey,
               depth: row.depth,
-              title: title.toUpperCase(),
+              title: title,
             ),
           ProjectHeaderRowUiModel(:final projectRef, :final title) =>
             TasklyStandardTileListIconHeaderRowModel(
