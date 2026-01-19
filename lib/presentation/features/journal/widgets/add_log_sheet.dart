@@ -112,7 +112,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
 
         bool isDailyScope(TrackerDefinition d) {
           final s = d.scope.trim().toLowerCase();
-          return s == 'day' || s == 'daily';
+          return s == 'day' || s == 'daily' || s == 'sleep_night';
         }
 
         List<TrackerDefinition> scopeTrackers(bool daily) {
@@ -396,43 +396,53 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                     child: Center(child: CircularProgressIndicator()),
                   )
                 else ...[
-                  ExpansionTile(
-                    initiallyExpanded: true,
-                    title: const Text('Daily'),
-                    childrenPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    children: [
-                      groupedTrackers(daily: true),
-                    ],
+                  Text('Mood', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  _MoodScalePicker(
+                    value: state.mood,
+                    enabled: !isSaving,
+                    onChanged: (value) =>
+                        context.read<JournalAddEntryCubit>().moodChanged(value),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _noteController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Note (optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                    enabled: !isSaving,
+                    onChanged: (v) =>
+                        context.read<JournalAddEntryCubit>().noteChanged(v),
                   ),
                   const SizedBox(height: 8),
                   ExpansionTile(
                     initiallyExpanded: true,
-                    title: const Text('This entry'),
+                    title: const Text('Factors'),
                     childrenPadding: const EdgeInsets.symmetric(horizontal: 8),
                     children: [
-                      Text('Mood', style: theme.textTheme.titleMedium),
-                      const SizedBox(height: 8),
-                      _MoodScalePicker(
-                        value: state.mood,
-                        enabled: !isSaving,
-                        onChanged: (value) => context
-                            .read<JournalAddEntryCubit>()
-                            .moodChanged(value),
-                      ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _noteController,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'Note (optional)',
-                          border: OutlineInputBorder(),
+                      ExpansionTile(
+                        initiallyExpanded: true,
+                        title: const Text('Daily (applies to the day)'),
+                        childrenPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
                         ),
-                        enabled: !isSaving,
-                        onChanged: (v) =>
-                            context.read<JournalAddEntryCubit>().noteChanged(v),
+                        children: [
+                          groupedTrackers(daily: true),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      groupedTrackers(daily: false),
+                      const SizedBox(height: 8),
+                      ExpansionTile(
+                        initiallyExpanded: true,
+                        title: const Text('This entry (momentary)'),
+                        childrenPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                        ),
+                        children: [
+                          groupedTrackers(daily: false),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),

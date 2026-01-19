@@ -6,12 +6,12 @@ import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/my_day_hero_card.dart';
-import 'package:taskly_bloc/presentation/screens/widgets/my_day_accepted_buckets_section.dart';
-import 'package:taskly_bloc/presentation/screens/widgets/my_day_task_list_section.dart';
+import 'package:taskly_bloc/presentation/screens/widgets/my_day_ritual_sections_card.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_ritual_wizard_page.dart';
 
 class MyDayPage extends StatelessWidget {
@@ -126,11 +126,11 @@ class _MyDayLoadedBody extends StatelessWidget {
           MyDayError(:final message) => Center(child: Text(message)),
           MyDayLoaded(
             :final summary,
-            :final mix,
-            :final tasks,
             :final acceptedDue,
             :final acceptedStarts,
             :final acceptedFocus,
+            :final otherDueCount,
+            :final otherStartsCount,
           ) =>
             SafeArea(
               bottom: false,
@@ -144,17 +144,27 @@ class _MyDayLoadedBody extends StatelessWidget {
                     sliver: SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.only(top: 10),
-                        child: MyDayAcceptedBucketsSection(
+                        child: MyDayRitualSectionsCard(
                           acceptedDue: acceptedDue,
                           acceptedStarts: acceptedStarts,
                           acceptedFocus: acceptedFocus,
+                          dueCounts: MyDayBucketCounts(
+                            acceptedCount: acceptedDue.length,
+                            otherCount: otherDueCount,
+                          ),
+                          startsCounts: MyDayBucketCounts(
+                            acceptedCount: acceptedStarts.length,
+                            otherCount: otherStartsCount,
+                          ),
+                          onReviewDue: otherDueCount > 0
+                              ? () => Routing.toScreenKey(context, 'scheduled')
+                              : null,
+                          onReviewStarts: otherStartsCount > 0
+                              ? () => Routing.toScreenKey(context, 'scheduled')
+                              : null,
                         ),
                       ),
                     ),
-                  ),
-                  MyDayTaskListSection(
-                    tasks: tasks,
-                    mix: mix,
                   ),
                 ],
               ),

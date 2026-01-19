@@ -18,7 +18,6 @@ final class JournalTodayLoading extends JournalTodayState {
 
 final class JournalTodayLoaded extends JournalTodayState {
   const JournalTodayLoaded({
-    required this.pinnedTrackers,
     required this.entries,
     required this.eventsByEntryId,
     required this.definitionById,
@@ -27,7 +26,6 @@ final class JournalTodayLoaded extends JournalTodayState {
     required this.moodStreakDays,
   });
 
-  final List<TrackerDefinition> pinnedTrackers;
   final List<JournalEntry> entries;
   final Map<String, List<TrackerEvent>> eventsByEntryId;
   final Map<String, TrackerDefinition> definitionById;
@@ -78,7 +76,6 @@ class JournalTodayBloc extends Cubit<JournalTodayState> {
     final weekEndUtc = endUtc;
 
     final defs$ = _repository.watchTrackerDefinitions();
-    final prefs$ = _repository.watchTrackerPreferences();
     final entries$ = _repository.watchJournalEntriesByQuery(
       JournalQuery.forDate(day),
     );
@@ -92,20 +89,18 @@ class JournalTodayBloc extends Cubit<JournalTodayState> {
     );
 
     _sub =
-        Rx.combineLatest5<
+        Rx.combineLatest4<
               List<TrackerDefinition>,
-              List<TrackerPreference>,
               List<JournalEntry>,
               List<TrackerEvent>,
               List<TrackerEvent>,
               JournalTodayLoaded
             >(
               defs$,
-              prefs$,
               entries$,
               events$,
               weekEvents$,
-              (defs, prefs, entries, events, weekEvents) {
+              (defs, entries, events, weekEvents) {
                 final definitionById = {
                   for (final d in defs) d.id: d,
                 };
@@ -117,22 +112,6 @@ class JournalTodayBloc extends Cubit<JournalTodayState> {
                     break;
                   }
                 }
-
-                final prefByTrackerId = {
-                  for (final p in prefs) p.trackerId: p,
-                };
-
-                final pinnedTrackers =
-                    defs
-                        .where((d) => d.isActive && d.deletedAt == null)
-                        .where((d) => d.systemKey != 'mood')
-                        .where((d) {
-                          final pref = prefByTrackerId[d.id];
-                          return (pref?.pinned ?? false) ||
-                              (pref?.showInQuickAdd ?? false);
-                        })
-                        .toList(growable: false)
-                      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
                 final eventsByEntryId = <String, List<TrackerEvent>>{};
                 for (final e in events) {
@@ -149,7 +128,6 @@ class JournalTodayBloc extends Cubit<JournalTodayState> {
                 final moodStreakDays = _countMoodStreak(moodWeek);
 
                 return JournalTodayLoaded(
-                  pinnedTrackers: pinnedTrackers,
                   entries: entries,
                   eventsByEntryId: eventsByEntryId,
                   definitionById: definitionById,

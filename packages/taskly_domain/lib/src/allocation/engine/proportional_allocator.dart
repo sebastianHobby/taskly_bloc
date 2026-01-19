@@ -258,12 +258,11 @@ class ProportionalAllocator implements AllocationStrategy {
       }
     }
 
-    score *= AllocationScoring.taskPriorityMultiplier(
-      task: task,
-      taskPriorityBoost: parameters.taskPriorityBoost,
-    );
-
-    return score;
+    return score *
+        AllocationScoring.taskPriorityMultiplier(
+          task: task,
+          taskPriorityBoost: parameters.taskPriorityBoost,
+        );
   }
 
   List<AllocationReasonCode> _buildReasonCodes({
@@ -272,21 +271,16 @@ class ProportionalAllocator implements AllocationStrategy {
     required int urgencyThresholdDays,
     required double taskPriorityBoost,
   }) {
-    final codes = <AllocationReasonCode>[
+    return <AllocationReasonCode>[
       AllocationReasonCode.valueAlignment,
+      if (_isUrgent(
+        task,
+        urgencyThresholdDays,
+        todayDayKeyUtc: todayDayKeyUtc,
+      ))
+        AllocationReasonCode.urgency
+      else if (task.priority != null && taskPriorityBoost > 1)
+        AllocationReasonCode.priority,
     ];
-
-    final isUrgent = _isUrgent(
-      task,
-      urgencyThresholdDays,
-      todayDayKeyUtc: todayDayKeyUtc,
-    );
-    if (isUrgent) {
-      codes.add(AllocationReasonCode.urgency);
-    } else if (task.priority != null && taskPriorityBoost > 1) {
-      codes.add(AllocationReasonCode.priority);
-    }
-
-    return codes;
   }
 }

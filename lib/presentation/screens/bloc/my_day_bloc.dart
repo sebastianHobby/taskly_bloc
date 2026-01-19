@@ -8,6 +8,7 @@ import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/settings.dart' as settings;
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/time.dart';
 
 sealed class MyDayEvent {
   const MyDayEvent();
@@ -33,6 +34,8 @@ final class MyDayLoaded extends MyDayState {
     required this.acceptedDue,
     required this.acceptedStarts,
     required this.acceptedFocus,
+    required this.otherDueCount,
+    required this.otherStartsCount,
   });
 
   final MyDaySummary summary;
@@ -47,6 +50,14 @@ final class MyDayLoaded extends MyDayState {
 
   /// Tasks accepted from the ritual "Suggestions" section.
   final List<Task> acceptedFocus;
+
+  /// Count of items that are due/overdue but were not accepted into today's
+  /// plan (to avoid misleading "all caught up" messaging).
+  final int otherDueCount;
+
+  /// Count of items that are starts-eligible (or due soon) but were not
+  /// accepted into today's plan.
+  final int otherStartsCount;
 }
 
 final class MyDayError extends MyDayState {
@@ -110,6 +121,8 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         acceptedDue: vm.acceptedDue,
         acceptedStarts: vm.acceptedStarts,
         acceptedFocus: vm.acceptedFocus,
+        otherDueCount: vm.otherDueCount,
+        otherStartsCount: vm.otherStartsCount,
       ),
     );
   }
@@ -271,6 +284,28 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
       tasksById,
     );
 
+    final planned = _buildPlanned(tasks, dayKeyUtc);
+    final plannedDue = planned
+        .where((t) {
+          final d = _deadlineDateOnly(t);
+          final today = dateOnly(dayKeyUtc);
+          return d != null && !d.isAfter(today);
+        })
+        .map((t) => t.id)
+        .toSet();
+    final plannedStarts = planned
+        .where((t) {
+          final d = _deadlineDateOnly(t);
+          final today = dateOnly(dayKeyUtc);
+          return d == null || d.isAfter(today);
+        })
+        .map((t) => t.id)
+        .toSet();
+
+    final selectedPlanIds = orderedTasks.map((t) => t.id).toSet();
+    final otherDueCount = plannedDue.difference(selectedPlanIds).length;
+    final otherStartsCount = plannedStarts.difference(selectedPlanIds).length;
+
     final qualifyingByTaskId = {
       for (final task in orderedTasks) task.id: task.effectivePrimaryValueId,
     };
@@ -282,6 +317,8 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
       acceptedDue: acceptedDueTasks,
       acceptedStarts: acceptedStartsTasks,
       acceptedFocus: acceptedFocusTasks,
+      otherDueCount: otherDueCount,
+      otherStartsCount: otherStartsCount,
     );
   }
 
@@ -292,6 +329,8 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
     List<Task> acceptedDue = const <Task>[],
     List<Task> acceptedStarts = const <Task>[],
     List<Task> acceptedFocus = const <Task>[],
+    int otherDueCount = 0,
+    int otherStartsCount = 0,
   }) {
     final valueById = {for (final value in values) value.id: value};
 
@@ -318,7 +357,30 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
       acceptedDue: acceptedDue,
       acceptedStarts: acceptedStarts,
       acceptedFocus: acceptedFocus,
+      otherDueCount: otherDueCount,
+      otherStartsCount: otherStartsCount,
     );
+  }
+
+  List<Task> _buildPlanned(List<Task> tasks, DateTime dayKeyUtc) {
+    final today = dateOnly(dayKeyUtc);
+    final dueSoonLimit = today.add(const Duration(days: 3));
+
+    bool isPlanned(Task task) {
+      if (_isCompleted(task)) return false;
+      final start = dateOnlyOrNull(task.startDate);
+      final deadline = dateOnlyOrNull(task.deadlineDate);
+      final startEligible = start != null && !start.isAfter(today);
+      final dueSoon = deadline != null && !deadline.isAfter(dueSoonLimit);
+      return startEligible || dueSoon;
+    }
+
+    return tasks.where(isPlanned).toList(growable: false);
+  }
+
+  DateTime? _deadlineDateOnly(Task task) {
+    final raw = task.occurrence?.deadline ?? task.deadlineDate;
+    return dateOnlyOrNull(raw);
   }
 
   List<Task> _resolveAcceptedTasks(
@@ -345,6 +407,8 @@ final class _MyDayViewModel {
     required this.acceptedDue,
     required this.acceptedStarts,
     required this.acceptedFocus,
+    required this.otherDueCount,
+    required this.otherStartsCount,
   });
 
   final List<Task> tasks;
@@ -354,6 +418,9 @@ final class _MyDayViewModel {
   final List<Task> acceptedDue;
   final List<Task> acceptedStarts;
   final List<Task> acceptedFocus;
+
+  final int otherDueCount;
+  final int otherStartsCount;
 }
 
 final class MyDayMixVm {
