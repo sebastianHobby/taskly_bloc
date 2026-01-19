@@ -26,12 +26,16 @@ class JournalTodayPage extends StatelessWidget {
               :final eventsByEntryId,
               :final definitionById,
               :final moodTrackerId,
+              :final moodWeek,
+              :final moodStreakDays,
             ) =>
               ListView(
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
                 children: [
                   JournalTodayComposer(
                     pinnedTrackers: pinnedTrackers,
+                    moodWeek: moodWeek,
+                    moodStreakDays: moodStreakDays,
                     onAddLog: () => AddLogSheet.show(context: context),
                     onQuickAddTracker: (trackerId) => AddLogSheet.show(
                       context: context,
@@ -44,6 +48,7 @@ class JournalTodayPage extends StatelessWidget {
                     eventsByEntryId: eventsByEntryId,
                     definitionById: definitionById,
                     moodTrackerId: moodTrackerId,
+                    onAddLog: () => AddLogSheet.show(context: context),
                     onEntryTap: (entry) => Routing.toJournalEntryEdit(
                       context,
                       entry.id,

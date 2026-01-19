@@ -65,11 +65,12 @@ A key UX invariant:
 
 My Day is an explicit screen (route + page) that renders allocation outputs.
 Any gating (e.g. “focus mode required”) is implemented in the presentation
-layer via explicit screens/pages and BLoC state.
+layer via the My Day ritual flow (inline gate card) and BLoC state.
 
-### Presentation (My Day gate + allocation rendering + focus setup)
-- Gate page shown when focus mode is not selected:
-  - [lib/presentation/screens/view/my_day_focus_mode_required_page.dart](../../lib/presentation/screens/view/my_day_focus_mode_required_page.dart)
+### Presentation (My Day ritual + gate card + allocation rendering + focus setup)
+- Ritual flow ("Choose what matters today") with inline gate card when
+  prerequisites are missing:
+  - [lib/presentation/screens/view/my_day_ritual_wizard_page.dart](../../lib/presentation/screens/view/my_day_ritual_wizard_page.dart)
 - Allocation section renderer:
   - [lib/presentation/screens/templates/renderers/allocation_section_renderer.dart](../../lib/presentation/screens/templates/renderers/allocation_section_renderer.dart)
 - Focus Setup wizard (select focus mode + save allocation config):
@@ -122,34 +123,36 @@ layer via explicit screens/pages and BLoC state.
 
 ## 4) End-to-End Flows
 
-### 4.1 My Day: Focus-mode gate -> Focus setup -> Allocation sections
+### 4.1 My Day: Ritual gate card -> Focus setup -> Allocation sections
 
-My Day is an **explicit screen** with a **presentation-owned gate**.
+My Day is an **explicit screen** with a **presentation-owned ritual flow**.
 
 Gate criteria:
 
 - `AllocationConfig.hasSelectedFocusMode == true`
+- at least one Value exists
 
-Gating is implemented in the presentation layer using explicit pages and BLoC
-state (not a domain-level screen interpreter).
+Gating is implemented in the presentation layer using the ritual screen and
+an inline gate card (not a domain-level screen interpreter).
 
 **What the user experiences**:
 
 ```text
 1) Navigate to My Day
-2) If AllocationConfig.hasSelectedFocusMode == false:
-   - Show MyDayFocusModeRequiredPage (full-screen)
-   - CTA navigates to Focus Setup wizard
-3) In Focus Setup wizard:
+2) My Day opens the daily ritual screen ("Choose what matters today")
+3) If prerequisites are missing, the ritual shows a gate card:
+   - CTA navigates to Focus Setup wizard (dynamic steps)
+4) In Focus Setup wizard:
    - user selects focus mode (preset or personalized)
+   - user adds at least one value if missing
    - FocusSetupBloc saves AllocationConfig with:
      - hasSelectedFocusMode = true
      - focusMode = selected
      - strategySettings = preset or user-tuned
-4) After save, FocusSetupWizardPage requests an immediate snapshot refresh via
+5) After save, FocusSetupWizardPage requests an immediate snapshot refresh via
   `AllocationSnapshotCoordinator` so snapshot-based screens refresh immediately.
-5) Return to My Day; gate is now inactive; the screen renders allocation output
-  and any allocation-related attention items.
+6) Return to My Day; ritual gate is now inactive; the screen renders allocation
+  output and any allocation-related attention items.
 ```
 
 Key save behavior:

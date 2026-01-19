@@ -79,7 +79,7 @@ final class MyDayRitualReady extends MyDayRitualState {
   final FocusMode focusMode;
   final List<Task> planned;
   final List<Task> curated;
-  final Map<String, List<String>> curatedReasons;
+  final Map<String, String> curatedReasons;
   final Set<String> selectedTaskIds;
   final DateTime dayKeyUtc;
   final MyDayRitualNav? nav;
@@ -90,7 +90,7 @@ final class MyDayRitualReady extends MyDayRitualState {
     FocusMode? focusMode,
     List<Task>? planned,
     List<Task>? curated,
-    Map<String, List<String>>? curatedReasons,
+    Map<String, String>? curatedReasons,
     Set<String>? selectedTaskIds,
     DateTime? dayKeyUtc,
     MyDayRitualNav? nav,
@@ -238,7 +238,11 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         focusMode: _allocationConfig.focusMode,
         planned: planned,
         curated: curated,
-        curatedReasons: _buildCuratedReasons(curated, _dayKeyUtc),
+        curatedReasons: _buildCuratedReasonText(
+          curated,
+          allocation: _allocationResult,
+          dayKeyUtc: _dayKeyUtc,
+        ),
         selectedTaskIds: _selectedTaskIds,
         dayKeyUtc: _dayKeyUtc,
         nav: null,
@@ -379,32 +383,86 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     return curated;
   }
 
-  Map<String, List<String>> _buildCuratedReasons(
-    List<Task> curated,
-    DateTime dayKeyUtc,
-  ) {
-    final today = dateOnly(dayKeyUtc);
-    final dueSoonLimit = today.add(const Duration(days: 3));
+  Map<String, String> _buildCuratedReasonText(
+    List<Task> curated, {
+    required AllocationResult? allocation,
+    required DateTime dayKeyUtc,
+  }) {
+    if (allocation == null) return const {};
 
-    List<String> reasonsFor(Task task) {
-      final reasons = <String>[];
-      final deadline = dateOnlyOrNull(task.deadlineDate);
-      if (deadline != null) {
-        if (deadline.isBefore(today)) {
-          reasons.add('Overdue');
-        } else if (!deadline.isAfter(dueSoonLimit)) {
-          reasons.add('Due soon');
-        }
-      }
-      if (task.effectivePrimaryValueId != null) {
-        reasons.add('High value');
-      }
-      return reasons.take(2).toList(growable: false);
+    final reasonsByTaskId = <String, List<AllocationReasonCode>>{};
+    for (final entry in allocation.allocatedTasks) {
+      reasonsByTaskId[entry.task.id] = entry.reasonCodes;
     }
 
     return {
-      for (final task in curated) task.id: reasonsFor(task),
-    };
+      for (final task in curated)
+        task.id: _reasonTextForTask(task, reasonsByTaskId[task.id] ?? const []),
+    }..removeWhere((_, value) => value.isEmpty);
+  }
+
+  String _reasonTextForTask(
+    Task task,
+    List<AllocationReasonCode> reasonCodes,
+  ) {
+    final valueName = task.effectivePrimaryValue?.name;
+    final hasValue = valueName != null && valueName.isNotEmpty;
+
+    final buffer = StringBuffer('Chosen because ');
+    if (hasValue) {
+      buffer.write('it supports $valueName');
+    }
+
+    final hasNeglect = reasonCodes.contains(
+      AllocationReasonCode.neglectBalance,
+    );
+    if (hasNeglect) {
+      if (hasValue) {
+        buffer.write('; restoring balance across your values');
+      } else {
+        buffer.write('it is restoring balance across your values');
+      }
+    }
+
+    final urgencyPhrase = _urgencyOrPriorityPhrase(task, reasonCodes);
+    if (urgencyPhrase.isNotEmpty) {
+      if (hasValue || hasNeglect) {
+        buffer.write(' and $urgencyPhrase');
+      } else {
+        buffer.write('it $urgencyPhrase');
+      }
+    }
+
+    final text = buffer.toString().trim();
+    return text == 'Chosen because' ? '' : '$text.';
+  }
+
+  String _urgencyOrPriorityPhrase(
+    Task task,
+    List<AllocationReasonCode> reasonCodes,
+  ) {
+    if (reasonCodes.contains(AllocationReasonCode.urgency)) {
+      return _deadlinePhrase(task);
+    }
+
+    if (reasonCodes.contains(AllocationReasonCode.priority)) {
+      return 'is high priority';
+    }
+
+    return '';
+  }
+
+  String _deadlinePhrase(Task task) {
+    final deadline = dateOnlyOrNull(task.deadlineDate);
+    if (deadline == null) return 'is due soon';
+
+    final today = dateOnly(_dayKeyUtc);
+    final diff = deadline.difference(today).inDays;
+
+    if (diff < 0) return 'is overdue';
+    if (diff == 0) return 'is due today';
+    if (diff == 1) return 'is due tomorrow';
+    return 'is due in $diff days';
   }
 
   bool _isCompleted(Task task) {

@@ -1,1 +1,36 @@
-include: package:flutter_lints/flutter.yaml
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  errors:
+    lines_longer_than_80_chars: ignore
+    flutter_style_todos: ignore
+    depend_on_referenced_packages: ignore
+    omit_local_variable_types: ignore
+    invalid_annotation_target: ignore
+    prefer_const_constructors: ignore
+    avoid_catches_without_on_clauses: ignore
+    avoid_positional_boolean_parameters: ignore
+    strict_raw_type: ignore
+    directives_ordering: ignore
+    avoid_print: ignore
+    avoid_equals_and_hash_code_on_mutable_classes: ignore
+    cascade_invocations: ignore
+    unnecessary_underscores: ignore
+    # Info-level rules (noisy, low value)
+    discarded_futures: ignore        # Fire-and-forget is common in UI callbacks
+    one_member_abstracts: ignore     # Single-method interfaces are valid for DI
+    deprecated_member_use: ignore    # Address during Flutter SDK upgrades
+    comment_references: ignore       # Minor doc comment issues
+    avoid_redundant_argument_values: ignore  # Explicit args can improve readability
+    avoid_slow_async_io: ignore      # Sync I/O is fine for startup/config code
+    use_late_for_private_fields_and_variables: ignore  # Nullable fields are intentional
+    unreachable_from_main: ignore    # Tool scripts have different entry points
+    document_ignores: ignore
+    unnecessary_import: ignore
+    avoid_dynamic_calls: ignore
+  exclude:
+    - "**/*.g.dart"
+
+linter:
+  rules:
+    public_member_api_docs: false

@@ -430,7 +430,6 @@ class AllocationOrchestrator {
       neglectInfluence: settings.neglectInfluence,
       valuePriorityWeight: settings.valuePriorityWeight,
       taskPriorityBoost: settings.taskPriorityBoost,
-      recencyPenalty: settings.recencyPenalty,
       overdueEmergencyMultiplier: settings.overdueEmergencyMultiplier,
       completionsByValue: completionsByValue,
     );

@@ -184,6 +184,16 @@ class JournalRepositoryImpl
   // === Trackers (OPT-A: event-log + projections) ===
 
   @override
+  Stream<List<TrackerGroup>> watchTrackerGroups() {
+    final query = _database.select(_database.trackerGroups)
+      ..orderBy([(g) => OrderingTerm.asc(g.sortOrder)]);
+
+    return query.watch().map(
+      (rows) => rows.map(_mapToTrackerGroup).toList(),
+    );
+  }
+
+  @override
   Stream<List<TrackerDefinition>> watchTrackerDefinitions() {
     final query = _database.select(_database.trackerDefinitions)
       ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
@@ -262,6 +272,7 @@ class JournalRepositoryImpl
               TrackerDefinitionsCompanion(
                 name: Value(definition.name),
                 description: Value(definition.description),
+                groupId: Value(definition.groupId),
                 scope: Value(definition.scope),
                 roles: Value(jsonEncode(definition.roles)),
                 valueType: Value(definition.valueType),
@@ -295,6 +306,7 @@ class JournalRepositoryImpl
                   id: Value(id),
                   name: Value(definition.name),
                   description: Value(definition.description),
+                  groupId: Value(definition.groupId),
                   scope: Value(definition.scope),
                   roles: Value(jsonEncode(definition.roles)),
                   valueType: Value(definition.valueType),
@@ -324,6 +336,77 @@ class JournalRepositoryImpl
       },
       area: 'data.journal',
       opName: 'saveTrackerDefinition',
+      context: context,
+    );
+  }
+
+  @override
+  Future<void> saveTrackerGroup(
+    TrackerGroup group, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final id = group.id.isEmpty ? _idGenerator.trackerGroupId() : group.id;
+
+        final updated =
+            await (_database.update(
+              _database.trackerGroups,
+            )..where((g) => g.id.equals(id))).write(
+              TrackerGroupsCompanion(
+                name: Value(group.name),
+                sortOrder: Value(group.sortOrder),
+                isActive: Value(group.isActive),
+                updatedAt: Value(group.updatedAt),
+                createdAt: const Value<DateTime>.absent(),
+              ),
+            );
+
+        if (updated == 0) {
+          await _database
+              .into(_database.trackerGroups)
+              .insert(
+                TrackerGroupsCompanion(
+                  id: Value(id),
+                  name: Value(group.name),
+                  sortOrder: Value(group.sortOrder),
+                  isActive: Value(group.isActive),
+                  createdAt: Value(group.createdAt),
+                  updatedAt: Value(group.updatedAt),
+                ),
+                mode: InsertMode.insertOrAbort,
+              );
+        }
+      },
+      area: 'data.journal',
+      opName: 'saveTrackerGroup',
+      context: context,
+    );
+  }
+
+  @override
+  Future<void> deleteTrackerGroup(
+    String groupId, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final trimmed = groupId.trim();
+        if (trimmed.isEmpty) return;
+
+        final nowUtc = DateTime.now().toUtc();
+
+        await (_database.update(
+          _database.trackerGroups,
+        )..where((g) => g.id.equals(trimmed))).write(
+          TrackerGroupsCompanion(
+            isActive: const Value(false),
+            updatedAt: Value(nowUtc),
+          ),
+        );
+      },
+      area: 'data.journal',
+      opName: 'deleteTrackerGroup',
       context: context,
     );
   }
@@ -708,6 +791,18 @@ class JournalRepositoryImpl
     );
   }
 
+  TrackerGroup _mapToTrackerGroup(TrackerGroupEntity row) {
+    return TrackerGroup(
+      id: row.id,
+      userId: row.userId,
+      name: row.name,
+      sortOrder: row.sortOrder,
+      isActive: row.isActive,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    );
+  }
+
   TrackerDefinition _mapToTrackerDefinition(TrackerDefinitionEntity row) {
     final roles = _tryDecodeJsonListOfStrings(row.roles) ?? const <String>[];
     final config = _tryDecodeJsonMap(row.config) ?? const <String, dynamic>{};
@@ -718,6 +813,7 @@ class JournalRepositoryImpl
       userId: row.userId,
       name: row.name,
       description: row.description,
+      groupId: row.groupId,
       scope: row.scope,
       roles: roles,
       valueType: row.valueType,

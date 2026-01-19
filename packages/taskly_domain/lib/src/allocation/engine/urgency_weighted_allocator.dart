@@ -120,12 +120,6 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
         taskPriorityBoost: parameters.taskPriorityBoost,
       );
 
-      finalScore *= AllocationScoring.recencyMultiplier(
-        task: task,
-        now: nowUtc,
-        recencyPenalty: parameters.recencyPenalty,
-      );
-
       scoredTasks.add(
         ScoredTask(
           task: task,
@@ -156,6 +150,12 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
           task: scored.task,
           qualifyingValueId: scored.categoryId,
           allocationScore: scored.finalScore,
+          reasonCodes: _buildReasonCodes(
+            task: scored.task,
+            todayDayKeyUtc: todayDayKeyUtc,
+            urgencyThresholdDays: parameters.taskUrgencyThresholdDays,
+            taskPriorityBoost: parameters.taskPriorityBoost,
+          ),
         ),
       );
     }
@@ -201,6 +201,30 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
         .difference(todayDayKeyUtc)
         .inDays;
     return daysUntilDeadline <= thresholdDays;
+  }
+
+  List<AllocationReasonCode> _buildReasonCodes({
+    required Task task,
+    required DateTime todayDayKeyUtc,
+    required int urgencyThresholdDays,
+    required double taskPriorityBoost,
+  }) {
+    final codes = <AllocationReasonCode>[
+      AllocationReasonCode.valueAlignment,
+    ];
+
+    final isUrgent = _isUrgent(
+      task,
+      urgencyThresholdDays,
+      todayDayKeyUtc: todayDayKeyUtc,
+    );
+    if (isUrgent) {
+      codes.add(AllocationReasonCode.urgency);
+    } else if (task.priority != null && taskPriorityBoost > 1) {
+      codes.add(AllocationReasonCode.priority);
+    }
+
+    return codes;
   }
 }
 

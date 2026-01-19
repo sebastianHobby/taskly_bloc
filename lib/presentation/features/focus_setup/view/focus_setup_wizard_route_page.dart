@@ -15,6 +15,7 @@ class FocusSetupWizardRoutePage extends StatelessWidget {
     final step = uri.queryParameters['step'];
     return switch (step) {
       'select_focus_mode' => FocusSetupWizardStep.selectFocusMode,
+      'values' => FocusSetupWizardStep.valuesCta,
       _ => null,
     };
   }

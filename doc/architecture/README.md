@@ -58,12 +58,20 @@ All UI in Taskly uses a consistent 4-tier composition model:
 
 Canonical entity tiles (for example Task/Project tiles) follow this split:
 
-- `packages/taskly_ui`: render-only catalogue tiles/sections + UI-only models.
-  Prefer the curated entrypoints:
-  - `package:taskly_ui/taskly_ui_catalog.dart` (catalogue tiles/sections)
-  - `package:taskly_ui/taskly_ui_feed.dart` (feed scaffolding)
-- app (`lib/`): domain→UI mapping + policy/side-effects (routing, overflow menus,
-  intent dispatch). `taskly_ui` surfaces interactions via callbacks (events out).
+- `packages/taskly_ui`: primitives/entities/sections + UI-only models.
+  Prefer the tiered public entrypoints:
+  - `package:taskly_ui/taskly_ui_entities.dart`
+  - `package:taskly_ui/taskly_ui_sections.dart`
+  - `package:taskly_ui/taskly_ui_models.dart`
+  - `package:taskly_ui/taskly_ui_forms.dart`
+- app (`lib/`): screens/templates (routing + BLoC wiring) plus domain→UI mapping
+  and policy/side-effects (routing, overflow menus, intent dispatch).
+  `taskly_ui` surfaces interactions via callbacks (events out).
+
+Governance note:
+
+- The app owns only Screens/Templates; primitives/entities/sections live in
+  `packages/taskly_ui`. Exceptions require explicit user approval.
 
 Normative details live in: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md)
 (section 2.2).
@@ -213,6 +221,7 @@ For the deeper dive see:
 ## 3) Architecture Docs Index (This Folder)
 
 - Architecture invariants (normative): [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md)
+- `taskly_ui` governance (normative): [TASKLY_UI_GOVERNANCE.md](TASKLY_UI_GOVERNANCE.md)
 - BLoC guidelines: [BLOC_GUIDELINES.md](BLOC_GUIDELINES.md)
 - Screen architecture (future): [SCREEN_ARCHITECTURE.md](SCREEN_ARCHITECTURE.md)
 - Legacy architecture overview: [LEGACY_ARCHITECTURE_OVERVIEW.md](LEGACY_ARCHITECTURE_OVERVIEW.md)

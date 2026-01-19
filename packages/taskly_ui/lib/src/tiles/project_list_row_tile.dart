@@ -226,9 +226,7 @@ class _ProjectProgressBar extends StatelessWidget {
     );
     final backgroundColor = scheme.outlineVariant.withValues(alpha: 0.25);
 
-    final progress = (completedTaskCount / taskCount)
-        .clamp(0.0, 1.0)
-        .toDouble();
+    final progress = (completedTaskCount / taskCount).clamp(0.0, 1.0);
 
     return Semantics(
       label: '$projectName progress $completedTaskCount of $taskCount',

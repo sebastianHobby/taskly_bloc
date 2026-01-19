@@ -34,7 +34,10 @@ A typical screen has:
   - read from domain/services/repositories
   - subscribe to reactive sources (DB watchers, streams)
   - expose state for rendering and drive side-effects via events
-- Optional **child/section widgets** that render subsets of the BLoC state
+- Optional **child widgets** that render subsets of the BLoC state.
+  - Under the strict UI ownership rule, these must not become app-owned
+    primitives/entities/sections. Prefer composing `taskly_ui` components
+    directly in the screen.
 
 This keeps data flow consistent and debuggable:
 
@@ -66,8 +69,9 @@ services**, not from a runtime screen interpreter.
 Recommended reuse mechanisms:
 
 - Shared UI components in `packages/taskly_ui` (pure UI only; see below)
-- Shared presentation components under `lib/presentation/...` when they are
-  screen/feature-specific or still in the process of extraction
+- Screen-local widgets must not be used to introduce new primitives/entities/
+  sections (even if used once). If the UI block is more than trivial layout,
+  it belongs in `packages/taskly_ui`.
 - Shared domain services/use-cases under `lib/domain/...` (or extracted packages)
 - Shared repositories/contracts and implementations
 
@@ -111,9 +115,13 @@ Package hygiene (recommended):
 
 - App code should import one of the curated public entrypoints (and avoid
   `package:taskly_ui/src/...` deep imports):
-  - `package:taskly_ui/taskly_ui_catalog.dart` (catalogue tiles/sections)
-  - `package:taskly_ui/taskly_ui_feed.dart` (feed scaffolding)
-  - `package:taskly_ui/taskly_ui.dart` only when you truly need the wider legacy API
+  - `package:taskly_ui/taskly_ui_entities.dart` (entity widgets + entity models)
+  - `package:taskly_ui/taskly_ui_sections.dart` (sections + overlays like dialogs)
+  - `package:taskly_ui/taskly_ui_models.dart` (UI-only models needed by entities/sections)
+  - `package:taskly_ui/taskly_ui_forms.dart` (template-like form chrome only)
+
+  The legacy wide entrypoint (`package:taskly_ui/taskly_ui.dart`) is not
+  intended for app consumption; prefer tiered entrypoints.
 - Keep `taskly_ui` implementation private under `packages/taskly_ui/lib/src/`.
 
 Taxonomy layout (strict):
@@ -123,6 +131,16 @@ Taxonomy layout (strict):
 - `packages/taskly_ui/lib/src/sections/`
 - (Reserved) `packages/taskly_ui/lib/src/templates/` for layout-only
   scaffolding that remains routing/state-free.
+
+Governance:
+
+- The app owns only Screens/Templates; primitives/entities/sections live in
+  `packages/taskly_ui`.
+- Shared-surface changes (new exports/options, default visual/interaction
+  changes) require explicit user approval; internal-only refactors/bugfixes are
+  allowed via fast path.
+
+See: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section 2.2.1)
 
 ## 5) Errors and Empty States
 

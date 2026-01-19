@@ -70,7 +70,6 @@ class NeglectBasedAllocator implements AllocationStrategy {
       projectThresholdDays: parameters.taskUrgencyThresholdDays,
     );
 
-    final nowUtc = parameters.nowUtc;
     final todayDayKeyUtc = parameters.todayDayKeyUtc;
 
     // SINGLE-PASS: Calculate combined score for EACH task
@@ -139,19 +138,9 @@ class NeglectBasedAllocator implements AllocationStrategy {
         taskPriorityBoost: parameters.taskPriorityBoost,
       );
 
-      final recencyFactor = AllocationScoring.recencyMultiplier(
-        task: task,
-        now: nowUtc,
-        recencyPenalty: parameters.recencyPenalty,
-      );
-
       // COMBINED SCORE: all factors multiplied together
       final combinedScore =
-          baseScore *
-          neglectFactor *
-          urgencyFactor *
-          taskPriorityFactor *
-          recencyFactor;
+          baseScore * neglectFactor * urgencyFactor * taskPriorityFactor * 1.0;
 
       // Check if value is neglected (positive neglect score)
       final isNeglectedValue = (neglectScores[categoryId] ?? 0) > 0;
@@ -181,6 +170,12 @@ class NeglectBasedAllocator implements AllocationStrategy {
           task: scored.task,
           qualifyingValueId: scored.categoryId,
           allocationScore: scored.score,
+          reasonCodes: _buildReasonCodes(
+            task: scored.task,
+            isNeglectedValue: scored.isNeglectedValue,
+            isUrgent: scored.isUrgent,
+            taskPriorityBoost: parameters.taskPriorityBoost,
+          ),
         ),
       );
     }
@@ -278,6 +273,29 @@ class NeglectBasedAllocator implements AllocationStrategy {
     }
 
     return multipliers;
+  }
+
+  List<AllocationReasonCode> _buildReasonCodes({
+    required Task task,
+    required bool isNeglectedValue,
+    required bool isUrgent,
+    required double taskPriorityBoost,
+  }) {
+    final codes = <AllocationReasonCode>[
+      AllocationReasonCode.valueAlignment,
+    ];
+
+    if (isNeglectedValue) {
+      codes.add(AllocationReasonCode.neglectBalance);
+    }
+
+    if (isUrgent) {
+      codes.add(AllocationReasonCode.urgency);
+    } else if (task.priority != null && taskPriorityBoost > 1) {
+      codes.add(AllocationReasonCode.priority);
+    }
+
+    return codes;
   }
 
   String _buildExclusionReason(_ScoredTask scored) {

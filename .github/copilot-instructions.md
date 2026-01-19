@@ -40,6 +40,7 @@ mobile platforms.
 * Always review relevant architecture docs when making changes to ensure compliance with architecture rules/design patterns. Try to keep architecture clean and consistent wherever possible.
 * prefer powershell to delete or move files when needed.
 * Never use any git commands without explicit user confirmation.
+* For UI/UX design tasks ask the user questions to clarify the intended user experience and offer design options with Ids in batches of 3 with explanations of the pros and cons of each option and reccomendation. Keep offering design options in batches until user tells you to implement. Always tell users if a proposed chang would impact more then one screen/area.
 ### Testing (preferred workflow)
 
 

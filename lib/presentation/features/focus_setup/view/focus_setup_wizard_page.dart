@@ -11,6 +11,8 @@ import 'package:taskly_bloc/presentation/screens/widgets/focus_mode_card.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 
 class FocusSetupWizardPage extends StatelessWidget {
   const FocusSetupWizardPage({super.key});
@@ -341,7 +343,6 @@ class _AllocationStep extends StatelessWidget {
 
     final valuePriorityPercent = state.effectiveValuePriorityWeightPercent;
     final taskFlagBoost = state.effectiveTaskFlagBoost;
-    final recencyPenaltyPercent = state.effectiveRecencyPenaltyPercent;
     final overdueEmergencyMultiplier =
         state.effectiveOverdueEmergencyMultiplier;
 
@@ -446,27 +447,6 @@ class _AllocationStep extends StatelessWidget {
                     FocusSetupEvent.taskFlagBoostChanged(
                       (v * 2).roundToDouble() / 2,
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Recency penalty',
-                  style: theme.textTheme.titleSmall,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '$recencyPenaltyPercent%',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                Slider(
-                  value: recencyPenaltyPercent.toDouble(),
-                  min: 0,
-                  max: 50,
-                  divisions: 10,
-                  onChanged: (v) => bloc.add(
-                    FocusSetupEvent.recencyPenaltyPercentChanged(v.round()),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -646,20 +626,24 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
                   onSubmitted: (text) => _submitQuickAdd(context, text),
                 ),
                 const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openCustomValueEditor(context),
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text('Create a custom value'),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final suggestion in const [
-                      'Health',
-                      'Family',
-                      'Career',
-                      'Learning',
-                      'Relationships',
-                    ])
-                      ActionChip(
-                        label: Text(suggestion),
-                        onPressed: () => _submitQuickAdd(context, suggestion),
+                    for (final suggestion in _quickAddSuggestions)
+                      _ValueSuggestionChip(
+                        suggestion: suggestion,
+                        onPressed: () =>
+                            _submitQuickAdd(context, suggestion.name),
                       ),
                   ],
                 ),
@@ -684,18 +668,25 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
     final name = raw.trim();
     if (name.isEmpty) return;
 
+    context.read<FocusSetupBloc>().add(
+      FocusSetupEvent.quickAddValueRequested(name),
+    );
+    _controller.clear();
+  }
+
+  Future<void> _openCustomValueEditor(BuildContext context) async {
+    final name = _controller.text.trim();
     final launcher = EditorLauncher.fromGetIt();
     await launcher.openValueEditor(
       context,
       initialDraft: ValueDraft(
         name: name,
-        color: _colorHexForName(name),
+        color: _colorHexForName(name.isEmpty ? 'Custom' : name),
         priority: ValuePriority.medium,
         iconName: null,
       ),
       showDragHandle: true,
     );
-
     _controller.clear();
   }
 
@@ -705,6 +696,67 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
       (a, b) => (a * 31 + b) & 0x7fffffff,
     );
     return _palette[hash % _palette.length];
+  }
+}
+
+class _ValueSuggestion {
+  const _ValueSuggestion({
+    required this.name,
+    required this.colorHex,
+    required this.iconName,
+  });
+
+  final String name;
+  final String colorHex;
+  final String iconName;
+}
+
+const _quickAddSuggestions = <_ValueSuggestion>[
+  _ValueSuggestion(name: 'Health', colorHex: '#43A047', iconName: 'health'),
+  _ValueSuggestion(name: 'Family', colorHex: '#FB8C00', iconName: 'home'),
+  _ValueSuggestion(name: 'Career', colorHex: '#1E88E5', iconName: 'work'),
+  _ValueSuggestion(
+    name: 'Learning',
+    colorHex: '#7E57C2',
+    iconName: 'lightbulb',
+  ),
+  _ValueSuggestion(
+    name: 'Relationships',
+    colorHex: '#E91E63',
+    iconName: 'group',
+  ),
+];
+
+class _ValueSuggestionChip extends StatelessWidget {
+  const _ValueSuggestionChip({
+    required this.suggestion,
+    required this.onPressed,
+  });
+
+  final _ValueSuggestion suggestion;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = ColorUtils.fromHexWithThemeFallback(
+      context,
+      suggestion.colorHex,
+    );
+    final iconData = getIconDataFromName(suggestion.iconName) ?? Icons.star;
+
+    return InputChip(
+      avatar: CircleAvatar(
+        backgroundColor: color,
+        child: Icon(
+          iconData,
+          size: 16,
+          color: theme.colorScheme.onPrimary,
+        ),
+      ),
+      label: Text(suggestion.name),
+      onPressed: onPressed,
+    );
   }
 }
 

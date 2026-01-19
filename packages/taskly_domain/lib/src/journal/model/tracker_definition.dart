@@ -18,6 +18,7 @@ abstract class TrackerDefinition with _$TrackerDefinition {
     @Default(<String, dynamic>{}) Map<String, dynamic> goal,
     @Default(true) bool isActive,
     @Default(0) int sortOrder,
+    String? groupId,
     DateTime? deletedAt,
     @Default('user') String source,
     String? systemKey,
