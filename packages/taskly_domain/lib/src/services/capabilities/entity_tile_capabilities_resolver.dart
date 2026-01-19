@@ -1,6 +1,5 @@
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/src/models/workflow/entity_tile_capabilities.dart';
 
 /// Resolves baseline tile capabilities from an entity model.
 ///
@@ -51,7 +50,6 @@ class EntityTileCapabilitiesResolver {
       canTogglePinned: true,
       canDelete: true,
       canOpenEditor: true,
-      canOpenDetails: false,
       canOpenMoveToProject: true,
       canQuickMoveToProject: true,
       canAlignValues: true,
@@ -66,28 +64,18 @@ class EntityTileCapabilitiesResolver {
       completionScope: hasOccurrence
           ? CompletionScope.occurrence
           : CompletionScope.entity,
-      // Project pin exists but is default-off unless enabled by override.
-      canTogglePinned: false,
       canDelete: true,
       canOpenEditor: true,
       canOpenDetails: true,
-      canOpenMoveToProject: false,
-      canQuickMoveToProject: false,
       canAlignValues: true,
     );
   }
 
   static EntityTileCapabilities _forValue(Value value) {
     return const EntityTileCapabilities(
-      canToggleCompletion: false,
-      completionScope: CompletionScope.entity,
-      canTogglePinned: false,
       canDelete: true,
       canOpenEditor: true,
       canOpenDetails: true,
-      canOpenMoveToProject: false,
-      canQuickMoveToProject: false,
-      canAlignValues: false,
     );
   }
 }

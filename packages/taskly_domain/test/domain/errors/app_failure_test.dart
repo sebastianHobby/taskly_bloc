@@ -1,6 +1,8 @@
+@Tags(['unit'])
+library;
+
 import '../../helpers/test_imports.dart';
 
-@Tags(['unit'])
 import 'package:taskly_domain/src/errors/app_failure.dart';
 
 void main() {

@@ -5,7 +5,6 @@ part 'tracker_group.g.dart';
 
 @freezed
 abstract class TrackerGroup with _$TrackerGroup {
-  @JsonSerializable(explicitToJson: true)
   const factory TrackerGroup({
     required String id,
     required String name,
