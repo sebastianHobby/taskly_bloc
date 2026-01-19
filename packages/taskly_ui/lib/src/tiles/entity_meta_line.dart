@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/primitives/date_chip.dart';
 import 'package:taskly_ui/src/primitives/priority_marker.dart';
-import 'package:taskly_ui/src/primitives/value_chip.dart';
+import 'package:taskly_ui/src/models/value_chip_data.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 
 class EntityMetaLine extends StatelessWidget {
@@ -193,11 +193,7 @@ class _ValueIcon extends StatelessWidget {
           border: Border.all(color: color.withValues(alpha: 0.8), width: 1.25),
         ),
         child: Center(
-          child: Icon(
-            data.icon,
-            size: 12,
-            color: color.withValues(alpha: 1),
-          ),
+          child: Icon(data.icon, size: 12, color: color.withValues(alpha: 1)),
         ),
       ),
     );

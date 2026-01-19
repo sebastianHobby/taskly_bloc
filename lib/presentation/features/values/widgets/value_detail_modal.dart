@@ -3,7 +3,7 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
-import 'package:taskly_ui/taskly_ui_feed.dart' show SparklinePainter;
+import 'package:taskly_bloc/presentation/shared/ui/sparkline_painter.dart';
 
 /// Modal showing detailed statistics for a value.
 class ValueDetailModal extends StatelessWidget {

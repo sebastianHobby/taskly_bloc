@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
-import 'package:taskly_ui/taskly_ui.dart';
 
 /// Helper to centralize modal usage for detail sheets.
 ///
@@ -151,4 +150,29 @@ Future<T?> _showAsDialog<T>({
       );
     },
   );
+}
+
+/// Inherited config for coordinating modal chrome between containers (sheet/
+/// dialog) and inner content widgets.
+///
+/// This is used to avoid duplicated affordances like drag handles when the
+/// modal container already renders one.
+class ModalChromeScope extends InheritedWidget {
+  const ModalChromeScope({
+    required super.child,
+    required this.modalHasDragHandle,
+    super.key,
+  });
+
+  /// True when the modal container already renders a drag handle.
+  final bool modalHasDragHandle;
+
+  static ModalChromeScope? maybeOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<ModalChromeScope>();
+  }
+
+  @override
+  bool updateShouldNotify(ModalChromeScope oldWidget) {
+    return modalHasDragHandle != oldWidget.modalHasDragHandle;
+  }
 }

@@ -5,4 +5,4 @@
 library;
 
 // Data model only. Chip widgets are intentionally not part of the public API.
-export 'src/primitives/value_chip.dart' show ValueChipData;
+export 'src/models/value_chip_data.dart';

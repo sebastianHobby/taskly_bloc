@@ -123,10 +123,7 @@ class _RitualBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final plannedCount = data.planned.length;
-    final selectedCount = data.selectedTaskIds.isEmpty
-        ? plannedCount
-        : data.selectedTaskIds.length;
+    final selectedCount = data.selectedTaskIds.length;
     final label = selectedCount > 0
         ? 'Start my day · $selectedCount'
         : 'Start my day';
@@ -147,9 +144,11 @@ class _RitualBottomBar extends StatelessWidget {
           children: [
             Expanded(
               child: FilledButton(
-                onPressed: () => context.read<MyDayRitualBloc>().add(
-                  const MyDayRitualConfirm(),
-                ),
+                onPressed: selectedCount == 0
+                    ? null
+                    : () => context.read<MyDayRitualBloc>().add(
+                        const MyDayRitualConfirm(),
+                      ),
                 child: Text(label),
               ),
             ),
@@ -240,7 +239,7 @@ class _FocusBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerLow,
+        color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -256,15 +255,17 @@ class _FocusBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  focusMode.displayName,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+                  'Value focus',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.6,
                   ),
                 ),
                 Text(
-                  focusMode.tagline,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
+                  focusMode.displayName,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -294,10 +295,12 @@ class _SectionHeader extends StatelessWidget {
     required this.title,
     required this.actionLabel,
     required this.onAction,
+    this.stepLabel,
     this.onInfo,
     this.helperText,
   });
 
+  final String? stepLabel;
   final String title;
   final String actionLabel;
   final VoidCallback onAction;
@@ -312,13 +315,25 @@ class _SectionHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (stepLabel != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(
+                stepLabel!,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ),
           Row(
             children: [
               Expanded(
                 child: Text(
                   title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -356,14 +371,28 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.header,
-    required this.body,
+class _RitualCard extends StatelessWidget {
+  const _RitualCard({
+    required this.focusMode,
+    required this.onChangeFocusMode,
+    required this.plannedCount,
+    required this.curatedCount,
+    required this.plannedBody,
+    required this.curatedBody,
+    required this.onAcceptAllPlanned,
+    required this.onAcceptAllCurated,
+    required this.onSuggestedInfo,
   });
 
-  final Widget header;
-  final Widget body;
+  final FocusMode focusMode;
+  final VoidCallback onChangeFocusMode;
+  final int plannedCount;
+  final int curatedCount;
+  final Widget plannedBody;
+  final Widget curatedBody;
+  final VoidCallback onAcceptAllPlanned;
+  final VoidCallback onAcceptAllCurated;
+  final VoidCallback onSuggestedInfo;
 
   @override
   Widget build(BuildContext context) {
@@ -375,9 +404,38 @@ class _SectionCard extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
         child: Column(
           children: [
-            header,
-            const SizedBox(height: 4),
-            body,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+              child: _FocusBanner(
+                focusMode: focusMode,
+                onChangeFocusMode: onChangeFocusMode,
+              ),
+            ),
+            _SectionHeader(
+              stepLabel: 'Step 1 · Planned',
+              title: 'Planned for ${focusMode.displayName} · $plannedCount',
+              actionLabel: 'Accept all planned',
+              helperText: plannedCount == 0
+                  ? null
+                  : 'Start with planned or time‑sensitive.',
+              onAction: onAcceptAllPlanned,
+            ),
+            plannedBody,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: Divider(color: cs.outlineVariant),
+            ),
+            _SectionHeader(
+              stepLabel: 'Step 2 · Suggested',
+              title: 'Suggested for ${focusMode.displayName} · $curatedCount',
+              actionLabel: 'Accept all picks',
+              helperText: curatedCount == 0
+                  ? null
+                  : 'Based on values + focus mode.',
+              onAction: onAcceptAllCurated,
+              onInfo: onSuggestedInfo,
+            ),
+            curatedBody,
           ],
         ),
       ),
@@ -468,14 +526,15 @@ class _SelectPill extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final label = selected ? 'Added' : 'Add';
     final background = selected
-        ? scheme.primaryContainer
+        ? scheme.surfaceContainerLow
         : scheme.surfaceContainerHighest;
     final foreground = selected
-        ? scheme.onPrimaryContainer
+        ? scheme.onSurfaceVariant
         : scheme.onSurfaceVariant;
+    final border = selected ? Border.all(color: scheme.outlineVariant) : null;
 
     return InkWell(
-      onTap: onPressed,
+      onTap: selected ? null : onPressed,
       borderRadius: BorderRadius.circular(999),
       child: Container(
         constraints: const BoxConstraints(minWidth: 64),
@@ -483,6 +542,7 @@ class _SelectPill extends StatelessWidget {
         decoration: BoxDecoration(
           color: background,
           borderRadius: BorderRadius.circular(999),
+          border: border,
         ),
         child: Text(
           label,

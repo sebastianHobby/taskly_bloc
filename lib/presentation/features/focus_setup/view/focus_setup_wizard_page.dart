@@ -11,7 +11,6 @@ import 'package:taskly_bloc/presentation/screens/widgets/focus_mode_card.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
-import 'package:taskly_ui/taskly_ui.dart';
 
 class FocusSetupWizardPage extends StatelessWidget {
   const FocusSetupWizardPage({super.key});
@@ -181,9 +180,18 @@ class _StepBody extends StatelessWidget {
       FocusSetupWizardStep.finalize => _FinalizeStep(state: state),
     };
 
-    return ContentConstraint(
-      applyConstraints: WindowSizeClass.of(context).isExpanded,
-      child: body,
+    final applyConstraints = WindowSizeClass.of(context).isExpanded;
+
+    if (!applyConstraints) {
+      return body;
+    }
+
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: body,
+      ),
     );
   }
 }

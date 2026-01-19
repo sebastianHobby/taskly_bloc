@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:taskly_ui/src/primitives/value_chip.dart';
+import 'package:taskly_ui/src/models/value_chip_data.dart';
 
 /// UI-only meta-line input.
 ///

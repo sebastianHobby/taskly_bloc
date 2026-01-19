@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:taskly_ui/src/catalog/taskly_catalog_types.dart';
 import 'package:taskly_ui/src/primitives/pinned_gutter_marker.dart';
 import 'package:taskly_ui/src/tiles/entity_meta_line.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
@@ -12,7 +11,6 @@ class ProjectListRowTile extends StatelessWidget {
     this.trailing,
     this.titlePrefix,
     this.statusBadge,
-    this.scheduleState,
     super.key,
     this.compact = false,
   });
@@ -26,11 +24,6 @@ class ProjectListRowTile extends StatelessWidget {
 
   final Widget? titlePrefix;
   final Widget? statusBadge;
-
-  /// Optional schedule state accent for Scheduled-like views.
-  ///
-  /// When set, a subtle patterned left rail is rendered (SCHED-32).
-  final BadgeKind? scheduleState;
 
   final bool compact;
 
@@ -63,16 +56,6 @@ class ProjectListRowTile extends StatelessWidget {
         onTap: onTap,
         child: Stack(
           children: [
-            if (scheduleState != null && scheduleState != BadgeKind.pinned)
-              Positioned(
-                left: 0,
-                top: compact ? 8 : 10,
-                bottom: 10,
-                child: _ScheduleAccentRail(
-                  state: scheduleState!,
-                  colorScheme: scheme,
-                ),
-              ),
             Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: 16,
@@ -348,32 +331,4 @@ class _ProjectProgressBar extends StatelessWidget {
     required this.completedTaskCount,
   });
 
-  final String projectName;
-  final bool isOverdue;
-  final int taskCount;
-  final int completedTaskCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final clampedTotal = taskCount <= 0 ? 1 : taskCount;
-    final progress = (completedTaskCount / clampedTotal).clamp(0.0, 1.0);
-
-    final fill = isOverdue ? scheme.error : scheme.primary;
-    final track = scheme.outlineVariant.withValues(alpha: 0.35);
-
-    return Semantics(
-      label: 'Project progress for $projectName',
-      value: '$completedTaskCount of $taskCount',
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(999),
-        child: LinearProgressIndicator(
-          value: progress,
-          minHeight: 2,
-          backgroundColor: track,
-          valueColor: AlwaysStoppedAnimation<Color>(fill),
-        ),
-      ),
-    );
-  }
-}
+        '$done/$total',
