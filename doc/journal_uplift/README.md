@@ -18,6 +18,10 @@
 - Daily quantities should support **incremental add** with negative adjustments; **no “reset today”.
 - Choice trackers: treat values as **per-event** (do not force one daily value).
 
+Decisions (locked in):
+
+- Phase 2 does not require search/filter inside Add Entry.
+
 ## 1) Current architecture alignment
 
 - Journal is event-log + projections:
@@ -36,6 +40,16 @@ This uplift keeps the event-log model and makes the UI more explicit about **sco
   - History / all entries (search/filter)
   - Manage trackers (definitions, groups, ordering)
 
+Decisions (locked in):
+
+- Keep app-level navigation bar/rail.
+- No Journal-internal tabs.
+- No week strip.
+- No filter chips on Journal Home.
+- Journal Home header includes “settings-style” actions for History/Search and Manage Trackers.
+- Journal Home date label uses an explicit date (e.g. “Mon 19 Jan”), not “Today”.
+- Day navigation: tap the date label to open a date picker (Journal Home shows the selected day).
+
 ### Rationale
 
 - Eliminates mode-switching overhead.
@@ -46,7 +60,7 @@ This uplift keeps the event-log model and makes the UI more explicit about **sco
 ### 3.1 Header area
 
 - Date label + small status summary.
-- Week strip (optional but currently valuable) to navigate days.
+- Day navigation via date picker (tap date label).
 
 ### 3.2 Small “Today summary” module (Daylio-like)
 
@@ -87,11 +101,12 @@ This uplift keeps the event-log model and makes the UI more explicit about **sco
 - Allow collapse at:
   - Section level (Daily / This entry)
   - Group level (user-defined groups)
+- Collapse state is not persisted (resets to expanded by default).
 
 ### 4.3 “All trackers easily accessible”
 
 - Within each scope, all trackers are present (organized by groups).
-- Always-available search/filter within the entry scope list.
+- Search/filter inside Add Entry is out of scope for Phase 2 (see decisions).
 
 ## 5) User-defined groups (organizational, not semantic categories)
 
@@ -174,7 +189,7 @@ This uplift keeps the event-log model and makes the UI more explicit about **sco
 - Step 2: Scope
   - Daily total (day)
   - Momentary (entry)
-  - Sleep/night (sleep_night) (only if user opts in)
+  - Sleep/night (sleep_night) (first-class option)
 - Step 3: Measurement type (choices depend on scope)
   - Daily: Toggle, Rating, **Quantity (incremental)**, Choice
   - Entry: Toggle, Rating, **Quantity (set)**, Choice
@@ -220,6 +235,13 @@ Show a single line under each type:
 - Add group rendering + collapse patterns.
 - Remove pinned/quick-add concept in Journal UI.
 
+Phase 2 decisions (locked in):
+
+- Daily factors are editable inline using “quick adjust” controls where applicable.
+- New tracker creation prompts for choosing a group (default Ungrouped).
+- Manage UX: a single “Manage trackers” destination includes groups + ordering.
+- Phase 2 input coverage includes all tracker types (toggle/rating/quantity/choice).
+
 ### Phase 3 — Tracker creation wizard and type-specific inputs
 
 - Introduce scope-first + type selection.
@@ -232,6 +254,8 @@ Show a single line under each type:
 
 ## 10) Open decisions (need confirmation before coding)
 
-- Entry quantity daily rollups: do we default to showing sum+count+avg, or keep UI minimal (sum only) and tuck others behind “details”?
-- Sleep/night scope: when should it be offered in creation (always vs advanced)?
-- Choice stats: do we show per-event distributions only, or also derive per-day presence signals for correlation views?
+Decisions (locked in):
+
+- Entry quantity daily rollups: default is minimal (sum only), with additional metrics behind “details”.
+- Sleep/night scope: offered as a first-class option in the creation wizard.
+- Choice stats: support both per-event distributions and derived per-day presence signals, with guardrails (minimum sample size + denominators + low-confidence messaging) to avoid false signals.

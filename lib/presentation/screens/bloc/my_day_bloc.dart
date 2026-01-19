@@ -30,11 +30,23 @@ final class MyDayLoaded extends MyDayState {
     required this.summary,
     required this.mix,
     required this.tasks,
+    required this.acceptedDue,
+    required this.acceptedStarts,
+    required this.acceptedFocus,
   });
 
   final MyDaySummary summary;
   final MyDayMixVm mix;
   final List<Task> tasks;
+
+  /// Tasks accepted from the ritual "Overdue & due" section.
+  final List<Task> acceptedDue;
+
+  /// Tasks accepted from the ritual "Starts today" section.
+  final List<Task> acceptedStarts;
+
+  /// Tasks accepted from the ritual "Suggestions" section.
+  final List<Task> acceptedFocus;
 }
 
 final class MyDayError extends MyDayState {
@@ -95,6 +107,9 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         summary: vm.summary,
         mix: vm.mix,
         tasks: vm.tasks,
+        acceptedDue: vm.acceptedDue,
+        acceptedStarts: vm.acceptedStarts,
+        acceptedFocus: vm.acceptedFocus,
       ),
     );
   }
@@ -131,8 +146,9 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         return Rx.combineLatest2<List<Task>, List<Value>, _MyDayViewModel>(
           tasks$,
           values$,
-          (tasks, values) => _buildFromSelection(
-            selectedIds,
+          (tasks, values) => _buildFromRitualSelection(
+            ritual,
+            dayKeyUtc,
             tasks,
             values,
           ),
@@ -220,18 +236,40 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
     );
   }
 
-  _MyDayViewModel _buildFromSelection(
-    List<String> selectedIds,
+  _MyDayViewModel _buildFromRitualSelection(
+    settings.MyDayRitualState ritual,
+    DateTime dayKeyUtc,
     List<Task> tasks,
     List<Value> values,
   ) {
     final tasksById = {for (final task in tasks) task.id: task};
+
+    final selectedIds = ritual.selectedTaskIds;
 
     final orderedTasks = selectedIds
         .map((id) => tasksById[id])
         .whereType<Task>()
         .where((task) => !_isCompleted(task))
         .toList(growable: false);
+
+    final acceptedFocusTasks = _resolveAcceptedTasks(
+      ritual.acceptedFocusTaskIds,
+      tasksById,
+    );
+    final acceptedFocusIds = acceptedFocusTasks.map((t) => t.id).toSet();
+
+    final acceptedDueTasks = _resolveAcceptedTasks(
+      ritual.acceptedDueTaskIds.where((id) => !acceptedFocusIds.contains(id)),
+      tasksById,
+    );
+    final acceptedDueIds = acceptedDueTasks.map((t) => t.id).toSet();
+
+    final acceptedStartsTasks = _resolveAcceptedTasks(
+      ritual.acceptedStartsTaskIds.where(
+        (id) => !acceptedFocusIds.contains(id) && !acceptedDueIds.contains(id),
+      ),
+      tasksById,
+    );
 
     final qualifyingByTaskId = {
       for (final task in orderedTasks) task.id: task.effectivePrimaryValueId,
@@ -241,6 +279,9 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
       tasks: orderedTasks,
       values: values,
       qualifyingByTaskId: qualifyingByTaskId,
+      acceptedDue: acceptedDueTasks,
+      acceptedStarts: acceptedStartsTasks,
+      acceptedFocus: acceptedFocusTasks,
     );
   }
 
@@ -248,6 +289,9 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
     required List<Task> tasks,
     required List<Value> values,
     required Map<String, String?> qualifyingByTaskId,
+    List<Task> acceptedDue = const <Task>[],
+    List<Task> acceptedStarts = const <Task>[],
+    List<Task> acceptedFocus = const <Task>[],
   }) {
     final valueById = {for (final value in values) value.id: value};
 
@@ -271,7 +315,21 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         qualifyingByTaskId: qualifyingByTaskId,
         valueById: valueById,
       ),
+      acceptedDue: acceptedDue,
+      acceptedStarts: acceptedStarts,
+      acceptedFocus: acceptedFocus,
     );
+  }
+
+  List<Task> _resolveAcceptedTasks(
+    Iterable<String> ids,
+    Map<String, Task> tasksById,
+  ) {
+    return ids
+        .map((id) => tasksById[id])
+        .whereType<Task>()
+        .where((task) => !_isCompleted(task))
+        .toList(growable: false);
   }
 
   bool _isCompleted(Task task) {
@@ -284,11 +342,18 @@ final class _MyDayViewModel {
     required this.tasks,
     required this.summary,
     required this.mix,
+    required this.acceptedDue,
+    required this.acceptedStarts,
+    required this.acceptedFocus,
   });
 
   final List<Task> tasks;
   final MyDaySummary summary;
   final MyDayMixVm mix;
+
+  final List<Task> acceptedDue;
+  final List<Task> acceptedStarts;
+  final List<Task> acceptedFocus;
 }
 
 final class MyDayMixVm {

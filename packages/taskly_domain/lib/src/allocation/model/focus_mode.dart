@@ -34,7 +34,7 @@ extension FocusModeX on FocusMode {
   /// Short tagline for the focus mode.
   String get tagline => switch (this) {
     FocusMode.intentional => 'Do what matters most today.',
-    FocusMode.sustainable => 'Stay steady, stay aligned.',
+    FocusMode.sustainable => 'Balance your values.',
     FocusMode.responsive => 'Handle what’s time-sensitive first.',
     FocusMode.personalized => 'Run today your way.',
   };

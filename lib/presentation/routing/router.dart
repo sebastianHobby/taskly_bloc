@@ -8,7 +8,9 @@ import 'package:taskly_bloc/presentation/routing/not_found_route_page.dart';
 import 'package:taskly_bloc/presentation/routing/route_codec.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_history_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_trackers_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/values_page.dart';
@@ -296,11 +298,11 @@ final router = GoRouter(
         ),
         GoRoute(
           path: Routing.screenPath('journal_history'),
-          builder: (_, __) => const JournalHubPage(initialTabIndex: 1),
+          builder: (_, __) => const JournalHistoryPage(),
         ),
         GoRoute(
           path: Routing.screenPath('journal_manage_trackers'),
-          builder: (_, __) => const JournalHubPage(initialTabIndex: 2),
+          builder: (_, __) => const JournalTrackersPage(),
         ),
         GoRoute(
           path: Routing.screenPath('trackers'),

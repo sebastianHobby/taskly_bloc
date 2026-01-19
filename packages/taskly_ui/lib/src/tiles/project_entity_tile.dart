@@ -30,13 +30,40 @@ class ProjectEntityTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool pinned = badges.any((b) => b.kind == BadgeKind.pinned);
+    final Widget? titlePrefix = pinned ? const _PinnedGlyph() : null;
+
     return ProjectListRowTile(
       model: model,
       onTap: onTap,
-      titlePrefix: null,
+      titlePrefix: titlePrefix,
       trailing: _TrailingOverflowButton(
         trailing: trailing,
         onOverflowRequestedAt: onOverflowRequestedAt,
+      ),
+    );
+  }
+}
+
+class _PinnedGlyph extends StatelessWidget {
+  const _PinnedGlyph();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Semantics(
+      label: 'Pinned',
+      child: SizedBox(
+        width: 18,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Icon(
+            Icons.push_pin_rounded,
+            size: 16,
+            color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+          ),
+        ),
       ),
     );
   }

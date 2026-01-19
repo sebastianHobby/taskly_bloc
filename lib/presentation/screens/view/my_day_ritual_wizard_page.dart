@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
@@ -34,10 +33,6 @@ class MyDayRitualWizardPage extends StatelessWidget {
         builder: (context, ritualState) {
           return BlocBuilder<MyDayGateBloc, MyDayGateState>(
             builder: (context, gateState) {
-              final gateMissing =
-                  gateState is MyDayGateLoaded &&
-                  (gateState.needsFocusModeSetup || gateState.needsValuesSetup);
-
               return switch (ritualState) {
                 MyDayRitualLoading() => const Scaffold(
                   body: Center(child: CircularProgressIndicator()),
@@ -50,9 +45,7 @@ class MyDayRitualWizardPage extends StatelessWidget {
                       gateState: gateState,
                     ),
                   ),
-                  bottomNavigationBar: gateMissing
-                      ? null
-                      : _RitualBottomBar(data: ritualState),
+                  bottomNavigationBar: _RitualBottomBar(data: ritualState),
                 ),
               };
             },
@@ -74,119 +67,54 @@ class _RitualBody extends StatelessWidget {
     final planned = data.planned;
     final curated = data.curated;
     final selected = data.selectedTaskIds;
-    final dateLabel = DateFormat('EEEE, MMM d').format(DateTime.now());
 
-    final gate = gateState;
-    final gateMissing =
-        gate is MyDayGateLoaded &&
-        (gate.needsFocusModeSetup || gate.needsValuesSetup);
+    final gate = gateState is MyDayGateLoaded
+        ? gateState as MyDayGateLoaded
+        : null;
 
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
           child: _HeroHeader(
-            dateLabel: dateLabel,
+            greeting: 'Welcome back.',
             title: 'Choose what matters today.',
-            subtitle: 'Planned items first, then curated picks.',
           ),
         ),
-        if (gateMissing)
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            sliver: SliverToBoxAdapter(
-              child: _RitualGateCard(gateState: gate),
-            ),
-          )
-        else
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            sliver: SliverToBoxAdapter(
-              child: _RitualCard(
-                focusMode: data.focusMode,
-                dayKeyUtc: data.dayKeyUtc,
-                planned: planned,
-                curated: curated,
-                selected: selected,
-                curatedReasons: data.curatedReasons,
-                onChangeFocusMode: () => context.read<MyDayRitualBloc>().add(
-                  const MyDayRitualFocusModeWizardRequested(),
-                ),
-                onAcceptAllPlanned: () => context.read<MyDayRitualBloc>().add(
-                  const MyDayRitualAcceptAllPlanned(),
-                ),
-                onAcceptAllCurated: () => context.read<MyDayRitualBloc>().add(
-                  const MyDayRitualAcceptAllCurated(),
-                ),
-                onSuggestedInfo: () => _showSuggestedInfo(context),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          sliver: SliverToBoxAdapter(
+            child: _RitualCard(
+              focusMode: data.focusMode,
+              dayKeyUtc: data.dayKeyUtc,
+              planned: planned,
+              curated: curated,
+              selected: selected,
+              curatedReasons: data.curatedReasons,
+              gateState: gate,
+              onStartSetup: () => _openFocusSetup(context, gate),
+              onChangeFocusMode: () => context.read<MyDayRitualBloc>().add(
+                const MyDayRitualFocusModeWizardRequested(),
+              ),
+              onAcceptAllDue: () => context.read<MyDayRitualBloc>().add(
+                const MyDayRitualAcceptAllDue(),
+              ),
+              onAcceptAllStarts: () => context.read<MyDayRitualBloc>().add(
+                const MyDayRitualAcceptAllStarts(),
+              ),
+              onAcceptAllCurated: () => context.read<MyDayRitualBloc>().add(
+                const MyDayRitualAcceptAllCurated(),
               ),
             ),
           ),
+        ),
         const SliverToBoxAdapter(child: SizedBox(height: 16)),
       ],
     );
   }
-}
 
-class _RitualGateCard extends StatelessWidget {
-  const _RitualGateCard({required this.gateState});
-
-  final MyDayGateLoaded gateState;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Card(
-      elevation: 0,
-      color: cs.surface,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Finish setup to start your day',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              gateState.descriptionText,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (gateState.needsFocusModeSetup)
-              _GateRow(
-                icon: Icons.tune,
-                label: 'Choose a focus mode',
-              ),
-            if (gateState.needsValuesSetup)
-              _GateRow(
-                icon: Icons.favorite_outline,
-                label: 'Add your first value',
-              ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () => _openFocusSetup(context),
-                icon: Icon(gateState.ctaIcon),
-                label: Text(gateState.ctaLabel),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _openFocusSetup(BuildContext context) {
-    if (gateState.needsFocusModeSetup) {
+  void _openFocusSetup(BuildContext context, MyDayGateLoaded? gateState) {
+    final needsFocusModeSetup = gateState?.needsFocusModeSetup ?? true;
+    if (needsFocusModeSetup) {
       Routing.toScreenKeyWithQuery(
         context,
         'focus_setup',
@@ -195,41 +123,10 @@ class _RitualGateCard extends StatelessWidget {
       return;
     }
 
-    if (gateState.needsValuesSetup) {
-      Routing.toScreenKeyWithQuery(
-        context,
-        'focus_setup',
-        queryParameters: const {'step': 'values'},
-      );
-    }
-  }
-}
-
-class _GateRow extends StatelessWidget {
-  const _GateRow({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: cs.primary),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+    Routing.toScreenKeyWithQuery(
+      context,
+      'focus_setup',
+      queryParameters: const {'step': 'values'},
     );
   }
 }
@@ -279,18 +176,17 @@ class _RitualBottomBar extends StatelessWidget {
 
 class _HeroHeader extends StatelessWidget {
   const _HeroHeader({
-    required this.dateLabel,
+    required this.greeting,
     required this.title,
-    required this.subtitle,
   });
 
-  final String dateLabel;
+  final String greeting;
   final String title;
-  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final mergedTitle = _mergeGreetingWithTitle(greeting, title);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -311,25 +207,9 @@ class _HeroHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                dateLabel.toUpperCase(),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.4,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                title,
+                mergedTitle,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -338,78 +218,14 @@ class _HeroHeader extends StatelessWidget {
       ],
     );
   }
-}
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.actionLabel,
-    required this.onAction,
-    this.stepLabel,
-    this.helperText,
-  });
-
-  final String? stepLabel;
-  final String title;
-  final String actionLabel;
-  final VoidCallback onAction;
-  final String? helperText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (stepLabel != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: Text(
-                stepLabel!,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.6,
-                ),
-              ),
-            ),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: onAction,
-                child: Text(
-                  actionLabel,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (helperText != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                helperText!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
+  String _mergeGreetingWithTitle(String greeting, String title) {
+    final trimmedGreeting = greeting.trim().replaceAll('.', '');
+    final trimmedTitle = title.trim();
+    if (trimmedTitle.isEmpty) return trimmedGreeting;
+    final lowercaseTitle =
+        '${trimmedTitle[0].toLowerCase()}${trimmedTitle.substring(1)}';
+    return '$trimmedGreeting — $lowercaseTitle';
   }
 }
 
@@ -421,10 +237,12 @@ class _RitualCard extends StatefulWidget {
     required this.curated,
     required this.selected,
     required this.curatedReasons,
+    required this.gateState,
+    required this.onStartSetup,
     required this.onChangeFocusMode,
-    required this.onAcceptAllPlanned,
+    required this.onAcceptAllDue,
+    required this.onAcceptAllStarts,
     required this.onAcceptAllCurated,
-    required this.onSuggestedInfo,
   });
 
   final FocusMode focusMode;
@@ -433,10 +251,12 @@ class _RitualCard extends StatefulWidget {
   final List<Task> curated;
   final Set<String> selected;
   final Map<String, String> curatedReasons;
+  final MyDayGateLoaded? gateState;
+  final VoidCallback onStartSetup;
   final VoidCallback onChangeFocusMode;
-  final VoidCallback onAcceptAllPlanned;
+  final VoidCallback onAcceptAllDue;
+  final VoidCallback onAcceptAllStarts;
   final VoidCallback onAcceptAllCurated;
-  final VoidCallback onSuggestedInfo;
 
   @override
   State<_RitualCard> createState() => _RitualCardState();
@@ -482,6 +302,11 @@ class _RitualCardState extends State<_RitualCard> {
     final curatedCount = widget.curated.length;
     final today = dateOnly(widget.dayKeyUtc);
 
+    final needsSetup =
+        widget.gateState != null &&
+        (widget.gateState!.needsFocusModeSetup ||
+            widget.gateState!.needsValuesSetup);
+
     final due = <Task>[];
     final starts = <Task>[];
     for (final task in widget.planned) {
@@ -515,27 +340,25 @@ class _RitualCardState extends State<_RitualCard> {
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
         child: Column(
           children: [
-            _SectionHeader(
-              stepLabel: 'Step 1 · Planned',
-              title: 'Planned · $plannedCount',
-              actionLabel: 'Accept all planned',
-              helperText: plannedCount == 0
-                  ? null
-                  : 'Start with planned or time‑sensitive.',
-              onAction: widget.onAcceptAllPlanned,
-            ),
             if (plannedCount == 0)
               const _EmptyPanel(
-                title: 'No planned tasks',
-                description: 'Nothing is due or scheduled to start today.',
+                title: 'Nothing planned yet',
+                description: 'No tasks are due or starting soon.',
               )
             else
               Column(
                 children: [
-                  if (due.isNotEmpty) ...[
+                  if (due.isEmpty)
+                    const _SectionEmptyPanel(
+                      title: 'Overdue & due',
+                      description: "You're caught up.",
+                    )
+                  else ...[
                     _SubsectionHeader(
                       title: 'Overdue & due',
                       count: due.length,
+                      actionLabel: 'Add all due',
+                      onAction: widget.onAcceptAllDue,
                     ),
                     _TaskTileColumn(
                       tasks: dueVisible,
@@ -553,10 +376,17 @@ class _RitualCardState extends State<_RitualCard> {
                             setState(() => _dueExpanded = !_dueExpanded),
                       ),
                   ],
-                  if (starts.isNotEmpty) ...[
+                  if (starts.isEmpty)
+                    const _SectionEmptyPanel(
+                      title: 'Starts today',
+                      description: 'No tasks starting soon.',
+                    )
+                  else ...[
                     _SubsectionHeader(
                       title: 'Starts today',
                       count: starts.length,
+                      actionLabel: 'Add all starts',
+                      onAction: widget.onAcceptAllStarts,
                     ),
                     _TaskTileColumn(
                       tasks: startsVisible,
@@ -578,19 +408,26 @@ class _RitualCardState extends State<_RitualCard> {
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: Divider(color: cs.outlineVariant),
+              child: Divider(
+                color: cs.outlineVariant,
+                thickness: 1,
+                height: 1,
+              ),
             ),
             _SuggestedHeader(
               count: curatedCount,
               focusMode: widget.focusMode,
+              needsSetup: needsSetup,
+              onStartSetup: widget.onStartSetup,
               onChangeFocusMode: widget.onChangeFocusMode,
               onAcceptAllCurated: widget.onAcceptAllCurated,
-              onSuggestedInfo: widget.onSuggestedInfo,
             ),
-            if (curatedCount == 0)
+            if (needsSetup)
+              _SuggestedSetupCard(gateState: widget.gateState!)
+            else if (curatedCount == 0)
               const _EmptyPanel(
-                title: 'No curated picks today',
-                description: 'Your focus mode has no suggestions yet.',
+                title: 'No suggested picks yet',
+                description: 'Check back later or adjust your focus mode.',
               )
             else
               Column(
@@ -626,10 +463,17 @@ class _RitualCardState extends State<_RitualCard> {
 }
 
 class _SubsectionHeader extends StatelessWidget {
-  const _SubsectionHeader({required this.title, required this.count});
+  const _SubsectionHeader({
+    required this.title,
+    required this.count,
+    this.actionLabel,
+    this.onAction,
+  });
 
   final String title;
   final int count;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -646,6 +490,17 @@ class _SubsectionHeader extends StatelessWidget {
               ),
             ),
           ),
+          if (actionLabel != null && onAction != null)
+            TextButton(
+              onPressed: onAction,
+              child: Text(
+                actionLabel!,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -656,77 +511,267 @@ class _SuggestedHeader extends StatelessWidget {
   const _SuggestedHeader({
     required this.count,
     required this.focusMode,
+    required this.needsSetup,
+    required this.onStartSetup,
     required this.onChangeFocusMode,
     required this.onAcceptAllCurated,
-    required this.onSuggestedInfo,
   });
 
   final int count;
   final FocusMode focusMode;
+  final bool needsSetup;
+  final VoidCallback onStartSetup;
   final VoidCallback onChangeFocusMode;
   final VoidCallback onAcceptAllCurated;
-  final VoidCallback onSuggestedInfo;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Step 2 · Suggested',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.6,
-            ),
-          ),
-          const SizedBox(height: 2),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  'Suggested · $count',
-                  style: theme.textTheme.titleSmall?.copyWith(
+                  'Suggested for you · $count',
+                  style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.info_outline, size: 18),
-                onPressed: onSuggestedInfo,
-                tooltip: 'Why these picks?',
-              ),
-              TextButton(
-                onPressed: onChangeFocusMode,
-                child: Text(focusMode.displayName),
-              ),
-              TextButton(
-                onPressed: onAcceptAllCurated,
-                child: Text(
-                  'Accept all picks',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
+              if (!needsSetup)
+                TextButton(
+                  onPressed: onAcceptAllCurated,
+                  child: Text(
+                    'Add all picks',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
+                )
+              else
+                TextButton(
+                  onPressed: onStartSetup,
+                  child: Text(
+                    'Start setup',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          if (!needsSetup)
+            _FocusModeHelperLine(
+              focusMode: focusMode,
+              onChangeFocusMode: onChangeFocusMode,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestedSetupCard extends StatelessWidget {
+  const _SuggestedSetupCard({required this.gateState});
+
+  final MyDayGateLoaded gateState;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+      child: Card(
+        elevation: 0,
+        color: cs.surface,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Unlock suggestions',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Set up a focus mode and add your first value to get tailored picks here.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (gateState.needsFocusModeSetup)
+                _GateRow(
+                  icon: Icons.tune,
+                  label: 'Choose a focus mode',
+                ),
+              if (gateState.needsValuesSetup)
+                _GateRow(
+                  icon: Icons.favorite_outline,
+                  label: 'Add your first value',
+                ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => _openFocusSetup(context),
+                  icon: Icon(gateState.ctaIcon),
+                  label: Text(gateState.ctaLabel),
                 ),
               ),
             ],
           ),
-          if (count > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'Based on values + focus mode.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+        ),
+      ),
+    );
+  }
+
+  void _openFocusSetup(BuildContext context) {
+    if (gateState.needsFocusModeSetup) {
+      Routing.toScreenKeyWithQuery(
+        context,
+        'focus_setup',
+        queryParameters: const {'step': 'select_focus_mode'},
+      );
+      return;
+    }
+
+    Routing.toScreenKeyWithQuery(
+      context,
+      'focus_setup',
+      queryParameters: const {'step': 'values'},
+    );
+  }
+}
+
+class _GateRow extends StatelessWidget {
+  const _GateRow({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: cs.primary),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _SectionEmptyPanel extends StatelessWidget {
+  const _SectionEmptyPanel({
+    required this.title,
+    required this.description,
+  });
+
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cs.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FocusModeHelperLine extends StatelessWidget {
+  const _FocusModeHelperLine({
+    required this.focusMode,
+    required this.onChangeFocusMode,
+  });
+
+  final FocusMode focusMode;
+  final VoidCallback onChangeFocusMode;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final helperStyle = theme.textTheme.bodySmall?.copyWith(
+      color: cs.onSurfaceVariant,
+    );
+
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 10,
+      runSpacing: 6,
+      children: [
+        Text(
+          'Mode: ${focusMode.displayName} · ${focusMode.tagline}',
+          style: helperStyle,
+        ),
+        TextButton(
+          onPressed: onChangeFocusMode,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            textStyle: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          child: const Text('Change'),
+        ),
+      ],
     );
   }
 }
@@ -893,25 +938,6 @@ class _SelectPill extends StatelessWidget {
       ),
     );
   }
-}
-
-void _showSuggestedInfo(BuildContext context) {
-  showDialog<void>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Why these picks?'),
-      content: const Text(
-        'Suggested tasks are selected based on your focus mode and current '
-        'signals like values, neglect, and time sensitivity.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Got it'),
-        ),
-      ],
-    ),
-  );
 }
 
 class _EmptyPanel extends StatelessWidget {

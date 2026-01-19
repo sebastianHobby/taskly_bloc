@@ -1,4 +1,4 @@
-insteadimport 'package:powersync/powersync.dart';
+import 'package:powersync/powersync.dart';
 import 'package:powersync_core/powersync_core.dart';
 
 //Generated from powersync dashboard --> Client setup
@@ -17,22 +17,11 @@ const schema = Schema([
     Column.text('user_id'),
     Column.text('repeat_ical_rrule'),
 
-    // Tracker groups (user-defined organizational groups)
-    Table('tracker_groups', [
-      Column.text('user_id'),
-      Column.text('name'),
-      Column.integer('sort_order'),
-      Column.integer('is_active'),
-      Column.text('created_at'),
-      Column.text('updated_at'),
-    ], trackMetadata: true),
-
     Column.integer('series_ended'),
     Column.integer('repeat_from_completion'),
     Column.text('review_notes'),
     Column.integer('priority'),
     Column.integer('pinned'),
-      Column.text('group_id'),
     Column.text('override_primary_value_id'),
     Column.text('override_secondary_value_id'),
   ], trackMetadata: true),
@@ -247,9 +236,20 @@ const schema = Schema([
     Column.text('local_date'),
   ], trackMetadata: true),
 
+  // Tracker Groups (user-defined organizational groups)
+  Table('tracker_groups', [
+    Column.text('user_id'),
+    Column.text('name'),
+    Column.integer('sort_order'),
+    Column.integer('is_active'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+  ], trackMetadata: true),
+
   // Tracker model (OPT-A): event-log + projections
   Table('tracker_definitions', [
     Column.text('user_id'),
+    Column.text('group_id'),
     Column.text('name'),
     Column.text('description'),
     Column.text('scope'),

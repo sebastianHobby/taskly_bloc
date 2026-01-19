@@ -1,64 +1,105 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/features/journal/view/journal_history_page.dart';
+import 'package:intl/intl.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_today_page.dart';
-import 'package:taskly_bloc/presentation/features/journal/view/journal_trackers_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 
 class JournalHubPage extends StatefulWidget {
-  const JournalHubPage({super.key, this.initialTabIndex = 0});
+  const JournalHubPage({
+    super.key,
+    @Deprecated(
+      'Tabs were removed from Journal. Use dedicated routes like '
+      '`journal_history` and `journal_manage_trackers` instead.',
+    )
+    this.initialTabIndex = 0,
+  });
 
+  @Deprecated(
+    'Tabs were removed from Journal. Use dedicated routes like '
+    '`journal_history` and `journal_manage_trackers` instead.',
+  )
   final int initialTabIndex;
 
   @override
   State<JournalHubPage> createState() => _JournalHubPageState();
 }
 
-class _JournalHubPageState extends State<JournalHubPage>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
+class _JournalHubPageState extends State<JournalHubPage> {
+  late DateTime _selectedDay;
 
   @override
   void initState() {
     super.initState();
-    final safeInitialIndex = widget.initialTabIndex.clamp(0, 2);
-    _tabController = TabController(
-      length: 3,
-      vsync: this,
-      initialIndex: safeInitialIndex,
-    );
+    _selectedDay = getIt<NowService>().nowLocal();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  Future<void> _pickDay() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day,
+      ),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (picked == null) return;
+    if (!mounted) return;
+
+    setState(() {
+      _selectedDay = picked;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final dateLabel = DateFormat('EEE d MMM').format(_selectedDay);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Journal'),
+        title: InkWell(
+          onTap: _pickDay,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Text(dateLabel),
+          ),
+        ),
         actions: TasklyAppBarActions.withAttentionBell(
           context,
-          actions: const <Widget>[],
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.today_outlined), text: 'Today'),
-            Tab(icon: Icon(Icons.receipt_long_outlined), text: 'Entries'),
-            Tab(icon: Icon(Icons.tune), text: 'Trackers'),
+          actions: [
+            IconButton(
+              tooltip: 'History',
+              onPressed: () => Routing.pushScreenKey(
+                context,
+                'journal_history',
+              ),
+              icon: const Icon(Icons.search),
+            ),
+            IconButton(
+              tooltip: 'Manage trackers',
+              onPressed: () => Routing.pushScreenKey(
+                context,
+                'journal_manage_trackers',
+              ),
+              icon: const Icon(Icons.tune),
+            ),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          JournalTodayPage(),
-          JournalHistoryPage(),
-          JournalTrackersPage(),
-        ],
+      body: JournalTodayPage(day: _selectedDay),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => AddLogSheet.show(
+          context: context,
+          selectedDayLocal: _selectedDay,
+        ),
+        icon: const Icon(Icons.add),
+        label: const Text('Add entry'),
       ),
     );
   }

@@ -33,12 +33,13 @@ class TaskEntityTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool pinned = badges.any((b) => b.kind == BadgeKind.pinned);
+    final Widget? titlePrefix = pinned ? const _PinnedGlyph() : null;
 
     return TaskListRowTile(
       model: model,
       onTap: onTap ?? model.onTap,
       onToggleCompletion: onToggleCompletion,
-      titlePrefix: pinned ? const _PinnedGlyph() : null,
+      titlePrefix: titlePrefix,
       trailing: _TrailingOverflowButton(
         trailing: trailing,
         onOverflowRequestedAt: onOverflowRequestedAt,
@@ -57,7 +58,7 @@ class _PinnedGlyph extends StatelessWidget {
     return Semantics(
       label: 'Pinned',
       child: SizedBox(
-        width: 22,
+        width: 18,
         child: Align(
           alignment: Alignment.topCenter,
           child: Icon(

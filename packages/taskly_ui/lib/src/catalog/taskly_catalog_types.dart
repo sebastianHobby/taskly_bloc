@@ -22,7 +22,7 @@ final class EntityRef {
 }
 
 /// Curated badge kinds used across catalogue renderers.
-enum BadgeKind { due, starts, ongoing, pinned }
+enum BadgeKind { pinned }
 
 /// A small badge rendered near an entity title.
 ///

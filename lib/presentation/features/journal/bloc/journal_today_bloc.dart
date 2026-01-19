@@ -46,14 +46,17 @@ class JournalTodayBloc extends Cubit<JournalTodayState> {
   JournalTodayBloc({
     required JournalRepositoryContract repository,
     required DateTime Function() nowUtc,
+    DateTime? selectedDay,
   }) : _repository = repository,
        _nowUtc = nowUtc,
+       _selectedDay = selectedDay,
        super(const JournalTodayLoading()) {
     _subscribe();
   }
 
   final JournalRepositoryContract _repository;
   final DateTime Function() _nowUtc;
+  final DateTime? _selectedDay;
 
   StreamSubscription<JournalTodayLoaded>? _sub;
 
@@ -65,8 +68,8 @@ class JournalTodayBloc extends Cubit<JournalTodayState> {
   }
 
   void _subscribe() {
-    final nowUtc = _nowUtc();
-    final startUtc = dateOnly(nowUtc);
+    final day = _selectedDay ?? _nowUtc();
+    final startUtc = dateOnly(day);
     final endUtc = startUtc
         .add(const Duration(days: 1))
         .subtract(const Duration(microseconds: 1));
@@ -77,7 +80,7 @@ class JournalTodayBloc extends Cubit<JournalTodayState> {
     final defs$ = _repository.watchTrackerDefinitions();
     final prefs$ = _repository.watchTrackerPreferences();
     final entries$ = _repository.watchJournalEntriesByQuery(
-      JournalQuery.forDate(nowUtc),
+      JournalQuery.forDate(day),
     );
     final events$ = _repository.watchTrackerEvents(
       range: DateRange(start: startUtc, end: endUtc),

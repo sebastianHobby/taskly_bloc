@@ -51,11 +51,13 @@ final class TasklyAgendaDateHeaderRowModel extends TasklyAgendaRowModel {
     required super.depth,
     required this.day,
     required this.title,
+    this.subtitle,
     this.isTodayAnchor = false,
   });
 
   final DateTime day;
   final String title;
+  final String? subtitle;
   final bool isTodayAnchor;
 }
 
@@ -246,6 +248,7 @@ class _StickyTasklyAgendaSectionState
     // scrolled past the top edge.
     String? activeBucketTitle;
     String? activeDateTitle;
+    String? activeDateSubtitle;
     int activeHeaderIndex = -1;
 
     final headerIndices = <int>[];
@@ -275,8 +278,10 @@ class _StickyTasklyAgendaSectionState
         if (row is TasklyAgendaBucketHeaderRowModel) {
           activeBucketTitle = row.title;
           activeDateTitle = null;
+          activeDateSubtitle = null;
         } else if (row is TasklyAgendaDateHeaderRowModel) {
           activeDateTitle = row.title;
+          activeDateSubtitle = row.subtitle;
 
           // Depth 0 date headers are not nested under a bucket; clear the
           // active bucket so we don't keep showing the previous section.
@@ -300,11 +305,13 @@ class _StickyTasklyAgendaSectionState
     const headerPadding = EdgeInsets.fromLTRB(16, 12, 16, 10);
     final theme = Theme.of(context);
     final bucketStyle = theme.textTheme.titleMedium;
-    final dateStyle = theme.textTheme.labelLarge;
+    final dateStyle = theme.textTheme.titleMedium;
     final lineHeight =
         (bucketStyle?.fontSize ?? 18) * (bucketStyle?.height ?? 1.2);
     final dateLineHeight =
         (dateStyle?.fontSize ?? 14) * (dateStyle?.height ?? 1.2);
+
+    // Sticky header always renders the date as a single compact line.
     final headerHeight =
         headerPadding.vertical +
         (activeBucketTitle == null ? 0 : lineHeight) +
@@ -340,6 +347,7 @@ class _StickyTasklyAgendaSectionState
     final next = _StickyHeaderState(
       bucketTitle: activeBucketTitle,
       dateTitle: activeDateTitle,
+      dateSubtitle: activeDateSubtitle,
       yOffset: yOffset,
     );
 
@@ -421,6 +429,7 @@ class _StickyTasklyAgendaSectionState
             child: _StickyAgendaHeader(
               bucketTitle: _sticky.bucketTitle,
               dateTitle: _sticky.dateTitle,
+              dateSubtitle: _sticky.dateSubtitle,
             ),
           ),
       ],
@@ -432,16 +441,19 @@ class _StickyHeaderState {
   const _StickyHeaderState({
     required this.bucketTitle,
     required this.dateTitle,
+    required this.dateSubtitle,
     required this.yOffset,
   });
 
   const _StickyHeaderState.hidden()
     : bucketTitle = null,
       dateTitle = null,
+      dateSubtitle = null,
       yOffset = 0;
 
   final String? bucketTitle;
   final String? dateTitle;
+  final String? dateSubtitle;
   final double yOffset;
 
   bool get hidden => bucketTitle == null && dateTitle == null;
@@ -451,26 +463,40 @@ class _StickyHeaderState {
     return other is _StickyHeaderState &&
         other.bucketTitle == bucketTitle &&
         other.dateTitle == dateTitle &&
+        other.dateSubtitle == dateSubtitle &&
         (other.yOffset - yOffset).abs() < 0.5;
   }
 
   @override
-  int get hashCode => Object.hash(bucketTitle, dateTitle, yOffset.round());
+  int get hashCode => Object.hash(
+    bucketTitle,
+    dateTitle,
+    dateSubtitle,
+    yOffset.round(),
+  );
 }
 
 class _StickyAgendaHeader extends StatelessWidget {
   const _StickyAgendaHeader({
     required this.bucketTitle,
     required this.dateTitle,
+    required this.dateSubtitle,
   });
 
   final String? bucketTitle;
   final String? dateTitle;
+  final String? dateSubtitle;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+
+    final dateLine = (dateTitle == null)
+        ? null
+        : (dateSubtitle == null || dateSubtitle!.isEmpty)
+        ? dateTitle!
+        : '${dateTitle!} · ${dateSubtitle!}';
 
     return Material(
       color: scheme.surface,
@@ -489,10 +515,10 @@ class _StickyAgendaHeader extends StatelessWidget {
           children: [
             if (bucketTitle != null)
               Text(bucketTitle!, style: theme.textTheme.titleMedium),
-            if (dateTitle != null) ...[
+            if (dateLine != null) ...[
               if (bucketTitle != null) const SizedBox(height: 4),
               Text(
-                dateTitle!,
+                dateLine,
                 style:
                     (bucketTitle == null
                             ? theme.textTheme.titleMedium
@@ -558,12 +584,26 @@ class _DateHeaderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: Text(
-        row.title,
-        style: Theme.of(context).textTheme.labelLarge,
-      ),
+      child: row.subtitle == null
+          ? Text(row.title, style: theme.textTheme.labelLarge)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(row.title, style: theme.textTheme.titleSmall),
+                const SizedBox(height: 2),
+                Text(
+                  row.subtitle!,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

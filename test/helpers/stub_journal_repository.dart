@@ -138,4 +138,21 @@ class StubJournalRepository implements JournalRepositoryContract {
   }) async {
     return const <DateTime, double>{};
   }
+
+  @override
+  Stream<List<TrackerGroup>> watchTrackerGroups() {
+    return Stream.value(const <TrackerGroup>[]);
+  }
+
+  @override
+  Future<void> saveTrackerGroup(
+    TrackerGroup group, {
+    OperationContext? context,
+  }) async {}
+
+  @override
+  Future<void> deleteTrackerGroup(
+    String groupId, {
+    OperationContext? context,
+  }) async {}
 }
