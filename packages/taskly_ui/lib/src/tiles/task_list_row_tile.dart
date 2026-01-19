@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-import 'package:taskly_ui/src/primitives/pinned_gutter_marker.dart';
 import 'package:taskly_ui/src/tiles/entity_meta_line.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 
@@ -12,9 +10,7 @@ class TaskListRowTile extends StatelessWidget {
     this.onToggleCompletion,
     this.trailing,
     this.titlePrefix,
-    this.statusBadge,
     super.key,
-    this.compact = false,
   });
 
   final TaskTileModel model;
@@ -29,9 +25,6 @@ class TaskListRowTile extends StatelessWidget {
   final Widget? trailing;
 
   final Widget? titlePrefix;
-  final Widget? statusBadge;
-
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +51,7 @@ class TaskListRowTile extends StatelessWidget {
             Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: compact ? 10 : 12,
+                vertical: 12,
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,14 +90,10 @@ class TaskListRowTile extends StatelessWidget {
                                       ? scheme.onSurface.withValues(alpha: 0.5)
                                       : scheme.onSurface,
                                 ),
-                                maxLines: compact ? 1 : 2,
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (statusBadge != null) ...[
-                              const SizedBox(width: 10),
-                              statusBadge!,
-                            ],
                           ],
                         ),
                         EntityMetaLine(model: model.meta),
@@ -113,7 +102,7 @@ class TaskListRowTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   SizedBox(
-                    width: 72,
+                    width: 56,
                     child: Align(
                       alignment: Alignment.topRight,
                       child: trailing ?? const SizedBox.shrink(),
@@ -122,14 +111,6 @@ class TaskListRowTile extends StatelessWidget {
                 ],
               ),
             ),
-            if (model.pinned)
-              Positioned(
-                left: 0,
-                top: compact ? 12 : 14,
-                child: IgnorePointer(
-                  child: PinnedGutterMarker(color: scheme.primary),
-                ),
-              ),
           ],
         ),
       ),

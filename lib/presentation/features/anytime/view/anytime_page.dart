@@ -3,20 +3,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
-import 'package:taskly_bloc/presentation/entity_tiles/widgets/widgets.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/view/scope_header.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
-import 'package:taskly_bloc/presentation/theme/taskly_typography.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_ui/taskly_ui_catalog.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_feed_bloc.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_screen_bloc.dart';
@@ -197,15 +198,10 @@ class _AnytimeView extends StatelessWidget {
                           ),
                         ),
                       ),
-                    AnytimeFeedLoaded(:final rows) => FeedBody.list(
-                      itemCount: rows.length,
-                      itemBuilder: (context, index) {
-                        final row = rows[index];
-                        return KeyedSubtree(
-                          key: ValueKey(row.rowKey),
-                          child: _AnytimeRow(row: row),
-                        );
-                      },
+                    AnytimeFeedLoaded(:final rows) => FeedBody.child(
+                      child: TasklyStandardTileListSection(
+                        rows: _buildStandardRows(context, rows),
+                      ),
                     ),
                   };
                 },
@@ -218,101 +214,86 @@ class _AnytimeView extends StatelessWidget {
   }
 }
 
-class _AnytimeRow extends StatelessWidget {
-  const _AnytimeRow({required this.row});
-
-  final ListRowUiModel row;
-
-  @override
-  Widget build(BuildContext context) {
-    final leftIndent = 12.0 * row.depth;
-
-    return switch (row) {
-      ValueHeaderRowUiModel(:final title) => Padding(
-        padding: EdgeInsets.fromLTRB(16 + leftIndent, 16, 16, 8),
-        child: Text(
-          title.toUpperCase(),
-          style: Theme.of(
-            context,
-          ).extension<TasklyTypography>()?.sectionHeaderHeavy,
-        ),
-      ),
-      ProjectHeaderRowUiModel(
-        :final projectRef,
-        :final title,
-      ) =>
-        Padding(
-          padding: EdgeInsets.fromLTRB(16 + leftIndent, 12, 16, 4),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: () {
-              context.read<AnytimeScreenBloc>().add(
-                AnytimeProjectHeaderTapped(
-                  projectRef: projectRef,
-                ),
-              );
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-              child: Row(
-                children: [
-                  Icon(
-                    projectRef.isInbox
-                        ? Icons.inbox_outlined
-                        : Icons.folder_outlined,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: Theme.of(
-                        context,
-                      ).extension<TasklyTypography>()?.subHeaderCaps,
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, size: 18),
-                ],
+List<TasklyStandardTileListRowModel> _buildStandardRows(
+  BuildContext context,
+  List<ListRowUiModel> rows,
+) {
+  return rows
+      .map<TasklyStandardTileListRowModel?>((row) {
+        return switch (row) {
+          ValueHeaderRowUiModel(:final title) =>
+            TasklyStandardTileListHeaderRowModel(
+              key: row.rowKey,
+              depth: row.depth,
+              title: title.toUpperCase(),
+            ),
+          ProjectHeaderRowUiModel(:final projectRef, :final title) =>
+            TasklyStandardTileListIconHeaderRowModel(
+              key: row.rowKey,
+              depth: row.depth,
+              title: title,
+              leadingIcon: projectRef.isInbox
+                  ? Icons.inbox_outlined
+                  : Icons.folder_outlined,
+              onTap: () => context.read<AnytimeScreenBloc>().add(
+                AnytimeProjectHeaderTapped(projectRef: projectRef),
               ),
             ),
-          ),
-        ),
-      TaskRowUiModel(:final task) => Padding(
-        padding: EdgeInsets.only(left: 8 + leftIndent, right: 8),
-        child: Builder(
-          builder: (context) {
+          TaskRowUiModel(:final task, :final showProjectLabel) => () {
             final tileCapabilities = EntityTileCapabilitiesResolver.forTask(
               task,
             );
 
-            return TaskListRowTile(
-              model: buildTaskListRowTileModel(
-                context,
-                task: task,
-                tileCapabilities: tileCapabilities,
-              ),
-              onTap: () => context.read<AnytimeScreenBloc>().add(
-                AnytimeTaskTapped(taskId: task.id),
-              ),
+            final overflowActions = TileOverflowActionCatalog.forTask(
+              taskId: task.id,
+              taskName: task.name,
+              isPinnedToMyDay: task.isPinned,
+              isRepeating: task.isRepeating,
+              seriesEnded: task.seriesEnded,
+              tileCapabilities: tileCapabilities,
+            );
+
+            final hasAnyEnabledAction = overflowActions.any((a) => a.enabled);
+
+            final model = buildTaskListRowTileModel(
+              context,
+              task: task,
+              tileCapabilities: tileCapabilities,
+              showProjectLabel: showProjectLabel,
+            );
+
+            return TasklyStandardTileListTaskRowModel(
+              key: row.rowKey,
+              depth: row.depth,
+              entityId: task.id,
+              model: model,
+              onTap: model.onTap,
+              badges: [
+                if (task.isPinned)
+                  const BadgeSpec(kind: BadgeKind.pinned, label: 'Pinned'),
+              ],
+              trailing: hasAnyEnabledAction
+                  ? TrailingSpec.overflowButton
+                  : TrailingSpec.none,
               onToggleCompletion: buildTaskToggleCompletionHandler(
                 context,
                 task: task,
                 tileCapabilities: tileCapabilities,
               ),
-              trailing: TaskTodayStatusMenuButton(
-                taskId: task.id,
-                taskName: task.name,
-                isPinnedToMyDay: task.isPinned,
-                isInMyDayAuto: false,
-                isRepeating: task.isRepeating,
-                seriesEnded: task.seriesEnded,
-                tileCapabilities: tileCapabilities,
-              ),
+              onOverflowRequestedAt: hasAnyEnabledAction
+                  ? (pos) => showTileOverflowMenu(
+                      context,
+                      position: pos,
+                      entityTypeLabel: 'task',
+                      entityId: task.id,
+                      actions: overflowActions,
+                    )
+                  : null,
             );
-          },
-        ),
-      ),
-      _ => const SizedBox.shrink(),
-    };
-  }
+          }(),
+          _ => null,
+        };
+      })
+      .whereType<TasklyStandardTileListRowModel>()
+      .toList(growable: false);
 }

@@ -1,21 +1,15 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
-import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui.dart';
 
 ProjectTileModel buildProjectListRowTileModel(
   BuildContext context, {
   required Project project,
-  required EntityTileCapabilities tileCapabilities,
   int? taskCount,
   int? completedTaskCount,
   bool showTrailingProgressLabel = false,
@@ -42,8 +36,6 @@ ProjectTileModel buildProjectListRowTileModel(
         .take(1)
         .map((v) => v.toChipData(context))
         .toList(growable: false),
-    secondaryValuePresentation: EntitySecondaryValuePresentation.dotsCluster,
-    maxSecondaryValues: 1,
     startDateLabel: startDateLabel,
     deadlineDateLabel: deadlineDateLabel,
     isOverdue: _isOverdue(
@@ -62,7 +54,6 @@ ProjectTileModel buildProjectListRowTileModel(
       today: today,
     ),
     hasRepeat: project.repeatIcalRrule != null,
-    showRepeatOnRight: true,
     showBothDatesIfPresent: true,
     showPriorityMarkerOnRight: true,
     priority: project.priority,
@@ -70,13 +61,6 @@ ProjectTileModel buildProjectListRowTileModel(
     priorityPillLabel: project.priority == null
         ? null
         : 'Priority P${project.priority}',
-    enableRightOverflowDemotion: true,
-    showOverflowIndicatorOnRight: true,
-    onTapValues: buildProjectOpenValuesHandler(
-      context,
-      project: project,
-      tileCapabilities: tileCapabilities,
-    ),
   );
 
   return ProjectTileModel(
@@ -90,28 +74,6 @@ ProjectTileModel buildProjectListRowTileModel(
     emptyTasksLabel: taskCount == 0 ? 'No tasks yet' : null,
     showTrailingProgressLabel: showTrailingProgressLabel,
   );
-}
-
-VoidCallback? buildProjectOpenValuesHandler(
-  BuildContext context, {
-  required Project project,
-  required EntityTileCapabilities tileCapabilities,
-}) {
-  if (!tileCapabilities.canAlignValues) return null;
-
-  return () {
-    final dispatcher = context.read<TileIntentDispatcher>();
-    unawaited(
-      dispatcher.dispatch(
-        context,
-        TileIntentOpenEditor(
-          entityType: EntityType.project,
-          entityId: project.id,
-          openToValues: true,
-        ),
-      ),
-    );
-  };
 }
 
 bool _isOverdue(

@@ -7,6 +7,7 @@ enum _FeedBodyKind {
   error,
   empty,
   list,
+  child,
 }
 
 /// Shared feed body UI that standardizes loading/error/empty/list rendering.
@@ -20,6 +21,7 @@ class FeedBody extends StatelessWidget {
     VoidCallback? onRetry,
     String? retryLabel,
     Widget? empty,
+    Widget? child,
     int? itemCount,
     IndexedWidgetBuilder? itemBuilder,
     EdgeInsetsGeometry? padding,
@@ -30,6 +32,7 @@ class FeedBody extends StatelessWidget {
        _onRetry = onRetry,
        _retryLabel = retryLabel,
        _empty = empty,
+       _child = child,
        _itemCount = itemCount,
        _itemBuilder = itemBuilder,
        _padding = padding,
@@ -59,6 +62,16 @@ class FeedBody extends StatelessWidget {
     Key? key,
   }) : this._(kind: _FeedBodyKind.empty, empty: child, key: key);
 
+  /// Custom loaded state.
+  ///
+  /// Use this when you already have a canonical section widget that owns its
+  /// own scrolling behavior (e.g. catalogue sections like TasklyAgendaSection
+  /// and TasklyStandardTileListSection).
+  const FeedBody.child({
+    required Widget child,
+    Key? key,
+  }) : this._(kind: _FeedBodyKind.child, child: child, key: key);
+
   /// List state.
   const FeedBody.list({
     required int itemCount,
@@ -83,6 +96,8 @@ class FeedBody extends StatelessWidget {
 
   final Widget? _empty;
 
+  final Widget? _child;
+
   final int? _itemCount;
   final IndexedWidgetBuilder? _itemBuilder;
   final EdgeInsetsGeometry? _padding;
@@ -94,6 +109,11 @@ class FeedBody extends StatelessWidget {
       _onRetry == null || _retryLabel != null,
       'When onRetry is provided, retryLabel must be provided (taskly_ui does not '
       'hardcode user-facing strings).',
+    );
+
+    assert(
+      _kind != _FeedBodyKind.child || _child != null,
+      'FeedBody.child requires a non-null child.',
     );
 
     return switch (_kind) {
@@ -110,6 +130,7 @@ class FeedBody extends StatelessWidget {
         itemCount: _itemCount ?? 0,
         itemBuilder: _itemBuilder!,
       ),
+      _FeedBodyKind.child => _child!,
     };
   }
 }

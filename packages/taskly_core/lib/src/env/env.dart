@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:meta/meta.dart';
 import 'package:taskly_core/logging.dart';
 
 /// Environment configuration with dual loading strategy:
@@ -12,6 +13,16 @@ import 'package:taskly_core/logging.dart';
 /// providing a seamless developer experience.
 class Env {
   static bool _initialized = false;
+
+  @visibleForTesting
+  static void resetForTest() {
+    _initialized = false;
+    try {
+      dotenv.testLoad(fileInput: '');
+    } catch (_) {
+      // Best-effort: tests should not fail if dotenv internals change.
+    }
+  }
 
   /// Initialize environment variables.
   ///

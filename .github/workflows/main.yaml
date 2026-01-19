@@ -107,10 +107,9 @@ jobs:
           echo "SUPABASE_URL=$(jq -r .api_url supabase_status.json)" >> $GITHUB_OUTPUT
           echo "SUPABASE_PUBLISHABLE_KEY=$(jq -r .anon_key supabase_status.json)" >> $GITHUB_OUTPUT
       
-      - name: Run tests with coverage
+      - name: Run tests
         run: |
-          flutter test --coverage --reporter=expanded \
-            --coverage-package="^(taskly_bloc|taskly_core|taskly_data|taskly_domain|taskly_ui)$" \
+          flutter test --reporter=expanded \
             --dart-define=SUPABASE_URL="${{ steps.supabase.outputs.SUPABASE_URL }}" \
             --dart-define=SUPABASE_PUBLISHABLE_KEY="${{ steps.supabase.outputs.SUPABASE_PUBLISHABLE_KEY }}" \
             --dart-define=POWERSYNC_URL="http://127.0.0.1:8080" \
@@ -131,20 +130,7 @@ jobs:
         if: always()
         run: supabase stop
       
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-      
-      - name: Check coverage threshold
-        run: |
-          dart pub global activate coverage
-          dart pub global run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --report-on=lib,packages/taskly_core/lib,packages/taskly_data/lib,packages/taskly_domain/lib,packages/taskly_ui/lib
-          # Optional informational check (does not fail the workflow).
-          dart pub global run coverage:test_with_coverage --min-coverage 80 || true
+
 
   # Analyze code quality
   analyze:

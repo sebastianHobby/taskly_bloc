@@ -1,0 +1,12 @@
+# Package-local test configuration for taskly_domain.
+# Keep in sync with repo-level testing architecture policies.
+
+timeout: 60s
+
+tags:
+  unit:
+
+reporter: expanded
+
+file_reporters:
+  json: test/last_run.json

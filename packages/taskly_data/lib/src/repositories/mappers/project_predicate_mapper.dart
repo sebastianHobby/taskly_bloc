@@ -3,15 +3,19 @@ import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/repositories/mixins/query_builder_mixin.dart';
 import 'package:taskly_data/src/repositories/mappers/sql_comparison_builder.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 /// Maps [ProjectPredicate] instances to Drift SQL expressions.
 ///
 /// This class encapsulates all the logic for converting domain-level
 /// project predicates into database-level WHERE clause expressions.
 class ProjectPredicateMapper with QueryBuilderMixin {
-  ProjectPredicateMapper({required this.driftDb});
+  ProjectPredicateMapper({required this.driftDb, this.clock = systemClock});
 
   final AppDatabase driftDb;
+
+  @override
+  final Clock clock;
 
   /// Converts a single [ProjectPredicate] to a Drift expression.
   Expression<bool> predicateToExpression(

@@ -47,9 +47,11 @@ final class TaskRowUiModel extends ListRowUiModel {
     required super.rowKey,
     required super.depth,
     required this.task,
+    this.showProjectLabel = true,
   });
 
   final Task task;
+  final bool showProjectLabel;
 }
 
 /// Scheduled-only: high-level bucket header (This Week/Next Week/Later).

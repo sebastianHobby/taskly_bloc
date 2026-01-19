@@ -92,6 +92,11 @@ void initializeLoggingForTest() {
   _isInitialized = true;
 }
 
+@visibleForTesting
+void resetLoggingForTest() {
+  _isInitialized = false;
+}
+
 class _TasklyLogAdapter implements TasklyLog {
   _TasklyLogAdapter(this._backend);
 
@@ -391,9 +396,12 @@ class DebugFileLogObserver extends TalkerObserver {
     this.maxBackupFiles = 3,
     this.dedupeWindow = const Duration(seconds: 2),
     this.maxStackTraceLines = 60,
+    Future<Directory> Function()? supportDirectoryProvider,
     Set<String>? includedTitles,
   }) : includedTitles =
-           includedTitles ?? const {'WARNING', 'ERROR', 'EXCEPTION'};
+           includedTitles ?? const {'WARNING', 'ERROR', 'EXCEPTION'},
+       _supportDirectoryProvider =
+           supportDirectoryProvider ?? getApplicationSupportDirectory;
 
   final Set<String> includedTitles;
 
@@ -414,26 +422,29 @@ class DebugFileLogObserver extends TalkerObserver {
   /// Limits stack trace verbosity written to file.
   final int maxStackTraceLines;
 
+  final Future<Directory> Function() _supportDirectoryProvider;
+
   File? _logFile;
   _RollingFileWriter? _writer;
 
   final Map<String, _DedupeEntry> _dedupe = <String, _DedupeEntry>{};
   bool _isInitialized = false;
-  bool _initStarted = false;
+  Future<void>? _initFuture;
 
   static bool get isSupported => !kIsWeb;
 
-  Future<void> _initFile() async {
-    if (_initStarted) return;
-    _initStarted = true;
+  Future<void> _initFile() {
+    return _initFuture ??= _initFileImpl();
+  }
 
+  Future<void> _initFileImpl() async {
     if (!isSupported) {
       debugPrint('Debug file logging not available on web platform');
       return;
     }
 
     try {
-      final dir = await getApplicationSupportDirectory();
+      final dir = await _supportDirectoryProvider();
       _logFile = File('${dir.path}/debug_errors.log');
       _writer = _RollingFileWriter(
         file: _logFile!,
@@ -450,6 +461,9 @@ class DebugFileLogObserver extends TalkerObserver {
       debugPrint('Failed to initialize debug log file: $e');
     }
   }
+
+  @visibleForTesting
+  Future<void> ensureInitializedForTest() => _initFile();
 
   @override
   void onError(TalkerError err) {
@@ -479,9 +493,7 @@ class DebugFileLogObserver extends TalkerObserver {
   }
 
   void _ensureInitialized() {
-    if (!_initStarted) {
-      _initFile();
-    }
+    _initFile();
   }
 
   void _writeLog(

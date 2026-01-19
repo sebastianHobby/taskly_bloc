@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_domain/time.dart' show Clock;
 
 /// Mixin providing shared query building capabilities for repositories.
 ///
@@ -7,12 +8,17 @@ import 'package:taskly_domain/queries.dart';
 /// - Converting QueryFilter to SQL expressions
 /// - Date calculations for relative date predicates
 mixin QueryBuilderMixin {
+  /// Time source used for relative-date computations.
+  ///
+  /// Data-layer code must not call `DateTime.now()` directly.
+  Clock get clock;
+
   /// Calculates an absolute date from relative days offset.
   ///
   /// A positive [days] value means days in the future,
   /// a negative value means days in the past.
   DateTime relativeToAbsolute(int days) {
-    final now = DateTime.now();
+    final now = clock.nowLocal();
     return DateTime(now.year, now.month, now.day).add(Duration(days: days));
   }
 

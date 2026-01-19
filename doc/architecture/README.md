@@ -58,9 +58,12 @@ All UI in Taskly uses a consistent 4-tier composition model:
 
 Canonical entity tiles (for example Task/Project tiles) follow this split:
 
-- `packages/taskly_ui`: render-only tiles + UI-only models.
-- app (`lib/`): domain→UI mapping, navigation, and app-owned trailing widgets
-  (overflow menus/status) wired via explicit `trailing` slots.
+- `packages/taskly_ui`: render-only catalogue tiles/sections + UI-only models.
+  Prefer the curated entrypoints:
+  - `package:taskly_ui/taskly_ui_catalog.dart` (catalogue tiles/sections)
+  - `package:taskly_ui/taskly_ui_feed.dart` (feed scaffolding)
+- app (`lib/`): domain→UI mapping + policy/side-effects (routing, overflow menus,
+  intent dispatch). `taskly_ui` surfaces interactions via callbacks (events out).
 
 Normative details live in: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md)
 (section 2.2).
