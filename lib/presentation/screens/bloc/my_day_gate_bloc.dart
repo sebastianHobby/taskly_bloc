@@ -22,7 +22,6 @@ final class MyDayGateLoaded extends MyDayGateState {
     required this.needsValuesSetup,
     required this.ctaLabel,
     required this.ctaIcon,
-    required this.descriptionText,
   });
 
   final bool needsFocusModeSetup;
@@ -30,7 +29,6 @@ final class MyDayGateLoaded extends MyDayGateState {
 
   final String ctaLabel;
   final IconData ctaIcon;
-  final String descriptionText;
 }
 
 final class MyDayGateError extends MyDayGateState {
@@ -99,20 +97,11 @@ class MyDayGateBloc extends Cubit<MyDayGateState> {
                 ? Icons.favorite_outline
                 : Icons.arrow_forward;
 
-            final descriptionText = needsFocusModeSetup && needsValuesSetup
-                ? 'To unlock My Day, choose a focus mode and add your first value.'
-                : needsFocusModeSetup
-                ? 'Choose a focus mode so Taskly can shape My Day around your preferences.'
-                : needsValuesSetup
-                ? 'Add your first value to unlock My Day. Values help Taskly prioritize what matters most.'
-                : "You're all set. Continue to My Day.";
-
             return MyDayGateLoaded(
               needsFocusModeSetup: needsFocusModeSetup,
               needsValuesSetup: needsValuesSetup,
               ctaLabel: ctaLabel,
               ctaIcon: ctaIcon,
-              descriptionText: descriptionText,
             );
           },
         ).listen(

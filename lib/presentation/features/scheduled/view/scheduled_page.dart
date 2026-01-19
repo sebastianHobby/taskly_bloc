@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
@@ -244,6 +245,24 @@ bool _isSameDay(DateTime a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
+String _semanticDayTitle(BuildContext context, DateTime day, DateTime today) {
+  final normalizedDay = DateTime(day.year, day.month, day.day);
+  final normalizedToday = DateTime(today.year, today.month, today.day);
+
+  if (_isSameDay(normalizedDay, normalizedToday)) return 'Today';
+  if (_isSameDay(normalizedDay, normalizedToday.add(const Duration(days: 1)))) {
+    return 'Tomorrow';
+  }
+
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  return DateFormat('EEEE', locale).format(normalizedDay);
+}
+
+String _semanticDaySubtitle(BuildContext context, DateTime day) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  return DateFormat('E · MMM d', locale).format(day);
+}
+
 class _ScheduledAgenda extends StatelessWidget {
   const _ScheduledAgenda({
     required this.rows,
@@ -427,16 +446,14 @@ class _ScheduledAgenda extends StatelessWidget {
               ),
             ),
           );
-        case DateHeaderRowUiModel(:final date, :final title):
+        case DateHeaderRowUiModel(:final date):
           agendaRows.add(
             TasklyAgendaDateHeaderRowModel(
               key: row.rowKey,
               depth: row.depth,
               day: date,
-              title: title,
-              dueCount: row.dueCount,
-              startsCount: row.startsCount,
-              ongoingCount: row.ongoingCount,
+              title: _semanticDayTitle(context, date, today),
+              subtitle: _semanticDaySubtitle(context, date),
               isTodayAnchor: _isSameDay(date, today),
             ),
           );

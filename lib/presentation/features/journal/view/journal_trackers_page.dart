@@ -5,35 +5,51 @@ import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
-import 'package:taskly_bloc/presentation/features/journal/bloc/journal_trackers_cubit.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_library_cubit.dart';
 
 class JournalTrackersPage extends StatelessWidget {
   const JournalTrackersPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<JournalTrackersCubit>(
-      create: (context) => JournalTrackersCubit(
+    return BlocProvider<JournalManageLibraryCubit>(
+      create: (context) => JournalManageLibraryCubit(
         repository: getIt<JournalRepositoryContract>(),
         errorReporter: context.read<AppErrorReporter>(),
         nowUtc: getIt<NowService>().nowUtc,
       ),
-      child: BlocBuilder<JournalTrackersCubit, JournalTrackersState>(
+      child: BlocConsumer<JournalManageLibraryCubit, JournalManageLibraryState>(
+        listenWhen: (prev, next) {
+          final p = prev is JournalManageLibraryLoaded ? prev.status : null;
+          final n = next is JournalManageLibraryLoaded ? next.status : null;
+          return p?.runtimeType != n?.runtimeType;
+        },
+        listener: (context, state) {
+          if (state is! JournalManageLibraryLoaded) return;
+          final status = state.status;
+          if (status is JournalManageLibraryActionError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(status.message)),
+            );
+          }
+        },
         builder: (context, state) {
           return switch (state) {
-            JournalTrackersLoading() => const Center(
-              child: CircularProgressIndicator(),
+            JournalManageLibraryLoading() => const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
             ),
-            JournalTrackersError(:final message) => Center(
-              child: Text(message),
+            JournalManageLibraryError(:final message) => Scaffold(
+              body: Center(child: Text(message)),
             ),
-            JournalTrackersLoaded(
-              :final visibleDefinitions,
-              :final preferenceByTrackerId,
+            JournalManageLibraryLoaded(
+              :final groups,
+              :final trackers,
+              :final status,
             ) =>
-              _JournalTrackersLoadedView(
-                visibleDefinitions: visibleDefinitions,
-                preferenceByTrackerId: preferenceByTrackerId,
+              _ManageLibraryView(
+                groups: groups,
+                trackers: trackers,
+                status: status,
               ),
           };
         },
@@ -42,231 +58,414 @@ class JournalTrackersPage extends StatelessWidget {
   }
 }
 
-class _JournalTrackersLoadedView extends StatelessWidget {
-  const _JournalTrackersLoadedView({
-    required this.visibleDefinitions,
-    required this.preferenceByTrackerId,
+class _ManageLibraryView extends StatelessWidget {
+  const _ManageLibraryView({
+    required this.groups,
+    required this.trackers,
+    required this.status,
   });
 
-  final List<TrackerDefinition> visibleDefinitions;
-  final Map<String, TrackerPreference> preferenceByTrackerId;
+  final List<TrackerGroup> groups;
+  final List<TrackerDefinition> trackers;
+  final JournalManageLibraryStatus status;
 
   @override
   Widget build(BuildContext context) {
-    final extraRows = visibleDefinitions.isEmpty ? 1 : 0;
+    final theme = Theme.of(context);
+    final isSaving = status is JournalManageLibrarySaving;
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      itemCount: visibleDefinitions.length + 1 + extraRows,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return _CreateTrackerCard(
-            onCreate: (name) {
-              context.read<JournalTrackersCubit>().createTracker(name);
-            },
-          );
-        }
+    List<TrackerGroup?> groupOptions() {
+      return <TrackerGroup?>[null, ...groups];
+    }
 
-        if (visibleDefinitions.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 24,
-            ),
-            child: Center(child: Text('No trackers yet.')),
-          );
-        }
+    String groupLabel(TrackerGroup? group) => group?.name ?? 'Ungrouped';
 
-        final definition = visibleDefinitions[index - 1];
-        final pref = preferenceByTrackerId[definition.id];
+    List<TrackerDefinition> trackersForGroup(String? groupId) {
+      final key = groupId ?? '';
+      return trackers
+          .where((d) => (d.groupId ?? '') == key)
+          .toList(growable: false)
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    }
 
-        return _TrackerRow(
-          definition: definition,
-          preference: pref,
-          onChanged: (p) {
-            context.read<JournalTrackersCubit>().savePreference(p);
+    Future<({String name, String? groupId})?> showCreateTrackerDialog() async {
+      final controller = TextEditingController();
+      TrackerGroup? selected;
+
+      try {
+        final result = await showDialog<({String name, String? groupId})>(
+          context: context,
+          builder: (context) {
+            return StatefulBuilder(
+              builder: (context, setState) {
+                return AlertDialog(
+                  title: const Text('New tracker'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: controller,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          hintText: 'e.g. Read, Walk, Stretch',
+                        ),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<TrackerGroup?>(
+                        value: selected,
+                        decoration: const InputDecoration(
+                          labelText: 'Group',
+                        ),
+                        items: [
+                          for (final g in groupOptions())
+                            DropdownMenuItem<TrackerGroup?>(
+                              value: g,
+                              child: Text(groupLabel(g)),
+                            ),
+                        ],
+                        onChanged: (v) => setState(() => selected = v),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.of(context).pop(
+                        (name: controller.text, groupId: selected?.id),
+                      ),
+                      child: const Text('Create'),
+                    ),
+                  ],
+                );
+              },
+            );
           },
         );
-      },
-    );
-  }
-}
 
-class _CreateTrackerCard extends StatelessWidget {
-  const _CreateTrackerCard({required this.onCreate});
-
-  final ValueChanged<String> onCreate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            const Icon(Icons.add),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Create tracker',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            FilledButton(
-              onPressed: () => _showCreateDialog(context),
-              child: const Text('New'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showCreateDialog(BuildContext context) async {
-    final controller = TextEditingController();
-    try {
-      final result = await showDialog<String>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('New tracker'),
-            content: TextField(
-              controller: controller,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'e.g. Read, Walk, Stretch',
-              ),
-              textInputAction: TextInputAction.done,
-              onSubmitted: (value) => Navigator.of(context).pop(value),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(controller.text),
-                child: const Text('Create'),
-              ),
-            ],
-          );
-        },
-      );
-
-      final name = (result ?? '').trim();
-      if (name.isEmpty) return;
-      onCreate(name);
-    } finally {
-      controller.dispose();
+        final name = (result?.name ?? '').trim();
+        if (name.isEmpty) return null;
+        return (name: name, groupId: result?.groupId);
+      } finally {
+        controller.dispose();
+      }
     }
-  }
-}
 
-class _TrackerRow extends StatelessWidget {
-  const _TrackerRow({
-    required this.definition,
-    required this.preference,
-    required this.onChanged,
-  });
-
-  final TrackerDefinition definition;
-  final TrackerPreference? preference;
-  final ValueChanged<TrackerPreference> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final now = getIt<NowService>().nowUtc();
-
-    final pref =
-        preference ??
-        TrackerPreference(
-          id: '',
-          trackerId: definition.id,
-          createdAt: now,
-          updatedAt: now,
-          isActive: true,
-          sortOrder: definition.sortOrder,
-          pinned: false,
-          showInQuickAdd: false,
+    Future<String?> showCreateGroupDialog() async {
+      final controller = TextEditingController();
+      try {
+        final result = await showDialog<String>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('New group'),
+              content: TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  hintText: 'e.g. Health, Work, Habits',
+                ),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (value) => Navigator.of(context).pop(value),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(controller.text),
+                  child: const Text('Create'),
+                ),
+              ],
+            );
+          },
         );
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    definition.name,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+        final name = (result ?? '').trim();
+        if (name.isEmpty) return null;
+        return name;
+      } finally {
+        controller.dispose();
+      }
+    }
+
+    Future<String?> showRenameDialog(String currentName) async {
+      final controller = TextEditingController(text: currentName);
+      try {
+        final result = await showDialog<String>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('Rename group'),
+              content: TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Name'),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (value) => Navigator.of(context).pop(value),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
                 ),
-                Switch(
-                  value: pref.isActive,
-                  onChanged: (value) {
-                    onChanged(
-                      pref.copyWith(
-                        isActive: value,
-                        updatedAt: getIt<NowService>().nowUtc(),
-                      ),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(controller.text),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+
+        final name = (result ?? '').trim();
+        if (name.isEmpty) return null;
+        return name;
+      } finally {
+        controller.dispose();
+      }
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Manage trackers'),
+        actions: [
+          IconButton(
+            tooltip: 'New group',
+            onPressed: isSaving
+                ? null
+                : () async {
+                    final name = await showCreateGroupDialog();
+                    if (name == null) return;
+                    if (!context.mounted) return;
+                    await context.read<JournalManageLibraryCubit>().createGroup(
+                      name,
                     );
                   },
-                ),
-              ],
-            ),
-            if (definition.description != null &&
-                definition.description!.trim().isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                definition.description!,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-            const SizedBox(height: 8),
-            Row(
+            icon: const Icon(Icons.create_new_folder_outlined),
+          ),
+          IconButton(
+            tooltip: 'New tracker',
+            onPressed: isSaving
+                ? null
+                : () async {
+                    final result = await showCreateTrackerDialog();
+                    if (result == null) return;
+                    if (!context.mounted) return;
+                    await context
+                        .read<JournalManageLibraryCubit>()
+                        .createTracker(
+                          name: result.name,
+                          groupId: result.groupId,
+                        );
+                  },
+            icon: const Icon(Icons.add),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+        children: [
+          Text('Groups', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
               children: [
-                Expanded(
-                  child: CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Pinned'),
-                    value: pref.pinned,
-                    onChanged: (value) {
-                      if (value == null) return;
-                      onChanged(
-                        pref.copyWith(
-                          pinned: value,
-                          updatedAt: getIt<NowService>().nowUtc(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Quick add'),
-                    value: pref.showInQuickAdd,
-                    onChanged: (value) {
-                      if (value == null) return;
-                      onChanged(
-                        pref.copyWith(
-                          showInQuickAdd: value,
-                          updatedAt: getIt<NowService>().nowUtc(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                if (groups.isEmpty)
+                  const ListTile(
+                    title: Text('No groups yet.'),
+                  )
+                else
+                  for (final g in groups)
+                    ListTile(
+                      title: Text(g.name),
+                      trailing: Wrap(
+                        spacing: 4,
+                        children: [
+                          IconButton(
+                            tooltip: 'Move up',
+                            onPressed: isSaving
+                                ? null
+                                : () => context
+                                      .read<JournalManageLibraryCubit>()
+                                      .reorderGroups(
+                                        groupId: g.id,
+                                        direction: -1,
+                                      ),
+                            icon: const Icon(Icons.arrow_upward),
+                          ),
+                          IconButton(
+                            tooltip: 'Move down',
+                            onPressed: isSaving
+                                ? null
+                                : () => context
+                                      .read<JournalManageLibraryCubit>()
+                                      .reorderGroups(
+                                        groupId: g.id,
+                                        direction: 1,
+                                      ),
+                            icon: const Icon(Icons.arrow_downward),
+                          ),
+                          IconButton(
+                            tooltip: 'Rename',
+                            onPressed: isSaving
+                                ? null
+                                : () async {
+                                    final name = await showRenameDialog(g.name);
+                                    if (name == null) return;
+                                    if (!context.mounted) return;
+                                    await context
+                                        .read<JournalManageLibraryCubit>()
+                                        .renameGroup(group: g, name: name);
+                                  },
+                            icon: const Icon(Icons.edit_outlined),
+                          ),
+                          IconButton(
+                            tooltip: 'Delete',
+                            onPressed: isSaving
+                                ? null
+                                : () => context
+                                      .read<JournalManageLibraryCubit>()
+                                      .deleteGroup(g),
+                            icon: const Icon(Icons.delete_outline),
+                          ),
+                        ],
+                      ),
+                    ),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          Text('Trackers', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          for (final group in groupOptions())
+            Builder(
+              builder: (context) {
+                final groupId = group?.id;
+                final inGroup = trackersForGroup(groupId);
+                if (inGroup.isEmpty) return const SizedBox.shrink();
+
+                return Card(
+                  child: ExpansionTile(
+                    initiallyExpanded: true,
+                    title: Text(groupLabel(group)),
+                    children: [
+                      for (final d in inGroup)
+                        Builder(
+                          builder: (context) {
+                            final selectedGroup = groupOptions().firstWhere(
+                              (g) => (g?.id ?? '') == (d.groupId ?? ''),
+                              orElse: () => null,
+                            );
+
+                            return Column(
+                              children: [
+                                ListTile(
+                                  title: Text(d.name),
+                                  subtitle: Text('${d.valueType} • ${d.scope}'),
+                                  trailing: Switch(
+                                    value: d.isActive,
+                                    onChanged: isSaving
+                                        ? null
+                                        : (v) => context
+                                              .read<JournalManageLibraryCubit>()
+                                              .setTrackerActive(
+                                                def: d,
+                                                isActive: v,
+                                              ),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    0,
+                                    16,
+                                    12,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child:
+                                            DropdownButtonFormField<
+                                              TrackerGroup?
+                                            >(
+                                              value: selectedGroup,
+                                              decoration: const InputDecoration(
+                                                labelText: 'Group',
+                                              ),
+                                              items: [
+                                                for (final g in groupOptions())
+                                                  DropdownMenuItem<
+                                                    TrackerGroup?
+                                                  >(
+                                                    value: g,
+                                                    child: Text(groupLabel(g)),
+                                                  ),
+                                              ],
+                                              onChanged: isSaving
+                                                  ? null
+                                                  : (v) => context
+                                                        .read<
+                                                          JournalManageLibraryCubit
+                                                        >()
+                                                        .moveTrackerToGroup(
+                                                          def: d,
+                                                          groupId: v?.id,
+                                                        ),
+                                            ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        tooltip: 'Move up',
+                                        onPressed: isSaving
+                                            ? null
+                                            : () => context
+                                                  .read<
+                                                    JournalManageLibraryCubit
+                                                  >()
+                                                  .reorderTrackersWithinGroup(
+                                                    trackerId: d.id,
+                                                    groupId: d.groupId,
+                                                    direction: -1,
+                                                  ),
+                                        icon: const Icon(Icons.arrow_upward),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Move down',
+                                        onPressed: isSaving
+                                            ? null
+                                            : () => context
+                                                  .read<
+                                                    JournalManageLibraryCubit
+                                                  >()
+                                                  .reorderTrackersWithinGroup(
+                                                    trackerId: d.id,
+                                                    groupId: d.groupId,
+                                                    direction: 1,
+                                                  ),
+                                        icon: const Icon(Icons.arrow_downward),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Divider(height: 1),
+                              ],
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          const SizedBox(height: 24),
+        ],
       ),
     );
   }

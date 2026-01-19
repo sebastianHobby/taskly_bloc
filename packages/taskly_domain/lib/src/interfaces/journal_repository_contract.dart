@@ -3,6 +3,7 @@ import 'package:taskly_domain/src/journal/model/journal_entry.dart';
 import 'package:taskly_domain/src/journal/model/tracker_definition.dart';
 import 'package:taskly_domain/src/journal/model/tracker_definition_choice.dart';
 import 'package:taskly_domain/src/journal/model/tracker_event.dart';
+import 'package:taskly_domain/src/journal/model/tracker_group.dart';
 import 'package:taskly_domain/src/journal/model/tracker_preference.dart';
 import 'package:taskly_domain/src/journal/model/tracker_state_day.dart';
 import 'package:taskly_domain/src/journal/model/tracker_state_entry.dart';
@@ -54,6 +55,8 @@ abstract class JournalRepositoryContract {
 
   // === Trackers (OPT-A: event-log + projections) ===
 
+  Stream<List<TrackerGroup>> watchTrackerGroups();
+
   Stream<List<TrackerDefinition>> watchTrackerDefinitions();
 
   Stream<List<TrackerPreference>> watchTrackerPreferences();
@@ -72,6 +75,16 @@ abstract class JournalRepositoryContract {
 
   Future<void> saveTrackerDefinition(
     TrackerDefinition definition, {
+    OperationContext? context,
+  });
+
+  Future<void> saveTrackerGroup(
+    TrackerGroup group, {
+    OperationContext? context,
+  });
+
+  Future<void> deleteTrackerGroup(
+    String groupId, {
     OperationContext? context,
   });
 

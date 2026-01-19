@@ -196,10 +196,10 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
       }
     }
 
-    // Date-first layout: each date groups by schedule-state
-    // (Due/Starts/Ongoing). The UI shows a compact per-date summary instead of
-    // tag header rows.
-    // SCHED-23: omit empty sections entirely.
+    // Date-first layout: each date's items are ordered by schedule tag
+    // (due → ongoing → starts). The UI intentionally does not render tag
+    // header rows; tags only influence within-day ordering.
+    // SCHED-23: omit empty days entirely.
     final normalizedToday = _normalizeDate(result.rangeStartDay);
     final rangeStart = normalizedToday;
     final rangeEnd = _normalizeDate(result.rangeEndDay);
@@ -215,8 +215,8 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
       final byTag = itemsByDateAndTag[day] ??=
           <ScheduledDateTag, List<ScheduledOccurrence>>{
             ScheduledDateTag.due: <ScheduledOccurrence>[],
-            ScheduledDateTag.starts: <ScheduledOccurrence>[],
             ScheduledDateTag.ongoing: <ScheduledOccurrence>[],
+            ScheduledDateTag.starts: <ScheduledOccurrence>[],
           };
       (byTag[tag] ??= <ScheduledOccurrence>[]).add(occurrence);
     }
@@ -254,8 +254,8 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
 
       final allItems = <ScheduledOccurrence>[
         ...(byTag[ScheduledDateTag.due] ?? const <ScheduledOccurrence>[]),
-        ...(byTag[ScheduledDateTag.starts] ?? const <ScheduledOccurrence>[]),
         ...(byTag[ScheduledDateTag.ongoing] ?? const <ScheduledOccurrence>[]),
+        ...(byTag[ScheduledDateTag.starts] ?? const <ScheduledOccurrence>[]),
       ];
       allItems.sort(_compareOccurrences);
 
@@ -273,6 +273,9 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     required DateTime? date,
   }) {
     final entityId = item.ref.entityId;
+    final tag = item.ref.tag;
+    final rowType = item.ref.entityType == EntityType.task ? 'task' : 'project';
+
     return ScheduledEntityRowUiModel(
       rowKey: RowKey.v1(
         screen: 'scheduled',
@@ -284,6 +287,9 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
           'bucket': ?bucketKey,
         },
       ),
+      depth: date == null ? 1 : 2,
+      occurrence: item,
+    );
   }
 
   int _compareOccurrences(ScheduledOccurrence a, ScheduledOccurrence b) {
@@ -310,8 +316,8 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
   int _tagRank(ScheduledDateTag tag) {
     return switch (tag) {
       ScheduledDateTag.due => 0,
-      ScheduledDateTag.starts => 1,
-      ScheduledDateTag.ongoing => 2,
+      ScheduledDateTag.ongoing => 1,
+      ScheduledDateTag.starts => 2,
     };
   }
 

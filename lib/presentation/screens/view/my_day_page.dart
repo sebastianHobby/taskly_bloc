@@ -10,6 +10,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/my_day_hero_card.dart';
+import 'package:taskly_bloc/presentation/screens/widgets/my_day_accepted_buckets_section.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/my_day_task_list_section.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_ritual_wizard_page.dart';
 
@@ -48,10 +49,17 @@ class MyDayPage extends StatelessWidget {
         BlocProvider<MyDayBloc>(create: (_) => getIt<MyDayBloc>()),
         BlocProvider<MyDayRitualBloc>(create: (_) => getIt<MyDayRitualBloc>()),
       ],
-      child: BlocBuilder<MyDayGateBloc, MyDayGateState>(
-        builder: (context, gateState) {
-          return switch (gateState) {
-            MyDayGateLoading() => Scaffold(
+      child: BlocBuilder<MyDayRitualBloc, MyDayRitualState>(
+        builder: (context, ritualState) {
+          final needsRitual =
+              ritualState is MyDayRitualReady && ritualState.needsRitual;
+
+          if (needsRitual) {
+            return const MyDayRitualWizardPage();
+          }
+
+          if (ritualState is MyDayRitualLoading) {
+            return Scaffold(
               appBar: AppBar(
                 title: const Text('My Day'),
                 actions: TasklyAppBarActions.withAttentionBell(
@@ -62,74 +70,42 @@ class MyDayPage extends StatelessWidget {
               body: const Center(
                 child: CircularProgressIndicator(),
               ),
-            ),
-            MyDayGateError(:final message) => Scaffold(
-              appBar: AppBar(
-                title: const Text('My Day'),
-                actions: TasklyAppBarActions.withAttentionBell(
-                  context,
-                  actions: const <Widget>[],
-                ),
-              ),
-              body: Center(child: Text(message)),
-            ),
-            MyDayGateLoaded(
-              :final needsFocusModeSetup,
-              :final needsValuesSetup,
-            ) =>
-              BlocBuilder<MyDayRitualBloc, MyDayRitualState>(
-                builder: (context, ritualState) {
-                  final needsSetup = needsFocusModeSetup || needsValuesSetup;
-                  final needsRitual =
-                      ritualState is MyDayRitualReady &&
-                      ritualState.needsRitual;
+            );
+          }
 
-                  if (needsSetup || needsRitual) {
-                    return const MyDayRitualWizardPage();
-                  }
-
-                  if (ritualState is MyDayRitualLoading) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-
-                  return Scaffold(
-                    appBar: AppBar(
-                      title: const Text('My Day'),
-                      actions: TasklyAppBarActions.withAttentionBell(
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('My Day'),
+              actions: TasklyAppBarActions.withAttentionBell(
+                context,
+                actions: [
+                  if (!isCompact)
+                    EntityAddMenuButton(
+                      onCreateTask: () => _openNewTaskEditor(
                         context,
-                        actions: [
-                          if (!isCompact)
-                            EntityAddMenuButton(
-                              onCreateTask: () => _openNewTaskEditor(
-                                context,
-                                defaultDay: today,
-                              ),
-                              onCreateProject: () => _openNewProjectEditor(
-                                context,
-                              ),
-                            ),
-                        ],
+                        defaultDay: today,
+                      ),
+                      onCreateProject: () => _openNewProjectEditor(
+                        context,
                       ),
                     ),
-                    floatingActionButton: isCompact
-                        ? EntityAddSpeedDial(
-                            heroTag: 'add_speed_dial_my_day',
-                            onCreateTask: () => _openNewTaskEditor(
-                              context,
-                              defaultDay: today,
-                            ),
-                            onCreateProject: () => _openNewProjectEditor(
-                              context,
-                            ),
-                          )
-                        : null,
-                    body: const _MyDayLoadedBody(),
-                  );
-                },
+                ],
               ),
-          };
+            ),
+            floatingActionButton: isCompact
+                ? EntityAddSpeedDial(
+                    heroTag: 'add_speed_dial_my_day',
+                    onCreateTask: () => _openNewTaskEditor(
+                      context,
+                      defaultDay: today,
+                    ),
+                    onCreateProject: () => _openNewProjectEditor(
+                      context,
+                    ),
+                  )
+                : null,
+            body: const _MyDayLoadedBody(),
+          );
         },
       ),
     );
@@ -148,20 +124,41 @@ class _MyDayLoadedBody extends StatelessWidget {
             child: CircularProgressIndicator(),
           ),
           MyDayError(:final message) => Center(child: Text(message)),
-          MyDayLoaded(:final summary, :final mix, :final tasks) => SafeArea(
-            bottom: false,
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: MyDayHeroCard(summary: summary),
-                ),
-                MyDayTaskListSection(
-                  tasks: tasks,
-                  mix: mix,
-                ),
-              ],
+          MyDayLoaded(
+            :final summary,
+            :final mix,
+            :final tasks,
+            :final acceptedDue,
+            :final acceptedStarts,
+            :final acceptedFocus,
+          ) =>
+            SafeArea(
+              bottom: false,
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: MyDayHeroCard(summary: summary),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    sliver: SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: MyDayAcceptedBucketsSection(
+                          acceptedDue: acceptedDue,
+                          acceptedStarts: acceptedStarts,
+                          acceptedFocus: acceptedFocus,
+                        ),
+                      ),
+                    ),
+                  ),
+                  MyDayTaskListSection(
+                    tasks: tasks,
+                    mix: mix,
+                  ),
+                ],
+              ),
             ),
-          ),
         };
       },
     );

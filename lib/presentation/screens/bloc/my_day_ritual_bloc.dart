@@ -31,6 +31,14 @@ final class MyDayRitualAcceptAllPlanned extends MyDayRitualEvent {
   const MyDayRitualAcceptAllPlanned();
 }
 
+final class MyDayRitualAcceptAllDue extends MyDayRitualEvent {
+  const MyDayRitualAcceptAllDue();
+}
+
+final class MyDayRitualAcceptAllStarts extends MyDayRitualEvent {
+  const MyDayRitualAcceptAllStarts();
+}
+
 final class MyDayRitualAcceptAllCurated extends MyDayRitualEvent {
   const MyDayRitualAcceptAllCurated();
 }
@@ -126,6 +134,8 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     on<MyDayRitualStarted>(_onStarted, transformer: restartable());
     on<MyDayRitualToggleTask>(_onToggleTask);
     on<MyDayRitualAcceptAllPlanned>(_onAcceptAllPlanned);
+    on<MyDayRitualAcceptAllDue>(_onAcceptAllDue);
+    on<MyDayRitualAcceptAllStarts>(_onAcceptAllStarts);
     on<MyDayRitualAcceptAllCurated>(_onAcceptAllCurated);
     on<MyDayRitualFocusModeChanged>(_onFocusModeChanged);
     on<MyDayRitualFocusModeWizardRequested>(_onFocusModeWizardRequested);
@@ -296,6 +306,44 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     );
   }
 
+  void _onAcceptAllDue(
+    MyDayRitualAcceptAllDue event,
+    Emitter<MyDayRitualState> emit,
+  ) {
+    if (state is! MyDayRitualReady) return;
+    _hasUserSelection = true;
+    final current = state as MyDayRitualReady;
+    final today = dateOnly(current.dayKeyUtc);
+    final dueIds = current.planned
+        .where((task) {
+          final deadline = _deadlineDateOnly(task);
+          return deadline != null && !deadline.isAfter(today);
+        })
+        .map((task) => task.id)
+        .toSet();
+    _selectedTaskIds = {..._selectedTaskIds, ...dueIds};
+    emit(current.copyWith(selectedTaskIds: _selectedTaskIds));
+  }
+
+  void _onAcceptAllStarts(
+    MyDayRitualAcceptAllStarts event,
+    Emitter<MyDayRitualState> emit,
+  ) {
+    if (state is! MyDayRitualReady) return;
+    _hasUserSelection = true;
+    final current = state as MyDayRitualReady;
+    final today = dateOnly(current.dayKeyUtc);
+    final startsIds = current.planned
+        .where((task) {
+          final deadline = _deadlineDateOnly(task);
+          return deadline == null || deadline.isAfter(today);
+        })
+        .map((task) => task.id)
+        .toSet();
+    _selectedTaskIds = {..._selectedTaskIds, ...startsIds};
+    emit(current.copyWith(selectedTaskIds: _selectedTaskIds));
+  }
+
   Future<void> _onFocusModeChanged(
     MyDayRitualFocusModeChanged event,
     Emitter<MyDayRitualState> emit,
@@ -344,9 +392,48 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
       if (!ordered.contains(id)) ordered.add(id);
     }
 
+    final today = dateOnly(current.dayKeyUtc);
+    final dueIds = {
+      for (final task in planned)
+        if (selectedIds.contains(task.id) &&
+            _deadlineDateOnly(task) != null &&
+            !_deadlineDateOnly(task)!.isAfter(today))
+          task.id,
+    };
+    final startsIds = {
+      for (final task in planned)
+        if (selectedIds.contains(task.id) &&
+            (_deadlineDateOnly(task) == null ||
+                _deadlineDateOnly(task)!.isAfter(today)))
+          task.id,
+    };
+    final focusIds = {
+      for (final task in curated)
+        if (selectedIds.contains(task.id)) task.id,
+    };
+
+    final acceptedDueOrdered = [
+      for (final id in ordered)
+        if (dueIds.contains(id) && !focusIds.contains(id)) id,
+    ];
+    final acceptedStartsOrdered = [
+      for (final id in ordered)
+        if (startsIds.contains(id) &&
+            !focusIds.contains(id) &&
+            !dueIds.contains(id))
+          id,
+    ];
+    final acceptedFocusOrdered = [
+      for (final id in ordered)
+        if (focusIds.contains(id)) id,
+    ];
+
     final updated = settings.MyDayRitualState(
       completedDayUtc: encodeDateOnly(_dayKeyUtc),
       selectedTaskIds: ordered,
+      acceptedDueTaskIds: acceptedDueOrdered,
+      acceptedStartsTaskIds: acceptedStartsOrdered,
+      acceptedFocusTaskIds: acceptedFocusOrdered,
     );
 
     await _settingsRepository.save(SettingsKey.myDayRitual, updated);
@@ -366,6 +453,11 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     }
 
     return tasks.where(isPlanned).toList(growable: false);
+  }
+
+  DateTime? _deadlineDateOnly(Task task) {
+    final raw = task.occurrence?.deadline ?? task.deadlineDate;
+    return dateOnlyOrNull(raw);
   }
 
   List<Task> _buildCurated(

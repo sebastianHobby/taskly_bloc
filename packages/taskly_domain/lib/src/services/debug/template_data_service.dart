@@ -410,7 +410,7 @@ class TemplateDataService {
     pinnedTaskNames.add('Deep clean kitchen');
 
     await _taskRepository.create(
-      name: 'Declutter �misc� drawer',
+      name: 'Declutter "misc" drawer',
       projectId: projectIdByName['Home chores'],
       priority: 4,
     );
@@ -513,7 +513,7 @@ class TemplateDataService {
     );
 
     await _taskRepository.create(
-      name: 'List �hard ones� to revisit',
+      name: 'List "hard ones" to revisit',
       projectId: projectIdByName['Learn capital city names'],
       priority: 4,
     );

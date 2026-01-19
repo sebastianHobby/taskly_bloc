@@ -8,7 +8,7 @@
 ///
 /// - Component A generates data that Component B consumes
 /// - A change in A could silently break B without failing unit tests
-/// - Examples: SystemScreenSpecs ↔ NavigationIconResolver
+/// - Examples: app navigation destinations ↔ NavigationIconResolver
 ///
 /// ## Pattern
 ///
@@ -44,8 +44,8 @@ const Duration kContractTestTimeout = Duration(seconds: 10);
 ///
 /// ```dart
 /// testContract('all system screens have icons', () {
-///   for (final screen in SystemScreenSpecs.all) {
-///     final icon = resolver.resolve(screenId: screen.screenKey);
+///   for (final screenKey in <String>['my_day', 'inbox', 'settings']) {
+///     final icon = resolver.resolve(screenId: screenKey);
 ///     expect(icon, isNot(defaultIcon));
 ///   }
 /// });
@@ -90,10 +90,10 @@ void testContract(
 ///
 /// ```dart
 /// verifyExhaustiveMapping(
-///   source: SystemScreenSpecs.all,
-///   transform: (screen) => resolver.resolve(screenId: screen.screenKey),
+///   source: <String>['my_day', 'inbox', 'settings'],
+///   transform: (screenKey) => resolver.resolve(screenId: screenKey),
 ///   isDefault: (result) => result.icon == Icons.widgets_outlined,
-///   itemLabel: (screen) => screen.screenKey,
+///   itemLabel: (screenKey) => screenKey,
 ///   errorHint: 'Add a case in NavigationIconResolver',
 /// );
 /// ```
@@ -125,9 +125,9 @@ void verifyExhaustiveMapping<TSource, TResult>({
 ///
 /// ```dart
 /// verifyUniqueMapping(
-///   source: SystemScreenSpecs.all,
-///   transform: (screen) => resolver.resolve(screenId: screen.screenKey).icon,
-///   itemLabel: (screen) => screen.screenKey,
+///   source: <String>['my_day', 'inbox', 'settings'],
+///   transform: (screenKey) => resolver.resolve(screenId: screenKey).icon,
+///   itemLabel: (screenKey) => screenKey,
 ///   allowDuplicates: {'settings', 'screen_management'}, // intentionally same
 /// );
 /// ```
@@ -166,7 +166,7 @@ void verifyUniqueMapping<TSource, TResult>({
 ///
 /// ```dart
 /// verifyRoundTrip(
-///   source: SystemScreenSpecs.all.map((s) => s.screenKey),
+///   source: <String>['my_day', 'someday', 'scheduled'],
 ///   encode: Routing.screenPath,
 ///   decode: (path) => Routing.parseScreenKey(path.substring(1)),
 ///   itemLabel: (key) => key,
