@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_domain/src/core/model/value_priority.dart';
+import 'package:taskly_domain/core/model/value_priority.dart';
 
 /// Domain representation of a Value used across the app.
 @immutable
@@ -57,15 +57,8 @@ class Value {
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    createdAt,
-    updatedAt,
-    name,
-    color,
-    iconName,
-    priority,
-  );
+  int get hashCode =>
+      Object.hash(id, createdAt, updatedAt, name, color, iconName, priority);
 
   @override
   String toString() {

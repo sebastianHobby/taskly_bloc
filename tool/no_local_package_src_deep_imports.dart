@@ -57,6 +57,13 @@ Future<void> main(List<String> args) async {
 
       final normalized = _normalize(entity.path);
 
+      // Ignore build system caches and generated artifacts.
+      // These are not checked into source control and can legitimately contain
+      // implementation-detail imports produced by third-party generators.
+      if (normalized.contains('/.dart_tool/')) {
+        continue;
+      }
+
       if (normalized.endsWith('.g.dart') ||
           normalized.endsWith('.freezed.dart')) {
         continue;
