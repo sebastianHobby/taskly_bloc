@@ -20,7 +20,6 @@ enum CompletionScope {
 /// This is the source of truth for which actions a tile may expose.
 @freezed
 abstract class EntityTileCapabilities with _$EntityTileCapabilities {
-  @JsonSerializable(disallowUnrecognizedKeys: true)
   const factory EntityTileCapabilities({
     /// Whether the tile can toggle completion.
     @Default(false) bool canToggleCompletion,
@@ -63,7 +62,6 @@ abstract class EntityTileCapabilities with _$EntityTileCapabilities {
 @freezed
 abstract class EntityTileCapabilitiesOverride
     with _$EntityTileCapabilitiesOverride {
-  @JsonSerializable(disallowUnrecognizedKeys: true)
   const factory EntityTileCapabilitiesOverride({
     bool? canToggleCompletion,
     bool? canTogglePinned,

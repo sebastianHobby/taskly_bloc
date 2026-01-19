@@ -5,7 +5,6 @@ part 'tracker_event.g.dart';
 
 @freezed
 abstract class TrackerEvent with _$TrackerEvent {
-  @JsonSerializable(explicitToJson: true)
   const factory TrackerEvent({
     required String id,
     required String trackerId,

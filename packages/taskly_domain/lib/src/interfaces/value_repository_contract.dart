@@ -1,5 +1,4 @@
 import 'package:taskly_domain/src/domain.dart';
-import 'package:taskly_domain/core/model/value_priority.dart';
 import 'package:taskly_domain/src/queries/value_query.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
 

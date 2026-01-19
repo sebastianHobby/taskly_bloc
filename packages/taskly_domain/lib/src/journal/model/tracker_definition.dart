@@ -5,7 +5,6 @@ part 'tracker_definition.g.dart';
 
 @freezed
 abstract class TrackerDefinition with _$TrackerDefinition {
-  @JsonSerializable(explicitToJson: true)
   const factory TrackerDefinition({
     required String id,
     required String name,

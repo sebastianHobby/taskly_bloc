@@ -5,7 +5,6 @@ part 'journal_entry.g.dart';
 
 @freezed
 abstract class JournalEntry with _$JournalEntry {
-  @JsonSerializable(explicitToJson: true)
   const factory JournalEntry({
     required String id,
     required DateTime entryDate,
