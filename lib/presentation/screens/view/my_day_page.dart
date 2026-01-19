@@ -6,13 +6,13 @@ import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/my_day_hero_card.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/my_day_ritual_sections_card.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_ritual_wizard_page.dart';
+import 'package:taskly_domain/core.dart' as domain;
 
 class MyDayPage extends StatelessWidget {
   const MyDayPage({super.key});
@@ -115,8 +115,269 @@ class MyDayPage extends StatelessWidget {
 class _MyDayLoadedBody extends StatelessWidget {
   const _MyDayLoadedBody();
 
+  Future<void> _showAddOneMoreFocusSheet(
+    BuildContext context, {
+    required Set<String> excludedTaskIds,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        final theme = Theme.of(context);
+
+        final ritualState = context.watch<MyDayRitualBloc>().state;
+        if (ritualState is! MyDayRitualReady) {
+          return const SizedBox.shrink();
+        }
+
+        final available = ritualState.curated
+            .where((t) => !excludedTaskIds.contains(t.id))
+            .toList(growable: false);
+
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Add one more focus',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Only if you feel like it.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (available.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      'No extra focus suggestions right now.',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  )
+                else
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 520),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: available.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final task = available[index];
+                        final reason = ritualState.curatedReasons[task.id];
+
+                        return ListTile(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: theme.colorScheme.outlineVariant
+                                  .withOpacity(0.6),
+                            ),
+                          ),
+                          tileColor: theme.colorScheme.surface,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            12,
+                            10,
+                            10,
+                            10,
+                          ),
+                          title: Text(
+                            task.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: reason != null && reason.isNotEmpty
+                              ? Text(
+                                  reason,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                )
+                              : null,
+                          trailing: Icon(
+                            Icons.add_rounded,
+                            color: theme.colorScheme.primary,
+                          ),
+                          onTap: () {
+                            context.read<MyDayRitualBloc>().add(
+                              MyDayRitualAppendToToday(
+                                bucket: MyDayRitualAppendBucket.focus,
+                                taskId: task.id,
+                              ),
+                            );
+                            Navigator.of(context).pop();
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Added to Today's Focus."),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Done'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showAddMissingSheet(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required List<domain.Task> tasks,
+    required MyDayRitualAppendBucket bucket,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        final theme = Theme.of(context);
+        final justAdded = <String>{};
+
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+            ),
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                final visible = tasks
+                    .where((t) => !justAdded.contains(t.id))
+                    .toList(growable: false);
+
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (visible.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          'Nothing to add right now.',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      )
+                    else
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 520),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: visible.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (context, index) {
+                            final task = visible[index];
+
+                            return ListTile(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: theme.colorScheme.outlineVariant
+                                      .withOpacity(0.6),
+                                ),
+                              ),
+                              tileColor: theme.colorScheme.surface,
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                              contentPadding: const EdgeInsets.fromLTRB(
+                                12,
+                                10,
+                                10,
+                                10,
+                              ),
+                              title: Text(
+                                task.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: Icon(
+                                Icons.add_rounded,
+                                color: theme.colorScheme.primary,
+                              ),
+                              onTap: () {
+                                context.read<MyDayRitualBloc>().add(
+                                  MyDayRitualAppendToToday(
+                                    bucket: bucket,
+                                    taskId: task.id,
+                                  ),
+                                );
+                                setState(() => justAdded.add(task.id));
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Added to today.'),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Done'),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final ritualState = context.watch<MyDayRitualBloc>().state;
+    final focusReasons = ritualState is MyDayRitualReady
+        ? ritualState.curatedReasons
+        : const <String, String>{};
+
     return BlocBuilder<MyDayBloc, MyDayState>(
       builder: (context, state) {
         return switch (state) {
@@ -129,8 +390,15 @@ class _MyDayLoadedBody extends StatelessWidget {
             :final acceptedDue,
             :final acceptedStarts,
             :final acceptedFocus,
-            :final otherDueCount,
-            :final otherStartsCount,
+            :final dueAcceptedTotalCount,
+            :final startsAcceptedTotalCount,
+            :final focusAcceptedTotalCount,
+            :final selectedTotalCount,
+            :final missingDueCount,
+            :final missingStartsCount,
+            :final missingDueTasks,
+            :final missingStartsTasks,
+            :final todaySelectedTaskIds,
           ) =>
             SafeArea(
               bottom: false,
@@ -148,20 +416,48 @@ class _MyDayLoadedBody extends StatelessWidget {
                           acceptedDue: acceptedDue,
                           acceptedStarts: acceptedStarts,
                           acceptedFocus: acceptedFocus,
+                          focusReasons: focusReasons,
+                          showCompletionMessage:
+                              selectedTotalCount > 0 &&
+                              acceptedDue.isEmpty &&
+                              acceptedStarts.isEmpty &&
+                              acceptedFocus.isEmpty,
+                          onAddOneMoreFocus: () => _showAddOneMoreFocusSheet(
+                            context,
+                            excludedTaskIds: todaySelectedTaskIds,
+                          ),
                           dueCounts: MyDayBucketCounts(
-                            acceptedCount: acceptedDue.length,
-                            otherCount: otherDueCount,
+                            acceptedCount: dueAcceptedTotalCount,
+                            otherCount: missingDueCount,
                           ),
                           startsCounts: MyDayBucketCounts(
-                            acceptedCount: acceptedStarts.length,
-                            otherCount: otherStartsCount,
+                            acceptedCount: startsAcceptedTotalCount,
+                            otherCount: missingStartsCount,
                           ),
-                          onReviewDue: otherDueCount > 0
-                              ? () => Routing.toScreenKey(context, 'scheduled')
+                          onAddMissingDue: missingDueCount > 0
+                              ? () => _showAddMissingSheet(
+                                  context,
+                                  title: 'Add overdue & due',
+                                  subtitle:
+                                      "These were eligible in your ritual, but you didn't select them.",
+                                  tasks: missingDueTasks,
+                                  bucket: MyDayRitualAppendBucket.due,
+                                )
                               : null,
-                          onReviewStarts: otherStartsCount > 0
-                              ? () => Routing.toScreenKey(context, 'scheduled')
+                          onAddMissingStarts: missingStartsCount > 0
+                              ? () => _showAddMissingSheet(
+                                  context,
+                                  title: 'Add starts today',
+                                  subtitle:
+                                      "These were eligible in your ritual, but you didn't select them.",
+                                  tasks: missingStartsTasks,
+                                  bucket: MyDayRitualAppendBucket.starts,
+                                )
                               : null,
+                          focusCounts: MyDayBucketCounts(
+                            acceptedCount: focusAcceptedTotalCount,
+                            otherCount: 0,
+                          ),
                         ),
                       ),
                     ),

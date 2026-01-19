@@ -53,13 +53,14 @@ class _HeroCard extends StatelessWidget {
     final showProgress = totalCount > 0;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
       child: Card(
         elevation: 0,
         margin: EdgeInsets.zero,
         color: cs.surfaceContainerLow,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -83,7 +84,7 @@ class _HeroCard extends StatelessWidget {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
-                          vertical: 6,
+                          vertical: 4,
                         ),
                         child: Row(
                           children: [
@@ -121,12 +122,22 @@ class _HeroCard extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Text(
-                              'Change',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: cs.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Change',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: cs.primary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 18,
+                                  color: cs.primary,
+                                ),
+                              ],
                             ),
                           ],
                         ),

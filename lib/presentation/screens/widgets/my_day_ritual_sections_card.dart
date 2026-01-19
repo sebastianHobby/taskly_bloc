@@ -27,9 +27,13 @@ class MyDayRitualSectionsCard extends StatefulWidget {
     required this.acceptedFocus,
     required this.dueCounts,
     required this.startsCounts,
+    required this.focusCounts,
+    required this.showCompletionMessage,
+    this.focusReasons = const <String, String>{},
     super.key,
-    this.onReviewDue,
-    this.onReviewStarts,
+    this.onAddMissingDue,
+    this.onAddMissingStarts,
+    this.onAddOneMoreFocus,
   });
 
   final List<Task> acceptedDue;
@@ -38,9 +42,18 @@ class MyDayRitualSectionsCard extends StatefulWidget {
 
   final MyDayBucketCounts dueCounts;
   final MyDayBucketCounts startsCounts;
+  final MyDayBucketCounts focusCounts;
 
-  final VoidCallback? onReviewDue;
-  final VoidCallback? onReviewStarts;
+  final bool showCompletionMessage;
+
+  /// Optional reason text for focus tasks, keyed by task id.
+  ///
+  /// When empty or when a task id is missing, no subtitle is shown.
+  final Map<String, String> focusReasons;
+
+  final VoidCallback? onAddMissingDue;
+  final VoidCallback? onAddMissingStarts;
+  final VoidCallback? onAddOneMoreFocus;
 
   @override
   State<MyDayRitualSectionsCard> createState() =>
@@ -57,15 +70,69 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
       color: cs.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+        padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
         child: Column(
           children: [
+            if (widget.showCompletionMessage) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle_rounded,
+                          size: 18,
+                          color: cs.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'All set for today.',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'You completed everything you chose in the ritual.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (widget.onAddOneMoreFocus != null)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: widget.onAddOneMoreFocus,
+                          icon: const Icon(Icons.add_rounded, size: 18),
+                          label: const Text('Add one more focus'),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
             _BucketSection(
               title: 'Overdue & due',
               acceptedTasks: widget.acceptedDue,
@@ -73,11 +140,12 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
               expanded: _dueExpanded,
               onToggleExpanded: () =>
                   setState(() => _dueExpanded = !_dueExpanded),
-              onReview: widget.onReviewDue,
+              onTapOther: widget.onAddMissingDue,
+              otherLabel: 'not in today',
               emptyTitle: 'Nothing accepted here.',
               emptySubtitle: widget.dueCounts.otherCount > 0
-                  ? "${widget.dueCounts.otherCount} other overdue item${widget.dueCounts.otherCount == 1 ? '' : 's'} not in today's plan."
-                  : 'No accepted overdue items for today.',
+                  ? "${widget.dueCounts.otherCount} task${widget.dueCounts.otherCount == 1 ? '' : 's'} not in today."
+                  : 'No accepted tasks in this section.',
               previewCount: _previewCount,
             ),
             const SizedBox(height: 10),
@@ -88,28 +156,32 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
               expanded: _startsExpanded,
               onToggleExpanded: () =>
                   setState(() => _startsExpanded = !_startsExpanded),
-              onReview: widget.onReviewStarts,
+              onTapOther: widget.onAddMissingStarts,
+              otherLabel: 'not in today',
               emptyTitle: 'Nothing accepted here.',
               emptySubtitle: widget.startsCounts.otherCount > 0
-                  ? "${widget.startsCounts.otherCount} other item${widget.startsCounts.otherCount == 1 ? '' : 's'} starting (or due soon) not in today's plan."
-                  : 'No accepted start items for today.',
+                  ? "${widget.startsCounts.otherCount} task${widget.startsCounts.otherCount == 1 ? '' : 's'} not in today."
+                  : 'No accepted tasks in this section.',
               previewCount: _previewCount,
             ),
             const SizedBox(height: 10),
             _BucketSection(
               title: 'Today’s Focus',
               acceptedTasks: widget.acceptedFocus,
-              counts: MyDayBucketCounts(
-                acceptedCount: widget.acceptedFocus.length,
-                otherCount: 0,
-              ),
+              counts: widget.focusCounts,
               expanded: _focusExpanded,
               onToggleExpanded: () =>
                   setState(() => _focusExpanded = !_focusExpanded),
-              onReview: null,
+              onTapOther: null,
+              otherLabel: 'not in today',
               emptyTitle: 'Nothing accepted here.',
               emptySubtitle: 'No focus items accepted for today.',
               previewCount: _previewCount,
+              subtitleForTask: (task) {
+                final reason = widget.focusReasons[task.id];
+                if (reason == null || reason.trim().isEmpty) return null;
+                return reason;
+              },
             ),
           ],
         ),
@@ -128,7 +200,9 @@ class _BucketSection extends StatelessWidget {
     required this.emptyTitle,
     required this.emptySubtitle,
     required this.previewCount,
-    this.onReview,
+    required this.otherLabel,
+    this.onTapOther,
+    this.subtitleForTask,
   });
 
   final String title;
@@ -136,10 +210,16 @@ class _BucketSection extends StatelessWidget {
   final MyDayBucketCounts counts;
   final bool expanded;
   final VoidCallback onToggleExpanded;
-  final VoidCallback? onReview;
+  final String otherLabel;
+  final VoidCallback? onTapOther;
   final String emptyTitle;
   final String emptySubtitle;
   final int previewCount;
+
+  /// Optional per-task subtitle text.
+  ///
+  /// Returned string is rendered in the tile's subtitle slot.
+  final String? Function(Task task)? subtitleForTask;
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +231,7 @@ class _BucketSection extends StatelessWidget {
         : acceptedTasks.take(previewCount).toList(growable: false);
     final remaining = acceptedTasks.length - visible.length;
 
-    final showReview = (counts.otherCount > 0) && onReview != null;
+    final showOtherLink = counts.otherCount > 0 && onTapOther != null;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
@@ -168,26 +248,15 @@ class _BucketSection extends StatelessWidget {
                   ),
                 ),
               ),
-              if (showReview)
-                TextButton(
-                  onPressed: onReview,
-                  child: Text(
-                    'Review',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 2),
-          Text(
-            '${counts.acceptedCount} accepted'
-            '${counts.otherCount > 0 ? ' · ${counts.otherCount} other' : ''}',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: cs.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
+          _CountsLine(
+            acceptedCount: counts.acceptedCount,
+            otherCount: counts.otherCount,
+            otherLabel: otherLabel,
+            showOtherAsLink: showOtherLink,
+            onTapOther: onTapOther,
           ),
           const SizedBox(height: 10),
           if (acceptedTasks.isEmpty)
@@ -218,7 +287,11 @@ class _BucketSection extends StatelessWidget {
               ),
             )
           else ...[
-            for (final task in visible) _AcceptedTaskTile(task: task),
+            for (final task in visible)
+              _AcceptedTaskTile(
+                task: task,
+                subtitleText: subtitleForTask?.call(task),
+              ),
             if (acceptedTasks.length > previewCount)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
@@ -245,9 +318,10 @@ class _BucketSection extends StatelessWidget {
 }
 
 class _AcceptedTaskTile extends StatelessWidget {
-  const _AcceptedTaskTile({required this.task});
+  const _AcceptedTaskTile({required this.task, this.subtitleText});
 
   final Task task;
+  final String? subtitleText;
 
   @override
   Widget build(BuildContext context) {
@@ -271,9 +345,22 @@ class _AcceptedTaskTile extends StatelessWidget {
       showProjectLabel: true,
     );
 
+    final subtitleText = this.subtitleText;
+    final subtitle = subtitleText == null || subtitleText.trim().isEmpty
+        ? null
+        : Text(
+            subtitleText,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          );
+
     return TaskEntityTile(
       model: model,
       onTap: model.onTap,
+      subtitle: subtitle,
       trailing: hasAnyEnabledAction
           ? TrailingSpec.overflowButton
           : TrailingSpec.none,
@@ -291,6 +378,78 @@ class _AcceptedTaskTile extends StatelessWidget {
               actions: overflowActions,
             )
           : null,
+    );
+  }
+}
+
+class _CountsLine extends StatelessWidget {
+  const _CountsLine({
+    required this.acceptedCount,
+    required this.otherCount,
+    required this.otherLabel,
+    required this.showOtherAsLink,
+    this.onTapOther,
+  });
+
+  final int acceptedCount;
+  final int otherCount;
+  final String otherLabel;
+  final bool showOtherAsLink;
+  final VoidCallback? onTapOther;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final baseStyle = theme.textTheme.bodySmall?.copyWith(
+      color: cs.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
+
+    final chipTextStyle = theme.textTheme.bodySmall?.copyWith(
+      color: cs.primary,
+      fontWeight: FontWeight.w800,
+    );
+
+    return Text.rich(
+      TextSpan(
+        style: baseStyle,
+        children: [
+          TextSpan(text: '$acceptedCount accepted'),
+          if (otherCount > 0) const TextSpan(text: ' · '),
+          if (otherCount > 0 && showOtherAsLink)
+            WidgetSpan(
+              alignment: PlaceholderAlignment.baseline,
+              baseline: TextBaseline.alphabetic,
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: onTapOther,
+                  borderRadius: BorderRadius.circular(999),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      child: Text(
+                        '$otherCount $otherLabel',
+                        style: chipTextStyle,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else if (otherCount > 0)
+            TextSpan(text: '$otherCount $otherLabel'),
+        ],
+      ),
     );
   }
 }

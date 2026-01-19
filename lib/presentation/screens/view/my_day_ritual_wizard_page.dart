@@ -867,22 +867,11 @@ class _TaskTileRow extends StatelessWidget {
       showProjectLabel: true,
     );
 
-    return TaskListRowTile(
+    return SelectableTaskEntityTile(
       model: model,
-      onTap: () => _toggleSelection(context),
-      onToggleCompletion: null,
-      subtitle: reasonText == null
-          ? null
-          : Text(
-              reasonText!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-      trailing: _SelectPill(
-        selected: selected,
-        onPressed: () => _toggleSelection(context),
-      ),
+      selected: selected,
+      reasonText: reasonText,
+      onToggleSelected: () => _toggleSelection(context),
     );
   }
 
@@ -891,50 +880,6 @@ class _TaskTileRow extends StatelessWidget {
       MyDayRitualToggleTask(
         task.id,
         selected: !selected,
-      ),
-    );
-  }
-}
-
-class _SelectPill extends StatelessWidget {
-  const _SelectPill({
-    required this.selected,
-    required this.onPressed,
-  });
-
-  final bool selected;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final label = selected ? 'Added' : 'Add';
-    final background = selected
-        ? scheme.surfaceContainerLow
-        : scheme.surfaceContainerHighest;
-    final foreground = selected
-        ? scheme.onSurfaceVariant
-        : scheme.onSurfaceVariant;
-    final border = selected ? Border.all(color: scheme.outlineVariant) : null;
-
-    return InkWell(
-      onTap: selected ? null : onPressed,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 64),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(999),
-          border: border,
-        ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: foreground,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
       ),
     );
   }
