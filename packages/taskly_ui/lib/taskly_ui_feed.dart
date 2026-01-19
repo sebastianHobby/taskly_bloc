@@ -14,6 +14,12 @@ export 'src/sections/error_state_widget.dart';
 export 'src/sections/loading_state_widget.dart';
 export 'src/sections/task_status_filter_bar.dart';
 
+export 'src/sections/confirmation_dialog.dart';
+
+export 'src/primitives/swipe_to_delete.dart';
+export 'src/primitives/delete_confirmation.dart';
+export 'src/primitives/sparkline_painter.dart';
+
 export 'src/tiles/entity_tile_models.dart';
 export 'src/tiles/task_list_row_tile.dart';
 export 'src/tiles/project_list_row_tile.dart';

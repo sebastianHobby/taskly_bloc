@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
-import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_list_bloc.dart';
-import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
-import 'package:taskly_bloc/presentation/widgets/value_chip.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_bloc/presentation/shared/ui/value_tile_model_mapper.dart';
+import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/core.dart';
+import 'package:taskly_ui/taskly_ui_catalog.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
 class ValuesListView extends StatelessWidget {
   const ValuesListView({
@@ -57,13 +57,9 @@ class ValuesListView extends StatelessWidget {
                 message: context.l10n.valueDeletedSuccessfully,
               );
             },
-            child: ListTile(
-              title: Text(value.name),
-              leading: ValueChip(
-                data: value.toChipData(context),
-                variant: ValueChipVariant.outlined,
-                iconOnly: true,
-              ),
+            child: ValueEntityTile(
+              model: value.toTileModel(context),
+              variant: ValueTileVariant.standard,
               onTap: () async {
                 isSheetOpen?.value = true;
                 Routing.toEntity(context, EntityType.value, value.id);

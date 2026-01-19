@@ -287,14 +287,17 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
   FakeSettingsRepository({
     GlobalSettings global = const GlobalSettings(),
     AllocationConfig allocation = const AllocationConfig(),
+    MyDayRitualState myDayRitual = const MyDayRitualState(),
     Map<String, SortPreferences> pageSort = const <String, SortPreferences>{},
   }) : _global = global,
        _allocation = allocation,
+       _myDayRitual = myDayRitual,
        _pageSort = Map<String, SortPreferences>.from(pageSort);
 
   final _controller = StreamController<void>.broadcast();
   GlobalSettings _global;
   AllocationConfig _allocation;
+  MyDayRitualState _myDayRitual;
   final Map<String, SortPreferences> _pageSort;
 
   @override
@@ -320,6 +323,7 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
     return switch (key) {
       SettingsKey.global => _global as T,
       SettingsKey.allocation => _allocation as T,
+      SettingsKey.myDayRitual => _myDayRitual as T,
       _ => _extractKeyedValue(key),
     };
   }
@@ -342,6 +346,10 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
     }
     if (identical(key, SettingsKey.allocation)) {
       _allocation = value as AllocationConfig;
+      return;
+    }
+    if (identical(key, SettingsKey.myDayRitual)) {
+      _myDayRitual = value as MyDayRitualState;
       return;
     }
 

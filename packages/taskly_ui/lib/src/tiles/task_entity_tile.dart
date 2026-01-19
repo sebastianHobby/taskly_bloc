@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/catalog/taskly_catalog_types.dart';
-import 'package:taskly_ui/src/primitives/taskly_badge.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 import 'package:taskly_ui/src/tiles/task_list_row_tile.dart';
 
@@ -36,7 +35,8 @@ class TaskEntityTile extends StatelessWidget {
     return TaskListRowTile(
       model: model,
       onTap: onTap,
-      titlePrefix: _Badges(badges: badges),
+      titlePrefix: _ScheduleGlyphColumn(badges: badges),
+      scheduleState: _firstScheduleState(badges),
       onToggleCompletion: onToggleCompletion,
       trailing: _TrailingOverflowButton(
         trailing: trailing,
@@ -46,32 +46,77 @@ class TaskEntityTile extends StatelessWidget {
   }
 }
 
-class _Badges extends StatelessWidget {
-  const _Badges({required this.badges});
+BadgeKind? _firstScheduleState(List<BadgeSpec> badges) {
+  for (final badge in badges) {
+    switch (badge.kind) {
+      case BadgeKind.starts:
+      case BadgeKind.ongoing:
+      case BadgeKind.due:
+        return badge.kind;
+      case BadgeKind.pinned:
+        continue;
+    }
+  }
+  return null;
+}
+
+class _ScheduleGlyphColumn extends StatelessWidget {
+  const _ScheduleGlyphColumn({required this.badges});
 
   final List<BadgeSpec> badges;
 
   @override
   Widget build(BuildContext context) {
-    if (badges.isEmpty) return const SizedBox.shrink();
+    final BadgeKind? state = _firstScheduleState(badges);
+    final bool pinned = badges.any((b) => b.kind == BadgeKind.pinned);
+    if (state == null && !pinned) return const SizedBox.shrink();
 
     final scheme = Theme.of(context).colorScheme;
 
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        for (final badge in badges)
-          TasklyBadge(
-            label: badge.label,
-            color: switch (badge.kind) {
-              BadgeKind.due => scheme.error,
-              BadgeKind.starts => scheme.primary,
-              BadgeKind.ongoing => scheme.onSurfaceVariant,
-              BadgeKind.pinned => scheme.secondary,
-            },
-          ),
-      ],
+    final (IconData? icon, Color color, String label) = switch (state) {
+      BadgeKind.starts => (Icons.play_arrow_rounded, scheme.primary, 'Starts'),
+      BadgeKind.ongoing => (
+        Icons.timelapse_rounded,
+        scheme.onSurfaceVariant,
+        'Ongoing',
+      ),
+      BadgeKind.due => (Icons.flag_outlined, scheme.error, 'Due'),
+      _ => (null, scheme.onSurfaceVariant, ''),
+    };
+
+    final semanticLabel = [
+      if (state != null) label,
+      if (pinned) 'Pinned',
+    ].join(', ');
+
+    return Semantics(
+      label: semanticLabel.isEmpty ? null : semanticLabel,
+      child: SizedBox(
+        width: 22,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            if (icon != null)
+              Align(
+                alignment: Alignment.topCenter,
+                child: Icon(icon, size: 16, color: color),
+              ),
+            if (pinned)
+              Positioned(
+                right: -1,
+                top: -1,
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: scheme.secondary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -100,11 +145,7 @@ class _TrailingOverflowButton extends StatelessWidget {
       onTapDown: (details) => onOverflowRequestedAt!(details.globalPosition),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Icon(
-          Icons.more_horiz,
-          size: 20,
-          color: iconColor,
-        ),
+        child: Icon(Icons.more_horiz, size: 20, color: iconColor),
       ),
     );
   }
