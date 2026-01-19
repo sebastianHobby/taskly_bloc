@@ -284,7 +284,11 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
           'id': entityId,
           if (date != null) 'date': _dateKey(date),
           'tag': tag.name,
-          'bucket': ?bucketKey,
+          ...?(bucketKey == null
+              ? null
+              : <String, String>{
+                  'bucket': bucketKey,
+                }),
         },
       ),
       depth: date == null ? 1 : 2,

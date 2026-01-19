@@ -256,13 +256,8 @@ final class ScheduledOccurrencesService {
     }
 
     if (!hasSameStartAndDeadline && startDay != null && deadlineDay != null) {
-      var current = startDay.add(const Duration(days: 1));
-      while (current.isBefore(deadlineDay)) {
-        if (_isInRange(current, rangeStart, rangeEnd)) {
-          dates[current] = ScheduledDateTag.ongoing;
-        }
-        current = current.add(const Duration(days: 1));
-      }
+      // Intentionally do not add intermediate “ongoing” days.
+      // Scheduled should show only explicit start and due days.
     }
 
     return dates;

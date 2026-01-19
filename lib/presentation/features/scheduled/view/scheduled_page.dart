@@ -249,18 +249,18 @@ String _semanticDayTitle(BuildContext context, DateTime day, DateTime today) {
   final normalizedDay = DateTime(day.year, day.month, day.day);
   final normalizedToday = DateTime(today.year, today.month, today.day);
 
-  if (_isSameDay(normalizedDay, normalizedToday)) return 'Today';
-  if (_isSameDay(normalizedDay, normalizedToday.add(const Duration(days: 1)))) {
-    return 'Tomorrow';
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final absolute = DateFormat('E, MMM d', locale).format(normalizedDay);
+
+  if (_isSameDay(normalizedDay, normalizedToday)) {
+    return '${context.l10n.dateToday} · $absolute';
   }
 
-  final locale = Localizations.localeOf(context).toLanguageTag();
-  return DateFormat('EEEE', locale).format(normalizedDay);
-}
+  if (_isSameDay(normalizedDay, normalizedToday.add(const Duration(days: 1)))) {
+    return '${context.l10n.dateTomorrow} · $absolute';
+  }
 
-String _semanticDaySubtitle(BuildContext context, DateTime day) {
-  final locale = Localizations.localeOf(context).toLanguageTag();
-  return DateFormat('E · MMM d', locale).format(day);
+  return absolute;
 }
 
 class _ScheduledAgenda extends StatelessWidget {
@@ -318,6 +318,7 @@ class _ScheduledAgenda extends StatelessWidget {
           if (deadline == null) continue;
           final deadlineDay = DateTime(
             deadline.year,
+
             deadline.month,
             deadline.day,
           );
@@ -453,7 +454,6 @@ class _ScheduledAgenda extends StatelessWidget {
               depth: row.depth,
               day: date,
               title: _semanticDayTitle(context, date, today),
-              subtitle: _semanticDaySubtitle(context, date),
               isTodayAnchor: _isSameDay(date, today),
             ),
           );
