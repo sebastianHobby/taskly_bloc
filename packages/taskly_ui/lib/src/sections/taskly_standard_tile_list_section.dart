@@ -110,7 +110,7 @@ class TasklyStandardTileListSection extends StatelessWidget {
       itemCount: rows.length,
       itemBuilder: (context, index) {
         final row = rows[index];
-        final leftIndent = 12.0 * row.depth;
+        final leftIndent = 10.0 * row.depth;
 
         final child = switch (row) {
           TasklyStandardTileListHeaderRowModel() => _HeaderRow(row: row),
@@ -154,25 +154,37 @@ class _HeaderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     final text = Text(
       row.title,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      style: theme.textTheme.titleSmall?.copyWith(
+        color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
         fontWeight: FontWeight.w700,
+        letterSpacing: 0.4,
+      ),
+    );
+
+    final content = DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: text,
       ),
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
       child: row.onTap == null
-          ? text
+          ? content
           : InkWell(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               onTap: row.onTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                child: text,
-              ),
+              child: content,
             ),
     );
   }
@@ -188,6 +200,8 @@ class _IconHeaderRow extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
+    final bool tappable = row.onTap != null;
+
     final child = Row(
       children: [
         Icon(row.leadingIcon, size: 18, color: scheme.onSurfaceVariant),
@@ -196,26 +210,26 @@ class _IconHeaderRow extends StatelessWidget {
           child: Text(
             row.title,
             style: theme.textTheme.titleSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
             ),
           ),
         ),
-        if (row.trailingIcon != null)
+        if (tappable && row.trailingIcon != null)
           Icon(row.trailingIcon, size: 18, color: scheme.onSurfaceVariant),
       ],
     );
 
     final padded = Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
         child: child,
       ),
     );
 
-    if (row.onTap == null) return padded;
+    if (!tappable) return padded;
 
     return InkWell(
       borderRadius: BorderRadius.circular(8),
