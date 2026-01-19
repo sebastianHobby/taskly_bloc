@@ -11,68 +11,13 @@ class TaskEntityTile extends StatelessWidget {
     this.badges = const [],
     this.trailing = TrailingSpec.none,
     this.onTap,
-    this.onToggleCompletion,
-    this.onOverflowRequestedAt,
-    super.key,
-  });
-
+      titlePrefix = null,
   final TaskTileModel model;
   final TileVariant variant;
 
   final List<BadgeSpec> badges;
   final TrailingSpec trailing;
-
-  final VoidCallback? onTap;
-  final ValueChanged<bool?>? onToggleCompletion;
-
-  /// Called when the overflow button is pressed.
-  ///
-  /// The [Offset] is the global position of the tap.
-  final ValueChanged<Offset>? onOverflowRequestedAt;
-
-  @override
-  Widget build(BuildContext context) {
-    return TaskListRowTile(
-      model: model,
-      onTap: onTap,
-      titlePrefix: _ScheduleGlyphColumn(badges: badges),
-      scheduleState: _firstScheduleState(badges),
-      onToggleCompletion: onToggleCompletion,
-      trailing: _TrailingOverflowButton(
-        trailing: trailing,
-        onOverflowRequestedAt: onOverflowRequestedAt,
-      ),
-    );
-  }
 }
-
-BadgeKind? _firstScheduleState(List<BadgeSpec> badges) {
-  for (final badge in badges) {
-    switch (badge.kind) {
-      case BadgeKind.starts:
-      case BadgeKind.ongoing:
-      case BadgeKind.due:
-        return badge.kind;
-      case BadgeKind.pinned:
-        continue;
-    }
-  }
-  return null;
-}
-
-class _ScheduleGlyphColumn extends StatelessWidget {
-  const _ScheduleGlyphColumn({required this.badges});
-
-  final List<BadgeSpec> badges;
-
-  @override
-  Widget build(BuildContext context) {
-    final BadgeKind? state = _firstScheduleState(badges);
-    final bool pinned = badges.any((b) => b.kind == BadgeKind.pinned);
-    if (state == null && !pinned) return const SizedBox.shrink();
-
-    final scheme = Theme.of(context).colorScheme;
-
     final (IconData? icon, Color color, String label) = switch (state) {
       BadgeKind.starts => (Icons.play_arrow_rounded, scheme.primary, 'Starts'),
       BadgeKind.ongoing => (
@@ -90,8 +35,8 @@ class _ScheduleGlyphColumn extends StatelessWidget {
     ].join(', ');
 
     return Semantics(
-      label: semanticLabel.isEmpty ? null : semanticLabel,
-      child: SizedBox(
+      label = semanticLabel.isEmpty ? null : semanticLabel,
+      child = SizedBox(
         width: 22,
         child: Stack(
           clipBehavior: Clip.none,

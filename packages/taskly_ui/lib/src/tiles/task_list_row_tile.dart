@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:taskly_ui/src/catalog/taskly_catalog_types.dart';
 import 'package:taskly_ui/src/tiles/entity_meta_line.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 
@@ -11,7 +10,6 @@ class TaskListRowTile extends StatelessWidget {
     this.onToggleCompletion,
     this.trailing,
     this.titlePrefix,
-    this.scheduleState,
     super.key,
   });
 
@@ -27,11 +25,6 @@ class TaskListRowTile extends StatelessWidget {
   final Widget? trailing;
 
   final Widget? titlePrefix;
-
-  /// Optional schedule state accent for Scheduled-like views.
-  ///
-  /// When set, a subtle patterned left rail is rendered (SCHED-32).
-  final BadgeKind? scheduleState;
 
   @override
   Widget build(BuildContext context) {
@@ -55,16 +48,6 @@ class TaskListRowTile extends StatelessWidget {
         onTap: onTap,
         child: Stack(
           children: [
-            if (scheduleState != null && scheduleState != BadgeKind.pinned)
-              Positioned(
-                left: 0,
-                top: 10,
-                bottom: 10,
-                child: _ScheduleAccentRail(
-                  state: scheduleState!,
-                  colorScheme: scheme,
-                ),
-              ),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -177,128 +160,6 @@ class _TaskCompletionCheckbox extends StatelessWidget {
           visualDensity: VisualDensity.compact,
         ),
       ),
-    );
-  }
-}
-
-class _ScheduleAccentRail extends StatelessWidget {
-  const _ScheduleAccentRail({required this.state, required this.colorScheme});
-
-  final BadgeKind state;
-  final ColorScheme colorScheme;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color baseColor = switch (state) {
-      BadgeKind.starts => colorScheme.primary,
-      BadgeKind.ongoing => colorScheme.onSurfaceVariant,
-      BadgeKind.due => colorScheme.error,
-      BadgeKind.pinned => colorScheme.primary,
-    };
-
-    final double railOpacity = switch (state) {
-      BadgeKind.starts => 0.85,
-      BadgeKind.ongoing => 0.55,
-      BadgeKind.due => 0.85,
-      BadgeKind.pinned => 0.85,
-    };
-
-    final rail = _Rail(
-      state: state,
-      color: baseColor.withValues(alpha: railOpacity),
-    );
-
-    return SizedBox(width: 4, child: rail);
-  }
-}
-
-class _Rail extends StatelessWidget {
-  const _Rail({required this.state, required this.color});
-
-  final BadgeKind state;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return switch (state) {
-      BadgeKind.starts => _DashedRail(color: color),
-      BadgeKind.ongoing => _SolidRail(color: color),
-      BadgeKind.due => _NotchedRail(color: color),
-      BadgeKind.pinned => _SolidRail(color: color),
-    };
-  }
-}
-
-class _SolidRail extends StatelessWidget {
-  const _SolidRail({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(width: 2, color: color),
-    );
-  }
-}
-
-class _NotchedRail extends StatelessWidget {
-  const _NotchedRail({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        _SolidRail(color: color),
-        Positioned(
-          left: 0,
-          top: 0,
-          child: Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DashedRail extends StatelessWidget {
-  const _DashedRail({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const double segmentHeight = 5;
-        const double gap = 4;
-        final double unit = segmentHeight + gap;
-        final int count = (constraints.maxHeight / unit).floor().clamp(1, 999);
-
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              for (int i = 0; i < count; i++)
-                Container(
-                  width: 2,
-                  height: segmentHeight,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

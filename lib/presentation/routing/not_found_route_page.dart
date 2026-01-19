@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_core/logging.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class NotFoundRoutePage extends StatelessWidget {
   const NotFoundRoutePage({

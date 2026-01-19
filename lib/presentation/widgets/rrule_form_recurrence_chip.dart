@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rrule/rrule.dart';
 import 'package:taskly_bloc/l10n/rrule_l10n_es.dart';
-import 'package:taskly_ui/taskly_ui.dart';
 
 /// A recurrence form chip that renders an RRULE with locale-aware text.
 ///
@@ -85,12 +84,22 @@ class _RruleFormRecurrenceChipState extends State<RruleFormRecurrenceChip> {
 
   @override
   Widget build(BuildContext context) {
-    return FormRecurrenceChip(
-      hasValue: _hasValue,
-      label: _label,
-      emptyLabel: widget.emptyLabel,
-      onTap: widget.onTap,
-      onClear: widget.onClear,
+    final canClear = _hasValue && widget.onClear != null;
+    final label = _hasValue
+        ? (_label != null
+            ? Text(_label!)
+            : const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ))
+        : Text(widget.emptyLabel);
+
+    return InputChip(
+      label: label,
+      onPressed: widget.onTap,
+      deleteIcon: const Icon(Icons.clear),
+      onDeleted: canClear ? widget.onClear : null,
     );
   }
 }

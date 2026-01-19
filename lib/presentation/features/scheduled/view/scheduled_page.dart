@@ -268,8 +268,6 @@ class _ScheduledAgenda extends StatelessWidget {
             ),
           );
         case ScheduledEntityRowUiModel(:final occurrence):
-          final scheduledTag = occurrence.ref.tag;
-
           if (occurrence.ref.entityType == EntityType.task &&
               occurrence.task != null) {
             final task = occurrence.task!;
@@ -299,14 +297,6 @@ class _ScheduledAgenda extends StatelessWidget {
                   tileCapabilities: tileCapabilities,
                 ),
                 badges: [
-                  BadgeSpec(
-                    kind: switch (scheduledTag) {
-                      ScheduledDateTag.due => BadgeKind.due,
-                      ScheduledDateTag.starts => BadgeKind.starts,
-                      ScheduledDateTag.ongoing => BadgeKind.ongoing,
-                    },
-                    label: scheduledTag.label,
-                  ),
                   if (task.isPinned)
                     const BadgeSpec(kind: BadgeKind.pinned, label: 'Pinned'),
                 ],
@@ -363,16 +353,7 @@ class _ScheduledAgenda extends StatelessWidget {
                   taskCount: project.taskCount,
                   completedTaskCount: project.completedTaskCount,
                 ),
-                badges: [
-                  BadgeSpec(
-                    kind: switch (scheduledTag) {
-                      ScheduledDateTag.due => BadgeKind.due,
-                      ScheduledDateTag.starts => BadgeKind.starts,
-                      ScheduledDateTag.ongoing => BadgeKind.ongoing,
-                    },
-                    label: scheduledTag.label,
-                  ),
-                ],
+                badges: const [],
                 trailing: hasAnyEnabledAction
                     ? TrailingSpec.overflowButton
                     : TrailingSpec.none,

@@ -7,8 +7,8 @@ import 'package:taskly_bloc/presentation/features/values/bloc/value_list_bloc.da
 import 'package:taskly_bloc/presentation/shared/ui/value_tile_model_mapper.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_ui/taskly_ui_catalog.dart';
-import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_entities.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class ValuesListView extends StatelessWidget {
   const ValuesListView({
@@ -27,11 +27,22 @@ class ValuesListView extends StatelessWidget {
     return ListView(
       children: [
         for (final value in values)
-          SwipeToDelete(
-            itemKey: ValueKey(value.id),
-            enabled: enableSwipeToDelete,
-            deleteLabel: context.l10n.deleteLabel,
-            confirmDismiss: () => ConfirmationDialog.show(
+          Dismissible(
+            key: ValueKey(value.id),
+            direction: enableSwipeToDelete
+                ? DismissDirection.endToStart
+                : DismissDirection.none,
+            background: const SizedBox.shrink(),
+            secondaryBackground: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              color: Theme.of(context).colorScheme.errorContainer,
+              child: Icon(
+                Icons.delete_outline_rounded,
+                color: Theme.of(context).colorScheme.onErrorContainer,
+              ),
+            ),
+            confirmDismiss: (_) => ConfirmationDialog.show(
               context,
               title: context.l10n.deleteValue,
               confirmLabel: context.l10n.deleteLabel,
@@ -48,7 +59,7 @@ class ValuesListView extends StatelessWidget {
                 description: context.l10n.deleteValueCascadeDescription,
               ),
             ),
-            onDismissed: () {
+            onDismissed: (_) {
               context.read<ValueListBloc>().add(
                 ValueListEvent.deleteValue(value: value),
               );
