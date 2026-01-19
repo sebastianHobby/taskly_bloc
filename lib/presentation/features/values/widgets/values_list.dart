@@ -63,9 +63,10 @@ class ValuesListView extends StatelessWidget {
               context.read<ValueListBloc>().add(
                 ValueListEvent.deleteValue(value: value),
               );
-              showDeleteSnackBar(
-                context: context,
-                message: context.l10n.valueDeletedSuccessfully,
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(context.l10n.valueDeletedSuccessfully),
+                ),
               );
             },
             child: ValueEntityTile(

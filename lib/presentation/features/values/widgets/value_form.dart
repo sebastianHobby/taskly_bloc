@@ -4,9 +4,10 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
+import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_color_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_ui/taskly_ui_forms.dart';
 
 /// A modern form for creating or editing values.
 ///
@@ -104,14 +105,34 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              FormBuilderTextFieldModern(
+              FormBuilderTextField(
                 name: ValueFieldKeys.name.id,
-                hint: l10n.projectFormTitleHint,
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
-                fieldType: ModernFieldType.title,
                 maxLength: ValueForm.maxNameLength,
-                isRequired: true,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+                decoration: InputDecoration(
+                  hintText: l10n.projectFormTitleHint,
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 1.5,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
                 validator: FormBuilderValidators.compose([
                   FormBuilderValidators.required(
                     errorText: l10n.taskFormNameRequired,
@@ -171,7 +192,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
               const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: FormBuilderColorPickerModern(
+                child: FormBuilderColorPicker(
                   name: ValueFieldKeys.colour.id,
                   showLabel: false,
                   compact: true,

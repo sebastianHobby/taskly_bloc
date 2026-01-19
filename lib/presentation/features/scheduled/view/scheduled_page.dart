@@ -18,8 +18,8 @@ import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.d
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
-import 'package:taskly_ui/taskly_ui.dart' hide ProjectTileModel, TaskTileModel;
-import 'package:taskly_ui/taskly_ui_catalog.dart';
+import 'package:taskly_ui/taskly_ui_entities.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class ScheduledPage extends StatelessWidget {
   const ScheduledPage({super.key, this.scope = const GlobalScheduledScope()});

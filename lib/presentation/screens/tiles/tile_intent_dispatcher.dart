@@ -14,7 +14,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
 import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
 abstract class TileIntentDispatcher {
   Future<void> dispatch(BuildContext context, TileIntent intent);

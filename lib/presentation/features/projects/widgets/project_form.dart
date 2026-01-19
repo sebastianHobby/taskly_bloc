@@ -10,7 +10,7 @@ import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/rrule_form_recurrence_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
@@ -206,13 +206,33 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Project Name
-              FormBuilderTextFieldModern(
+              FormBuilderTextField(
                 name: ProjectFieldKeys.name.id,
-                hint: l10n.projectFormTitleHint,
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
-                fieldType: ModernFieldType.title,
-                isRequired: true,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+                decoration: InputDecoration(
+                  hintText: l10n.projectFormTitleHint,
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 1.5,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
                 validator: FormBuilderValidators.compose([
                   FormBuilderValidators.required(
                     errorText: l10n.projectFormTitleRequired,
@@ -229,13 +249,31 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
               ),
 
               // Project Description
-              FormBuilderTextFieldModern(
+              FormBuilderTextField(
                 name: ProjectFieldKeys.description.id,
-                hint: l10n.projectFormDescriptionHint,
                 textInputAction: TextInputAction.newline,
-                fieldType: ModernFieldType.description,
                 maxLines: 3,
                 minLines: 2,
+                decoration: InputDecoration(
+                  hintText: l10n.projectFormDescriptionHint,
+                  filled: true,
+                  fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 1.5,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
                 validator: FormBuilderValidators.maxLength(
                   200,
                   errorText: l10n.projectFormDescriptionTooLong,

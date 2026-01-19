@@ -49,11 +49,7 @@ class PriorityFlag extends StatelessWidget {
     return Semantics(
       label: semanticsLabel,
       value: semanticsValue,
-      child: Icon(
-        Icons.flag,
-        size: size,
-        color: color,
-      ),
+      child: Icon(Icons.flag, size: size, color: color),
     );
   }
 

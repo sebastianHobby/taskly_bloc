@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'package:taskly_ui/taskly_ui.dart' show ValueChipData;
+import 'package:taskly_ui/taskly_ui_models.dart';
 
 enum ValueChipVariant { solid, outlined }
 

@@ -87,3 +87,42 @@ extension ResponsiveContext on BuildContext {
   /// Returns true if the screen is expanded (desktop).
   bool get isExpandedScreen => windowSizeClass.isExpanded;
 }
+
+/// Wraps a Scaffold body with simple content constraints for wide screens.
+///
+/// On compact/medium layouts, this returns [child] (optionally with horizontal
+/// padding). On expanded layouts, this centers and constrains the max width.
+class ResponsiveBody extends StatelessWidget {
+  const ResponsiveBody({
+    required this.child,
+    required this.isExpandedLayout,
+    this.maxWidth = 800,
+    this.horizontalPadding = 0,
+    super.key,
+  });
+
+  final Widget child;
+  final bool isExpandedLayout;
+  final double maxWidth;
+  final double horizontalPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isExpandedLayout) {
+      if (horizontalPadding > 0) {
+        return Padding(
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+          child: child,
+        );
+      }
+      return child;
+    }
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: child,
+      ),
+    );
+  }
+}

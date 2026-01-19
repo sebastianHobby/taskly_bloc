@@ -7,8 +7,8 @@ import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
-import 'package:taskly_ui/taskly_ui_catalog.dart';
-import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_entities.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class MyDayTaskListSection extends StatefulWidget {
   const MyDayTaskListSection({
