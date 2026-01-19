@@ -17,6 +17,21 @@ part 'focus_setup_bloc.freezed.dart';
 const _minNeglectLookbackDays = 1;
 const _maxNeglectLookbackDays = 60;
 
+class _QuickAddPreset {
+  const _QuickAddPreset({required this.colorHex, required this.iconName});
+
+  final String colorHex;
+  final String iconName;
+}
+
+const _quickAddPresets = <String, _QuickAddPreset>{
+  'Health': _QuickAddPreset(colorHex: '#43A047', iconName: 'health'),
+  'Family': _QuickAddPreset(colorHex: '#FB8C00', iconName: 'home'),
+  'Career': _QuickAddPreset(colorHex: '#1E88E5', iconName: 'work'),
+  'Learning': _QuickAddPreset(colorHex: '#7E57C2', iconName: 'lightbulb'),
+  'Relationships': _QuickAddPreset(colorHex: '#E91E63', iconName: 'group'),
+};
+
 enum FocusSetupWizardStep {
   selectFocusMode,
   allocationStrategy,
@@ -55,10 +70,6 @@ sealed class FocusSetupEvent with _$FocusSetupEvent {
   /// UI uses multiplier (0.5-5.0).
   const factory FocusSetupEvent.taskFlagBoostChanged(double multiplier) =
       FocusSetupTaskFlagBoostChanged;
-
-  /// UI uses 0-50%; persisted as 0.0-0.5.
-  const factory FocusSetupEvent.recencyPenaltyPercentChanged(int percent) =
-      FocusSetupRecencyPenaltyPercentChanged;
 
   /// UI uses multiplier (1.0-5.0).
   const factory FocusSetupEvent.overdueEmergencyMultiplierChanged(
@@ -109,7 +120,6 @@ sealed class FocusSetupState with _$FocusSetupState {
 
     int? draftValuePriorityWeightPercent,
     double? draftTaskFlagBoost,
-    int? draftRecencyPenaltyPercent,
     double? draftOverdueEmergencyMultiplier,
 
     @Default(false) bool saveSucceeded,
@@ -248,19 +258,6 @@ sealed class FocusSetupState with _$FocusSetupState {
     return 1;
   }
 
-  int get effectiveRecencyPenaltyPercent {
-    final draft = draftRecencyPenaltyPercent;
-    if (draft != null) return draft.clamp(0, 50);
-    final persisted = persistedAllocationConfig;
-    if (persisted != null) {
-      return (persisted.strategySettings.recencyPenalty * 100).round().clamp(
-        0,
-        50,
-      );
-    }
-    return 10;
-  }
-
   double get effectiveOverdueEmergencyMultiplier {
     final draft = draftOverdueEmergencyMultiplier;
     if (draft != null) return draft;
@@ -321,10 +318,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     );
     on<FocusSetupTaskFlagBoostChanged>(
       _onTaskFlagBoostChanged,
-      transformer: droppable(),
-    );
-    on<FocusSetupRecencyPenaltyPercentChanged>(
-      _onRecencyPenaltyPercentChanged,
       transformer: droppable(),
     );
     on<FocusSetupOverdueEmergencyMultiplierChanged>(
@@ -527,6 +520,9 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     final name = event.name.trim();
     if (name.isEmpty) return;
 
+    final preset = _quickAddPresets[name];
+    final color = preset?.colorHex ?? _colorHexForName(name);
+
     final context = _contextFactory.create(
       feature: 'focus_setup',
       screen: 'focus_setup',
@@ -539,7 +535,8 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     try {
       await _valueRepository.create(
         name: name,
-        color: _colorHexForName(name),
+        color: color,
+        iconName: preset?.iconName,
         context: context,
       );
     } catch (e, st) {
@@ -614,7 +611,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
           draftNeglectInfluencePercent: null,
           draftValuePriorityWeightPercent: null,
           draftTaskFlagBoost: null,
-          draftRecencyPenaltyPercent: null,
           draftOverdueEmergencyMultiplier: null,
           errorMessage: null,
         ),
@@ -638,10 +634,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
             .round()
             .clamp(0, 100),
         draftTaskFlagBoost: preset.taskPriorityBoost,
-        draftRecencyPenaltyPercent: (preset.recencyPenalty * 100).round().clamp(
-          0,
-          50,
-        ),
         draftOverdueEmergencyMultiplier: preset.overdueEmergencyMultiplier,
         errorMessage: null,
       ),
@@ -703,15 +695,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     emit(state.copyWith(draftTaskFlagBoost: event.multiplier.clamp(0.5, 5.0)));
   }
 
-  void _onRecencyPenaltyPercentChanged(
-    FocusSetupRecencyPenaltyPercentChanged event,
-    Emitter<FocusSetupState> emit,
-  ) {
-    emit(
-      state.copyWith(draftRecencyPenaltyPercent: event.percent.clamp(0, 50)),
-    );
-  }
-
   void _onOverdueEmergencyMultiplierChanged(
     FocusSetupOverdueEmergencyMultiplierChanged event,
     Emitter<FocusSetupState> emit,
@@ -741,10 +724,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
             .round()
             .clamp(0, 100),
         draftTaskFlagBoost: preset.taskPriorityBoost,
-        draftRecencyPenaltyPercent: (preset.recencyPenalty * 100).round().clamp(
-          0,
-          50,
-        ),
         draftOverdueEmergencyMultiplier: preset.overdueEmergencyMultiplier,
       ),
     );
@@ -784,7 +763,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
               valuePriorityWeight:
                   state.effectiveValuePriorityWeightPercent / 50.0,
               taskPriorityBoost: state.effectiveTaskFlagBoost,
-              recencyPenalty: state.effectiveRecencyPenaltyPercent / 100.0,
               overdueEmergencyMultiplier:
                   state.effectiveOverdueEmergencyMultiplier,
             )

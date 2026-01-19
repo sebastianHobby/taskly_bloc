@@ -47,18 +47,5 @@ class AllocationScoring {
     return 1.0 + (taskPriorityBoost - 1.0) * priorityStrength;
   }
 
-  static double recencyMultiplier({
-    required Task task,
-    required DateTime now,
-    required double recencyPenalty,
-  }) {
-    if (recencyPenalty <= 0) return 1;
-
-    final ageDays = now.difference(task.createdAt).inDays;
-    const windowDays = 7;
-    if (ageDays >= windowDays) return 1;
-
-    final freshness = 1.0 - (ageDays / windowDays);
-    return (1.0 - recencyPenalty * freshness).clamp(0.0, 1.0);
-  }
+  // Recency weighting removed. Allocation no longer uses task freshness.
 }

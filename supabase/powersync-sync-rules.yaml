@@ -21,8 +21,6 @@ bucket_definitions:
       # Screen Definitions
       - SELECT * FROM screen_definitions WHERE user_id = bucket.user_id
 
-      # Screen Preferences (per-user navigation ordering/visibility)
-      - SELECT * FROM screen_preferences WHERE user_id = bucket.user_id
 
       # Pending Notifications
       - SELECT * FROM pending_notifications WHERE user_id = bucket.user_id
@@ -72,6 +70,9 @@ bucket_definitions:
 
       # Journal Entries
       - SELECT * FROM journal_entries WHERE user_id = bucket.user_id
+
+      # Tracker Groups (user-defined organizational groups)
+      - SELECT * FROM tracker_groups WHERE user_id = bucket.user_id
 
       # Tracker Definitions (replaces trackers)
       - SELECT * FROM tracker_definitions WHERE user_id = bucket.user_id

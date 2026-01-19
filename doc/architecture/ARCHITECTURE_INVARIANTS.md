@@ -155,18 +155,20 @@ Normative rules:
 - Reusable UI must follow **data in / events out** APIs (props + callbacks).
 - App code must not deep-import `taskly_ui` internals (`package:taskly_ui/src/...`).
   Import only public entrypoints under `packages/taskly_ui/lib/`:
-  - prefer `package:taskly_ui/taskly_ui_catalog.dart` for catalogue tiles/sections
-  - use `package:taskly_ui/taskly_ui_feed.dart` for feed scaffolding
-  - treat `package:taskly_ui/taskly_ui.dart` as a legacy/wide barrel
+  - `package:taskly_ui/taskly_ui_entities.dart`
+  - `package:taskly_ui/taskly_ui_sections.dart`
+  - `package:taskly_ui/taskly_ui_models.dart`
+  - `package:taskly_ui/taskly_ui_forms.dart`
+
+  The legacy wide entrypoint (`package:taskly_ui/taskly_ui.dart`) is not
+  intended for app consumption; prefer tiered entrypoints.
 
 Allowed exceptions (narrow):
 
 - Ephemeral UI-only state that is inherently screen-local (controllers, focus
   nodes, animations, scroll controllers).
-- Feature-unique widgets that are not reused (keep them inside the owning
-  feature/screen; promote to `taskly_ui` if they become shared).
-- Short-lived experiments/prototypes that are explicitly scoped and removed or
-  extracted if they become permanent.
+- Any non-screen UI (primitive/entity/section) that is app-owned is an
+  **architecture exception** and requires explicit user approval.
 
 ### 2.1.1 Form UI boundary (FormBuilder) (strict)
 
@@ -213,10 +215,28 @@ Normative rules:
     feature-specific orchestration). These live in the app presentation layer.
 
 - Code placement is strict:
-  - **Primitives / Entities / Sections** that are shared across screens/features
-    must live in `packages/taskly_ui`.
+  - The **app owns only Screens/Templates**.
+  - All **Primitives / Entities / Sections** live in `packages/taskly_ui`.
   - **Screens/Templates** must live in the app presentation layer (for example
     under `lib/presentation/`). They must not live in `packages/taskly_ui`.
+
+#### 2.2.A Screen-only ownership rule (strict)
+
+To keep shared UI consistent and avoid “shadow design systems” in app code:
+
+- Screens/Templates must not introduce new **Primitives / Entities / Sections**
+  in app code, even if they are used only once.
+- In particular, do not create screen-local widgets that represent:
+  - a reusable “section” block (headers + lists + empty/error states),
+  - a reusable “entity” presentation (for example, a Task/Project tile),
+  - a new primitive-style building block (chips, buttons, badges, etc.).
+- If a screen needs a new section/entity/primitive, it must be created in
+  `packages/taskly_ui` and then composed from the screen.
+
+Rationale:
+
+- Prevents duplication and drift in look-and-feel across screens.
+- Keeps review simple: new UI building blocks go to `taskly_ui`.
 
 - Shared UI APIs must be **data in / events out**:
   - render from immutable inputs (props/view-models)
@@ -238,9 +258,61 @@ Allowed exceptions (narrow):
 
 - Ephemeral UI-only state that is inherently screen-local (controllers, focus
   nodes, animations, scroll controllers).
-- Feature-unique widgets that are not reused (keep in the owning feature).
-- Explicitly short-lived prototypes/experiments that are scoped and removed or
-  extracted if they become permanent.
+- Any non-screen UI (primitive/entity/section) that is app-owned is an
+  **architecture exception** and requires explicit user approval (see 2.2.1).
+
+### 2.2.1 `taskly_ui` shared surface governance (strict)
+
+Changes to `packages/taskly_ui` are governed differently depending on whether
+they change the shared public surface (API + default visuals/behavior) or are
+internal-only.
+
+See also: [TASKLY_UI_GOVERNANCE.md](TASKLY_UI_GOVERNANCE.md)
+
+Definitions:
+
+- **Shared surface change**: any change that modifies what a consuming screen
+  can import/call/configure, or any change that alters default visuals,
+  interaction behavior, accessibility semantics, or user-visible strings.
+- **Internal-only change**: refactors/bugfixes/performance work that do not
+  change the public API, default visuals, or interaction contracts.
+
+#### Requires explicit user approval
+
+The following require explicit user approval before implementation:
+
+- New shared UI: introducing a new entity/section/template intended for reuse.
+- New or expanded public API options: new constructor parameters, new enums,
+  new exported models, or new entrypoints.
+- Any breaking/shared contract change:
+  - changing default visuals (colors, spacing, typography, iconography)
+  - changing default interaction behavior (tap/gesture semantics, affordances)
+  - changing accessibility semantics (labels/roles)
+  - changing callback contracts or their meaning
+  - renames/removals that force downstream updates
+
+Approval expectations (minimum):
+
+- Impact analysis: list affected call sites and migration plan.
+- Contract statement: what is changing and what stays the same.
+- Record the decision (in the PR description or a short note under
+  `doc/architecture/`) when the change is a new shared pattern.
+
+#### Fast path allowed (no approval required)
+
+The following may proceed without explicit user approval:
+
+- Internal refactors that do not change the public surface.
+- Bugfixes that restore intended behavior without changing defaults.
+- Performance improvements with no user-visible behavior changes.
+
+#### Configuration hygiene (required)
+
+When changing or refactoring `taskly_ui` entities/sections:
+
+- Remove unused options, dead plumbing, and unused callback wiring.
+- Avoid “option creep”: do not add new configuration flags to cover one-off
+  screen needs; prefer creating a new, well-named variant model when required.
 
 ## 3) State management standard
 

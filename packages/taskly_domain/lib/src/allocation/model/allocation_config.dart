@@ -92,9 +92,6 @@ abstract class StrategySettings with _$StrategySettings {
     /// Boost given to task priority.
     @Default(1.0) double taskPriorityBoost,
 
-    /// Penalty for recency.
-    @Default(0.0) double recencyPenalty,
-
     /// Weight for start date proximity.
     @Default(0.0) double startDateProximity,
 
@@ -119,7 +116,6 @@ abstract class StrategySettings with _$StrategySettings {
         neglectInfluence: 0,
         valuePriorityWeight: 2,
         taskPriorityBoost: 0.5,
-        recencyPenalty: 0,
         startDateProximity: 0,
         overdueEmergencyMultiplier: 1,
       ),
@@ -133,7 +129,6 @@ abstract class StrategySettings with _$StrategySettings {
         neglectInfluence: 0.5,
         valuePriorityWeight: 1.5,
         taskPriorityBoost: 1,
-        recencyPenalty: 0.1,
         startDateProximity: 0.5,
         overdueEmergencyMultiplier: 1.5,
       ),
@@ -147,7 +142,6 @@ abstract class StrategySettings with _$StrategySettings {
         neglectInfluence: 0,
         valuePriorityWeight: 0.5,
         taskPriorityBoost: 2,
-        recencyPenalty: 0,
         startDateProximity: 1,
         overdueEmergencyMultiplier: 3,
       ),

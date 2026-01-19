@@ -372,6 +372,7 @@ class ProjectRecurrenceExceptionsTable extends Table {
     // Journal tables
     JournalEntries,
     // Tracker model (OPT-A): event-log + projections
+    TrackerGroups,
     TrackerDefinitions,
     TrackerPreferences,
     TrackerDefinitionChoices,

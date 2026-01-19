@@ -56,6 +56,7 @@ class IdGenerator {
     'tasks',
     'projects',
     'journal_entries',
+    'tracker_groups',
     'user_profiles',
     'pending_notifications',
     'analytics_correlations',
@@ -87,6 +88,11 @@ class IdGenerator {
 
   /// Generate random ID for a new journal entry.
   String journalEntryId() => _uuid.v4();
+
+  /// Generate random ID for a new tracker group.
+  ///
+  /// Groups are renameable, so we use UUID v4 (not deterministic by name).
+  String trackerGroupId() => _uuid.v4();
 
   /// Generate random ID for user profile.
   String userProfileId() => _uuid.v4();

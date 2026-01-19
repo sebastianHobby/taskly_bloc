@@ -31,6 +31,7 @@ class FakeIdGenerator implements IdGenerator {
   int _analyticsCorrelationIdCounter = 0;
   int _analyticsInsightIdCounter = 0;
   int _trackerEventIdCounter = 0;
+  int _trackerGroupIdCounter = 0;
 
   // Call counts for verification
   int get taskIdCallCount => _taskIdCounter;
@@ -66,6 +67,9 @@ class FakeIdGenerator implements IdGenerator {
 
   @override
   String analyticsInsightId() => 'insight-${_analyticsInsightIdCounter++}';
+
+  @override
+  String trackerGroupId() => 'tracker-group-${_trackerGroupIdCounter++}';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // V5 DETERMINISTIC IDs - Predictable based on inputs

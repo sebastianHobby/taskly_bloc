@@ -1,6 +1,23 @@
 import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 
+@DataClassName('TrackerGroupEntity')
+class TrackerGroups extends Table {
+  TextColumn get id => text().clientDefault(uuid.v4)();
+  TextColumn get userId => text().nullable()();
+
+  TextColumn get name => text().withLength(min: 1, max: 100)();
+
+  IntColumn get sortOrder => integer().clientDefault(() => 0)();
+  BoolColumn get isActive => boolean().clientDefault(() => true)();
+
+  DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
+  DateTimeColumn get updatedAt => dateTime().clientDefault(DateTime.now)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DataClassName('TrackerDefinitionEntity')
 class TrackerDefinitions extends Table {
   TextColumn get id => text().clientDefault(uuid.v4)();
@@ -8,6 +25,8 @@ class TrackerDefinitions extends Table {
 
   TextColumn get name => text().withLength(min: 1, max: 200)();
   TextColumn get description => text().nullable()();
+
+  TextColumn get groupId => text().nullable()();
 
   /// Supabase: scope in {entry, day, sleep_night}
   TextColumn get scope => text().withLength(min: 1, max: 50)();

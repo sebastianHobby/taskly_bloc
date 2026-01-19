@@ -3,10 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/core.dart' hide MyDayRitualState;
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_entities.dart';
 
 class MyDayRitualWizardPage extends StatelessWidget {
@@ -29,19 +31,32 @@ class MyDayRitualWizardPage extends StatelessWidget {
         );
       },
       child: BlocBuilder<MyDayRitualBloc, MyDayRitualState>(
-        builder: (context, state) {
-          return switch (state) {
-            MyDayRitualLoading() => const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            ),
-            MyDayRitualReady() => Scaffold(
-              body: SafeArea(
-                bottom: false,
-                child: _RitualBody(data: state),
-              ),
-              bottomNavigationBar: _RitualBottomBar(data: state),
-            ),
-          };
+        builder: (context, ritualState) {
+          return BlocBuilder<MyDayGateBloc, MyDayGateState>(
+            builder: (context, gateState) {
+              final gateMissing =
+                  gateState is MyDayGateLoaded &&
+                  (gateState.needsFocusModeSetup || gateState.needsValuesSetup);
+
+              return switch (ritualState) {
+                MyDayRitualLoading() => const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                ),
+                MyDayRitualReady() => Scaffold(
+                  body: SafeArea(
+                    bottom: false,
+                    child: _RitualBody(
+                      data: ritualState,
+                      gateState: gateState,
+                    ),
+                  ),
+                  bottomNavigationBar: gateMissing
+                      ? null
+                      : _RitualBottomBar(data: ritualState),
+                ),
+              };
+            },
+          );
         },
       ),
     );
@@ -49,9 +64,10 @@ class MyDayRitualWizardPage extends StatelessWidget {
 }
 
 class _RitualBody extends StatelessWidget {
-  const _RitualBody({required this.data});
+  const _RitualBody({required this.data, required this.gateState});
 
   final MyDayRitualReady data;
+  final MyDayGateState gateState;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +75,11 @@ class _RitualBody extends StatelessWidget {
     final curated = data.curated;
     final selected = data.selectedTaskIds;
     final dateLabel = DateFormat('EEEE, MMM d').format(DateTime.now());
+
+    final gate = gateState;
+    final gateMissing =
+        gate is MyDayGateLoaded &&
+        (gate.needsFocusModeSetup || gate.needsValuesSetup);
 
     return CustomScrollView(
       slivers: [
@@ -69,49 +90,146 @@ class _RitualBody extends StatelessWidget {
             subtitle: 'Planned items first, then curated picks.',
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          sliver: SliverToBoxAdapter(
-            child: _RitualCard(
-              focusMode: data.focusMode,
-              onChangeFocusMode: () => context.read<MyDayRitualBloc>().add(
-                const MyDayRitualFocusModeWizardRequested(),
+        if (gateMissing)
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            sliver: SliverToBoxAdapter(
+              child: _RitualGateCard(gateState: gate),
+            ),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            sliver: SliverToBoxAdapter(
+              child: _RitualCard(
+                focusMode: data.focusMode,
+                dayKeyUtc: data.dayKeyUtc,
+                planned: planned,
+                curated: curated,
+                selected: selected,
+                curatedReasons: data.curatedReasons,
+                onChangeFocusMode: () => context.read<MyDayRitualBloc>().add(
+                  const MyDayRitualFocusModeWizardRequested(),
+                ),
+                onAcceptAllPlanned: () => context.read<MyDayRitualBloc>().add(
+                  const MyDayRitualAcceptAllPlanned(),
+                ),
+                onAcceptAllCurated: () => context.read<MyDayRitualBloc>().add(
+                  const MyDayRitualAcceptAllCurated(),
+                ),
+                onSuggestedInfo: () => _showSuggestedInfo(context),
               ),
-              plannedCount: planned.length,
-              curatedCount: curated.length,
-              plannedBody: planned.isEmpty
-                  ? const _EmptyPanel(
-                      title: 'No planned tasks',
-                      description:
-                          'Nothing is due or scheduled to start today.',
-                    )
-                  : _TaskTileColumn(
-                      tasks: planned,
-                      selected: selected,
-                      reasonsByTaskId: const {},
-                    ),
-              curatedBody: curated.isEmpty
-                  ? const _EmptyPanel(
-                      title: 'No curated picks today',
-                      description: 'Your focus mode has no suggestions yet.',
-                    )
-                  : _TaskTileColumn(
-                      tasks: curated,
-                      selected: selected,
-                      reasonsByTaskId: data.curatedReasons,
-                    ),
-              onAcceptAllPlanned: () => context.read<MyDayRitualBloc>().add(
-                const MyDayRitualAcceptAllPlanned(),
-              ),
-              onAcceptAllCurated: () => context.read<MyDayRitualBloc>().add(
-                const MyDayRitualAcceptAllCurated(),
-              ),
-              onSuggestedInfo: () => _showSuggestedInfo(context),
             ),
           ),
-        ),
         const SliverToBoxAdapter(child: SizedBox(height: 16)),
       ],
+    );
+  }
+}
+
+class _RitualGateCard extends StatelessWidget {
+  const _RitualGateCard({required this.gateState});
+
+  final MyDayGateLoaded gateState;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Card(
+      elevation: 0,
+      color: cs.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Finish setup to start your day',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              gateState.descriptionText,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (gateState.needsFocusModeSetup)
+              _GateRow(
+                icon: Icons.tune,
+                label: 'Choose a focus mode',
+              ),
+            if (gateState.needsValuesSetup)
+              _GateRow(
+                icon: Icons.favorite_outline,
+                label: 'Add your first value',
+              ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => _openFocusSetup(context),
+                icon: Icon(gateState.ctaIcon),
+                label: Text(gateState.ctaLabel),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openFocusSetup(BuildContext context) {
+    if (gateState.needsFocusModeSetup) {
+      Routing.toScreenKeyWithQuery(
+        context,
+        'focus_setup',
+        queryParameters: const {'step': 'select_focus_mode'},
+      );
+      return;
+    }
+
+    if (gateState.needsValuesSetup) {
+      Routing.toScreenKeyWithQuery(
+        context,
+        'focus_setup',
+        queryParameters: const {'step': 'values'},
+      );
+    }
+  }
+}
+
+class _GateRow extends StatelessWidget {
+  const _GateRow({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: cs.primary),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -222,81 +340,12 @@ class _HeroHeader extends StatelessWidget {
   }
 }
 
-class _FocusBanner extends StatelessWidget {
-  const _FocusBanner({
-    required this.focusMode,
-    required this.onChangeFocusMode,
-  });
-
-  final FocusMode focusMode;
-  final VoidCallback onChangeFocusMode;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            _focusIcon(focusMode),
-            size: 18,
-            color: cs.onSurfaceVariant,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Value focus',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                Text(
-                  focusMode.displayName,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: onChangeFocusMode,
-            child: const Text('Change'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _focusIcon(FocusMode focusMode) {
-    return switch (focusMode) {
-      FocusMode.intentional => Icons.gps_fixed,
-      FocusMode.sustainable => Icons.balance,
-      FocusMode.responsive => Icons.bolt,
-      FocusMode.personalized => Icons.tune,
-    };
-  }
-}
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({
     required this.title,
     required this.actionLabel,
     required this.onAction,
     this.stepLabel,
-    this.onInfo,
     this.helperText,
   });
 
@@ -304,7 +353,6 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final String actionLabel;
   final VoidCallback onAction;
-  final VoidCallback? onInfo;
   final String? helperText;
 
   @override
@@ -337,12 +385,6 @@ class _SectionHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              if (onInfo != null)
-                IconButton(
-                  icon: const Icon(Icons.info_outline, size: 18),
-                  onPressed: onInfo,
-                  tooltip: 'Why these picks?',
-                ),
               TextButton(
                 onPressed: onAction,
                 child: Text(
@@ -371,32 +413,101 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _RitualCard extends StatelessWidget {
+class _RitualCard extends StatefulWidget {
   const _RitualCard({
     required this.focusMode,
+    required this.dayKeyUtc,
+    required this.planned,
+    required this.curated,
+    required this.selected,
+    required this.curatedReasons,
     required this.onChangeFocusMode,
-    required this.plannedCount,
-    required this.curatedCount,
-    required this.plannedBody,
-    required this.curatedBody,
     required this.onAcceptAllPlanned,
     required this.onAcceptAllCurated,
     required this.onSuggestedInfo,
   });
 
   final FocusMode focusMode;
+  final DateTime dayKeyUtc;
+  final List<Task> planned;
+  final List<Task> curated;
+  final Set<String> selected;
+  final Map<String, String> curatedReasons;
   final VoidCallback onChangeFocusMode;
-  final int plannedCount;
-  final int curatedCount;
-  final Widget plannedBody;
-  final Widget curatedBody;
   final VoidCallback onAcceptAllPlanned;
   final VoidCallback onAcceptAllCurated;
   final VoidCallback onSuggestedInfo;
 
   @override
+  State<_RitualCard> createState() => _RitualCardState();
+}
+
+class _RitualCardState extends State<_RitualCard> {
+  static const _plannedPreviewPerGroup = 2;
+  static const _plannedPreviewTotal = 4;
+  static const _curatedPreviewCount = 4;
+
+  late bool _dueExpanded;
+  late bool _startsExpanded;
+  late bool _curatedExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _dueExpanded = widget.planned.length <= _plannedPreviewTotal;
+    _startsExpanded = widget.planned.length <= _plannedPreviewTotal;
+    _curatedExpanded = false;
+  }
+
+  @override
+  void didUpdateWidget(covariant _RitualCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.planned.length != widget.planned.length) {
+      if (widget.planned.length <= _plannedPreviewTotal) {
+        _dueExpanded = true;
+        _startsExpanded = true;
+      }
+    }
+    if (oldWidget.curated.length != widget.curated.length) {
+      if (widget.curated.length <= _curatedPreviewCount) {
+        _curatedExpanded = true;
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final plannedCount = widget.planned.length;
+    final curatedCount = widget.curated.length;
+    final today = dateOnly(widget.dayKeyUtc);
+
+    final due = <Task>[];
+    final starts = <Task>[];
+    for (final task in widget.planned) {
+      final deadline = _deadlineDateOnly(task);
+      if (deadline != null && !deadline.isAfter(today)) {
+        due.add(task);
+      } else {
+        starts.add(task);
+      }
+    }
+
+    final dueVisible = _dueExpanded
+        ? due
+        : due.take(_plannedPreviewPerGroup).toList(growable: false);
+    final startsVisible = _startsExpanded
+        ? starts
+        : starts.take(_plannedPreviewPerGroup).toList(growable: false);
+
+    final dueHasMore = due.length > _plannedPreviewPerGroup;
+    final startsHasMore = starts.length > _plannedPreviewPerGroup;
+
+    final curatedVisible = _curatedExpanded
+        ? widget.curated
+        : widget.curated.take(_curatedPreviewCount).toList(growable: false);
+    final curatedHasMore = widget.curated.length > _curatedPreviewCount;
+
     return Card(
       elevation: 0,
       color: cs.surfaceContainerLow,
@@ -404,40 +515,217 @@ class _RitualCard extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-              child: _FocusBanner(
-                focusMode: focusMode,
-                onChangeFocusMode: onChangeFocusMode,
-              ),
-            ),
             _SectionHeader(
               stepLabel: 'Step 1 · Planned',
-              title: 'Planned for ${focusMode.displayName} · $plannedCount',
+              title: 'Planned · $plannedCount',
               actionLabel: 'Accept all planned',
               helperText: plannedCount == 0
                   ? null
                   : 'Start with planned or time‑sensitive.',
-              onAction: onAcceptAllPlanned,
+              onAction: widget.onAcceptAllPlanned,
             ),
-            plannedBody,
+            if (plannedCount == 0)
+              const _EmptyPanel(
+                title: 'No planned tasks',
+                description: 'Nothing is due or scheduled to start today.',
+              )
+            else
+              Column(
+                children: [
+                  if (due.isNotEmpty) ...[
+                    _SubsectionHeader(
+                      title: 'Overdue & due',
+                      count: due.length,
+                    ),
+                    _TaskTileColumn(
+                      tasks: dueVisible,
+                      selected: widget.selected,
+                      reasonTextByTaskId: const <String, String>{},
+                    ),
+                    if (dueHasMore)
+                      _ShowMoreRow(
+                        isExpanded: _dueExpanded,
+                        remainingCount: due.length - dueVisible.length,
+                        totalCount: due.length,
+                        labelExpanded: 'Show fewer',
+                        labelCollapsed: 'Show all due items',
+                        onPressed: () =>
+                            setState(() => _dueExpanded = !_dueExpanded),
+                      ),
+                  ],
+                  if (starts.isNotEmpty) ...[
+                    _SubsectionHeader(
+                      title: 'Starts today',
+                      count: starts.length,
+                    ),
+                    _TaskTileColumn(
+                      tasks: startsVisible,
+                      selected: widget.selected,
+                      reasonTextByTaskId: const <String, String>{},
+                    ),
+                    if (startsHasMore)
+                      _ShowMoreRow(
+                        isExpanded: _startsExpanded,
+                        remainingCount: starts.length - startsVisible.length,
+                        totalCount: starts.length,
+                        labelExpanded: 'Show fewer',
+                        labelCollapsed: 'Show all starts',
+                        onPressed: () =>
+                            setState(() => _startsExpanded = !_startsExpanded),
+                      ),
+                  ],
+                ],
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Divider(color: cs.outlineVariant),
             ),
-            _SectionHeader(
-              stepLabel: 'Step 2 · Suggested',
-              title: 'Suggested for ${focusMode.displayName} · $curatedCount',
-              actionLabel: 'Accept all picks',
-              helperText: curatedCount == 0
-                  ? null
-                  : 'Based on values + focus mode.',
-              onAction: onAcceptAllCurated,
-              onInfo: onSuggestedInfo,
+            _SuggestedHeader(
+              count: curatedCount,
+              focusMode: widget.focusMode,
+              onChangeFocusMode: widget.onChangeFocusMode,
+              onAcceptAllCurated: widget.onAcceptAllCurated,
+              onSuggestedInfo: widget.onSuggestedInfo,
             ),
-            curatedBody,
+            if (curatedCount == 0)
+              const _EmptyPanel(
+                title: 'No curated picks today',
+                description: 'Your focus mode has no suggestions yet.',
+              )
+            else
+              Column(
+                children: [
+                  _TaskTileColumn(
+                    tasks: curatedVisible,
+                    selected: widget.selected,
+                    reasonTextByTaskId: widget.curatedReasons,
+                  ),
+                  if (curatedHasMore)
+                    _ShowMoreRow(
+                      isExpanded: _curatedExpanded,
+                      remainingCount:
+                          widget.curated.length - curatedVisible.length,
+                      totalCount: widget.curated.length,
+                      labelExpanded: 'Show fewer',
+                      labelCollapsed: 'Show all picks',
+                      onPressed: () =>
+                          setState(() => _curatedExpanded = !_curatedExpanded),
+                    ),
+                ],
+              ),
           ],
         ),
+      ),
+    );
+  }
+
+  DateTime? _deadlineDateOnly(Task task) {
+    final raw = task.occurrence?.deadline ?? task.deadlineDate;
+    return dateOnlyOrNull(raw);
+  }
+}
+
+class _SubsectionHeader extends StatelessWidget {
+  const _SubsectionHeader({required this.title, required this.count});
+
+  final String title;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '$title · $count',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestedHeader extends StatelessWidget {
+  const _SuggestedHeader({
+    required this.count,
+    required this.focusMode,
+    required this.onChangeFocusMode,
+    required this.onAcceptAllCurated,
+    required this.onSuggestedInfo,
+  });
+
+  final int count;
+  final FocusMode focusMode;
+  final VoidCallback onChangeFocusMode;
+  final VoidCallback onAcceptAllCurated;
+  final VoidCallback onSuggestedInfo;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Step 2 · Suggested',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Suggested · $count',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.info_outline, size: 18),
+                onPressed: onSuggestedInfo,
+                tooltip: 'Why these picks?',
+              ),
+              TextButton(
+                onPressed: onChangeFocusMode,
+                child: Text(focusMode.displayName),
+              ),
+              TextButton(
+                onPressed: onAcceptAllCurated,
+                child: Text(
+                  'Accept all picks',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (count > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Based on values + focus mode.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -447,12 +735,12 @@ class _TaskTileColumn extends StatelessWidget {
   const _TaskTileColumn({
     required this.tasks,
     required this.selected,
-    required this.reasonsByTaskId,
+    required this.reasonTextByTaskId,
   });
 
   final List<Task> tasks;
   final Set<String> selected;
-  final Map<String, List<String>> reasonsByTaskId;
+  final Map<String, String> reasonTextByTaskId;
 
   @override
   Widget build(BuildContext context) {
@@ -462,9 +750,53 @@ class _TaskTileColumn extends StatelessWidget {
           _TaskTileRow(
             task: task,
             selected: selected.contains(task.id),
-            reasons: reasonsByTaskId[task.id] ?? const <String>[],
+            reasonText: reasonTextByTaskId[task.id],
           ),
       ],
+    );
+  }
+}
+
+class _ShowMoreRow extends StatelessWidget {
+  const _ShowMoreRow({
+    required this.isExpanded,
+    required this.remainingCount,
+    required this.totalCount,
+    required this.labelExpanded,
+    required this.labelCollapsed,
+    required this.onPressed,
+  });
+
+  final bool isExpanded;
+  final int remainingCount;
+  final int totalCount;
+  final String labelExpanded;
+  final String labelCollapsed;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final label = isExpanded
+        ? labelExpanded
+        : remainingCount > 0
+        ? 'Show $remainingCount more · $labelCollapsed ($totalCount)'
+        : '$labelCollapsed ($totalCount)';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton(
+          onPressed: onPressed,
+          child: Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -473,12 +805,12 @@ class _TaskTileRow extends StatelessWidget {
   const _TaskTileRow({
     required this.task,
     required this.selected,
-    required this.reasons,
+    required this.reasonText,
   });
 
   final Task task;
   final bool selected;
-  final List<String> reasons;
+  final String? reasonText;
 
   @override
   Widget build(BuildContext context) {
@@ -494,7 +826,14 @@ class _TaskTileRow extends StatelessWidget {
       model: model,
       onTap: () => _toggleSelection(context),
       onToggleCompletion: null,
-      titlePrefix: _ReasonBadges(reasons: reasons),
+      subtitle: reasonText == null
+          ? null
+          : Text(
+              reasonText!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
       trailing: _SelectPill(
         selected: selected,
         onPressed: () => _toggleSelection(context),
@@ -552,42 +891,6 @@ class _SelectPill extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ReasonBadges extends StatelessWidget {
-  const _ReasonBadges({required this.reasons});
-
-  final List<String> reasons;
-
-  @override
-  Widget build(BuildContext context) {
-    if (reasons.isEmpty) return const SizedBox.shrink();
-
-    final scheme = Theme.of(context).colorScheme;
-
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        for (final reason in reasons)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: scheme.outlineVariant),
-            ),
-            child: Text(
-              reason,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

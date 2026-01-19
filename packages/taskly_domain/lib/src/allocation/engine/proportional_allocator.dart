@@ -28,7 +28,6 @@ class ProportionalAllocator implements AllocationStrategy {
     final tasks = parameters.tasks;
     final categories = parameters.categories;
     final totalLimit = parameters.maxTasks;
-    final nowUtc = parameters.nowUtc;
     final todayDayKeyUtc = parameters.todayDayKeyUtc;
 
     final allocatedTasks = <AllocatedTask>[];
@@ -131,7 +130,6 @@ class ProportionalAllocator implements AllocationStrategy {
         (a, b) =>
             _taskScore(
               task: b,
-              nowUtc: nowUtc,
               todayDayKeyUtc: todayDayKeyUtc,
               categoryWeight: categoryWeights[categoryId] ?? 0.0,
               totalWeight: totalWeight,
@@ -139,7 +137,6 @@ class ProportionalAllocator implements AllocationStrategy {
             ).compareTo(
               _taskScore(
                 task: a,
-                nowUtc: nowUtc,
                 todayDayKeyUtc: todayDayKeyUtc,
                 categoryWeight: categoryWeights[categoryId] ?? 0.0,
                 totalWeight: totalWeight,
@@ -157,11 +154,18 @@ class ProportionalAllocator implements AllocationStrategy {
       final tasksToAllocate = availableTasks.take(allocation).toList();
 
       for (var i = 0; i < tasksToAllocate.length; i++) {
+        final task = tasksToAllocate[i];
         allocatedTasks.add(
           AllocatedTask(
-            task: tasksToAllocate[i],
+            task: task,
             qualifyingValueId: categoryId,
             allocationScore: categoryWeights[categoryId] ?? 0.0,
+            reasonCodes: _buildReasonCodes(
+              task: task,
+              todayDayKeyUtc: todayDayKeyUtc,
+              urgencyThresholdDays: parameters.taskUrgencyThresholdDays,
+              taskPriorityBoost: parameters.taskPriorityBoost,
+            ),
           ),
         );
       }
@@ -225,7 +229,6 @@ class ProportionalAllocator implements AllocationStrategy {
 
   double _taskScore({
     required Task task,
-    required DateTime nowUtc,
     required DateTime todayDayKeyUtc,
     required double categoryWeight,
     required double totalWeight,
@@ -260,12 +263,30 @@ class ProportionalAllocator implements AllocationStrategy {
       taskPriorityBoost: parameters.taskPriorityBoost,
     );
 
-    score *= AllocationScoring.recencyMultiplier(
-      task: task,
-      now: nowUtc,
-      recencyPenalty: parameters.recencyPenalty,
-    );
-
     return score;
+  }
+
+  List<AllocationReasonCode> _buildReasonCodes({
+    required Task task,
+    required DateTime todayDayKeyUtc,
+    required int urgencyThresholdDays,
+    required double taskPriorityBoost,
+  }) {
+    final codes = <AllocationReasonCode>[
+      AllocationReasonCode.valueAlignment,
+    ];
+
+    final isUrgent = _isUrgent(
+      task,
+      urgencyThresholdDays,
+      todayDayKeyUtc: todayDayKeyUtc,
+    );
+    if (isUrgent) {
+      codes.add(AllocationReasonCode.urgency);
+    } else if (task.priority != null && taskPriorityBoost > 1) {
+      codes.add(AllocationReasonCode.priority);
+    }
+
+    return codes;
   }
 }

@@ -45,6 +45,11 @@ class AppSeedPalettes {
       seedColor: Color(0xFF4F46E5),
     ),
     ThemePaletteOption(
+      id: 'calm_indigo',
+      name: 'Calm Indigo',
+      seedColor: Color(0xFF3F51B5),
+    ),
+    ThemePaletteOption(
       id: 'focused_sky',
       name: 'Sky',
       seedColor: Color(0xFF0EA5E9),
@@ -55,9 +60,19 @@ class AppSeedPalettes {
       seedColor: Color(0xFF14B8A6),
     ),
     ThemePaletteOption(
+      id: 'fresh_sage',
+      name: 'Fresh Sage',
+      seedColor: Color(0xFF4CAF50),
+    ),
+    ThemePaletteOption(
       id: 'focused_amber',
       name: 'Amber',
       seedColor: Color(0xFFF59E0B),
+    ),
+    ThemePaletteOption(
+      id: 'warm_slate',
+      name: 'Warm Slate',
+      seedColor: Color(0xFF546E7A),
     ),
   ];
 }

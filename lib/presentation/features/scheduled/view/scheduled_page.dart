@@ -30,7 +30,12 @@ class ScheduledPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => ScheduledScreenBloc()),
+        BlocProvider(
+          create: (_) => ScheduledScreenBloc(
+            taskRepository: getIt(),
+            projectRepository: getIt(),
+          ),
+        ),
         BlocProvider(
           create: (_) => ScheduledFeedBloc(
             scheduledOccurrencesService: getIt(),
@@ -117,6 +122,33 @@ class _ScheduledViewState extends State<_ScheduledView> {
                   projectId: null,
                   showDragHandle: true,
                 );
+              case ScheduledBulkDeadlineRescheduled(
+                :final taskCount,
+                :final projectCount,
+                :final newDeadlineDay,
+              ):
+                final formatted = MaterialLocalizations.of(
+                  context,
+                ).formatMediumDate(newDeadlineDay);
+
+                final parts = <String>[];
+                if (taskCount > 0) {
+                  parts.add(taskCount == 1 ? '1 task' : '$taskCount tasks');
+                }
+                if (projectCount > 0) {
+                  parts.add(
+                    projectCount == 1 ? '1 project' : '$projectCount projects',
+                  );
+                }
+                final label = parts.isEmpty ? '0 items' : parts.join(' + ');
+                final message = 'Rescheduled $label to $formatted';
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(message)));
+              case ScheduledShowMessage(:final message):
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(message)));
             }
 
             if (context.mounted) {
@@ -225,9 +257,131 @@ class _ScheduledAgenda extends StatelessWidget {
   final ScrollController scrollController;
   final Key todayAnchorKey;
 
+  static ({List<String> taskIds, List<String> projectIds})
+  _extractOverdueEntityIds(
+    List<ListRowUiModel> rows,
+    DateTime today,
+  ) {
+    final taskIds = <String>{};
+    final projectIds = <String>{};
+    var inOverdue = false;
+
+    for (final row in rows) {
+      if (row is BucketHeaderRowUiModel) {
+        inOverdue = row.bucketKey == 'overdue';
+        continue;
+      }
+
+      if (!inOverdue) continue;
+      if (row is! ScheduledEntityRowUiModel) continue;
+
+      final occurrence = row.occurrence;
+      final todayDay = DateTime(today.year, today.month, today.day);
+
+      switch (occurrence.ref.entityType) {
+        case EntityType.task:
+          final task = occurrence.task;
+          if (task == null) continue;
+          final deadline = task.deadlineDate;
+          if (deadline == null) continue;
+          final deadlineDay = DateTime(
+            deadline.year,
+            deadline.month,
+            deadline.day,
+          );
+          if (deadlineDay.isBefore(todayDay)) {
+            taskIds.add(task.id);
+          }
+        case EntityType.project:
+          final project = occurrence.project;
+          if (project == null) continue;
+          final deadline = project.deadlineDate;
+          if (deadline == null) continue;
+          final deadlineDay = DateTime(
+            deadline.year,
+            deadline.month,
+            deadline.day,
+          );
+          if (deadlineDay.isBefore(todayDay)) {
+            projectIds.add(project.id);
+          }
+        case EntityType.value:
+          continue;
+      }
+    }
+
+    return (
+      taskIds: taskIds.toList(growable: false),
+      projectIds: projectIds.toList(growable: false),
+    );
+  }
+
+  static Future<DateTime?> _showRescheduleOverdueSheet(
+    BuildContext context, {
+    required int itemCount,
+    required DateTime today,
+  }) async {
+    final todayDay = DateTime(today.year, today.month, today.day);
+    final tomorrowDay = todayDay.add(const Duration(days: 1));
+
+    return showModalBottomSheet<DateTime>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text(
+                  itemCount == 1
+                      ? 'Reschedule 1 overdue item'
+                      : 'Reschedule $itemCount overdue items',
+                ),
+                subtitle: const Text('Pick a new deadline date.'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.today),
+                title: const Text('Today'),
+                onTap: () => Navigator.of(sheetContext).pop(todayDay),
+              ),
+              ListTile(
+                leading: const Icon(Icons.calendar_today),
+                title: const Text('Tomorrow'),
+                onTap: () => Navigator.of(sheetContext).pop(tomorrowDay),
+              ),
+              ListTile(
+                leading: const Icon(Icons.event),
+                title: const Text('Pick a date…'),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: sheetContext,
+                    initialDate: tomorrowDay,
+                    firstDate: todayDay,
+                    lastDate: todayDay.add(const Duration(days: 365)),
+                  );
+                  if (picked == null) return;
+                  if (!sheetContext.mounted) return;
+                  Navigator.of(sheetContext).pop(
+                    DateTime(picked.year, picked.month, picked.day),
+                  );
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final agendaRows = <TasklyAgendaRowModel>[];
+    final overdueIds = _extractOverdueEntityIds(rows, today);
+    final overdueTaskIds = overdueIds.taskIds;
+    final overdueProjectIds = overdueIds.projectIds;
+    final overdueCount = overdueTaskIds.length + overdueProjectIds.length;
 
     for (final row in rows) {
       switch (row) {
@@ -236,6 +390,30 @@ class _ScheduledAgenda extends StatelessWidget {
           :final title,
           :final isCollapsed,
         ):
+          final action = bucketKey == 'overdue' && overdueCount > 0
+              ? TasklyAgendaBucketHeaderAction(
+                  label: 'Reschedule all',
+                  icon: Icons.event,
+                  tooltip: 'Reschedule overdue items',
+                  onPressed: () async {
+                    final newDeadlineDay = await _showRescheduleOverdueSheet(
+                      context,
+                      itemCount: overdueCount,
+                      today: today,
+                    );
+                    if (newDeadlineDay == null) return;
+                    if (!context.mounted) return;
+                    context.read<ScheduledScreenBloc>().add(
+                      ScheduledRescheduleEntitiesDeadlineRequested(
+                        taskIds: overdueTaskIds,
+                        projectIds: overdueProjectIds,
+                        newDeadlineDay: newDeadlineDay,
+                      ),
+                    );
+                  },
+                )
+              : null;
+
           agendaRows.add(
             TasklyAgendaBucketHeaderRowModel(
               key: row.rowKey,
@@ -243,6 +421,7 @@ class _ScheduledAgenda extends StatelessWidget {
               bucketKey: bucketKey,
               title: title,
               isCollapsed: isCollapsed,
+              action: action,
               onTap: () => context.read<ScheduledFeedBloc>().add(
                 ScheduledBucketCollapseToggled(bucketKey: bucketKey),
               ),
@@ -255,6 +434,9 @@ class _ScheduledAgenda extends StatelessWidget {
               depth: row.depth,
               day: date,
               title: title,
+              dueCount: row.dueCount,
+              startsCount: row.startsCount,
+              ongoingCount: row.ongoingCount,
               isTodayAnchor: _isSameDay(date, today),
             ),
           );

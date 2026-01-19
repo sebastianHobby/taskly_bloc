@@ -152,9 +152,8 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     final latestResult = _latestResult;
     if (latestResult == null) return;
 
-    final today = _normalizeDate(latestResult.rangeStartDay);
-    final todayBucketKey = _bucketKeyForDate(today, today: today);
-    _collapsedBuckets[todayBucketKey] = false;
+    // Ensure the section containing today's header is visible.
+    _collapsedBuckets['overdue'] = false;
 
     _scrollToTodaySignal++;
     emit(
@@ -197,91 +196,71 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
       }
     }
 
-    final itemsByDate = <DateTime, List<ScheduledOccurrence>>{};
+    // Date-first layout: each date groups by schedule-state
+    // (Due/Starts/Ongoing). The UI shows a compact per-date summary instead of
+    // tag header rows.
+    // SCHED-23: omit empty sections entirely.
+    final normalizedToday = _normalizeDate(result.rangeStartDay);
+    final rangeStart = normalizedToday;
+    final rangeEnd = _normalizeDate(result.rangeEndDay);
+
+    final itemsByDateAndTag =
+        <DateTime, Map<ScheduledDateTag, List<ScheduledOccurrence>>>{};
+
     for (final occurrence in result.occurrences) {
       final day = _normalizeDate(occurrence.ref.localDay);
-      (itemsByDate[day] ??= <ScheduledOccurrence>[]).add(occurrence);
+      if (day.isBefore(rangeStart) || day.isAfter(rangeEnd)) continue;
+
+      final tag = occurrence.ref.tag;
+      final byTag = itemsByDateAndTag[day] ??=
+          <ScheduledDateTag, List<ScheduledOccurrence>>{
+            ScheduledDateTag.due: <ScheduledOccurrence>[],
+            ScheduledDateTag.starts: <ScheduledOccurrence>[],
+            ScheduledDateTag.ongoing: <ScheduledOccurrence>[],
+          };
+      (byTag[tag] ??= <ScheduledOccurrence>[]).add(occurrence);
     }
 
-    final groups = _generateDateGroups(
-      itemsByDate: itemsByDate,
-      today: result.rangeStartDay,
-      nearTermDays: _nearTermDays,
+    // Near-term dates first (today..today+_nearTermDays) where there are items,
+    // then remaining future dates.
+    final datesWithItems = itemsByDateAndTag.keys.toList()..sort();
+    final nearTermMax = normalizedToday.add(
+      const Duration(days: _nearTermDays),
     );
-
-    final distinctBucketKeys = groups
-        .map((g) => g.bucketKey)
-        .toSet()
+    final nearTermDates = datesWithItems
+        .where((d) => !d.isAfter(nearTermMax))
         .toList(growable: false);
-    final useBuckets = distinctBucketKeys.length >= 2;
+    final laterDates = datesWithItems
+        .where((d) => d.isAfter(nearTermMax))
+        .toList(growable: false);
+    final orderedDates = <DateTime>[...nearTermDates, ...laterDates];
 
-    String? lastBucketKey;
-    var isCurrentBucketCollapsed = false;
-    for (final group in groups) {
-      final bucketKey = group.bucketKey;
-      if (useBuckets && bucketKey != lastBucketKey) {
-        isCurrentBucketCollapsed = _collapsedBuckets[bucketKey] ?? false;
-        rows.add(
-          BucketHeaderRowUiModel(
-            rowKey: RowKey.v1(
-              screen: 'scheduled',
-              rowType: 'bucket',
-              params: <String, String>{'bucket': bucketKey},
-            ),
-            depth: 0,
-            bucketKey: bucketKey,
-            title: _bucketTitle(bucketKey),
-            isCollapsed: isCurrentBucketCollapsed,
-          ),
-        );
-        lastBucketKey = bucketKey;
-      }
-
-      if (useBuckets && isCurrentBucketCollapsed) continue;
+    for (final date in orderedDates) {
+      final byTag = itemsByDateAndTag[date];
+      if (byTag == null) continue;
 
       rows.add(
         DateHeaderRowUiModel(
           rowKey: RowKey.v1(
             screen: 'scheduled',
             rowType: 'date_header',
-            params: <String, String>{
-              'date': _dateKey(group.date),
-              if (useBuckets) 'bucket': bucketKey,
-            },
+            params: <String, String>{'date': _dateKey(date)},
           ),
-          depth: 1,
-          date: group.date,
-          title: group.formattedHeader,
+          depth: 0,
+          date: date,
+          title: _formatHeader(date),
         ),
       );
 
-      if (group.isEmpty) {
-        rows.add(
-          EmptyDayRowUiModel(
-            rowKey: RowKey.v1(
-              screen: 'scheduled',
-              rowType: 'empty_day',
-              params: <String, String>{
-                'date': _dateKey(group.date),
-                if (useBuckets) 'bucket': bucketKey,
-              },
-            ),
-            depth: 2,
-            date: group.date,
-          ),
-        );
-        continue;
-      }
+      final allItems = <ScheduledOccurrence>[
+        ...(byTag[ScheduledDateTag.due] ?? const <ScheduledOccurrence>[]),
+        ...(byTag[ScheduledDateTag.starts] ?? const <ScheduledOccurrence>[]),
+        ...(byTag[ScheduledDateTag.ongoing] ?? const <ScheduledOccurrence>[]),
+      ];
+      allItems.sort(_compareOccurrences);
 
-      final itemsSorted = [...group.items]..sort(_compareOccurrences);
-      for (final item in itemsSorted) {
-        rows.add(
-          _itemRow(
-            item,
-            bucketKey: useBuckets ? bucketKey : null,
-            date: group.date,
-          ),
-        );
+      for (final item in allItems) {
+        rows.add(_itemRow(item, bucketKey: null, date: date));
       }
     }
 
@@ -294,9 +273,6 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     required DateTime? date,
   }) {
     final entityId = item.ref.entityId;
-    final tag = item.ref.tag;
-    final rowType = item.ref.entityType == EntityType.task ? 'task' : 'project';
-
     return ScheduledEntityRowUiModel(
       rowKey: RowKey.v1(
         screen: 'scheduled',
@@ -308,9 +284,6 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
           'bucket': ?bucketKey,
         },
       ),
-      depth: date == null ? 1 : 2,
-      occurrence: item,
-    );
   }
 
   int _compareOccurrences(ScheduledOccurrence a, ScheduledOccurrence b) {
@@ -321,11 +294,6 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
         ? (b.task?.isPinned ?? false)
         : (b.project?.isPinned ?? false);
     if (aPinned != bPinned) return aPinned ? -1 : 1;
-
-    // Tasks before projects.
-    if (a.ref.entityType != b.ref.entityType) {
-      return a.ref.entityType == EntityType.task ? -1 : 1;
-    }
 
     final aTagRank = _tagRank(a.ref.tag);
     final bTagRank = _tagRank(b.ref.tag);
@@ -347,72 +315,6 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     };
   }
 
-  List<_ScheduledDateGroup> _generateDateGroups({
-    required Map<DateTime, List<ScheduledOccurrence>> itemsByDate,
-    required DateTime today,
-    required int nearTermDays,
-  }) {
-    final groups = <_ScheduledDateGroup>[];
-
-    final normalizedToday = _normalizeDate(today);
-
-    for (var i = 0; i <= nearTermDays; i++) {
-      final date = normalizedToday.add(Duration(days: i));
-      final items = itemsByDate[_normalizeDate(date)] ?? const [];
-      groups.add(
-        _ScheduledDateGroup(
-          date: date,
-          bucketKey: _bucketKeyForDate(date, today: normalizedToday),
-          formattedHeader: _formatHeader(date),
-          items: items,
-          isEmpty: items.isEmpty,
-        ),
-      );
-    }
-
-    final futureDates =
-        itemsByDate.keys
-            .where((d) => d.isAfter(today.add(Duration(days: nearTermDays))))
-            .toList()
-          ..sort();
-
-    for (final date in futureDates) {
-      groups.add(
-        _ScheduledDateGroup(
-          date: date,
-          bucketKey: _bucketKeyForDate(date, today: normalizedToday),
-          formattedHeader: _formatHeader(date),
-          items: itemsByDate[date] ?? const [],
-          isEmpty: false,
-        ),
-      );
-    }
-
-    return groups;
-  }
-
-  String _bucketKeyForDate(DateTime date, {required DateTime today}) {
-    // Sunday-start week boundaries (Sunday..Saturday).
-    final startOfThisWeek = today.subtract(Duration(days: today.weekday % 7));
-    final endOfThisWeek = startOfThisWeek.add(const Duration(days: 6));
-    final endOfNextWeek = endOfThisWeek.add(const Duration(days: 7));
-
-    final normalizedDate = _normalizeDate(date);
-    if (!normalizedDate.isAfter(endOfThisWeek)) return 'this_week';
-    if (!normalizedDate.isAfter(endOfNextWeek)) return 'next_week';
-    return 'later';
-  }
-
-  String _bucketTitle(String bucketKey) {
-    return switch (bucketKey) {
-      'this_week' => 'This Week',
-      'next_week' => 'Next Week',
-      'later' => 'Later',
-      'overdue' => 'Overdue',
-      _ => bucketKey,
-    };
-  }
-
   String _formatHeader(DateTime date) {
     return DateFormat('E, MMM d').format(date);
   }
@@ -427,20 +329,4 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     final d = date.day.toString().padLeft(2, '0');
     return '$y-$m-$d';
   }
-}
-
-class _ScheduledDateGroup {
-  const _ScheduledDateGroup({
-    required this.date,
-    required this.bucketKey,
-    required this.formattedHeader,
-    required this.items,
-    required this.isEmpty,
-  });
-
-  final DateTime date;
-  final String bucketKey;
-  final String formattedHeader;
-  final List<ScheduledOccurrence> items;
-  final bool isEmpty;
 }

@@ -29,10 +29,30 @@ abstract class AllocatedTask with _$AllocatedTask {
     required String qualifyingValueId, // Value that qualified this task
     required double allocationScore,
 
+    /// Reasons explaining why this task was selected.
+    ///
+    /// Ordered by priority for UI display.
+    @Default(<AllocationReasonCode>[]) List<AllocationReasonCode> reasonCodes,
+
     /// True if this task was included due to urgency override (Firefighter mode)
     /// rather than value-based allocation.
     @Default(false) bool isUrgentOverride,
   }) = _AllocatedTask;
+}
+
+/// Reasons explaining why a task was selected by allocation.
+enum AllocationReasonCode {
+  /// Task aligns with a value (explicit or inherited).
+  valueAlignment,
+
+  /// Task supports a value that has been neglected.
+  neglectBalance,
+
+  /// Task is urgent due to deadline proximity or being overdue.
+  urgency,
+
+  /// Task is high priority and received a priority boost.
+  priority,
 }
 
 /// Task that was excluded from allocation

@@ -23,6 +23,8 @@ final class JournalTodayLoaded extends JournalTodayState {
     required this.eventsByEntryId,
     required this.definitionById,
     required this.moodTrackerId,
+    required this.moodWeek,
+    required this.moodStreakDays,
   });
 
   final List<TrackerDefinition> pinnedTrackers;
@@ -30,6 +32,8 @@ final class JournalTodayLoaded extends JournalTodayState {
   final Map<String, List<TrackerEvent>> eventsByEntryId;
   final Map<String, TrackerDefinition> definitionById;
   final String? moodTrackerId;
+  final List<JournalMoodDay> moodWeek;
+  final int moodStreakDays;
 }
 
 final class JournalTodayError extends JournalTodayState {
@@ -67,6 +71,9 @@ class JournalTodayBloc extends Cubit<JournalTodayState> {
         .add(const Duration(days: 1))
         .subtract(const Duration(microseconds: 1));
 
+    final weekStartUtc = startUtc.subtract(const Duration(days: 6));
+    final weekEndUtc = endUtc;
+
     final defs$ = _repository.watchTrackerDefinitions();
     final prefs$ = _repository.watchTrackerPreferences();
     final entries$ = _repository.watchJournalEntriesByQuery(
@@ -76,12 +83,17 @@ class JournalTodayBloc extends Cubit<JournalTodayState> {
       range: DateRange(start: startUtc, end: endUtc),
       anchorType: 'entry',
     );
+    final weekEvents$ = _repository.watchTrackerEvents(
+      range: DateRange(start: weekStartUtc, end: weekEndUtc),
+      anchorType: 'entry',
+    );
 
     _sub =
-        Rx.combineLatest4<
+        Rx.combineLatest5<
               List<TrackerDefinition>,
               List<TrackerPreference>,
               List<JournalEntry>,
+              List<TrackerEvent>,
               List<TrackerEvent>,
               JournalTodayLoaded
             >(
@@ -89,7 +101,8 @@ class JournalTodayBloc extends Cubit<JournalTodayState> {
               prefs$,
               entries$,
               events$,
-              (defs, prefs, entries, events) {
+              weekEvents$,
+              (defs, prefs, entries, events, weekEvents) {
                 final definitionById = {
                   for (final d in defs) d.id: d,
                 };
@@ -125,12 +138,21 @@ class JournalTodayBloc extends Cubit<JournalTodayState> {
                   (eventsByEntryId[entryId] ??= <TrackerEvent>[]).add(e);
                 }
 
+                final moodWeek = _buildMoodWeek(
+                  weekEvents: weekEvents,
+                  moodTrackerId: moodTrackerId,
+                  weekStartUtc: weekStartUtc,
+                );
+                final moodStreakDays = _countMoodStreak(moodWeek);
+
                 return JournalTodayLoaded(
                   pinnedTrackers: pinnedTrackers,
                   entries: entries,
                   eventsByEntryId: eventsByEntryId,
                   definitionById: definitionById,
                   moodTrackerId: moodTrackerId,
+                  moodWeek: moodWeek,
+                  moodStreakDays: moodStreakDays,
                 );
               },
             )
@@ -141,4 +163,49 @@ class JournalTodayBloc extends Cubit<JournalTodayState> {
               },
             );
   }
+
+  List<JournalMoodDay> _buildMoodWeek({
+    required List<TrackerEvent> weekEvents,
+    required String? moodTrackerId,
+    required DateTime weekStartUtc,
+  }) {
+    final moodEventByDay = <DateTime, TrackerEvent>{};
+    if (moodTrackerId != null) {
+      for (final event in weekEvents) {
+        if (event.trackerId != moodTrackerId) continue;
+        if (event.value is! int) continue;
+        final dayKeyUtc = dateOnly(event.occurredAt.toUtc());
+        final existing = moodEventByDay[dayKeyUtc];
+        if (existing == null ||
+            existing.occurredAt.isBefore(event.occurredAt)) {
+          moodEventByDay[dayKeyUtc] = event;
+        }
+      }
+    }
+
+    return List<JournalMoodDay>.generate(7, (index) {
+      final dayUtc = weekStartUtc.add(Duration(days: index));
+      final event = moodEventByDay[dayUtc];
+      final mood = event == null
+          ? null
+          : MoodRating.fromValue(event.value! as int);
+      return JournalMoodDay(dayUtc: dayUtc, mood: mood);
+    }, growable: false);
+  }
+
+  int _countMoodStreak(List<JournalMoodDay> week) {
+    var streak = 0;
+    for (var i = week.length - 1; i >= 0; i--) {
+      if (week[i].mood == null) break;
+      streak += 1;
+    }
+    return streak;
+  }
+}
+
+class JournalMoodDay {
+  const JournalMoodDay({required this.dayUtc, required this.mood});
+
+  final DateTime dayUtc;
+  final MoodRating? mood;
 }

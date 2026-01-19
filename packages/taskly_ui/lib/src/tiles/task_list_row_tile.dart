@@ -10,6 +10,7 @@ class TaskListRowTile extends StatelessWidget {
     this.onToggleCompletion,
     this.trailing,
     this.titlePrefix,
+    this.subtitle,
     super.key,
   });
 
@@ -25,6 +26,9 @@ class TaskListRowTile extends StatelessWidget {
   final Widget? trailing;
 
   final Widget? titlePrefix;
+
+  /// Optional subtitle widget shown between title and meta line.
+  final Widget? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +97,10 @@ class TaskListRowTile extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: 4),
+                          subtitle!,
+                        ],
                         EntityMetaLine(model: model.meta),
                       ],
                     ),

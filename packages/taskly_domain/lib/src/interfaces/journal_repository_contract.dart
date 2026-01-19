@@ -36,13 +36,19 @@ abstract class JournalRepositoryContract {
     required DateTime date,
   });
 
-  Future<void> saveJournalEntry(JournalEntry entry, {OperationContext? context});
+  Future<void> saveJournalEntry(
+    JournalEntry entry, {
+    OperationContext? context,
+  });
 
   /// Upsert a journal entry and return the ID that was used.
   ///
   /// This is useful for workflows that need a stable entry ID to attach
   /// tracker events (e.g. mood) to the entry.
-  Future<String> upsertJournalEntry(JournalEntry entry, {OperationContext? context});
+  Future<String> upsertJournalEntry(
+    JournalEntry entry, {
+    OperationContext? context,
+  });
 
   Future<void> deleteJournalEntry(String id, {OperationContext? context});
 
@@ -79,7 +85,10 @@ abstract class JournalRepositoryContract {
     OperationContext? context,
   });
 
-  Future<void> appendTrackerEvent(TrackerEvent event, {OperationContext? context});
+  Future<void> appendTrackerEvent(
+    TrackerEvent event, {
+    OperationContext? context,
+  });
 
   /// Soft-delete a tracker definition and purge its local event/projection data.
   ///

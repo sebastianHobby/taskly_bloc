@@ -36,15 +36,11 @@ class AllocationParameters {
     this.neglectInfluence = 0.7,
     this.valuePriorityWeight = 1.0,
     this.taskPriorityBoost = 1.0,
-    this.recencyPenalty = 0.0,
     this.overdueEmergencyMultiplier = 1.0,
     this.completionsByValue = const {},
   });
 
   /// Current time (UTC).
-  ///
-  /// This is used for recency scoring and any time-based calculations that
-  /// need sub-day precision.
   final DateTime nowUtc;
 
   /// Today's home-day key (UTC midnight).
@@ -100,9 +96,6 @@ class AllocationParameters {
 
   /// Boost applied to prioritized tasks.
   final double taskPriorityBoost;
-
-  /// Penalty applied to newly-created tasks (0-1).
-  final double recencyPenalty;
 
   /// Multiplier controlling how much overdue tasks are boosted.
   final double overdueEmergencyMultiplier;
