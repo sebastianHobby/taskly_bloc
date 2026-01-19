@@ -15,7 +15,7 @@ import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
 /// Settings screen for global app configuration.
 ///

@@ -25,11 +25,12 @@ class SparklinePainter extends CustomPainter {
 
     final path = Path();
     for (var i = 0; i < data.length; i++) {
-      final x =
-          data.length > 1 ? i * size.width / (data.length - 1) : size.width / 2;
+      final x = data.length > 1
+          ? i * size.width / (data.length - 1)
+          : size.width / 2;
       final normalizedY = range > 0 ? (data[i] - minVal) / range : 0.5;
-      final y = size.height -
-          (normalizedY * size.height * 0.8 + size.height * 0.1);
+      final y =
+          size.height - (normalizedY * size.height * 0.8 + size.height * 0.1);
 
       if (i == 0) {
         path.moveTo(x, y);

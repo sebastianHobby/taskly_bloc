@@ -8,7 +8,12 @@ library;
 export 'src/catalog/taskly_catalog_types.dart';
 
 export 'src/tiles/entity_tile_models.dart'
-    show ProjectTileModel, TaskTileModel, ValueTileModel, ValueTileVariant;
+    show
+        EntityMetaLineModel,
+        ProjectTileModel,
+        TaskTileModel,
+        ValueTileModel,
+        ValueTileVariant;
 
 export 'src/tiles/task_entity_tile.dart';
 export 'src/tiles/project_entity_tile.dart';

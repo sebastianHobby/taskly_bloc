@@ -16,7 +16,7 @@ import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_b
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_form.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class ProjectEditSheetPage extends StatelessWidget {
   const ProjectEditSheetPage({

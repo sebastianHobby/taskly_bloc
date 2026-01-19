@@ -16,8 +16,8 @@ import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_ui/taskly_ui_catalog.dart';
-import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_entities.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_feed_bloc.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_screen_bloc.dart';

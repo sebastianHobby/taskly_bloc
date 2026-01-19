@@ -87,12 +87,12 @@ class _RruleFormRecurrenceChipState extends State<RruleFormRecurrenceChip> {
     final canClear = _hasValue && widget.onClear != null;
     final label = _hasValue
         ? (_label != null
-            ? Text(_label!)
-            : const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ))
+              ? Text(_label!)
+              : const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ))
         : Text(widget.emptyLabel);
 
     return InputChip(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
 /// Default icon categories used by the app.
 ///

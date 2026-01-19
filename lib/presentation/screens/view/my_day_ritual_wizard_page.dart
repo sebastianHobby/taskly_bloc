@@ -7,7 +7,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/core.dart' hide MyDayRitualState;
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_ui/taskly_ui_entities.dart';
 
 class MyDayRitualWizardPage extends StatelessWidget {
   const MyDayRitualWizardPage({super.key});
@@ -572,9 +572,20 @@ class _ReasonBadges extends StatelessWidget {
       runSpacing: 6,
       children: [
         for (final reason in reasons)
-          TasklyBadge(
-            label: reason,
-            color: scheme.secondary,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: scheme.outlineVariant),
+            ),
+            child: Text(
+              reason,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
       ],
     );

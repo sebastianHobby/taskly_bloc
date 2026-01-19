@@ -10,7 +10,7 @@ import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.d
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_domain/contracts.dart';
-import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class ValuesPage extends StatelessWidget {
   const ValuesPage({super.key});

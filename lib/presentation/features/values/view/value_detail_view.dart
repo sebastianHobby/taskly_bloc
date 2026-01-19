@@ -13,7 +13,7 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/value_form.dart';
-import 'package:taskly_ui/taskly_ui.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class ValueDetailSheetPage extends StatelessWidget {
   const ValueDetailSheetPage({
