@@ -12,6 +12,7 @@ class TaskEntityTile extends StatelessWidget {
     this.trailing = TrailingSpec.none,
     this.onTap,
     this.onToggleCompletion,
+    this.subtitle,
     this.onOverflowRequestedAt,
     super.key,
   });
@@ -24,6 +25,11 @@ class TaskEntityTile extends StatelessWidget {
 
   final VoidCallback? onTap;
   final ValueChanged<bool?>? onToggleCompletion;
+
+  /// Optional widget shown between title and meta line.
+  ///
+  /// When null, no subtitle is rendered.
+  final Widget? subtitle;
 
   /// Called when the overflow button is pressed.
   ///
@@ -39,6 +45,7 @@ class TaskEntityTile extends StatelessWidget {
       model: model,
       onTap: onTap ?? model.onTap,
       onToggleCompletion: onToggleCompletion,
+      subtitle: subtitle,
       titlePrefix: titlePrefix,
       trailing: _TrailingOverflowButton(
         trailing: trailing,

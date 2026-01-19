@@ -8,7 +8,6 @@ import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/settings.dart' as settings;
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_domain/time.dart';
 
 sealed class MyDayEvent {
   const MyDayEvent();
@@ -34,8 +33,15 @@ final class MyDayLoaded extends MyDayState {
     required this.acceptedDue,
     required this.acceptedStarts,
     required this.acceptedFocus,
-    required this.otherDueCount,
-    required this.otherStartsCount,
+    required this.dueAcceptedTotalCount,
+    required this.startsAcceptedTotalCount,
+    required this.focusAcceptedTotalCount,
+    required this.selectedTotalCount,
+    required this.missingDueCount,
+    required this.missingStartsCount,
+    required this.missingDueTasks,
+    required this.missingStartsTasks,
+    required this.todaySelectedTaskIds,
   });
 
   final MyDaySummary summary;
@@ -51,13 +57,23 @@ final class MyDayLoaded extends MyDayState {
   /// Tasks accepted from the ritual "Suggestions" section.
   final List<Task> acceptedFocus;
 
-  /// Count of items that are due/overdue but were not accepted into today's
-  /// plan (to avoid misleading "all caught up" messaging).
-  final int otherDueCount;
+  /// Total counts as persisted by the ritual (includes already-completed
+  /// accepted tasks).
+  final int dueAcceptedTotalCount;
+  final int startsAcceptedTotalCount;
+  final int focusAcceptedTotalCount;
+  final int selectedTotalCount;
 
-  /// Count of items that are starts-eligible (or due soon) but were not
-  /// accepted into today's plan.
-  final int otherStartsCount;
+  /// Count of bucket candidates that were not selected during the ritual.
+  final int missingDueCount;
+  final int missingStartsCount;
+
+  /// Tasks (from frozen ritual candidates) that were not selected.
+  final List<Task> missingDueTasks;
+  final List<Task> missingStartsTasks;
+
+  /// Full set of task ids selected for today (from ritual persistence).
+  final Set<String> todaySelectedTaskIds;
 }
 
 final class MyDayError extends MyDayState {
@@ -121,8 +137,15 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         acceptedDue: vm.acceptedDue,
         acceptedStarts: vm.acceptedStarts,
         acceptedFocus: vm.acceptedFocus,
-        otherDueCount: vm.otherDueCount,
-        otherStartsCount: vm.otherStartsCount,
+        dueAcceptedTotalCount: vm.dueAcceptedTotalCount,
+        startsAcceptedTotalCount: vm.startsAcceptedTotalCount,
+        focusAcceptedTotalCount: vm.focusAcceptedTotalCount,
+        selectedTotalCount: vm.selectedTotalCount,
+        missingDueCount: vm.missingDueCount,
+        missingStartsCount: vm.missingStartsCount,
+        missingDueTasks: vm.missingDueTasks,
+        missingStartsTasks: vm.missingStartsTasks,
+        todaySelectedTaskIds: vm.todaySelectedTaskIds,
       ),
     );
   }
@@ -284,27 +307,25 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
       tasksById,
     );
 
-    final planned = _buildPlanned(tasks, dayKeyUtc);
-    final plannedDue = planned
-        .where((t) {
-          final d = _deadlineDateOnly(t);
-          final today = dateOnly(dayKeyUtc);
-          return d != null && !d.isAfter(today);
-        })
-        .map((t) => t.id)
-        .toSet();
-    final plannedStarts = planned
-        .where((t) {
-          final d = _deadlineDateOnly(t);
-          final today = dateOnly(dayKeyUtc);
-          return d == null || d.isAfter(today);
-        })
-        .map((t) => t.id)
-        .toSet();
+    final todaySelectedTaskIds = ritual.selectedTaskIds.toSet();
 
-    final selectedPlanIds = orderedTasks.map((t) => t.id).toSet();
-    final otherDueCount = plannedDue.difference(selectedPlanIds).length;
-    final otherStartsCount = plannedStarts.difference(selectedPlanIds).length;
+    final missingDueIds = ritual.candidateDueTaskIds
+        .where((id) => !todaySelectedTaskIds.contains(id))
+        .toList(growable: false);
+    final missingStartsIds = ritual.candidateStartsTaskIds
+        .where((id) => !todaySelectedTaskIds.contains(id))
+        .toList(growable: false);
+
+    final missingDueTasks = missingDueIds
+        .map((id) => tasksById[id])
+        .whereType<Task>()
+        .where((t) => !_isCompleted(t))
+        .toList(growable: false);
+    final missingStartsTasks = missingStartsIds
+        .map((id) => tasksById[id])
+        .whereType<Task>()
+        .where((t) => !_isCompleted(t))
+        .toList(growable: false);
 
     final qualifyingByTaskId = {
       for (final task in orderedTasks) task.id: task.effectivePrimaryValueId,
@@ -317,8 +338,15 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
       acceptedDue: acceptedDueTasks,
       acceptedStarts: acceptedStartsTasks,
       acceptedFocus: acceptedFocusTasks,
-      otherDueCount: otherDueCount,
-      otherStartsCount: otherStartsCount,
+      dueAcceptedTotalCount: ritual.acceptedDueTaskIds.length,
+      startsAcceptedTotalCount: ritual.acceptedStartsTaskIds.length,
+      focusAcceptedTotalCount: ritual.acceptedFocusTaskIds.length,
+      selectedTotalCount: ritual.selectedTaskIds.length,
+      missingDueCount: missingDueIds.length,
+      missingStartsCount: missingStartsIds.length,
+      missingDueTasks: missingDueTasks,
+      missingStartsTasks: missingStartsTasks,
+      todaySelectedTaskIds: todaySelectedTaskIds,
     );
   }
 
@@ -329,8 +357,15 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
     List<Task> acceptedDue = const <Task>[],
     List<Task> acceptedStarts = const <Task>[],
     List<Task> acceptedFocus = const <Task>[],
-    int otherDueCount = 0,
-    int otherStartsCount = 0,
+    int dueAcceptedTotalCount = 0,
+    int startsAcceptedTotalCount = 0,
+    int focusAcceptedTotalCount = 0,
+    int selectedTotalCount = 0,
+    int missingDueCount = 0,
+    int missingStartsCount = 0,
+    List<Task> missingDueTasks = const <Task>[],
+    List<Task> missingStartsTasks = const <Task>[],
+    Set<String> todaySelectedTaskIds = const <String>{},
   }) {
     final valueById = {for (final value in values) value.id: value};
 
@@ -357,32 +392,16 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
       acceptedDue: acceptedDue,
       acceptedStarts: acceptedStarts,
       acceptedFocus: acceptedFocus,
-      otherDueCount: otherDueCount,
-      otherStartsCount: otherStartsCount,
+      dueAcceptedTotalCount: dueAcceptedTotalCount,
+      startsAcceptedTotalCount: startsAcceptedTotalCount,
+      focusAcceptedTotalCount: focusAcceptedTotalCount,
+      selectedTotalCount: selectedTotalCount,
+      missingDueCount: missingDueCount,
+      missingStartsCount: missingStartsCount,
+      missingDueTasks: missingDueTasks,
+      missingStartsTasks: missingStartsTasks,
+      todaySelectedTaskIds: todaySelectedTaskIds,
     );
-  }
-
-  List<Task> _buildPlanned(List<Task> tasks, DateTime dayKeyUtc) {
-    final today = dateOnly(dayKeyUtc);
-    final dueSoonLimit = today.add(const Duration(days: 3));
-
-    bool isPlanned(Task task) {
-      if (_isCompleted(task)) return false;
-      final start = dateOnlyOrNull(task.occurrence?.date ?? task.startDate);
-      final deadline = dateOnlyOrNull(
-        task.occurrence?.deadline ?? task.deadlineDate,
-      );
-      final startEligible = start != null && !start.isAfter(today);
-      final dueSoon = deadline != null && !deadline.isAfter(dueSoonLimit);
-      return startEligible || dueSoon;
-    }
-
-    return tasks.where(isPlanned).toList(growable: false);
-  }
-
-  DateTime? _deadlineDateOnly(Task task) {
-    final raw = task.occurrence?.deadline ?? task.deadlineDate;
-    return dateOnlyOrNull(raw);
   }
 
   List<Task> _resolveAcceptedTasks(
@@ -409,8 +428,15 @@ final class _MyDayViewModel {
     required this.acceptedDue,
     required this.acceptedStarts,
     required this.acceptedFocus,
-    required this.otherDueCount,
-    required this.otherStartsCount,
+    required this.dueAcceptedTotalCount,
+    required this.startsAcceptedTotalCount,
+    required this.focusAcceptedTotalCount,
+    required this.selectedTotalCount,
+    required this.missingDueCount,
+    required this.missingStartsCount,
+    required this.missingDueTasks,
+    required this.missingStartsTasks,
+    required this.todaySelectedTaskIds,
   });
 
   final List<Task> tasks;
@@ -421,8 +447,16 @@ final class _MyDayViewModel {
   final List<Task> acceptedStarts;
   final List<Task> acceptedFocus;
 
-  final int otherDueCount;
-  final int otherStartsCount;
+  final int dueAcceptedTotalCount;
+  final int startsAcceptedTotalCount;
+  final int focusAcceptedTotalCount;
+  final int selectedTotalCount;
+
+  final int missingDueCount;
+  final int missingStartsCount;
+  final List<Task> missingDueTasks;
+  final List<Task> missingStartsTasks;
+  final Set<String> todaySelectedTaskIds;
 }
 
 final class MyDayMixVm {

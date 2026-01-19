@@ -11,6 +11,8 @@ class MyDayRitualState {
     this.acceptedDueTaskIds = const <String>[],
     this.acceptedStartsTaskIds = const <String>[],
     this.acceptedFocusTaskIds = const <String>[],
+    this.candidateDueTaskIds = const <String>[],
+    this.candidateStartsTaskIds = const <String>[],
   });
 
   factory MyDayRitualState.fromJson(Map<String, dynamic> json) {
@@ -36,6 +38,16 @@ class MyDayRitualState {
               ?.whereType<String>()
               .toList(growable: false) ??
           const <String>[],
+      candidateDueTaskIds:
+          (json['candidateDueTaskIds'] as List<dynamic>?)
+              ?.whereType<String>()
+              .toList(growable: false) ??
+          const <String>[],
+      candidateStartsTaskIds:
+          (json['candidateStartsTaskIds'] as List<dynamic>?)
+              ?.whereType<String>()
+              .toList(growable: false) ??
+          const <String>[],
     );
   }
 
@@ -54,6 +66,20 @@ class MyDayRitualState {
   /// Ordered task ids accepted from the ritual "Suggestions" section.
   final List<String> acceptedFocusTaskIds;
 
+  /// Ordered task ids that were in the ritual "Overdue & due" candidate
+  /// universe at the time the ritual was confirmed.
+  ///
+  /// This is used to explain "not selected" counts and support add-on flows
+  /// without introducing new suggestions after the ritual.
+  final List<String> candidateDueTaskIds;
+
+  /// Ordered task ids that were in the ritual "Starts today" candidate
+  /// universe at the time the ritual was confirmed.
+  ///
+  /// This is used to explain "not selected" counts and support add-on flows
+  /// without introducing new suggestions after the ritual.
+  final List<String> candidateStartsTaskIds;
+
   bool get hasSelection => selectedTaskIds.isNotEmpty;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
@@ -62,6 +88,8 @@ class MyDayRitualState {
     'acceptedDueTaskIds': acceptedDueTaskIds,
     'acceptedStartsTaskIds': acceptedStartsTaskIds,
     'acceptedFocusTaskIds': acceptedFocusTaskIds,
+    'candidateDueTaskIds': candidateDueTaskIds,
+    'candidateStartsTaskIds': candidateStartsTaskIds,
   };
 
   /// Returns true when the ritual was completed for [dayUtc].

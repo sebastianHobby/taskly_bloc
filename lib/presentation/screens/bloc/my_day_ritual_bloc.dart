@@ -57,6 +57,19 @@ final class MyDayRitualConfirm extends MyDayRitualEvent {
   const MyDayRitualConfirm();
 }
 
+enum MyDayRitualAppendBucket {
+  due,
+  starts,
+  focus,
+}
+
+final class MyDayRitualAppendToToday extends MyDayRitualEvent {
+  const MyDayRitualAppendToToday({required this.bucket, required this.taskId});
+
+  final MyDayRitualAppendBucket bucket;
+  final String taskId;
+}
+
 sealed class MyDayRitualState {
   const MyDayRitualState();
 }
@@ -130,6 +143,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
        _taskRepository = taskRepository,
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
+       _dayKeyUtc = dayKeyService.todayDayKeyUtc(),
        super(const MyDayRitualLoading()) {
     on<MyDayRitualStarted>(_onStarted, transformer: restartable());
     on<MyDayRitualToggleTask>(_onToggleTask);
@@ -140,6 +154,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     on<MyDayRitualFocusModeChanged>(_onFocusModeChanged);
     on<MyDayRitualFocusModeWizardRequested>(_onFocusModeWizardRequested);
     on<MyDayRitualConfirm>(_onConfirm);
+    on<MyDayRitualAppendToToday>(_onAppendToToday);
     on<_MyDayRitualInputsChanged>(_onInputsChanged);
     add(const MyDayRitualStarted());
   }
@@ -160,7 +175,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
   List<Task> _tasks = const <Task>[];
   AllocationConfig _allocationConfig = const AllocationConfig();
   settings.MyDayRitualState _ritualState = const settings.MyDayRitualState();
-  DateTime _dayKeyUtc = DateTime.now().toUtc();
+  DateTime _dayKeyUtc;
 
   bool _hasUserSelection = false;
   Set<String> _selectedTaskIds = <String>{};
@@ -393,39 +408,45 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     }
 
     final today = dateOnly(current.dayKeyUtc);
-    final dueIds = {
-      for (final task in planned)
-        if (selectedIds.contains(task.id) &&
-            _deadlineDateOnly(task) != null &&
-            !_deadlineDateOnly(task)!.isAfter(today))
-          task.id,
+
+    final candidateDueOrdered = <String>[];
+    final candidateStartsOrdered = <String>[];
+    for (final task in planned) {
+      final deadline = _deadlineDateOnly(task);
+      if (deadline != null && !deadline.isAfter(today)) {
+        candidateDueOrdered.add(task.id);
+      } else {
+        candidateStartsOrdered.add(task.id);
+      }
+    }
+
+    final dueSelectedIds = {
+      for (final id in candidateDueOrdered)
+        if (selectedIds.contains(id)) id,
     };
-    final startsIds = {
-      for (final task in planned)
-        if (selectedIds.contains(task.id) &&
-            (_deadlineDateOnly(task) == null ||
-                _deadlineDateOnly(task)!.isAfter(today)))
-          task.id,
+    final startsSelectedIds = {
+      for (final id in candidateStartsOrdered)
+        if (selectedIds.contains(id)) id,
     };
-    final focusIds = {
+    final focusSelectedIds = {
       for (final task in curated)
         if (selectedIds.contains(task.id)) task.id,
     };
 
     final acceptedDueOrdered = [
       for (final id in ordered)
-        if (dueIds.contains(id) && !focusIds.contains(id)) id,
+        if (dueSelectedIds.contains(id) && !focusSelectedIds.contains(id)) id,
     ];
     final acceptedStartsOrdered = [
       for (final id in ordered)
-        if (startsIds.contains(id) &&
-            !focusIds.contains(id) &&
-            !dueIds.contains(id))
+        if (startsSelectedIds.contains(id) &&
+            !focusSelectedIds.contains(id) &&
+            !dueSelectedIds.contains(id))
           id,
     ];
     final acceptedFocusOrdered = [
       for (final id in ordered)
-        if (focusIds.contains(id)) id,
+        if (focusSelectedIds.contains(id)) id,
     ];
 
     final updated = settings.MyDayRitualState(
@@ -434,7 +455,55 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
       acceptedDueTaskIds: acceptedDueOrdered,
       acceptedStartsTaskIds: acceptedStartsOrdered,
       acceptedFocusTaskIds: acceptedFocusOrdered,
+      candidateDueTaskIds: candidateDueOrdered,
+      candidateStartsTaskIds: candidateStartsOrdered,
     );
+
+    await _settingsRepository.save(SettingsKey.myDayRitual, updated);
+  }
+
+  Future<void> _onAppendToToday(
+    MyDayRitualAppendToToday event,
+    Emitter<MyDayRitualState> emit,
+  ) async {
+    final current = _ritualState;
+    if (!current.isCompletedFor(_dayKeyUtc)) return;
+
+    if (current.selectedTaskIds.contains(event.taskId)) return;
+
+    final updatedSelected = [...current.selectedTaskIds, event.taskId];
+
+    List<String> append(List<String> ids) => [...ids, event.taskId];
+
+    final updated = switch (event.bucket) {
+      MyDayRitualAppendBucket.due => settings.MyDayRitualState(
+        completedDayUtc: current.completedDayUtc,
+        selectedTaskIds: updatedSelected,
+        acceptedDueTaskIds: append(current.acceptedDueTaskIds),
+        acceptedStartsTaskIds: current.acceptedStartsTaskIds,
+        acceptedFocusTaskIds: current.acceptedFocusTaskIds,
+        candidateDueTaskIds: current.candidateDueTaskIds,
+        candidateStartsTaskIds: current.candidateStartsTaskIds,
+      ),
+      MyDayRitualAppendBucket.starts => settings.MyDayRitualState(
+        completedDayUtc: current.completedDayUtc,
+        selectedTaskIds: updatedSelected,
+        acceptedDueTaskIds: current.acceptedDueTaskIds,
+        acceptedStartsTaskIds: append(current.acceptedStartsTaskIds),
+        acceptedFocusTaskIds: current.acceptedFocusTaskIds,
+        candidateDueTaskIds: current.candidateDueTaskIds,
+        candidateStartsTaskIds: current.candidateStartsTaskIds,
+      ),
+      MyDayRitualAppendBucket.focus => settings.MyDayRitualState(
+        completedDayUtc: current.completedDayUtc,
+        selectedTaskIds: updatedSelected,
+        acceptedDueTaskIds: current.acceptedDueTaskIds,
+        acceptedStartsTaskIds: current.acceptedStartsTaskIds,
+        acceptedFocusTaskIds: append(current.acceptedFocusTaskIds),
+        candidateDueTaskIds: current.candidateDueTaskIds,
+        candidateStartsTaskIds: current.candidateStartsTaskIds,
+      ),
+    };
 
     await _settingsRepository.save(SettingsKey.myDayRitual, updated);
   }

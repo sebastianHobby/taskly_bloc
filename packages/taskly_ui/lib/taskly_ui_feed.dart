@@ -17,5 +17,4 @@ export 'src/sections/task_status_filter_bar.dart';
 export 'src/sections/confirmation_dialog.dart';
 
 export 'src/tiles/entity_tile_models.dart';
-export 'src/tiles/task_list_row_tile.dart';
 export 'src/tiles/project_list_row_tile.dart';

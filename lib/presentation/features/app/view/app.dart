@@ -293,7 +293,8 @@ class _SyncAnomalySnackBarListener extends StatefulWidget {
 
 class _SyncAnomalySnackBarListenerState
     extends State<_SyncAnomalySnackBarListener> {
-  DateTime? _lastShownAt;
+  final Stopwatch _dedupeClock = Stopwatch()..start();
+  Duration? _lastShownAt;
 
   @override
   Widget build(BuildContext context) {
@@ -305,9 +306,9 @@ class _SyncAnomalySnackBarListenerState
         final anomaly = state.lastAnomaly;
         if (anomaly == null) return;
 
-        final now = DateTime.now();
+        final now = _dedupeClock.elapsed;
         final last = _lastShownAt;
-        if (last != null && now.difference(last) < const Duration(seconds: 2)) {
+        if (last != null && (now - last) < const Duration(seconds: 2)) {
           return;
         }
         _lastShownAt = now;

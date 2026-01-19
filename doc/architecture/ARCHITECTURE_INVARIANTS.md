@@ -314,6 +314,29 @@ When changing or refactoring `taskly_ui` entities/sections:
 - Avoid “option creep”: do not add new configuration flags to cover one-off
   screen needs; prefer creating a new, well-named variant model when required.
 
+### 2.3 Entity views/tiles are side-effect free (strict)
+
+Entity views and tile builder code must remain **render-only** adapters.
+
+Normative rules:
+
+- Code under `lib/presentation/entity_views/` and `lib/presentation/screens/tiles/`
+  must not resolve app services via DI.
+  - In particular, tiles must not resolve `EntityActionService` via `getIt`.
+- Code under these folders must not show SnackBars or other user-feedback
+  side-effects directly.
+  - SnackBars belong in screen/BLoC orchestration, not tiles.
+
+Rationale:
+
+- Keeps tile UI reusable and predictable.
+- Centralizes side-effects (routing, writes, transient UI feedback) in the
+  screen layer where lifecycle and policy are explicit.
+
+Guardrail:
+
+- Script: [tool/usm_tile_action_guardrail.dart](../../tool/usm_tile_action_guardrail.dart)
+
 ## 3) State management standard
 
 - Application state is **BLoC-only**.
@@ -343,6 +366,26 @@ Rationale:
 
 - Prevents "emit was called after an event handler completed normally" crashes.
 - Makes cancellation/retry deterministic.
+
+### 3.2 Test hang safety for reactive code (strict for new tests)
+
+New tests must avoid patterns that can hang indefinitely when streams and BLoCs
+are involved.
+
+Normative rules:
+
+- Prefer safe wrappers instead of raw `test(...)` and `testWidgets(...)`:
+  - Widget tests: `testWidgetsSafe` (see [test/helpers/test_helpers.dart](../../test/helpers/test_helpers.dart))
+  - Unit tests: `testSafe` (see [test/helpers/test_helpers.dart](../../test/helpers/test_helpers.dart))
+  - Bloc tests: `blocTestSafe` (see [test/helpers/bloc_test_patterns.dart](../../test/helpers/bloc_test_patterns.dart))
+- Avoid raw `StreamController` in tests for BLoC inputs/outputs when late
+  subscriptions are possible.
+  - Prefer `TestStreamController` (see [test/helpers/bloc_test_patterns.dart](../../test/helpers/bloc_test_patterns.dart))
+
+Guardrails:
+
+- Script (repo-wide): [tool/no_raw_test_wrappers.dart](../../tool/no_raw_test_wrappers.dart)
+- Pre-push (staged-file focused): implemented in [git_hooks.dart](../../git_hooks.dart)
 
 ## 4) Write boundary and atomicity
 
@@ -437,6 +480,24 @@ Guardrail: the repo includes a lightweight check to prevent accidental usage.
   - [.github/workflows/main.yaml](../../.github/workflows/main.yaml)
     (step: "Run repo guardrails")
 
+### 5.3 PowerSync schema tables must be registered for ID generation (strict)
+
+When PowerSync-backed tables are created/changed, ensure ID generation and
+deterministic write behavior stays consistent.
+
+Normative rules:
+
+- All tables declared in the PowerSync schema must be registered in the ID
+  generator configuration.
+- When adding a new PowerSync table, update the schema and the ID generator in
+  the same change.
+
+Guardrail:
+
+- Pre-push validation: implemented in [git_hooks.dart](../../git_hooks.dart)
+  (compares `lib/data/infrastructure/powersync/schema.dart` against
+  `lib/data/id/id_generator.dart` when present)
+
 ## 6) Sync conflicts/anomalies policy
 
 Conflicts are treated as correctness bugs, not “merge inputs”.
@@ -451,6 +512,7 @@ This policy is intentionally logging-first (not persisted), per current decision
 ## 7) Time model and clocks
 
 - Domain/data must not call `DateTime.now()` directly.
+- Presentation must not call `DateTime.now()` directly.
 - Time must come from an injected time/clock service.
 - Day-key and date-only conversions must be centralized (no ad-hoc conversions
   inside screens).
@@ -458,6 +520,11 @@ This policy is intentionally logging-first (not persisted), per current decision
 Guardrail:
 
 - Script: [tool/no_datetime_now_in_domain_data.dart](../../tool/no_datetime_now_in_domain_data.dart)
+  - Escape hatch (use sparingly): `// ignore-datetime-now-guardrail`
+
+- Script: [tool/no_datetime_now_in_presentation.dart](../../tool/no_datetime_now_in_presentation.dart)
+  - Centralize presentation time access in:
+    `lib/presentation/shared/services/time/now_service.dart`
   - Escape hatch (use sparingly): `// ignore-datetime-now-guardrail`
 
 Recurrence + date-only semantics are further specified in:
