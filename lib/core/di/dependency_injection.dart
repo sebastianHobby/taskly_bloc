@@ -252,6 +252,7 @@ Future<void> setupDependencies() async {
         taskRepository: getIt<TaskRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
+        nowService: getIt<NowService>(),
       ),
     )
     ..registerFactory<MyDayHeaderBloc>(

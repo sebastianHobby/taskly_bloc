@@ -109,13 +109,19 @@ class FormDateChip extends StatelessWidget {
     final chipColor = overdue
         ? colorScheme.errorContainer
         : hasDate
-        ? colorScheme.primaryContainer
-        : colorScheme.surfaceContainerHigh;
+        ? (isDeadline
+              ? colorScheme.primaryContainer
+              : colorScheme.secondaryContainer)
+        : (isDeadline
+              ? colorScheme.surfaceContainerHighest
+              : colorScheme.surfaceContainerHigh);
 
     final contentColor = overdue
         ? colorScheme.onErrorContainer
         : hasDate
-        ? colorScheme.onPrimaryContainer
+        ? (isDeadline
+              ? colorScheme.onPrimaryContainer
+              : colorScheme.onSecondaryContainer)
         : colorScheme.onSurfaceVariant;
 
     return Material(

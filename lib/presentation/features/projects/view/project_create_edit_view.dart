@@ -84,6 +84,21 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
 
   ProjectDraft _draft = ProjectDraft.empty();
 
+  Future<void> _scrollToFirstInvalidField() async {
+    final formState = _formKey.currentState;
+    if (formState == null) return;
+
+    for (final fieldState in formState.fields.values) {
+      if (!fieldState.hasError) continue;
+      await Scrollable.ensureVisible(
+        fieldState.context,
+        alignment: 0.15,
+        duration: const Duration(milliseconds: 220),
+      );
+      return;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -211,7 +226,10 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
               openToValues: widget.openToValues,
               onSubmit: () {
                 final formValues = validateAndGetFormValues(_formKey);
-                if (formValues == null) return;
+                if (formValues == null) {
+                  unawaited(_scrollToFirstInvalidField());
+                  return;
+                }
 
                 syncDraft(formValues);
 
@@ -301,7 +319,10 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
               openToValues: widget.openToValues,
               onSubmit: () {
                 final formValues = validateAndGetFormValues(_formKey);
-                if (formValues == null) return;
+                if (formValues == null) {
+                  unawaited(_scrollToFirstInvalidField());
+                  return;
+                }
 
                 syncDraft(formValues);
 

@@ -81,6 +81,20 @@ void initializeLogging() {
   _isInitialized = true;
 }
 
+/// Writes a targeted trace entry to `debug_errors.log`.
+///
+/// This is intended for "hard to repro" flows where we need high-signal,
+/// timestamped breadcrumbs in the same place crash logs already land.
+void myDayTrace(String message) {
+  if (!_isInitialized) return;
+  _backend.logCustom(
+    _DebugFileTraceLog(
+      message,
+      titleText: _DebugFileTraceLog.titleMyDayTrace,
+    ),
+  );
+}
+
 /// Initialize logging for tests.
 ///
 /// This disables fail-fast behavior.
@@ -361,6 +375,26 @@ class TasklyLogRecord extends TalkerLog {
   AnsiPen get pen => AnsiPen()..green();
 }
 
+final class _DebugFileTraceLog extends TalkerLog {
+  _DebugFileTraceLog(
+    super.message, {
+    required String titleText,
+  }) : _titleText = titleText;
+
+  static const String titleMyDayTrace = 'MY_DAY_TRACE';
+
+  final String _titleText;
+
+  @override
+  String get title => _titleText;
+
+  @override
+  String get key => 'debug_file_trace_${_titleText.toLowerCase()}';
+
+  @override
+  AnsiPen get pen => AnsiPen()..cyan();
+}
+
 class MultiTalkerObserver extends TalkerObserver {
   MultiTalkerObserver({
     required List<TalkerObserver> observers,
@@ -399,7 +433,13 @@ class DebugFileLogObserver extends TalkerObserver {
     Future<Directory> Function()? supportDirectoryProvider,
     Set<String>? includedTitles,
   }) : includedTitles =
-           includedTitles ?? const {'WARNING', 'ERROR', 'EXCEPTION'},
+           includedTitles ??
+           const {
+             'WARNING',
+             'ERROR',
+             'EXCEPTION',
+             _DebugFileTraceLog.titleMyDayTrace,
+           },
        _supportDirectoryProvider =
            supportDirectoryProvider ?? getApplicationSupportDirectory;
 

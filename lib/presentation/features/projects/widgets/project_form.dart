@@ -135,6 +135,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
     final isCreating = widget.initialData == null;
 
     final availableValuesById = <String, Value>{
@@ -159,10 +160,42 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       ProjectFieldKeys.seriesEnded.id: widget.initialData?.seriesEnded ?? false,
     };
 
+      final effectiveStartDate =
+        (widget
+            .formKey
+            .currentState
+            ?.fields[ProjectFieldKeys.startDate.id]
+            ?.value
+          as DateTime?) ??
+        (initialValues[ProjectFieldKeys.startDate.id] as DateTime?);
+      final effectiveDeadlineDate =
+        (widget
+            .formKey
+            .currentState
+            ?.fields[ProjectFieldKeys.deadlineDate.id]
+            ?.value
+          as DateTime?) ??
+        (initialValues[ProjectFieldKeys.deadlineDate.id] as DateTime?);
+      final showScheduleHelper =
+        effectiveStartDate == null && effectiveDeadlineDate == null;
+
+      final submitEnabled =
+        isDirty && (widget.formKey.currentState?.isValid ?? false);
+
+      final sectionGap = isCompact ? 12.0 : 16.0;
+      final denseFieldPadding = EdgeInsets.symmetric(
+        horizontal: isCompact ? 12 : 16,
+        vertical: isCompact ? 10 : 12,
+      );
+
     return FormShell(
       onSubmit: widget.onSubmit,
       submitTooltip: isCreating ? l10n.actionCreate : l10n.actionUpdate,
       submitIcon: isCreating ? Icons.add : Icons.check,
+        submitEnabled: submitEnabled,
+        showHeaderSubmit: true,
+        showFooterSubmit: false,
+        closeOnLeft: true,
       onDelete: widget.initialData != null ? widget.onDelete : null,
       deleteTooltip: l10n.deleteProjectAction,
       onClose: widget.onClose != null ? handleClose : null,
@@ -190,7 +223,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       ],
       trailingActions: widget.trailingActions,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: EdgeInsets.only(bottom: isCompact ? 16 : 24),
         child: FormBuilder(
           key: widget.formKey,
           initialValue: initialValues,
@@ -228,10 +261,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                       width: 1.5,
                     ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
+                  contentPadding: denseFieldPadding,
                 ),
                 validator: FormBuilderValidators.compose([
                   FormBuilderValidators.required(
@@ -252,8 +282,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
               FormBuilderTextField(
                 name: ProjectFieldKeys.description.id,
                 textInputAction: TextInputAction.newline,
-                maxLines: 3,
-                minLines: 2,
+                maxLines: isCompact ? 2 : 3,
+                minLines: isCompact ? 1 : 2,
                 decoration: InputDecoration(
                   hintText: l10n.projectFormDescriptionHint,
                   filled: true,
@@ -269,10 +299,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                       width: 1.5,
                     ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
+                  contentPadding: denseFieldPadding,
                 ),
                 validator: FormBuilderValidators.maxLength(
                   200,
@@ -281,7 +308,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                 ),
               ),
 
-              const SizedBox(height: 8),
+              SizedBox(height: isCompact ? 6 : 8),
 
               // Completed
               Padding(
@@ -320,10 +347,16 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                           onTap: () => _showDatePicker(
                             context,
                             field.value,
-                            (date) => field.didChange(date),
+                            (date) {
+                              field.didChange(date);
+                              setState(() {});
+                            },
                           ),
                           onClear: field.value != null
-                              ? () => field.didChange(null)
+                              ? () {
+                                  field.didChange(null);
+                                  setState(() {});
+                                }
                               : null,
                         );
                       },
@@ -338,10 +371,16 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                           onTap: () => _showDatePicker(
                             context,
                             field.value,
-                            (date) => field.didChange(date),
+                            (date) {
+                              field.didChange(date);
+                              setState(() {});
+                            },
                           ),
                           onClear: field.value != null
-                              ? () => field.didChange(null)
+                              ? () {
+                                  field.didChange(null);
+                                  setState(() {});
+                                }
                               : null,
                         );
                       },
@@ -441,8 +480,19 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
 
+              if (showScheduleHelper)
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
+                  child: Text(
+                    l10n.scheduleHelperText,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+
+              SizedBox(height: sectionGap),
               // Priority
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -451,7 +501,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: sectionGap),
 
               // Values
               Padding(
@@ -479,6 +529,9 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                         ? primaryName
                         : '$primaryName + ${valueIds.length - 1}';
 
+                    final helperOrError = field.errorText ??
+                        (valueIds.isEmpty ? l10n.valuesProjectHelp : null);
+
                     return KeyedSubtree(
                       key: _valuesKey,
                       child: Card(
@@ -489,9 +542,16 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                         child: ListTile(
                           title: Text(l10n.projectFormValuesLabel),
                           subtitle: Text(
-                            summary,
-                            maxLines: 2,
+                            helperOrError == null
+                                ? summary
+                                : '$summary\n$helperOrError',
+                            maxLines: 3,
                             overflow: TextOverflow.ellipsis,
+                            style: field.errorText == null
+                                ? null
+                                : theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.error,
+                                  ),
                           ),
                           leading: const Icon(Icons.star_border),
                           trailing: const Icon(Icons.chevron_right),

@@ -40,6 +40,10 @@ class FormShell extends StatelessWidget {
     this.trailingActions = const <Widget>[],
     this.scrollController,
     this.submitIcon = Icons.check,
+    this.submitEnabled = true,
+    this.showHeaderSubmit = false,
+    this.showFooterSubmit = true,
+    this.closeOnLeft = false,
     this.handleBarWidth = 40.0,
     this.borderRadius = 20.0,
     this.showHandleBar,
@@ -67,6 +71,26 @@ class FormShell extends StatelessWidget {
 
   /// Icon for the submit button.
   final IconData submitIcon;
+
+  /// Whether the submit button(s) are enabled.
+  ///
+  /// When false, submit buttons render disabled and do not call [onSubmit].
+  final bool submitEnabled;
+
+  /// Whether to show a submit button in the header row.
+  ///
+  /// Defaults to false to preserve legacy behavior.
+  final bool showHeaderSubmit;
+
+  /// Whether to show the submit button in the sticky footer.
+  ///
+  /// Defaults to true to preserve legacy behavior.
+  final bool showFooterSubmit;
+
+  /// When true, renders the close button on the left side of the header.
+  ///
+  /// Defaults to false to preserve legacy behavior.
+  final bool closeOnLeft;
 
   /// Called when the close button is tapped. If null, no close button shown.
   final VoidCallback? onClose;
@@ -112,6 +136,12 @@ class FormShell extends StatelessWidget {
         (isCompact && !(modalChrome?.modalHasDragHandle ?? false));
 
     final resolvedLeadingActions = <Widget>[
+      if (closeOnLeft && onClose != null)
+        IconButton(
+          onPressed: onClose,
+          icon: const Icon(Icons.close),
+          tooltip: closeTooltip,
+        ),
       if (onDelete != null)
         IconButton(
           onPressed: onDelete,
@@ -126,12 +156,19 @@ class FormShell extends StatelessWidget {
 
     final resolvedTrailingActions = <Widget>[
       ...trailingActions,
-      if (onClose != null)
+      if (showHeaderSubmit)
         IconButton(
-          onPressed: onClose,
-          icon: const Icon(Icons.close),
-          tooltip: closeTooltip,
+          onPressed: submitEnabled ? onSubmit : null,
+          icon: Icon(submitIcon),
+          tooltip: submitTooltip,
         ),
+      if (onClose != null)
+        if (!closeOnLeft)
+          IconButton(
+            onPressed: onClose,
+            icon: const Icon(Icons.close),
+            tooltip: closeTooltip,
+          ),
     ];
 
     return Container(
@@ -175,30 +212,30 @@ class FormShell extends StatelessWidget {
             ),
           ),
 
-          // Sticky footer with submit button
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: colorScheme.shadow.withValues(alpha: 0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
+          if (showFooterSubmit)
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.shadow.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  FilledButton.icon(
+                    onPressed: submitEnabled ? onSubmit : null,
+                    icon: Icon(submitIcon),
+                    label: Text(submitTooltip),
+                  ),
+                ],
+              ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                FilledButton.icon(
-                  onPressed: onSubmit,
-                  icon: Icon(submitIcon),
-                  label: Text(submitTooltip),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

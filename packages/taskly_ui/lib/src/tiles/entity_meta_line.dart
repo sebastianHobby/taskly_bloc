@@ -135,16 +135,18 @@ class EntityMetaLine extends StatelessWidget {
                         color: scheme.onSurfaceVariant.withValues(alpha: 0.65),
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        projectName,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                          height: 1.1,
-                          fontSize: 12,
+                      Flexible(
+                        child: Text(
+                          projectName,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            height: 1.1,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        softWrap: false,
                       ),
                     ],
                   ),
@@ -208,7 +210,14 @@ class EntityMetaLine extends StatelessWidget {
               if (needsSpacing) {
                 optionalWidgets.add(const SizedBox(width: spacing));
               }
-              optionalWidgets.add(extra);
+              final availableWidthForExtra =
+                  (remaining - (needsSpacing ? spacing : 0)).clamp(0.0, maxWidth);
+              optionalWidgets.add(
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: availableWidthForExtra),
+                  child: extra,
+                ),
+              );
               remaining -= total;
             } else {
               hiddenCount += 1;

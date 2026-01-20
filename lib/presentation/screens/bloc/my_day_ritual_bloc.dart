@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -160,12 +161,14 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     required TaskRepositoryContract taskRepository,
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
+    required NowService nowService,
   }) : _settingsRepository = settingsRepository,
        _myDayRepository = myDayRepository,
        _allocationOrchestrator = allocationOrchestrator,
        _taskRepository = taskRepository,
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
+       _nowService = nowService,
        _dayKeyUtc = dayKeyService.todayDayKeyUtc(),
        super(const MyDayRitualLoading()) {
     on<MyDayRitualStarted>(_onStarted, transformer: restartable());
@@ -189,6 +192,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
   final TaskRepositoryContract _taskRepository;
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
+  final NowService _nowService;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
@@ -492,7 +496,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         if (selectedIds.contains(task.id)) task.id,
     };
 
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = _nowService.nowUtc();
     final tasksById = {for (final task in _tasks) task.id: task};
 
     final allocationByTaskId =
