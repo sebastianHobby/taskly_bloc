@@ -20,6 +20,10 @@ sealed class TaskTileIntent {
   /// The selection state is part of the intent.
   const factory TaskTileIntent.selection({required bool selected}) =
       TaskTileIntentSelection;
+
+  /// A task row used for bulk selection mode.
+  const factory TaskTileIntent.bulkSelection({required bool selected}) =
+      TaskTileIntentBulkSelection;
 }
 
 final class TaskTileIntentStandardList extends TaskTileIntent {
@@ -32,6 +36,12 @@ final class TaskTileIntentMyDayList extends TaskTileIntent {
 
 final class TaskTileIntentSelection extends TaskTileIntent {
   const TaskTileIntentSelection({required this.selected});
+
+  final bool selected;
+}
+
+final class TaskTileIntentBulkSelection extends TaskTileIntent {
+  const TaskTileIntentBulkSelection({required this.selected});
 
   final bool selected;
 }
@@ -55,6 +65,7 @@ final class TaskTileActions {
     this.onOverflowMenuRequestedAt,
     this.onToggleSelected,
     this.onSnoozeRequested,
+    this.onLongPress,
   });
 
   final VoidCallback onTap;
@@ -77,6 +88,11 @@ final class TaskTileActions {
   /// This is intentionally generic and callback-driven so `taskly_ui` remains
   /// pure UI and does not perform any business logic.
   final VoidCallback? onSnoozeRequested;
+
+  /// Optional long-press handler.
+  ///
+  /// Used by the app to enter selection mode.
+  final VoidCallback? onLongPress;
 }
 
 /// High-level rendering intent for a Project tile.
@@ -87,6 +103,10 @@ sealed class ProjectTileIntent {
       ProjectTileIntentStandardList;
 
   const factory ProjectTileIntent.agenda() = ProjectTileIntentAgenda;
+
+  /// A project row used for bulk selection mode.
+  const factory ProjectTileIntent.bulkSelection({required bool selected}) =
+      ProjectTileIntentBulkSelection;
 }
 
 final class ProjectTileIntentStandardList extends ProjectTileIntent {
@@ -97,15 +117,34 @@ final class ProjectTileIntentAgenda extends ProjectTileIntent {
   const ProjectTileIntentAgenda();
 }
 
+final class ProjectTileIntentBulkSelection extends ProjectTileIntent {
+  const ProjectTileIntentBulkSelection({required this.selected});
+
+  final bool selected;
+}
+
 /// Intent-based actions for a project tile.
 @immutable
 final class ProjectTileActions {
-  const ProjectTileActions({this.onTap, this.onOverflowMenuRequestedAt});
+  const ProjectTileActions({
+    this.onTap,
+    this.onOverflowMenuRequestedAt,
+    this.onToggleSelected,
+    this.onLongPress,
+  });
 
   final VoidCallback? onTap;
 
   /// When non-null, an overflow button is shown.
   final ValueChanged<Offset>? onOverflowMenuRequestedAt;
+
+  /// Used only for bulk selection mode.
+  final VoidCallback? onToggleSelected;
+
+  /// Optional long-press handler.
+  ///
+  /// Used by the app to enter selection mode.
+  final VoidCallback? onLongPress;
 }
 
 /// High-level rendering intent for a Value tile.
@@ -116,6 +155,10 @@ sealed class ValueTileIntent {
 
   const factory ValueTileIntent.myValuesCardV1() =
       ValueTileIntentMyValuesCardV1;
+
+  /// A value row used for bulk selection mode.
+  const factory ValueTileIntent.bulkSelection({required bool selected}) =
+      ValueTileIntentBulkSelection;
 }
 
 final class ValueTileIntentStandardList extends ValueTileIntent {
@@ -126,11 +169,30 @@ final class ValueTileIntentMyValuesCardV1 extends ValueTileIntent {
   const ValueTileIntentMyValuesCardV1();
 }
 
+final class ValueTileIntentBulkSelection extends ValueTileIntent {
+  const ValueTileIntentBulkSelection({required this.selected});
+
+  final bool selected;
+}
+
 /// Intent-based actions for a value tile.
 @immutable
 final class ValueTileActions {
-  const ValueTileActions({this.onTap, this.onOverflowMenuRequestedAt});
+  const ValueTileActions({
+    this.onTap,
+    this.onOverflowMenuRequestedAt,
+    this.onToggleSelected,
+    this.onLongPress,
+  });
 
   final VoidCallback? onTap;
   final ValueChanged<Offset>? onOverflowMenuRequestedAt;
+
+  /// Used only for bulk selection mode.
+  final VoidCallback? onToggleSelected;
+
+  /// Optional long-press handler.
+  ///
+  /// Used by the app to enter selection mode.
+  final VoidCallback? onLongPress;
 }

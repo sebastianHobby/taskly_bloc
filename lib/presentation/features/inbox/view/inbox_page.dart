@@ -6,11 +6,13 @@ import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.d
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
+import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_ui/taskly_ui_entities.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
@@ -55,57 +57,96 @@ class InboxView extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCompact = WindowSizeClass.of(context).isCompact;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Inbox'),
-        actions: TasklyAppBarActions.withAttentionBell(
-          context,
-          actions: [
-            if (!isCompact)
-              EntityAddMenuButton(
-                onCreateTask: () => _openNewTaskEditor(context),
-                onCreateProject: () => _openNewProjectEditor(context),
-              ),
-          ],
-        ),
-      ),
-      floatingActionButton: isCompact
-          ? EntityAddSpeedDial(
-              heroTag: 'add_speed_dial_inbox',
-              onCreateTask: () => _openNewTaskEditor(context),
-              onCreateProject: () => _openNewProjectEditor(context),
-            )
-          : null,
-      body: BlocBuilder<InboxFeedBloc, InboxFeedState>(
-        builder: (context, state) {
-          return switch (state) {
-            InboxFeedLoading() => const FeedBody.loading(),
-            InboxFeedError(:final message) => FeedBody.error(
-              message: message,
-              retryLabel: context.l10n.retryButton,
-              onRetry: () => context.read<InboxFeedBloc>().add(
-                const InboxFeedRetryRequested(),
-              ),
-            ),
-            InboxFeedLoaded(:final rows) when rows.isEmpty => FeedBody.empty(
-              child: EmptyStateWidget.noTasks(
-                title: 'Inbox is empty',
-                description: 'Create a task to start capturing things.',
-                actionLabel: 'Create task',
-                onAction: () => _openNewTaskEditor(context),
-              ),
-            ),
-            InboxFeedLoaded(:final rows) => FeedBody.list(
-              itemCount: rows.length,
-              itemBuilder: (context, index) {
-                final row = rows[index];
-                return KeyedSubtree(
-                  key: ValueKey(row.rowKey),
-                  child: _InboxRow(row: row),
-                );
+    return BlocProvider(
+      create: (_) => SelectionCubit(),
+      child: BlocBuilder<SelectionCubit, SelectionState>(
+        builder: (context, selectionState) {
+          return Scaffold(
+            appBar: selectionState.isSelectionMode
+                ? SelectionAppBar(
+                    baseTitle: 'Inbox',
+                    onExit: () {},
+                  )
+                : AppBar(
+                    title: const Text('Inbox'),
+                    actions: TasklyAppBarActions.withAttentionBell(
+                      context,
+                      actions: [
+                        if (!isCompact)
+                          EntityAddMenuButton(
+                            onCreateTask: () => _openNewTaskEditor(context),
+                            onCreateProject: () =>
+                                _openNewProjectEditor(context),
+                          ),
+                      ],
+                    ),
+                  ),
+            floatingActionButton: isCompact
+                ? EntityAddSpeedDial(
+                    heroTag: 'add_speed_dial_inbox',
+                    onCreateTask: () => _openNewTaskEditor(context),
+                    onCreateProject: () => _openNewProjectEditor(context),
+                  )
+                : null,
+            body: BlocBuilder<InboxFeedBloc, InboxFeedState>(
+              builder: (context, state) {
+                return switch (state) {
+                  InboxFeedLoading() => const FeedBody.loading(),
+                  InboxFeedError(:final message) => FeedBody.error(
+                    message: message,
+                    retryLabel: context.l10n.retryButton,
+                    onRetry: () => context.read<InboxFeedBloc>().add(
+                      const InboxFeedRetryRequested(),
+                    ),
+                  ),
+                  InboxFeedLoaded(:final rows) when rows.isEmpty =>
+                    FeedBody.empty(
+                      child: EmptyStateWidget.noTasks(
+                        title: 'Inbox is empty',
+                        description: 'Create a task to start capturing things.',
+                        actionLabel: 'Create task',
+                        onAction: () => _openNewTaskEditor(context),
+                      ),
+                    ),
+                  InboxFeedLoaded(:final rows) => Builder(
+                    builder: (context) {
+                      final selection = context.read<SelectionCubit>();
+                      selection.updateVisibleEntities(
+                        rows
+                            .whereType<TaskRowUiModel>()
+                            .map(
+                              (r) => SelectionEntityMeta(
+                                key: SelectionKey(
+                                  entityType: EntityType.task,
+                                  entityId: r.task.id,
+                                ),
+                                displayName: r.task.name,
+                                canDelete: true,
+                                completed: r.task.completed,
+                                pinned: r.task.isPinned,
+                                canCompleteSeries:
+                                    r.task.isRepeating && !r.task.seriesEnded,
+                              ),
+                            )
+                            .toList(growable: false),
+                      );
+
+                      return FeedBody.list(
+                        itemCount: rows.length,
+                        itemBuilder: (context, index) {
+                          final row = rows[index];
+                          return KeyedSubtree(
+                            key: ValueKey(row.rowKey),
+                            child: _InboxRow(row: row),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                };
               },
             ),
-          };
+          );
         },
       ),
     );
@@ -128,16 +169,11 @@ class _InboxRow extends StatelessWidget {
               task,
             );
 
-            final overflowActions = TileOverflowActionCatalog.forTask(
-              taskId: task.id,
-              taskName: task.name,
-              isPinnedToMyDay: task.isPinned,
-              isRepeating: task.isRepeating,
-              seriesEnded: task.seriesEnded,
-              tileCapabilities: tileCapabilities,
+            final selection = context.read<SelectionCubit>();
+            final key = SelectionKey(
+              entityType: EntityType.task,
+              entityId: task.id,
             );
-
-            final hasAnyEnabledAction = overflowActions.any((a) => a.enabled);
 
             final model = buildTaskListRowTileModel(
               context,
@@ -145,25 +181,34 @@ class _InboxRow extends StatelessWidget {
               tileCapabilities: tileCapabilities,
             );
 
+            final isSelected = selection.isSelected(key);
+            final selectionMode = selection.isSelectionMode;
+
             return TaskEntityTile(
               model: model,
               markers: TaskTileMarkers(pinned: task.isPinned),
+              intent: selectionMode
+                  ? TaskTileIntent.bulkSelection(selected: isSelected)
+                  : const TaskTileIntent.standardList(),
               actions: TaskTileActions(
-                onTap: model.onTap,
+                onTap: () {
+                  if (selection.shouldInterceptTapAsSelection()) {
+                    selection.handleEntityTap(key);
+                    return;
+                  }
+                  model.onTap();
+                },
+                onLongPress: () {
+                  selection.enterSelectionMode(initialSelection: key);
+                },
+                onToggleSelected: () =>
+                    selection.toggleSelection(key, extendRange: false),
                 onToggleCompletion: buildTaskToggleCompletionHandler(
                   context,
                   task: task,
                   tileCapabilities: tileCapabilities,
                 ),
-                onOverflowMenuRequestedAt: hasAnyEnabledAction
-                    ? (pos) => showTileOverflowMenu(
-                        context,
-                        position: pos,
-                        entityTypeLabel: 'task',
-                        entityId: task.id,
-                        actions: overflowActions,
-                      )
-                    : null,
+                onOverflowMenuRequestedAt: null,
               ),
             );
           },

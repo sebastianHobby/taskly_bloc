@@ -13,11 +13,12 @@ import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_scree
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_ui/taskly_ui_entities.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
@@ -44,6 +45,7 @@ class ScheduledPage extends StatelessWidget {
             scope: scope,
           ),
         ),
+        BlocProvider(create: (_) => SelectionCubit()),
       ],
       child: _ScheduledView(scope: scope),
     );
@@ -211,157 +213,226 @@ class _ScheduledViewState extends State<_ScheduledView> {
           },
         ),
       ],
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Scheduled'),
-          actions: TasklyAppBarActions.withAttentionBell(
-            context,
-            actions: [
-              if (!isCompact)
-                EntityAddMenuButton(
-                  onCreateTask: () => context.read<ScheduledScreenBloc>().add(
-                    ScheduledCreateTaskForDayRequested(day: today),
+      child: BlocBuilder<SelectionCubit, SelectionState>(
+        builder: (context, selectionState) {
+          return Scaffold(
+            appBar: selectionState.isSelectionMode
+                ? SelectionAppBar(baseTitle: 'Scheduled', onExit: () {})
+                : AppBar(
+                    title: const Text('Scheduled'),
+                    actions: TasklyAppBarActions.withAttentionBell(
+                      context,
+                      actions: [
+                        if (!isCompact)
+                          EntityAddMenuButton(
+                            onCreateTask: () =>
+                                context.read<ScheduledScreenBloc>().add(
+                                  ScheduledCreateTaskForDayRequested(
+                                    day: today,
+                                  ),
+                                ),
+                            onCreateProject: () =>
+                                context.read<ScheduledScreenBloc>().add(
+                                  const ScheduledCreateProjectRequested(),
+                                ),
+                          ),
+                      ],
+                    ),
                   ),
-                  onCreateProject: () =>
-                      context.read<ScheduledScreenBloc>().add(
-                        const ScheduledCreateProjectRequested(),
-                      ),
-                ),
-            ],
-          ),
-        ),
-        floatingActionButton: isCompact
-            ? EntityAddSpeedDial(
-                heroTag: 'add_speed_dial_scheduled',
-                onCreateTask: () => context.read<ScheduledScreenBloc>().add(
-                  ScheduledCreateTaskForDayRequested(day: today),
-                ),
-                onCreateProject: () => context.read<ScheduledScreenBloc>().add(
-                  const ScheduledCreateProjectRequested(),
-                ),
-              )
-            : null,
-        body: BlocBuilder<ScheduledFeedBloc, ScheduledFeedState>(
-          builder: (context, state) {
-            final feed = switch (state) {
-              ScheduledFeedLoading() => const FeedBody.loading(),
-              ScheduledFeedError(:final message) => FeedBody.error(
-                message: message,
-                retryLabel: context.l10n.retryButton,
-                onRetry: () => context.read<ScheduledFeedBloc>().add(
-                  const ScheduledFeedRetryRequested(),
-                ),
-              ),
-              ScheduledFeedLoaded(:final rows) when rows.isEmpty =>
-                FeedBody.empty(
-                  child: EmptyStateWidget.noTasks(
-                    title: 'Nothing scheduled',
-                    description:
-                        'Add planned days or due dates to see items here.',
-                  ),
-                ),
-              ScheduledFeedLoaded(:final rows) => _ScheduledAgenda(
-                rows: rows,
-                today: today,
-                scrollController: _scrollController,
-                todayHeaderKey: _todayHeaderKey,
-                dayHeaderKeys: _dayHeaderKeys,
-                searchQuery: _searchQuery,
-                filter: _filter,
-              ),
-            };
-
-            final filterBar = Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: SegmentedButton<ScheduledAgendaFilter>(
-                  segments: const <ButtonSegment<ScheduledAgendaFilter>>[
-                    ButtonSegment(
-                      value: ScheduledAgendaFilter.all,
-                      label: Text('All'),
+            floatingActionButton: isCompact
+                ? EntityAddSpeedDial(
+                    heroTag: 'add_speed_dial_scheduled',
+                    onCreateTask: () => context.read<ScheduledScreenBloc>().add(
+                      ScheduledCreateTaskForDayRequested(day: today),
                     ),
-                    ButtonSegment(
-                      value: ScheduledAgendaFilter.planned,
-                      label: Text('Planned'),
-                    ),
-                    ButtonSegment(
-                      value: ScheduledAgendaFilter.due,
-                      label: Text('Due'),
-                    ),
-                  ],
-                  selected: <ScheduledAgendaFilter>{_filter},
-                  onSelectionChanged: (selection) {
-                    final next = selection.isEmpty
-                        ? ScheduledAgendaFilter.all
-                        : selection.first;
-                    if (next == _filter) return;
-                    setState(() => _filter = next);
-                  },
-                  showSelectedIcon: false,
-                ),
-              ),
-            );
-
-            final searchBar = Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIconConstraints: const BoxConstraints(minWidth: 0),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_searchQuery.trim().isNotEmpty)
-                        IconButton(
-                          tooltip: 'Clear search',
-                          visualDensity: VisualDensity.compact,
-                          onPressed: _searchController.clear,
-                          icon: const Icon(Icons.clear_rounded),
+                    onCreateProject: () =>
+                        context.read<ScheduledScreenBloc>().add(
+                          const ScheduledCreateProjectRequested(),
                         ),
-                      IconButton(
-                        tooltip: 'Jump to today',
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () {
-                          context.read<ScheduledFeedBloc>().add(
-                            const ScheduledJumpToTodayRequested(),
-                          );
-                        },
-                        icon: const Icon(Icons.today_outlined),
-                      ),
-                      IconButton(
-                        tooltip: 'Pick a date',
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () => _pickDayAndScroll(today),
-                        icon: const Icon(Icons.calendar_today_outlined),
-                      ),
-                    ],
+                  )
+                : null,
+            body: BlocBuilder<ScheduledFeedBloc, ScheduledFeedState>(
+              builder: (context, state) {
+                final feed = switch (state) {
+                  ScheduledFeedLoading() => const FeedBody.loading(),
+                  ScheduledFeedError(:final message) => FeedBody.error(
+                    message: message,
+                    retryLabel: context.l10n.retryButton,
+                    onRetry: () => context.read<ScheduledFeedBloc>().add(
+                      const ScheduledFeedRetryRequested(),
+                    ),
                   ),
-                  filled: true,
-                ),
-              ),
-            );
+                  ScheduledFeedLoaded(:final rows) when rows.isEmpty =>
+                    FeedBody.empty(
+                      child: EmptyStateWidget.noTasks(
+                        title: 'Nothing scheduled',
+                        description:
+                            'Add planned days or due dates to see items here.',
+                        actionLabel: 'Create task',
+                        onAction: () => context.read<ScheduledScreenBloc>().add(
+                          ScheduledCreateTaskForDayRequested(day: today),
+                        ),
+                      ),
+                    ),
+                  ScheduledFeedLoaded(:final rows) => Builder(
+                    builder: (context) {
+                      final selection = context.read<SelectionCubit>();
 
-            final content = Column(
-              children: [
-                searchBar,
-                filterBar,
-                Expanded(child: feed),
-              ],
-            );
+                      final metas = <SelectionEntityMeta>[];
+                      for (final row in rows) {
+                        if (row is! ScheduledEntityRowUiModel) continue;
 
-            if (!showScopeHeader) return content;
+                        final occurrence = row.occurrence;
+                        final key = SelectionKey(
+                          entityType: occurrence.ref.entityType,
+                          entityId: occurrence.ref.entityId,
+                        );
 
-            return Column(
-              children: [
-                ScheduledScopeHeader(scope: scope),
-                Expanded(child: content),
-              ],
-            );
-          },
-        ),
+                        switch (occurrence.ref.entityType) {
+                          case EntityType.task:
+                            final task = occurrence.task;
+                            if (task == null) continue;
+                            metas.add(
+                              SelectionEntityMeta(
+                                key: key,
+                                displayName: task.name,
+                                canDelete: true,
+                                completed: task.completed,
+                                pinned: task.isPinned,
+                                canCompleteSeries:
+                                    task.isRepeating && !task.seriesEnded,
+                              ),
+                            );
+                          case EntityType.project:
+                            final project = occurrence.project;
+                            if (project == null) continue;
+                            metas.add(
+                              SelectionEntityMeta(
+                                key: key,
+                                displayName: project.name,
+                                canDelete: true,
+                                completed: project.completed,
+                                pinned: project.isPinned,
+                                canCompleteSeries:
+                                    project.isRepeating && !project.seriesEnded,
+                              ),
+                            );
+                          case EntityType.value:
+                            continue;
+                        }
+                      }
+
+                      selection.updateVisibleEntities(metas);
+
+                      return FeedBody.child(
+                        child: _ScheduledAgenda(
+                          rows: rows,
+                          today: today,
+                          scrollController: _scrollController,
+                          todayHeaderKey: _todayHeaderKey,
+                          dayHeaderKeys: _dayHeaderKeys,
+                          searchQuery: _searchQuery,
+                          filter: _filter,
+                        ),
+                      );
+                    },
+                  ),
+                };
+
+                final filterBar = Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: SegmentedButton<ScheduledAgendaFilter>(
+                      segments: const <ButtonSegment<ScheduledAgendaFilter>>[
+                        ButtonSegment(
+                          value: ScheduledAgendaFilter.all,
+                          label: Text('All'),
+                        ),
+                        ButtonSegment(
+                          value: ScheduledAgendaFilter.planned,
+                          label: Text('Planned'),
+                        ),
+                        ButtonSegment(
+                          value: ScheduledAgendaFilter.due,
+                          label: Text('Due'),
+                        ),
+                      ],
+                      selected: <ScheduledAgendaFilter>{_filter},
+                      onSelectionChanged:
+                          (Set<ScheduledAgendaFilter> selected) {
+                            final next = selected.isEmpty
+                                ? ScheduledAgendaFilter.all
+                                : selected.first;
+                            if (next == _filter) return;
+                            setState(() => _filter = next);
+                          },
+                      showSelectedIcon: false,
+                    ),
+                  ),
+                );
+
+                final searchBar = Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIconConstraints: const BoxConstraints(minWidth: 0),
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_searchQuery.trim().isNotEmpty)
+                            IconButton(
+                              tooltip: 'Clear search',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: _searchController.clear,
+                              icon: const Icon(Icons.clear_rounded),
+                            ),
+                          IconButton(
+                            tooltip: 'Jump to today',
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () {
+                              context.read<ScheduledFeedBloc>().add(
+                                const ScheduledJumpToTodayRequested(),
+                              );
+                            },
+                            icon: const Icon(Icons.today_outlined),
+                          ),
+                          IconButton(
+                            tooltip: 'Pick a date',
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () => _pickDayAndScroll(today),
+                            icon: const Icon(Icons.calendar_today_outlined),
+                          ),
+                        ],
+                      ),
+                      filled: true,
+                    ),
+                  ),
+                );
+
+                final content = Column(
+                  children: [
+                    searchBar,
+                    filterBar,
+                    Expanded(child: feed),
+                  ],
+                );
+
+                if (!showScopeHeader) return content;
+
+                return Column(
+                  children: [
+                    ScheduledScopeHeader(scope: scope),
+                    Expanded(child: content),
+                  ],
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }
@@ -741,16 +812,10 @@ class _ScheduledAgenda extends StatelessWidget {
       final task = occurrence.task!;
       final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
 
-      final overflowActions = TileOverflowActionCatalog.forTask(
-        taskId: task.id,
-        taskName: task.name,
-        isPinnedToMyDay: task.isPinned,
-        isRepeating: task.isRepeating,
-        seriesEnded: task.seriesEnded,
-        tileCapabilities: tileCapabilities,
-      );
-
-      final hasAnyEnabledAction = overflowActions.any((a) => a.enabled);
+      final selection = context.read<SelectionCubit>();
+      final key = SelectionKey(entityType: EntityType.task, entityId: task.id);
+      final selectionMode = selection.isSelectionMode;
+      final isSelected = selection.isSelected(key);
 
       final model = buildTaskListRowTileModel(
         context,
@@ -772,25 +837,29 @@ class _ScheduledAgenda extends StatelessWidget {
         depth: 0,
         entityId: task.id,
         model: model,
+        intent: selectionMode
+            ? TaskTileIntent.bulkSelection(selected: isSelected)
+            : const TaskTileIntent.standardList(),
         markers: TaskTileMarkers(pinned: task.isPinned),
         actions: TaskTileActions(
-          onTap: model.onTap,
+          onTap: () {
+            if (selection.shouldInterceptTapAsSelection()) {
+              selection.handleEntityTap(key);
+              return;
+            }
+            model.onTap();
+          },
+          onLongPress: () {
+            selection.enterSelectionMode(initialSelection: key);
+          },
+          onToggleSelected: () =>
+              selection.toggleSelection(key, extendRange: false),
           onToggleCompletion: buildTaskToggleCompletionHandler(
             context,
             task: task,
             tileCapabilities: tileCapabilities,
           ),
-          onOverflowMenuRequestedAt: hasAnyEnabledAction
-              ? (Offset pos) {
-                  showTileOverflowMenu(
-                    context,
-                    position: pos,
-                    entityTypeLabel: 'task',
-                    entityId: task.id,
-                    actions: overflowActions,
-                  );
-                }
-              : null,
+          onOverflowMenuRequestedAt: null,
         ),
       );
     }
@@ -798,20 +867,13 @@ class _ScheduledAgenda extends StatelessWidget {
     if (occurrence.entityType == EntityType.project &&
         occurrence.project != null) {
       final project = occurrence.project!;
-      final tileCapabilities = EntityTileCapabilitiesResolver.forProject(
-        project,
+      final selection = context.read<SelectionCubit>();
+      final key = SelectionKey(
+        entityType: EntityType.project,
+        entityId: project.id,
       );
-
-      final overflowActions = TileOverflowActionCatalog.forProject(
-        projectId: project.id,
-        projectName: project.name,
-        isPinnedToMyDay: project.isPinned,
-        isRepeating: project.isRepeating,
-        seriesEnded: project.seriesEnded,
-        tileCapabilities: tileCapabilities,
-      );
-
-      final hasAnyEnabledAction = overflowActions.any((a) => a.enabled);
+      final selectionMode = selection.isSelectionMode;
+      final isSelected = selection.isSelected(key);
 
       return TasklyAgendaProjectRowModel(
         key: rowKey,
@@ -831,19 +893,23 @@ class _ScheduledAgenda extends StatelessWidget {
           showRepeatIcon: false,
           showOverflowEllipsisWhenMetaHidden: false,
         ),
+        intent: selectionMode
+            ? ProjectTileIntent.bulkSelection(selected: isSelected)
+            : const ProjectTileIntent.agenda(),
         actions: ProjectTileActions(
-          onTap: () => Routing.toProjectEdit(context, project.id),
-          onOverflowMenuRequestedAt: hasAnyEnabledAction
-              ? (Offset pos) {
-                  showTileOverflowMenu(
-                    context,
-                    position: pos,
-                    entityTypeLabel: 'project',
-                    entityId: project.id,
-                    actions: overflowActions,
-                  );
-                }
-              : null,
+          onTap: () {
+            if (selection.shouldInterceptTapAsSelection()) {
+              selection.handleEntityTap(key);
+              return;
+            }
+            Routing.toProjectEdit(context, project.id);
+          },
+          onLongPress: () {
+            selection.enterSelectionMode(initialSelection: key);
+          },
+          onToggleSelected: () =>
+              selection.toggleSelection(key, extendRange: false),
+          onOverflowMenuRequestedAt: null,
         ),
       );
     }

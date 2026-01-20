@@ -8,11 +8,13 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/view/scope_header.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
+import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_entities.dart';
@@ -43,6 +45,7 @@ class AnytimePage extends StatelessWidget {
             scope: scope,
           ),
         ),
+        BlocProvider(create: (_) => SelectionCubit()),
       ],
       child: _AnytimeView(scope: scope),
     );
@@ -124,98 +127,132 @@ class _AnytimeView extends StatelessWidget {
           },
         ),
       ],
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Anytime'),
-          actions: TasklyAppBarActions.withAttentionBell(
-            context,
-            actions: [
-              if (!isCompact)
-                EntityAddMenuButton(
-                  onCreateTask: () => context.read<AnytimeScreenBloc>().add(
-                    const AnytimeCreateTaskRequested(),
-                  ),
-                  onCreateProject: () => context.read<AnytimeScreenBloc>().add(
-                    const AnytimeCreateProjectRequested(),
-                  ),
-                ),
-              BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
-                buildWhen: (p, n) => p.focusOnly != n.focusOnly,
-                builder: (context, state) {
-                  final enabled = state.focusOnly;
-                  return IconButton(
-                    tooltip: enabled ? 'Focus only: on' : 'Focus only: off',
-                    icon: Icon(
-                      enabled ? Icons.filter_alt : Icons.filter_alt_off,
+      child: BlocBuilder<SelectionCubit, SelectionState>(
+        builder: (context, selectionState) {
+          return Scaffold(
+            appBar: selectionState.isSelectionMode
+                ? const SelectionAppBar(baseTitle: 'Anytime', onExit: _noop)
+                : AppBar(
+                    title: const Text('Anytime'),
+                    actions: TasklyAppBarActions.withAttentionBell(
+                      context,
+                      actions: [
+                        if (!isCompact)
+                          EntityAddMenuButton(
+                            onCreateTask: () =>
+                                context.read<AnytimeScreenBloc>().add(
+                                  const AnytimeCreateTaskRequested(),
+                                ),
+                            onCreateProject: () =>
+                                context.read<AnytimeScreenBloc>().add(
+                                  const AnytimeCreateProjectRequested(),
+                                ),
+                          ),
+                        BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
+                          buildWhen: (p, n) => p.focusOnly != n.focusOnly,
+                          builder: (context, state) {
+                            final enabled = state.focusOnly;
+                            return IconButton(
+                              tooltip: enabled
+                                  ? 'Focus only: on'
+                                  : 'Focus only: off',
+                              icon: Icon(
+                                enabled
+                                    ? Icons.filter_alt
+                                    : Icons.filter_alt_off,
+                              ),
+                              onPressed: () {
+                                context.read<AnytimeScreenBloc>().add(
+                                  const AnytimeFocusOnlyToggled(),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
                     ),
-                    onPressed: () {
-                      context.read<AnytimeScreenBloc>().add(
-                        const AnytimeFocusOnlyToggled(),
-                      );
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-        floatingActionButton: isCompact
-            ? EntityAddSpeedDial(
-                heroTag: 'add_speed_dial_anytime',
-                onCreateTask: () => context.read<AnytimeScreenBloc>().add(
-                  const AnytimeCreateTaskRequested(),
-                ),
-                onCreateProject: () => context.read<AnytimeScreenBloc>().add(
-                  const AnytimeCreateProjectRequested(),
-                ),
-              )
-            : null,
-        body: Column(
-          children: [
-            if (scope != null) ScopeHeader(scope: scope!),
-            Expanded(
-              child: BlocBuilder<AnytimeFeedBloc, AnytimeFeedState>(
-                builder: (context, state) {
-                  return switch (state) {
-                    AnytimeFeedLoading() => const FeedBody.loading(),
-                    AnytimeFeedError(:final message) => FeedBody.error(
-                      message: message,
-                      retryLabel: context.l10n.retryButton,
-                      onRetry: () => context.read<AnytimeFeedBloc>().add(
-                        const AnytimeFeedRetryRequested(),
-                      ),
+                  ),
+            floatingActionButton: isCompact
+                ? EntityAddSpeedDial(
+                    heroTag: 'add_speed_dial_anytime',
+                    onCreateTask: () => context.read<AnytimeScreenBloc>().add(
+                      const AnytimeCreateTaskRequested(),
                     ),
-                    AnytimeFeedLoaded(:final rows) when rows.isEmpty =>
-                      FeedBody.empty(
-                        child: EmptyStateWidget.noTasks(
-                          title: 'No tasks',
-                          description: 'Create a task to start planning.',
-                          actionLabel: 'Create task',
-                          onAction: () => context.read<AnytimeScreenBloc>().add(
-                            const AnytimeCreateTaskRequested(),
+                    onCreateProject: () =>
+                        context.read<AnytimeScreenBloc>().add(
+                          const AnytimeCreateProjectRequested(),
+                        ),
+                  )
+                : null,
+            body: Column(
+              children: [
+                if (scope != null) ScopeHeader(scope: scope!),
+                Expanded(
+                  child: BlocBuilder<AnytimeFeedBloc, AnytimeFeedState>(
+                    builder: (context, state) {
+                      return switch (state) {
+                        AnytimeFeedLoading() => const FeedBody.loading(),
+                        AnytimeFeedError(:final message) => FeedBody.error(
+                          message: message,
+                          retryLabel: context.l10n.retryButton,
+                          onRetry: () => context.read<AnytimeFeedBloc>().add(
+                            const AnytimeFeedRetryRequested(),
                           ),
                         ),
-                      ),
-                    AnytimeFeedLoaded(:final rows) => FeedBody.child(
-                      child: TasklyStandardTileListSection(
-                        rows: _buildStandardRows(context, rows),
-                      ),
-                    ),
-                  };
-                },
-              ),
+                        AnytimeFeedLoaded(:final rows) when rows.isEmpty =>
+                          FeedBody.empty(
+                            child: EmptyStateWidget.noTasks(
+                              title: 'No tasks',
+                              description: 'Create a task to start planning.',
+                              actionLabel: 'Create task',
+                              onAction: () =>
+                                  context.read<AnytimeScreenBloc>().add(
+                                    const AnytimeCreateTaskRequested(),
+                                  ),
+                            ),
+                          ),
+                        AnytimeFeedLoaded(:final rows) => FeedBody.child(
+                          child: TasklyStandardTileListSection(
+                            rows: _buildStandardRows(context, rows),
+                          ),
+                        ),
+                      };
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 }
 
+void _noop() {}
+
 List<TasklyStandardTileListRowModel> _buildStandardRows(
   BuildContext context,
   List<ListRowUiModel> rows,
 ) {
+  final selection = context.read<SelectionCubit>();
+
+  selection.updateVisibleEntities(
+    rows
+        .whereType<TaskRowUiModel>()
+        .map(
+          (r) => SelectionEntityMeta(
+            key: SelectionKey(entityType: EntityType.task, entityId: r.task.id),
+            displayName: r.task.name,
+            canDelete: true,
+            completed: r.task.completed,
+            pinned: r.task.isPinned,
+            canCompleteSeries: r.task.isRepeating && !r.task.seriesEnded,
+          ),
+        )
+        .toList(growable: false),
+  );
+
   return rows
       .map<TasklyStandardTileListRowModel?>((row) {
         return switch (row) {
@@ -242,16 +279,10 @@ List<TasklyStandardTileListRowModel> _buildStandardRows(
               task,
             );
 
-            final overflowActions = TileOverflowActionCatalog.forTask(
-              taskId: task.id,
-              taskName: task.name,
-              isPinnedToMyDay: task.isPinned,
-              isRepeating: task.isRepeating,
-              seriesEnded: task.seriesEnded,
-              tileCapabilities: tileCapabilities,
+            final key = SelectionKey(
+              entityType: EntityType.task,
+              entityId: task.id,
             );
-
-            final hasAnyEnabledAction = overflowActions.any((a) => a.enabled);
 
             final model = buildTaskListRowTileModel(
               context,
@@ -260,28 +291,37 @@ List<TasklyStandardTileListRowModel> _buildStandardRows(
               showProjectLabel: showProjectLabel,
             );
 
+            final isSelected = selection.isSelected(key);
+            final selectionMode = selection.isSelectionMode;
+
             return TasklyStandardTileListTaskRowModel(
               key: row.rowKey,
               depth: row.depth,
               entityId: task.id,
               model: model,
               markers: TaskTileMarkers(pinned: task.isPinned),
+              intent: selectionMode
+                  ? TaskTileIntent.bulkSelection(selected: isSelected)
+                  : const TaskTileIntent.standardList(),
               actions: TaskTileActions(
-                onTap: model.onTap,
+                onTap: () {
+                  if (selection.shouldInterceptTapAsSelection()) {
+                    selection.handleEntityTap(key);
+                    return;
+                  }
+                  model.onTap();
+                },
+                onLongPress: () {
+                  selection.enterSelectionMode(initialSelection: key);
+                },
+                onToggleSelected: () =>
+                    selection.toggleSelection(key, extendRange: false),
                 onToggleCompletion: buildTaskToggleCompletionHandler(
                   context,
                   task: task,
                   tileCapabilities: tileCapabilities,
                 ),
-                onOverflowMenuRequestedAt: hasAnyEnabledAction
-                    ? (pos) => showTileOverflowMenu(
-                        context,
-                        position: pos,
-                        entityTypeLabel: 'task',
-                        entityId: task.id,
-                        actions: overflowActions,
-                      )
-                    : null,
+                onOverflowMenuRequestedAt: null,
               ),
             );
           }(),

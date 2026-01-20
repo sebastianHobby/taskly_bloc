@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_menu.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_ui/taskly_ui_entities.dart';
 
 final class MyDayBucketCounts {
@@ -72,10 +74,50 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
     final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
 
+    final selection = context.read<SelectionCubit>();
+
     final hideStartsSection =
         widget.acceptedStarts.isEmpty &&
         widget.startsCounts.acceptedCount == 0 &&
         widget.startsCounts.otherCount == 0;
+
+    void registerVisibleTasks(List<Task> tasks) {
+      selection.updateVisibleEntities(
+        tasks
+            .map(
+              (t) => SelectionEntityMeta(
+                key: SelectionKey(
+                  entityType: EntityType.task,
+                  entityId: t.id,
+                ),
+                displayName: t.name,
+                canDelete: true,
+                completed: t.completed,
+                pinned: t.isPinned,
+                canCompleteSeries: t.isRepeating && !t.seriesEnded,
+              ),
+            )
+            .toList(growable: false),
+      );
+    }
+
+    final dueVisible = _dueExpanded
+        ? widget.acceptedDue
+        : widget.acceptedDue.take(_previewCount).toList(growable: false);
+    final startsVisible = hideStartsSection
+        ? const <Task>[]
+        : _startsExpanded
+        ? widget.acceptedStarts
+        : widget.acceptedStarts.take(_previewCount).toList(growable: false);
+    final focusVisible = _focusExpanded
+        ? widget.acceptedFocus
+        : widget.acceptedFocus.take(_previewCount).toList(growable: false);
+
+    registerVisibleTasks(<Task>[
+      ...dueVisible,
+      ...startsVisible,
+      ...focusVisible,
+    ]);
 
     return Card(
       elevation: 0,
@@ -367,16 +409,10 @@ class _AcceptedTaskTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
 
-    final overflowActions = TileOverflowActionCatalog.forTask(
-      taskId: task.id,
-      taskName: task.name,
-      isPinnedToMyDay: task.isPinned,
-      isRepeating: task.isRepeating,
-      seriesEnded: task.seriesEnded,
-      tileCapabilities: tileCapabilities,
-    );
-
-    final hasAnyEnabledAction = overflowActions.any((a) => a.enabled);
+    final selection = context.read<SelectionCubit>();
+    final key = SelectionKey(entityType: EntityType.task, entityId: task.id);
+    final selectionMode = selection.isSelectionMode;
+    final isSelected = selection.isSelected(key);
 
     final model = buildTaskListRowTileModel(
       context,
@@ -389,24 +425,32 @@ class _AcceptedTaskTile extends StatelessWidget {
 
     return TaskEntityTile(
       model: model,
+      intent: selectionMode
+          ? TaskTileIntent.bulkSelection(selected: isSelected)
+          : const TaskTileIntent.myDayList(),
       supportingText: subtitleText,
       markers: TaskTileMarkers(pinned: task.isPinned),
       actions: TaskTileActions(
-        onTap: model.onTap,
+        onTap: () {
+          if (selection.shouldInterceptTapAsSelection()) {
+            selection.handleEntityTap(key);
+            return;
+          }
+          model.onTap();
+        },
+        onLongPress: () {
+          selection.enterSelectionMode(initialSelection: key);
+        },
+        onToggleSelected: () => selection.toggleSelection(
+          key,
+          extendRange: false,
+        ),
         onToggleCompletion: buildTaskToggleCompletionHandler(
           context,
           task: task,
           tileCapabilities: tileCapabilities,
         ),
-        onOverflowMenuRequestedAt: hasAnyEnabledAction
-            ? (pos) => showTileOverflowMenu(
-                context,
-                position: pos,
-                entityTypeLabel: 'task',
-                entityId: task.id,
-                actions: overflowActions,
-              )
-            : null,
+        onOverflowMenuRequestedAt: null,
       ),
     );
   }

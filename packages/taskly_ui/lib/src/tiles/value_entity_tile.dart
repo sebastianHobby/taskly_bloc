@@ -27,6 +27,11 @@ class ValueEntityTile extends StatelessWidget {
         model: model,
         actions: actions,
       ),
+      ValueTileIntentBulkSelection(:final selected) => _StandardListRow(
+        model: model,
+        actions: actions,
+        bulkSelected: selected,
+      ),
       _ => _StandardListRow(
         model: model,
         actions: actions,
@@ -39,10 +44,12 @@ class _StandardListRow extends StatelessWidget {
   const _StandardListRow({
     required this.model,
     required this.actions,
+    this.bulkSelected,
   });
 
   final ValueTileModel model;
   final ValueTileActions actions;
+  final bool? bulkSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +68,10 @@ class _StandardListRow extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: actions.onTap,
+        onTap: bulkSelected == null
+            ? actions.onTap
+            : (actions.onToggleSelected ?? actions.onTap),
+        onLongPress: actions.onLongPress,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -86,15 +96,22 @@ class _StandardListRow extends StatelessWidget {
               const SizedBox(width: 8),
               SizedBox(
                 width: 56,
-                child: actions.onOverflowMenuRequestedAt == null
-                    ? const SizedBox.shrink()
-                    : Align(
-                        alignment: Alignment.topRight,
-                        child: _TrailingOverflowButton(
-                          onOverflowRequestedAt:
-                              actions.onOverflowMenuRequestedAt!,
-                        ),
-                      ),
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: switch (bulkSelected) {
+                    null =>
+                      actions.onOverflowMenuRequestedAt == null
+                          ? const SizedBox.shrink()
+                          : _TrailingOverflowButton(
+                              onOverflowRequestedAt:
+                                  actions.onOverflowMenuRequestedAt!,
+                            ),
+                    final selected => _BulkSelectIcon(
+                      selected: selected,
+                      onPressed: actions.onToggleSelected ?? actions.onTap,
+                    ),
+                  },
+                ),
               ),
             ],
           ),
@@ -134,6 +151,7 @@ class _MyValuesCardV1 extends StatelessWidget {
       ),
       child: InkWell(
         onTap: actions.onTap,
+        onLongPress: actions.onLongPress,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -284,6 +302,36 @@ class _TrailingOverflowButton extends StatelessWidget {
           size: 20,
           color: iconColor,
         ),
+      ),
+    );
+  }
+}
+
+class _BulkSelectIcon extends StatelessWidget {
+  const _BulkSelectIcon({
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final bool selected;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return IconButton(
+      tooltip: selected ? 'Deselect' : 'Select',
+      onPressed: onPressed,
+      icon: Icon(
+        selected
+            ? Icons.check_circle_rounded
+            : Icons.radio_button_unchecked_rounded,
+        color: selected ? scheme.primary : scheme.onSurfaceVariant,
+      ),
+      style: IconButton.styleFrom(
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        minimumSize: const Size(44, 44),
+        padding: const EdgeInsets.all(10),
       ),
     );
   }

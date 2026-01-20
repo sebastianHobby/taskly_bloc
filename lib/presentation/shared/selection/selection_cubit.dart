@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
+import 'package:taskly_domain/analytics.dart';
 
 class SelectionCubit extends Cubit<SelectionState> {
   SelectionCubit() : super(SelectionState.empty);
@@ -94,9 +95,7 @@ class SelectionCubit extends Cubit<SelectionState> {
     final end = fromIndex < toIndex ? toIndex : fromIndex;
 
     final selected = <SelectionKey>{...state.selected};
-    for (final key in order.sublist(start, end + 1)) {
-      selected.add(key);
-    }
+    order.sublist(start, end + 1).forEach(selected.add);
 
     emit(state.copyWith(selected: selected, anchor: to));
   }
@@ -159,22 +158,26 @@ class SelectionCubit extends Cubit<SelectionState> {
     final canDelete = selectedKeys.isNotEmpty;
 
     final canComplete = !onlyDelete && anyWhere((m) => m.completed == false);
-    final canUncomplete = !onlyDelete && anyWhere((m) => m.completed == true);
+    final canUncomplete = !onlyDelete && anyWhere((m) => m.completed ?? false);
 
     final canPin = !onlyDelete && anyWhere((m) => m.pinned == false);
-    final canUnpin = !onlyDelete && anyWhere((m) => m.pinned == true);
+    final canUnpin = !onlyDelete && anyWhere((m) => m.pinned ?? false);
 
     final canCompleteSeries =
         !onlyDelete && anyWhere((m) => m.canCompleteSeries);
 
-    final tasksOnly = selectedTypes.length == 1 &&
+    final tasksOnly =
+        selectedTypes.length == 1 &&
         selectedTypes.contains(EntityType.task) &&
         selectedKeys.isNotEmpty;
 
     final canMoveToProject = !onlyDelete && tasksOnly;
 
     final available = <BulkActionAvailability>[
-      BulkActionAvailability(kind: BulkActionKind.complete, enabled: canComplete),
+      BulkActionAvailability(
+        kind: BulkActionKind.complete,
+        enabled: canComplete,
+      ),
       BulkActionAvailability(
         kind: BulkActionKind.uncomplete,
         enabled: canUncomplete,
@@ -202,7 +205,9 @@ class SelectionCubit extends Cubit<SelectionState> {
         .toList(growable: false);
   }
 
-  Future<void> runSequential(Future<void> Function(SelectionKey key) action) async {
+  Future<void> runSequential(
+    Future<void> Function(SelectionKey key) action,
+  ) async {
     for (final key in state.selected) {
       await action(key);
     }
