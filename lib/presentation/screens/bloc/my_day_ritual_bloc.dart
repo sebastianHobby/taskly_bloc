@@ -5,6 +5,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -186,6 +187,12 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     add(const MyDayRitualStarted());
   }
 
+  final int _instanceId = identityHashCode(Object());
+  DateTime? _lastObservedRitualCompletedAtUtc;
+  bool? _lastObservedNeedsRitual;
+  DateTime? _lastConfirmRequestedAtUtc;
+  String? _lastConfirmCorrelationId;
+
   final SettingsRepositoryContract _settingsRepository;
   final MyDayRepositoryContract _myDayRepository;
   final AllocationOrchestrator _allocationOrchestrator;
@@ -228,6 +235,11 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     MyDayRitualStarted event,
     Emitter<MyDayRitualState> emit,
   ) async {
+    myDayTrace(
+      '[MyDayRitualBloc#$_instanceId] started '
+      'dayKeyUtc=${_dayKeyService.todayDayKeyUtc().toIso8601String()}',
+    );
+
     _dayKeyUtc = _dayKeyService.todayDayKeyUtc();
     _dayPicks = my_day.MyDayDayPicks(
       dayKeyUtc: dateOnly(_dayKeyUtc),
@@ -255,7 +267,20 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     });
 
     _dayPicksSub = _myDayRepository.watchDay(_dayKeyUtc).listen((picks) {
+      final before = _dayPicks.ritualCompletedAtUtc;
       _dayPicks = picks;
+
+      if (before != _dayPicks.ritualCompletedAtUtc) {
+        myDayTrace(
+          '[MyDayRitualBloc#$_instanceId] dayPicks changed '
+          'dayKeyUtc=${_dayPicks.dayKeyUtc.toIso8601String()} '
+          'ritualCompletedAtUtc:${before?.toIso8601String() ?? "<null>"}'
+          ' -> ${_dayPicks.ritualCompletedAtUtc?.toIso8601String() ?? "<null>"} '
+          'pickCount=${_dayPicks.picks.length} '
+          'lastConfirmAtUtc=${_lastConfirmRequestedAtUtc?.toIso8601String() ?? "<null>"} '
+          'lastConfirmCorrelationId=${_lastConfirmCorrelationId ?? "<null>"}',
+        );
+      }
       add(const _MyDayRitualInputsChanged());
     });
 
@@ -278,6 +303,10 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         .listen((_) {
           final nextDay = _dayKeyService.todayDayKeyUtc();
           if (!_isSameDayUtc(nextDay, _dayKeyUtc)) {
+            myDayTrace(
+              '[MyDayRitualBloc#$_instanceId] day boundary crossed '
+              'dayKeyUtc:${_dayKeyUtc.toIso8601String()} -> ${nextDay.toIso8601String()}',
+            );
             _dayKeyUtc = nextDay;
             _dayPicks = my_day.MyDayDayPicks(
               dayKeyUtc: dateOnly(_dayKeyUtc),
@@ -311,6 +340,35 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     }
 
     final needsRitual = _dayPicks.ritualCompletedAtUtc == null;
+
+    final previousNeedsRitual = _lastObservedNeedsRitual;
+    final previousRitualCompletedAtUtc = _lastObservedRitualCompletedAtUtc;
+    if (previousNeedsRitual == null || previousNeedsRitual != needsRitual) {
+      final nowUtc = _nowService.nowUtc();
+      final secondsSinceConfirm = _lastConfirmRequestedAtUtc == null
+          ? null
+          : nowUtc.difference(_lastConfirmRequestedAtUtc!).inMilliseconds /
+                1000.0;
+
+      final suspiciousFlipToNeedsRitual =
+          needsRitual && (secondsSinceConfirm ?? 999999) < 10;
+
+      myDayTrace(
+        '[MyDayRitualBloc#$_instanceId] needsRitual '
+        '${previousNeedsRitual ?? "<unset>"} -> $needsRitual '
+        'dayKeyUtc=${_dayKeyUtc.toIso8601String()} '
+        'ritualCompletedAtUtc:${previousRitualCompletedAtUtc?.toIso8601String() ?? "<unset>"}'
+        ' -> ${_dayPicks.ritualCompletedAtUtc?.toIso8601String() ?? "<null>"} '
+        'pickCount=${_dayPicks.picks.length} '
+        'selectedCount=${_selectedTaskIds.length} '
+        'hasUserSelection=$_hasUserSelection '
+        'secondsSinceConfirm=${secondsSinceConfirm?.toStringAsFixed(2) ?? "<null>"} '
+        'suspicious=$suspiciousFlipToNeedsRitual',
+      );
+
+      _lastObservedNeedsRitual = needsRitual;
+      _lastObservedRitualCompletedAtUtc = _dayPicks.ritualCompletedAtUtc;
+    }
 
     final curatedReasonDetails = _buildCuratedReasonDetails(
       curated,
@@ -454,6 +512,15 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
 
     if (selectedIds.isEmpty) return;
 
+    _lastConfirmRequestedAtUtc = _nowService.nowUtc();
+    myDayTrace(
+      '[MyDayRitualBloc#$_instanceId] confirm requested '
+      'dayKeyUtc=${current.dayKeyUtc.toIso8601String()} '
+      'selectedCount=${selectedIds.length} '
+      'plannedCount=${planned.length} '
+      'curatedCount=${curated.length}',
+    );
+
     final ordered = <String>[];
     for (final task in planned) {
       if (selectedIds.contains(task.id)) ordered.add(task.id);
@@ -577,12 +644,35 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
       },
     );
 
-    await _myDayRepository.setDayPicks(
-      dayKeyUtc: _dayKeyUtc,
-      ritualCompletedAtUtc: nowUtc,
-      picks: picks,
-      context: context,
+    _lastConfirmCorrelationId = context.correlationId;
+    myDayTrace(
+      '[MyDayRitualBloc#$_instanceId] setDayPicks start '
+      'correlationId=${context.correlationId} '
+      'dayKeyUtc=${_dayKeyUtc.toIso8601String()} '
+      'ritualCompletedAtUtc=${nowUtc.toIso8601String()} '
+      'pickedCount=${picks.length} '
+      'bucketCounts={due:${dueSelectedIds.length},starts:${startsSelectedIds.length},focus:${focusSelectedIds.length}}',
     );
+
+    try {
+      await _myDayRepository.setDayPicks(
+        dayKeyUtc: _dayKeyUtc,
+        ritualCompletedAtUtc: nowUtc,
+        picks: picks,
+        context: context,
+      );
+
+      myDayTrace(
+        '[MyDayRitualBloc#$_instanceId] setDayPicks done '
+        'correlationId=${context.correlationId}',
+      );
+    } catch (e, s) {
+      myDayTrace(
+        '[MyDayRitualBloc#$_instanceId] setDayPicks failed '
+        'correlationId=${context.correlationId} error=$e\n$s',
+      );
+      rethrow;
+    }
   }
 
   Future<void> _onSnoozeTaskRequested(

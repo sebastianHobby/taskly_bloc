@@ -16,7 +16,6 @@ void main() {
       });
 
       final observer = DebugFileLogObserver(
-        maxFileSizeBytes: 1024 * 1024,
         supportDirectoryProvider: () async => tempDir,
       );
       await observer.ensureInitializedForTest();
@@ -73,14 +72,15 @@ void main() {
       await existing.writeAsString('B' * 1000);
 
       final observer = DebugFileLogObserver(
-        maxFileSizeBytes: 200,
-        maxBackupFiles: 2,
         supportDirectoryProvider: () async => tempDir,
       );
       await observer.ensureInitializedForTest();
 
       final rotated0 = File('${existing.path}.0');
-      expect(await rotated0.exists(), isTrue);
+      expect(await rotated0.exists(), isFalse);
+
+      final content = await existing.readAsString();
+      expect(content, contains('B'));
     });
 
     testSafe('init failure causes subsequent writes to be no-ops', () async {
@@ -154,8 +154,6 @@ void main() {
       });
 
       final observer = DebugFileLogObserver(
-        maxFileSizeBytes: 200,
-        maxBackupFiles: 2,
         supportDirectoryProvider: () async => tempDir,
       );
       await observer.ensureInitializedForTest();
@@ -168,9 +166,8 @@ void main() {
       final current = File(observer.logFilePath!);
       expect(await current.exists(), isTrue);
 
-      // After rotation, the previous log should exist as .0.
       final rotated0 = File('${current.path}.0');
-      expect(await rotated0.exists(), isTrue);
+      expect(await rotated0.exists(), isFalse);
     });
 
     testSafe('clearLog rewrites the file with a header', () async {
@@ -205,6 +202,7 @@ void main() {
       });
 
       final observer = DebugFileLogObserver(
+        includedTitles: const {'WARNING'},
         supportDirectoryProvider: () async => tempDir,
       );
       await observer.ensureInitializedForTest();
@@ -299,7 +297,7 @@ void main() {
     });
 
     testSafe(
-      'rotation does not create backups when maxBackupFiles <= 0',
+      'large writes do not create rotated backup files',
       () async {
         final tempDir = await Directory.systemTemp.createTemp(
           'taskly_core_logs_',
@@ -309,8 +307,6 @@ void main() {
         });
 
         final observer = DebugFileLogObserver(
-          maxFileSizeBytes: 200,
-          maxBackupFiles: 0,
           supportDirectoryProvider: () async => tempDir,
         );
         await observer.ensureInitializedForTest();

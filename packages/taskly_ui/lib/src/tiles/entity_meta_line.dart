@@ -211,7 +211,10 @@ class EntityMetaLine extends StatelessWidget {
                 optionalWidgets.add(const SizedBox(width: spacing));
               }
               final availableWidthForExtra =
-                  (remaining - (needsSpacing ? spacing : 0)).clamp(0.0, maxWidth);
+                  (remaining - (needsSpacing ? spacing : 0)).clamp(
+                    0.0,
+                    maxWidth,
+                  );
               optionalWidgets.add(
                 ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: availableWidthForExtra),

@@ -82,6 +82,21 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
   String? _formValueId;
   ValueDraft _draft = ValueDraft.empty();
 
+  Future<void> _scrollToFirstInvalidField() async {
+    final formState = _formKey.currentState;
+    if (formState == null) return;
+
+    for (final fieldState in formState.fields.values) {
+      if (!fieldState.hasError) continue;
+      await Scrollable.ensureVisible(
+        fieldState.context,
+        alignment: 0.15,
+        duration: const Duration(milliseconds: 220),
+      );
+      return;
+    }
+  }
+
   void _ensureFreshFormKeyFor(String? valueId) {
     if (_formValueId == valueId) return;
     _formValueId = valueId;
@@ -114,7 +129,10 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
 
   void _onSubmit(String? id) {
     final formValues = validateAndGetFormValues(_formKey);
-    if (formValues == null) return;
+    if (formValues == null) {
+      unawaited(_scrollToFirstInvalidField());
+      return;
+    }
 
     _syncDraftFromFormValues(formValues);
 
@@ -197,6 +215,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
           },
           validationFailure: (failure) {
             applyValidationFailureToForm(_formKey, failure.failure, context);
+            unawaited(_scrollToFirstInvalidField());
           },
           operationFailure: (failure) {
             showEditorErrorSnackBar(context, failure.errorDetails.error);
