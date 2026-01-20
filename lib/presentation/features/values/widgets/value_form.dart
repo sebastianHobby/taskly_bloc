@@ -74,10 +74,6 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
             createDraft?.color ??
             ValueForm._defaultColorHex,
       ),
-      ValueFieldKeys.priority.id:
-          widget.initialData?.priority ??
-          createDraft?.priority ??
-          ValuePriority.medium,
       ValueFieldKeys.iconName.id:
           widget.initialData?.iconName ?? createDraft?.iconName,
     };
@@ -121,6 +117,11 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _LiveValuePreviewCard(isCompact: isCompact),
+              ),
+              SizedBox(height: sectionGap),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: FormBuilderTextField(
@@ -170,47 +171,10 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
               SizedBox(height: sectionGap),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: FormBuilderField<ValuePriority>(
-                  name: ValueFieldKeys.priority.id,
-                  validator: FormBuilderValidators.required<ValuePriority>(),
-                  builder: (field) {
-                    final value = field.value ?? ValuePriority.medium;
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: SegmentedButton<ValuePriority>(
-                            segments: [
-                              ButtonSegment(
-                                value: ValuePriority.low,
-                                label: Text(l10n.valuePriorityLowLabel),
-                              ),
-                              ButtonSegment(
-                                value: ValuePriority.medium,
-                                label: Text(l10n.valuePriorityMediumLabel),
-                              ),
-                              ButtonSegment(
-                                value: ValuePriority.high,
-                                label: Text(l10n.valuePriorityHighLabel),
-                              ),
-                            ],
-                            selected: {value},
-                            onSelectionChanged: (selection) {
-                              field.didChange(selection.first);
-                              markDirty();
-                              setState(() {});
-                            },
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              SizedBox(height: sectionGap),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: FormBuilderIconPicker(
                   name: ValueFieldKeys.iconName.id,
+                  title: l10n.valueFormIconLabel,
+                  hintText: l10n.valueFormIconHint,
                 ),
               ),
               SizedBox(height: sectionGap),
@@ -218,13 +182,113 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: FormBuilderColorPicker(
                   name: ValueFieldKeys.colour.id,
-                  showLabel: false,
+                  title: l10n.valueFormColorLabel,
+                  moreColorsLabel: l10n.valueFormColorMoreColors,
                   compact: true,
                   validator: FormBuilderValidators.required<Color>(),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LiveValuePreviewCard extends StatelessWidget {
+  const _LiveValuePreviewCard({required this.isCompact});
+
+  final bool isCompact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final l10n = context.l10n;
+
+    final form = FormBuilder.of(context);
+    final values = form?.instantValue ?? const <String, dynamic>{};
+
+    final rawName = values[ValueFieldKeys.name.id] as String?;
+    final name = (rawName ?? '').trim().isEmpty
+        ? l10n.valueFormNameHint
+        : rawName!.trim();
+
+    final color = (values[ValueFieldKeys.colour.id] as Color?) ?? cs.primary;
+
+    final iconName = values[ValueFieldKeys.iconName.id] as String?;
+    final iconData =
+        FormBuilderIconPicker.getIconData(iconName) ?? Icons.star_rounded;
+
+    final onColor =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+        ? Colors.white
+        : Colors.black;
+
+    final cardPadding = isCompact
+        ? const EdgeInsets.all(14)
+        : const EdgeInsets.all(18);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withValues(alpha: 0.22),
+            cs.surfaceContainerLow,
+          ],
+        ),
+      ),
+      child: Padding(
+        padding: cardPadding,
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.95),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.35),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Icon(iconData, color: onColor, size: 26),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.valueFormPreviewLabel,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
@@ -43,7 +42,6 @@ class MyDayPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = WindowSizeClass.of(context).isCompact;
     final today = getIt<HomeDayService>().todayDayKeyUtc().toLocal();
 
     return MultiBlocProvider(
@@ -106,24 +104,12 @@ class MyDayPage extends StatelessWidget {
                           title: const Text('My Day'),
                           actions: TasklyAppBarActions.withAttentionBell(
                             context,
-                            actions: [
-                              if (!isCompact)
-                                EntityAddMenuButton(
-                                  onCreateTask: () => _openNewTaskEditor(
-                                    context,
-                                    defaultDay: today,
-                                  ),
-                                  onCreateProject: () => _openNewProjectEditor(
-                                    context,
-                                  ),
-                                ),
-                            ],
+                            actions: const <Widget>[],
                           ),
                         ),
                   floatingActionButton: selectionState.isSelectionMode
                       ? null
-                      : isCompact
-                      ? EntityAddSpeedDial(
+                      : EntityAddSpeedDial(
                           heroTag: 'add_speed_dial_my_day',
                           onCreateTask: () => _openNewTaskEditor(
                             context,
@@ -132,8 +118,7 @@ class MyDayPage extends StatelessWidget {
                           onCreateProject: () => _openNewProjectEditor(
                             context,
                           ),
-                        )
-                      : null,
+                        ),
                   body: const _MyDayLoadedBody(),
                 );
               },

@@ -25,6 +25,7 @@ import 'package:taskly_data/src/repositories/task_repository.dart';
 import 'package:taskly_data/src/repositories/value_repository.dart';
 import 'package:taskly_data/src/services/occurrence_stream_expander.dart';
 import 'package:taskly_data/src/services/occurrence_write_helper.dart';
+import 'package:taskly_data/src/services/sync/powersync_initial_sync_service.dart';
 
 /// Strongly-typed bindings for Taskly's day-1 data stack.
 ///
@@ -49,6 +50,7 @@ final class TasklyDataBindings {
     required this.notificationPresenter,
     required this.pendingNotificationsRepository,
     required this.pendingNotificationsProcessor,
+    required this.initialSyncService,
   });
 
   final AppDatabase driftDb;
@@ -71,6 +73,8 @@ final class TasklyDataBindings {
   final NotificationPresenter notificationPresenter;
   final PendingNotificationsRepositoryContract pendingNotificationsRepository;
   final PendingNotificationsProcessor pendingNotificationsProcessor;
+
+  final InitialSyncService initialSyncService;
 }
 
 /// Strongly-typed handles for the day-1 data stack.
@@ -304,6 +308,8 @@ final class TasklyDataStack implements SyncAnomalyStream {
       presenter: notificationPresenter,
     );
 
+    final initialSyncService = PowerSyncInitialSyncService(syncDb);
+
     return TasklyDataBindings(
       driftDb: driftDb,
       idGenerator: idGenerator,
@@ -322,6 +328,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
       notificationPresenter: notificationPresenter,
       pendingNotificationsRepository: pendingNotificationsRepository,
       pendingNotificationsProcessor: pendingNotificationsProcessor,
+      initialSyncService: initialSyncService,
     );
   }
 }

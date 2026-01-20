@@ -15,7 +15,6 @@ import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
@@ -141,7 +140,6 @@ class _ScheduledViewState extends State<_ScheduledView> {
   Widget build(BuildContext context) {
     final scope = widget.scope;
     final showScopeHeader = scope is! GlobalScheduledScope;
-    final isCompact = WindowSizeClass.of(context).isCompact;
     final todayUtc = getIt<HomeDayService>().todayDayKeyUtc();
     final today = DateTime(todayUtc.year, todayUtc.month, todayUtc.day);
 
@@ -222,25 +220,12 @@ class _ScheduledViewState extends State<_ScheduledView> {
                     title: const Text('Scheduled'),
                     actions: TasklyAppBarActions.withAttentionBell(
                       context,
-                      actions: [
-                        if (!isCompact)
-                          EntityAddMenuButton(
-                            onCreateTask: () =>
-                                context.read<ScheduledScreenBloc>().add(
-                                  ScheduledCreateTaskForDayRequested(
-                                    day: today,
-                                  ),
-                                ),
-                            onCreateProject: () =>
-                                context.read<ScheduledScreenBloc>().add(
-                                  const ScheduledCreateProjectRequested(),
-                                ),
-                          ),
-                      ],
+                      actions: const <Widget>[],
                     ),
                   ),
-            floatingActionButton: isCompact
-                ? EntityAddSpeedDial(
+            floatingActionButton: selectionState.isSelectionMode
+                ? null
+                : EntityAddSpeedDial(
                     heroTag: 'add_speed_dial_scheduled',
                     onCreateTask: () => context.read<ScheduledScreenBloc>().add(
                       ScheduledCreateTaskForDayRequested(day: today),
@@ -249,8 +234,7 @@ class _ScheduledViewState extends State<_ScheduledView> {
                         context.read<ScheduledScreenBloc>().add(
                           const ScheduledCreateProjectRequested(),
                         ),
-                  )
-                : null,
+                  ),
             body: BlocBuilder<ScheduledFeedBloc, ScheduledFeedState>(
               builder: (context, state) {
                 final feed = switch (state) {

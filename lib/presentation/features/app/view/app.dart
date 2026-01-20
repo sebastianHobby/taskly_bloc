@@ -17,6 +17,8 @@ import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/sign_in_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/sign_up_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/forgot_password_view.dart';
+import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
+import 'package:taskly_bloc/presentation/features/app/view/initial_sync_gate_screen.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
@@ -219,6 +221,13 @@ class _AuthenticatedApp extends StatelessWidget {
       ],
       child: MultiBlocProvider(
         providers: [
+          BlocProvider<InitialSyncGateBloc>(
+            lazy: false,
+            create: (_) => InitialSyncGateBloc(
+              coordinator: getIt<AuthenticatedAppServicesCoordinator>(),
+              initialSyncService: getIt<InitialSyncService>(),
+            )..add(const InitialSyncGateStarted()),
+          ),
           BlocProvider<ScreenActionsBloc>(
             create: (context) => ScreenActionsBloc(
               entityActionService: getIt<EntityActionService>(),
@@ -234,32 +243,68 @@ class _AuthenticatedApp extends StatelessWidget {
           builder: (context, state) {
             final settings = state.settings;
 
-            return MaterialApp.router(
-              scaffoldMessengerKey: App.scaffoldMessengerKey,
-              theme: AppTheme.lightTheme(seedColor: state.seedColor),
-              darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
-              themeMode: state.flutterThemeMode,
-              locale: settings.localeCode == null
-                  ? null
-                  : Locale(settings.localeCode!),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              routerConfig: router,
-              debugShowCheckedModeBanner: false,
-              builder: (context, child) {
-                return _SyncAnomalySnackBarListener(
-                  scaffoldMessengerKey: App.scaffoldMessengerKey,
-                  child: _ScreenActionsFailureSnackBarListener(
+            return BlocBuilder<InitialSyncGateBloc, InitialSyncGateState>(
+              builder: (context, gateState) {
+                final commonLocale = settings.localeCode == null
+                    ? null
+                    : Locale(settings.localeCode!);
+
+                final commonTheme = AppTheme.lightTheme(
+                  seedColor: state.seedColor,
+                );
+                final commonDarkTheme = AppTheme.darkTheme(
+                  seedColor: state.seedColor,
+                );
+
+                if (gateState is! InitialSyncGateReady) {
+                  return MaterialApp(
                     scaffoldMessengerKey: App.scaffoldMessengerKey,
-                    child: MediaQuery(
+                    theme: commonTheme,
+                    darkTheme: commonDarkTheme,
+                    themeMode: state.flutterThemeMode,
+                    locale: commonLocale,
+                    localizationsDelegates:
+                        AppLocalizations.localizationsDelegates,
+                    supportedLocales: AppLocalizations.supportedLocales,
+                    debugShowCheckedModeBanner: false,
+                    home: MediaQuery(
                       data: MediaQuery.of(context).copyWith(
                         textScaler: TextScaler.linear(
                           settings.textScaleFactor,
                         ),
                       ),
-                      child: _NotificationsBootstrapper(child: child!),
+                      child: const InitialSyncGateScreen(),
                     ),
-                  ),
+                  );
+                }
+
+                return MaterialApp.router(
+                  scaffoldMessengerKey: App.scaffoldMessengerKey,
+                  theme: commonTheme,
+                  darkTheme: commonDarkTheme,
+                  themeMode: state.flutterThemeMode,
+                  locale: commonLocale,
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  routerConfig: router,
+                  debugShowCheckedModeBanner: false,
+                  builder: (context, child) {
+                    return _SyncAnomalySnackBarListener(
+                      scaffoldMessengerKey: App.scaffoldMessengerKey,
+                      child: _ScreenActionsFailureSnackBarListener(
+                        scaffoldMessengerKey: App.scaffoldMessengerKey,
+                        child: MediaQuery(
+                          data: MediaQuery.of(context).copyWith(
+                            textScaler: TextScaler.linear(
+                              settings.textScaleFactor,
+                            ),
+                          ),
+                          child: _NotificationsBootstrapper(child: child!),
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             );

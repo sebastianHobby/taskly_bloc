@@ -3,6 +3,7 @@ library;
 
 export 'src/services/debug/template_data_service.dart';
 export 'src/services/maintenance/local_data_maintenance_service.dart';
+export 'src/services/sync/initial_sync_service.dart';
 export 'src/services/notifications/notification_presenter.dart';
 export 'src/services/notifications/pending_notifications_processor.dart';
 export 'src/models/scheduled/scheduled_date_tag.dart';

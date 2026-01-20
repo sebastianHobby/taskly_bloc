@@ -8,6 +8,8 @@ import 'package:taskly_bloc/presentation/widgets/form_date_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/rrule_form_recurrence_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
+import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
@@ -273,6 +275,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       horizontal: isCompact ? 12 : 16,
       vertical: isCompact ? 10 : 12,
     );
+
+    const valuesWhyCopy = 'Helps Taskly prioritize and suggest the right work.';
 
     return FormShell(
       onSubmit: widget.onSubmit,
@@ -672,50 +676,58 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                         .firstOrNull;
 
                     final hasExplicit = explicitValueIds.isNotEmpty;
-                    final isInheriting =
-                        !hasExplicit && selectedProject != null;
+                    final canInherit = selectedProject != null;
 
-                    final inheritedCount = selectedProject?.values.length ?? 0;
-                    final hasInheritedValues =
-                        selectedProject != null && inheritedCount > 0;
+                    final explicitIds = explicitValueIds
+                        .take(2)
+                        .toList(
+                          growable: false,
+                        );
 
-                    final primaryValueId = hasExplicit
-                        ? explicitValueIds.first
-                        : selectedProject?.primaryValueId;
+                    final inheritedValues =
+                        selectedProject?.values.cast<Value?>() ??
+                        const <Value?>[];
 
-                    final primaryName = primaryValueId == null
+                    Value? effectivePrimary;
+                    Value? effectiveSecondary;
+
+                    if (hasExplicit) {
+                      effectivePrimary = explicitIds.isEmpty
+                          ? null
+                          : availableValuesById[explicitIds.first];
+
+                      effectiveSecondary = explicitIds.length < 2
+                          ? null
+                          : availableValuesById[explicitIds[1]];
+                    } else if (selectedProject != null) {
+                      final primaryId = selectedProject.primaryValueId;
+                      effectivePrimary = primaryId == null
+                          ? null
+                          : inheritedValues.firstWhere(
+                              (v) => v?.id == primaryId,
+                              orElse: () => null,
+                            );
+
+                      effectiveSecondary = inheritedValues.firstWhere(
+                        (v) =>
+                            v != null &&
+                            (effectivePrimary == null ||
+                                v.id != effectivePrimary.id),
+                        orElse: () => null,
+                      );
+                    }
+
+                    final helperCopy = !canInherit
+                        ? valuesWhyCopy
+                        : hasExplicit
+                        ? 'Custom values set for this item.'
+                        : 'Using your project’s values. Override if this task differs.';
+
+                    final statusLabel = !canInherit
                         ? null
-                        : (hasExplicit
-                              ? availableValuesById[primaryValueId]?.name
-                              : selectedProject?.values
-                                    .cast<Value?>()
-                                    .firstWhere(
-                                      (v) => v?.id == primaryValueId,
-                                      orElse: () => null,
-                                    )
-                                    ?.name);
+                        : (hasExplicit ? 'Override' : 'Inherited');
 
-                    final count = hasExplicit
-                        ? explicitValueIds.length
-                        : inheritedCount;
-
-                    final summary = primaryName == null
-                        ? (isInheriting
-                              ? (hasInheritedValues
-                                    ? l10n.valuesNoneInherited
-                                    : l10n.valuesProjectHasNoValues)
-                              : l10n.valuesNoneSelected)
-                        : count <= 1
-                        ? primaryName
-                        : '$primaryName + ${count - 1}';
-
-                    final secondary = primaryName == null
-                        ? (selectedProject == null
-                              ? l10n.valuesAlignmentHelperText
-                              : null)
-                        : (isInheriting && !hasExplicit
-                              ? '${l10n.valuesInheritedFromProject} ${selectedProject.name}'
-                              : l10n.valuesExplicitSelectionLabel);
+                    final statusIsOverride = canInherit && hasExplicit;
 
                     return KeyedSubtree(
                       key: _valuesKey,
@@ -726,19 +738,41 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                         ).colorScheme.surfaceContainerLow,
                         child: ListTile(
                           title: Text(l10n.valuesAlignedToTitle),
-                          subtitle: Text(
-                            secondary == null
-                                ? summary
-                                : '$summary\n$secondary',
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                helperCopy,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _ValueSlotRow(
+                                label: 'Primary',
+                                value: effectivePrimary,
+                                showNone: true,
+                              ),
+                              const SizedBox(height: 6),
+                              _ValueSlotRow(
+                                label: 'Secondary',
+                                value: effectiveSecondary,
+                                showNone: true,
+                              ),
+                            ],
                           ),
-                          leading: Icon(
-                            isInheriting && !hasExplicit
-                                ? Icons.call_merge
-                                : Icons.star_border,
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (statusLabel != null)
+                                _ValuesStatusChip(
+                                  label: statusLabel,
+                                  emphasized: statusIsOverride,
+                                ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.chevron_right),
+                            ],
                           ),
-                          trailing: const Icon(Icons.chevron_right),
                           onTap: () async {
                             final result =
                                 await showValuesAlignmentSheetForTask(
@@ -761,6 +795,132 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ValuesStatusChip extends StatelessWidget {
+  const _ValuesStatusChip({required this.label, required this.emphasized});
+
+  final String label;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    final backgroundColor = emphasized
+        ? scheme.primaryContainer
+        : scheme.surfaceContainerHighest;
+    final foregroundColor = emphasized
+        ? scheme.onPrimaryContainer
+        : scheme.onSurfaceVariant;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.7),
+        ),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: foregroundColor,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _ValueSlotRow extends StatelessWidget {
+  const _ValueSlotRow({
+    required this.label,
+    required this.value,
+    this.showNone = false,
+  });
+
+  final String label;
+  final Value? value;
+  final bool showNone;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 84,
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          child: value == null
+              ? Text(
+                  showNone ? 'None' : '',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                )
+              : Row(
+                  children: [
+                    _SmallValueIcon(value: value!),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        value!.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SmallValueIcon extends StatelessWidget {
+  const _SmallValueIcon({required this.value});
+
+  final Value value;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconData = getIconDataFromName(value.iconName) ?? Icons.star;
+    final valueColor = ColorUtils.fromHexWithThemeFallback(
+      context,
+      value.color,
+    );
+    final color = valueColor.withValues(alpha: 0.95);
+
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: 0.8), width: 1.25),
+      ),
+      child: Center(
+        child: Icon(
+          iconData,
+          size: 12,
+          color: color,
+          semanticLabel: value.name,
         ),
       ),
     );
