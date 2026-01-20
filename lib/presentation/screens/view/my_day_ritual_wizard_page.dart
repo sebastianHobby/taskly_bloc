@@ -32,19 +32,6 @@ class MyDayRitualWizardPage extends StatelessWidget {
             );
           },
         ),
-        BlocListener<MyDayRitualBloc, MyDayRitualState>(
-          listenWhen: (previous, current) {
-            return previous is MyDayRitualReady &&
-                current is MyDayRitualReady &&
-                previous.needsRitual &&
-                !current.needsRitual;
-          },
-          listener: (context, state) {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            }
-          },
-        ),
       ],
       child: BlocBuilder<MyDayRitualBloc, MyDayRitualState>(
         builder: (context, ritualState) {

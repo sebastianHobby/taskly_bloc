@@ -127,8 +127,10 @@ class TaskListRowTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  SizedBox(
-                    width: isCompact ? 48 : 56,
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minWidth: isCompact ? 48 : 56,
+                    ),
                     child: Align(
                       alignment: Alignment.topRight,
                       child: trailing ?? const SizedBox.shrink(),

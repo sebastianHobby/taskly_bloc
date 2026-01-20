@@ -88,6 +88,17 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
   final GlobalKey<State<StatefulWidget>> _valuesKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _projectKey = GlobalKey();
   bool _didAutoOpen = false;
+  final List<String> _recentProjectIds = <String>[];
+
+  void _recordRecentProjectId(String projectId) {
+    final id = projectId.trim();
+    if (id.isEmpty) return;
+    _recentProjectIds.remove(id);
+    _recentProjectIds.insert(0, id);
+    if (_recentProjectIds.length > 5) {
+      _recentProjectIds.removeRange(5, _recentProjectIds.length);
+    }
+  }
 
   @override
   void initState() {
@@ -118,16 +129,26 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                     ?.value
                 as String?) ??
             '';
-        final selected = await showDialog<Project>(
+        final result = await showDialog<_ProjectPickerResult>(
           context: context,
           builder: (context) => _ProjectPickerDialog(
             availableProjects: widget.availableProjects,
             currentProjectId: currentProjectId,
+            recentProjectIds: List<String>.unmodifiable(_recentProjectIds),
           ),
         );
-        if (!mounted || selected == null) return;
-        widget.formKey.currentState?.fields[TaskFieldKeys.projectId.id]
-            ?.didChange(selected.id);
+        if (!mounted || result == null) return;
+
+        switch (result) {
+          case _ProjectPickerResultCleared():
+            widget.formKey.currentState?.fields[TaskFieldKeys.projectId.id]
+                ?.didChange('');
+          case _ProjectPickerResultSelected(:final project):
+            widget.formKey.currentState?.fields[TaskFieldKeys.projectId.id]
+                ?.didChange(project.id);
+            _recordRecentProjectId(project.id);
+        }
+
         markDirty();
         setState(() {});
         return;
@@ -201,6 +222,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
     final isCreating = widget.initialData == null;
 
     final availableValuesById = <String, Value>{
@@ -228,10 +250,38 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       TaskFieldKeys.seriesEnded.id: widget.initialData?.seriesEnded ?? false,
     };
 
+    final effectiveStartDate =
+        (widget.formKey.currentState?.fields[TaskFieldKeys.startDate.id]?.value
+            as DateTime?) ??
+        (initialValues[TaskFieldKeys.startDate.id] as DateTime?);
+    final effectiveDeadlineDate =
+        (widget
+                .formKey
+                .currentState
+                ?.fields[TaskFieldKeys.deadlineDate.id]
+                ?.value
+            as DateTime?) ??
+        (initialValues[TaskFieldKeys.deadlineDate.id] as DateTime?);
+    final showScheduleHelper =
+        effectiveStartDate == null && effectiveDeadlineDate == null;
+
+    final submitEnabled =
+        isDirty && (widget.formKey.currentState?.isValid ?? false);
+
+    final sectionGap = isCompact ? 12.0 : 16.0;
+    final denseFieldPadding = EdgeInsets.symmetric(
+      horizontal: isCompact ? 12 : 16,
+      vertical: isCompact ? 10 : 12,
+    );
+
     return FormShell(
       onSubmit: widget.onSubmit,
       submitTooltip: isCreating ? l10n.actionCreate : l10n.actionUpdate,
       submitIcon: isCreating ? Icons.add : Icons.check,
+      submitEnabled: submitEnabled,
+      showHeaderSubmit: true,
+      showFooterSubmit: false,
+      closeOnLeft: true,
       onDelete: widget.initialData != null ? widget.onDelete : null,
       deleteTooltip: l10n.deleteTaskAction,
       onClose: widget.onClose != null ? handleClose : null,
@@ -259,7 +309,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       ],
       trailingActions: widget.trailingActions,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: EdgeInsets.only(bottom: isCompact ? 16 : 24),
         child: FormBuilder(
           key: widget.formKey,
           initialValue: initialValues,
@@ -317,10 +367,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           hintText: l10n.taskFormNameHint,
                           filled: true,
                           fillColor: colorScheme.surfaceContainerLow,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
+                          contentPadding: denseFieldPadding,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
@@ -360,8 +407,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
               FormBuilderTextField(
                 name: TaskFieldKeys.description.id,
                 textInputAction: TextInputAction.newline,
-                maxLines: 3,
-                minLines: 2,
+                maxLines: isCompact ? 2 : 3,
+                minLines: isCompact ? 1 : 2,
                 decoration: InputDecoration(
                   hintText: l10n.taskFormDescriptionHint,
                   filled: true,
@@ -377,10 +424,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                       width: 1.5,
                     ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
+                  contentPadding: denseFieldPadding,
                 ),
                 validator: FormBuilderValidators.maxLength(
                   200,
@@ -389,7 +433,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                 ),
               ),
 
-              const SizedBox(height: 8),
+              SizedBox(height: isCompact ? 6 : 8),
 
               // Chips row: Project, Planned Day, Due Date
               Padding(
@@ -412,18 +456,34 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                             child: _ProjectChip(
                               project: selectedProject,
                               onTap: () async {
-                                final selected = await showDialog<Project>(
-                                  context: context,
-                                  builder: (context) => _ProjectPickerDialog(
-                                    availableProjects: widget.availableProjects,
-                                    currentProjectId: field.value,
-                                  ),
-                                );
-                                if (selected != null) {
-                                  field.didChange(selected.id);
-                                  markDirty();
-                                  setState(() {});
+                                final result =
+                                    await showDialog<_ProjectPickerResult>(
+                                      context: context,
+                                      builder: (context) =>
+                                          _ProjectPickerDialog(
+                                            availableProjects:
+                                                widget.availableProjects,
+                                            currentProjectId: field.value,
+                                            recentProjectIds:
+                                                List<String>.unmodifiable(
+                                                  _recentProjectIds,
+                                                ),
+                                          ),
+                                    );
+                                if (result == null) return;
+
+                                switch (result) {
+                                  case _ProjectPickerResultCleared():
+                                    field.didChange('');
+                                  case _ProjectPickerResultSelected(
+                                    :final project,
+                                  ):
+                                    field.didChange(project.id);
+                                    _recordRecentProjectId(project.id);
                                 }
+
+                                markDirty();
+                                setState(() {});
                               },
                               onClear:
                                   field.value != null && field.value!.isNotEmpty
@@ -447,10 +507,16 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           onTap: () => _showDatePicker(
                             context,
                             field.value,
-                            (date) => field.didChange(date),
+                            (date) {
+                              field.didChange(date);
+                              setState(() {});
+                            },
                           ),
                           onClear: field.value != null
-                              ? () => field.didChange(null)
+                              ? () {
+                                  field.didChange(null);
+                                  setState(() {});
+                                }
                               : null,
                         );
                       },
@@ -465,10 +531,16 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           onTap: () => _showDatePicker(
                             context,
                             field.value,
-                            (date) => field.didChange(date),
+                            (date) {
+                              field.didChange(date);
+                              setState(() {});
+                            },
                           ),
                           onClear: field.value != null
-                              ? () => field.didChange(null)
+                              ? () {
+                                  field.didChange(null);
+                                  setState(() {});
+                                }
                               : null,
                         );
                       },
@@ -554,7 +626,18 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              if (showScheduleHelper)
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
+                  child: Text(
+                    l10n.scheduleHelperText,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+
+              SizedBox(height: sectionGap),
 
               // Priority
               Padding(
@@ -564,7 +647,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: sectionGap),
 
               // Values
               Padding(
@@ -591,6 +674,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                     final isInheriting =
                         !hasExplicit && selectedProject != null;
 
+                    final inheritedCount = selectedProject?.values.length ?? 0;
+                    final hasInheritedValues =
+                        selectedProject != null && inheritedCount > 0;
+
                     final primaryValueId = hasExplicit
                         ? explicitValueIds.first
                         : selectedProject?.primaryValueId;
@@ -609,15 +696,25 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
 
                     final count = hasExplicit
                         ? explicitValueIds.length
-                        : (selectedProject?.values.length ?? 0);
+                        : inheritedCount;
 
                     final summary = primaryName == null
                         ? (isInheriting
-                              ? l10n.valuesNoneInherited
+                              ? (hasInheritedValues
+                                    ? l10n.valuesNoneInherited
+                                    : l10n.valuesProjectHasNoValues)
                               : l10n.valuesNoneSelected)
                         : count <= 1
                         ? primaryName
                         : '$primaryName + ${count - 1}';
+
+                    final secondary = primaryName == null
+                        ? (selectedProject == null
+                              ? l10n.valuesAlignmentHelperText
+                              : null)
+                        : (isInheriting && !hasExplicit
+                              ? '${l10n.valuesInheritedFromProject} ${selectedProject.name}'
+                              : l10n.valuesExplicitSelectionLabel);
 
                     return KeyedSubtree(
                       key: _valuesKey,
@@ -629,8 +726,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                         child: ListTile(
                           title: Text(l10n.valuesAlignedToTitle),
                           subtitle: Text(
-                            summary,
-                            maxLines: 2,
+                            secondary == null
+                                ? summary
+                                : '$summary\n$secondary',
+                            maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                           ),
                           leading: Icon(
@@ -746,32 +845,79 @@ class _ProjectChip extends StatelessWidget {
 }
 
 /// Dialog for selecting a project.
-class _ProjectPickerDialog extends StatelessWidget {
+sealed class _ProjectPickerResult {
+  const _ProjectPickerResult();
+}
+
+final class _ProjectPickerResultSelected extends _ProjectPickerResult {
+  const _ProjectPickerResultSelected(this.project);
+  final Project project;
+}
+
+final class _ProjectPickerResultCleared extends _ProjectPickerResult {
+  const _ProjectPickerResultCleared();
+}
+
+class _ProjectPickerDialog extends StatefulWidget {
   const _ProjectPickerDialog({
     required this.availableProjects,
+    required this.recentProjectIds,
     this.currentProjectId,
   });
 
   final List<Project> availableProjects;
+  final List<String> recentProjectIds;
   final String? currentProjectId;
+
+  @override
+  State<_ProjectPickerDialog> createState() => _ProjectPickerDialogState();
+}
+
+class _ProjectPickerDialogState extends State<_ProjectPickerDialog> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
+    final currentId = (widget.currentProjectId ?? '').trim();
+    final query = _searchController.text.trim().toLowerCase();
+
+    final projectsById = <String, Project>{
+      for (final p in widget.availableProjects) p.id: p,
+    };
+
+    final recentProjects = widget.recentProjectIds
+        .map((id) => projectsById[id])
+        .whereType<Project>()
+        .where((p) => p.id != currentId)
+        .toList(growable: false);
+
+    final filteredProjects = query.isEmpty
+        ? widget.availableProjects
+        : widget.availableProjects
+              .where((p) => p.name.toLowerCase().contains(query))
+              .toList(growable: false);
 
     return Dialog(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
+        constraints: const BoxConstraints(maxWidth: 420, maxHeight: 560),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
               child: Row(
                 children: [
                   Text(
-                    context.l10n.selectProjectTitle,
+                    l10n.selectProjectTitle,
                     style: theme.textTheme.titleLarge,
                   ),
                   const Spacer(),
@@ -782,30 +928,105 @@ class _ProjectPickerDialog extends StatelessWidget {
                 ],
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: l10n.projectPickerSearchHint,
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerLow,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
             const Divider(height: 1),
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: availableProjects.length,
-                itemBuilder: (context, index) {
-                  final project = availableProjects[index];
-                  final isSelected = project.id == currentProjectId;
-
-                  return ListTile(
+            Expanded(
+              child: ListView(
+                children: [
+                  ListTile(
                     leading: Icon(
-                      Icons.folder_rounded,
-                      color: isSelected
+                      Icons.inbox_outlined,
+                      color: currentId.isEmpty
                           ? colorScheme.primary
                           : colorScheme.onSurfaceVariant,
                     ),
-                    title: Text(project.name),
-                    trailing: isSelected
+                    title: Text(l10n.projectPickerNoProjectInbox),
+                    trailing: currentId.isEmpty
                         ? Icon(Icons.check, color: colorScheme.primary)
                         : null,
-                    selected: isSelected,
-                    onTap: () => Navigator.of(context).pop(project),
-                  );
-                },
+                    selected: currentId.isEmpty,
+                    onTap: () => Navigator.of(context).pop(
+                      const _ProjectPickerResultCleared(),
+                    ),
+                  ),
+                  if (recentProjects.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      child: Text(
+                        l10n.projectPickerRecentTitle,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    ...recentProjects.map((project) {
+                      final isSelected = project.id == currentId;
+                      return ListTile(
+                        leading: Icon(
+                          Icons.history,
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                        title: Text(project.name),
+                        trailing: isSelected
+                            ? Icon(Icons.check, color: colorScheme.primary)
+                            : null,
+                        selected: isSelected,
+                        onTap: () => Navigator.of(context).pop(
+                          _ProjectPickerResultSelected(project),
+                        ),
+                      );
+                    }),
+                    const Divider(height: 1),
+                  ],
+                  if (filteredProjects.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        l10n.projectPickerNoMatchingProjects,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  else
+                    ...filteredProjects.map((project) {
+                      final isSelected = project.id == currentId;
+                      return ListTile(
+                        leading: Icon(
+                          Icons.folder_rounded,
+                          color: isSelected
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                        title: Text(project.name),
+                        trailing: isSelected
+                            ? Icon(Icons.check, color: colorScheme.primary)
+                            : null,
+                        selected: isSelected,
+                        onTap: () => Navigator.of(context).pop(
+                          _ProjectPickerResultSelected(project),
+                        ),
+                      );
+                    }),
+                ],
               ),
             ),
           ],

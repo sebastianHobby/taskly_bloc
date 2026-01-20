@@ -116,6 +116,21 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
     );
   }
 
+  Future<void> _scrollToFirstInvalidField() async {
+    final formState = _formKey.currentState;
+    if (formState == null) return;
+
+    for (final fieldState in formState.fields.values) {
+      if (!fieldState.hasError) continue;
+      await Scrollable.ensureVisible(
+        fieldState.context,
+        alignment: 0.15,
+        duration: const Duration(milliseconds: 220),
+      );
+      return;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<TaskDetailBloc, TaskDetailState>(
@@ -166,7 +181,10 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 onChanged: _syncDraftFromFormValues,
                 onSubmit: () {
                   final formValues = validateAndGetFormValues(_formKey);
-                  if (formValues == null) return;
+                  if (formValues == null) {
+                    unawaited(_scrollToFirstInvalidField());
+                    return;
+                  }
 
                   _syncDraftFromFormValues(formValues);
 
@@ -210,7 +228,10 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 onChanged: _syncDraftFromFormValues,
                 onSubmit: () {
                   final formValues = validateAndGetFormValues(_formKey);
-                  if (formValues == null) return;
+                  if (formValues == null) {
+                    unawaited(_scrollToFirstInvalidField());
+                    return;
+                  }
 
                   _syncDraftFromFormValues(formValues);
 
