@@ -12,6 +12,7 @@ class EntityMetaLineModel {
     this.showValuesInMetaLine = false,
     this.primaryValue,
     this.secondaryValues = const <ValueChipData>[],
+    this.showOverflowEllipsis = false,
     this.showDates = true,
     this.showOnlyDeadlineDate = false,
     this.showBothDatesIfPresent = false,
@@ -35,6 +36,10 @@ class EntityMetaLineModel {
 
   /// When true, value icons render at the start of the meta line.
   final bool showValuesInMetaLine;
+
+  /// When true, shows a non-numeric overflow indicator ("…") to signal that
+  /// additional metadata exists but is intentionally hidden by the caller.
+  final bool showOverflowEllipsis;
 
   /// When false, no date chips are rendered.
   final bool showDates;

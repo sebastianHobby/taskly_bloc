@@ -520,7 +520,6 @@
         "description": "Texto de sugerencia para el campo de fecha de inicio de tarea"
     },
     "taskFormDeadlineDateHint": "Fecha de entrega",
-
     "dateChipAddPlannedDay": "Añadir día planificado",
     "@dateChipAddPlannedDay": {
         "description": "Etiqueta mostrada en los chips de fecha cuando no se ha establecido el día planificado"

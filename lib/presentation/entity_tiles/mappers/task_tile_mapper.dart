@@ -18,6 +18,10 @@ TaskTileModel buildTaskListRowTileModel(
   required Task task,
   required EntityTileCapabilities tileCapabilities,
   bool showProjectLabel = true,
+  bool showDates = true,
+  bool showPriorityMarkerOnRight = true,
+  bool showRepeatIcon = true,
+  bool showOverflowEllipsisWhenMetaHidden = false,
 }) {
   final isCompleted = task.occurrence?.isCompleted ?? task.completed;
 
@@ -40,6 +44,17 @@ TaskTileModel buildTaskListRowTileModel(
       ? null
       : DateLabelFormatter.format(context, effectiveDeadlineDate);
 
+    final hasExtraSecondaryValues = task.effectiveSecondaryValues.length > 1;
+
+    final shouldShowOverflowEllipsis =
+      showOverflowEllipsisWhenMetaHidden &&
+      (task.project != null ||
+        (startDateLabel != null) ||
+        (deadlineDateLabel != null) ||
+        task.isRepeating ||
+        task.priority != null ||
+        hasExtraSecondaryValues);
+
   final meta = EntityMetaLineModel(
     projectName: showProjectLabel ? task.project?.name : null,
     showValuesInMetaLine: true,
@@ -48,6 +63,8 @@ TaskTileModel buildTaskListRowTileModel(
         .take(1)
         .map((v) => v.toChipData(context))
         .toList(growable: false),
+    showOverflowEllipsis: shouldShowOverflowEllipsis,
+    showDates: showDates,
     startDateLabel: startDateLabel,
     deadlineDateLabel: deadlineDateLabel,
     isOverdue: _isOverdue(
@@ -65,9 +82,9 @@ TaskTileModel buildTaskListRowTileModel(
       completed: isCompleted,
       today: today,
     ),
-    hasRepeat: task.isRepeating,
+    hasRepeat: showRepeatIcon && task.isRepeating,
     showBothDatesIfPresent: true,
-    showPriorityMarkerOnRight: true,
+    showPriorityMarkerOnRight: showPriorityMarkerOnRight,
     priority: task.priority,
     priorityColor: _priorityColor(task.priority),
     priorityPillLabel: task.priority == null
