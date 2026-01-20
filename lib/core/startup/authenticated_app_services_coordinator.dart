@@ -18,15 +18,13 @@ class AuthenticatedAppServicesCoordinator {
     required AttentionTemporalInvalidationService
     attentionTemporalInvalidationService,
     required AttentionPrewarmService attentionPrewarmService,
-    required AllocationSnapshotCoordinator allocationSnapshotCoordinator,
   }) : _dataStack = dataStack,
        _homeDayKeyService = homeDayKeyService,
        _appLifecycleService = appLifecycleService,
        _temporalTriggerService = temporalTriggerService,
        _attentionTemporalInvalidationService =
            attentionTemporalInvalidationService,
-       _attentionPrewarmService = attentionPrewarmService,
-       _allocationSnapshotCoordinator = allocationSnapshotCoordinator;
+       _attentionPrewarmService = attentionPrewarmService;
 
   final TasklyDataStack _dataStack;
   final HomeDayKeyService _homeDayKeyService;
@@ -35,7 +33,6 @@ class AuthenticatedAppServicesCoordinator {
   final AttentionTemporalInvalidationService
   _attentionTemporalInvalidationService;
   final AttentionPrewarmService _attentionPrewarmService;
-  final AllocationSnapshotCoordinator _allocationSnapshotCoordinator;
 
   Future<void>? _startInFlight;
   bool _started = false;
@@ -62,8 +59,6 @@ class AuthenticatedAppServicesCoordinator {
 
       _attentionTemporalInvalidationService.start();
       _attentionPrewarmService.start();
-
-      _allocationSnapshotCoordinator.start();
 
       _started = true;
     } finally {
@@ -94,7 +89,6 @@ class AuthenticatedAppServicesCoordinator {
       talker.info('[AuthServices] stopping post-auth services ($reason)');
 
       // Stop in reverse-ish order of dependencies.
-      await _allocationSnapshotCoordinator.stop();
       await _attentionPrewarmService.stop();
       _attentionTemporalInvalidationService.stop();
       _temporalTriggerService.stop();

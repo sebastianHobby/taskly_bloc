@@ -315,6 +315,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                       name: ProjectFieldKeys.startDate.id,
                       builder: (field) {
                         return FormDateChip.startDate(
+                          label: context.l10n.dateChipAddPlannedDay,
                           date: field.value,
                           onTap: () => _showDatePicker(
                             context,
@@ -332,6 +333,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                       name: ProjectFieldKeys.deadlineDate.id,
                       builder: (field) {
                         return FormDateChip.deadline(
+                          label: context.l10n.dateChipAddDueDate,
                           date: field.value,
                           onTap: () => _showDatePicker(
                             context,

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/tiles/entity_tile_intents.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
-import 'package:taskly_ui/src/tiles/task_list_row_tile.dart';
+import 'package:taskly_ui/src/tiles/task_entity_tile.dart';
 
 /// A task row tile variant for selection flows.
 ///
@@ -15,6 +16,7 @@ class SelectableTaskEntityTile extends StatelessWidget {
     required this.model,
     required this.selected,
     required this.onToggleSelected,
+    this.onSnoozeRequested,
     this.reasonText,
     this.titlePrefix,
     super.key,
@@ -29,6 +31,9 @@ class SelectableTaskEntityTile extends StatelessWidget {
   /// This is invoked from both row tap and the trailing pill.
   final VoidCallback onToggleSelected;
 
+  /// Optional secondary action shown next to the selection pill.
+  final VoidCallback? onSnoozeRequested;
+
   /// Optional subtitle shown between title and meta line.
   ///
   /// Commonly used to show “why this was suggested”.
@@ -42,71 +47,16 @@ class SelectableTaskEntityTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subtitleText = reasonText;
-    final subtitle = subtitleText == null || subtitleText.trim().isEmpty
-        ? null
-        : Text(
-            subtitleText,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          );
-
-    return TaskListRowTile(
+    return TaskEntityTile(
       model: model,
-      onTap: onToggleSelected,
-      onToggleCompletion: null,
-      titlePrefix: titlePrefix,
-      subtitle: subtitle,
-      trailing: _SelectPill(selected: selected, onPressed: onToggleSelected),
-    );
-  }
-}
-
-class _SelectPill extends StatelessWidget {
-  const _SelectPill({
-    required this.selected,
-    required this.onPressed,
-  });
-
-  final bool selected;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    final label = selected ? 'Added' : 'Add';
-
-    final background = selected
-        ? scheme.surfaceContainerLow
-        : scheme.surfaceContainerHighest;
-
-    final foreground = scheme.onSurfaceVariant;
-
-    final border = selected ? Border.all(color: scheme.outlineVariant) : null;
-
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        constraints: const BoxConstraints(minWidth: 64),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(999),
-          border: border,
-        ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: foreground,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+      intent: TaskTileIntent.selection(selected: selected),
+      actions: TaskTileActions(
+        onTap: onToggleSelected,
+        onToggleSelected: onToggleSelected,
+        onSnoozeRequested: onSnoozeRequested,
       ),
+      markers: const TaskTileMarkers(),
+      supportingText: reasonText,
     );
   }
 }

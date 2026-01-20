@@ -66,7 +66,12 @@ Canonical entity tiles (for example Task/Project tiles) follow this split:
   - `package:taskly_ui/taskly_ui_forms.dart`
 - app (`lib/`): screens/templates (routing + BLoC wiring) plus domain→UI mapping
   and policy/side-effects (routing, overflow menus, intent dispatch).
-  `taskly_ui` surfaces interactions via callbacks (events out).
+  `taskly_ui` surfaces interactions via callbacks (events out). For entity
+  tiles, the default pattern is **intent, not config**: pass a `*TileIntent`
+  and a `*TileActions` object and let the shared tile derive affordances from
+  callback presence.
+
+See also: [TASKLY_UI_INTENT_NOT_CONFIG.md](TASKLY_UI_INTENT_NOT_CONFIG.md)
 
 Governance note:
 
@@ -180,9 +185,10 @@ For the deeper dive see:
 
 ### 2.4 Allocation System (daily focus list -> My Day)
 
-The allocation system computes a daily “focus list” based on user configuration
-and task/project signals. The result is usually persisted as a daily snapshot so
-“My Day” remains stable throughout the day.
+The allocation system computes **suggested focus items** based on user
+configuration and task/project signals. The **My Day ritual selection** is the
+source of truth for “today”, and the allocator provides suggestions to help the
+user choose.
 
 Integration highlights:
 
@@ -190,7 +196,7 @@ Integration highlights:
   triggers).
 - My Day renders allocation outputs via explicit presentation widgets driven by
   a My Day BLoC.
-- Allocation warnings are surfaced via the attention system.
+- Allocation warnings via snapshots have been removed.
 
 For the deeper dive see:
 - [ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md)

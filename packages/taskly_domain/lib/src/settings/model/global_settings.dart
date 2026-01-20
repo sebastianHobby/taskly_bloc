@@ -19,11 +19,20 @@ abstract class GlobalSettings with _$GlobalSettings {
     /// Note: this does not model DST transitions; it's a fixed offset.
     @Default(GlobalSettings.defaultHomeTimeZoneOffsetMinutes)
     int homeTimeZoneOffsetMinutes,
+
+    /// My Day ritual: include tasks due within this many days.
+    ///
+    /// Clamped to 1–30 days.
+    @Default(GlobalSettings.defaultMyDayDueWindowDays) int myDayDueWindowDays,
     @Default(1.0) double textScaleFactor,
     @Default(false) bool onboardingCompleted,
   }) = _GlobalSettings;
 
   factory GlobalSettings.fromJson(Map<String, dynamic> json) {
+    final rawMyDayDueWindowDays =
+        (json['myDayDueWindowDays'] as num?)?.toInt() ??
+        defaultMyDayDueWindowDays;
+
     return GlobalSettings(
       themeMode: AppThemeMode.fromName(json['themeMode'] as String?),
       colorSchemeSeedArgb: _rgbHexToArgb(
@@ -34,6 +43,7 @@ abstract class GlobalSettings with _$GlobalSettings {
       homeTimeZoneOffsetMinutes:
           (json['homeTimeZoneOffsetMinutes'] as num?)?.toInt() ??
           defaultHomeTimeZoneOffsetMinutes,
+      myDayDueWindowDays: rawMyDayDueWindowDays.clamp(1, 30),
       textScaleFactor: (json['textScaleFactor'] as num?)?.toDouble() ?? 1.0,
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
     );
@@ -46,6 +56,9 @@ abstract class GlobalSettings with _$GlobalSettings {
 
   /// Default seed color (Material Purple).
   static const int defaultSeedArgb = 0xFF6750A4;
+
+  /// Default My Day due window (days).
+  static const int defaultMyDayDueWindowDays = 7;
 
   /// Parses `#RRGGBB`, `RRGGBB`, `#RGB`, or `RGB` into an ARGB int.
   ///
@@ -85,6 +98,7 @@ extension GlobalSettingsJson on GlobalSettings {
     ),
     'locale': localeCode,
     'homeTimeZoneOffsetMinutes': homeTimeZoneOffsetMinutes,
+    'myDayDueWindowDays': myDayDueWindowDays.clamp(1, 30),
     'textScaleFactor': textScaleFactor,
     'onboardingCompleted': onboardingCompleted,
   };

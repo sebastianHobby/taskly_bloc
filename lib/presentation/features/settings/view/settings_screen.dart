@@ -13,7 +13,6 @@ import 'package:taskly_bloc/presentation/features/settings/bloc/settings_mainten
 import 'package:taskly_bloc/presentation/features/settings/widgets/accent_palette_gallery.dart';
 import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
-import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
 
@@ -31,7 +30,6 @@ class SettingsScreen extends StatelessWidget {
     return BlocProvider<SettingsMaintenanceCubit>(
       create: (_) => SettingsMaintenanceCubit(
         templateDataService: getIt<TemplateDataService>(),
-        allocationSnapshotCoordinator: getIt<AllocationSnapshotCoordinator>(),
       ),
       child: Scaffold(
         appBar: AppBar(
@@ -56,6 +54,13 @@ class SettingsScreen extends StatelessWidget {
                       _ThemeModeSelector(settings: settings),
                       _AccentPalettePicker(settings: settings),
                       _TextSizeSlider(settings: settings),
+                    ],
+                  ),
+                  _buildSection(
+                    context: context,
+                    title: 'My Day',
+                    children: [
+                      _MyDayDueWindowSlider(settings: settings),
                     ],
                   ),
                   _buildSection(
@@ -271,6 +276,61 @@ class _TextSizeSlider extends StatelessWidget {
   }
 }
 
+class _MyDayDueWindowSlider extends StatelessWidget {
+  const _MyDayDueWindowSlider({required this.settings});
+
+  final GlobalSettings settings;
+
+  static const int _min = 1;
+  static const int _max = 30;
+
+  @override
+  Widget build(BuildContext context) {
+    final days = settings.myDayDueWindowDays.clamp(_min, _max);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Due window',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              Text(
+                '$days days',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+          Text(
+            'Include tasks due within the next $days days',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Slider(
+            value: days.toDouble(),
+            min: _min.toDouble(),
+            max: _max.toDouble(),
+            divisions: _max - _min,
+            label: '$days days',
+            onChanged: (value) {
+              context.read<GlobalSettingsBloc>().add(
+                GlobalSettingsEvent.myDayDueWindowDaysChanged(value.round()),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _LanguageSelector extends StatelessWidget {
   const _LanguageSelector({required this.settings});
 
@@ -334,7 +394,7 @@ class _HomeTimeZoneSelector extends StatelessWidget {
     return ListTile(
       title: const Text('Home Timezone'),
       subtitle: const Text(
-        'Fixed day boundary for “today” and daily snapshots',
+        'Fixed day boundary for “today” and the My Day ritual',
       ),
       trailing: DropdownButton<int>(
         value: settings.homeTimeZoneOffsetMinutes,

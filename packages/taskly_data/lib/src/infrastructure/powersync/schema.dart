@@ -75,6 +75,7 @@ const schema = Schema([
   Table('attention_rules', [
     Column.text('rule_key'),
     Column.text('user_id'),
+    Column.text('domain'),
     Column.text('bucket'),
     Column.text('evaluator'),
     Column.text('evaluator_params'),
@@ -157,29 +158,6 @@ const schema = Schema([
     Column.text('first_detected_at'),
     Column.text('last_detected_at'),
     Column.text('last_cleared_at'),
-    Column.text('created_at'),
-    Column.text('updated_at'),
-  ], trackMetadata: true),
-
-  // Allocation snapshots (daily, allocated membership only)
-  Table('allocation_snapshots', [
-    Column.text('user_id'),
-    Column.text('day_utc'),
-    Column.integer('version'),
-    Column.integer('cap_at_generation'),
-    Column.integer('candidate_pool_count_at_generation'),
-    Column.text('created_at'),
-    Column.text('updated_at'),
-  ], trackMetadata: true),
-  Table('allocation_snapshot_entries', [
-    Column.text('user_id'),
-    Column.text('snapshot_id'),
-    Column.text('entity_type'),
-    Column.text('entity_id'),
-    Column.text('project_id'),
-    Column.text('qualifying_value_id'),
-    Column.text('effective_primary_value_id'),
-    Column.real('allocation_score'),
     Column.text('created_at'),
     Column.text('updated_at'),
   ], trackMetadata: true),

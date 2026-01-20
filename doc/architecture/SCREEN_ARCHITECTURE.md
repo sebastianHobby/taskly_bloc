@@ -111,6 +111,13 @@ Normative boundaries for `taskly_ui`:
 - Interactivity is expressed as **callbacks / UI events** that are handled by
   the app-owned screen/BLoC.
 
+For entity tiles, the default approach is **intent, not config**:
+
+- pass a `*TileIntent` to describe the screen/flow,
+- pass a `*TileActions` object and let callback presence opt into affordances.
+
+See: [TASKLY_UI_INTENT_NOT_CONFIG.md](TASKLY_UI_INTENT_NOT_CONFIG.md)
+
 Package hygiene (recommended):
 
 - App code should import one of the curated public entrypoints (and avoid

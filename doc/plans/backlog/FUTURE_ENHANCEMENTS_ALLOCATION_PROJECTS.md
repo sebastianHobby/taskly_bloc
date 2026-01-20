@@ -5,6 +5,11 @@
 > Scope: forward-looking enhancements to the allocation system, focused on making
 > projects first-class allocated entities alongside tasks.
 
+> Note (2026-01): Taskly removed allocation snapshot persistence. Any persistence
+> ideas in this doc are historical and would need a fresh design pass under the
+> current “allocation as suggestions; My Day ritual selection is the source of
+> truth for today” model.
+
 ## 1) Motivation
 
 Today, allocation primarily produces a list of allocated tasks. Projects influence

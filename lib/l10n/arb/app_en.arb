@@ -247,7 +247,7 @@
     "@taskSortByName": {
         "description": "Task overview sort option to sort tasks by name"
     },
-    "taskSortByDeadline": "Sort by deadline",
+    "taskSortByDeadline": "Sort by due date",
     "@taskSortByDeadline": {
         "description": "Task overview sort option to sort tasks by deadline date"
     },
@@ -279,11 +279,11 @@
     "@sortFieldNameLabel": {
         "description": "Label for the name sort field"
     },
-    "sortFieldStartDateLabel": "Start date",
+    "sortFieldStartDateLabel": "Planned day",
     "@sortFieldStartDateLabel": {
         "description": "Label for the start date sort field"
     },
-    "sortFieldDeadlineDateLabel": "Deadline date",
+    "sortFieldDeadlineDateLabel": "Due date",
     "@sortFieldDeadlineDateLabel": {
         "description": "Label for the deadline date sort field"
     },
@@ -447,15 +447,15 @@
     "@projectFormDescriptionTooLong": {
         "description": "Validation error shown when the project description is too long"
     },
-    "projectFormStartDateHint": "Start date (optional)",
+    "projectFormStartDateHint": "Planned day",
     "@projectFormStartDateHint": {
         "description": "Hint text for the optional project start date field"
     },
-    "projectFormDeadlineDateHint": "Deadline date (optional)",
+    "projectFormDeadlineDateHint": "Due date",
     "@projectFormDeadlineDateHint": {
         "description": "Hint text for the optional project deadline date field"
     },
-    "projectFormDeadlineAfterStartError": "Deadline must be after start date",
+    "projectFormDeadlineAfterStartError": "Due date must be after planned day",
     "@projectFormDeadlineAfterStartError": {
         "description": "Validation error shown when the deadline is before the start date"
     },
@@ -527,11 +527,20 @@
     "@taskFormDescriptionHint": {
         "description": "Hint text for the task description field"
     },
-    "taskFormStartDateHint": "Start date (optional)",
+    "taskFormStartDateHint": "Planned day",
     "@taskFormStartDateHint": {
         "description": "Hint text for the task start date field"
     },
-    "taskFormDeadlineDateHint": "Deadline date (optional)",
+    "taskFormDeadlineDateHint": "Due date",
+
+    "dateChipAddPlannedDay": "Add planned day",
+    "@dateChipAddPlannedDay": {
+        "description": "Label shown on date chips when planned day is not set"
+    },
+    "dateChipAddDueDate": "Add due date",
+    "@dateChipAddDueDate": {
+        "description": "Label shown on date chips when due date is not set"
+    },
     "@taskFormDeadlineDateHint": {
         "description": "Hint text for the task deadline date field"
     },
@@ -563,7 +572,7 @@
     "@taskFormRepeatRuleTooLong": {
         "description": "Validation error when task repeat rule is too long"
     },
-    "taskFormDeadlineAfterStartError": "Deadline must be after start date",
+    "taskFormDeadlineAfterStartError": "Due date must be after planned day",
     "@taskFormDeadlineAfterStartError": {
         "description": "Validation error when deadline is before start date"
     },
@@ -1034,11 +1043,11 @@
     "@urgencyThresholdsSection": {
         "description": "Section title for urgency threshold settings"
     },
-    "taskUrgencyDays": "Task urgency (days before deadline)",
+    "taskUrgencyDays": "Task urgency (days before due date)",
     "@taskUrgencyDays": {
         "description": "Label for task urgency threshold setting"
     },
-    "projectUrgencyDays": "Project urgency (days before deadline)",
+    "projectUrgencyDays": "Project urgency (days before due date)",
     "@projectUrgencyDays": {
         "description": "Label for project urgency threshold setting"
     },

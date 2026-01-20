@@ -8,7 +8,6 @@ import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 enum AttentionRulesInitialSection {
   problemDetection,
   periodicReviews,
-  allocationAlerts,
 }
 
 /// Settings UI for managing attention rules.
@@ -130,7 +129,6 @@ class _RulesList extends StatefulWidget {
 class _RulesListState extends State<_RulesList> {
   final GlobalKey<State<StatefulWidget>> _problemDetectionKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _periodicReviewsKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _allocationAlertsKey = GlobalKey();
   bool _didAutoScroll = false;
 
   @override
@@ -149,7 +147,6 @@ class _RulesListState extends State<_RulesList> {
     final key = switch (section) {
       AttentionRulesInitialSection.problemDetection => _problemDetectionKey,
       AttentionRulesInitialSection.periodicReviews => _periodicReviewsKey,
-      AttentionRulesInitialSection.allocationAlerts => _allocationAlertsKey,
     };
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -184,13 +181,7 @@ class _RulesListState extends State<_RulesList> {
         .where((r) => r.bucket == AttentionBucket.action)
         .toList(growable: false);
 
-    final allocationRules = actionRules
-        .where((r) => r.evaluator == 'allocation_snapshot_task_v1')
-        .toList(growable: false);
-
-    final problemRules = actionRules
-        .where((r) => r.evaluator != 'allocation_snapshot_task_v1')
-        .toList(growable: false);
+    final problemRules = actionRules;
 
     return ResponsiveBody(
       isExpandedLayout: context.isExpandedScreen,
@@ -215,17 +206,6 @@ class _RulesListState extends State<_RulesList> {
                   'Scheduled reminders to review your tasks, projects, and values.',
             ),
             ...reviewRules.map((rule) => _RuleTile(rule: rule)),
-          ],
-          if (allocationRules.isNotEmpty) ...[
-            _SectionHeader(
-              key: _allocationAlertsKey,
-              title: 'Allocation Alerts',
-            ),
-            _SectionDescription(
-              description:
-                  "Warnings when tasks should be in your day allocation but aren't.",
-            ),
-            ...allocationRules.map((rule) => _RuleTile(rule: rule)),
           ],
           const SizedBox(height: 32),
         ],

@@ -2,7 +2,6 @@ import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 import 'package:taskly_data/src/infrastructure/drift/converters/date_only_string_converter.dart';
 import 'package:taskly_data/src/infrastructure/drift/converters/json_converters.dart';
-import 'package:taskly_data/src/infrastructure/drift/features/allocation_tables.drift.dart';
 import 'package:taskly_data/src/infrastructure/drift/features/analytics_tables.drift.dart';
 import 'package:taskly_data/src/infrastructure/drift/features/attention_tables.drift.dart';
 import 'package:taskly_data/src/infrastructure/drift/features/journal_tables.drift.dart';
@@ -380,9 +379,6 @@ class ProjectRecurrenceExceptionsTable extends Table {
     TrackerStateDay,
     TrackerStateEntry,
     PendingNotifications,
-    // Allocation snapshots (allocated membership only)
-    AllocationSnapshots,
-    AllocationSnapshotEntries,
     // Attention System (unified attention management)
     AttentionRules,
     AttentionResolutions,

@@ -1,7 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-
-import 'package:sqlite3/sqlite3.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_domain/errors.dart';
 
@@ -20,8 +17,8 @@ abstract final class AppFailureMapper {
       return NotFoundFailure(message: error.message, cause: error);
     }
 
-    if (error is SqliteException) {
-      return StorageFailure(message: error.message, cause: error);
+    if (_isSqliteException(error)) {
+      return StorageFailure(message: _extractMessage(error), cause: error);
     }
 
     if (error is AuthException) {
@@ -46,10 +43,30 @@ abstract final class AppFailureMapper {
       return TimeoutFailure(message: error.message, cause: error);
     }
 
-    if (error is SocketException) {
-      return NetworkFailure(message: error.message, cause: error);
+    if (_isSocketException(error)) {
+      return NetworkFailure(message: _extractMessage(error), cause: error);
     }
 
     return UnknownFailure(cause: error);
+  }
+
+  static bool _isSqliteException(Object error) {
+    return error.runtimeType.toString() == 'SqliteException';
+  }
+
+  static bool _isSocketException(Object error) {
+    return error.runtimeType.toString() == 'SocketException';
+  }
+
+  static String _extractMessage(Object error) {
+    try {
+      final dynamicError = error as dynamic;
+      final message = dynamicError.message;
+      if (message is String && message.isNotEmpty) return message;
+    } catch (_) {
+      // Ignore: best-effort extraction without importing platform-only types.
+    }
+
+    return error.toString();
   }
 }

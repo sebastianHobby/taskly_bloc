@@ -15,12 +15,9 @@ import 'package:taskly_domain/src/allocation/engine/proportional_allocator.dart'
 import 'package:taskly_domain/src/allocation/engine/urgency_detector.dart';
 import 'package:taskly_domain/src/allocation/engine/urgency_weighted_allocator.dart';
 import 'package:taskly_domain/src/services/analytics/analytics_service.dart';
-import 'package:taskly_domain/src/allocation/contracts/allocation_snapshot_repository_contract.dart';
-import 'package:taskly_domain/src/allocation/model/allocation_snapshot.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/time/clock.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_domain/src/services/values/effective_values.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 /// Orchestrates task allocation using pinned labels and allocation strategies.
@@ -37,15 +34,13 @@ class AllocationOrchestrator {
     required ProjectRepositoryContract projectRepository,
     required HomeDayKeyService dayKeyService,
     Clock clock = systemClock,
-    AllocationSnapshotRepositoryContract? allocationSnapshotRepository,
   }) : _taskRepository = taskRepository,
        _valueRepository = valueRepository,
        _settingsRepository = settingsRepository,
        _analyticsService = analyticsService,
        _projectRepository = projectRepository,
        _dayKeyService = dayKeyService,
-       _clock = clock,
-       _allocationSnapshotRepository = allocationSnapshotRepository;
+       _clock = clock;
 
   final TaskRepositoryContract _taskRepository;
   final ValueRepositoryContract _valueRepository;
@@ -54,60 +49,18 @@ class AllocationOrchestrator {
   final ProjectRepositoryContract _projectRepository;
   final HomeDayKeyService _dayKeyService;
   final Clock _clock;
-  final AllocationSnapshotRepositoryContract? _allocationSnapshotRepository;
 
   /// Watch the full allocation result (pinned + allocated tasks)
   Stream<AllocationResult> watchAllocation() {
     AppLog.routine('domain.allocation', 'watchAllocation started');
 
-    // Latest snapshot wins: cancel in-flight computations when inputs change.
-    return combineStreams()
-        .switchMap(
-          (combined) => Stream.fromFuture(_computeAllocation(combined)),
-        )
-        .asyncMap((computed) async {
-          // Persist a stable daily snapshot of allocation membership.
-          // IMPORTANT: App code does not filter on `user_id`; RLS + PowerSync buckets
-          // handle scoping.
-          final repo = _allocationSnapshotRepository;
-          if (repo != null && !computed.result.requiresValueSetup) {
-            final allocated = computed.result.allocatedTasks
-                .map(
-                  (a) => AllocationSnapshotEntryInput(
-                    entity: AllocationEntityRef(
-                      type: AllocationSnapshotEntityType.task,
-                      id: a.task.id,
-                    ),
-                    projectId: a.task.projectId,
-                    qualifyingValueId: a.qualifyingValueId,
-                    effectivePrimaryValueId: a.task.effectivePrimaryValueId,
-                    allocationScore: a.allocationScore,
-                  ),
-                )
-                .toList();
-
-            await repo.persistAllocatedForUtcDay(
-              dayUtc: computed.dayUtc,
-              capAtGeneration: computed.capAtGeneration,
-              candidatePoolCountAtGeneration:
-                  computed.candidatePoolCountAtGeneration,
-              allocated: allocated,
-            );
-          }
-
-          return computed.result;
-        });
+    // Latest inputs win: cancel in-flight computations when inputs change.
+    return combineStreams().switchMap(
+      (combined) => Stream.fromFuture(_computeAllocation(combined)),
+    );
   }
 
-  Future<
-    ({
-      AllocationResult result,
-      DateTime dayUtc,
-      int capAtGeneration,
-      int candidatePoolCountAtGeneration,
-    })
-  >
-  _computeAllocation(
+  Future<AllocationResult> _computeAllocation(
     (List<Task>, List<Project>, AllocationConfig) combined,
   ) async {
     final tasks = combined.$1;
@@ -134,39 +87,29 @@ class AllocationOrchestrator {
       'Found ${values.length} values in DB',
     );
     if (values.isEmpty) {
-      return (
-        result: AllocationResult(
-          allocatedTasks: const [],
-          reasoning: const AllocationReasoning(
-            strategyUsed: 'none',
-            categoryAllocations: {},
-            categoryWeights: {},
-            explanation: 'No values defined',
-          ),
-          excludedTasks: const [],
-          requiresValueSetup: true,
+      return AllocationResult(
+        allocatedTasks: const [],
+        reasoning: const AllocationReasoning(
+          strategyUsed: 'none',
+          categoryAllocations: {},
+          categoryWeights: {},
+          explanation: 'No values defined',
         ),
-        dayUtc: todayUtc,
-        capAtGeneration: allocationConfig.dailyLimit,
-        candidatePoolCountAtGeneration: 0,
+        excludedTasks: const [],
+        requiresValueSetup: true,
       );
     }
 
     if (allocationConfig.dailyLimit == 0) {
-      return (
-        result: AllocationResult(
-          allocatedTasks: const [],
-          reasoning: const AllocationReasoning(
-            strategyUsed: 'none',
-            categoryAllocations: {},
-            categoryWeights: {},
-            explanation: 'No allocation preferences configured',
-          ),
-          excludedTasks: const [],
+      return AllocationResult(
+        allocatedTasks: const [],
+        reasoning: const AllocationReasoning(
+          strategyUsed: 'none',
+          categoryAllocations: {},
+          categoryWeights: {},
+          explanation: 'No allocation preferences configured',
         ),
-        dayUtc: todayUtc,
-        capAtGeneration: allocationConfig.dailyLimit,
-        candidatePoolCountAtGeneration: 0,
+        excludedTasks: const [],
       );
     }
 
@@ -211,32 +154,10 @@ class AllocationOrchestrator {
       todayDayKeyUtc: todayUtc,
     );
 
-    final candidatePoolCountNow =
-        allocatedRegularTasks.allocatedTasks.length +
-        allocatedRegularTasks.excludedTasks.length;
-
-    final snapshotRepo = _allocationSnapshotRepository;
-    final latestSnapshot = snapshotRepo == null
-        ? null
-        : await snapshotRepo.getLatestForUtcDay(todayUtc);
-
-    // Once a day has been generated, keep cap/pool stable across versions so the
-    // 'top-up allowed' decision never flips due to mid-day completions.
-    final capAtGeneration =
-        latestSnapshot?.capAtGeneration ?? allocationConfig.dailyLimit;
-    final candidatePoolCountAtGeneration =
-        latestSnapshot?.candidatePoolCountAtGeneration ?? candidatePoolCountNow;
-
-    final stabilizedRegular = _stabilizeRegularAllocation(
-      todayUtc: todayUtc,
-      capAtGeneration: capAtGeneration,
-      candidatePoolCountAtGeneration: candidatePoolCountAtGeneration,
-      latestSnapshot: latestSnapshot,
-      regularTasks: regularTasks,
-      allocatedRegularTasks: allocatedRegularTasks.allocatedTasks,
-    );
-
-    final allAllocatedTasks = [...pinnedAllocatedTasks, ...stabilizedRegular];
+    final allAllocatedTasks = [
+      ...pinnedAllocatedTasks,
+      ...allocatedRegularTasks.allocatedTasks,
+    ];
 
     // Best-effort logging: urgent valueless tasks are a key signal for UX.
     final urgencyDetector = UrgencyDetector.fromConfig(allocationConfig);
@@ -251,92 +172,12 @@ class AllocationOrchestrator {
       );
     }
 
-    return (
-      result: AllocationResult(
-        allocatedTasks: allAllocatedTasks,
-        reasoning: allocatedRegularTasks.reasoning,
-        excludedTasks: allocatedRegularTasks.excludedTasks,
-        activeFocusMode: allocationConfig.focusMode,
-      ),
-      dayUtc: todayUtc,
-      capAtGeneration: capAtGeneration,
-      candidatePoolCountAtGeneration: candidatePoolCountAtGeneration,
+    return AllocationResult(
+      allocatedTasks: allAllocatedTasks,
+      reasoning: allocatedRegularTasks.reasoning,
+      excludedTasks: allocatedRegularTasks.excludedTasks,
+      activeFocusMode: allocationConfig.focusMode,
     );
-  }
-
-  List<AllocatedTask> _stabilizeRegularAllocation({
-    required DateTime todayUtc,
-    required int capAtGeneration,
-    required int candidatePoolCountAtGeneration,
-    required AllocationSnapshot? latestSnapshot,
-    required List<Task> regularTasks,
-    required List<AllocatedTask> allocatedRegularTasks,
-  }) {
-    // No snapshot: use computed allocation as-is.
-    if (latestSnapshot == null) return allocatedRegularTasks;
-
-    // Only allow top-up when the day was initially generated with a shortage.
-    final topUpAllowed = candidatePoolCountAtGeneration < capAtGeneration;
-
-    final regularTaskById = <String, Task>{
-      for (final t in regularTasks) t.id: t,
-    };
-
-    final suggestedById = <String, AllocatedTask>{
-      for (final a in allocatedRegularTasks) a.task.id: a,
-    };
-
-    final prevEntries = latestSnapshot.allocated
-        .where(
-          (e) =>
-              e.entity.type == AllocationSnapshotEntityType.task &&
-              e.qualifyingValueId != 'pinned',
-        )
-        .toList();
-
-    final lockedPrev = <AllocatedTask>[];
-    final lockedIds = <String>{};
-
-    for (final e in prevEntries) {
-      final task = regularTaskById[e.entity.id];
-      if (task == null) continue; // Completed/removed/ineligible.
-
-      final fromSuggested = suggestedById[e.entity.id];
-      if (fromSuggested != null) {
-        lockedPrev.add(fromSuggested);
-      } else {
-        lockedPrev.add(
-          AllocatedTask(
-            task: task,
-            qualifyingValueId: e.qualifyingValueId ?? 'snapshot',
-            allocationScore: e.allocationScore ?? 0,
-          ),
-        );
-      }
-
-      lockedIds.add(e.entity.id);
-    }
-
-    if (!topUpAllowed) {
-      // Freeze membership (allow shrink, no refill).
-      return lockedPrev.length <= capAtGeneration
-          ? lockedPrev
-          : lockedPrev.take(capAtGeneration).toList();
-    }
-
-    final remainingSlots = capAtGeneration - lockedPrev.length;
-    if (remainingSlots <= 0) {
-      return lockedPrev.take(capAtGeneration).toList();
-    }
-
-    final topUps = <AllocatedTask>[];
-    for (final a in allocatedRegularTasks) {
-      if (lockedIds.contains(a.task.id)) continue;
-      topUps.add(a);
-      if (topUps.length >= remainingSlots) break;
-    }
-
-    return [...lockedPrev, ...topUps];
   }
 
   /// Allocate regular (non-pinned) tasks using the configured strategy.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:taskly_ui/src/catalog/taskly_catalog_types.dart';
+import 'package:taskly_ui/src/tiles/entity_tile_intents.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 import 'package:taskly_ui/src/tiles/project_entity_tile.dart';
 import 'package:taskly_ui/src/tiles/task_entity_tile.dart';
@@ -79,22 +79,19 @@ final class TasklyAgendaTaskRowModel extends TasklyAgendaRowModel {
     required super.depth,
     required this.entityId,
     required this.model,
-    this.badges = const [],
-    this.trailing = TrailingSpec.none,
-    this.onTap,
-    this.onToggleCompletion,
-    this.onOverflowRequestedAt,
+    required this.actions,
+    this.intent = const TaskTileIntent.standardList(),
+    this.markers = const TaskTileMarkers(),
+    this.supportingText,
   });
 
   final String entityId;
   final TaskTileModel model;
 
-  final List<BadgeSpec> badges;
-  final TrailingSpec trailing;
-
-  final VoidCallback? onTap;
-  final ValueChanged<bool?>? onToggleCompletion;
-  final ValueChanged<Offset>? onOverflowRequestedAt;
+  final TaskTileIntent intent;
+  final TaskTileMarkers markers;
+  final TaskTileActions actions;
+  final String? supportingText;
 }
 
 final class TasklyAgendaProjectRowModel extends TasklyAgendaRowModel {
@@ -103,20 +100,15 @@ final class TasklyAgendaProjectRowModel extends TasklyAgendaRowModel {
     required super.depth,
     required this.entityId,
     required this.model,
-    this.badges = const [],
-    this.trailing = TrailingSpec.none,
-    this.onTap,
-    this.onOverflowRequestedAt,
+    this.intent = const ProjectTileIntent.agenda(),
+    this.actions = const ProjectTileActions(),
   });
 
   final String entityId;
   final ProjectTileModel model;
 
-  final List<BadgeSpec> badges;
-  final TrailingSpec trailing;
-
-  final VoidCallback? onTap;
-  final ValueChanged<Offset>? onOverflowRequestedAt;
+  final ProjectTileIntent intent;
+  final ProjectTileActions actions;
 }
 
 class TasklyAgendaSection extends StatelessWidget {
@@ -382,18 +374,15 @@ class _StickyTasklyAgendaSectionState
               TasklyAgendaEmptyDayRowModel() => _EmptyDayRow(row: row),
               TasklyAgendaTaskRowModel() => TaskEntityTile(
                 model: row.model,
-                badges: row.badges,
-                trailing: row.trailing,
-                onTap: row.onTap,
-                onToggleCompletion: row.onToggleCompletion,
-                onOverflowRequestedAt: row.onOverflowRequestedAt,
+                intent: row.intent,
+                markers: row.markers,
+                actions: row.actions,
+                supportingText: row.supportingText,
               ),
               TasklyAgendaProjectRowModel() => ProjectEntityTile(
                 model: row.model,
-                badges: row.badges,
-                trailing: row.trailing,
-                onTap: row.onTap,
-                onOverflowRequestedAt: row.onOverflowRequestedAt,
+                intent: row.intent,
+                actions: row.actions,
               ),
             };
 

@@ -215,7 +215,7 @@ class _ScheduledViewState extends State<_ScheduledView> {
                   child: EmptyStateWidget.noTasks(
                     title: 'Nothing scheduled',
                     description:
-                        'Add start dates or deadlines to see items here.',
+                        'Add planned days or due dates to see items here.',
                   ),
                 ),
               ScheduledFeedLoaded(:final rows) => _ScheduledAgenda(
@@ -485,39 +485,38 @@ class _ScheduledAgenda extends StatelessWidget {
 
             final hasAnyEnabledAction = overflowActions.any((a) => a.enabled);
 
+            final model = buildTaskListRowTileModel(
+              context,
+              task: task,
+              tileCapabilities: tileCapabilities,
+            );
+
             agendaRows.add(
               TasklyAgendaTaskRowModel(
                 key: row.rowKey,
                 depth: row.depth,
                 entityId: task.id,
-                model: buildTaskListRowTileModel(
-                  context,
-                  task: task,
-                  tileCapabilities: tileCapabilities,
+                model: model,
+                markers: TaskTileMarkers(pinned: task.isPinned),
+                actions: TaskTileActions(
+                  onTap: model.onTap,
+                  onToggleCompletion: buildTaskToggleCompletionHandler(
+                    context,
+                    task: task,
+                    tileCapabilities: tileCapabilities,
+                  ),
+                  onOverflowMenuRequestedAt: hasAnyEnabledAction
+                      ? (Offset pos) {
+                          showTileOverflowMenu(
+                            context,
+                            position: pos,
+                            entityTypeLabel: 'task',
+                            entityId: task.id,
+                            actions: overflowActions,
+                          );
+                        }
+                      : null,
                 ),
-                badges: [
-                  if (task.isPinned)
-                    const BadgeSpec(kind: BadgeKind.pinned, label: 'Pinned'),
-                ],
-                trailing: hasAnyEnabledAction
-                    ? TrailingSpec.overflowButton
-                    : TrailingSpec.none,
-                onToggleCompletion: buildTaskToggleCompletionHandler(
-                  context,
-                  task: task,
-                  tileCapabilities: tileCapabilities,
-                ),
-                onOverflowRequestedAt: hasAnyEnabledAction
-                    ? (Offset pos) async {
-                        await showTileOverflowMenu(
-                          context,
-                          position: pos,
-                          entityTypeLabel: 'task',
-                          entityId: task.id,
-                          actions: overflowActions,
-                        );
-                      }
-                    : null,
               ),
             );
             continue;
@@ -552,22 +551,20 @@ class _ScheduledAgenda extends StatelessWidget {
                   taskCount: project.taskCount,
                   completedTaskCount: project.completedTaskCount,
                 ),
-                badges: const [],
-                trailing: hasAnyEnabledAction
-                    ? TrailingSpec.overflowButton
-                    : TrailingSpec.none,
-                onTap: () => Routing.toProjectEdit(context, project.id),
-                onOverflowRequestedAt: hasAnyEnabledAction
-                    ? (Offset pos) async {
-                        await showTileOverflowMenu(
-                          context,
-                          position: pos,
-                          entityTypeLabel: 'project',
-                          entityId: project.id,
-                          actions: overflowActions,
-                        );
-                      }
-                    : null,
+                actions: ProjectTileActions(
+                  onTap: () => Routing.toProjectEdit(context, project.id),
+                  onOverflowMenuRequestedAt: hasAnyEnabledAction
+                      ? (Offset pos) {
+                          showTileOverflowMenu(
+                            context,
+                            position: pos,
+                            entityTypeLabel: 'project',
+                            entityId: project.id,
+                            actions: overflowActions,
+                          );
+                        }
+                      : null,
+                ),
               ),
             );
             continue;

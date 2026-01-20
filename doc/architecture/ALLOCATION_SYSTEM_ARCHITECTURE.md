@@ -2,7 +2,7 @@
 
 > Audience: developers + architects
 >
-> Scope: the allocation system in the **future-state** architecture (inputs -> focus-mode config -> allocation computation -> daily snapshots -> screen integration), with emphasis on **My Day**, **focus modes**, and **when/how allocation is invoked**.
+> Scope: allocation in the current architecture (inputs -> focus-mode config -> allocation computation -> My Day integration), with emphasis on **My Day**, **focus modes**, and **when/how allocation is invoked**.
 
 ## 1) Executive Summary
 
@@ -15,9 +15,8 @@ Taskly's **allocation system** produces a daily "Focus list" of tasks by combini
 
 This output is exposed to the app primarily through the **My Day screen**:
 
-- The screen’s BLoC reads the latest allocation snapshot and exposes widget-ready state.
-- Allocation warnings are surfaced via the attention system.
-- The system prefers a persisted **daily allocation snapshot** so that My Day remains stable throughout the day.
+- The screen’s BLoC subscribes to allocation suggestions and exposes widget-ready state.
+- Allocation snapshot persistence and snapshot-based alerts have been removed.
 
 A key UX invariant:
 
@@ -38,8 +37,6 @@ A key UX invariant:
 ### Domain services (allocation engine)
 - Orchestrator:
   - [lib/domain/allocation/engine/allocation_orchestrator.dart](../../lib/domain/allocation/engine/allocation_orchestrator.dart)
-- Snapshot refresh coordinator:
-  - [lib/domain/allocation/engine/allocation_snapshot_coordinator.dart](../../lib/domain/allocation/engine/allocation_snapshot_coordinator.dart)
 - Strategy implementations (selection is config-driven):
   - [lib/domain/allocation/engine/proportional_allocator.dart](../../lib/domain/allocation/engine/proportional_allocator.dart)
   - [lib/domain/allocation/engine/urgency_weighted_allocator.dart](../../lib/domain/allocation/engine/urgency_weighted_allocator.dart)
@@ -53,13 +50,6 @@ A key UX invariant:
   - [lib/domain/services/time/app_lifecycle_service.dart](../../lib/domain/services/time/app_lifecycle_service.dart)
 - Central time-based triggers (timers, day rollover):
   - [lib/domain/services/time/temporal_trigger_service.dart](../../lib/domain/services/time/temporal_trigger_service.dart)
-
-### Persistence (daily snapshots)
-- Contract + domain models:
-  - [lib/domain/allocation/contracts/allocation_snapshot_repository_contract.dart](../../lib/domain/allocation/contracts/allocation_snapshot_repository_contract.dart)
-  - [lib/domain/allocation/model/allocation_snapshot.dart](../../lib/domain/allocation/model/allocation_snapshot.dart)
-- Drift repository implementation:
-  - [lib/data/allocation/repositories/allocation_snapshot_repository.dart](../../lib/data/allocation/repositories/allocation_snapshot_repository.dart)
 
 ### Screen integration (My Day)
 
@@ -98,23 +88,17 @@ layer via the My Day ritual flow (inline gate card) and BLoC state.
 |   - emits HomeDayBoundaryCrossed events                         |
 |   - re-checks on app resume (timers don't run while suspended)  |
 |                                                               |
-|  AllocationSnapshotCoordinator                                  |
-|   - owns WHEN to refresh today's snapshot                       |
-|   - debounces input changes                                     |
-|   - refreshes immediately on day boundary                       |
 |  AllocationOrchestrator                                        |
 |   - combines tasks/projects/settings                            |
 |   - computes allocation result (strategies)                     |
-|   - persists allocation snapshots (optional injection)          |
 |                                                               |
-|  AllocationSnapshotRepository                                  |
-|   - stores daily allocation membership                          |
+|  My Day ritual selection                                        |
+|   - source of truth for “today” task set                         |
 +---------------------------------------------------------------+
                                 |
                                 v
 +---------------------------------------------------------------+
 |                       Drift / PowerSync DB                     |
-|  - allocation_snapshots + allocation_snapshot_entries           |
 |  - user settings (SettingsKey.allocation)                       |
 +---------------------------------------------------------------+
 ```
@@ -150,7 +134,7 @@ an inline gate card (not a domain-level screen interpreter).
      - focusMode = selected
      - strategySettings = preset or user-tuned
 5) After save, FocusSetupWizardPage requests an immediate snapshot refresh via
-  `AllocationSnapshotCoordinator` so snapshot-based screens refresh immediately.
+  allocation suggestions recompute immediately.
 6) Return to My Day; ritual gate is now inactive; the screen renders allocation
   output and any allocation-related attention items.
 ```
@@ -158,78 +142,7 @@ an inline gate card (not a domain-level screen interpreter).
 Key save behavior:
 - [lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart](../../lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart)
 
-Key post-save "refresh" call (requests an immediate snapshot refresh):
-- [lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart](../../lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart)
-
 ---
-
-### 4.2 Allocation section: Snapshot-first, with live fallback
-
-My Day is snapshot-first.
-
-**Runtime sequence (watch path):**
-
-```text
-1) My Day BLoC determines current UTC day
-2) Subscribe to AllocationSnapshotRepository.watchLatestForUtcDay(day)
-3) If snapshot exists:
-  - fetch Task entities referenced by snapshot entries
-  - build widget-ready groups (pinned + tasksByValue)
-4) If snapshot does not exist yet:
-  - fall back to AllocationOrchestrator.watchAllocation()
-  - build groups from the computed allocation result
-5) Emit BLoC state; widgets render it
-```
-
-**Snapshot-first behavior exists for stability**:
-
-- The user's Focus list should not churn due to incidental mid-day changes.
-- The allocator can still recompute, but the snapshot layer can "lock" membership.
-
-**Keeping snapshots fresh (top-up-only)**:
-
-- Once running, `AllocationSnapshotCoordinator` keeps today's snapshot generated
-  and refreshed in the background.
-- It triggers refreshes based on:
-  - debounced allocation input changes (tasks/projects/settings)
-  - home-day boundary rollover (`TemporalTriggerService`)
-  - explicit requests (e.g., focus setup save)
-- Snapshot stabilization rules ensure **no reshuffle**:
-  - If the day was generated without a shortage, allocation membership freezes
-    (it may shrink as tasks become ineligible/completed, but it will not refill).
-  - If the day was generated with a shortage, remaining slots may be **topped up**.
-
----
-
-### 4.3 Allocation snapshots: generation, versioning, and stability rules
-
-Allocation snapshots are **daily**, keyed by **UTC day**, and are **allocated-membership only**.
-
-- Domain contract:
-  - [lib/domain/allocation/contracts/allocation_snapshot_repository_contract.dart](../../lib/domain/allocation/contracts/allocation_snapshot_repository_contract.dart)
-
-**Who writes snapshots?**
-
-- `AllocationOrchestrator.watchAllocation()` persists a snapshot (if the snapshot repository is provided via DI).
-
-**When does a new version get written?**
-
-- Only when the **membership changes** or relevant generation metadata changes.
-- The Drift implementation checks set equality before inserting a new version.
-
-Repository implementation:
-- [lib/data/allocation/repositories/allocation_snapshot_repository.dart](../../lib/data/allocation/repositories/allocation_snapshot_repository.dart)
-
-**Mid-day stability rules (membership locking):**
-
-The orchestrator includes a stabilization step:
-
-- When a snapshot already exists for today, regular (non-pinned) membership is treated as "locked".
-- A "top-up" is only allowed if the day was generated with an initial shortage (candidate pool < cap).
-
-Implementation details:
-- [lib/domain/allocation/engine/allocation_orchestrator.dart](../../lib/domain/allocation/engine/allocation_orchestrator.dart)
-
 ---
 
 ## 5) Allocation Algorithm (What it does)
@@ -277,10 +190,9 @@ Regular tasks are allocated using `AllocationParameters` built from settings, in
 - neglect window and influence
 - value/task priority weights
 
-5) **Persist + stabilize**
+5) **Return suggestions**
 
-- Persist allocation membership as a snapshot for today (if configured).
-- Stabilize regular membership against the latest snapshot.
+- Return an `AllocationResult` that My Day can use to suggest focus items.
 
 ---
 
@@ -313,66 +225,14 @@ Save behavior:
 
 ---
 
-## 7) Integration with Allocation Alerts (Attention system)
-
-Allocation alerts are *not* computed by the allocator directly.
-
-Instead:
-
-- My Day BLoC (or a dedicated child BLoC) calls:
-  - `AttentionEngine.watch(AttentionQuery(domains: {'allocation'}))`
-- Allocation alert rules are evaluated **against the current day's snapshot**:
-  - "Show candidates that match predicate X but are not allocated today."
-
-Key implementation:
-- [lib/domain/attention/engine/attention_engine.dart](../../lib/domain/attention/engine/attention_engine.dart)
-
-Important design note (current state):
-
-- The allocation section result carries `excludedTasks` mainly for the optional "outside focus" section.
-- The "warning banners / alerts" UX is driven by the attention system so it can:
-  - apply rule configuration,
-  - support dismissals via state-hashes,
-  - remain consistent with other attention surfaces.
-
----
-
-## 8) When / How Allocation Is Called (Trigger points)
+## 7) When / How Allocation Is Called (Trigger points)
 
 ### 8.1 My Day screen (primary)
 
 Allocation is read whenever the My Day BLoC is active:
 
-- Prefer snapshot stream; fall back to orchestrator only when necessary.
-
-### 8.2 Focus setup save (explicit refresh)
-
-After saving focus-mode settings, the wizard triggers:
-
-- `AllocationSnapshotCoordinator.requestRefreshNow(AllocationSnapshotRefreshReason.focusSetupSaved)`
-
-This forces generation/persistence of a fresh snapshot so My Day updates immediately.
-
-See:
-- [lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart](../../lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart)
-
-### 8.3 Centralized snapshot refresh triggers (coordinator)
-
-The coordinator is started at bootstrap and unifies "when" decisions.
-
-It will attempt a refresh when:
-
-- Allocation inputs change (debounced): tasks/projects/settings streams emit.
-- Home day boundary crosses (immediate): `TemporalTriggerService` emits `HomeDayBoundaryCrossed`.
-
-Refreshes are gated to avoid unnecessary churn:
-
-- Requires `AllocationConfig.hasSelectedFocusMode == true`
-- Requires `AllocationConfig.dailyLimit > 0`
-- Requires at least one incomplete task
-
-See:
-- [lib/domain/allocation/engine/allocation_snapshot_coordinator.dart](../../lib/domain/allocation/engine/allocation_snapshot_coordinator.dart)
+- If the ritual is not completed for the day, show allocation suggestions.
+- If the ritual is completed, render the ritual-selected tasks as “today”.
 
 ### 8.4 What changes can trigger recomputation (when orchestrator is used)
 
@@ -389,7 +249,5 @@ See stream combination:
 
 ## 9) Notes / Invariants
 
-- Snapshots are keyed by **UTC day**.
-- Snapshots store **allocated membership** (not "excluded").
-- App code intentionally does not filter snapshot rows by `user_id`; scoping is handled by Supabase RLS + PowerSync bucket rules.
-- "First run" (no snapshot yet) uses live allocation fallback.
+- Day logic is keyed by **home-day (UTC-derived)** to keep “today” consistent.
+- Allocation returns **suggestions**; ritual selection is the source of truth.

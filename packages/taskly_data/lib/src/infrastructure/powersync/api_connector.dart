@@ -593,6 +593,8 @@ Future<void> runPostAuthMaintenance({
   // the local Drift/PowerSync database.
   await AttentionSeeder(db: driftDb, idGenerator: idGenerator).ensureSeeded();
 
+  await _backfillAttentionRulesDomain(db: driftDb);
+
   // Seed system Journal trackers + default preferences.
   await JournalTrackerSeeder(
     db: driftDb,
@@ -606,6 +608,36 @@ Future<void> runPostAuthMaintenance({
   await _cleanupOrphanedAttentionResolutions(db: driftDb);
 
   talker.info('[PostAuthMaintenance] Completed');
+}
+
+Future<void> _backfillAttentionRulesDomain({
+  required AppDatabase db,
+}) async {
+  try {
+    final updated = await db.customUpdate(
+      'UPDATE attention_rules '
+      'SET domain = ? '
+      "WHERE domain IS NULL OR domain = ''",
+      variables: [
+        Variable.withString(AttentionSeeder.attentionRulesDomain),
+      ],
+      updates: {db.attentionRules},
+    );
+
+    if (updated > 0) {
+      talker.info(
+        '[PostAuthMaintenance] Backfilled domain for '
+        '$updated attention rule(s)',
+      );
+    }
+  } catch (e, stackTrace) {
+    // Best-effort: if the local PowerSync schema hasn't applied the new column
+    // yet, we don't want to crash app startup.
+    talker.warning(
+      '[PostAuthMaintenance] Failed to backfill attention_rules.domain',
+    );
+    talker.handle(e, stackTrace);
+  }
 }
 
 Future<void> _cleanupOrphanedSystemAttentionRules({

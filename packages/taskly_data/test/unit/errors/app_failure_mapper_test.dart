@@ -6,7 +6,6 @@ import '../../helpers/test_imports.dart';
 import 'dart:async' as async;
 import 'dart:io';
 
-import 'package:sqlite3/sqlite3.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_data/src/errors/app_failure_mapper.dart';
 import 'package:taskly_data/src/repositories/repository_exceptions.dart';
@@ -55,12 +54,13 @@ void main() {
       expect(mapped.message, contains('offline'));
     });
 
-    testSafe('maps SqliteException to StorageFailure', () async {
-      final mapped = AppFailureMapper.fromException(
-        SqliteException(1, 'disk I/O error'),
-      );
-      expect(mapped, isA<StorageFailure>());
-      expect(mapped.message, contains('disk I/O error'));
+    testSafe('maps SqliteException-like errors to StorageFailure', () async {
+      final error = _FakeSqliteException('disk I/O error');
+
+      final failure = AppFailureMapper.fromException(error);
+
+      expect(failure, isA<StorageFailure>());
+      expect(failure.message, contains('disk I/O error'));
     });
 
     testSafe('maps AuthException to AuthFailure', () async {
@@ -84,4 +84,13 @@ void main() {
       expect(mapped, isA<UnknownFailure>());
     });
   });
+}
+
+class _FakeSqliteException {
+  _FakeSqliteException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'SqliteException($message)';
 }

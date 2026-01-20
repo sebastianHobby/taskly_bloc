@@ -68,5 +68,33 @@ When changing `taskly_ui` entities/sections:
 
 - Remove unused options and unused callback wiring.
 - Avoid option creep: do not add new flags for one-off screen needs.
-- Prefer well-named variants (models/enums) when configuration is legitimately
-  needed across multiple consumers.
+
+### 5.1 Intent, not config (required)
+
+For entity tiles and list rows (Task/Project/Value), the default pattern is:
+
+- **Intent** describes *why* the tile is being shown (screen/flow).
+- **Actions** describe what the user can do (callbacks opt into affordances).
+- **Markers** describe small semantic facts that affect minor affordances.
+
+Normative rules:
+
+- Do not add visual/structural configuration knobs (for example “badge lists”,
+  “trailing spec”, “variant flags”) to satisfy one-off screen needs.
+- Prefer adding a new intent case when multiple screens truly need a distinct
+  rendering intent.
+- Prefer deriving affordances from the presence/absence of callbacks in the
+  `*Actions` object (for example, show overflow only when an
+  `onOverflowMenuRequestedAt` callback is provided).
+
+See: `doc/architecture/ARCHITECTURE_INVARIANTS.md` (UI + `taskly_ui` rules).
+
+### 5.2 Narrow extension points only (required)
+
+To keep shared UI consistent across screens:
+
+- Avoid “widget injection” parameters for entity tiles.
+- Prefer strings and UI-only models (data-in) and callbacks (events-out).
+- If an extension point is unavoidable, keep it narrow and semantically named
+  (for example a `titlePrefix` widget) rather than exposing a full `trailing`
+  builder API.

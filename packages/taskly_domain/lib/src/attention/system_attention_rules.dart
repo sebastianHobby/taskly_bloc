@@ -218,64 +218,6 @@ abstract class SystemAttentionRules {
   );
 
   // ==========================================================================
-  // ALLOCATION WARNING RULES (3 rules)
-  // ==========================================================================
-
-  /// Warns about tasks that need allocation attention
-  static const allocationExcludedTasks = AttentionRuleTemplate(
-    ruleKey: 'allocation_excluded_tasks',
-    bucket: AttentionBucket.action,
-    evaluator: 'allocation_snapshot_task_v1',
-    evaluatorParams: {
-      'predicate': 'urgentValueless',
-    },
-    severity: AttentionSeverity.warning,
-    displayConfig: {
-      'title': 'Needs Allocation',
-      'description': 'Urgent tasks not in your day allocation',
-      'icon': 'error_outline',
-    },
-    resolutionActions: ['reviewed', 'dismissed'],
-    sortOrder: 200,
-  );
-
-  /// Warns about urgent tasks that ARE value-aligned but still not allocated.
-  static const allocationUrgentValueAligned = AttentionRuleTemplate(
-    ruleKey: 'allocation_urgent_value_aligned',
-    bucket: AttentionBucket.action,
-    evaluator: 'allocation_snapshot_task_v1',
-    evaluatorParams: {
-      'predicate': 'urgentValueAligned',
-    },
-    severity: AttentionSeverity.warning,
-    displayConfig: {
-      'title': 'Urgent but Not Allocated',
-      'description': 'Urgent tasks aligned to your values, but not in focus',
-      'icon': 'error_outline',
-    },
-    resolutionActions: ['reviewed', 'dismissed'],
-    sortOrder: 210,
-  );
-
-  /// Warns about tasks under urgent projects that have no effective value.
-  static const allocationProjectUrgentValueless = AttentionRuleTemplate(
-    ruleKey: 'allocation_project_urgent_valueless',
-    bucket: AttentionBucket.action,
-    evaluator: 'allocation_snapshot_task_v1',
-    evaluatorParams: {
-      'predicate': 'projectUrgentValueless',
-    },
-    severity: AttentionSeverity.warning,
-    displayConfig: {
-      'title': 'Urgent Project Needs Alignment',
-      'description': 'Tasks in urgent projects with no effective value',
-      'icon': 'error_outline',
-    },
-    resolutionActions: ['reviewed', 'dismissed'],
-    sortOrder: 220,
-  );
-
-  // ==========================================================================
   // HELPERS
   // ==========================================================================
 
@@ -293,10 +235,6 @@ abstract class SystemAttentionRules {
     reviewProjectHighValueNeglected,
     reviewProjectNoAllocatedRecently,
     reviewProjectNoAllocatableTasks,
-    // Allocation warnings (3)
-    allocationExcludedTasks,
-    allocationUrgentValueAligned,
-    allocationProjectUrgentValueless,
   ];
 
   /// Get template by rule key

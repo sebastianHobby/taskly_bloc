@@ -22,6 +22,8 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
   // Rules
   // ==========================================================================
 
+  static const String attentionRulesDomain = 'attention';
+
   @override
   Stream<List<domain_rule.AttentionRule>> watchAllRules() {
     return _db
@@ -329,6 +331,7 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
       displayConfig: Value(rule.displayConfig),
       resolutionActions: Value(rule.resolutionActions),
       active: Value(rule.active),
+      domain: const Value(attentionRulesDomain),
       source: Value(_mapSource(rule.source)),
       createdAt: forUpdate
           ? const Value<DateTime>.absent()

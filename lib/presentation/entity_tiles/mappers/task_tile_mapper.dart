@@ -31,7 +31,7 @@ TaskTileModel buildTaskListRowTileModel(
   final startDateLabel = switch (start) {
     null => null,
     final startDate =>
-      DateTime(startDate.year, startDate.month, startDate.day).isAfter(today)
+      !DateTime(startDate.year, startDate.month, startDate.day).isBefore(today)
           ? DateLabelFormatter.format(context, startDate)
           : null,
   };
@@ -65,7 +65,7 @@ TaskTileModel buildTaskListRowTileModel(
       completed: isCompleted,
       today: today,
     ),
-    hasRepeat: task.repeatIcalRrule != null,
+    hasRepeat: task.isRepeating,
     showBothDatesIfPresent: true,
     showPriorityMarkerOnRight: true,
     priority: task.priority,

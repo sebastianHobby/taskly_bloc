@@ -47,6 +47,10 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
   const factory GlobalSettingsEvent.textScaleChanged(double textScaleFactor) =
       GlobalSettingsTextScaleChanged;
 
+  /// User changed the My Day due-window days.
+  const factory GlobalSettingsEvent.myDayDueWindowDaysChanged(int days) =
+      GlobalSettingsMyDayDueWindowDaysChanged;
+
   /// User completed onboarding.
   const factory GlobalSettingsEvent.onboardingCompleted() =
       GlobalSettingsOnboardingCompleted;
@@ -137,6 +141,10 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsTextScaleChanged>(
       _onTextScaleChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMyDayDueWindowDaysChanged>(
+      _onMyDayDueWindowDaysChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsOnboardingCompleted>(
@@ -454,6 +462,34 @@ class GlobalSettingsBloc
         st,
         context: context,
         message: '[GlobalSettingsBloc] onboarding persist failed',
+      );
+    }
+  }
+
+  Future<void> _onMyDayDueWindowDaysChanged(
+    GlobalSettingsMyDayDueWindowDaysChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final clampedDays = event.days.clamp(1, 30);
+    final updated = state.settings.copyWith(myDayDueWindowDays: clampedDays);
+    final context = _newContext(
+      intent: 'settings_my_day_due_window_days_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'days': clampedDays},
+    );
+    try {
+      await _settingsRepository.save(
+        SettingsKey.global,
+        updated,
+        context: context,
+      );
+    } catch (e, st) {
+      talker.error('[settings.global] My Day due window persist FAILED', e, st);
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[GlobalSettingsBloc] my day due window persist failed',
       );
     }
   }

@@ -3,7 +3,6 @@
 /// Import this when you only need domain contracts/interfaces.
 library;
 
-export 'src/allocation/contracts/allocation_snapshot_repository_contract.dart';
 export 'src/attention/contracts/attention_engine_contract.dart';
 export 'src/attention/contracts/attention_repository_contract.dart';
 

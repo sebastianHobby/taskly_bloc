@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart';
-import 'package:sqlite3/sqlite3.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/db.dart';
 import 'package:taskly_data/id.dart';
@@ -42,12 +41,28 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
         fields,
       );
 
-      if (error is SqliteException) {
-        throw StorageFailure(message: error.message, cause: error);
+      if (_isSqliteException(error)) {
+        throw StorageFailure(message: _extractMessage(error), cause: error);
       }
 
       throw UnknownFailure(cause: error);
     }
+  }
+
+  bool _isSqliteException(Object error) {
+    return error.runtimeType.toString() == 'SqliteException';
+  }
+
+  String _extractMessage(Object error) {
+    try {
+      final dynamicError = error as dynamic;
+      final message = dynamicError.message;
+      if (message is String && message.isNotEmpty) return message;
+    } catch (_) {
+      // Ignore: best-effort extraction without importing platform-only types.
+    }
+
+    return error.toString();
   }
 
   // ===========================================================================

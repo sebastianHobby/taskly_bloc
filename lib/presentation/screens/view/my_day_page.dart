@@ -9,7 +9,6 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
-import 'package:taskly_bloc/presentation/screens/widgets/my_day_hero_card.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/my_day_ritual_sections_card.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_ritual_wizard_page.dart';
 import 'package:taskly_domain/core.dart' as domain;
@@ -404,9 +403,6 @@ class _MyDayLoadedBody extends StatelessWidget {
               bottom: false,
               child: CustomScrollView(
                 slivers: [
-                  SliverToBoxAdapter(
-                    child: MyDayHeroCard(summary: summary),
-                  ),
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     sliver: SliverToBoxAdapter(

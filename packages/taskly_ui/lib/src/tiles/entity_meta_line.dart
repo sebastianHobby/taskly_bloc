@@ -15,6 +15,9 @@ class EntityMetaLine extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
+    const spacing = 8.0;
+    const projectNameMaxChars = 20;
+
     final hasAnyValues =
         model.showValuesInMetaLine &&
         (model.primaryValue != null || model.secondaryValues.isNotEmpty);
@@ -35,6 +38,7 @@ class EntityMetaLine extends StatelessWidget {
       padding: const EdgeInsets.only(top: 6),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          // --- Required slots: values + start + deadline (no wrapping) ---
           Widget? valueCluster;
           if (model.showValuesInMetaLine) {
             final primaryValue = model.primaryValue;
@@ -57,117 +61,311 @@ class EntityMetaLine extends StatelessWidget {
             }
           }
 
-          final dateTokens = <Widget>[];
-          if (model.showDates) {
-            final shouldShowBoth =
-                model.showBothDatesIfPresent ||
-                (model.startDateLabel != null &&
-                    model.deadlineDateLabel != null &&
-                    constraints.maxWidth >= 420);
+          final hasStart =
+              model.showDates &&
+              !model.showOnlyDeadlineDate &&
+              model.startDateLabel != null &&
+              model.startDateLabel!.trim().isNotEmpty;
 
-            if (!model.showOnlyDeadlineDate &&
-                model.startDateLabel != null &&
-                (model.deadlineDateLabel == null || shouldShowBoth)) {
-              dateTokens.add(
-                DateChip.startDate(
+          final hasDeadline =
+              model.showDates &&
+              model.deadlineDateLabel != null &&
+              model.deadlineDateLabel!.trim().isNotEmpty;
+
+          final startChip = hasStart
+              ? DateChip.startDate(
                   context: context,
                   label: model.startDateLabel!,
-                ),
-              );
-            }
+                )
+              : null;
 
-            if (model.deadlineDateLabel != null) {
-              dateTokens.add(
-                DateChip.deadline(
+          final deadlineChip = hasDeadline
+              ? DateChip.deadline(
                   context: context,
                   label: model.deadlineDateLabel!,
-
                   isOverdue: model.isOverdue,
                   isDueToday: model.isDueToday,
                   isDueSoon: model.isDueSoon,
-                ),
-              );
-            }
-          }
+                )
+              : null;
+
+          // Reserve space for required chips by constraining them to a
+          // reasonable fraction of the available width.
+          final maxWidth = constraints.maxWidth;
+          final hasBothDates = startChip != null && deadlineChip != null;
+
+          final dateChipMaxWidth = hasBothDates
+              ? maxWidth * 0.30
+              : maxWidth * 0.50;
+
+          final Widget? constrainedStart = startChip == null
+              ? null
+              : ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: dateChipMaxWidth),
+                  child: _TapAbsorber(child: startChip),
+                );
+
+          final Widget? constrainedDeadline = deadlineChip == null
+              ? null
+              : ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: dateChipMaxWidth),
+                  child: _TapAbsorber(child: deadlineChip),
+                );
+
+          // --- Optional extras (project / repeat / priority) with +N overflow ---
+          final optionalWidgets = <Widget>[];
+          var hiddenCount = 0;
 
           final hasProjectName =
               model.projectName != null && model.projectName!.trim().isNotEmpty;
-          final hasOtherTokens =
-              hasProjectName ||
-              dateTokens.isNotEmpty ||
-              model.hasRepeat ||
+
+          final projectName = hasProjectName
+              ? _capWithEllipsis(model.projectName!.trim(), projectNameMaxChars)
+              : null;
+
+          final projectWidget = projectName == null
+              ? null
+              : _TapAbsorber(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.folder_outlined,
+                        size: 12,
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.65),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        projectName,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          height: 1.1,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
+                    ],
+                  ),
+                );
+
+          final repeatWidget = model.hasRepeat
+              ? _TapAbsorber(
+                  child: Icon(
+                    Icons.sync_rounded,
+                    size: 14,
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.55),
+                  ),
+                )
+              : null;
+
+          final priorityWidget =
               (model.showPriorityMarkerOnRight &&
                   (model.priority == 1 || model.priority == 2) &&
-                  model.priorityColor != null);
+                  model.priorityColor != null)
+              ? Tooltip(
+                  message:
+                      model.priorityPillLabel ?? 'Priority P${model.priority}',
+                  child: _TapAbsorber(
+                    child: PriorityMarker(color: model.priorityColor!),
+                  ),
+                )
+              : null;
 
-          final tokens = <Widget>[
-            if (valueCluster != null) _TapAbsorber(child: valueCluster),
-            if (valueCluster != null && hasOtherTokens)
-              _TapAbsorber(
-                child: Text(
-                  '•',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
-                    fontSize: 12,
-                    height: 1,
-                  ),
-                ),
-              ),
-            if (hasProjectName)
-              _TapAbsorber(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.folder_outlined,
-                      size: 12,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.65),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      model.projectName!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                        height: 1.1,
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ...dateTokens,
-            if (model.hasRepeat)
-              _TapAbsorber(
-                child: Icon(
-                  Icons.sync_rounded,
-                  size: 14,
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.55),
-                ),
-              ),
-            if (model.showPriorityMarkerOnRight)
-              if (model.priority == 1 || model.priority == 2)
-                if (model.priorityColor != null)
-                  Tooltip(
-                    message:
-                        model.priorityPillLabel ??
-                        'Priority P${model.priority}',
-                    child: _TapAbsorber(
-                      child: PriorityMarker(color: model.priorityColor!),
-                    ),
-                  ),
+          // Always consider project first, then repeat, then priority.
+          final candidateExtras = <Widget?>[
+            projectWidget,
+            repeatWidget,
+            priorityWidget,
           ];
 
-          return Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: tokens,
+          // Compute remaining width after required content.
+          final requiredWidth = _measureRequiredWidth(
+            context,
+            theme: theme,
+            valueCluster: valueCluster,
+            constrainedStart: constrainedStart,
+            constrainedDeadline: constrainedDeadline,
+            spacing: spacing,
+          );
+
+          var remaining = (maxWidth - requiredWidth).clamp(0.0, maxWidth);
+
+          for (final extra in candidateExtras) {
+            if (extra == null) continue;
+
+            final extraWidth = _measureWidgetWidth(
+              context,
+              theme: theme,
+              widget: extra,
+            );
+
+            final needsSpacing = optionalWidgets.isNotEmpty;
+            final total = extraWidth + (needsSpacing ? spacing : 0);
+
+            if (remaining >= total) {
+              if (needsSpacing)
+                optionalWidgets.add(const SizedBox(width: spacing));
+              optionalWidgets.add(extra);
+              remaining -= total;
+            } else {
+              hiddenCount += 1;
+            }
+          }
+
+          final overflowWidget = hiddenCount <= 0
+              ? null
+              : _TapAbsorber(
+                  child: Text(
+                    '+$hiddenCount',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.75),
+                      fontSize: 12,
+                      height: 1.1,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                  ),
+                );
+
+          if (overflowWidget != null) {
+            final overflowWidth = _measureTextWidth(
+              context,
+              text: '+$hiddenCount',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            );
+
+            final needsSpacing = optionalWidgets.isNotEmpty;
+            final total = overflowWidth + (needsSpacing ? spacing : 0);
+
+            if (remaining >= total) {
+              if (needsSpacing)
+                optionalWidgets.add(const SizedBox(width: spacing));
+              optionalWidgets.add(overflowWidget);
+            }
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (valueCluster != null) _TapAbsorber(child: valueCluster),
+              if (valueCluster != null &&
+                  (constrainedStart != null || constrainedDeadline != null))
+                const SizedBox(width: spacing),
+              ?constrainedStart,
+              if (constrainedStart != null && constrainedDeadline != null)
+                const SizedBox(width: spacing),
+              ?constrainedDeadline,
+              if (optionalWidgets.isNotEmpty) const SizedBox(width: spacing),
+              ...optionalWidgets,
+            ],
           );
         },
       ),
     );
+  }
+}
+
+String _capWithEllipsis(String text, int maxChars) {
+  if (maxChars <= 0) return '…';
+  if (text.length <= maxChars) return text;
+  return '${text.substring(0, maxChars)}…';
+}
+
+double _measureRequiredWidth(
+  BuildContext context, {
+  required ThemeData theme,
+  required Widget? valueCluster,
+  required Widget? constrainedStart,
+  required Widget? constrainedDeadline,
+  required double spacing,
+}) {
+  // Conservative approximation: measure using known fixed sizes.
+  // This is only used to decide whether optional extras can fit.
+  var width = 0.0;
+
+  if (valueCluster != null) {
+    // Primary icon (18) + optional secondary icon (18) + internal spacing (6).
+    final hasSecondary =
+        (valueCluster is Row) && (valueCluster.children.length > 1);
+    width += hasSecondary ? (18 + 6 + 18) : 18;
+  }
+
+  if (valueCluster != null &&
+      (constrainedStart != null || constrainedDeadline != null)) {
+    width += spacing;
+  }
+
+  if (constrainedStart != null) {
+    width += (constrainedStart is ConstrainedBox)
+        ? constrainedStart.constraints.maxWidth
+        : 0;
+  }
+
+  if (constrainedStart != null && constrainedDeadline != null) {
+    width += spacing;
+  }
+
+  if (constrainedDeadline != null) {
+    width += (constrainedDeadline is ConstrainedBox)
+        ? constrainedDeadline.constraints.maxWidth
+        : 0;
+  }
+
+  return width;
+}
+
+double _measureTextWidth(
+  BuildContext context, {
+  required String text,
+  required TextStyle? style,
+}) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: Directionality.of(context),
+    maxLines: 1,
+  )..layout();
+  return painter.size.width;
+}
+
+double _measureWidgetWidth(
+  BuildContext context, {
+  required ThemeData theme,
+  required Widget widget,
+}) {
+  // Measure only known widget types we generate above.
+  // Fall back to a safe minimum width.
+  switch (widget) {
+    case _TapAbsorber(child: final Widget child):
+      return _measureWidgetWidth(context, theme: theme, widget: child);
+    case SizedBox(width: final w) when w != null:
+      return w;
+    case Icon(size: final s) when s != null:
+      return s;
+    case Tooltip(child: final Widget child):
+      return _measureWidgetWidth(context, theme: theme, widget: child);
+    case PriorityMarker(:final width):
+      return width;
+    case Row(children: final children):
+      var w = 0.0;
+      for (final c in children) {
+        w += _measureWidgetWidth(context, theme: theme, widget: c);
+      }
+      return w;
+    case Text(data: final data) when data != null:
+      return _measureTextWidth(
+        context,
+        text: data,
+        style: theme.textTheme.bodySmall,
+      );
+    default:
+      return 20;
   }
 }
 

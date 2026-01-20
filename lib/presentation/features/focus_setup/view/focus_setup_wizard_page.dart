@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
@@ -32,10 +31,6 @@ class FocusSetupWizardPage extends StatelessWidget {
         }
 
         if (!state.saveSucceeded) return;
-
-        getIt<AllocationSnapshotCoordinator>().requestRefreshNow(
-          AllocationSnapshotRefreshReason.focusSetupSaved,
-        );
 
         final router = GoRouter.of(context);
         if (router.canPop()) {
@@ -241,7 +236,7 @@ class _FocusModeStep extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
     final content = AttentionRulesSettingsView(
       embedded: true,
-      initialSection: AttentionRulesInitialSection.allocationAlerts,
+      initialSection: AttentionRulesInitialSection.problemDetection,
     );
 
     if (width < 700) {
