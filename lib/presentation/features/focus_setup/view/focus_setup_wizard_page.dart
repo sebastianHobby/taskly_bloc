@@ -132,7 +132,6 @@ class FocusSetupWizardPage extends StatelessWidget {
   static String _titleForStep(FocusSetupWizardStep step) {
     return switch (step) {
       FocusSetupWizardStep.selectFocusMode => 'Focus mode',
-      FocusSetupWizardStep.allocationStrategy => 'Tune Focus',
       FocusSetupWizardStep.valuesCta => 'Your values',
       FocusSetupWizardStep.finalize => 'All set',
     };
@@ -172,7 +171,6 @@ class _StepBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final body = switch (state.currentStep) {
       FocusSetupWizardStep.selectFocusMode => _FocusModeStep(state: state),
-      FocusSetupWizardStep.allocationStrategy => _AllocationStep(state: state),
       FocusSetupWizardStep.valuesCta => _ValuesCtaStep(state: state),
       FocusSetupWizardStep.finalize => _FinalizeStep(state: state),
     };
@@ -203,6 +201,7 @@ class _FocusModeStep extends StatelessWidget {
     final bloc = context.read<FocusSetupBloc>();
     final theme = Theme.of(context);
     final selected = state.effectiveFocusMode;
+    final keepValuesInBalance = state.effectiveNeglectEnabled;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -228,6 +227,59 @@ class _FocusModeStep extends StatelessWidget {
               onTap: () => bloc.add(FocusSetupEvent.focusModeChanged(mode)),
             ),
           ),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.balance, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Value balancing',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  value: keepValuesInBalance,
+                  onChanged: (v) => bloc.add(
+                    FocusSetupEvent.neglectEnabledChanged(v),
+                  ),
+                  title: const Row(
+                    children: [
+                      Expanded(child: Text('Keep my values in balance')),
+                      Tooltip(
+                        message:
+                            'About value balancing\n\n'
+                            'When enabled, Suggested picks may include a small '
+                            "number of tasks from values you've focused on less "
+                            "recently. It's always a gentle nudge and never "
+                            'overrides your plan.',
+                        child: Icon(Icons.info_outline, size: 18),
+                      ),
+                    ],
+                  ),
+                  subtitle: Text(
+                    'Suggested picks can gently rebalance across your values.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -317,221 +369,6 @@ class _SafetyNetCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _AllocationStep extends StatelessWidget {
-  const _AllocationStep({required this.state});
-
-  final FocusSetupState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final bloc = context.read<FocusSetupBloc>();
-    final theme = Theme.of(context);
-
-    final urgency = state.effectiveUrgencyBoostMultiplier;
-    final neglectEnabled = state.effectiveNeglectEnabled;
-    final lookback = state.effectiveNeglectLookbackDays;
-    final influencePercent = state.effectiveNeglectInfluencePercent;
-
-    final valuePriorityPercent = state.effectiveValuePriorityWeightPercent;
-    final taskFlagBoost = state.effectiveTaskFlagBoost;
-    final overdueEmergencyMultiplier =
-        state.effectiveOverdueEmergencyMultiplier;
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.tune, color: theme.colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Tune your preferences',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => bloc.add(
-                        const FocusSetupEvent.allocationResetToDefaultPressed(),
-                      ),
-                      child: const Text('Reset'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'These settings only affect how your Focus list is ranked '
-                  'and filtered.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text('Urgency boost', style: theme.textTheme.titleSmall),
-                const SizedBox(height: 6),
-                Text(
-                  '${urgency.toStringAsFixed(1)}x',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                Slider(
-                  value: urgency.clamp(0.5, 5.0),
-                  min: 0.5,
-                  max: 5,
-                  divisions: 18,
-                  onChanged: (v) => bloc.add(
-                    FocusSetupEvent.urgencyBoostChanged(
-                      (v * 2).roundToDouble() / 2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Value priority weight',
-                  style: theme.textTheme.titleSmall,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '$valuePriorityPercent%',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                Slider(
-                  value: valuePriorityPercent.toDouble(),
-                  min: 0,
-                  max: 100,
-                  divisions: 20,
-                  onChanged: (v) => bloc.add(
-                    FocusSetupEvent.valuePriorityWeightPercentChanged(
-                      v.round(),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Task flag boost',
-                  style: theme.textTheme.titleSmall,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '${taskFlagBoost.toStringAsFixed(1)}x',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                Slider(
-                  value: taskFlagBoost.clamp(0.5, 5.0),
-                  min: 0.5,
-                  max: 5,
-                  divisions: 18,
-                  onChanged: (v) => bloc.add(
-                    FocusSetupEvent.taskFlagBoostChanged(
-                      (v * 2).roundToDouble() / 2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Overdue emergency boost',
-                  style: theme.textTheme.titleSmall,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '${overdueEmergencyMultiplier.toStringAsFixed(1)}x',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                Slider(
-                  value: overdueEmergencyMultiplier.clamp(1.0, 5.0),
-                  min: 1,
-                  max: 5,
-                  divisions: 8,
-                  onChanged: (v) => bloc.add(
-                    FocusSetupEvent.overdueEmergencyMultiplierChanged(
-                      (v * 2).roundToDouble() / 2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  value: neglectEnabled,
-                  onChanged: (v) => bloc.add(
-                    FocusSetupEvent.neglectEnabledChanged(v),
-                  ),
-                  title: const Text('Boost neglected values'),
-                  subtitle: Text(
-                    'If you have been ignoring a value lately, give it a '
-                    'small lift.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                if (neglectEnabled) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    'Lookback window',
-                    style: theme.textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '$lookback days',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  Slider(
-                    value: lookback.toDouble(),
-                    min: 1,
-                    max: 60,
-                    divisions: 59,
-                    onChanged: (v) => bloc.add(
-                      FocusSetupEvent.neglectLookbackDaysChanged(v.round()),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Neglect influence',
-                    style: theme.textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '$influencePercent%',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  Slider(
-                    value: influencePercent.toDouble().clamp(0, 100),
-                    min: 0,
-                    max: 100,
-                    divisions: 20,
-                    onChanged: (v) => bloc.add(
-                      FocusSetupEvent.neglectInfluencePercentChanged(v.round()),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

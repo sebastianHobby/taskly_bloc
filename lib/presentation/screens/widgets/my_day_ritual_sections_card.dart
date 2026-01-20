@@ -72,6 +72,11 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
     final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
 
+    final hideStartsSection =
+        widget.acceptedStarts.isEmpty &&
+        widget.startsCounts.acceptedCount == 0 &&
+        widget.startsCounts.otherCount == 0;
+
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
@@ -113,7 +118,7 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'You completed everything you chose in the ritual.',
+                      'You completed everything you planned today.',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: cs.onSurfaceVariant,
                       ),
@@ -142,28 +147,34 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
                   setState(() => _dueExpanded = !_dueExpanded),
               onTapOther: widget.onAddMissingDue,
               otherLabel: 'not in today',
-              emptyTitle: 'Nothing accepted here.',
-              emptySubtitle: widget.dueCounts.otherCount > 0
-                  ? "${widget.dueCounts.otherCount} task${widget.dueCounts.otherCount == 1 ? '' : 's'} not in today."
-                  : 'No accepted tasks in this section.',
+              emptyTitle: widget.dueCounts.otherCount == 0
+                  ? "You're caught up."
+                  : 'Nothing added here yet.',
+              emptySubtitle: widget.dueCounts.otherCount == 0
+                  ? 'No overdue or due items in your plan.'
+                  : 'Review what’s available above if you want to add any.',
               previewCount: _previewCount,
             ),
-            const SizedBox(height: 10),
-            _BucketSection(
-              title: 'Starts today',
-              acceptedTasks: widget.acceptedStarts,
-              counts: widget.startsCounts,
-              expanded: _startsExpanded,
-              onToggleExpanded: () =>
-                  setState(() => _startsExpanded = !_startsExpanded),
-              onTapOther: widget.onAddMissingStarts,
-              otherLabel: 'not in today',
-              emptyTitle: 'Nothing accepted here.',
-              emptySubtitle: widget.startsCounts.otherCount > 0
-                  ? "${widget.startsCounts.otherCount} task${widget.startsCounts.otherCount == 1 ? '' : 's'} not in today."
-                  : 'No accepted tasks in this section.',
-              previewCount: _previewCount,
-            ),
+            if (!hideStartsSection) ...[
+              const SizedBox(height: 10),
+              _BucketSection(
+                title: 'Starts today',
+                acceptedTasks: widget.acceptedStarts,
+                counts: widget.startsCounts,
+                expanded: _startsExpanded,
+                onToggleExpanded: () =>
+                    setState(() => _startsExpanded = !_startsExpanded),
+                onTapOther: widget.onAddMissingStarts,
+                otherLabel: 'not in today',
+                emptyTitle: widget.startsCounts.otherCount == 0
+                    ? 'Nothing scheduled to start today.'
+                    : 'Nothing added here yet.',
+                emptySubtitle: widget.startsCounts.otherCount == 0
+                    ? 'This section will appear when tasks become available.'
+                    : 'Review what’s available above if you want to add any.',
+                previewCount: _previewCount,
+              ),
+            ],
             const SizedBox(height: 10),
             _BucketSection(
               title: 'Today’s Focus',
@@ -233,6 +244,23 @@ class _BucketSection extends StatelessWidget {
 
     final showOtherLink = counts.otherCount > 0 && onTapOther != null;
 
+    final suppressCountsLine =
+        acceptedTasks.isEmpty &&
+        counts.acceptedCount == 0 &&
+        counts.otherCount > 0;
+
+    final effectiveEmptyTitle = suppressCountsLine
+        ? 'Nothing added yet.'
+        : emptyTitle;
+
+    final effectiveEmptySubtitle = suppressCountsLine
+        ? () {
+            final otherCount = counts.otherCount;
+            final n = otherCount == 1 ? '1 task' : '$otherCount tasks';
+            return '$n not in today. Tap to review and add.';
+          }()
+        : emptySubtitle;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
       child: Column(
@@ -251,39 +279,51 @@ class _BucketSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 2),
-          _CountsLine(
-            acceptedCount: counts.acceptedCount,
-            otherCount: counts.otherCount,
-            otherLabel: otherLabel,
-            showOtherAsLink: showOtherLink,
-            onTapOther: onTapOther,
-          ),
-          const SizedBox(height: 10),
+          if (!suppressCountsLine) ...[
+            _CountsLine(
+              acceptedCount: counts.acceptedCount,
+              otherCount: counts.otherCount,
+              otherLabel: otherLabel,
+              showOtherAsLink: showOtherLink,
+              onTapOther: onTapOther,
+            ),
+            const SizedBox(height: 10),
+          ] else
+            const SizedBox(height: 10),
           if (acceptedTasks.isEmpty)
-            Container(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-              decoration: BoxDecoration(
-                color: cs.surface,
+            Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: suppressCountsLine ? onTapOther : null,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    emptyTitle,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                  decoration: BoxDecoration(
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: cs.outlineVariant.withOpacity(0.6),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    emptySubtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        effectiveEmptyTitle,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        effectiveEmptySubtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             )
           else ...[

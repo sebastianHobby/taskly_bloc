@@ -15,6 +15,9 @@ ProjectTileModel buildProjectListRowTileModel(
   bool showTrailingProgressLabel = false,
   bool showDates = true,
   bool showOnlyDeadlineDate = false,
+  bool showPrimaryValueOnTitleLine = false,
+  bool showValuesInMetaLine = true,
+  bool showSecondaryValues = true,
   String? overrideStartDateLabel,
   String? overrideDeadlineDateLabel,
   bool? overrideIsOverdue,
@@ -54,12 +57,17 @@ ProjectTileModel buildProjectListRowTileModel(
           project.priority != null ||
           hasExtraSecondaryValues);
 
+  final primaryValueData = project.primaryValue?.toChipData(context);
+
   final meta = EntityMetaLineModel(
-    primaryValue: project.primaryValue?.toChipData(context),
-    secondaryValues: project.secondaryValues
-        .take(1)
-        .map((v) => v.toChipData(context))
-        .toList(growable: false),
+    showValuesInMetaLine: showValuesInMetaLine,
+    primaryValue: primaryValueData,
+    secondaryValues: !showSecondaryValues
+        ? const []
+        : project.secondaryValues
+              .take(1)
+              .map((v) => v.toChipData(context))
+              .toList(growable: false),
     showOverflowEllipsis: shouldShowOverflowEllipsis,
     showDates: showDates,
     showOnlyDeadlineDate: showOnlyDeadlineDate,
@@ -102,6 +110,7 @@ ProjectTileModel buildProjectListRowTileModel(
     completed: project.completed,
     pinned: project.isPinned,
     meta: meta,
+    titlePrimaryValue: showPrimaryValueOnTitleLine ? primaryValueData : null,
     taskCount: taskCount,
     completedTaskCount: completedTaskCount,
     emptyTasksLabel: taskCount == 0 ? 'No tasks yet' : null,

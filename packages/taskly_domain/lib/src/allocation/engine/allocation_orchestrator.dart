@@ -10,10 +10,8 @@ import 'package:taskly_domain/src/core/model/project.dart';
 import 'package:taskly_domain/src/allocation/model/allocation_result.dart';
 import 'package:taskly_domain/src/queries/task_query.dart';
 import 'package:taskly_domain/src/allocation/engine/allocation_strategy.dart';
-import 'package:taskly_domain/src/allocation/engine/neglect_based_allocator.dart';
-import 'package:taskly_domain/src/allocation/engine/proportional_allocator.dart';
+import 'package:taskly_domain/src/allocation/engine/suggested_picks_engine.dart';
 import 'package:taskly_domain/src/allocation/engine/urgency_detector.dart';
-import 'package:taskly_domain/src/allocation/engine/urgency_weighted_allocator.dart';
 import 'package:taskly_domain/src/services/analytics/analytics_service.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/time/clock.dart';
@@ -182,8 +180,7 @@ class AllocationOrchestrator {
 
   /// Allocate regular (non-pinned) tasks using the configured strategy.
   ///
-  /// For Phase 1, this simplifies to proportional allocation.
-  /// Future phases may implement focus-mode-specific logic.
+  /// Regular allocation uses a single engine: [SuggestedPicksEngine].
   Future<AllocationResult> allocateRegularTasks(
     List<Task> tasks,
     AllocationConfig config, {
@@ -238,22 +235,29 @@ class AllocationOrchestrator {
       '$tasksWithValuesCount/${tasks.length} tasks have values',
     );
 
-    // Create allocation strategy based on configuration.
-    final strategy = createStrategyForConfig(config);
+    final engine = SuggestedPicksEngine();
 
     talker.debug(
-      '[AllocationOrchestrator] Using ${strategy.strategyName} strategy, '
+      '[AllocationOrchestrator] Using ${engine.strategyName}, '
       '$tasksWithValuesCount/${tasks.length} tasks have values, '
       '${categories.length} categories',
     );
 
-    // Fetch recent completions by value if neglect weighting is enabled
+    // Fetch recent completions by value if value balancing is enabled.
     final settings = config.strategySettings;
     Map<String, int> completionsByValue = const {};
     if (settings.enableNeglectWeighting) {
       completionsByValue = await _analyticsService.getRecentCompletionsByValue(
-        days: settings.neglectLookbackDays,
+        days: 14,
       );
+
+      final totalCompletions = completionsByValue.values.fold<int>(
+        0,
+        (sum, v) => sum + v,
+      );
+      if (totalCompletions <= 0) {
+        completionsByValue = const {};
+      }
     }
 
     // Run allocation
@@ -263,42 +267,13 @@ class AllocationOrchestrator {
       tasks: tasks,
       categories: categories,
       maxTasks: config.dailyLimit,
-      urgencyInfluence: settings.urgencyBoostMultiplier - 1.0,
-      urgentTaskBehavior: settings.urgentTaskBehavior,
       taskUrgencyThresholdDays: settings.taskUrgencyThresholdDays,
-      urgencyBoostMultiplier: settings.urgencyBoostMultiplier,
-      neglectLookbackDays: settings.neglectLookbackDays,
-      neglectInfluence: settings.neglectInfluence,
-      valuePriorityWeight: settings.valuePriorityWeight,
-      taskPriorityBoost: settings.taskPriorityBoost,
-      overdueEmergencyMultiplier: settings.overdueEmergencyMultiplier,
+      keepValuesInBalance:
+          settings.enableNeglectWeighting && completionsByValue.isNotEmpty,
       completionsByValue: completionsByValue,
     );
 
-    return strategy.allocate(parameters);
-  }
-
-  /// Create allocation strategy based on allocation configuration.
-  ///
-  /// Selects appropriate allocator based on enabled features:
-  /// - NeglectBasedAllocator when enableNeglectWeighting is true
-  /// - UrgencyWeightedAllocator when urgency boost > 1.0
-  /// - ProportionalAllocator as default
-  AllocationStrategy createStrategyForConfig(AllocationConfig config) {
-    final settings = config.strategySettings;
-
-    // Check for neglect weighting first (enables combo mode in Custom)
-    if (settings.enableNeglectWeighting) {
-      return NeglectBasedAllocator();
-    }
-
-    // If urgency boost > 1.0, use urgency-weighted allocator
-    if (settings.urgencyBoostMultiplier > 1.0) {
-      return UrgencyWeightedAllocator();
-    }
-
-    // Default to proportional allocation
-    return ProportionalAllocator();
+    return engine.allocate(parameters);
   }
 
   /// Combine all necessary streams

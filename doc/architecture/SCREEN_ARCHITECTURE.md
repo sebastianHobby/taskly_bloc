@@ -1,4 +1,4 @@
-# Screen Architecture (Future State)
+# Screen Architecture 
 
 > Audience: developers + architects
 >

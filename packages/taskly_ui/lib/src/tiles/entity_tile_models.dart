@@ -82,6 +82,7 @@ class TaskTileModel {
     required this.completed,
     required this.onTap,
     required this.meta,
+    this.titlePrimaryValue,
     this.checkboxSemanticLabel,
   });
 
@@ -90,6 +91,11 @@ class TaskTileModel {
   final bool completed;
   final VoidCallback onTap;
   final EntityMetaLineModel meta;
+
+  /// Optional primary value icon to show on the title row.
+  ///
+  /// When set, callers should typically also disable meta-line values.
+  final ValueChipData? titlePrimaryValue;
 
   /// Optional semantics label for the completion toggle (app-owned).
   final String? checkboxSemanticLabel;
@@ -102,6 +108,7 @@ class ProjectTileModel {
     required this.completed,
     required this.pinned,
     required this.meta,
+    this.titlePrimaryValue,
     this.taskCount,
     this.completedTaskCount,
     this.emptyTasksLabel,
@@ -113,6 +120,11 @@ class ProjectTileModel {
   final bool completed;
   final bool pinned;
   final EntityMetaLineModel meta;
+
+  /// Optional primary value icon to show on the title row.
+  ///
+  /// When set, callers should typically also disable meta-line values.
+  final ValueChipData? titlePrimaryValue;
 
   final int? taskCount;
   final int? completedTaskCount;

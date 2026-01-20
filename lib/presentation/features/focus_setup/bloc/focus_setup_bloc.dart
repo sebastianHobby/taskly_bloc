@@ -14,9 +14,6 @@ import 'package:taskly_domain/telemetry.dart';
 
 part 'focus_setup_bloc.freezed.dart';
 
-const _minNeglectLookbackDays = 1;
-const _maxNeglectLookbackDays = 60;
-
 class _QuickAddPreset {
   const _QuickAddPreset({required this.colorHex, required this.iconName});
 
@@ -34,7 +31,6 @@ const _quickAddPresets = <String, _QuickAddPreset>{
 
 enum FocusSetupWizardStep {
   selectFocusMode,
-  allocationStrategy,
   valuesCta,
   finalize,
 }
@@ -50,34 +46,8 @@ sealed class FocusSetupEvent with _$FocusSetupEvent {
   const factory FocusSetupEvent.focusModeChanged(FocusMode focusMode) =
       FocusSetupFocusModeChanged;
 
-  const factory FocusSetupEvent.urgencyBoostChanged(double value) =
-      FocusSetupUrgencyBoostChanged;
-
   const factory FocusSetupEvent.neglectEnabledChanged(bool enabled) =
       FocusSetupNeglectEnabledChanged;
-
-  const factory FocusSetupEvent.neglectLookbackDaysChanged(int days) =
-      FocusSetupNeglectLookbackDaysChanged;
-
-  /// UI uses 0-100%; persisted as 0.0-1.0.
-  const factory FocusSetupEvent.neglectInfluencePercentChanged(int percent) =
-      FocusSetupNeglectInfluencePercentChanged;
-
-  /// UI uses 0-100%; persisted as 0.0-2.0 via (percent / 50).
-  const factory FocusSetupEvent.valuePriorityWeightPercentChanged(int percent) =
-      FocusSetupValuePriorityWeightPercentChanged;
-
-  /// UI uses multiplier (0.5-5.0).
-  const factory FocusSetupEvent.taskFlagBoostChanged(double multiplier) =
-      FocusSetupTaskFlagBoostChanged;
-
-  /// UI uses multiplier (1.0-5.0).
-  const factory FocusSetupEvent.overdueEmergencyMultiplierChanged(
-    double multiplier,
-  ) = FocusSetupOverdueEmergencyMultiplierChanged;
-
-  const factory FocusSetupEvent.allocationResetToDefaultPressed() =
-      FocusSetupAllocationResetToDefaultPressed;
 
   const factory FocusSetupEvent.finalizePressed() = FocusSetupFinalizePressed;
 
@@ -113,14 +83,8 @@ sealed class FocusSetupState with _$FocusSetupState {
 
     /// Draft allocation settings.
     FocusMode? draftFocusMode,
-    double? draftUrgencyBoostMultiplier,
     bool? draftNeglectEnabled,
-    int? draftNeglectLookbackDays,
-    int? draftNeglectInfluencePercent,
-
-    int? draftValuePriorityWeightPercent,
-    double? draftTaskFlagBoost,
-    double? draftOverdueEmergencyMultiplier,
+    @Default(false) bool showAdvancedSettings,
 
     @Default(false) bool saveSucceeded,
   }) = _FocusSetupState;
@@ -140,8 +104,6 @@ sealed class FocusSetupState with _$FocusSetupState {
   }
 
   List<FocusSetupWizardStep> get steps {
-    final focusMode = effectiveFocusMode;
-
     final hasSelectedFocusMode =
         persistedAllocationConfig?.hasSelectedFocusMode ?? false;
     final hasValues = valuesCount > 0;
@@ -152,9 +114,6 @@ sealed class FocusSetupState with _$FocusSetupState {
       final steps = <FocusSetupWizardStep>[];
       if (!hasSelectedFocusMode) {
         steps.add(FocusSetupWizardStep.selectFocusMode);
-        if (focusMode == FocusMode.personalized) {
-          steps.add(FocusSetupWizardStep.allocationStrategy);
-        }
       }
       if (!hasValues) {
         steps.add(FocusSetupWizardStep.valuesCta);
@@ -164,15 +123,6 @@ sealed class FocusSetupState with _$FocusSetupState {
     }
 
     // Full wizard (settings route): include values step as part of setup.
-    if (focusMode == FocusMode.personalized) {
-      return const [
-        FocusSetupWizardStep.selectFocusMode,
-        FocusSetupWizardStep.allocationStrategy,
-        FocusSetupWizardStep.valuesCta,
-        FocusSetupWizardStep.finalize,
-      ];
-    }
-
     return const [
       FocusSetupWizardStep.selectFocusMode,
       FocusSetupWizardStep.valuesCta,
@@ -195,16 +145,6 @@ sealed class FocusSetupState with _$FocusSetupState {
     return FocusMode.sustainable;
   }
 
-  double get effectiveUrgencyBoostMultiplier {
-    final draft = draftUrgencyBoostMultiplier;
-    if (draft != null) return draft;
-    final persisted = persistedAllocationConfig;
-    if (persisted != null) {
-      return persisted.strategySettings.urgencyBoostMultiplier;
-    }
-    return 1.5;
-  }
-
   bool get effectiveNeglectEnabled {
     final draft = draftNeglectEnabled;
     if (draft != null) return draft;
@@ -213,59 +153,6 @@ sealed class FocusSetupState with _$FocusSetupState {
       return persisted.strategySettings.enableNeglectWeighting;
     }
     return false;
-  }
-
-  int get effectiveNeglectLookbackDays {
-    final draft = draftNeglectLookbackDays;
-    if (draft != null) return draft;
-    final persisted = persistedAllocationConfig;
-    if (persisted != null) {
-      return persisted.strategySettings.neglectLookbackDays;
-    }
-    return 7;
-  }
-
-  int get effectiveNeglectInfluencePercent {
-    final draft = draftNeglectInfluencePercent;
-    if (draft != null) return draft;
-    final persisted = persistedAllocationConfig;
-    if (persisted != null) {
-      final p = (persisted.strategySettings.neglectInfluence * 100).round();
-      return p.clamp(0, 100);
-    }
-    return 50;
-  }
-
-  int get effectiveValuePriorityWeightPercent {
-    final draft = draftValuePriorityWeightPercent;
-    if (draft != null) return draft.clamp(0, 100);
-    final persisted = persistedAllocationConfig;
-    if (persisted != null) {
-      return (persisted.strategySettings.valuePriorityWeight * 50)
-          .round()
-          .clamp(0, 100);
-    }
-    return 75;
-  }
-
-  double get effectiveTaskFlagBoost {
-    final draft = draftTaskFlagBoost;
-    if (draft != null) return draft;
-    final persisted = persistedAllocationConfig;
-    if (persisted != null) {
-      return persisted.strategySettings.taskPriorityBoost;
-    }
-    return 1;
-  }
-
-  double get effectiveOverdueEmergencyMultiplier {
-    final draft = draftOverdueEmergencyMultiplier;
-    if (draft != null) return draft;
-    final persisted = persistedAllocationConfig;
-    if (persisted != null) {
-      return persisted.strategySettings.overdueEmergencyMultiplier;
-    }
-    return 1.5;
   }
 }
 
@@ -295,38 +182,8 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
       _onFocusModeChanged,
       transformer: droppable(),
     );
-    on<FocusSetupUrgencyBoostChanged>(
-      _onUrgencyBoostChanged,
-      transformer: droppable(),
-    );
     on<FocusSetupNeglectEnabledChanged>(
       _onNeglectEnabledChanged,
-      transformer: droppable(),
-    );
-    on<FocusSetupNeglectLookbackDaysChanged>(
-      _onNeglectLookbackDaysChanged,
-      transformer: droppable(),
-    );
-    on<FocusSetupNeglectInfluencePercentChanged>(
-      _onNeglectInfluencePercentChanged,
-      transformer: droppable(),
-    );
-
-    on<FocusSetupValuePriorityWeightPercentChanged>(
-      _onValuePriorityWeightPercentChanged,
-      transformer: droppable(),
-    );
-    on<FocusSetupTaskFlagBoostChanged>(
-      _onTaskFlagBoostChanged,
-      transformer: droppable(),
-    );
-    on<FocusSetupOverdueEmergencyMultiplierChanged>(
-      _onOverdueEmergencyMultiplierChanged,
-      transformer: droppable(),
-    );
-
-    on<FocusSetupAllocationResetToDefaultPressed>(
-      _onAllocationResetToDefaultPressed,
       transformer: droppable(),
     );
 
@@ -598,53 +455,17 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
       nextStateForSteps.maxStepIndex,
     );
 
-    // Non-personalized modes always use their default weightings.
-    // Personalized keeps the user's existing settings until they adjust.
-    if (nextFocusMode == FocusMode.personalized) {
-      emit(
-        state.copyWith(
-          draftFocusMode: nextFocusMode,
-          stepIndex: clampedStepIndex,
-          draftUrgencyBoostMultiplier: null,
-          draftNeglectEnabled: null,
-          draftNeglectLookbackDays: null,
-          draftNeglectInfluencePercent: null,
-          draftValuePriorityWeightPercent: null,
-          draftTaskFlagBoost: null,
-          draftOverdueEmergencyMultiplier: null,
-          errorMessage: null,
-        ),
-      );
-      return;
-    }
-
+    // With the new Suggested picks engine, we keep only one user-facing knob:
+    // the value balancing toggle.
     final preset = StrategySettings.forFocusMode(nextFocusMode);
-
     emit(
       state.copyWith(
         draftFocusMode: nextFocusMode,
         stepIndex: clampedStepIndex,
-        draftUrgencyBoostMultiplier: preset.urgencyBoostMultiplier,
         draftNeglectEnabled: preset.enableNeglectWeighting,
-        draftNeglectLookbackDays: preset.neglectLookbackDays,
-        draftNeglectInfluencePercent: (preset.neglectInfluence * 100)
-            .round()
-            .clamp(0, 100),
-        draftValuePriorityWeightPercent: (preset.valuePriorityWeight * 50)
-            .round()
-            .clamp(0, 100),
-        draftTaskFlagBoost: preset.taskPriorityBoost,
-        draftOverdueEmergencyMultiplier: preset.overdueEmergencyMultiplier,
         errorMessage: null,
       ),
     );
-  }
-
-  void _onUrgencyBoostChanged(
-    FocusSetupUrgencyBoostChanged event,
-    Emitter<FocusSetupState> emit,
-  ) {
-    emit(state.copyWith(draftUrgencyBoostMultiplier: event.value));
   }
 
   void _onNeglectEnabledChanged(
@@ -652,81 +473,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     Emitter<FocusSetupState> emit,
   ) {
     emit(state.copyWith(draftNeglectEnabled: event.enabled));
-  }
-
-  void _onNeglectLookbackDaysChanged(
-    FocusSetupNeglectLookbackDaysChanged event,
-    Emitter<FocusSetupState> emit,
-  ) {
-    emit(
-      state.copyWith(
-        draftNeglectLookbackDays: event.days.clamp(
-          _minNeglectLookbackDays,
-          _maxNeglectLookbackDays,
-        ),
-      ),
-    );
-  }
-
-  void _onNeglectInfluencePercentChanged(
-    FocusSetupNeglectInfluencePercentChanged event,
-    Emitter<FocusSetupState> emit,
-  ) {
-    emit(
-      state.copyWith(draftNeglectInfluencePercent: event.percent.clamp(0, 100)),
-    );
-  }
-
-  void _onValuePriorityWeightPercentChanged(
-    FocusSetupValuePriorityWeightPercentChanged event,
-    Emitter<FocusSetupState> emit,
-  ) {
-    emit(
-      state.copyWith(
-        draftValuePriorityWeightPercent: event.percent.clamp(0, 100),
-      ),
-    );
-  }
-
-  void _onTaskFlagBoostChanged(
-    FocusSetupTaskFlagBoostChanged event,
-    Emitter<FocusSetupState> emit,
-  ) {
-    emit(state.copyWith(draftTaskFlagBoost: event.multiplier.clamp(0.5, 5.0)));
-  }
-
-  void _onOverdueEmergencyMultiplierChanged(
-    FocusSetupOverdueEmergencyMultiplierChanged event,
-    Emitter<FocusSetupState> emit,
-  ) {
-    emit(
-      state.copyWith(
-        draftOverdueEmergencyMultiplier: event.multiplier.clamp(1.0, 5.0),
-      ),
-    );
-  }
-
-  void _onAllocationResetToDefaultPressed(
-    FocusSetupAllocationResetToDefaultPressed event,
-    Emitter<FocusSetupState> emit,
-  ) {
-    final preset = StrategySettings.forFocusMode(state.effectiveFocusMode);
-
-    emit(
-      state.copyWith(
-        draftUrgencyBoostMultiplier: preset.urgencyBoostMultiplier,
-        draftNeglectEnabled: preset.enableNeglectWeighting,
-        draftNeglectLookbackDays: preset.neglectLookbackDays,
-        draftNeglectInfluencePercent: (preset.neglectInfluence * 100)
-            .round()
-            .clamp(0, 100),
-        draftValuePriorityWeightPercent: (preset.valuePriorityWeight * 50)
-            .round()
-            .clamp(0, 100),
-        draftTaskFlagBoost: preset.taskPriorityBoost,
-        draftOverdueEmergencyMultiplier: preset.overdueEmergencyMultiplier,
-      ),
-    );
   }
 
   Future<void> _onFinalizePressed(
@@ -754,19 +500,12 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     try {
       final focusMode = state.effectiveFocusMode;
 
-      final strategySettings = focusMode == FocusMode.personalized
-          ? persisted.strategySettings.copyWith(
-              urgencyBoostMultiplier: state.effectiveUrgencyBoostMultiplier,
-              enableNeglectWeighting: state.effectiveNeglectEnabled,
-              neglectLookbackDays: state.effectiveNeglectLookbackDays,
-              neglectInfluence: state.effectiveNeglectInfluencePercent / 100.0,
-              valuePriorityWeight:
-                  state.effectiveValuePriorityWeightPercent / 50.0,
-              taskPriorityBoost: state.effectiveTaskFlagBoost,
-              overdueEmergencyMultiplier:
-                  state.effectiveOverdueEmergencyMultiplier,
-            )
+      final base = focusMode == FocusMode.personalized
+          ? persisted.strategySettings
           : StrategySettings.forFocusMode(focusMode);
+      final strategySettings = base.copyWith(
+        enableNeglectWeighting: state.effectiveNeglectEnabled,
+      );
 
       final updatedConfig = persisted.copyWith(
         hasSelectedFocusMode: true,

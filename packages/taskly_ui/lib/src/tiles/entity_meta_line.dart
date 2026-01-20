@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/primitives/date_chip.dart';
+import 'package:taskly_ui/src/primitives/value_icon.dart';
 import 'package:taskly_ui/src/primitives/priority_marker.dart';
-import 'package:taskly_ui/src/models/value_chip_data.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 
 class EntityMetaLine extends StatelessWidget {
@@ -51,10 +51,10 @@ class EntityMetaLine extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (primaryValue != null)
-                    _ValueIcon(data: primaryValue, useValueColor: true),
+                    ValueIcon(data: primaryValue, useValueColor: true),
                   if (secondaryValue != null) ...[
                     const SizedBox(width: 6),
-                    _ValueIcon(data: secondaryValue, useValueColor: false),
+                    ValueIcon(data: secondaryValue, useValueColor: false),
                   ],
                 ],
               );
@@ -370,36 +370,6 @@ double _measureWidgetWidth(
       );
     default:
       return 20;
-  }
-}
-
-class _ValueIcon extends StatelessWidget {
-  const _ValueIcon({required this.data, required this.useValueColor});
-
-  final ValueChipData data;
-  final bool useValueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final color = useValueColor
-        ? data.color.withValues(alpha: 0.95)
-        : scheme.onSurfaceVariant.withValues(alpha: 0.7);
-
-    return Tooltip(
-      message: data.label,
-      child: Container(
-        width: 18,
-        height: 18,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: color.withValues(alpha: 0.8), width: 1.25),
-        ),
-        child: Center(
-          child: Icon(data.icon, size: 12, color: color.withValues(alpha: 1)),
-        ),
-      ),
-    );
   }
 }
 
