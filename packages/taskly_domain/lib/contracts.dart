@@ -9,6 +9,7 @@ export 'src/attention/contracts/attention_repository_contract.dart';
 export 'src/interfaces/analytics_repository_contract.dart';
 export 'src/interfaces/auth_repository_contract.dart';
 export 'src/interfaces/journal_repository_contract.dart';
+export 'src/interfaces/my_day_repository_contract.dart';
 export 'src/interfaces/occurrence_stream_expander_contract.dart';
 export 'src/interfaces/occurrence_write_helper_contract.dart';
 export 'src/interfaces/pending_notifications_repository_contract.dart';

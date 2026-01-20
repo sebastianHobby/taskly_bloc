@@ -4,10 +4,12 @@ import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/my_day.dart' as my_day;
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/settings.dart' as settings;
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/time.dart';
 
 sealed class MyDayEvent {
   const MyDayEvent();
@@ -95,12 +97,14 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
     required TaskRepositoryContract taskRepository,
     required ValueRepositoryContract valueRepository,
     required SettingsRepositoryContract settingsRepository,
+    required MyDayRepositoryContract myDayRepository,
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
   }) : _allocationOrchestrator = allocationOrchestrator,
        _taskRepository = taskRepository,
        _valueRepository = valueRepository,
        _settingsRepository = settingsRepository,
+       _myDayRepository = myDayRepository,
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
        super(const MyDayLoading()) {
@@ -112,6 +116,7 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
   final TaskRepositoryContract _taskRepository;
   final ValueRepositoryContract _valueRepository;
   final SettingsRepositoryContract _settingsRepository;
+  final MyDayRepositoryContract _myDayRepository;
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
 
@@ -163,27 +168,41 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
 
   Stream<_MyDayViewModel> _watchForDay(DateTime dayKeyUtc) {
     final values$ = _valueRepository.watchAll().startWith(const <Value>[]);
-    final ritual$ = _settingsRepository
-        .watch<settings.MyDayRitualState>(SettingsKey.myDayRitual)
-        .startWith(const settings.MyDayRitualState());
+    final global$ = _settingsRepository
+        .watch<settings.GlobalSettings>(SettingsKey.global)
+        .startWith(const settings.GlobalSettings());
 
-    return ritual$.switchMap((ritual) {
-      final selectedIds = ritual.isCompletedFor(dayKeyUtc)
-          ? ritual.selectedTaskIds
-          : const <String>[];
+    final dayPicks$ = _myDayRepository
+        .watchDay(dayKeyUtc)
+        .startWith(
+          my_day.MyDayDayPicks(
+            dayKeyUtc: dateOnly(dayKeyUtc),
+            ritualCompletedAtUtc: null,
+            picks: const <my_day.MyDayPick>[],
+          ),
+        );
 
-      if (selectedIds.isNotEmpty) {
+    return dayPicks$.switchMap((dayPicks) {
+      if (dayPicks.ritualCompletedAtUtc != null) {
         final tasks$ = _taskRepository
             .watchAll(TaskQuery.incomplete())
             .startWith(const <Task>[]);
-        return Rx.combineLatest2<List<Task>, List<Value>, _MyDayViewModel>(
+
+        return Rx.combineLatest3<
+          List<Task>,
+          List<Value>,
+          settings.GlobalSettings,
+          _MyDayViewModel
+        >(
           tasks$,
           values$,
-          (tasks, values) => _buildFromRitualSelection(
-            ritual,
+          global$,
+          (tasks, values, global) => _buildFromDailyPicks(
+            dayPicks,
             dayKeyUtc,
             tasks,
             values,
+            global,
           ),
         );
       }
@@ -216,15 +235,21 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
     );
   }
 
-  _MyDayViewModel _buildFromRitualSelection(
-    settings.MyDayRitualState ritual,
+  _MyDayViewModel _buildFromDailyPicks(
+    my_day.MyDayDayPicks dayPicks,
     DateTime dayKeyUtc,
     List<Task> tasks,
     List<Value> values,
+    settings.GlobalSettings globalSettings,
   ) {
     final tasksById = {for (final task in tasks) task.id: task};
 
-    final selectedIds = ritual.selectedTaskIds;
+    final orderedPickIds = dayPicks.picks.toList(growable: false)
+      ..sort((a, b) => a.sortIndex.compareTo(b.sortIndex));
+
+    final selectedIds = orderedPickIds
+        .map((p) => p.taskId)
+        .toList(growable: false);
 
     final orderedTasks = selectedIds
         .map((id) => tasksById[id])
@@ -232,31 +257,58 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         .where((task) => !_isCompleted(task))
         .toList(growable: false);
 
-    final acceptedFocusTasks = _resolveAcceptedTasks(
-      ritual.acceptedFocusTaskIds,
-      tasksById,
-    );
-    final acceptedFocusIds = acceptedFocusTasks.map((t) => t.id).toSet();
+    Iterable<String> idsForBucket(my_day.MyDayPickBucket bucket) {
+      return orderedPickIds
+          .where((p) => p.bucket == bucket)
+          .map((p) => p.taskId);
+    }
 
-    final acceptedDueTasks = _resolveAcceptedTasks(
-      ritual.acceptedDueTaskIds.where((id) => !acceptedFocusIds.contains(id)),
-      tasksById,
-    );
-    final acceptedDueIds = acceptedDueTasks.map((t) => t.id).toSet();
+    final acceptedDueIds = idsForBucket(
+      my_day.MyDayPickBucket.due,
+    ).toList(growable: false);
+    final acceptedStartsIds = idsForBucket(
+      my_day.MyDayPickBucket.starts,
+    ).toList(growable: false);
+    final acceptedFocusIds = idsForBucket(
+      my_day.MyDayPickBucket.focus,
+    ).toList(growable: false);
 
+    final acceptedDueTasks = _resolveAcceptedTasks(acceptedDueIds, tasksById);
     final acceptedStartsTasks = _resolveAcceptedTasks(
-      ritual.acceptedStartsTaskIds.where(
-        (id) => !acceptedFocusIds.contains(id) && !acceptedDueIds.contains(id),
-      ),
+      acceptedStartsIds,
+      tasksById,
+    );
+    final acceptedFocusTasks = _resolveAcceptedTasks(
+      acceptedFocusIds,
       tasksById,
     );
 
-    final todaySelectedTaskIds = ritual.selectedTaskIds.toSet();
+    final todaySelectedTaskIds = selectedIds.toSet();
 
-    final missingDueIds = ritual.candidateDueTaskIds
+    final today = dateOnly(dayKeyUtc);
+    final dueLimit = _dueLimit(today, globalSettings.myDayDueWindowDays);
+
+    final planned = _buildPlanned(
+      tasks,
+      today,
+      globalSettings.myDayDueWindowDays,
+    );
+    final candidateDueIds = <String>[];
+    final candidateStartsIds = <String>[];
+    for (final task in planned) {
+      if (_isDueWithinWindow(task, dueLimit)) {
+        candidateDueIds.add(task.id);
+        continue;
+      }
+      if (_isAvailableToStart(task, today)) {
+        candidateStartsIds.add(task.id);
+      }
+    }
+
+    final missingDueIds = candidateDueIds
         .where((id) => !todaySelectedTaskIds.contains(id))
         .toList(growable: false);
-    final missingStartsIds = ritual.candidateStartsTaskIds
+    final missingStartsIds = candidateStartsIds
         .where((id) => !todaySelectedTaskIds.contains(id))
         .toList(growable: false);
 
@@ -271,9 +323,16 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         .where((t) => !_isCompleted(t))
         .toList(growable: false);
 
-    final qualifyingByTaskId = {
-      for (final task in orderedTasks) task.id: task.effectivePrimaryValueId,
-    };
+    final qualifyingByTaskId = <String, String?>{};
+    for (final pick in dayPicks.picks) {
+      qualifyingByTaskId[pick.taskId] = pick.qualifyingValueId;
+    }
+    for (final task in orderedTasks) {
+      qualifyingByTaskId.putIfAbsent(
+        task.id,
+        () => task.effectivePrimaryValueId,
+      );
+    }
 
     return _buildViewModel(
       tasks: orderedTasks,
@@ -282,16 +341,64 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
       acceptedDue: acceptedDueTasks,
       acceptedStarts: acceptedStartsTasks,
       acceptedFocus: acceptedFocusTasks,
-      dueAcceptedTotalCount: ritual.acceptedDueTaskIds.length,
-      startsAcceptedTotalCount: ritual.acceptedStartsTaskIds.length,
-      focusAcceptedTotalCount: ritual.acceptedFocusTaskIds.length,
-      selectedTotalCount: ritual.selectedTaskIds.length,
+      dueAcceptedTotalCount: acceptedDueIds.length,
+      startsAcceptedTotalCount: acceptedStartsIds.length,
+      focusAcceptedTotalCount: acceptedFocusIds.length,
+      selectedTotalCount: selectedIds.length,
       missingDueCount: missingDueIds.length,
       missingStartsCount: missingStartsIds.length,
       missingDueTasks: missingDueTasks,
       missingStartsTasks: missingStartsTasks,
       todaySelectedTaskIds: todaySelectedTaskIds,
     );
+  }
+
+  List<Task> _buildPlanned(
+    List<Task> tasks,
+    DateTime today,
+    int dueWindowDays,
+  ) {
+    final dueSoonLimit = today.add(
+      Duration(days: dueWindowDays.clamp(1, 30) - 1),
+    );
+
+    bool isPlanned(Task task) {
+      if (_isCompleted(task)) return false;
+      final start = dateOnlyOrNull(task.occurrence?.date ?? task.startDate);
+      final deadline = dateOnlyOrNull(
+        task.occurrence?.deadline ?? task.deadlineDate,
+      );
+      final startEligible = start != null && !start.isAfter(today);
+      final dueSoon = deadline != null && !deadline.isAfter(dueSoonLimit);
+      return startEligible || dueSoon;
+    }
+
+    return tasks.where(isPlanned).toList(growable: false);
+  }
+
+  DateTime? _deadlineDateOnly(Task task) {
+    final raw = task.occurrence?.deadline ?? task.deadlineDate;
+    return dateOnlyOrNull(raw);
+  }
+
+  DateTime? _startDateOnly(Task task) {
+    final raw = task.occurrence?.date ?? task.startDate;
+    return dateOnlyOrNull(raw);
+  }
+
+  bool _isAvailableToStart(Task task, DateTime today) {
+    final start = _startDateOnly(task);
+    return start != null && !start.isAfter(today);
+  }
+
+  bool _isDueWithinWindow(Task task, DateTime dueLimit) {
+    final deadline = _deadlineDateOnly(task);
+    return deadline != null && !deadline.isAfter(dueLimit);
+  }
+
+  DateTime _dueLimit(DateTime today, int dueWindowDays) {
+    final days = dueWindowDays.clamp(1, 30);
+    return today.add(Duration(days: days - 1));
   }
 
   _MyDayViewModel _buildViewModel({

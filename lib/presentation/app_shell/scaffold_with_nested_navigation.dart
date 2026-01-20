@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/navigation_bar_scaffold.dart';
 import 'package:taskly_bloc/presentation/app_shell/navigation_rail_scaffold.dart';
@@ -8,7 +7,6 @@ import 'package:taskly_bloc/presentation/app_shell/more_destinations_sheet.dart'
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
-import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 
 class ScaffoldWithNestedNavigation extends StatelessWidget {
@@ -30,7 +28,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'ScaffoldWithNestedNavigation.build(): activeScreenId=$activeScreenId',
     );
 
-    final badgeService = context.read<NavigationBadgeService>();
     const iconResolver = NavigationIconResolver();
 
     const primaryNavigationKeys = <String>[
@@ -80,7 +77,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
             icon: iconSet.icon,
             selectedIcon: iconSet.selectedIcon,
             route: Routing.screenPath(screenKey),
-            badgeStream: badgeService.badgeStreamForScreenKey(screenKey),
             sortOrder: sortOrders[screenKey] ?? 999,
           );
         })

@@ -8,5 +8,4 @@ export 'package:taskly_domain/src/settings/model/alert_severity.dart';
 export 'package:taskly_domain/src/allocation/model/allocation_config.dart';
 export 'package:taskly_domain/src/settings/model/app_theme_mode.dart';
 export 'package:taskly_domain/src/settings/model/global_settings.dart';
-export 'package:taskly_domain/src/settings/model/my_day_ritual_state.dart';
 export 'package:taskly_domain/src/settings/model/project_health_review_settings.dart';

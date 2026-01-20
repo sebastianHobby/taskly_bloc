@@ -5,7 +5,7 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
 import 'package:taskly_domain/allocation.dart';
-import 'package:taskly_domain/core.dart' hide MyDayRitualState;
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_entities.dart';

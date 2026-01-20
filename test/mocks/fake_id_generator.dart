@@ -148,6 +148,17 @@ class FakeIdGenerator implements IdGenerator {
   }
 
   @override
+  String myDayDayId({required DateTime dayUtc}) {
+    final dateKey = dayUtc.toIso8601String().split('T').first;
+    return 'my-day-day-$dateKey';
+  }
+
+  @override
+  String myDayPickId({required String dayId, required String taskId}) {
+    return 'my-day-pick-$dayId-$taskId';
+  }
+
+  @override
   String attentionRuleId({required String ruleKey}) =>
       'attention-rule-${ruleKey.toLowerCase().replaceAll('_', '-')}';
 

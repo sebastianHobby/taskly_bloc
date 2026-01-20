@@ -52,8 +52,13 @@ class SettingsMaintenanceCubit extends Cubit<SettingsMaintenanceState> {
 
   final TemplateDataService _templateDataService;
 
+  void _safeEmit(SettingsMaintenanceState state) {
+    if (isClosed) return;
+    emit(state);
+  }
+
   Future<void> generateTemplateData() async {
-    emit(
+    _safeEmit(
       const SettingsMaintenanceState(
         status: SettingsMaintenanceRunning(
           SettingsMaintenanceAction.generateTemplateData,
@@ -64,7 +69,9 @@ class SettingsMaintenanceCubit extends Cubit<SettingsMaintenanceState> {
     try {
       await _templateDataService.resetAndSeed();
 
-      emit(
+      if (isClosed) return;
+
+      _safeEmit(
         const SettingsMaintenanceState(
           status: SettingsMaintenanceSuccess(
             SettingsMaintenanceAction.generateTemplateData,
@@ -72,9 +79,11 @@ class SettingsMaintenanceCubit extends Cubit<SettingsMaintenanceState> {
         ),
       );
 
-      emit(SettingsMaintenanceState.idle());
+      _safeEmit(SettingsMaintenanceState.idle());
     } catch (e) {
-      emit(
+      if (isClosed) return;
+
+      _safeEmit(
         SettingsMaintenanceState(
           status: SettingsMaintenanceFailure(
             action: SettingsMaintenanceAction.generateTemplateData,
@@ -83,7 +92,7 @@ class SettingsMaintenanceCubit extends Cubit<SettingsMaintenanceState> {
         ),
       );
 
-      emit(SettingsMaintenanceState.idle());
+      _safeEmit(SettingsMaintenanceState.idle());
     }
   }
 }

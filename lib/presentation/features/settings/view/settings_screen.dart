@@ -484,6 +484,7 @@ class _GenerateTemplateDataItem extends StatelessWidget {
         content: const Text(
           'This will delete all Tasks, Projects, and Values for the current '
           'account and then generate a sample dataset.\n\n'
+          'It will also clear any saved My Day ritual selections.\n\n'
           'This is intended for debug/demo use only.',
         ),
         actions: [

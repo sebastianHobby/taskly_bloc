@@ -6,9 +6,7 @@ import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/row_key.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/queries.dart';
-import 'package:taskly_domain/settings.dart' as settings;
 import 'package:taskly_domain/services.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -55,12 +53,12 @@ final class AnytimeFeedError extends AnytimeFeedState {
 class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   AnytimeFeedBloc({
     required TaskRepositoryContract taskRepository,
-    required SettingsRepositoryContract settingsRepository,
+    required MyDayRepositoryContract myDayRepository,
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
     AnytimeScope? scope,
   }) : _taskRepository = taskRepository,
-       _settingsRepository = settingsRepository,
+       _myDayRepository = myDayRepository,
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
        _scope = scope,
@@ -76,7 +74,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   }
 
   final TaskRepositoryContract _taskRepository;
-  final SettingsRepositoryContract _settingsRepository;
+  final MyDayRepositoryContract _myDayRepository;
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
   final AnytimeScope? _scope;
@@ -113,10 +111,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   Future<void> _bind(Emitter<AnytimeFeedState> emit) async {
     final query = _scopeQuery(TaskQuery.incomplete(), _scope);
 
-    final ritual$ = _settingsRepository
-        .watch<settings.MyDayRitualState>(SettingsKey.myDayRitual)
-        .startWith(const settings.MyDayRitualState());
-
     final dayKeyStream = Rx.merge<DateTime>([
       Stream<DateTime>.value(_dayKeyService.todayDayKeyUtc()),
       _temporalTriggerService.events
@@ -126,18 +120,16 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
           .map((_) => _dayKeyService.todayDayKeyUtc()),
     ]).distinct().shareValue();
 
-    final todaySelectionIdsStream =
-        Rx.combineLatest2<DateTime, settings.MyDayRitualState, Set<String>>(
-          dayKeyStream,
-          ritual$,
-          (dayKeyUtc, ritual) {
-            if (!ritual.isCompletedFor(dayKeyUtc)) return <String>{};
-            return ritual.selectedTaskIds
-                .map((id) => id.trim())
-                .where((id) => id.isNotEmpty)
-                .toSet();
-          },
-        ).distinct(_areSetsEqual);
+    final todaySelectionIdsStream = dayKeyStream
+        .switchMap(_myDayRepository.watchDay)
+        .map((picks) {
+          if (picks.ritualCompletedAtUtc == null) return <String>{};
+          return picks.selectedTaskIds
+              .map((id) => id.trim())
+              .where((id) => id.isNotEmpty)
+              .toSet();
+        })
+        .distinct(_areSetsEqual);
 
     final nextOccurrenceByTaskIdStream = dayKeyStream.switchMap((dayKey) {
       // Anytime is not date-scoped, but "Complete" should target the next

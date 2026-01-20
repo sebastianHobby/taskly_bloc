@@ -27,7 +27,9 @@ The Flutter app already supports switching environments via `--dart-define-from-
   - Windows PowerShell: `powershell -File tool/e2e/Start-LocalE2EStack.ps1 -ResetDb`
 
 What reset does:
-- `supabase db reset` recreates local Postgres and applies `supabase/migrations/*` + `supabase/seed.sql`.
+- `supabase db reset` recreates local Postgres and applies the locally generated schema (via `supabase/migrations/`).
+  - In this repo, migrations are expected to be generated via `supabase db pull` (CI does this automatically).
+  - Developers can run `supabase db pull` before reset when needed.
 
 ### Run tests
 - PowerShell 7: `pwsh -File tool/e2e/Run-LocalE2ETests.ps1 -ResetDb`
@@ -44,7 +46,7 @@ What the test script runs:
 ## Schema notes (prod -> local)
 
 CI (and developers when needed) can pull the latest schema from Supabase Cloud
-into `supabase/migrations/` before starting the local stack.
+into the local generated migrations output (`supabase/migrations/`) via `supabase db pull` before starting the local stack.
 
 This keeps the local stack aligned with production without requiring developers
 to manually maintain schema drift.

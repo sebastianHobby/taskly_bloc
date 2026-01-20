@@ -18,6 +18,10 @@ bucket_definitions:
       # User settings
       - SELECT * FROM user_profiles WHERE user_id = bucket.user_id
 
+      # My Day picks (persisted ritual selection)
+      - SELECT * FROM my_day_days WHERE user_id = bucket.user_id
+      - SELECT * FROM my_day_picks WHERE user_id = bucket.user_id
+
       # Screen Definitions
       - SELECT * FROM screen_definitions WHERE user_id = bucket.user_id
 
