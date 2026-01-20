@@ -56,9 +56,25 @@ jobs:
       
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Get dependencies (taskly_domain)
+        working-directory: packages/taskly_domain
+        run: flutter pub get
+
+      - name: Get dependencies (taskly_data)
+        working-directory: packages/taskly_data
+        run: flutter pub get
       
       - name: Generate code
-        run: flutter pub run build_runner build --delete-conflicting-outputs
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate code (taskly_domain)
+        working-directory: packages/taskly_domain
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate code (taskly_data)
+        working-directory: packages/taskly_data
+        run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Link to Supabase Cloud (prod)
         env:
@@ -150,9 +166,25 @@ jobs:
       
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Get dependencies (taskly_domain)
+        working-directory: packages/taskly_domain
+        run: flutter pub get
+
+      - name: Get dependencies (taskly_data)
+        working-directory: packages/taskly_data
+        run: flutter pub get
       
       - name: Generate code
-        run: flutter pub run build_runner build --delete-conflicting-outputs
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate code (taskly_domain)
+        working-directory: packages/taskly_domain
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate code (taskly_data)
+        working-directory: packages/taskly_data
+        run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Run repo guardrails
         run: dart run tool/guardrails.dart
@@ -234,10 +266,10 @@ jobs:
       - name: Validate IdGenerator table registration
         run: |
           # Extract tables from PowerSync schema
-          SCHEMA_TABLES=$(grep -oP "Table\(\s*'\K\w+" lib/data/powersync/schema.dart | sort)
+          SCHEMA_TABLES=$(grep -oP "Table\(\s*'\K\w+" packages/taskly_data/lib/src/infrastructure/powersync/schema.dart | sort)
           
           # Extract tables from IdGenerator (v5Tables and v4Tables)
-          ID_GEN_CONTENT=$(cat lib/data/id/id_generator.dart)
+          ID_GEN_CONTENT=$(cat packages/taskly_data/lib/src/id/id_generator.dart)
           V5_TABLES=$(echo "$ID_GEN_CONTENT" | grep -ozP "v5Tables\s*=\s*\{[^}]+\}" | grep -oP "'\K\w+(?=')" | sort)
           V4_TABLES=$(echo "$ID_GEN_CONTENT" | grep -ozP "v4Tables\s*=\s*\{[^}]+\}" | grep -oP "'\K\w+(?=')" | sort)
           
@@ -286,9 +318,25 @@ jobs:
       
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Get dependencies (taskly_domain)
+        working-directory: packages/taskly_domain
+        run: flutter pub get
+
+      - name: Get dependencies (taskly_data)
+        working-directory: packages/taskly_data
+        run: flutter pub get
       
       - name: Generate code
-        run: flutter pub run build_runner build --delete-conflicting-outputs
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate code (taskly_domain)
+        working-directory: packages/taskly_domain
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate code (taskly_data)
+        working-directory: packages/taskly_data
+        run: dart run build_runner build --delete-conflicting-outputs
       
       - name: Build ${{ matrix.build-target }}
         shell: bash
