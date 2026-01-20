@@ -160,42 +160,42 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       ProjectFieldKeys.seriesEnded.id: widget.initialData?.seriesEnded ?? false,
     };
 
-      final effectiveStartDate =
+    final effectiveStartDate =
         (widget
-            .formKey
-            .currentState
-            ?.fields[ProjectFieldKeys.startDate.id]
-            ?.value
-          as DateTime?) ??
+                .formKey
+                .currentState
+                ?.fields[ProjectFieldKeys.startDate.id]
+                ?.value
+            as DateTime?) ??
         (initialValues[ProjectFieldKeys.startDate.id] as DateTime?);
-      final effectiveDeadlineDate =
+    final effectiveDeadlineDate =
         (widget
-            .formKey
-            .currentState
-            ?.fields[ProjectFieldKeys.deadlineDate.id]
-            ?.value
-          as DateTime?) ??
+                .formKey
+                .currentState
+                ?.fields[ProjectFieldKeys.deadlineDate.id]
+                ?.value
+            as DateTime?) ??
         (initialValues[ProjectFieldKeys.deadlineDate.id] as DateTime?);
-      final showScheduleHelper =
+    final showScheduleHelper =
         effectiveStartDate == null && effectiveDeadlineDate == null;
 
-      final submitEnabled =
+    final submitEnabled =
         isDirty && (widget.formKey.currentState?.isValid ?? false);
 
-      final sectionGap = isCompact ? 12.0 : 16.0;
-      final denseFieldPadding = EdgeInsets.symmetric(
-        horizontal: isCompact ? 12 : 16,
-        vertical: isCompact ? 10 : 12,
-      );
+    final sectionGap = isCompact ? 12.0 : 16.0;
+    final denseFieldPadding = EdgeInsets.symmetric(
+      horizontal: isCompact ? 12 : 16,
+      vertical: isCompact ? 10 : 12,
+    );
 
     return FormShell(
       onSubmit: widget.onSubmit,
       submitTooltip: isCreating ? l10n.actionCreate : l10n.actionUpdate,
       submitIcon: isCreating ? Icons.add : Icons.check,
-        submitEnabled: submitEnabled,
-        showHeaderSubmit: true,
-        showFooterSubmit: false,
-        closeOnLeft: true,
+      submitEnabled: submitEnabled,
+      showHeaderSubmit: true,
+      showFooterSubmit: false,
+      closeOnLeft: true,
       onDelete: widget.initialData != null ? widget.onDelete : null,
       deleteTooltip: l10n.deleteProjectAction,
       onClose: widget.onClose != null ? handleClose : null,
@@ -230,6 +230,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
           autovalidateMode: AutovalidateMode.onUserInteraction,
           onChanged: () {
             markDirty();
+            setState(() {});
             final values = widget.formKey.currentState?.value;
             if (values != null) {
               widget.onChanged?.call(values);
@@ -529,7 +530,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                         ? primaryName
                         : '$primaryName + ${valueIds.length - 1}';
 
-                    final helperOrError = field.errorText ??
+                    final helperOrError =
+                        field.errorText ??
                         (valueIds.isEmpty ? l10n.valuesProjectHelp : null);
 
                     return KeyedSubtree(

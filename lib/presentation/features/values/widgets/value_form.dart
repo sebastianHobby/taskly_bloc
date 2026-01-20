@@ -12,8 +12,7 @@ import 'package:taskly_ui/taskly_ui_forms.dart';
 /// A modern form for creating or editing values.
 ///
 /// Features:
-/// - X close button in top right
-/// - Action button in sticky footer at bottom right
+/// - Action buttons in header (always visible)
 /// - Unsaved changes confirmation on close
 class ValueForm extends StatefulWidget {
   const ValueForm({
@@ -59,6 +58,8 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
 
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
+
     final isCreating = widget.initialData == null;
 
     final createDraft = widget.initialData == null
@@ -81,22 +82,37 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
           widget.initialData?.iconName ?? createDraft?.iconName,
     };
 
+    final submitEnabled =
+        isDirty && (widget.formKey.currentState?.isValid ?? false);
+
+    final denseFieldPadding = EdgeInsets.symmetric(
+      horizontal: isCompact ? 12 : 16,
+      vertical: isCompact ? 10 : 12,
+    );
+
+    final sectionGap = isCompact ? 12.0 : 16.0;
+
     return FormShell(
       onSubmit: widget.onSubmit,
       submitTooltip: widget.submitTooltip,
       submitIcon: isCreating ? Icons.add : Icons.check,
+      submitEnabled: submitEnabled,
+      showHeaderSubmit: true,
+      showFooterSubmit: false,
+      closeOnLeft: true,
       onDelete: widget.initialData != null ? widget.onDelete : null,
       deleteTooltip: l10n.deleteValue,
       onClose: widget.onClose != null ? handleClose : null,
       closeTooltip: l10n.closeLabel,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 24),
+        padding: EdgeInsets.only(bottom: isCompact ? 16 : 24),
         child: FormBuilder(
           key: widget.formKey,
           initialValue: initialValues,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           onChanged: () {
             markDirty();
+            setState(() {});
             final values = widget.formKey.currentState?.value;
             if (values != null) {
               widget.onChanged?.call(values);
@@ -105,46 +121,53 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              FormBuilderTextField(
-                name: ValueFieldKeys.name.id,
-                textCapitalization: TextCapitalization.words,
-                textInputAction: TextInputAction.next,
-                maxLength: ValueForm.maxNameLength,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-                decoration: InputDecoration(
-                  hintText: l10n.projectFormTitleHint,
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: FormBuilderTextField(
+                  name: ValueFieldKeys.name.id,
+                  textCapitalization: TextCapitalization.words,
+                  textInputAction: TextInputAction.next,
+                  maxLength: ValueForm.maxNameLength,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 1.5,
+                  decoration: InputDecoration(
+                    hintText: l10n.valueFormNameHint,
+                    filled: true,
+                    fillColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerLow,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                    contentPadding: denseFieldPadding,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
+                  validator: FormBuilderValidators.compose([
+                    FormBuilderValidators.required(
+                      errorText: l10n.valueFormNameRequired,
+                    ),
+                    FormBuilderValidators.minLength(
+                      1,
+                      errorText: l10n.valueFormNameEmpty,
+                    ),
+                    FormBuilderValidators.maxLength(
+                      ValueForm.maxNameLength,
+                      errorText: l10n.valueFormNameTooLong(
+                        ValueForm.maxNameLength,
+                      ),
+                    ),
+                  ]),
                 ),
-                validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.required(
-                    errorText: l10n.taskFormNameRequired,
-                  ),
-                  FormBuilderValidators.minLength(
-                    1,
-                    errorText: l10n.taskFormNameEmpty,
-                  ),
-                  FormBuilderValidators.maxLength(ValueForm.maxNameLength),
-                ]),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: sectionGap),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: FormBuilderField<ValuePriority>(
@@ -156,24 +179,25 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                       children: [
                         Expanded(
                           child: SegmentedButton<ValuePriority>(
-                            segments: const [
+                            segments: [
                               ButtonSegment(
                                 value: ValuePriority.low,
-                                label: Text('Low'),
+                                label: Text(l10n.valuePriorityLowLabel),
                               ),
                               ButtonSegment(
                                 value: ValuePriority.medium,
-                                label: Text('Medium'),
+                                label: Text(l10n.valuePriorityMediumLabel),
                               ),
                               ButtonSegment(
                                 value: ValuePriority.high,
-                                label: Text('High'),
+                                label: Text(l10n.valuePriorityHighLabel),
                               ),
                             ],
                             selected: {value},
                             onSelectionChanged: (selection) {
                               field.didChange(selection.first);
                               markDirty();
+                              setState(() {});
                             },
                           ),
                         ),
@@ -182,14 +206,14 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                   },
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: sectionGap),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: FormBuilderIconPicker(
                   name: ValueFieldKeys.iconName.id,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: sectionGap),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: FormBuilderColorPicker(

@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -426,35 +425,17 @@ class MultiTalkerObserver extends TalkerObserver {
 
 class DebugFileLogObserver extends TalkerObserver {
   DebugFileLogObserver({
-    this.maxFileSizeBytes = 512 * 1024,
-    this.maxBackupFiles = 3,
     this.dedupeWindow = const Duration(seconds: 2),
     this.maxStackTraceLines = 60,
     Future<Directory> Function()? supportDirectoryProvider,
-    Set<String>? includedTitles,
-  }) : includedTitles =
-           includedTitles ??
-           const {
-             'WARNING',
-             'ERROR',
-             'EXCEPTION',
-             _DebugFileTraceLog.titleMyDayTrace,
-           },
-       _supportDirectoryProvider =
+    this.includedTitles,
+  }) : _supportDirectoryProvider =
            supportDirectoryProvider ?? getApplicationSupportDirectory;
 
-  final Set<String> includedTitles;
-
-  final int maxFileSizeBytes;
-
-  /// Number of rotated backup files to keep.
+  /// Optional allowlist of `TalkerData.title` values to write.
   ///
-  /// Example: with `maxBackupFiles=3`, this keeps:
-  /// - debug_errors.log (current)
-  /// - debug_errors.log.1
-  /// - debug_errors.log.2
-  /// - debug_errors.log.3
-  final int maxBackupFiles;
+  /// When null, all log titles are written.
+  final Set<String>? includedTitles;
 
   /// Suppress identical log entries that repeat within this window.
   final Duration dedupeWindow;
@@ -465,7 +446,7 @@ class DebugFileLogObserver extends TalkerObserver {
   final Future<Directory> Function() _supportDirectoryProvider;
 
   File? _logFile;
-  _RollingFileWriter? _writer;
+  _AppendFileWriter? _writer;
 
   final Map<String, _DedupeEntry> _dedupe = <String, _DedupeEntry>{};
   bool _isInitialized = false;
@@ -486,12 +467,7 @@ class DebugFileLogObserver extends TalkerObserver {
     try {
       final dir = await _supportDirectoryProvider();
       _logFile = File('${dir.path}/debug_errors.log');
-      _writer = _RollingFileWriter(
-        file: _logFile!,
-        maxFileSizeBytes: maxFileSizeBytes,
-        maxBackupFiles: maxBackupFiles,
-        headerLabel: 'Log',
-      );
+      _writer = _AppendFileWriter(file: _logFile!, headerLabel: 'Log');
       _isInitialized = true;
 
       debugPrint('Debug log file: ${_logFile!.path}');
@@ -527,7 +503,8 @@ class DebugFileLogObserver extends TalkerObserver {
     _ensureInitialized();
 
     final title = (log.title ?? 'LOG').toUpperCase();
-    if (!includedTitles.contains(title)) return;
+    final allowlist = includedTitles;
+    if (allowlist != null && !allowlist.contains(title)) return;
 
     _writeLog(title, log.message, null, null);
   }
@@ -646,42 +623,29 @@ class _DedupeEntry {
   int suppressedCount = 0;
 }
 
-class _RollingFileWriter {
-  _RollingFileWriter({
+class _AppendFileWriter {
+  _AppendFileWriter({
     required File file,
-    required int maxFileSizeBytes,
-    required int maxBackupFiles,
     required String headerLabel,
   }) : _file = file,
-       _maxFileSizeBytes = maxFileSizeBytes,
-       _maxBackupFiles = maxBackupFiles,
        _headerLabel = headerLabel;
 
   final File _file;
-  final int _maxFileSizeBytes;
-  final int _maxBackupFiles;
   final String _headerLabel;
 
-  int _approxSizeBytes = 0;
   bool _initialized = false;
 
   Future<void> init() async {
     if (_initialized) return;
     try {
-      if (await _file.exists()) {
-        _approxSizeBytes = await _file.length();
-      } else {
+      if (!await _file.exists()) {
         await _file.create(recursive: true);
-        _approxSizeBytes = 0;
       }
       _initialized = true;
 
-      if (_maxFileSizeBytes > 0 && _approxSizeBytes > _maxFileSizeBytes) {
-        await _rotate(reason: 'was ${_approxSizeBytes ~/ 1024} KB');
-      }
-
-      await _append(
+      await _file.writeAsString(
         '--- $_headerLabel started at ${DateTime.now()} ---\n',
+        mode: FileMode.append,
       );
     } catch (_) {
       // Best-effort only.
@@ -692,11 +656,6 @@ class _RollingFileWriter {
     if (!_initialized) return;
     try {
       _file.writeAsStringSync(text, mode: FileMode.append, flush: true);
-      _approxSizeBytes += utf8.encode(text).length;
-
-      if (_maxFileSizeBytes > 0 && _approxSizeBytes > _maxFileSizeBytes) {
-        _rotateSync(reason: 'size ${_approxSizeBytes ~/ 1024} KB');
-      }
     } catch (_) {
       // Best-effort only.
     }
@@ -705,82 +664,11 @@ class _RollingFileWriter {
   Future<void> clear(String reason) async {
     if (!_initialized) return;
     try {
-      await _rotateFilesAsync();
       final header =
           '--- $_headerLabel cleared at ${DateTime.now()} ($reason) ---\n';
       await _file.writeAsString(header, mode: FileMode.write);
-      _approxSizeBytes = utf8.encode(header).length;
     } catch (_) {
       // Best-effort only.
-    }
-  }
-
-  Future<void> _append(String text) async {
-    await _file.writeAsString(text, mode: FileMode.append);
-    _approxSizeBytes += utf8.encode(text).length;
-  }
-
-  Future<void> _rotate({required String reason}) async {
-    await _rotateFilesAsync();
-    final header =
-        '--- $_headerLabel rotated at ${DateTime.now()} ($reason) ---\n';
-    await _file.writeAsString(header, mode: FileMode.write);
-    _approxSizeBytes = utf8.encode(header).length;
-  }
-
-  void _rotateSync({required String reason}) {
-    try {
-      _rotateFilesSync();
-      final header =
-          '--- $_headerLabel rotated at ${DateTime.now()} ($reason) ---\n';
-      _file.writeAsStringSync(header, mode: FileMode.write, flush: true);
-      _approxSizeBytes = utf8.encode(header).length;
-    } catch (_) {
-      // Best-effort only.
-    }
-  }
-
-  Future<void> _rotateFilesAsync() async {
-    if (_maxBackupFiles <= 0) {
-      await _file.writeAsString('', mode: FileMode.write);
-      return;
-    }
-
-    for (var i = _maxBackupFiles; i >= 1; i--) {
-      final src = File('${_file.path}.${i - 1}');
-      final dst = File('${_file.path}.$i');
-      if (await dst.exists()) {
-        await dst.delete();
-      }
-      if (await src.exists()) {
-        await src.rename(dst.path);
-      }
-    }
-
-    if (await _file.exists()) {
-      await _file.rename('${_file.path}.0');
-    }
-  }
-
-  void _rotateFilesSync() {
-    if (_maxBackupFiles <= 0) {
-      _file.writeAsStringSync('', mode: FileMode.write, flush: true);
-      return;
-    }
-
-    for (var i = _maxBackupFiles; i >= 1; i--) {
-      final src = File('${_file.path}.${i - 1}');
-      final dst = File('${_file.path}.$i');
-      if (dst.existsSync()) {
-        dst.deleteSync();
-      }
-      if (src.existsSync()) {
-        src.renameSync(dst.path);
-      }
-    }
-
-    if (_file.existsSync()) {
-      _file.renameSync('${_file.path}.0');
     }
   }
 }

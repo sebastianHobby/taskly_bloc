@@ -14,6 +14,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/my_day_ritual_sections_card.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_ritual_wizard_page.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/core.dart' as domain;
 
 class MyDayPage extends StatelessWidget {
@@ -52,72 +53,93 @@ class MyDayPage extends StatelessWidget {
         BlocProvider<MyDayRitualBloc>(create: (_) => getIt<MyDayRitualBloc>()),
         BlocProvider(create: (_) => SelectionCubit()),
       ],
-      child: BlocBuilder<MyDayRitualBloc, MyDayRitualState>(
-        builder: (context, ritualState) {
-          final needsRitual =
-              ritualState is MyDayRitualReady && ritualState.needsRitual;
+      child: BlocListener<MyDayRitualBloc, MyDayRitualState>(
+        listenWhen: (previous, next) {
+          final prevReady = previous is MyDayRitualReady ? previous : null;
+          final nextReady = next is MyDayRitualReady ? next : null;
 
-          if (needsRitual) {
-            return const MyDayRitualWizardPage();
-          }
+          final prevNeeds = prevReady?.needsRitual;
+          final nextNeeds = nextReady?.needsRitual;
 
-          if (ritualState is MyDayRitualLoading) {
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text('My Day'),
-                actions: TasklyAppBarActions.withAttentionBell(
-                  context,
-                  actions: const <Widget>[],
-                ),
-              ),
-              body: const Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-
-          return BlocBuilder<SelectionCubit, SelectionState>(
-            builder: (context, selectionState) {
-              return Scaffold(
-                appBar: selectionState.isSelectionMode
-                    ? SelectionAppBar(baseTitle: 'My Day', onExit: () {})
-                    : AppBar(
-                        title: const Text('My Day'),
-                        actions: TasklyAppBarActions.withAttentionBell(
-                          context,
-                          actions: [
-                            if (!isCompact)
-                              EntityAddMenuButton(
-                                onCreateTask: () => _openNewTaskEditor(
-                                  context,
-                                  defaultDay: today,
-                                ),
-                                onCreateProject: () => _openNewProjectEditor(
-                                  context,
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                floatingActionButton: selectionState.isSelectionMode
-                    ? null
-                    : isCompact
-                    ? EntityAddSpeedDial(
-                        heroTag: 'add_speed_dial_my_day',
-                        onCreateTask: () => _openNewTaskEditor(
-                          context,
-                          defaultDay: today,
-                        ),
-                        onCreateProject: () => _openNewProjectEditor(
-                          context,
-                        ),
-                      )
-                    : null,
-                body: const _MyDayLoadedBody(),
-              );
-            },
+          if (prevNeeds != nextNeeds) return true;
+          if (prevReady?.dayKeyUtc != nextReady?.dayKeyUtc) return true;
+          return false;
+        },
+        listener: (_, state) {
+          final ready = state is MyDayRitualReady ? state : null;
+          myDayTrace(
+            'MyDayPage gate: state=${state.runtimeType} '
+            'needsRitual=${ready?.needsRitual} '
+            'dayKey=${ready?.dayKeyUtc.toIso8601String()}',
           );
         },
+        child: BlocBuilder<MyDayRitualBloc, MyDayRitualState>(
+          builder: (context, ritualState) {
+            final needsRitual =
+                ritualState is MyDayRitualReady && ritualState.needsRitual;
+
+            if (needsRitual) {
+              return const MyDayRitualWizardPage();
+            }
+
+            if (ritualState is MyDayRitualLoading) {
+              return Scaffold(
+                appBar: AppBar(
+                  title: const Text('My Day'),
+                  actions: TasklyAppBarActions.withAttentionBell(
+                    context,
+                    actions: const <Widget>[],
+                  ),
+                ),
+                body: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+
+            return BlocBuilder<SelectionCubit, SelectionState>(
+              builder: (context, selectionState) {
+                return Scaffold(
+                  appBar: selectionState.isSelectionMode
+                      ? SelectionAppBar(baseTitle: 'My Day', onExit: () {})
+                      : AppBar(
+                          title: const Text('My Day'),
+                          actions: TasklyAppBarActions.withAttentionBell(
+                            context,
+                            actions: [
+                              if (!isCompact)
+                                EntityAddMenuButton(
+                                  onCreateTask: () => _openNewTaskEditor(
+                                    context,
+                                    defaultDay: today,
+                                  ),
+                                  onCreateProject: () => _openNewProjectEditor(
+                                    context,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                  floatingActionButton: selectionState.isSelectionMode
+                      ? null
+                      : isCompact
+                      ? EntityAddSpeedDial(
+                          heroTag: 'add_speed_dial_my_day',
+                          onCreateTask: () => _openNewTaskEditor(
+                            context,
+                            defaultDay: today,
+                          ),
+                          onCreateProject: () => _openNewProjectEditor(
+                            context,
+                          ),
+                        )
+                      : null,
+                  body: const _MyDayLoadedBody(),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

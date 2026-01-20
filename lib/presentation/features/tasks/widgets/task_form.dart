@@ -316,6 +316,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
           autovalidateMode: AutovalidateMode.onUserInteraction,
           onChanged: () {
             markDirty();
+            setState(() {});
             final values = widget.formKey.currentState?.value;
             if (values != null) {
               widget.onChanged?.call(values);
