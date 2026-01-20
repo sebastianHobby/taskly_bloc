@@ -507,4 +507,4 @@ refresh.
 
 ---
 
-See also: [doc/architecture/ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md) for how allocation suggestions integrate with My Day.
+See also: [doc/architecture/SUGGESTED_PICKS_ENGINE_ARCHITECTURE.md](SUGGESTED_PICKS_ENGINE_ARCHITECTURE.md) for how suggested picks integrate with My Day.

@@ -66,6 +66,7 @@ class _ScheduledViewState extends State<_ScheduledView> {
 
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  ScheduledAgendaFilter _filter = ScheduledAgendaFilter.all;
   int _lastScrollToTodaySignal = 0;
 
   @override
@@ -266,8 +267,41 @@ class _ScheduledViewState extends State<_ScheduledView> {
                 todayHeaderKey: _todayHeaderKey,
                 dayHeaderKeys: _dayHeaderKeys,
                 searchQuery: _searchQuery,
+                filter: _filter,
               ),
             };
+
+            final filterBar = Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: SegmentedButton<ScheduledAgendaFilter>(
+                  segments: const <ButtonSegment<ScheduledAgendaFilter>>[
+                    ButtonSegment(
+                      value: ScheduledAgendaFilter.all,
+                      label: Text('All'),
+                    ),
+                    ButtonSegment(
+                      value: ScheduledAgendaFilter.planned,
+                      label: Text('Planned'),
+                    ),
+                    ButtonSegment(
+                      value: ScheduledAgendaFilter.due,
+                      label: Text('Due'),
+                    ),
+                  ],
+                  selected: <ScheduledAgendaFilter>{_filter},
+                  onSelectionChanged: (selection) {
+                    final next = selection.isEmpty
+                        ? ScheduledAgendaFilter.all
+                        : selection.first;
+                    if (next == _filter) return;
+                    setState(() => _filter = next);
+                  },
+                  showSelectedIcon: false,
+                ),
+              ),
+            );
 
             final searchBar = Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -280,8 +314,16 @@ class _ScheduledViewState extends State<_ScheduledView> {
                   suffixIcon: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (_searchQuery.trim().isNotEmpty)
+                        IconButton(
+                          tooltip: 'Clear search',
+                          visualDensity: VisualDensity.compact,
+                          onPressed: _searchController.clear,
+                          icon: const Icon(Icons.clear_rounded),
+                        ),
                       IconButton(
                         tooltip: 'Jump to today',
+                        visualDensity: VisualDensity.compact,
                         onPressed: () {
                           context.read<ScheduledFeedBloc>().add(
                             const ScheduledJumpToTodayRequested(),
@@ -291,6 +333,7 @@ class _ScheduledViewState extends State<_ScheduledView> {
                       ),
                       IconButton(
                         tooltip: 'Pick a date',
+                        visualDensity: VisualDensity.compact,
                         onPressed: () => _pickDayAndScroll(today),
                         icon: const Icon(Icons.calendar_today_outlined),
                       ),
@@ -304,6 +347,7 @@ class _ScheduledViewState extends State<_ScheduledView> {
             final content = Column(
               children: [
                 searchBar,
+                filterBar,
                 Expanded(child: feed),
               ],
             );
@@ -353,6 +397,7 @@ class _ScheduledAgenda extends StatelessWidget {
     required this.todayHeaderKey,
     required this.dayHeaderKeys,
     required this.searchQuery,
+    required this.filter,
   });
 
   final List<ListRowUiModel> rows;
@@ -361,6 +406,7 @@ class _ScheduledAgenda extends StatelessWidget {
   final GlobalKey todayHeaderKey;
   final Map<String, GlobalKey> dayHeaderKeys;
   final String searchQuery;
+  final ScheduledAgendaFilter filter;
 
   static String _dayKey(DateTime day) {
     final d = DateTime(day.year, day.month, day.day);
@@ -602,42 +648,44 @@ class _ScheduledAgenda extends StatelessWidget {
           .whereType<TasklyAgendaRowModel>()
           .toList(growable: false);
 
-      final action = overdueCount > 0
-          ? TasklyAgendaCardHeaderAction(
-              label: 'Reschedule all',
-              icon: Icons.event,
-              tooltip: 'Reschedule overdue items',
-              onPressed: () async {
-                final newDeadlineDay = await _showRescheduleOverdueSheet(
-                  context,
-                  itemCount: overdueCount,
-                  today: today,
-                );
-                if (newDeadlineDay == null) return;
-                if (!context.mounted) return;
-                context.read<ScheduledScreenBloc>().add(
-                  ScheduledRescheduleEntitiesDeadlineRequested(
-                    taskIds: overdueTaskIds,
-                    projectIds: overdueProjectIds,
-                    newDeadlineDay: newDeadlineDay,
-                  ),
-                );
-              },
-            )
-          : null;
+      if (filter != ScheduledAgendaFilter.planned) {
+        final action = overdueCount > 0
+            ? TasklyAgendaCardHeaderAction(
+                label: 'Reschedule all',
+                icon: Icons.event,
+                tooltip: 'Reschedule overdue items',
+                onPressed: () async {
+                  final newDeadlineDay = await _showRescheduleOverdueSheet(
+                    context,
+                    itemCount: overdueCount,
+                    today: today,
+                  );
+                  if (newDeadlineDay == null) return;
+                  if (!context.mounted) return;
+                  context.read<ScheduledScreenBloc>().add(
+                    ScheduledRescheduleEntitiesDeadlineRequested(
+                      taskIds: overdueTaskIds,
+                      projectIds: overdueProjectIds,
+                      newDeadlineDay: newDeadlineDay,
+                    ),
+                  );
+                },
+              )
+            : null;
 
-      cards.add(
-        TasklyAgendaCardModel(
-          key: 'overdue',
-          title: 'Overdue',
-          isCollapsed: overdueCollapsed,
-          onHeaderTap: () => context.read<ScheduledFeedBloc>().add(
-            const ScheduledBucketCollapseToggled(bucketKey: 'overdue'),
+        cards.add(
+          TasklyAgendaCardModel(
+            key: 'overdue',
+            title: 'Overdue',
+            isCollapsed: overdueCollapsed,
+            onHeaderTap: () => context.read<ScheduledFeedBloc>().add(
+              const ScheduledBucketCollapseToggled(bucketKey: 'overdue'),
+            ),
+            action: action,
+            dueRows: overdueDueRows,
           ),
-          action: action,
-          dueRows: overdueDueRows,
-        ),
-      );
+        );
+      }
     }
 
     for (final entry in dayDueRows.entries) {
@@ -645,7 +693,14 @@ class _ScheduledAgenda extends StatelessWidget {
       final planned = dayPlannedRows[day] ?? const <TasklyAgendaRowModel>[];
       final due = entry.value;
 
-      if (planned.isEmpty && due.isEmpty) continue;
+      final effectivePlanned = (filter == ScheduledAgendaFilter.due)
+          ? const <TasklyAgendaRowModel>[]
+          : planned;
+      final effectiveDue = (filter == ScheduledAgendaFilter.planned)
+          ? const <TasklyAgendaRowModel>[]
+          : due;
+
+      if (effectivePlanned.isEmpty && effectiveDue.isEmpty) continue;
 
       final dayKey = _dayKey(day);
       final headerKey = _isSameDay(day, today)
@@ -657,8 +712,8 @@ class _ScheduledAgenda extends StatelessWidget {
           key: dayKey,
           title: _semanticDayTitle(context, day, today),
           headerKey: headerKey,
-          plannedRows: planned,
-          dueRows: due,
+          plannedRows: effectivePlanned,
+          dueRows: effectiveDue,
         ),
       );
     }
@@ -682,20 +737,9 @@ class _ScheduledAgenda extends StatelessWidget {
     final rowKey =
         '${occurrence.entityType.name}:${occurrence.entityId}:${_dayKey(normalizedDay)}:${occurrence.tag.name}';
 
-    final todayUtc = getIt<HomeDayService>().todayDayKeyUtc();
-    final today = DateTime(todayUtc.year, todayUtc.month, todayUtc.day);
-
     if (occurrence.entityType == EntityType.task && occurrence.task != null) {
       final task = occurrence.task!;
       final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
-
-      final dueChipLabel = _plannedMismatchDueChipLabel(
-        context,
-        plannedDay: normalizedDay,
-        today: today,
-        deadline: task.deadlineDate,
-        tag: occurrence.tag,
-      );
 
       final overflowActions = TileOverflowActionCatalog.forTask(
         taskId: task.id,
@@ -713,15 +757,14 @@ class _ScheduledAgenda extends StatelessWidget {
         task: task,
         tileCapabilities: tileCapabilities,
         showProjectLabel: false,
-        showDates: dueChipLabel != null,
-        showOnlyDeadlineDate: dueChipLabel != null,
-        overrideDeadlineDateLabel: dueChipLabel,
-        overrideIsOverdue: dueChipLabel != null ? false : null,
-        overrideIsDueToday: dueChipLabel != null ? false : null,
-        overrideIsDueSoon: dueChipLabel != null ? false : null,
+        showDates: false,
+        showOnlyDeadlineDate: false,
+        showPrimaryValueOnTitleLine: true,
+        showValuesInMetaLine: false,
+        showSecondaryValues: false,
         showPriorityMarkerOnRight: false,
         showRepeatIcon: false,
-        showOverflowEllipsisWhenMetaHidden: true,
+        showOverflowEllipsisWhenMetaHidden: false,
       );
 
       return TasklyAgendaTaskRowModel(
@@ -759,14 +802,6 @@ class _ScheduledAgenda extends StatelessWidget {
         project,
       );
 
-      final dueChipLabel = _plannedMismatchDueChipLabel(
-        context,
-        plannedDay: normalizedDay,
-        today: today,
-        deadline: project.deadlineDate,
-        tag: occurrence.tag,
-      );
-
       final overflowActions = TileOverflowActionCatalog.forProject(
         projectId: project.id,
         projectName: project.name,
@@ -787,15 +822,14 @@ class _ScheduledAgenda extends StatelessWidget {
           project: project,
           taskCount: project.taskCount,
           completedTaskCount: project.completedTaskCount,
-          showDates: dueChipLabel != null,
-          showOnlyDeadlineDate: dueChipLabel != null,
-          overrideDeadlineDateLabel: dueChipLabel,
-          overrideIsOverdue: dueChipLabel != null ? false : null,
-          overrideIsDueToday: dueChipLabel != null ? false : null,
-          overrideIsDueSoon: dueChipLabel != null ? false : null,
+          showDates: false,
+          showOnlyDeadlineDate: false,
+          showPrimaryValueOnTitleLine: true,
+          showValuesInMetaLine: false,
+          showSecondaryValues: false,
           showPriorityMarkerOnRight: false,
           showRepeatIcon: false,
-          showOverflowEllipsisWhenMetaHidden: true,
+          showOverflowEllipsisWhenMetaHidden: false,
         ),
         actions: ProjectTileActions(
           onTap: () => Routing.toProjectEdit(context, project.id),
@@ -816,29 +850,6 @@ class _ScheduledAgenda extends StatelessWidget {
 
     return null;
   }
-
-  static String? _plannedMismatchDueChipLabel(
-    BuildContext context, {
-    required DateTime plannedDay,
-    required DateTime today,
-    required DateTime? deadline,
-    required ScheduledDateTag tag,
-  }) {
-    if (tag != ScheduledDateTag.starts) return null;
-    if (deadline == null) return null;
-
-    final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
-    if (_isSameDay(deadlineDay, plannedDay)) return null;
-
-    final locale = Localizations.localeOf(context);
-    final daysFromPlanned = deadlineDay.difference(plannedDay).inDays;
-
-    final formatted = (daysFromPlanned >= 0 && daysFromPlanned <= 6)
-        ? DateFormat.E(locale.toLanguageTag()).format(deadlineDay)
-        : DateFormat.MMMd(locale.toLanguageTag()).format(deadlineDay);
-
-    // P2: only show this in PLANNED (starts) when due != planned day.
-    // Keep the chip visually secondary by forcing neutral urgency flags.
-    return 'Due $formatted';
-  }
 }
+
+enum ScheduledAgendaFilter { all, planned, due }

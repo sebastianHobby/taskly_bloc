@@ -20,6 +20,9 @@ TaskTileModel buildTaskListRowTileModel(
   bool showProjectLabel = true,
   bool showDates = true,
   bool showOnlyDeadlineDate = false,
+  bool showPrimaryValueOnTitleLine = false,
+  bool showValuesInMetaLine = true,
+  bool showSecondaryValues = true,
   String? overrideStartDateLabel,
   String? overrideDeadlineDateLabel,
   bool? overrideIsOverdue,
@@ -65,14 +68,18 @@ TaskTileModel buildTaskListRowTileModel(
           task.priority != null ||
           hasExtraSecondaryValues);
 
+  final primaryValueData = task.effectivePrimaryValue?.toChipData(context);
+
   final meta = EntityMetaLineModel(
     projectName: showProjectLabel ? task.project?.name : null,
-    showValuesInMetaLine: true,
-    primaryValue: task.effectivePrimaryValue?.toChipData(context),
-    secondaryValues: task.effectiveSecondaryValues
-        .take(1)
-        .map((v) => v.toChipData(context))
-        .toList(growable: false),
+    showValuesInMetaLine: showValuesInMetaLine,
+    primaryValue: primaryValueData,
+    secondaryValues: !showSecondaryValues
+        ? const []
+        : task.effectiveSecondaryValues
+              .take(1)
+              .map((v) => v.toChipData(context))
+              .toList(growable: false),
     showOverflowEllipsis: shouldShowOverflowEllipsis,
     showDates: showDates,
     showOnlyDeadlineDate: showOnlyDeadlineDate,
@@ -128,6 +135,7 @@ TaskTileModel buildTaskListRowTileModel(
     completed: isCompleted,
     onTap: onTap,
     meta: meta,
+    titlePrimaryValue: showPrimaryValueOnTitleLine ? primaryValueData : null,
     checkboxSemanticLabel: isCompleted
         ? 'Mark "${task.name}" as incomplete'
         : 'Mark "${task.name}" as complete',

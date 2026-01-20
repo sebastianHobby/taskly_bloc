@@ -434,7 +434,7 @@ class _MyDayLoadedBody extends StatelessWidget {
                                   context,
                                   title: 'Add overdue & due',
                                   subtitle:
-                                      "These were eligible in your ritual, but you didn't select them.",
+                                      "These were eligible when you planned today, but you didn't add them.",
                                   tasks: missingDueTasks,
                                   bucket: MyDayRitualAppendBucket.due,
                                 )
@@ -444,7 +444,7 @@ class _MyDayLoadedBody extends StatelessWidget {
                                   context,
                                   title: 'Add starts today',
                                   subtitle:
-                                      "These were eligible in your ritual, but you didn't select them.",
+                                      "These were eligible when you planned today, but you didn't add them.",
                                   tasks: missingStartsTasks,
                                   bucket: MyDayRitualAppendBucket.starts,
                                 )

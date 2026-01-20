@@ -713,7 +713,11 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     }
 
     if (reasonCodes.contains(AllocationReasonCode.neglectBalance)) {
-      return 'Balance';
+      final primaryValueName = task.effectivePrimaryValue?.name.trim();
+      if (primaryValueName != null && primaryValueName.isNotEmpty) {
+        return 'Rebalancing toward $primaryValueName';
+      }
+      return 'Rebalancing';
     }
 
     if (reasonCodes.contains(AllocationReasonCode.priority)) {
@@ -726,6 +730,10 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
   String _whyItMattersToken(Task task, List<AllocationReasonCode> reasonCodes) {
     if (reasonCodes.contains(AllocationReasonCode.crossValue)) {
       return 'Cross-value';
+    }
+
+    if (reasonCodes.contains(AllocationReasonCode.neglectBalance)) {
+      return '';
     }
 
     final primaryValueName = task.effectivePrimaryValue?.name.trim();
@@ -761,7 +769,12 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     }
 
     if (reasonCodes.contains(AllocationReasonCode.neglectBalance)) {
-      bullets.add('Restores balance');
+      final primaryValueName = task.effectivePrimaryValue?.name.trim();
+      if (primaryValueName != null && primaryValueName.isNotEmpty) {
+        bullets.add('Rebalancing toward $primaryValueName');
+      } else {
+        bullets.add('Rebalancing');
+      }
     }
 
     if (reasonCodes.contains(AllocationReasonCode.crossValue)) {

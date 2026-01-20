@@ -199,7 +199,7 @@ Integration highlights:
 - Allocation warnings via snapshots have been removed.
 
 For the deeper dive see:
-- [ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md)
+- [SUGGESTED_PICKS_ENGINE_ARCHITECTURE.md](SUGGESTED_PICKS_ENGINE_ARCHITECTURE.md)
 
 ### 2.5 Journal + Statistics (entries + trackers -> trends/correlations)
 
@@ -235,7 +235,7 @@ For the deeper dive see:
 - Screen purpose concepts: [screen_purpose_concepts.md](screen_purpose_concepts.md)
 - Offline-first + sync: [POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md](POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md)
 - Local dev / E2E (PowerSync + Supabase): [LOCAL_SUPABASE_POWERSYNC_E2E.md](LOCAL_SUPABASE_POWERSYNC_E2E.md)
-- Allocation: [ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md)
+- Suggested picks: [SUGGESTED_PICKS_ENGINE_ARCHITECTURE.md](SUGGESTED_PICKS_ENGINE_ARCHITECTURE.md)
 - Attention: [ATTENTION_SYSTEM_ARCHITECTURE.md](ATTENTION_SYSTEM_ARCHITECTURE.md)
 - Recurrence + sync contract: [RECURRENCE_SYNC_CONTRACT.md](RECURRENCE_SYNC_CONTRACT.md)
 - Testing: [TESTING_ARCHITECTURE.md](TESTING_ARCHITECTURE.md)

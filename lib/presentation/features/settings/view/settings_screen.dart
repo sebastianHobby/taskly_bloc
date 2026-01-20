@@ -394,7 +394,7 @@ class _HomeTimeZoneSelector extends StatelessWidget {
     return ListTile(
       title: const Text('Home Timezone'),
       subtitle: const Text(
-        'Fixed day boundary for “today” and the My Day ritual',
+        'Fixed day boundary for “today” and My Day planning',
       ),
       trailing: DropdownButton<int>(
         value: settings.homeTimeZoneOffsetMinutes,

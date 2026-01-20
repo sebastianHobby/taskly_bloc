@@ -72,31 +72,8 @@ abstract class StrategySettings with _$StrategySettings {
     /// Days before project deadline = urgent.
     @Default(7) int projectUrgencyThresholdDays,
 
-    /// Boost multiplier for urgent tasks with value alignment.
-    /// Set to 1.0 to disable urgency boosting.
-    @Default(1.0) double urgencyBoostMultiplier,
-
     /// Enable neglect-based weighting (Reflector mode feature).
     @Default(false) bool enableNeglectWeighting,
-
-    /// Days to look back for neglect calculation.
-    @Default(7) int neglectLookbackDays,
-
-    /// Weight of neglect score vs base weight (0.0-1.0).
-    /// Default 0.7 matches the Reflector-mode preset.
-    @Default(0.7) double neglectInfluence,
-
-    /// Weight given to value priority.
-    @Default(1.0) double valuePriorityWeight,
-
-    /// Boost given to task priority.
-    @Default(1.0) double taskPriorityBoost,
-
-    /// Weight for start date proximity.
-    @Default(0.0) double startDateProximity,
-
-    /// Multiplier for overdue emergency tasks.
-    @Default(1.0) double overdueEmergencyMultiplier,
   }) = _StrategySettings;
   const StrategySettings._();
 
@@ -110,40 +87,19 @@ abstract class StrategySettings with _$StrategySettings {
         urgentTaskBehavior: UrgentTaskBehavior.ignore,
         taskUrgencyThresholdDays: 3,
         projectUrgencyThresholdDays: 7,
-        urgencyBoostMultiplier: 1,
         enableNeglectWeighting: false,
-        neglectLookbackDays: 7,
-        neglectInfluence: 0,
-        valuePriorityWeight: 2,
-        taskPriorityBoost: 0.5,
-        startDateProximity: 0,
-        overdueEmergencyMultiplier: 1,
       ),
       FocusMode.sustainable => const StrategySettings(
         urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
         taskUrgencyThresholdDays: 3,
         projectUrgencyThresholdDays: 7,
-        urgencyBoostMultiplier: 1.5,
         enableNeglectWeighting: true,
-        neglectLookbackDays: 7,
-        neglectInfluence: 0.5,
-        valuePriorityWeight: 1.5,
-        taskPriorityBoost: 1,
-        startDateProximity: 0.5,
-        overdueEmergencyMultiplier: 1.5,
       ),
       FocusMode.responsive => const StrategySettings(
         urgentTaskBehavior: UrgentTaskBehavior.includeAll,
         taskUrgencyThresholdDays: 3,
         projectUrgencyThresholdDays: 7,
-        urgencyBoostMultiplier: 2,
         enableNeglectWeighting: false,
-        neglectLookbackDays: 7,
-        neglectInfluence: 0,
-        valuePriorityWeight: 0.5,
-        taskPriorityBoost: 2,
-        startDateProximity: 1,
-        overdueEmergencyMultiplier: 3,
       ),
       FocusMode.personalized => const StrategySettings(),
     };
