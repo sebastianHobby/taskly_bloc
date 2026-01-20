@@ -164,6 +164,26 @@
             }
         }
     },
+    "valueFormPreviewLabel": "Vista previa",
+    "@valueFormPreviewLabel": {
+        "description": "Small label above the live preview card in the value editor"
+    },
+    "valueFormIconLabel": "Icono",
+    "@valueFormIconLabel": {
+        "description": "Label/title for the icon picker field in the value editor"
+    },
+    "valueFormIconHint": "Toca para seleccionar un icono",
+    "@valueFormIconHint": {
+        "description": "Hint shown when no icon is selected in the value editor"
+    },
+    "valueFormColorLabel": "Color",
+    "@valueFormColorLabel": {
+        "description": "Label/title for the color picker field in the value editor"
+    },
+    "valueFormColorMoreColors": "Más colores",
+    "@valueFormColorMoreColors": {
+        "description": "Label for the advanced color picker entry in the value editor"
+    },
     "valuePriorityLowLabel": "Baja",
     "@valuePriorityLowLabel": {
         "description": "Etiqueta para prioridad baja del valor"

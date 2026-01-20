@@ -101,6 +101,9 @@ Future<void> setupDependencies() async {
     ..registerSingleton<PendingNotificationsProcessor>(
       getIt<TasklyDataBindings>().pendingNotificationsProcessor,
     )
+    ..registerSingleton<InitialSyncService>(
+      getIt<TasklyDataBindings>().initialSyncService,
+    )
     ..registerSingleton<HomeDayKeyService>(
       getIt<TasklyDataBindings>().homeDayKeyService,
     )

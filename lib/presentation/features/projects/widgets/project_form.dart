@@ -9,6 +9,8 @@ import 'package:taskly_bloc/presentation/widgets/form_date_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/rrule_form_recurrence_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
+import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
@@ -187,6 +189,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       horizontal: isCompact ? 12 : 16,
       vertical: isCompact ? 10 : 12,
     );
+
+    const valuesWhyCopy = 'Helps Taskly prioritize and suggest the right work.';
 
     return FormShell(
       onSubmit: widget.onSubmit,
@@ -519,20 +523,17 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                     final valueIds = List<String>.of(
                       field.value ?? const <String>[],
                     );
-                    final primaryId = valueIds.isEmpty ? null : valueIds.first;
-                    final primaryName = primaryId == null
+                    final effectiveIds = valueIds
+                        .take(2)
+                        .toList(
+                          growable: false,
+                        );
+                    final primary = effectiveIds.isEmpty
                         ? null
-                        : availableValuesById[primaryId]?.name;
-
-                    final summary = primaryName == null
-                        ? l10n.valuesNoneSelected
-                        : valueIds.length <= 1
-                        ? primaryName
-                        : '$primaryName + ${valueIds.length - 1}';
-
-                    final helperOrError =
-                        field.errorText ??
-                        (valueIds.isEmpty ? l10n.valuesProjectHelp : null);
+                        : availableValuesById[effectiveIds.first];
+                    final secondary = effectiveIds.length < 2
+                        ? null
+                        : availableValuesById[effectiveIds[1]];
 
                     return KeyedSubtree(
                       key: _valuesKey,
@@ -543,19 +544,39 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                         ).colorScheme.surfaceContainerLow,
                         child: ListTile(
                           title: Text(l10n.projectFormValuesLabel),
-                          subtitle: Text(
-                            helperOrError == null
-                                ? summary
-                                : '$summary\n$helperOrError',
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: field.errorText == null
-                                ? null
-                                : theme.textTheme.bodySmall?.copyWith(
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                valuesWhyCopy,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _ProjectValueSlotRow(
+                                label: 'Primary',
+                                value: primary,
+                                showNone: true,
+                              ),
+                              const SizedBox(height: 6),
+                              _ProjectValueSlotRow(
+                                label: 'Secondary',
+                                value: secondary,
+                                showNone: true,
+                              ),
+                              if (field.errorText != null) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  field.errorText!,
+                                  style: theme.textTheme.bodySmall?.copyWith(
                                     color: colorScheme.error,
+                                    fontWeight: FontWeight.w600,
                                   ),
+                                ),
+                              ],
+                            ],
                           ),
-                          leading: const Icon(Icons.star_border),
                           trailing: const Icon(Icons.chevron_right),
                           onTap: () async {
                             final result =
@@ -578,6 +599,95 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProjectValueSlotRow extends StatelessWidget {
+  const _ProjectValueSlotRow({
+    required this.label,
+    required this.value,
+    required this.showNone,
+  });
+
+  final String label;
+  final Value? value;
+  final bool showNone;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 84,
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          child: value == null
+              ? Text(
+                  showNone ? 'None' : '',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                )
+              : Row(
+                  children: [
+                    _ProjectSmallValueIcon(value: value!),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        value!.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProjectSmallValueIcon extends StatelessWidget {
+  const _ProjectSmallValueIcon({required this.value});
+
+  final Value value;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconData = getIconDataFromName(value.iconName) ?? Icons.star;
+    final valueColor = ColorUtils.fromHexWithThemeFallback(
+      context,
+      value.color,
+    );
+    final color = valueColor.withValues(alpha: 0.95);
+
+    return Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: 0.8), width: 1.25),
+      ),
+      child: Center(
+        child: Icon(
+          iconData,
+          size: 12,
+          color: color,
+          semanticLabel: value.name,
         ),
       ),
     );
