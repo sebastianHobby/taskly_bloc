@@ -12,7 +12,6 @@ enum TileOverflowActionId {
   togglePinnedToMyDay,
   edit,
   moveToProject,
-  alignValues,
   completeSeries,
   delete,
 }
@@ -125,18 +124,6 @@ abstract final class TileOverflowActionCatalog {
         ),
       ),
       TileOverflowActionEntry(
-        id: TileOverflowActionId.alignValues,
-        group: TileOverflowActionGroup.edit,
-        label: 'Align values…',
-        enabled: tileCapabilities.canAlignValues,
-        destructive: false,
-        intent: TileIntentOpenEditor(
-          entityType: EntityType.task,
-          entityId: taskId,
-          openToValues: true,
-        ),
-      ),
-      TileOverflowActionEntry(
         id: TileOverflowActionId.completeSeries,
         group: TileOverflowActionGroup.destructive,
         label: 'Complete series',
@@ -195,18 +182,6 @@ abstract final class TileOverflowActionCatalog {
         intent: TileIntentOpenEditor(
           entityType: EntityType.project,
           entityId: projectId,
-        ),
-      ),
-      TileOverflowActionEntry(
-        id: TileOverflowActionId.alignValues,
-        group: TileOverflowActionGroup.edit,
-        label: 'Align values…',
-        enabled: tileCapabilities.canAlignValues,
-        destructive: false,
-        intent: TileIntentOpenEditor(
-          entityType: EntityType.project,
-          entityId: projectId,
-          openToValues: true,
         ),
       ),
       TileOverflowActionEntry(

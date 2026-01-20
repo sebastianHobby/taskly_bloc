@@ -8,7 +8,7 @@ bool _isDebugBuild() {
   assert(() {
     debug = true;
     return true;
-  }());
+  }(), 'Debug build check');
   return debug;
 }
 

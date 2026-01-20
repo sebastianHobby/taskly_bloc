@@ -52,7 +52,6 @@ class EntityTileCapabilitiesResolver {
       canOpenEditor: true,
       canOpenMoveToProject: true,
       canQuickMoveToProject: true,
-      canAlignValues: true,
     );
   }
 
@@ -67,7 +66,6 @@ class EntityTileCapabilitiesResolver {
       canDelete: true,
       canOpenEditor: true,
       canOpenDetails: true,
-      canAlignValues: true,
     );
   }
 

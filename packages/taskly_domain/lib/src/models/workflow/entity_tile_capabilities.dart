@@ -46,9 +46,6 @@ abstract class EntityTileCapabilities with _$EntityTileCapabilities {
 
     /// Whether the tile can perform a quick move-to-project mutation.
     @Default(false) bool canQuickMoveToProject,
-
-    /// Whether the tile can open the values alignment editor surface.
-    @Default(false) bool canAlignValues,
   }) = _EntityTileCapabilities;
 
   factory EntityTileCapabilities.fromJson(Map<String, dynamic> json) =>
@@ -70,7 +67,6 @@ abstract class EntityTileCapabilitiesOverride
     bool? canOpenDetails,
     bool? canOpenMoveToProject,
     bool? canQuickMoveToProject,
-    bool? canAlignValues,
   }) = _EntityTileCapabilitiesOverride;
 
   factory EntityTileCapabilitiesOverride.fromJson(Map<String, dynamic> json) =>
@@ -92,7 +88,6 @@ extension EntityTileCapabilitiesOverrideX on EntityTileCapabilities {
           override.canOpenMoveToProject ?? canOpenMoveToProject,
       canQuickMoveToProject:
           override.canQuickMoveToProject ?? canQuickMoveToProject,
-      canAlignValues: override.canAlignValues ?? canAlignValues,
     );
   }
 }
