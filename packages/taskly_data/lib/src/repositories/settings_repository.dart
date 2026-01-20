@@ -318,16 +318,6 @@ class SettingsRepository implements SettingsRepositoryContract {
           )
           as T;
     }
-    if (identical(key, SettingsKey.myDayRitual)) {
-      return _decodeSingleton(
-            keyName: 'my_day_ritual',
-            overrides: overrides,
-            profileId: row.id,
-            defaultValue: const MyDayRitualState(),
-            fromJson: MyDayRitualState.fromJson,
-          )
-          as T;
-    }
 
     return _extractKeyedValue(key, row.id, overrides);
   }
@@ -449,10 +439,6 @@ class SettingsRepository implements SettingsRepositoryContract {
       updated['allocation'] = (value as AllocationConfig).toJson();
       return updated;
     }
-    if (identical(key, SettingsKey.myDayRitual)) {
-      updated['my_day_ritual'] = (value as MyDayRitualState).toJson();
-      return updated;
-    }
 
     final keyedKey = key as dynamic;
     final name = keyedKey.name as String;
@@ -485,9 +471,6 @@ class SettingsRepository implements SettingsRepositoryContract {
     if (identical(key, SettingsKey.global)) return const GlobalSettings() as T;
     if (identical(key, SettingsKey.allocation)) {
       return const AllocationConfig() as T;
-    }
-    if (identical(key, SettingsKey.myDayRitual)) {
-      return const MyDayRitualState() as T;
     }
 
     final keyedKey = key as dynamic;

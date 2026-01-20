@@ -2,6 +2,9 @@
 .branches
 .temp
 
+# Schema migrations are pulled from Supabase Cloud on demand (CI/local).
+migrations/
+
 # dotenvx
 .env.keys
 .env.local

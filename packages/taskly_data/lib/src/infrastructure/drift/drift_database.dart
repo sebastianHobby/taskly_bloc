@@ -199,6 +199,81 @@ class UserProfileTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class MyDayDaysTable extends Table {
+  @override
+  String get tableName => 'my_day_days';
+
+  TextColumn get id => text().named('id')();
+
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  /// UTC day key stored as a date-only string.
+  TextColumn get dayUtc =>
+      text().map(dateOnlyStringConverter).named('day_utc')();
+
+  DateTimeColumn get ritualCompletedAt =>
+      dateTime().nullable().named('ritual_completed_at')();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class MyDayPicksTable extends Table {
+  @override
+  String get tableName => 'my_day_picks';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  TextColumn get dayId => text()
+      .named('day_id')
+      .references(MyDayDaysTable, #id, onDelete: KeyAction.cascade)();
+
+  TextColumn get taskId => text()
+      .named('task_id')
+      .references(TaskTable, #id, onDelete: KeyAction.cascade)();
+
+  /// One of: due, starts, focus.
+  TextColumn get bucket => text().named('bucket')();
+
+  IntColumn get sortIndex => integer().named('sort_index')();
+
+  DateTimeColumn get pickedAt => dateTime().named('picked_at')();
+
+  IntColumn get suggestionRank =>
+      integer().nullable().named('suggestion_rank')();
+
+  @ReferenceName('qualifyingValueMyDayPicks')
+  TextColumn get qualifyingValueId => text()
+      .nullable()
+      .named('qualifying_value_id')
+      .references(ValueTable, #id, onDelete: KeyAction.setNull)();
+
+  TextColumn get reasonCodes => text()
+      .map(const JsonStringListConverter())
+      .nullable()
+      .named('reason_codes')();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 // =============================================================================
 // NEW TABLES FOR REPEATING TASKS
 // =============================================================================
@@ -360,6 +435,8 @@ class ProjectRecurrenceExceptionsTable extends Table {
     TaskTable,
     ValueTable,
     UserProfileTable,
+    MyDayDaysTable,
+    MyDayPicksTable,
     TaskCompletionHistoryTable,
     ProjectCompletionHistoryTable,
     TaskRecurrenceExceptionsTable,
@@ -389,7 +466,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

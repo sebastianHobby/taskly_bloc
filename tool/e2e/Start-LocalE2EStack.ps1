@@ -22,7 +22,17 @@ if ($ResetDb) {
         & (Join-Path $PSScriptRoot "Truncate-LocalE2EDb.ps1") | Out-Host
     }
     catch {
-        Write-Host "Truncate failed (likely missing schema). Applying migrations and retrying..."
+        Write-Host "Truncate failed (likely missing schema). Pulling schema (supabase db pull), then resetting DB..."
+
+        supabase db pull | Out-Host
+        if ($LASTEXITCODE -ne 0) {
+            throw (
+                "supabase db pull failed. This repo does not commit schema migrations; " +
+                "you must link the repo to your Supabase project first (supabase link --project-ref <ref>) " +
+                "and authenticate (SUPABASE_ACCESS_TOKEN or supabase login)."
+            )
+        }
+
         supabase db reset | Out-Host
         & (Join-Path $PSScriptRoot "Truncate-LocalE2EDb.ps1") | Out-Host
     }
@@ -43,8 +53,7 @@ if ($ResetDb) {
     if ($tablesLine -eq '|||') {
         throw (
             "Local Supabase schema is missing the app tables required for E2E tests. " +
-            "Ensure prod schema has been pulled into supabase/migrations (see doc/architecture/LOCAL_SUPABASE_POWERSYNC_E2E.md), " +
-            "then rerun this script."
+            "Run 'supabase db pull' (after linking/auth), then rerun this script."
         )
     }
 }

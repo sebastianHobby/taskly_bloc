@@ -44,6 +44,8 @@ class IdGenerator {
     'project_completion_history',
     'task_recurrence_exceptions',
     'project_recurrence_exceptions',
+    'my_day_days',
+    'my_day_picks',
     'tracker_definitions',
     'tracker_preferences',
     'tracker_definition_choices',
@@ -197,6 +199,19 @@ class IdGenerator {
   }) {
     final dateKey = snapshotDate.toIso8601String().split('T').first;
     return _v5('analytics_snapshot/$entityType/$entityId/$dateKey');
+  }
+
+  /// Generate deterministic ID for a My Day day row.
+  /// Natural key: userId + dayUtc (YYYY-MM-DD)
+  String myDayDayId({required DateTime dayUtc}) {
+    final dateKey = dayUtc.toIso8601String().split('T').first;
+    return _v5('my_day_day/$dateKey');
+  }
+
+  /// Generate deterministic ID for a My Day pick.
+  /// Natural key: userId + dayId + taskId
+  String myDayPickId({required String dayId, required String taskId}) {
+    return _v5('my_day_pick/$dayId/$taskId');
   }
 
   /// Generate deterministic ID for attention rule.

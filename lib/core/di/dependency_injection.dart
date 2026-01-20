@@ -77,6 +77,9 @@ Future<void> setupDependencies() async {
     ..registerSingleton<SettingsRepositoryContract>(
       getIt<TasklyDataBindings>().settingsRepository,
     )
+    ..registerSingleton<MyDayRepositoryContract>(
+      getIt<TasklyDataBindings>().myDayRepository,
+    )
     ..registerSingleton<attention_repo_v2.AttentionRepositoryContract>(
       getIt<TasklyDataBindings>().attentionRepository,
     )
@@ -236,6 +239,7 @@ Future<void> setupDependencies() async {
         taskRepository: getIt<TaskRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
+        myDayRepository: getIt<MyDayRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
       ),
@@ -243,6 +247,7 @@ Future<void> setupDependencies() async {
     ..registerFactory<MyDayRitualBloc>(
       () => MyDayRitualBloc(
         settingsRepository: getIt<SettingsRepositoryContract>(),
+        myDayRepository: getIt<MyDayRepositoryContract>(),
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),

@@ -20,9 +20,6 @@ sealed class SettingsKey<T> {
   /// Allocation algorithm settings.
   static const allocation = _SingletonKey<AllocationConfig>('allocation');
 
-  /// My Day ritual state.
-  static const myDayRitual = _SingletonKey<MyDayRitualState>('my_day_ritual');
-
   // ─────────────────────────────────────────────────────────────────────────
   // Keyed keys (parameterized by identifier)
   // ─────────────────────────────────────────────────────────────────────────

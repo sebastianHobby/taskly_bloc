@@ -11,6 +11,7 @@ import 'package:taskly_data/src/attention/repositories/attention_repository_v2.d
 import 'package:taskly_data/src/features/analytics/repositories/analytics_repository_impl.dart';
 import 'package:taskly_data/src/features/analytics/services/analytics_service_impl.dart';
 import 'package:taskly_data/src/features/journal/repositories/journal_repository_impl.dart';
+import 'package:taskly_data/src/features/my_day/repositories/my_day_repository_impl.dart';
 import 'package:taskly_data/src/features/notifications/repositories/pending_notifications_repository_impl.dart';
 import 'package:taskly_data/src/features/notifications/services/logging_notification_presenter.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
@@ -38,6 +39,7 @@ final class TasklyDataBindings {
     required this.projectRepository,
     required this.taskRepository,
     required this.valueRepository,
+    required this.myDayRepository,
     required this.settingsRepository,
     required this.homeDayKeyService,
     required this.attentionRepository,
@@ -57,6 +59,7 @@ final class TasklyDataBindings {
   final ProjectRepositoryContract projectRepository;
   final TaskRepositoryContract taskRepository;
   final ValueRepositoryContract valueRepository;
+  final MyDayRepositoryContract myDayRepository;
   final SettingsRepositoryContract settingsRepository;
   final HomeDayKeyService homeDayKeyService;
   final AttentionRepositoryContract attentionRepository;
@@ -267,6 +270,11 @@ final class TasklyDataStack implements SyncAnomalyStream {
       idGenerator: idGenerator,
     );
 
+    final myDayRepository = MyDayRepositoryImpl(
+      driftDb: driftDb,
+      ids: idGenerator,
+    );
+
     final attentionRepository = attention_repo_v2_impl.AttentionRepositoryV2(
       db: driftDb,
     );
@@ -304,6 +312,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
       projectRepository: projectRepository,
       taskRepository: taskRepository,
       valueRepository: valueRepository,
+      myDayRepository: myDayRepository,
       settingsRepository: settingsRepository,
       homeDayKeyService: homeDayKeyService,
       attentionRepository: attentionRepository,

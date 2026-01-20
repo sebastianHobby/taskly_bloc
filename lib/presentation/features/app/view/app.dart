@@ -19,7 +19,6 @@ import 'package:taskly_bloc/presentation/features/auth/view/sign_up_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/forgot_password_view.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
-import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
@@ -208,12 +207,6 @@ class _AuthenticatedApp extends StatelessWidget {
           create: (_) => TodayBadgeService(
             taskRepository: getIt<TaskRepositoryContract>(),
             homeDayService: getIt<HomeDayService>(),
-          ),
-        ),
-
-        Provider<NavigationBadgeService>(
-          create: (_) => NavigationBadgeService(
-            taskRepository: getIt<TaskRepositoryContract>(),
           ),
         ),
 

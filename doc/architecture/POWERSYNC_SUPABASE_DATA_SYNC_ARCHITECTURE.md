@@ -123,8 +123,8 @@ Important ownership rule:
   - [supabase/powersync-sync-rules.yaml](../../supabase/powersync-sync-rules.yaml)
 
 ### Supabase local
-- Migrations (schema is applied from migrations; CI may pull prod schema into migrations):
-  - [supabase/migrations/](../../supabase/migrations/)
+- Schema source of truth: Supabase Cloud.
+- Local schema is generated via `supabase db pull` (which produces `supabase/migrations/` as generated output).
 
 Note: this repo currently does not ship a dedicated migration for PowerSync replication/publication setup.
 
@@ -304,7 +304,9 @@ In this repo, local stack orchestration lives under:
 - [doc/architecture/LOCAL_SUPABASE_POWERSYNC_E2E.md](LOCAL_SUPABASE_POWERSYNC_E2E.md)
 - [infra/powersync_local/](../../infra/powersync_local/)
 
-If replication setup becomes a recurring source of drift, add a Supabase migration under `supabase/migrations/` to make the required publication/permissions explicit and reviewable.
+If replication setup becomes a recurring source of drift, make the required publication/permissions explicit and reviewable via the local stack orchestration (Compose/config/scripts) and architecture docs.
+
+Note: This repo treats `supabase/migrations/` as generated output from `supabase db pull` (not a manually curated, committed migration history).
 
 ---
 
@@ -345,7 +347,7 @@ This proves the "remote change propagates locally" loop:
 The repo provides scripts to:
 
 - start Supabase
-- optionally reset DB (`supabase db reset` applies migrations + seed)
+- optionally reset DB (`supabase db reset` applies the locally generated schema + seed)
 - start PowerSync (compose)
 - generate `dart_defines.local.json` from `supabase status`
 
@@ -380,7 +382,7 @@ See:
 ## 8) Schema Sync Policy (Prod -> Local)
 
 Local schema is kept in sync with production by pulling schema from Supabase
-Cloud into `supabase/migrations/*` before starting the local stack.
+Cloud (`supabase db pull`) before starting the local stack.
 
 This is the default in CI so pipeline-tagged tests run against a fully local
 stack that matches prod schema.

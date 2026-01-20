@@ -61,6 +61,10 @@ uploadJsonExpectationsByTable = {
     'performance_metrics': UploadJsonExpectation.map,
     'statistical_significance': UploadJsonExpectation.map,
   },
+  'my_day_picks': {
+    // Supabase: jsonb/text[] (PostgREST expects a JSON array)
+    'reason_codes': UploadJsonExpectation.list,
+  },
 };
 
 String _previewForLog(Object? value, {int maxChars = 200}) {
