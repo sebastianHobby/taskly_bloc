@@ -9,6 +9,7 @@ class ProjectListRowTile extends StatelessWidget {
   const ProjectListRowTile({
     required this.model,
     this.onTap,
+    this.onLongPress,
     this.trailing,
     this.titlePrefix,
     this.statusBadge,
@@ -19,6 +20,7 @@ class ProjectListRowTile extends StatelessWidget {
   final ProjectTileModel model;
 
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   /// App-owned trailing widget (overflow/menu/actions).
   final Widget? trailing;
@@ -57,6 +59,7 @@ class ProjectListRowTile extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Stack(
           children: [
             Padding(

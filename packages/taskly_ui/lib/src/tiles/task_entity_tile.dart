@@ -122,9 +122,23 @@ class TaskEntityTile extends StatelessWidget {
           ],
         ),
       ),
+      TaskTileIntentBulkSelection(:final selected) => TaskListRowTile(
+        model: model,
+        onTap: actions.onToggleSelected ?? actions.onTap,
+        onLongPress: actions.onLongPress,
+        onToggleCompletion: null,
+        subtitle: null,
+        titlePrefix: titlePrefix,
+        footer: footer,
+        trailing: _BulkSelectIcon(
+          selected: selected,
+          onPressed: actions.onToggleSelected ?? actions.onTap,
+        ),
+      ),
       _ => TaskListRowTile(
         model: model,
         onTap: actions.onTap,
+        onLongPress: actions.onLongPress,
         onToggleCompletion: actions.onToggleCompletion,
         subtitle: null,
         titlePrefix: titlePrefix,
@@ -134,6 +148,36 @@ class TaskEntityTile extends StatelessWidget {
         ),
       ),
     };
+  }
+}
+
+class _BulkSelectIcon extends StatelessWidget {
+  const _BulkSelectIcon({
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return IconButton(
+      tooltip: selected ? 'Deselect' : 'Select',
+      onPressed: onPressed,
+      icon: Icon(
+        selected
+            ? Icons.check_circle_rounded
+            : Icons.radio_button_unchecked_rounded,
+        color: selected ? scheme.primary : scheme.onSurfaceVariant,
+      ),
+      style: IconButton.styleFrom(
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        minimumSize: const Size(44, 44),
+        padding: const EdgeInsets.all(10),
+      ),
+    );
   }
 }
 

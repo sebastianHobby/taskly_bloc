@@ -8,6 +8,7 @@ class TaskListRowTile extends StatelessWidget {
   const TaskListRowTile({
     required this.model,
     this.onTap,
+    this.onLongPress,
     this.onToggleCompletion,
     this.trailing,
     this.titlePrefix,
@@ -18,6 +19,7 @@ class TaskListRowTile extends StatelessWidget {
 
   final TaskTileModel model;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   /// Called when the completion checkbox is toggled.
   ///
@@ -57,6 +59,7 @@ class TaskListRowTile extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         child: Stack(
           children: [
             Padding(

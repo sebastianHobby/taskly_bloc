@@ -519,6 +519,11 @@ Future<PowerSyncDatabase> openDatabase({
 }) async {
   installPowerSyncLogForwarding();
 
+  const powersyncVerbose = bool.fromEnvironment('POWERSYNC_VERBOSE_LOGS');
+  const dbLockDiagnostics = bool.fromEnvironment('DB_LOCK_DIAGNOSTICS');
+  const enableDbDiagnostics =
+      dbLockDiagnostics || (kDebugMode && powersyncVerbose);
+
   final db = PowerSyncDatabase(
     schema: schema,
     path: pathOverride ?? await getDatabasePath(),
@@ -526,11 +531,48 @@ Future<PowerSyncDatabase> openDatabase({
   );
   await db.initialize();
 
+  Future<void> logSqlitePragmas(PowerSyncDatabase database) async {
+    // This is a low-cost, one-time diagnostic to confirm WAL/busy_timeout/etc.
+    // It should not run in production unless explicitly enabled.
+    if (!enableDbDiagnostics) return;
+
+    try {
+      Future<String?> singleValue(String pragmaSql) async {
+        final result = await database.execute(pragmaSql);
+        if (result.rows.isEmpty) return null;
+        final row = result.rows.first;
+        if (row.isEmpty) return null;
+        return row.first?.toString();
+      }
+
+      final journalMode = await singleValue('PRAGMA journal_mode;');
+      final busyTimeout = await singleValue('PRAGMA busy_timeout;');
+      final synchronous = await singleValue('PRAGMA synchronous;');
+      final tempStore = await singleValue('PRAGMA temp_store;');
+      final walCheckpoint = await singleValue('PRAGMA wal_autocheckpoint;');
+
+      talker.info(
+        '[db] SQLite PRAGMAs\n'
+        '  journal_mode=${journalMode ?? "<null>"}\n'
+        '  busy_timeout=${busyTimeout ?? "<null>"}\n'
+        '  synchronous=${synchronous ?? "<null>"}\n'
+        '  temp_store=${tempStore ?? "<null>"}\n'
+        '  wal_autocheckpoint=${walCheckpoint ?? "<null>"}',
+      );
+    } catch (e, st) {
+      // Best-effort diagnostics only.
+      talker.handle(e, st, '[db] Failed to read SQLite PRAGMAs');
+    }
+  }
+
+  await logSqlitePragmas(db);
+
   // Helper to log user_profiles state after sync checkpoint
   Future<void> logUserProfilesAfterSync(
     PowerSyncDatabase database,
     DateTime syncTime,
   ) async {
+    if (!enableDbDiagnostics) return;
     try {
       final results = await database.execute(
         'SELECT id, updated_at, '
@@ -551,23 +593,25 @@ Future<PowerSyncDatabase> openDatabase({
     }
   }
 
-  // Log sync status changes for debugging with enhanced checkpoint tracking
-  db.statusStream.listen((status) {
-    final now = DateTime.now();
-    talker.debug(
-      '[POWERSYNC SYNC STATUS] at $now\n'
-      '  connected=${status.connected}\n'
-      '  downloading=${status.downloading}\n'
-      '  uploading=${status.uploading}\n'
-      '  lastSyncedAt=${status.lastSyncedAt}\n'
-      '  hasSynced=${status.hasSynced}',
-    );
+  // Log sync status changes only when diagnostics are enabled.
+  if (enableDbDiagnostics) {
+    db.statusStream.listen((status) {
+      final now = DateTime.now();
+      talker.debug(
+        '[POWERSYNC SYNC STATUS] at $now\n'
+        '  connected=${status.connected}\n'
+        '  downloading=${status.downloading}\n'
+        '  uploading=${status.uploading}\n'
+        '  lastSyncedAt=${status.lastSyncedAt}\n'
+        '  hasSynced=${status.hasSynced}',
+      );
 
-    // When downloading completes, query user_profiles to see what was synced
-    if (!status.downloading && (status.hasSynced ?? false)) {
-      logUserProfilesAfterSync(db, now);
-    }
-  });
+      // When downloading completes, query user_profiles to see what was synced.
+      if (!status.downloading && (status.hasSynced ?? false)) {
+        logUserProfilesAfterSync(db, now);
+      }
+    });
+  }
 
   return db;
 }

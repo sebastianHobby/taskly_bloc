@@ -1,85 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
-import 'package:taskly_bloc/presentation/features/values/bloc/value_list_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_tile_model_mapper.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_ui/taskly_ui_entities.dart';
-import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class ValuesListView extends StatelessWidget {
   const ValuesListView({
     required this.values,
     this.isSheetOpen,
-    this.enableSwipeToDelete = true,
     super.key,
   });
 
   final List<Value> values;
   final ValueNotifier<bool>? isSheetOpen;
-  final bool enableSwipeToDelete;
 
   @override
   Widget build(BuildContext context) {
+    final selection = context.read<SelectionCubit>();
+    selection.updateVisibleEntities(
+      values
+          .map(
+            (v) => SelectionEntityMeta(
+              key: SelectionKey(entityType: EntityType.value, entityId: v.id),
+              displayName: v.name,
+              canDelete: true,
+            ),
+          )
+          .toList(growable: false),
+    );
+
     return ListView(
       children: [
         for (final value in values)
-          Dismissible(
-            key: ValueKey(value.id),
-            direction: enableSwipeToDelete
-                ? DismissDirection.endToStart
-                : DismissDirection.none,
-            background: const SizedBox.shrink(),
-            secondaryBackground: Container(
-              alignment: Alignment.centerRight,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              color: Theme.of(context).colorScheme.errorContainer,
-              child: Icon(
-                Icons.delete_outline_rounded,
-                color: Theme.of(context).colorScheme.onErrorContainer,
-              ),
-            ),
-            confirmDismiss: (_) => ConfirmationDialog.show(
-              context,
-              title: context.l10n.deleteValue,
-              confirmLabel: context.l10n.deleteLabel,
-              cancelLabel: context.l10n.cancelLabel,
-              isDestructive: true,
-              icon: Icons.delete_outline_rounded,
-              iconColor: Theme.of(context).colorScheme.error,
-              iconBackgroundColor: Theme.of(
-                context,
-              ).colorScheme.errorContainer.withValues(alpha: 0.3),
-              content: buildDeleteConfirmationContent(
-                context,
-                itemName: value.name,
-                description: context.l10n.deleteValueCascadeDescription,
-              ),
-            ),
-            onDismissed: (_) {
-              context.read<ValueListBloc>().add(
-                ValueListEvent.deleteValue(value: value),
+          Builder(
+            builder: (context) {
+              final key = SelectionKey(
+                entityType: EntityType.value,
+                entityId: value.id,
               );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(context.l10n.valueDeletedSuccessfully),
+
+              final selectionMode = selection.isSelectionMode;
+              final isSelected = selection.isSelected(key);
+
+              return ValueEntityTile(
+                model: value.toTileModel(context),
+                intent: selectionMode
+                    ? ValueTileIntent.bulkSelection(selected: isSelected)
+                    : const ValueTileIntent.standardList(),
+                actions: ValueTileActions(
+                  onTap: () async {
+                    if (selection.shouldInterceptTapAsSelection()) {
+                      selection.handleEntityTap(key);
+                      return;
+                    }
+                    isSheetOpen?.value = true;
+                    Routing.toEntity(context, EntityType.value, value.id);
+                    isSheetOpen?.value = false;
+                  },
+                  onLongPress: () {
+                    selection.enterSelectionMode(initialSelection: key);
+                  },
+                  onToggleSelected: () =>
+                      selection.toggleSelection(key, extendRange: false),
                 ),
               );
             },
-            child: ValueEntityTile(
-              model: value.toTileModel(context),
-              intent: const ValueTileIntent.standardList(),
-              actions: ValueTileActions(
-                onTap: () async {
-                  isSheetOpen?.value = true;
-                  Routing.toEntity(context, EntityType.value, value.id);
-                  isSheetOpen?.value = false;
-                },
-              ),
-            ),
           ),
       ],
     );

@@ -9,6 +9,9 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
 
@@ -21,67 +24,78 @@ class ValuesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ValueListBloc>(
-      create: (context) => ValueListBloc(
-        valueRepository: getIt<ValueRepositoryContract>(),
-        errorReporter: context.read<AppErrorReporter>(),
-      )..add(const ValueListEvent.subscriptionRequested()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ValueListBloc>(
+          create: (context) => ValueListBloc(
+            valueRepository: getIt<ValueRepositoryContract>(),
+            errorReporter: context.read<AppErrorReporter>(),
+          )..add(const ValueListEvent.subscriptionRequested()),
+        ),
+        BlocProvider(create: (_) => SelectionCubit()),
+      ],
       child: Builder(
         builder: (context) {
           final isCompact = WindowSizeClass.of(context).isCompact;
 
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text('Values'),
-              actions: TasklyAppBarActions.withAttentionBell(
-                context,
-                actions: [
-                  if (!isCompact)
-                    IconButton(
-                      tooltip: context.l10n.createValueTooltip,
-                      onPressed: () => _createValue(context),
-                      icon: const Icon(Icons.add),
-                    ),
-                ],
-              ),
-            ),
-            floatingActionButton: isCompact
-                ? FloatingActionButton(
-                    tooltip: context.l10n.createValueTooltip,
-                    onPressed: () => _createValue(context),
-                    heroTag: 'create_value_fab_values',
-                    child: const Icon(Icons.add),
-                  )
-                : null,
-            body: BlocBuilder<ValueListBloc, ValueListState>(
-              builder: (context, state) {
-                return switch (state) {
-                  ValueListInitial() ||
-                  ValueListLoading() => const FeedBody.loading(),
-                  ValueListError(:final error) => FeedBody.error(
-                    message: friendlyErrorMessageForUi(error, context.l10n),
-                    retryLabel: context.l10n.retryButton,
-                    onRetry: () => context.read<ValueListBloc>().add(
-                      const ValueListEvent.subscriptionRequested(),
-                    ),
-                  ),
-                  ValueListLoaded(:final values) when values.isEmpty =>
-                    FeedBody.empty(
-                      child: EmptyStateWidget(
-                        icon: Icons.favorite_border,
-                        title: 'No values yet',
-                        description:
-                            'Create a value to clarify what matters most.',
-                        actionLabel: context.l10n.createValueOption,
-                        onAction: () => _createValue(context),
+          return BlocBuilder<SelectionCubit, SelectionState>(
+            builder: (context, selectionState) {
+              return Scaffold(
+                appBar: selectionState.isSelectionMode
+                    ? SelectionAppBar(baseTitle: 'Values', onExit: () {})
+                    : AppBar(
+                        title: const Text('Values'),
+                        actions: TasklyAppBarActions.withAttentionBell(
+                          context,
+                          actions: [
+                            if (!isCompact)
+                              IconButton(
+                                tooltip: context.l10n.createValueTooltip,
+                                onPressed: () => _createValue(context),
+                                icon: const Icon(Icons.add),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ValueListLoaded(:final values) => ValuesListView(
-                    values: values,
-                  ),
-                };
-              },
-            ),
+                floatingActionButton: isCompact
+                    ? FloatingActionButton(
+                        tooltip: context.l10n.createValueTooltip,
+                        onPressed: () => _createValue(context),
+                        heroTag: 'create_value_fab_values',
+                        child: const Icon(Icons.add),
+                      )
+                    : null,
+                body: BlocBuilder<ValueListBloc, ValueListState>(
+                  builder: (context, state) {
+                    return switch (state) {
+                      ValueListInitial() ||
+                      ValueListLoading() => const FeedBody.loading(),
+                      ValueListError(:final error) => FeedBody.error(
+                        message: friendlyErrorMessageForUi(error, context.l10n),
+                        retryLabel: context.l10n.retryButton,
+                        onRetry: () => context.read<ValueListBloc>().add(
+                          const ValueListEvent.subscriptionRequested(),
+                        ),
+                      ),
+                      ValueListLoaded(:final values) when values.isEmpty =>
+                        FeedBody.empty(
+                          child: EmptyStateWidget(
+                            icon: Icons.favorite_border,
+                            title: 'No values yet',
+                            description:
+                                'Create a value to clarify what matters most.',
+                            actionLabel: context.l10n.createValueOption,
+                            onAction: () => _createValue(context),
+                          ),
+                        ),
+                      ValueListLoaded(:final values) => ValuesListView(
+                        values: values,
+                      ),
+                    };
+                  },
+                ),
+              );
+            },
           );
         },
       ),
