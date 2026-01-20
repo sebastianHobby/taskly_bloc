@@ -111,465 +111,187 @@ final class TasklyAgendaProjectRowModel extends TasklyAgendaRowModel {
   final ProjectTileActions actions;
 }
 
+final class TasklyAgendaCardHeaderAction {
+  const TasklyAgendaCardHeaderAction({
+    required this.label,
+    this.icon,
+    this.tooltip,
+    this.onPressed,
+  });
+
+  final String label;
+  final IconData? icon;
+  final String? tooltip;
+  final VoidCallback? onPressed;
+}
+
+final class TasklyAgendaCardModel {
+  const TasklyAgendaCardModel({
+    required this.key,
+    required this.title,
+    this.subtitle,
+    this.headerKey,
+    this.isCollapsed = false,
+    this.onHeaderTap,
+    this.action,
+    this.plannedRows = const <TasklyAgendaRowModel>[],
+    this.dueRows = const <TasklyAgendaRowModel>[],
+  });
+
+  final String key;
+  final String title;
+  final String? subtitle;
+
+  /// Optional key applied to the card header container.
+  ///
+  /// This is typically used by the app to scroll to a specific date.
+  final Key? headerKey;
+
+  final bool isCollapsed;
+  final VoidCallback? onHeaderTap;
+  final TasklyAgendaCardHeaderAction? action;
+
+  final List<TasklyAgendaRowModel> plannedRows;
+  final List<TasklyAgendaRowModel> dueRows;
+}
+
 class TasklyAgendaSection extends StatelessWidget {
   const TasklyAgendaSection({
-    required this.rows,
+    required this.cards,
     this.controller,
-    this.todayAnchorKey,
     super.key,
   });
 
-  final List<TasklyAgendaRowModel> rows;
+  final List<TasklyAgendaCardModel> cards;
   final ScrollController? controller;
-
-  /// When provided, applied to the first date header row that has
-  /// [TasklyAgendaDateHeaderRowModel.isTodayAnchor] set.
-  final Key? todayAnchorKey;
 
   @override
   Widget build(BuildContext context) {
-    return _StickyTasklyAgendaSection(
-      rows: rows,
+    final scheme = Theme.of(context).colorScheme;
+
+    return ListView.builder(
       controller: controller,
-      todayAnchorKey: todayAnchorKey,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: cards.length,
+      itemBuilder: (context, index) {
+        final card = cards[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Material(
+            color: scheme.surfaceContainerLow,
+            elevation: 0,
+            borderRadius: BorderRadius.circular(18),
+            clipBehavior: Clip.antiAlias,
+            child: _AgendaCard(card: card),
+          ),
+        );
+      },
     );
   }
 }
 
-class _StickyTasklyAgendaSection extends StatefulWidget {
-  const _StickyTasklyAgendaSection({
-    required this.rows,
-    required this.controller,
-    required this.todayAnchorKey,
-  });
+class _AgendaCard extends StatelessWidget {
+  const _AgendaCard({required this.card});
 
-  final List<TasklyAgendaRowModel> rows;
-  final ScrollController? controller;
-  final Key? todayAnchorKey;
-
-  @override
-  State<_StickyTasklyAgendaSection> createState() =>
-      _StickyTasklyAgendaSectionState();
-}
-
-class _StickyTasklyAgendaSectionState
-    extends State<_StickyTasklyAgendaSection> {
-  late final ScrollController _internalController;
-  late ScrollController _effectiveController;
-  final GlobalKey _listKey = GlobalKey();
-
-  final Map<String, GlobalKey> _bucketHeaderKeys = <String, GlobalKey>{};
-  final Map<String, GlobalKey> _dateHeaderKeys = <String, GlobalKey>{};
-
-  _StickyHeaderState _sticky = const _StickyHeaderState.hidden();
-
-  @override
-  void initState() {
-    super.initState();
-    _internalController = ScrollController();
-    _effectiveController = widget.controller ?? _internalController;
-    _effectiveController.addListener(_onScroll);
-    _reconcileHeaderKeys();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _updateSticky());
-  }
-
-  @override
-  void didUpdateWidget(covariant _StickyTasklyAgendaSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    final newController = widget.controller ?? _internalController;
-    if (newController != _effectiveController) {
-      _effectiveController.removeListener(_onScroll);
-      _effectiveController = newController;
-      _effectiveController.addListener(_onScroll);
-    }
-
-    if (!identical(widget.rows, oldWidget.rows)) {
-      _reconcileHeaderKeys();
-      WidgetsBinding.instance.addPostFrameCallback((_) => _updateSticky());
-    }
-  }
-
-  @override
-  void dispose() {
-    _effectiveController.removeListener(_onScroll);
-    _internalController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() => _updateSticky();
-
-  void _reconcileHeaderKeys() {
-    for (final row in widget.rows) {
-      switch (row) {
-        case TasklyAgendaBucketHeaderRowModel():
-          _bucketHeaderKeys.putIfAbsent(row.key, GlobalKey.new);
-        case TasklyAgendaDateHeaderRowModel():
-          _dateHeaderKeys.putIfAbsent(row.key, GlobalKey.new);
-        default:
-          continue;
-      }
-    }
-  }
-
-  RenderBox? _renderBoxFor(GlobalKey key) {
-    final ctx = key.currentContext;
-    if (ctx == null) return null;
-    final renderObject = ctx.findRenderObject();
-    if (renderObject is! RenderBox) return null;
-    if (!renderObject.hasSize) return null;
-    return renderObject;
-  }
-
-  double? _yInList(GlobalKey childKey) {
-    final listBox = _renderBoxFor(_listKey);
-    final childBox = _renderBoxFor(childKey);
-    if (listBox == null || childBox == null) return null;
-
-    final childTopLeft = childBox.localToGlobal(Offset.zero, ancestor: listBox);
-    return childTopLeft.dy;
-  }
-
-  void _updateSticky() {
-    if (!mounted) return;
-
-    final rows = widget.rows;
-    if (rows.isEmpty) return;
-
-    // The header should represent the most recent bucket/date header that has
-    // scrolled past the top edge.
-    String? activeBucketTitle;
-    String? activeDateTitle;
-    String? activeDateSubtitle;
-    int activeHeaderIndex = -1;
-
-    final headerIndices = <int>[];
-    for (var i = 0; i < rows.length; i++) {
-      final r = rows[i];
-      if (r is TasklyAgendaBucketHeaderRowModel ||
-          r is TasklyAgendaDateHeaderRowModel) {
-        headerIndices.add(i);
-      }
-    }
-
-    for (final i in headerIndices) {
-      final row = rows[i];
-      final GlobalKey? key = switch (row) {
-        TasklyAgendaBucketHeaderRowModel() => _bucketHeaderKeys[row.key],
-        TasklyAgendaDateHeaderRowModel() => _dateHeaderKeys[row.key],
-        _ => null,
-      };
-      if (key == null) continue;
-
-      final y = _yInList(key);
-      if (y == null) continue;
-
-      // Consider a header active when it has reached the top.
-      if (y <= 0) {
-        activeHeaderIndex = i;
-        if (row is TasklyAgendaBucketHeaderRowModel) {
-          activeBucketTitle = row.title;
-          activeDateTitle = null;
-          activeDateSubtitle = null;
-        } else if (row is TasklyAgendaDateHeaderRowModel) {
-          activeDateTitle = row.title;
-          activeDateSubtitle = row.subtitle;
-
-          // Depth 0 date headers are not nested under a bucket; clear the
-          // active bucket so we don't keep showing the previous section.
-          if (row.depth == 0) {
-            activeBucketTitle = null;
-          }
-        }
-      }
-    }
-
-    // If we haven't scrolled past any header yet, don't render a sticky header.
-    if (activeHeaderIndex < 0 ||
-        (activeBucketTitle == null && activeDateTitle == null)) {
-      const next = _StickyHeaderState.hidden();
-      if (next != _sticky) setState(() => _sticky = next);
-      return;
-    }
-
-    // Push-off effect: slide the sticky header up when the next header is
-    // about to overlap it.
-    const headerPadding = EdgeInsets.fromLTRB(16, 12, 16, 10);
-    final theme = Theme.of(context);
-    final bucketStyle = theme.textTheme.titleMedium;
-    final dateStyle = theme.textTheme.titleMedium;
-    final lineHeight =
-        (bucketStyle?.fontSize ?? 18) * (bucketStyle?.height ?? 1.2);
-    final dateLineHeight =
-        (dateStyle?.fontSize ?? 14) * (dateStyle?.height ?? 1.2);
-
-    // Sticky header always renders the date as a single compact line.
-    final headerHeight =
-        headerPadding.vertical +
-        (activeBucketTitle == null ? 0 : lineHeight) +
-        (activeDateTitle == null
-            ? 0
-            : ((activeBucketTitle == null ? 0 : 4) + dateLineHeight));
-
-    double yOffset = 0;
-    int? nextHeaderIndex;
-    if (activeHeaderIndex >= 0) {
-      for (final i in headerIndices) {
-        if (i <= activeHeaderIndex) continue;
-        nextHeaderIndex = i;
-        break;
-      }
-    }
-
-    if (nextHeaderIndex != null) {
-      final nextRow = rows[nextHeaderIndex];
-      final GlobalKey? key = switch (nextRow) {
-        TasklyAgendaBucketHeaderRowModel() => _bucketHeaderKeys[nextRow.key],
-        TasklyAgendaDateHeaderRowModel() => _dateHeaderKeys[nextRow.key],
-        _ => null,
-      };
-      if (key != null) {
-        final nextY = _yInList(key);
-        if (nextY != null) {
-          yOffset = (nextY - headerHeight).clamp(-headerHeight, 0);
-        }
-      }
-    }
-
-    final next = _StickyHeaderState(
-      bucketTitle: activeBucketTitle,
-      dateTitle: activeDateTitle,
-      dateSubtitle: activeDateSubtitle,
-      yOffset: yOffset,
-    );
-
-    if (next != _sticky) {
-      setState(() => _sticky = next);
-    }
-  }
+  final TasklyAgendaCardModel card;
 
   @override
   Widget build(BuildContext context) {
-    final rows = widget.rows;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
-    return Stack(
-      children: [
-        ListView.builder(
-          key: _listKey,
-          controller: _effectiveController,
-          itemCount: rows.length,
-          itemBuilder: (context, index) {
-            final row = rows[index];
-            final leftIndent = 12.0 * row.depth;
+    final action = card.action;
+    final hasPlanned = card.plannedRows.isNotEmpty;
+    final hasDue = card.dueRows.isNotEmpty;
 
-            Widget child = switch (row) {
-              TasklyAgendaBucketHeaderRowModel() => KeyedSubtree(
-                key: _bucketHeaderKeys[row.key],
-                child: _BucketHeaderRow(row: row),
+    final header = InkWell(
+      key: card.headerKey,
+      onTap: card.onHeaderTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    card.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                  ),
+                  if (card.subtitle != null && card.subtitle!.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        card.subtitle!.trim(),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
+                    ),
+                ],
               ),
-              TasklyAgendaDateHeaderRowModel() => KeyedSubtree(
-                key: _dateHeaderKeys[row.key],
-                child: _DateHeaderRow(row: row),
-              ),
-              TasklyAgendaEmptyDayRowModel() => _EmptyDayRow(row: row),
-              TasklyAgendaTaskRowModel() => TaskEntityTile(
-                model: row.model,
-                intent: row.intent,
-                markers: row.markers,
-                actions: row.actions,
-                supportingText: row.supportingText,
-              ),
-              TasklyAgendaProjectRowModel() => ProjectEntityTile(
-                model: row.model,
-                intent: row.intent,
-                actions: row.actions,
-              ),
-            };
-
-            if (leftIndent > 0) {
-              child = Padding(
-                padding: EdgeInsets.only(left: leftIndent),
-                child: child,
-              );
-            }
-
-            if (widget.todayAnchorKey == null) {
-              return KeyedSubtree(key: ValueKey(row.key), child: child);
-            }
-
-            if (row is TasklyAgendaDateHeaderRowModel && row.isTodayAnchor) {
-              return KeyedSubtree(
-                key: ValueKey(row.key),
-                child: KeyedSubtree(
-                  key: widget.todayAnchorKey,
-                  child: child,
-                ),
-              );
-            }
-
-            return KeyedSubtree(key: ValueKey(row.key), child: child);
-          },
-        ),
-        if (!_sticky.hidden)
-          Positioned(
-            left: 0,
-            right: 0,
-            top: _sticky.yOffset,
-            child: _StickyAgendaHeader(
-              bucketTitle: _sticky.bucketTitle,
-              dateTitle: _sticky.dateTitle,
-              dateSubtitle: _sticky.dateSubtitle,
             ),
+            if (action != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Tooltip(
+                  message: action.tooltip ?? action.label,
+                  child: TextButton.icon(
+                    onPressed: action.onPressed,
+                    icon: action.icon == null
+                        ? const SizedBox.shrink()
+                        : Icon(action.icon, size: 18),
+                    label: Text(action.label),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (card.isCollapsed) {
+      return Column(children: [header]);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        header,
+        if (hasPlanned) const _SectionLabel(label: 'PLANNED'),
+        if (hasPlanned) ..._buildRows(context, card.plannedRows),
+        if (hasPlanned && hasDue)
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: scheme.outlineVariant.withValues(alpha: 0.35),
           ),
+        if (hasDue) const _SectionLabel(label: 'DUE'),
+        if (hasDue) ..._buildRows(context, card.dueRows),
       ],
     );
   }
-}
 
-class _StickyHeaderState {
-  const _StickyHeaderState({
-    required this.bucketTitle,
-    required this.dateTitle,
-    required this.dateSubtitle,
-    required this.yOffset,
-  });
-
-  const _StickyHeaderState.hidden()
-    : bucketTitle = null,
-      dateTitle = null,
-      dateSubtitle = null,
-      yOffset = 0;
-
-  final String? bucketTitle;
-  final String? dateTitle;
-  final String? dateSubtitle;
-  final double yOffset;
-
-  bool get hidden => bucketTitle == null && dateTitle == null;
-
-  @override
-  bool operator ==(Object other) {
-    return other is _StickyHeaderState &&
-        other.bucketTitle == bucketTitle &&
-        other.dateTitle == dateTitle &&
-        other.dateSubtitle == dateSubtitle &&
-        (other.yOffset - yOffset).abs() < 0.5;
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    bucketTitle,
-    dateTitle,
-    dateSubtitle,
-    yOffset.round(),
-  );
-}
-
-class _StickyAgendaHeader extends StatelessWidget {
-  const _StickyAgendaHeader({
-    required this.bucketTitle,
-    required this.dateTitle,
-    required this.dateSubtitle,
-  });
-
-  final String? bucketTitle;
-  final String? dateTitle;
-  final String? dateSubtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    final dateLine = (dateTitle == null)
-        ? null
-        : (dateSubtitle == null || dateSubtitle!.isEmpty)
-        ? dateTitle!
-        : '${dateTitle!} · ${dateSubtitle!}';
-
-    return Material(
-      color: scheme.surface,
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: scheme.outlineVariant.withValues(alpha: 0.25),
-              width: 1,
-            ),
-          ),
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (bucketTitle != null)
-              Text(bucketTitle!, style: theme.textTheme.titleMedium),
-            if (dateLine != null) ...[
-              if (bucketTitle != null) const SizedBox(height: 4),
-              Text(
-                dateLine,
-                style:
-                    (bucketTitle == null
-                            ? theme.textTheme.titleMedium
-                            : theme.textTheme.labelLarge)
-                        ?.copyWith(
-                          color: bucketTitle == null
-                              ? scheme.onSurface
-                              : scheme.onSurfaceVariant,
-                        ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
+  List<Widget> _buildRows(BuildContext context, List<TasklyAgendaRowModel> rows) {
+    return rows.map((r) => _AgendaCardRow(row: r)).toList(growable: false);
   }
 }
 
-class _BucketHeaderRow extends StatelessWidget {
-  const _BucketHeaderRow({required this.row});
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label});
 
-  final TasklyAgendaBucketHeaderRowModel row;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: row.onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                row.title,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            if (row.action != null) ...[
-              const SizedBox(width: 8),
-              TextButton.icon(
-                onPressed: row.action!.onPressed,
-                icon: row.action!.icon != null
-                    ? Icon(row.action!.icon, size: 18)
-                    : const SizedBox.shrink(),
-                label: Text(row.action!.label),
-              ),
-            ],
-            Icon(
-              row.isCollapsed ? Icons.chevron_right : Icons.expand_more,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DateHeaderRow extends StatelessWidget {
-  const _DateHeaderRow({required this.row});
-
-  final TasklyAgendaDateHeaderRowModel row;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -577,39 +299,46 @@ class _DateHeaderRow extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: row.subtitle == null
-          ? Text(row.title, style: theme.textTheme.labelLarge)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(row.title, style: theme.textTheme.titleSmall),
-                const SizedBox(height: 2),
-                Text(
-                  row.subtitle!,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-}
-
-class _EmptyDayRow extends StatelessWidget {
-  const _EmptyDayRow({required this.row});
-
-  final TasklyAgendaEmptyDayRowModel row;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
       child: Text(
-        row.label,
-        style: Theme.of(context).textTheme.bodySmall,
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: scheme.onSurfaceVariant,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.8,
+        ),
       ),
     );
+  }
+}
+
+class _AgendaCardRow extends StatelessWidget {
+  const _AgendaCardRow({required this.row});
+
+  final TasklyAgendaRowModel row;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (row) {
+      TasklyAgendaTaskRowModel() => Padding(
+        padding: EdgeInsets.only(left: row.depth * 12.0),
+        child: TaskEntityTile(
+          model: row.model,
+          intent: row.intent,
+          markers: row.markers,
+          actions: row.actions,
+          supportingText: row.supportingText,
+        ),
+      ),
+      TasklyAgendaProjectRowModel() => Padding(
+        padding: EdgeInsets.only(left: row.depth * 12.0),
+        child: ProjectEntityTile(
+          model: row.model,
+          intent: row.intent,
+          actions: row.actions,
+        ),
+      ),
+      _ => const SizedBox.shrink(),
+    };
   }
 }

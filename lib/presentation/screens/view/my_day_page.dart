@@ -385,7 +385,6 @@ class _MyDayLoadedBody extends StatelessWidget {
           ),
           MyDayError(:final message) => Center(child: Text(message)),
           MyDayLoaded(
-            :final summary,
             :final acceptedDue,
             :final acceptedStarts,
             :final acceptedFocus,

@@ -112,7 +112,7 @@ class EntityMetaLine extends StatelessWidget {
                   child: _TapAbsorber(child: deadlineChip),
                 );
 
-          // --- Optional extras (project / repeat / priority) with +N overflow ---
+          // --- Optional extras (project / repeat / priority) with overflow ---
           final optionalWidgets = <Widget>[];
           var hiddenCount = 0;
 
@@ -214,16 +214,18 @@ class EntityMetaLine extends StatelessWidget {
             }
           }
 
-          final overflowWidget = hiddenCount <= 0
+          final showEllipsis = hiddenCount > 0 || model.showOverflowEllipsis;
+
+          final overflowWidget = !showEllipsis
               ? null
               : _TapAbsorber(
                   child: Text(
-                    '+$hiddenCount',
+                    '…',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant.withValues(alpha: 0.75),
-                      fontSize: 12,
-                      height: 1.1,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      height: 1,
+                      fontWeight: FontWeight.w700,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -234,10 +236,10 @@ class EntityMetaLine extends StatelessWidget {
           if (overflowWidget != null) {
             final overflowWidth = _measureTextWidth(
               context,
-              text: '+$hiddenCount',
+              text: '…',
               style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
               ),
             );
 

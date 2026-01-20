@@ -13,6 +13,10 @@ ProjectTileModel buildProjectListRowTileModel(
   int? taskCount,
   int? completedTaskCount,
   bool showTrailingProgressLabel = false,
+  bool showDates = true,
+  bool showPriorityMarkerOnRight = true,
+  bool showRepeatIcon = true,
+  bool showOverflowEllipsisWhenMetaHidden = false,
 }) {
   final now = context.read<NowService>().nowLocal();
   final today = DateTime(now.year, now.month, now.day);
@@ -30,12 +34,24 @@ ProjectTileModel buildProjectListRowTileModel(
       ? null
       : _formatMonthDay(context, project.deadlineDate!);
 
+    final hasExtraSecondaryValues = project.secondaryValues.length > 1;
+
+    final shouldShowOverflowEllipsis =
+      showOverflowEllipsisWhenMetaHidden &&
+      ((startDateLabel != null) ||
+        (deadlineDateLabel != null) ||
+        project.isRepeating ||
+        project.priority != null ||
+        hasExtraSecondaryValues);
+
   final meta = EntityMetaLineModel(
     primaryValue: project.primaryValue?.toChipData(context),
     secondaryValues: project.secondaryValues
         .take(1)
         .map((v) => v.toChipData(context))
         .toList(growable: false),
+    showOverflowEllipsis: shouldShowOverflowEllipsis,
+    showDates: showDates,
     startDateLabel: startDateLabel,
     deadlineDateLabel: deadlineDateLabel,
     isOverdue: _isOverdue(
@@ -53,9 +69,9 @@ ProjectTileModel buildProjectListRowTileModel(
       completed: project.completed,
       today: today,
     ),
-    hasRepeat: project.isRepeating,
+    hasRepeat: showRepeatIcon && project.isRepeating,
     showBothDatesIfPresent: true,
-    showPriorityMarkerOnRight: true,
+    showPriorityMarkerOnRight: showPriorityMarkerOnRight,
     priority: project.priority,
     priorityColor: _priorityColor(project.priority),
     priorityPillLabel: project.priority == null

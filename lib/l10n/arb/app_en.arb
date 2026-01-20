@@ -532,7 +532,6 @@
         "description": "Hint text for the task start date field"
     },
     "taskFormDeadlineDateHint": "Due date",
-
     "dateChipAddPlannedDay": "Add planned day",
     "@dateChipAddPlannedDay": {
         "description": "Label shown on date chips when planned day is not set"
