@@ -45,6 +45,9 @@ enum AllocationReasonCode {
   /// Task aligns with a value (explicit or inherited).
   valueAlignment,
 
+  /// Task advances multiple values (efficient leverage / cross-category impact).
+  crossValue,
+
   /// Task supports a value that has been neglected.
   neglectBalance,
 

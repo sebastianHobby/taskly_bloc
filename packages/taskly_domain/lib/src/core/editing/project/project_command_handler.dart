@@ -105,13 +105,22 @@ final class ProjectCommandHandler {
     }
 
     if (startDate != null && deadlineDate != null) {
-      if (deadlineDate.isBefore(startDate)) {
-        fieldErrors[ProjectFieldKeys.deadlineDate] = const <ValidationError>[
+      final startDay = DateTime(startDate.year, startDate.month, startDate.day);
+      final deadlineDay = DateTime(
+        deadlineDate.year,
+        deadlineDate.month,
+        deadlineDate.day,
+      );
+
+      if (deadlineDay.isBefore(startDay)) {
+        const errors = <ValidationError>[
           ValidationError(
             code: 'deadline_before_start',
             messageKey: 'projectFormDeadlineAfterStartError',
           ),
         ];
+        fieldErrors[ProjectFieldKeys.startDate] = errors;
+        fieldErrors[ProjectFieldKeys.deadlineDate] = errors;
       }
     }
 

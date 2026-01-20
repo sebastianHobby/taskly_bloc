@@ -90,7 +90,8 @@ Key points:
 Kinds:
 
 - `skip`: removes the occurrence from Scheduled.
-- `reschedule`: moves the displayed occurrence date and may override deadline.
+- `reschedule`: moves the displayed occurrence date and may override due date
+  (deadline).
 
 Uniqueness:
 

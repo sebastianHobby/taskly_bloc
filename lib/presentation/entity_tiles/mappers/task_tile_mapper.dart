@@ -19,6 +19,12 @@ TaskTileModel buildTaskListRowTileModel(
   required EntityTileCapabilities tileCapabilities,
   bool showProjectLabel = true,
   bool showDates = true,
+  bool showOnlyDeadlineDate = false,
+  String? overrideStartDateLabel,
+  String? overrideDeadlineDateLabel,
+  bool? overrideIsOverdue,
+  bool? overrideIsDueToday,
+  bool? overrideIsDueSoon,
   bool showPriorityMarkerOnRight = true,
   bool showRepeatIcon = true,
   bool showOverflowEllipsisWhenMetaHidden = false,
@@ -44,16 +50,20 @@ TaskTileModel buildTaskListRowTileModel(
       ? null
       : DateLabelFormatter.format(context, effectiveDeadlineDate);
 
-    final hasExtraSecondaryValues = task.effectiveSecondaryValues.length > 1;
+  final resolvedStartDateLabel = overrideStartDateLabel ?? startDateLabel;
+  final resolvedDeadlineDateLabel =
+      overrideDeadlineDateLabel ?? deadlineDateLabel;
 
-    final shouldShowOverflowEllipsis =
+  final hasExtraSecondaryValues = task.effectiveSecondaryValues.length > 1;
+
+  final shouldShowOverflowEllipsis =
       showOverflowEllipsisWhenMetaHidden &&
       (task.project != null ||
-        (startDateLabel != null) ||
-        (deadlineDateLabel != null) ||
-        task.isRepeating ||
-        task.priority != null ||
-        hasExtraSecondaryValues);
+          (resolvedStartDateLabel != null) ||
+          (resolvedDeadlineDateLabel != null) ||
+          task.isRepeating ||
+          task.priority != null ||
+          hasExtraSecondaryValues);
 
   final meta = EntityMetaLineModel(
     projectName: showProjectLabel ? task.project?.name : null,
@@ -65,23 +75,30 @@ TaskTileModel buildTaskListRowTileModel(
         .toList(growable: false),
     showOverflowEllipsis: shouldShowOverflowEllipsis,
     showDates: showDates,
-    startDateLabel: startDateLabel,
-    deadlineDateLabel: deadlineDateLabel,
-    isOverdue: _isOverdue(
-      effectiveDeadlineDate,
-      completed: isCompleted,
-      today: today,
-    ),
-    isDueToday: _isDueToday(
-      effectiveDeadlineDate,
-      completed: isCompleted,
-      today: today,
-    ),
-    isDueSoon: _isDueSoon(
-      effectiveDeadlineDate,
-      completed: isCompleted,
-      today: today,
-    ),
+    showOnlyDeadlineDate: showOnlyDeadlineDate,
+    startDateLabel: resolvedStartDateLabel,
+    deadlineDateLabel: resolvedDeadlineDateLabel,
+    isOverdue:
+        overrideIsOverdue ??
+        _isOverdue(
+          effectiveDeadlineDate,
+          completed: isCompleted,
+          today: today,
+        ),
+    isDueToday:
+        overrideIsDueToday ??
+        _isDueToday(
+          effectiveDeadlineDate,
+          completed: isCompleted,
+          today: today,
+        ),
+    isDueSoon:
+        overrideIsDueSoon ??
+        _isDueSoon(
+          effectiveDeadlineDate,
+          completed: isCompleted,
+          today: today,
+        ),
     hasRepeat: showRepeatIcon && task.isRepeating,
     showBothDatesIfPresent: true,
     showPriorityMarkerOnRight: showPriorityMarkerOnRight,

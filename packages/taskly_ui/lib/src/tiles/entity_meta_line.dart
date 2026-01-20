@@ -38,7 +38,7 @@ class EntityMetaLine extends StatelessWidget {
       padding: const EdgeInsets.only(top: 6),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // --- Required slots: values + start + deadline (no wrapping) ---
+          // --- Required slots: values + planned + due (no wrapping) ---
           Widget? valueCluster;
           if (model.showValuesInMetaLine) {
             final primaryValue = model.primaryValue;
@@ -205,8 +205,9 @@ class EntityMetaLine extends StatelessWidget {
             final total = extraWidth + (needsSpacing ? spacing : 0);
 
             if (remaining >= total) {
-              if (needsSpacing)
+              if (needsSpacing) {
                 optionalWidgets.add(const SizedBox(width: spacing));
+              }
               optionalWidgets.add(extra);
               remaining -= total;
             } else {
@@ -247,8 +248,9 @@ class EntityMetaLine extends StatelessWidget {
             final total = overflowWidth + (needsSpacing ? spacing : 0);
 
             if (remaining >= total) {
-              if (needsSpacing)
+              if (needsSpacing) {
                 optionalWidgets.add(const SizedBox(width: spacing));
+              }
               optionalWidgets.add(overflowWidget);
             }
           }

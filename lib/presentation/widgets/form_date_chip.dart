@@ -7,7 +7,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 /// Features:
 /// - Tappable to open date picker
 /// - Optional clear button when date is set
-/// - Overdue highlighting for deadlines
+/// - Overdue highlighting for due dates
 /// - Consistent styling across all forms
 class FormDateChip extends StatelessWidget {
   const FormDateChip({
@@ -20,7 +20,7 @@ class FormDateChip extends StatelessWidget {
     super.key,
   });
 
-  /// Creates a start date chip with default styling.
+  /// Creates a planned day chip with default styling.
   const FormDateChip.startDate({
     required String label,
     required DateTime? date,
@@ -36,7 +36,7 @@ class FormDateChip extends StatelessWidget {
          key: key,
        );
 
-  /// Creates a deadline date chip with overdue highlighting.
+  /// Creates a due date chip with overdue highlighting.
   const FormDateChip.deadline({
     required String label,
     required DateTime? date,
@@ -65,7 +65,7 @@ class FormDateChip extends StatelessWidget {
   /// Called when the chip is tapped.
   final VoidCallback onTap;
 
-  /// Whether this is a deadline (enables overdue highlighting).
+  /// Whether this is a due date (enables overdue highlighting).
   final bool isDeadline;
 
   /// Called when the clear button is tapped. If null, no clear button shown.

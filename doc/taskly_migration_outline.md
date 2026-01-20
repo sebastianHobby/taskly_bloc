@@ -130,13 +130,13 @@ Implementation follow-ups to keep in mind:
 - USM removal strategy: strangler pattern (disable entrypoints first, then delete) (DEC-006B).
 
 - Editing UX as a route: editors are deep-linkable routes (even if presented as a sheet/panel) (DEC-015A).
-- Scheduled/Agenda grouping: flat date-based feed (day groups only) showing projects + tasks by start/deadline, preserving the existing tag semantics and labels "Starts" / "Ongoing" / "Due" (DEC-016).
+- Scheduled/Agenda grouping: flat date-based feed (day groups only) showing projects + tasks by planned day/due date, preserving the existing tag semantics and labels "Starts" / "Ongoing" / "Due" (DEC-016).
 - My Day refresh policy: snapshot remains the primary surface; refresh is coordinator-driven (home-day boundary + debounced input changes) with explicit refresh requests allowed, and the UI provides a manual "Refresh allocation" action without any staleness indication or thresholds (DEC-017B, DEC-030A).
 
 - My Day staleness UX (MVP): none. Do not show any staleness indicators (no banner/chip/timestamp/thresholds); keep only the manual “Refresh allocation” action per DEC-017B (DEC-189A).
 
 - Agenda in-day ordering: deterministic sort (pinned first → tasks before projects → Due before Starts before Ongoing → then time → then name) (DEC-018B).
-- Same-day start+deadline semantics: show only "Due" (no double tag) (DEC-019A).
+- Same-day planned day+due date semantics: show only "Due" (no double tag) (DEC-019A).
 - Feed horizon + empty-day behavior: near-term dense (includes empty days), later sparse (only dates with items) (DEC-020A).
 
 - MVP route schema: resource-first routes (`/my-day`, `/anytime`, `/scheduled`, plus `/task/:id/edit`, `/project/:id/edit`, `/value/:id/edit`) (DEC-024A).

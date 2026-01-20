@@ -7,7 +7,7 @@ import 'package:taskly_domain/time.dart';
 /// Features:
 /// - Consistent visual design
 /// - Proper Material 3 styling
-/// - Support for start and deadline date types
+/// - Support for planned day and due date field types
 /// - Built-in validation and date formatting
 class FormBuilderDatePickerModern extends StatelessWidget {
   const FormBuilderDatePickerModern({
@@ -155,10 +155,10 @@ class FormBuilderDatePickerModern extends StatelessWidget {
 
 /// Different visual styles for date fields.
 enum DateFieldType {
-  /// Start date field with play icon
+  /// Planned day field with play icon
   startDate,
 
-  /// Deadline date field with flag icon
+  /// Due date field with flag icon
   deadline,
 
   /// Standard date field with calendar icon
