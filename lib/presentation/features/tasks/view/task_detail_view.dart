@@ -29,10 +29,10 @@ class TaskDetailSheet extends StatefulWidget {
   final String? defaultProjectId;
   final List<String>? defaultValueIds;
 
-  /// Optional start date to prefill when creating a new task.
+  /// Optional planned day to prefill when creating a new task.
   final DateTime? defaultStartDate;
 
-  /// Optional deadline date to prefill when creating a new task.
+  /// Optional due date to prefill when creating a new task.
   final DateTime? defaultDeadlineDate;
 
   /// When true, scrolls to the values section and opens the values alignment

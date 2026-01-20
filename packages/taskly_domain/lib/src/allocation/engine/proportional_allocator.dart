@@ -273,6 +273,7 @@ class ProportionalAllocator implements AllocationStrategy {
   }) {
     return <AllocationReasonCode>[
       AllocationReasonCode.valueAlignment,
+      if (task.effectiveValues.length >= 2) AllocationReasonCode.crossValue,
       if (_isUrgent(
         task,
         urgencyThresholdDays,

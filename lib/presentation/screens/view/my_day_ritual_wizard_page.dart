@@ -108,6 +108,7 @@ class _RitualBody extends StatelessWidget {
               curated: curated,
               selected: selected,
               curatedReasons: data.curatedReasons,
+              curatedReasonTooltips: data.curatedReasonTooltips,
               gateState: gate,
               onStartSetup: () => _openFocusSetup(context, gate),
               onChangeFocusMode: () => context.read<MyDayRitualBloc>().add(
@@ -254,6 +255,7 @@ class _RitualCard extends StatefulWidget {
     required this.curated,
     required this.selected,
     required this.curatedReasons,
+    required this.curatedReasonTooltips,
     required this.gateState,
     required this.onStartSetup,
     required this.onChangeFocusMode,
@@ -269,6 +271,7 @@ class _RitualCard extends StatefulWidget {
   final List<Task> curated;
   final Set<String> selected;
   final Map<String, String> curatedReasons;
+  final Map<String, String> curatedReasonTooltips;
   final MyDayGateLoaded? gateState;
   final VoidCallback onStartSetup;
   final VoidCallback onChangeFocusMode;
@@ -391,6 +394,7 @@ class _RitualCardState extends State<_RitualCard> {
                       tasks: dueVisible,
                       selected: widget.selected,
                       reasonTextByTaskId: const <String, String>{},
+                      reasonTooltipTextByTaskId: const <String, String>{},
                       enableSnooze: true,
                     ),
                     if (dueHasMore)
@@ -424,6 +428,7 @@ class _RitualCardState extends State<_RitualCard> {
                       tasks: startsVisible,
                       selected: widget.selected,
                       reasonTextByTaskId: const <String, String>{},
+                      reasonTooltipTextByTaskId: const <String, String>{},
                       enableSnooze: true,
                     ),
                     if (startsHasMore)
@@ -470,6 +475,7 @@ class _RitualCardState extends State<_RitualCard> {
                     tasks: curatedVisible,
                     selected: widget.selected,
                     reasonTextByTaskId: widget.curatedReasons,
+                    reasonTooltipTextByTaskId: widget.curatedReasonTooltips,
                     enableSnooze: false,
                   ),
                   if (curatedHasMore)
@@ -833,6 +839,7 @@ class _TaskTileColumn extends StatelessWidget {
     required this.tasks,
     required this.selected,
     required this.reasonTextByTaskId,
+    required this.reasonTooltipTextByTaskId,
     required this.enableSnooze,
   });
 
@@ -840,6 +847,7 @@ class _TaskTileColumn extends StatelessWidget {
   final List<Task> tasks;
   final Set<String> selected;
   final Map<String, String> reasonTextByTaskId;
+  final Map<String, String> reasonTooltipTextByTaskId;
   final bool enableSnooze;
 
   @override
@@ -852,6 +860,7 @@ class _TaskTileColumn extends StatelessWidget {
             task: task,
             selected: selected.contains(task.id),
             reasonText: reasonTextByTaskId[task.id],
+            reasonTooltipText: reasonTooltipTextByTaskId[task.id],
             enableSnooze: enableSnooze,
           ),
       ],
@@ -909,6 +918,7 @@ class _TaskTileRow extends StatelessWidget {
     required this.task,
     required this.selected,
     required this.reasonText,
+    required this.reasonTooltipText,
     required this.enableSnooze,
   });
 
@@ -916,6 +926,7 @@ class _TaskTileRow extends StatelessWidget {
   final Task task;
   final bool selected;
   final String? reasonText;
+  final String? reasonTooltipText;
   final bool enableSnooze;
 
   @override
@@ -932,6 +943,7 @@ class _TaskTileRow extends StatelessWidget {
       model: model,
       selected: selected,
       reasonText: reasonText,
+      reasonTooltipText: reasonTooltipText,
       onToggleSelected: () => _toggleSelection(context),
       onSnoozeRequested: !enableSnooze
           ? null
@@ -973,7 +985,7 @@ class _TaskTileRow extends StatelessWidget {
             children: [
               ListTile(
                 title: const Text('Snooze'),
-                subtitle: const Text('Set a new start date (availability).'),
+                subtitle: const Text('Set a new planned day (availability).'),
               ),
               ListTile(
                 leading: const Icon(Icons.today),

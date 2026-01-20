@@ -16,7 +16,7 @@ class DateChip extends StatelessWidget {
     super.key,
   });
 
-  /// Creates a date chip for start dates.
+  /// Creates a date chip for planned days.
   DateChip.startDate({
     required BuildContext context,
     required String label,
@@ -28,7 +28,7 @@ class DateChip extends StatelessWidget {
          key: key,
        );
 
-  /// Creates a date chip for deadline dates.
+  /// Creates a date chip for due dates.
   factory DateChip.deadline({
     required BuildContext context,
     required String label,

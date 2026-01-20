@@ -310,7 +310,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    // Start Date chip
+                    // Planned day chip
                     FormBuilderField<DateTime?>(
                       name: ProjectFieldKeys.startDate.id,
                       builder: (field) {
@@ -328,7 +328,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                         );
                       },
                     ),
-                    // Deadline Date chip
+                    // Due date chip
                     FormBuilderField<DateTime?>(
                       name: ProjectFieldKeys.deadlineDate.id,
                       builder: (field) {

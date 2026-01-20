@@ -101,13 +101,22 @@ final class TaskCommandHandler {
     }
 
     if (startDate != null && deadlineDate != null) {
-      if (deadlineDate.isBefore(startDate)) {
-        fieldErrors[TaskFieldKeys.deadlineDate] = const <ValidationError>[
+      final startDay = DateTime(startDate.year, startDate.month, startDate.day);
+      final deadlineDay = DateTime(
+        deadlineDate.year,
+        deadlineDate.month,
+        deadlineDate.day,
+      );
+
+      if (deadlineDay.isBefore(startDay)) {
+        const errors = <ValidationError>[
           ValidationError(
             code: 'deadline_before_start',
             messageKey: 'taskFormDeadlineAfterStartError',
           ),
         ];
+        fieldErrors[TaskFieldKeys.startDate] = errors;
+        fieldErrors[TaskFieldKeys.deadlineDate] = errors;
       }
     }
 

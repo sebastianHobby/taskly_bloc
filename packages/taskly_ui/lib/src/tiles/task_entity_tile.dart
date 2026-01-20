@@ -11,6 +11,7 @@ class TaskEntityTile extends StatelessWidget {
     this.intent = const TaskTileIntent.standardList(),
     this.markers = const TaskTileMarkers(),
     this.supportingText,
+    this.supportingTooltipText,
     super.key,
   });
 
@@ -23,23 +24,67 @@ class TaskEntityTile extends StatelessWidget {
   /// Optional supporting text shown between title and meta line.
   final String? supportingText;
 
+  /// Optional tooltip text for the supporting text.
+  ///
+  /// When provided, a small info icon is rendered next to the supporting text.
+  /// The tooltip is shown on tap.
+  final String? supportingTooltipText;
+
   @override
   Widget build(BuildContext context) {
     final Widget? titlePrefix = markers.pinned ? const _PinnedGlyph() : null;
 
-    final effectiveSupportingText = supportingText;
-    final Widget? footer =
-        (effectiveSupportingText == null ||
-            effectiveSupportingText.trim().isEmpty)
+    final effectiveSupportingText = supportingText?.trim();
+    final effectiveTooltipText = supportingTooltipText?.trim();
+    final hasSupportingText =
+        effectiveSupportingText != null && effectiveSupportingText.isNotEmpty;
+    final hasTooltip =
+        effectiveTooltipText != null && effectiveTooltipText.isNotEmpty;
+
+    final scheme = Theme.of(context).colorScheme;
+    final footerTextStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+    );
+
+    final Widget? footer = !hasSupportingText
         ? null
-        : Text(
-            _capWithEllipsis(effectiveSupportingText.trim(), 20),
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            softWrap: false,
+        : Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _capWithEllipsis(effectiveSupportingText, 40),
+                  style: footerTextStyle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                ),
+              ),
+              if (hasTooltip) ...[
+                const SizedBox(width: 6),
+                Semantics(
+                  button: true,
+                  label: 'Why suggested',
+                  child: Tooltip(
+                    message: effectiveTooltipText,
+                    triggerMode: TooltipTriggerMode.tap,
+                    showDuration: const Duration(seconds: 10),
+                    child: IconButton(
+                      onPressed: () {},
+                      icon: Icon(
+                        Icons.info_outline_rounded,
+                        size: 18,
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+                      ),
+                      style: IconButton.styleFrom(
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        minimumSize: const Size(32, 32),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           );
 
     return switch (intent) {

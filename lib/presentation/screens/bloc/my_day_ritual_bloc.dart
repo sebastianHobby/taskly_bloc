@@ -102,6 +102,7 @@ final class MyDayRitualReady extends MyDayRitualState {
     required this.planned,
     required this.curated,
     required this.curatedReasons,
+    required this.curatedReasonTooltips,
     required this.selectedTaskIds,
     required this.dayKeyUtc,
     this.nav,
@@ -114,6 +115,7 @@ final class MyDayRitualReady extends MyDayRitualState {
   final List<Task> planned;
   final List<Task> curated;
   final Map<String, String> curatedReasons;
+  final Map<String, String> curatedReasonTooltips;
   final Set<String> selectedTaskIds;
   final DateTime dayKeyUtc;
   final MyDayRitualNav? nav;
@@ -126,6 +128,7 @@ final class MyDayRitualReady extends MyDayRitualState {
     List<Task>? planned,
     List<Task>? curated,
     Map<String, String>? curatedReasons,
+    Map<String, String>? curatedReasonTooltips,
     Set<String>? selectedTaskIds,
     DateTime? dayKeyUtc,
     MyDayRitualNav? nav,
@@ -138,6 +141,8 @@ final class MyDayRitualReady extends MyDayRitualState {
       planned: planned ?? this.planned,
       curated: curated ?? this.curated,
       curatedReasons: curatedReasons ?? this.curatedReasons,
+      curatedReasonTooltips:
+          curatedReasonTooltips ?? this.curatedReasonTooltips,
       selectedTaskIds: selectedTaskIds ?? this.selectedTaskIds,
       dayKeyUtc: dayKeyUtc ?? this.dayKeyUtc,
       nav: nav ?? this.nav,
@@ -286,6 +291,11 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
 
     final needsRitual = !_ritualState.isCompletedFor(_dayKeyUtc);
 
+    final curatedReasonDetails = _buildCuratedReasonDetails(
+      curated,
+      allocation: _allocationResult,
+    );
+
     emit(
       MyDayRitualReady(
         needsRitual: needsRitual,
@@ -293,11 +303,8 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         dueWindowDays: _globalSettings.myDayDueWindowDays,
         planned: planned,
         curated: curated,
-        curatedReasons: _buildCuratedReasonText(
-          curated,
-          allocation: _allocationResult,
-          dayKeyUtc: _dayKeyUtc,
-        ),
+        curatedReasons: curatedReasonDetails.reasonLineByTaskId,
+        curatedReasonTooltips: curatedReasonDetails.tooltipByTaskId,
         selectedTaskIds: _selectedTaskIds,
         dayKeyUtc: _dayKeyUtc,
         nav: null,
@@ -647,86 +654,156 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     return curated;
   }
 
-  Map<String, String> _buildCuratedReasonText(
+  ({
+    Map<String, String> reasonLineByTaskId,
+    Map<String, String> tooltipByTaskId,
+  })
+  _buildCuratedReasonDetails(
     List<Task> curated, {
     required AllocationResult? allocation,
-    required DateTime dayKeyUtc,
   }) {
-    if (allocation == null) return const {};
+    if (allocation == null) {
+      return (
+        reasonLineByTaskId: const <String, String>{},
+        tooltipByTaskId: const <String, String>{},
+      );
+    }
 
     final reasonsByTaskId = <String, List<AllocationReasonCode>>{};
     for (final entry in allocation.allocatedTasks) {
       reasonsByTaskId[entry.task.id] = entry.reasonCodes;
     }
 
-    return {
-      for (final task in curated)
-        task.id: _reasonTextForTask(task, reasonsByTaskId[task.id] ?? const []),
-    }..removeWhere((_, value) => value.isEmpty);
-  }
+    final reasonLineByTaskId = <String, String>{};
+    final tooltipByTaskId = <String, String>{};
 
-  String _reasonTextForTask(
-    Task task,
-    List<AllocationReasonCode> reasonCodes,
-  ) {
-    final valueName = task.effectivePrimaryValue?.name;
-    final hasValue = valueName != null && valueName.isNotEmpty;
+    for (final task in curated) {
+      final reasonCodes = reasonsByTaskId[task.id] ?? const [];
+      final reasonLine = _reasonLineForTask(task, reasonCodes);
+      final tooltip = _reasonTooltipForTask(task, reasonCodes);
 
-    final buffer = StringBuffer('Chosen because ');
-    if (hasValue) {
-      buffer.write('it supports $valueName');
+      if (reasonLine.isNotEmpty) {
+        reasonLineByTaskId[task.id] = reasonLine;
+      }
+      if (tooltip.isNotEmpty) {
+        tooltipByTaskId[task.id] = tooltip;
+      }
     }
 
-    final hasNeglect = reasonCodes.contains(
-      AllocationReasonCode.neglectBalance,
+    return (
+      reasonLineByTaskId: reasonLineByTaskId,
+      tooltipByTaskId: tooltipByTaskId,
     );
-    if (hasNeglect) {
-      if (hasValue) {
-        buffer.write('; restoring balance across your values');
-      } else {
-        buffer.write('it is restoring balance across your values');
-      }
-    }
-
-    final urgencyPhrase = _urgencyOrPriorityPhrase(task, reasonCodes);
-    if (urgencyPhrase.isNotEmpty) {
-      if (hasValue || hasNeglect) {
-        buffer.write(' and $urgencyPhrase');
-      } else {
-        buffer.write('it $urgencyPhrase');
-      }
-    }
-
-    final text = buffer.toString().trim();
-    return text == 'Chosen because' ? '' : '$text.';
   }
 
-  String _urgencyOrPriorityPhrase(
-    Task task,
-    List<AllocationReasonCode> reasonCodes,
-  ) {
+  String _reasonLineForTask(Task task, List<AllocationReasonCode> reasonCodes) {
+    final whyNow = _whyNowToken(task, reasonCodes);
+    final whyItMatters = _whyItMattersToken(task, reasonCodes);
+
+    if (whyNow.isEmpty && whyItMatters.isEmpty) return '';
+    if (whyNow.isEmpty) return whyItMatters;
+    if (whyItMatters.isEmpty) return whyNow;
+    if (whyNow == whyItMatters) return whyNow;
+    return '$whyNow · $whyItMatters';
+  }
+
+  String _whyNowToken(Task task, List<AllocationReasonCode> reasonCodes) {
     if (reasonCodes.contains(AllocationReasonCode.urgency)) {
-      return _deadlinePhrase(task);
+      return _deadlineLabel(task);
+    }
+
+    if (reasonCodes.contains(AllocationReasonCode.neglectBalance)) {
+      return 'Balance';
     }
 
     if (reasonCodes.contains(AllocationReasonCode.priority)) {
-      return 'is high priority';
+      return 'Priority';
+    }
+
+    return 'Suggested';
+  }
+
+  String _whyItMattersToken(Task task, List<AllocationReasonCode> reasonCodes) {
+    if (reasonCodes.contains(AllocationReasonCode.crossValue)) {
+      return 'Cross-value';
+    }
+
+    final primaryValueName = task.effectivePrimaryValue?.name.trim();
+    if (primaryValueName != null && primaryValueName.isNotEmpty) {
+      return primaryValueName;
+    }
+
+    if (reasonCodes.contains(AllocationReasonCode.neglectBalance)) {
+      return 'Balance';
+    }
+
+    if (reasonCodes.contains(AllocationReasonCode.priority)) {
+      return 'Priority';
     }
 
     return '';
   }
 
-  String _deadlinePhrase(Task task) {
+  String _reasonTooltipForTask(
+    Task task,
+    List<AllocationReasonCode> reasonCodes,
+  ) {
+    if (reasonCodes.isEmpty && task.isEffectivelyValueless) return '';
+
+    final bullets = <String>[];
+
+    if (reasonCodes.contains(AllocationReasonCode.urgency)) {
+      bullets.add(_deadlineLabel(task));
+    }
+
+    if (reasonCodes.contains(AllocationReasonCode.priority)) {
+      bullets.add('High priority');
+    }
+
+    if (reasonCodes.contains(AllocationReasonCode.neglectBalance)) {
+      bullets.add('Restores balance');
+    }
+
+    if (reasonCodes.contains(AllocationReasonCode.crossValue)) {
+      final valueNames = task.effectiveValues
+          .map((v) => v.name.trim())
+          .where((n) => n.isNotEmpty)
+          .toList(growable: false);
+
+      if (valueNames.length >= 2) {
+        bullets.add(
+          'Cross-value: advances ${valueNames[0]} + ${valueNames[1]}',
+        );
+      } else {
+        bullets.add('Cross-value');
+      }
+    } else {
+      final primaryValueName = task.effectivePrimaryValue?.name.trim();
+      if (primaryValueName != null && primaryValueName.isNotEmpty) {
+        bullets.add('Supports $primaryValueName');
+      }
+    }
+
+    if (bullets.isEmpty) return '';
+
+    final buffer = StringBuffer('Why suggested');
+    for (final item in bullets) {
+      buffer.write('\n• $item');
+    }
+    return buffer.toString();
+  }
+
+  String _deadlineLabel(Task task) {
     final deadline = dateOnlyOrNull(task.deadlineDate);
-    if (deadline == null) return 'is due soon';
+    if (deadline == null) return 'Due soon';
 
     final today = dateOnly(_dayKeyUtc);
     final diff = deadline.difference(today).inDays;
 
-    if (diff < 0) return 'is overdue';
-    if (diff == 0) return 'is due today';
-    if (diff == 1) return 'is due tomorrow';
-    return 'is due in $diff days';
+    if (diff < 0) return 'Past due';
+    if (diff == 0) return 'Due today';
+    if (diff == 1) return 'Due tomorrow';
+    return 'Due in ${diff}d';
   }
 
   bool _isCompleted(Task task) {

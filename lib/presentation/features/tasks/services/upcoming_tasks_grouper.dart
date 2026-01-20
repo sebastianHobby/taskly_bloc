@@ -60,7 +60,8 @@ class UpcomingProjectEntry extends UpcomingDateEntry {
   final TaskDateType dateType;
 }
 
-/// Indicates whether an item is associated with a date via its start or deadline.
+/// Indicates whether an item is associated with a date via its planned day or
+/// due date.
 enum TaskDateType {
   start,
   deadline,
@@ -68,7 +69,8 @@ enum TaskDateType {
 
 /// Groups tasks and projects by date for the upcoming view.
 ///
-/// Items with both start date and deadline on different days will appear twice.
+/// Items with both planned day and due date on different days will appear
+/// twice.
 class UpcomingTasksGrouper {
   /// Groups tasks by date for the next [daysAhead] days (default 7).
   ///
@@ -91,7 +93,7 @@ class UpcomingTasksGrouper {
 
     // Add tasks to appropriate dates
     for (final task in tasks) {
-      // Add task for its start date if within range
+      // Add task for its planned day if within range
       if (task.startDate != null) {
         final startDateOnly = _dateOnly(task.startDate!);
         if (!startDateOnly.isBefore(today.add(const Duration(days: 1))) &&
@@ -106,12 +108,12 @@ class UpcomingTasksGrouper {
         }
       }
 
-      // Add task for its deadline date if within range
+      // Add task for its due date if within range
       if (task.deadlineDate != null) {
         final deadlineDateOnly = _dateOnly(task.deadlineDate!);
         if (!deadlineDateOnly.isBefore(today.add(const Duration(days: 1))) &&
             deadlineDateOnly.isBefore(endDate)) {
-          // Only add if it's a different date than start date
+          // Only add if it's a different date than planned day
           final startDateOnly = task.startDate != null
               ? _dateOnly(task.startDate!)
               : null;
@@ -200,7 +202,7 @@ class UpcomingTasksGrouper {
     DateTime? startDateOnly;
     DateTime? deadlineDateOnly;
 
-    // Add for start date if within range
+    // Add for planned day if within range
     if (startDate != null) {
       startDateOnly = _dateOnly(startDate);
       if (!startDateOnly.isBefore(today.add(const Duration(days: 1))) &&
@@ -211,12 +213,12 @@ class UpcomingTasksGrouper {
       }
     }
 
-    // Add for deadline date if within range and different from start
+    // Add for due date if within range and different from planned day
     if (deadlineDate != null) {
       deadlineDateOnly = _dateOnly(deadlineDate);
       if (!deadlineDateOnly.isBefore(today.add(const Duration(days: 1))) &&
           deadlineDateOnly.isBefore(endDate)) {
-        // Only add if it's a different date than start date
+        // Only add if it's a different date than planned day
         if (startDateOnly == null || startDateOnly != deadlineDateOnly) {
           grouped[deadlineDateOnly]?.add(
             createEntry(deadlineDateOnly, TaskDateType.deadline),

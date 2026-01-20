@@ -44,13 +44,13 @@ class EntityMetaLineModel {
   /// When false, no date chips are rendered.
   final bool showDates;
 
-  /// When true, only the deadline chip is shown (start date suppressed).
+  /// When true, only the due date chip is shown (planned day suppressed).
   final bool showOnlyDeadlineDate;
 
-  /// If true, show both start and deadline when both are present.
+  /// If true, show both planned day and due date when both are present.
   ///
-  /// If false, start date is shown only when there is no deadline, or when the
-  /// layout has enough horizontal space.
+  /// If false, planned day is shown only when there is no due date, or when
+  /// the layout has enough horizontal space.
   final bool showBothDatesIfPresent;
 
   /// Pre-formatted labels (app-owned).

@@ -18,6 +18,7 @@ class SelectableTaskEntityTile extends StatelessWidget {
     required this.onToggleSelected,
     this.onSnoozeRequested,
     this.reasonText,
+    this.reasonTooltipText,
     this.titlePrefix,
     super.key,
   });
@@ -39,6 +40,9 @@ class SelectableTaskEntityTile extends StatelessWidget {
   /// Commonly used to show “why this was suggested”.
   final String? reasonText;
 
+  /// Optional tooltip text for the reason subtitle.
+  final String? reasonTooltipText;
+
   /// Optional widget displayed before the title.
   ///
   /// This is intentionally a narrow extension point to avoid re-exposing the
@@ -57,6 +61,7 @@ class SelectableTaskEntityTile extends StatelessWidget {
       ),
       markers: const TaskTileMarkers(),
       supportingText: reasonText,
+      supportingTooltipText: reasonTooltipText,
     );
   }
 }

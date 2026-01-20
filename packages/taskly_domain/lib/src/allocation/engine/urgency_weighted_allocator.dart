@@ -211,6 +211,7 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
   }) {
     final codes = <AllocationReasonCode>[
       AllocationReasonCode.valueAlignment,
+      if (task.effectiveValues.length >= 2) AllocationReasonCode.crossValue,
     ];
 
     final isUrgent = _isUrgent(

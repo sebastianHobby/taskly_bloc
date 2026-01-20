@@ -249,7 +249,7 @@
     },
     "taskSortByDeadline": "Sort by due date",
     "@taskSortByDeadline": {
-        "description": "Task overview sort option to sort tasks by deadline date"
+        "description": "Task overview sort option to sort tasks by due date"
     },
     "groupSortMenuTitle": "Group & sort",
     "@groupSortMenuTitle": {
@@ -281,11 +281,11 @@
     },
     "sortFieldStartDateLabel": "Planned day",
     "@sortFieldStartDateLabel": {
-        "description": "Label for the start date sort field"
+        "description": "Label for the planned day sort field"
     },
     "sortFieldDeadlineDateLabel": "Due date",
     "@sortFieldDeadlineDateLabel": {
-        "description": "Label for the deadline date sort field"
+        "description": "Label for the due date sort field"
     },
     "sortFieldNoneLabel": "None",
     "@sortFieldNoneLabel": {
@@ -449,15 +449,15 @@
     },
     "projectFormStartDateHint": "Planned day",
     "@projectFormStartDateHint": {
-        "description": "Hint text for the optional project start date field"
+        "description": "Hint text for the optional project planned day field"
     },
     "projectFormDeadlineDateHint": "Due date",
     "@projectFormDeadlineDateHint": {
-        "description": "Hint text for the optional project deadline date field"
+        "description": "Hint text for the optional project due date field"
     },
     "projectFormDeadlineAfterStartError": "Due date must be after planned day",
     "@projectFormDeadlineAfterStartError": {
-        "description": "Validation error shown when the deadline is before the start date"
+        "description": "Validation error shown when the due date is before the planned day"
     },
     "projectFormCompletedLabel": "Completed",
     "@projectFormCompletedLabel": {
@@ -529,7 +529,7 @@
     },
     "taskFormStartDateHint": "Planned day",
     "@taskFormStartDateHint": {
-        "description": "Hint text for the task start date field"
+        "description": "Hint text for the task planned day field"
     },
     "taskFormDeadlineDateHint": "Due date",
     "dateChipAddPlannedDay": "Add planned day",
@@ -541,7 +541,7 @@
         "description": "Label shown on date chips when due date is not set"
     },
     "@taskFormDeadlineDateHint": {
-        "description": "Hint text for the task deadline date field"
+        "description": "Hint text for the task due date field"
     },
     "taskFormProjectHint": "Project (optional)",
     "@taskFormProjectHint": {
@@ -573,7 +573,7 @@
     },
     "taskFormDeadlineAfterStartError": "Due date must be after planned day",
     "@taskFormDeadlineAfterStartError": {
-        "description": "Validation error when deadline is before start date"
+        "description": "Validation error when due date is before planned day"
     },
     "dateToday": "Today",
     "@dateToday": {
@@ -1170,7 +1170,7 @@
     },
     "deadlineFormatDays": "{days, plural, =0{Due today} =1{Due tomorrow} other{Due in {days} days}}",
     "@deadlineFormatDays": {
-        "description": "Format string for deadline relative to today",
+        "description": "Format string for due date relative to today",
         "placeholders": {
             "days": {
                 "type": "int"
@@ -1179,7 +1179,7 @@
     },
     "deadlineOverdue": "Overdue",
     "@deadlineOverdue": {
-        "description": "Label shown when a deadline has passed"
+        "description": "Label shown when a due date has passed"
     },
     "reflectorBuildingHistory": "Building your history...",
     "@reflectorBuildingHistory": {

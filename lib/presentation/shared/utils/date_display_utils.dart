@@ -9,7 +9,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 class DateDisplayUtils {
   DateDisplayUtils._();
 
-  /// Checks if the given deadline date is overdue (before today).
+  /// Checks if the given due date is overdue (before today).
   static bool isOverdue(DateTime? deadline, {bool isCompleted = false}) {
     if (deadline == null || isCompleted) return false;
     final now = getIt<NowService>().nowLocal();
@@ -18,7 +18,7 @@ class DateDisplayUtils {
     return deadlineDay.isBefore(today);
   }
 
-  /// Checks if the given deadline date is today.
+  /// Checks if the given due date is today.
   static bool isDueToday(DateTime? deadline, {bool isCompleted = false}) {
     if (deadline == null || isCompleted) return false;
     final now = getIt<NowService>().nowLocal();
@@ -27,7 +27,7 @@ class DateDisplayUtils {
     return deadlineDay.isAtSameMomentAs(today);
   }
 
-  /// Checks if the given deadline date is within the next few days.
+  /// Checks if the given due date is within the next few days.
   static bool isDueSoon(
     DateTime? deadline, {
     bool isCompleted = false,

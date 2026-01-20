@@ -51,10 +51,10 @@ class TaskForm extends StatefulWidget {
   final String? defaultProjectId;
   final List<String>? defaultValueIds;
 
-  /// Optional start date to prefill when creating a new task.
+  /// Optional planned day to prefill when creating a new task.
   final DateTime? defaultStartDate;
 
-  /// Optional deadline date to prefill when creating a new task.
+  /// Optional due date to prefill when creating a new task.
   final DateTime? defaultDeadlineDate;
 
   /// When true, scrolls to the values section and opens the values sheet.
@@ -391,7 +391,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
 
               const SizedBox(height: 8),
 
-              // Chips row: Project, Start Date, Deadline
+              // Chips row: Project, Planned Day, Due Date
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Wrap(
@@ -437,7 +437,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           );
                         },
                       ),
-                    // Start Date chip
+                    // Planned day chip
                     FormBuilderField<DateTime?>(
                       name: TaskFieldKeys.startDate.id,
                       builder: (field) {
@@ -455,7 +455,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                         );
                       },
                     ),
-                    // Deadline Date chip
+                    // Due date chip
                     FormBuilderField<DateTime?>(
                       name: TaskFieldKeys.deadlineDate.id,
                       builder: (field) {

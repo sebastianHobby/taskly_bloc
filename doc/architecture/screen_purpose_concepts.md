@@ -21,7 +21,9 @@
   entity type.
 - **Scheduled**: A **date-based lens** (timeline/agenda grouping), not a bucket.
   It shows the same underlying tasks, presented by date.
-- **Start date**: A **soft plan-to-start signal** (not a hard blocker).
+- **Planned day (start date)**: A **soft plan-to-start signal** (not a hard
+  blocker).
+- **Due date (deadline)**: A **hard must-finish-by signal**.
 - **Local day boundary**: “Today” semantics use the user’s local calendar day
   boundary for comparisons and filtering (not UTC).
 
@@ -52,19 +54,20 @@
 - “Your actionable backlog. Use filters to hide ‘start later’ items.”
 
 **Key questions it answers**
-- “What can I work on (now or soon), regardless of deadlines?”
+- “What can I work on (now or soon), regardless of due dates?”
 - “What’s in my backlog across projects?”
 
 **Contract**
 - Anytime includes **tasks and projects**.
-- Tasks/projects may have deadlines or start dates.
+- Tasks/projects may have due dates or planned days.
 - Focus (My Day) items are included, but must be visually differentiated.
 
-**Filter: hide future start**
-- Provide a simple toggle to include/exclude items with a start date in the
+**Filter: hide future planned day**
+- Provide a simple toggle to include/exclude items with a planned day in the
   future.
 - This toggle applies to **both tasks and projects**.
-- When toggled off, items with `startDate > today (local day)` are hidden.
+- When toggled off, items with `startDate (planned day) > today (local day)`
+  are hidden.
 
 **Focus ordering within projects**
 - When displaying tasks under a project grouping, **focus (My Day) tasks sort to

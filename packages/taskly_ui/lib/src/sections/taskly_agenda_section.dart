@@ -256,6 +256,13 @@ class _AgendaCard extends StatelessWidget {
                   ),
                 ),
               ),
+            if (card.onHeaderTap != null)
+              Icon(
+                card.isCollapsed
+                    ? Icons.expand_more_rounded
+                    : Icons.expand_less_rounded,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+              ),
           ],
         ),
       ),
@@ -283,7 +290,10 @@ class _AgendaCard extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildRows(BuildContext context, List<TasklyAgendaRowModel> rows) {
+  List<Widget> _buildRows(
+    BuildContext context,
+    List<TasklyAgendaRowModel> rows,
+  ) {
     return rows.map((r) => _AgendaCardRow(row: r)).toList(growable: false);
   }
 }
@@ -320,24 +330,38 @@ class _AgendaCardRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (row) {
-      TasklyAgendaTaskRowModel() => Padding(
-        padding: EdgeInsets.only(left: row.depth * 12.0),
-        child: TaskEntityTile(
-          model: row.model,
-          intent: row.intent,
-          markers: row.markers,
-          actions: row.actions,
-          supportingText: row.supportingText,
+      TasklyAgendaTaskRowModel(
+        :final depth,
+        :final model,
+        :final intent,
+        :final markers,
+        :final actions,
+        :final supportingText,
+      ) =>
+        Padding(
+          padding: EdgeInsets.only(left: depth * 12.0),
+          child: TaskEntityTile(
+            model: model,
+            intent: intent,
+            markers: markers,
+            actions: actions,
+            supportingText: supportingText,
+          ),
         ),
-      ),
-      TasklyAgendaProjectRowModel() => Padding(
-        padding: EdgeInsets.only(left: row.depth * 12.0),
-        child: ProjectEntityTile(
-          model: row.model,
-          intent: row.intent,
-          actions: row.actions,
+      TasklyAgendaProjectRowModel(
+        :final depth,
+        :final model,
+        :final intent,
+        :final actions,
+      ) =>
+        Padding(
+          padding: EdgeInsets.only(left: depth * 12.0),
+          child: ProjectEntityTile(
+            model: model,
+            intent: intent,
+            actions: actions,
+          ),
         ),
-      ),
       _ => const SizedBox.shrink(),
     };
   }
