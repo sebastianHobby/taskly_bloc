@@ -6,8 +6,6 @@ import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/taskly_domain.dart';
-
-import 'package:taskly_data/src/allocation/repositories/allocation_snapshot_repository.dart';
 import 'package:taskly_data/src/attention/repositories/attention_repository_v2.dart'
     as attention_repo_v2_impl;
 import 'package:taskly_data/src/features/analytics/repositories/analytics_repository_impl.dart';
@@ -42,7 +40,6 @@ final class TasklyDataBindings {
     required this.valueRepository,
     required this.settingsRepository,
     required this.homeDayKeyService,
-    required this.allocationSnapshotRepository,
     required this.attentionRepository,
     required this.analyticsRepository,
     required this.journalRepository,
@@ -62,7 +59,6 @@ final class TasklyDataBindings {
   final ValueRepositoryContract valueRepository;
   final SettingsRepositoryContract settingsRepository;
   final HomeDayKeyService homeDayKeyService;
-  final AllocationSnapshotRepositoryContract allocationSnapshotRepository;
   final AttentionRepositoryContract attentionRepository;
 
   final AnalyticsRepositoryContract analyticsRepository;
@@ -271,10 +267,6 @@ final class TasklyDataStack implements SyncAnomalyStream {
       idGenerator: idGenerator,
     );
 
-    final allocationSnapshotRepository = AllocationSnapshotRepository(
-      db: driftDb,
-    );
-
     final attentionRepository = attention_repo_v2_impl.AttentionRepositoryV2(
       db: driftDb,
     );
@@ -314,7 +306,6 @@ final class TasklyDataStack implements SyncAnomalyStream {
       valueRepository: valueRepository,
       settingsRepository: settingsRepository,
       homeDayKeyService: homeDayKeyService,
-      allocationSnapshotRepository: allocationSnapshotRepository,
       attentionRepository: attentionRepository,
       analyticsRepository: analyticsRepository,
       journalRepository: journalRepository,

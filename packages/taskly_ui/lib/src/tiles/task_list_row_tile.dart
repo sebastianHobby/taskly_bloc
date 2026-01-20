@@ -11,6 +11,7 @@ class TaskListRowTile extends StatelessWidget {
     this.trailing,
     this.titlePrefix,
     this.subtitle,
+    this.footer,
     super.key,
   });
 
@@ -29,6 +30,9 @@ class TaskListRowTile extends StatelessWidget {
 
   /// Optional subtitle widget shown between title and meta line.
   final Widget? subtitle;
+
+  /// Optional footer widget shown below the meta line.
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +111,10 @@ class TaskListRowTile extends StatelessWidget {
                           subtitle!,
                         ],
                         EntityMetaLine(model: model.meta),
+                        if (footer != null) ...[
+                          const SizedBox(height: 6),
+                          footer!,
+                        ],
                       ],
                     ),
                   ),

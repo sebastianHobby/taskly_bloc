@@ -71,12 +71,14 @@ class ValuesListView extends StatelessWidget {
             },
             child: ValueEntityTile(
               model: value.toTileModel(context),
-              variant: ValueTileVariant.standard,
-              onTap: () async {
-                isSheetOpen?.value = true;
-                Routing.toEntity(context, EntityType.value, value.id);
-                isSheetOpen?.value = false;
-              },
+              intent: const ValueTileIntent.standardList(),
+              actions: ValueTileActions(
+                onTap: () async {
+                  isSheetOpen?.value = true;
+                  Routing.toEntity(context, EntityType.value, value.id);
+                  isSheetOpen?.value = false;
+                },
+              ),
             ),
           ),
       ],

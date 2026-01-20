@@ -31,12 +31,6 @@ bucket_definitions:
       # Attention Rule Runtime State (per-rule/per-entity evaluation state)
       - SELECT * FROM attention_rule_runtime_state WHERE user_id = bucket.user_id
 
-      # Allocation Snapshots (daily, allocated membership only)
-      - SELECT * FROM allocation_snapshots WHERE user_id = bucket.user_id
-
-      # Allocation Snapshot Entries
-      - SELECT * FROM allocation_snapshot_entries WHERE user_id = bucket.user_id
-
 
   user_history:
     priority: 2

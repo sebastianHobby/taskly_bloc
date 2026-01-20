@@ -346,38 +346,28 @@ class _AcceptedTaskTile extends StatelessWidget {
     );
 
     final subtitleText = this.subtitleText;
-    final subtitle = subtitleText == null || subtitleText.trim().isEmpty
-        ? null
-        : Text(
-            subtitleText,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          );
 
     return TaskEntityTile(
       model: model,
-      onTap: model.onTap,
-      subtitle: subtitle,
-      trailing: hasAnyEnabledAction
-          ? TrailingSpec.overflowButton
-          : TrailingSpec.none,
-      onToggleCompletion: buildTaskToggleCompletionHandler(
-        context,
-        task: task,
-        tileCapabilities: tileCapabilities,
+      supportingText: subtitleText,
+      markers: TaskTileMarkers(pinned: task.isPinned),
+      actions: TaskTileActions(
+        onTap: model.onTap,
+        onToggleCompletion: buildTaskToggleCompletionHandler(
+          context,
+          task: task,
+          tileCapabilities: tileCapabilities,
+        ),
+        onOverflowMenuRequestedAt: hasAnyEnabledAction
+            ? (pos) => showTileOverflowMenu(
+                context,
+                position: pos,
+                entityTypeLabel: 'task',
+                entityId: task.id,
+                actions: overflowActions,
+              )
+            : null,
       ),
-      onOverflowRequestedAt: hasAnyEnabledAction
-          ? (pos) => showTileOverflowMenu(
-              context,
-              position: pos,
-              entityTypeLabel: 'task',
-              entityId: task.id,
-              actions: overflowActions,
-            )
-          : null,
     );
   }
 }

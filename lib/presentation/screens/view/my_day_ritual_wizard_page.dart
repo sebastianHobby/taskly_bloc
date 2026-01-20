@@ -15,20 +15,37 @@ class MyDayRitualWizardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<MyDayRitualBloc, MyDayRitualState>(
-      listenWhen: (previous, current) {
-        return previous is MyDayRitualReady &&
-            current is MyDayRitualReady &&
-            previous.navRequestId != current.navRequestId &&
-            current.nav == MyDayRitualNav.openFocusSetupWizard;
-      },
-      listener: (context, state) {
-        Routing.toScreenKeyWithQuery(
-          context,
-          'focus_setup',
-          queryParameters: const {'step': 'select_focus_mode'},
-        );
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<MyDayRitualBloc, MyDayRitualState>(
+          listenWhen: (previous, current) {
+            return previous is MyDayRitualReady &&
+                current is MyDayRitualReady &&
+                previous.navRequestId != current.navRequestId &&
+                current.nav == MyDayRitualNav.openFocusSetupWizard;
+          },
+          listener: (context, state) {
+            Routing.toScreenKeyWithQuery(
+              context,
+              'focus_setup',
+              queryParameters: const {'step': 'select_focus_mode'},
+            );
+          },
+        ),
+        BlocListener<MyDayRitualBloc, MyDayRitualState>(
+          listenWhen: (previous, current) {
+            return previous is MyDayRitualReady &&
+                current is MyDayRitualReady &&
+                previous.needsRitual &&
+                !current.needsRitual;
+          },
+          listener: (context, state) {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+      ],
       child: BlocBuilder<MyDayRitualBloc, MyDayRitualState>(
         builder: (context, ritualState) {
           return BlocBuilder<MyDayGateBloc, MyDayGateState>(
@@ -76,8 +93,8 @@ class _RitualBody extends StatelessWidget {
       slivers: [
         SliverToBoxAdapter(
           child: _HeroHeader(
-            greeting: 'Welcome back.',
-            title: 'Choose what matters today.',
+            title: 'Choose what matters',
+            subtitle: 'My Day keeps you on track.',
           ),
         ),
         SliverPadding(
@@ -87,6 +104,7 @@ class _RitualBody extends StatelessWidget {
               focusMode: data.focusMode,
               dayKeyUtc: data.dayKeyUtc,
               planned: planned,
+              dueWindowDays: data.dueWindowDays,
               curated: curated,
               selected: selected,
               curatedReasons: data.curatedReasons,
@@ -139,9 +157,10 @@ class _RitualBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selectedCount = data.selectedTaskIds.length;
-    final label = selectedCount > 0
-        ? 'Start my day · $selectedCount'
-        : 'Start my day';
+    final isEnabled = selectedCount > 0;
+    final label = isEnabled
+        ? 'Continue to My Day · $selectedCount'
+        : 'Select items to continue';
 
     return SafeArea(
       top: false,
@@ -159,7 +178,7 @@ class _RitualBottomBar extends StatelessWidget {
           children: [
             Expanded(
               child: FilledButton(
-                onPressed: selectedCount == 0
+                onPressed: !isEnabled
                     ? null
                     : () => context.read<MyDayRitualBloc>().add(
                         const MyDayRitualConfirm(),
@@ -176,17 +195,16 @@ class _RitualBottomBar extends StatelessWidget {
 
 class _HeroHeader extends StatelessWidget {
   const _HeroHeader({
-    required this.greeting,
     required this.title,
+    required this.subtitle,
   });
 
-  final String greeting;
   final String title;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final mergedTitle = _mergeGreetingWithTitle(greeting, title);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -207,9 +225,16 @@ class _HeroHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                mergedTitle,
+                title,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -218,15 +243,6 @@ class _HeroHeader extends StatelessWidget {
       ],
     );
   }
-
-  String _mergeGreetingWithTitle(String greeting, String title) {
-    final trimmedGreeting = greeting.trim().replaceAll('.', '');
-    final trimmedTitle = title.trim();
-    if (trimmedTitle.isEmpty) return trimmedGreeting;
-    final lowercaseTitle =
-        '${trimmedTitle[0].toLowerCase()}${trimmedTitle.substring(1)}';
-    return '$trimmedGreeting — $lowercaseTitle';
-  }
 }
 
 class _RitualCard extends StatefulWidget {
@@ -234,6 +250,7 @@ class _RitualCard extends StatefulWidget {
     required this.focusMode,
     required this.dayKeyUtc,
     required this.planned,
+    required this.dueWindowDays,
     required this.curated,
     required this.selected,
     required this.curatedReasons,
@@ -248,6 +265,7 @@ class _RitualCard extends StatefulWidget {
   final FocusMode focusMode;
   final DateTime dayKeyUtc;
   final List<Task> planned;
+  final int dueWindowDays;
   final List<Task> curated;
   final Set<String> selected;
   final Map<String, String> curatedReasons;
@@ -301,6 +319,8 @@ class _RitualCardState extends State<_RitualCard> {
     final plannedCount = widget.planned.length;
     final curatedCount = widget.curated.length;
     final today = dateOnly(widget.dayKeyUtc);
+    final dueWindowDays = widget.dueWindowDays.clamp(1, 30);
+    final dueLimit = today.add(Duration(days: dueWindowDays - 1));
 
     final needsSetup =
         widget.gateState != null &&
@@ -311,9 +331,15 @@ class _RitualCardState extends State<_RitualCard> {
     final starts = <Task>[];
     for (final task in widget.planned) {
       final deadline = _deadlineDateOnly(task);
-      if (deadline != null && !deadline.isAfter(today)) {
+      final isDue = deadline != null && !deadline.isAfter(dueLimit);
+      if (isDue) {
         due.add(task);
-      } else {
+        continue;
+      }
+
+      final start = dateOnlyOrNull(task.occurrence?.date ?? task.startDate);
+      final isAvailableToStart = start != null && !start.isAfter(today);
+      if (isAvailableToStart) {
         starts.add(task);
       }
     }
@@ -343,7 +369,7 @@ class _RitualCardState extends State<_RitualCard> {
             if (plannedCount == 0)
               const _EmptyPanel(
                 title: 'Nothing planned yet',
-                description: 'No tasks are due or starting soon.',
+                description: 'No tasks are due soon or available to start.',
               )
             else
               Column(
@@ -361,9 +387,11 @@ class _RitualCardState extends State<_RitualCard> {
                       onAction: widget.onAcceptAllDue,
                     ),
                     _TaskTileColumn(
+                      dayKeyUtc: widget.dayKeyUtc,
                       tasks: dueVisible,
                       selected: widget.selected,
                       reasonTextByTaskId: const <String, String>{},
+                      enableSnooze: true,
                     ),
                     if (dueHasMore)
                       _ShowMoreRow(
@@ -378,20 +406,25 @@ class _RitualCardState extends State<_RitualCard> {
                   ],
                   if (starts.isEmpty)
                     const _SectionEmptyPanel(
-                      title: 'Starts today',
-                      description: 'No tasks starting soon.',
+                      title: 'Planned for today (or earlier)',
+                      description:
+                          'Tasks whose planned day is today or earlier. '
+                          'Nothing available right now.',
                     )
                   else ...[
                     _SubsectionHeader(
-                      title: 'Starts today',
+                      title: 'Planned for today (or earlier)',
                       count: starts.length,
-                      actionLabel: 'Add all starts',
+                      subtitle: 'Tasks whose planned day is today or earlier.',
+                      actionLabel: 'Add all available',
                       onAction: widget.onAcceptAllStarts,
                     ),
                     _TaskTileColumn(
+                      dayKeyUtc: widget.dayKeyUtc,
                       tasks: startsVisible,
                       selected: widget.selected,
                       reasonTextByTaskId: const <String, String>{},
+                      enableSnooze: true,
                     ),
                     if (startsHasMore)
                       _ShowMoreRow(
@@ -399,7 +432,7 @@ class _RitualCardState extends State<_RitualCard> {
                         remainingCount: starts.length - startsVisible.length,
                         totalCount: starts.length,
                         labelExpanded: 'Show fewer',
-                        labelCollapsed: 'Show all starts',
+                        labelCollapsed: 'Show all available',
                         onPressed: () =>
                             setState(() => _startsExpanded = !_startsExpanded),
                       ),
@@ -433,9 +466,11 @@ class _RitualCardState extends State<_RitualCard> {
               Column(
                 children: [
                   _TaskTileColumn(
+                    dayKeyUtc: widget.dayKeyUtc,
                     tasks: curatedVisible,
                     selected: widget.selected,
                     reasonTextByTaskId: widget.curatedReasons,
+                    enableSnooze: false,
                   ),
                   if (curatedHasMore)
                     _ShowMoreRow(
@@ -466,12 +501,14 @@ class _SubsectionHeader extends StatelessWidget {
   const _SubsectionHeader({
     required this.title,
     required this.count,
+    this.subtitle,
     this.actionLabel,
     this.onAction,
   });
 
   final String title;
   final int count;
+  final String? subtitle;
   final String? actionLabel;
   final VoidCallback? onAction;
 
@@ -480,27 +517,41 @@ class _SubsectionHeader extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              '$title · $count',
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          if (actionLabel != null && onAction != null)
-            TextButton(
-              onPressed: onAction,
-              child: Text(
-                actionLabel!,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '$title · $count',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
+              if (actionLabel != null && onAction != null)
+                TextButton(
+                  onPressed: onAction,
+                  child: Text(
+                    actionLabel!,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              subtitle!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
+          ],
         ],
       ),
     );
@@ -778,14 +829,18 @@ class _FocusModeHelperLine extends StatelessWidget {
 
 class _TaskTileColumn extends StatelessWidget {
   const _TaskTileColumn({
+    required this.dayKeyUtc,
     required this.tasks,
     required this.selected,
     required this.reasonTextByTaskId,
+    required this.enableSnooze,
   });
 
+  final DateTime dayKeyUtc;
   final List<Task> tasks;
   final Set<String> selected;
   final Map<String, String> reasonTextByTaskId;
+  final bool enableSnooze;
 
   @override
   Widget build(BuildContext context) {
@@ -793,9 +848,11 @@ class _TaskTileColumn extends StatelessWidget {
       children: [
         for (final task in tasks)
           _TaskTileRow(
+            dayKeyUtc: dayKeyUtc,
             task: task,
             selected: selected.contains(task.id),
             reasonText: reasonTextByTaskId[task.id],
+            enableSnooze: enableSnooze,
           ),
       ],
     );
@@ -848,14 +905,18 @@ class _ShowMoreRow extends StatelessWidget {
 
 class _TaskTileRow extends StatelessWidget {
   const _TaskTileRow({
+    required this.dayKeyUtc,
     required this.task,
     required this.selected,
     required this.reasonText,
+    required this.enableSnooze,
   });
 
+  final DateTime dayKeyUtc;
   final Task task;
   final bool selected;
   final String? reasonText;
+  final bool enableSnooze;
 
   @override
   Widget build(BuildContext context) {
@@ -872,6 +933,13 @@ class _TaskTileRow extends StatelessWidget {
       selected: selected,
       reasonText: reasonText,
       onToggleSelected: () => _toggleSelection(context),
+      onSnoozeRequested: !enableSnooze
+          ? null
+          : () => _showSnoozeSheet(
+              context,
+              dayKeyUtc: dayKeyUtc,
+              task: task,
+            ),
     );
   }
 
@@ -880,6 +948,134 @@ class _TaskTileRow extends StatelessWidget {
       MyDayRitualToggleTask(
         task.id,
         selected: !selected,
+      ),
+    );
+  }
+
+  Future<void> _showSnoozeSheet(
+    BuildContext context, {
+    required DateTime dayKeyUtc,
+    required Task task,
+  }) async {
+    final today = dateOnly(dayKeyUtc);
+    final tomorrow = today.add(const Duration(days: 1));
+    final nextWeek = today.add(const Duration(days: 7));
+
+    final parentContext = context;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Snooze'),
+                subtitle: const Text('Set a new start date (availability).'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.today),
+                title: const Text('Tomorrow'),
+                onTap: () async {
+                  await _confirmAndDispatchSnooze(
+                    parentContext,
+                    sheetContext,
+                    task: task,
+                    newStartDate: tomorrow,
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.date_range),
+                title: const Text('Next week'),
+                onTap: () async {
+                  await _confirmAndDispatchSnooze(
+                    parentContext,
+                    sheetContext,
+                    task: task,
+                    newStartDate: nextWeek,
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.event),
+                title: const Text('Pick date…'),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: sheetContext,
+                    initialDate: tomorrow,
+                    firstDate: tomorrow,
+                    lastDate: today.add(const Duration(days: 365 * 5)),
+                  );
+                  if (picked == null) return;
+                  if (!sheetContext.mounted || !parentContext.mounted) return;
+                  await _confirmAndDispatchSnooze(
+                    parentContext,
+                    sheetContext,
+                    task: task,
+                    newStartDate: dateOnly(picked),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmAndDispatchSnooze(
+    BuildContext parentContext,
+    BuildContext sheetContext, {
+    required Task task,
+    required DateTime newStartDate,
+  }) async {
+    final bloc = parentContext.read<MyDayRitualBloc>();
+    final navigator = Navigator.of(sheetContext);
+    final deadline = dateOnlyOrNull(task.deadlineDate);
+
+    if (deadline != null && newStartDate.isAfter(deadline)) {
+      final localizations = MaterialLocalizations.of(sheetContext);
+      final confirm = await showDialog<bool>(
+        context: sheetContext,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('Snooze past due date?'),
+            content: Text(
+              'This task is due on ${localizations.formatMediumDate(deadline)}. '
+              'Snoozing to ${localizations.formatMediumDate(newStartDate)} '
+              'keeps the due date the same.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Snooze anyway'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirm != true) return;
+    }
+
+    if (!navigator.mounted) return;
+
+    if (navigator.canPop()) {
+      navigator.pop();
+    }
+
+    bloc.add(
+      MyDayRitualSnoozeTaskRequested(
+        taskId: task.id,
+        newStartDate: newStartDate,
       ),
     );
   }

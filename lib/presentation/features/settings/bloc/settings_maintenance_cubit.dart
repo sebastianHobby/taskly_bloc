@@ -1,5 +1,4 @@
 import 'package:bloc/bloc.dart';
-import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/services.dart';
 
 enum SettingsMaintenanceAction {
@@ -48,13 +47,10 @@ final class SettingsMaintenanceState {
 class SettingsMaintenanceCubit extends Cubit<SettingsMaintenanceState> {
   SettingsMaintenanceCubit({
     required TemplateDataService templateDataService,
-    required AllocationSnapshotCoordinator allocationSnapshotCoordinator,
   }) : _templateDataService = templateDataService,
-       _allocationSnapshotCoordinator = allocationSnapshotCoordinator,
        super(SettingsMaintenanceState.idle());
 
   final TemplateDataService _templateDataService;
-  final AllocationSnapshotCoordinator _allocationSnapshotCoordinator;
 
   Future<void> generateTemplateData() async {
     emit(
@@ -67,9 +63,6 @@ class SettingsMaintenanceCubit extends Cubit<SettingsMaintenanceState> {
 
     try {
       await _templateDataService.resetAndSeed();
-      _allocationSnapshotCoordinator.requestRefreshNow(
-        AllocationSnapshotRefreshReason.manual,
-      );
 
       emit(
         const SettingsMaintenanceState(

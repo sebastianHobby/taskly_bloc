@@ -77,9 +77,6 @@ Future<void> setupDependencies() async {
     ..registerSingleton<SettingsRepositoryContract>(
       getIt<TasklyDataBindings>().settingsRepository,
     )
-    ..registerSingleton<AllocationSnapshotRepositoryContract>(
-      getIt<TasklyDataBindings>().allocationSnapshotRepository,
-    )
     ..registerSingleton<attention_repo_v2.AttentionRepositoryContract>(
       getIt<TasklyDataBindings>().attentionRepository,
     )
@@ -112,15 +109,6 @@ Future<void> setupDependencies() async {
         clock: getIt<Clock>(),
       ),
     )
-    ..registerLazySingleton<TodayProgressService>(
-      () => TodayProgressService(
-        allocationSnapshotRepository:
-            getIt<AllocationSnapshotRepositoryContract>(),
-        taskRepository: getIt<TaskRepositoryContract>(),
-        dayKeyService: getIt<HomeDayKeyService>(),
-        temporalTriggerService: getIt<TemporalTriggerService>(),
-      ),
-    )
     ..registerLazySingleton<AttentionTemporalInvalidationService>(
       () => AttentionTemporalInvalidationService(
         temporalTriggerService: getIt<TemporalTriggerService>(),
@@ -133,16 +121,8 @@ Future<void> setupDependencies() async {
         settingsRepository: getIt<SettingsRepositoryContract>(),
         analyticsService: getIt<AnalyticsService>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
-        allocationSnapshotRepository:
-            getIt<AllocationSnapshotRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         clock: getIt<Clock>(),
-      ),
-    )
-    ..registerLazySingleton<AllocationSnapshotCoordinator>(
-      () => AllocationSnapshotCoordinator(
-        allocationOrchestrator: getIt<AllocationOrchestrator>(),
-        temporalTriggerService: getIt<TemporalTriggerService>(),
       ),
     )
     ..registerLazySingleton<OccurrenceCommandService>(
@@ -176,10 +156,6 @@ Future<void> setupDependencies() async {
             getIt<attention_repo_v2.AttentionRepositoryContract>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
-        allocationSnapshotRepository:
-            getIt<AllocationSnapshotRepositoryContract>(),
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-        dayKeyService: getIt<HomeDayKeyService>(),
         invalidations:
             getIt<AttentionTemporalInvalidationService>().invalidations,
         clock: getIt<Clock>(),
@@ -201,9 +177,6 @@ Future<void> setupDependencies() async {
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-        allocationSnapshotRepository:
-            getIt<AllocationSnapshotRepositoryContract>(),
       ),
     )
     ..registerLazySingleton<AuthenticatedAppServicesCoordinator>(
@@ -215,7 +188,6 @@ Future<void> setupDependencies() async {
         attentionTemporalInvalidationService:
             getIt<AttentionTemporalInvalidationService>(),
         attentionPrewarmService: getIt<AttentionPrewarmService>(),
-        allocationSnapshotCoordinator: getIt<AllocationSnapshotCoordinator>(),
       ),
     )
     // Presentation BLoCs/Cubits
@@ -260,8 +232,6 @@ Future<void> setupDependencies() async {
     )
     ..registerFactory<MyDayBloc>(
       () => MyDayBloc(
-        allocationSnapshotRepository:
-            getIt<AllocationSnapshotRepositoryContract>(),
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
@@ -287,7 +257,6 @@ Future<void> setupDependencies() async {
     ..registerFactory<SettingsMaintenanceCubit>(
       () => SettingsMaintenanceCubit(
         templateDataService: getIt<TemplateDataService>(),
-        allocationSnapshotCoordinator: getIt<AllocationSnapshotCoordinator>(),
       ),
     );
 }

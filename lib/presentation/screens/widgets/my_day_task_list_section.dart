@@ -253,28 +253,24 @@ class _MyDayTaskListSectionState extends State<MyDayTaskListSection> {
 
               return TaskEntityTile(
                 model: model,
-                onTap: model.onTap,
-                badges: [
-                  if (task.isPinned)
-                    const BadgeSpec(kind: BadgeKind.pinned, label: 'Pinned'),
-                ],
-                trailing: hasAnyEnabledAction
-                    ? TrailingSpec.overflowButton
-                    : TrailingSpec.none,
-                onToggleCompletion: buildTaskToggleCompletionHandler(
-                  context,
-                  task: task,
-                  tileCapabilities: tileCapabilities,
+                markers: TaskTileMarkers(pinned: task.isPinned),
+                actions: TaskTileActions(
+                  onTap: model.onTap,
+                  onToggleCompletion: buildTaskToggleCompletionHandler(
+                    context,
+                    task: task,
+                    tileCapabilities: tileCapabilities,
+                  ),
+                  onOverflowMenuRequestedAt: hasAnyEnabledAction
+                      ? (pos) => showTileOverflowMenu(
+                          context,
+                          position: pos,
+                          entityTypeLabel: 'task',
+                          entityId: task.id,
+                          actions: overflowActions,
+                        )
+                      : null,
                 ),
-                onOverflowRequestedAt: hasAnyEnabledAction
-                    ? (pos) => showTileOverflowMenu(
-                        context,
-                        position: pos,
-                        entityTypeLabel: 'task',
-                        entityId: task.id,
-                        actions: overflowActions,
-                      )
-                    : null,
               );
             },
           );

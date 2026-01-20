@@ -22,13 +22,14 @@ class FormDateChip extends StatelessWidget {
 
   /// Creates a start date chip with default styling.
   const FormDateChip.startDate({
+    required String label,
     required DateTime? date,
     required VoidCallback onTap,
     VoidCallback? onClear,
     Key? key,
   }) : this(
          icon: Icons.calendar_today_rounded,
-         label: 'start date',
+         label: label,
          date: date,
          onTap: onTap,
          onClear: onClear,
@@ -37,13 +38,14 @@ class FormDateChip extends StatelessWidget {
 
   /// Creates a deadline date chip with overdue highlighting.
   const FormDateChip.deadline({
+    required String label,
     required DateTime? date,
     required VoidCallback onTap,
     VoidCallback? onClear,
     Key? key,
   }) : this(
          icon: Icons.flag_rounded,
-         label: 'deadline',
+         label: label,
          date: date,
          onTap: onTap,
          isDeadline: true,
@@ -54,7 +56,7 @@ class FormDateChip extends StatelessWidget {
   /// The icon to display.
   final IconData icon;
 
-  /// The label shown when no date is set (e.g., "Add start date").
+  /// The label shown when no date is set (e.g., "Add planned day").
   final String label;
 
   /// The current date value, or null if not set.
@@ -139,7 +141,7 @@ class FormDateChip extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                hasDate ? formatDate(date!) : 'Add $label',
+                hasDate ? formatDate(date!) : label,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: contentColor,
                   fontWeight: hasDate ? FontWeight.w500 : FontWeight.normal,

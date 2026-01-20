@@ -116,7 +116,7 @@ Attention is consumed by presentation-layer BLoCs, which subscribe to
 │  │  │  switch (rule.ruleType) {                                          │  │ │
 │  │  │    problem           → _evaluateProblemRule()                      │  │ │
 │  │  │    review            → _evaluateReviewRule()                       │  │ │
-│  │  │    allocationWarning → _evaluateAllocationRule()                   │  │ │
+│  │  │    workflowStep      → [] (not implemented)                        │  │ │
 │  │  │    workflowStep      → [] (not implemented)                        │  │ │
 │  │  │  }                                                                  │  │ │
 │  │  └─────────────────────────────────────────────────────────────────────┘  │ │
@@ -195,7 +195,7 @@ attention_rules
   - rule_key
   - domain
   - category
-  - rule_type (problem/review/workflowStep/allocationWarning)
+  - rule_type (problem/review/workflowStep)
   - trigger_type (realtime/scheduled)
   - trigger_config (json)
   - entity_selector (json)
@@ -238,7 +238,7 @@ attention_rule_runtime_state
 
 `AttentionRule` describes **what** to detect and **how** to present it.
 
-- `ruleType` is the high-level category (problem/review/allocationWarning/...)
+- `ruleType` is the high-level category (problem/review/...)
 - `entitySelector` identifies the target domain entities and predicate (e.g.
   `{"entity_type": "task", "predicate": "isOverdue"}`)
 - `triggerType`/`triggerConfig` describes cadence/thresholds
@@ -481,7 +481,6 @@ AttentionEngine._evaluateRule(rule, ...)
     └── switch (rule.ruleType) {
             problem           → _evaluateProblemRule()
             review            → _evaluateReviewRule()
-            allocationWarning → _evaluateAllocationRule()
             workflowStep      → [] (not implemented)
         }
 ```
@@ -508,4 +507,4 @@ refresh.
 
 ---
 
-See also: [doc/architecture/ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md) for allocation snapshot behavior and how allocation feeds the `allocationAlerts` section.
+See also: [doc/architecture/ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md) for how allocation suggestions integrate with My Day.

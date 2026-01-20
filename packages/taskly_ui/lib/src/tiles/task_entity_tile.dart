@@ -1,58 +1,101 @@
 import 'package:flutter/material.dart';
 
-import 'package:taskly_ui/src/catalog/taskly_catalog_types.dart';
+import 'package:taskly_ui/src/tiles/entity_tile_intents.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 import 'package:taskly_ui/src/tiles/task_list_row_tile.dart';
 
 class TaskEntityTile extends StatelessWidget {
   const TaskEntityTile({
     required this.model,
-    this.variant = TileVariant.standard,
-    this.badges = const [],
-    this.trailing = TrailingSpec.none,
-    this.onTap,
-    this.onToggleCompletion,
-    this.subtitle,
-    this.onOverflowRequestedAt,
+    required this.actions,
+    this.intent = const TaskTileIntent.standardList(),
+    this.markers = const TaskTileMarkers(),
+    this.supportingText,
     super.key,
   });
 
   final TaskTileModel model;
-  final TileVariant variant;
 
-  final List<BadgeSpec> badges;
-  final TrailingSpec trailing;
+  final TaskTileIntent intent;
+  final TaskTileMarkers markers;
+  final TaskTileActions actions;
 
-  final VoidCallback? onTap;
-  final ValueChanged<bool?>? onToggleCompletion;
-
-  /// Optional widget shown between title and meta line.
-  ///
-  /// When null, no subtitle is rendered.
-  final Widget? subtitle;
-
-  /// Called when the overflow button is pressed.
-  ///
-  /// The [Offset] is the global position of the tap.
-  final ValueChanged<Offset>? onOverflowRequestedAt;
+  /// Optional supporting text shown between title and meta line.
+  final String? supportingText;
 
   @override
   Widget build(BuildContext context) {
-    final bool pinned = badges.any((b) => b.kind == BadgeKind.pinned);
-    final Widget? titlePrefix = pinned ? const _PinnedGlyph() : null;
+    final Widget? titlePrefix = markers.pinned ? const _PinnedGlyph() : null;
 
-    return TaskListRowTile(
-      model: model,
-      onTap: onTap ?? model.onTap,
-      onToggleCompletion: onToggleCompletion,
-      subtitle: subtitle,
-      titlePrefix: titlePrefix,
-      trailing: _TrailingOverflowButton(
-        trailing: trailing,
-        onOverflowRequestedAt: onOverflowRequestedAt,
+    final effectiveSupportingText = supportingText;
+    final Widget? footer =
+        (effectiveSupportingText == null ||
+            effectiveSupportingText.trim().isEmpty)
+        ? null
+        : Text(
+            _capWithEllipsis(effectiveSupportingText.trim(), 20),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+          );
+
+    return switch (intent) {
+      TaskTileIntentSelection(:final selected) => TaskListRowTile(
+        model: model,
+        onTap: actions.onToggleSelected ?? actions.onTap,
+        onToggleCompletion: null,
+        subtitle: null,
+        titlePrefix: titlePrefix,
+        footer: footer,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (actions.onSnoozeRequested != null)
+              IconButton(
+                tooltip: 'Snooze',
+                onPressed: actions.onSnoozeRequested,
+                style: IconButton.styleFrom(
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size(40, 40),
+                  padding: const EdgeInsets.all(8),
+                ),
+                icon: Icon(
+                  Icons.snooze,
+                  size: 20,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.85),
+                ),
+              ),
+            _SelectPill(
+              selected: selected,
+              onPressed: actions.onToggleSelected ?? actions.onTap,
+            ),
+          ],
+        ),
       ),
-    );
+      _ => TaskListRowTile(
+        model: model,
+        onTap: actions.onTap,
+        onToggleCompletion: actions.onToggleCompletion,
+        subtitle: null,
+        titlePrefix: titlePrefix,
+        footer: footer,
+        trailing: _TrailingOverflowButton(
+          onOverflowMenuRequestedAt: actions.onOverflowMenuRequestedAt,
+        ),
+      ),
+    };
   }
+}
+
+String _capWithEllipsis(String text, int maxChars) {
+  if (maxChars <= 0) return '…';
+  if (text.length <= maxChars) return text;
+  return '${text.substring(0, maxChars)}…';
 }
 
 class _PinnedGlyph extends StatelessWidget {
@@ -81,27 +124,71 @@ class _PinnedGlyph extends StatelessWidget {
 
 class _TrailingOverflowButton extends StatelessWidget {
   const _TrailingOverflowButton({
-    required this.trailing,
-    required this.onOverflowRequestedAt,
+    required this.onOverflowMenuRequestedAt,
   });
 
-  final TrailingSpec trailing;
-  final ValueChanged<Offset>? onOverflowRequestedAt;
+  final ValueChanged<Offset>? onOverflowMenuRequestedAt;
 
   @override
   Widget build(BuildContext context) {
-    if (trailing != TrailingSpec.overflowButton) return const SizedBox.shrink();
-    if (onOverflowRequestedAt == null) return const SizedBox.shrink();
+    if (onOverflowMenuRequestedAt == null) return const SizedBox.shrink();
 
     final scheme = Theme.of(context).colorScheme;
     final iconColor = scheme.onSurfaceVariant.withValues(alpha: 0.85);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapDown: (details) => onOverflowRequestedAt!(details.globalPosition),
+      onTapDown: (details) =>
+          onOverflowMenuRequestedAt!(details.globalPosition),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         child: Icon(Icons.more_horiz, size: 20, color: iconColor),
+      ),
+    );
+  }
+}
+
+class _SelectPill extends StatelessWidget {
+  const _SelectPill({
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final bool selected;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    final label = selected ? 'Added' : 'Add';
+
+    final background = selected
+        ? scheme.surfaceContainerLow
+        : scheme.surfaceContainerHighest;
+
+    final foreground = scheme.onSurfaceVariant;
+
+    final border = selected ? Border.all(color: scheme.outlineVariant) : null;
+
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 64),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(999),
+          border: border,
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: foreground,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
     );
   }

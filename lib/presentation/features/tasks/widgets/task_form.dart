@@ -442,6 +442,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                       name: TaskFieldKeys.startDate.id,
                       builder: (field) {
                         return FormDateChip.startDate(
+                          label: context.l10n.dateChipAddPlannedDay,
                           date: field.value,
                           onTap: () => _showDatePicker(
                             context,
@@ -459,6 +460,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                       name: TaskFieldKeys.deadlineDate.id,
                       builder: (field) {
                         return FormDateChip.deadline(
+                          label: context.l10n.dateChipAddDueDate,
                           date: field.value,
                           onTap: () => _showDatePicker(
                             context,

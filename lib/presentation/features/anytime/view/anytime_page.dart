@@ -13,7 +13,6 @@ import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
-import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_entities.dart';
@@ -38,8 +37,7 @@ class AnytimePage extends StatelessWidget {
         BlocProvider(
           create: (_) => AnytimeFeedBloc(
             taskRepository: getIt<TaskRepositoryContract>(),
-            allocationSnapshotRepository:
-                getIt<AllocationSnapshotRepositoryContract>(),
+            settingsRepository: getIt<SettingsRepositoryContract>(),
             dayKeyService: getIt<HomeDayKeyService>(),
             temporalTriggerService: getIt<TemporalTriggerService>(),
             scope: scope,
@@ -267,28 +265,24 @@ List<TasklyStandardTileListRowModel> _buildStandardRows(
               depth: row.depth,
               entityId: task.id,
               model: model,
-              onTap: model.onTap,
-              badges: [
-                if (task.isPinned)
-                  const BadgeSpec(kind: BadgeKind.pinned, label: 'Pinned'),
-              ],
-              trailing: hasAnyEnabledAction
-                  ? TrailingSpec.overflowButton
-                  : TrailingSpec.none,
-              onToggleCompletion: buildTaskToggleCompletionHandler(
-                context,
-                task: task,
-                tileCapabilities: tileCapabilities,
+              markers: TaskTileMarkers(pinned: task.isPinned),
+              actions: TaskTileActions(
+                onTap: model.onTap,
+                onToggleCompletion: buildTaskToggleCompletionHandler(
+                  context,
+                  task: task,
+                  tileCapabilities: tileCapabilities,
+                ),
+                onOverflowMenuRequestedAt: hasAnyEnabledAction
+                    ? (pos) => showTileOverflowMenu(
+                        context,
+                        position: pos,
+                        entityTypeLabel: 'task',
+                        entityId: task.id,
+                        actions: overflowActions,
+                      )
+                    : null,
               ),
-              onOverflowRequestedAt: hasAnyEnabledAction
-                  ? (pos) => showTileOverflowMenu(
-                      context,
-                      position: pos,
-                      entityTypeLabel: 'task',
-                      entityId: task.id,
-                      actions: overflowActions,
-                    )
-                  : null,
             );
           }(),
           _ => null,

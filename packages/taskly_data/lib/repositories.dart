@@ -14,8 +14,6 @@ export 'src/repositories/value_repository.dart';
 
 export 'src/repositories/query_stream_cache.dart';
 export 'src/repositories/repository_helpers.dart';
-
-export 'src/allocation/repositories/allocation_snapshot_repository.dart';
 export 'src/attention/repositories/attention_repository_v2.dart';
 
 export 'src/features/analytics/repositories/analytics_repository_impl.dart';

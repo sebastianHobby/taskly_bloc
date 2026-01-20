@@ -20,6 +20,7 @@ class AttentionSeeder {
     required IdGenerator idGenerator,
   }) : _db = db,
        _idGenerator = idGenerator;
+  static const String attentionRulesDomain = 'attention';
   final AppDatabase _db;
   final IdGenerator _idGenerator;
 
@@ -70,6 +71,7 @@ class AttentionSeeder {
             severity: _mapSeverity(template.severity),
             displayConfig: template.displayConfig,
             resolutionActions: template.resolutionActions,
+            domain: const Value(attentionRulesDomain),
             source: const Value(EntitySource.system_template),
           ),
           mode: InsertMode.insertOrIgnore, // Skip if already exists

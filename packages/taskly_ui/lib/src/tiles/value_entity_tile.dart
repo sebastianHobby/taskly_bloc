@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:taskly_ui/src/catalog/taskly_catalog_types.dart';
+import 'package:taskly_ui/src/tiles/entity_tile_intents.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 
 /// Canonical Value ("My Values") entity tile.
@@ -10,39 +10,26 @@ import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 class ValueEntityTile extends StatelessWidget {
   const ValueEntityTile({
     required this.model,
-    this.variant = ValueTileVariant.standard,
-    this.trailing = TrailingSpec.none,
-    this.onTap,
-    this.onOverflowRequestedAt,
+    this.intent = const ValueTileIntent.standardList(),
+    this.actions = const ValueTileActions(),
     super.key,
   });
 
   final ValueTileModel model;
-  final ValueTileVariant variant;
 
-  final TrailingSpec trailing;
-
-  final VoidCallback? onTap;
-
-  /// Called when the overflow button is pressed.
-  ///
-  /// The [Offset] is the global position of the tap.
-  final ValueChanged<Offset>? onOverflowRequestedAt;
+  final ValueTileIntent intent;
+  final ValueTileActions actions;
 
   @override
   Widget build(BuildContext context) {
-    return switch (variant) {
-      ValueTileVariant.standard => _StandardListRow(
+    return switch (intent) {
+      ValueTileIntentMyValuesCardV1() => _MyValuesCardV1(
         model: model,
-        trailing: trailing,
-        onTap: onTap,
-        onOverflowRequestedAt: onOverflowRequestedAt,
+        actions: actions,
       ),
-      ValueTileVariant.myValuesCardV1 => _MyValuesCardV1(
+      _ => _StandardListRow(
         model: model,
-        trailing: trailing,
-        onTap: onTap,
-        onOverflowRequestedAt: onOverflowRequestedAt,
+        actions: actions,
       ),
     };
   }
@@ -51,16 +38,11 @@ class ValueEntityTile extends StatelessWidget {
 class _StandardListRow extends StatelessWidget {
   const _StandardListRow({
     required this.model,
-    required this.trailing,
-    required this.onTap,
-    required this.onOverflowRequestedAt,
+    required this.actions,
   });
 
   final ValueTileModel model;
-  final TrailingSpec trailing;
-
-  final VoidCallback? onTap;
-  final ValueChanged<Offset>? onOverflowRequestedAt;
+  final ValueTileActions actions;
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +61,7 @@ class _StandardListRow extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: onTap,
+        onTap: actions.onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
@@ -104,16 +86,15 @@ class _StandardListRow extends StatelessWidget {
               const SizedBox(width: 8),
               SizedBox(
                 width: 56,
-                child: Align(
-                  alignment: Alignment.topRight,
-                  child:
-                      trailing == TrailingSpec.overflowButton &&
-                          onOverflowRequestedAt != null
-                      ? _TrailingOverflowButton(
-                          onOverflowRequestedAt: onOverflowRequestedAt!,
-                        )
-                      : const SizedBox.shrink(),
-                ),
+                child: actions.onOverflowMenuRequestedAt == null
+                    ? const SizedBox.shrink()
+                    : Align(
+                        alignment: Alignment.topRight,
+                        child: _TrailingOverflowButton(
+                          onOverflowRequestedAt:
+                              actions.onOverflowMenuRequestedAt!,
+                        ),
+                      ),
               ),
             ],
           ),
@@ -126,16 +107,11 @@ class _StandardListRow extends StatelessWidget {
 class _MyValuesCardV1 extends StatelessWidget {
   const _MyValuesCardV1({
     required this.model,
-    required this.trailing,
-    required this.onTap,
-    required this.onOverflowRequestedAt,
+    required this.actions,
   });
 
   final ValueTileModel model;
-  final TrailingSpec trailing;
-
-  final VoidCallback? onTap;
-  final ValueChanged<Offset>? onOverflowRequestedAt;
+  final ValueTileActions actions;
 
   bool get _hasStatsLines =>
       model.firstLineLabel != null &&
@@ -157,7 +133,7 @@ class _MyValuesCardV1 extends StatelessWidget {
         side: BorderSide(color: scheme.outlineVariant.withOpacity(0.6)),
       ),
       child: InkWell(
-        onTap: onTap,
+        onTap: actions.onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -185,10 +161,10 @@ class _MyValuesCardV1 extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (trailing == TrailingSpec.overflowButton &&
-                            onOverflowRequestedAt != null)
+                        if (actions.onOverflowMenuRequestedAt != null)
                           _TrailingOverflowButton(
-                            onOverflowRequestedAt: onOverflowRequestedAt!,
+                            onOverflowRequestedAt:
+                                actions.onOverflowMenuRequestedAt!,
                           ),
                       ],
                     ),

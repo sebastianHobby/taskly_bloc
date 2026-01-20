@@ -235,7 +235,7 @@
     "@taskSortByName": {
         "description": "Opción de ordenación en la vista de tareas para ordenar por nombre"
     },
-    "taskSortByDeadline": "Ordenar por fecha límite",
+    "taskSortByDeadline": "Ordenar por fecha de entrega",
     "@taskSortByDeadline": {
         "description": "Opción de ordenación en la vista de tareas para ordenar por fecha límite"
     },
@@ -267,11 +267,11 @@
     "@sortFieldNameLabel": {
         "description": "Etiqueta para el campo de orden por nombre"
     },
-    "sortFieldStartDateLabel": "Fecha de inicio",
+    "sortFieldStartDateLabel": "Día planificado",
     "@sortFieldStartDateLabel": {
         "description": "Etiqueta para el campo de orden por fecha de inicio"
     },
-    "sortFieldDeadlineDateLabel": "Fecha límite",
+    "sortFieldDeadlineDateLabel": "Fecha de entrega",
     "@sortFieldDeadlineDateLabel": {
         "description": "Etiqueta para el campo de orden por fecha límite"
     },
@@ -435,15 +435,15 @@
     "@projectFormDescriptionTooLong": {
         "description": "Error de validación mostrado cuando la descripción del proyecto es demasiado larga"
     },
-    "projectFormStartDateHint": "Fecha de inicio (opcional)",
+    "projectFormStartDateHint": "Día planificado",
     "@projectFormStartDateHint": {
         "description": "Texto de sugerencia para el campo opcional de fecha de inicio del proyecto"
     },
-    "projectFormDeadlineDateHint": "Fecha límite (opcional)",
+    "projectFormDeadlineDateHint": "Fecha de entrega",
     "@projectFormDeadlineDateHint": {
         "description": "Texto de sugerencia para el campo opcional de fecha límite del proyecto"
     },
-    "projectFormDeadlineAfterStartError": "La fecha límite debe ser posterior a la fecha de inicio",
+    "projectFormDeadlineAfterStartError": "La fecha de entrega debe ser posterior al día planificado",
     "@projectFormDeadlineAfterStartError": {
         "description": "Error de validación mostrado cuando la fecha límite es anterior a la fecha de inicio"
     },
@@ -515,11 +515,20 @@
     "@taskFormDescriptionHint": {
         "description": "Texto de sugerencia para el campo de descripción de tarea"
     },
-    "taskFormStartDateHint": "Fecha de inicio (opcional)",
+    "taskFormStartDateHint": "Día planificado",
     "@taskFormStartDateHint": {
         "description": "Texto de sugerencia para el campo de fecha de inicio de tarea"
     },
-    "taskFormDeadlineDateHint": "Fecha límite (opcional)",
+    "taskFormDeadlineDateHint": "Fecha de entrega",
+
+    "dateChipAddPlannedDay": "Añadir día planificado",
+    "@dateChipAddPlannedDay": {
+        "description": "Etiqueta mostrada en los chips de fecha cuando no se ha establecido el día planificado"
+    },
+    "dateChipAddDueDate": "Añadir fecha de entrega",
+    "@dateChipAddDueDate": {
+        "description": "Etiqueta mostrada en los chips de fecha cuando no se ha establecido la fecha de entrega"
+    },
     "@taskFormDeadlineDateHint": {
         "description": "Texto de sugerencia para el campo de fecha límite de tarea"
     },
@@ -551,7 +560,7 @@
     "@taskFormRepeatRuleTooLong": {
         "description": "Error de validación cuando la regla de repetición de la tarea es muy larga"
     },
-    "taskFormDeadlineAfterStartError": "La fecha límite debe ser posterior a la fecha de inicio",
+    "taskFormDeadlineAfterStartError": "La fecha de entrega debe ser posterior al día planificado",
     "@taskFormDeadlineAfterStartError": {
         "description": "Error de validación cuando la fecha límite es anterior a la fecha de inicio"
     },
@@ -1022,11 +1031,11 @@
     "@urgencyThresholdsSection": {
         "description": "Título de sección para configuración de umbrales de urgencia"
     },
-    "taskUrgencyDays": "Urgencia de tarea (días antes de la fecha límite)",
+    "taskUrgencyDays": "Urgencia de tarea (días antes de la fecha de entrega)",
     "@taskUrgencyDays": {
         "description": "Etiqueta para configuración de umbral de urgencia de tarea"
     },
-    "projectUrgencyDays": "Urgencia de proyecto (días antes de la fecha límite)",
+    "projectUrgencyDays": "Urgencia de proyecto (días antes de la fecha de entrega)",
     "@projectUrgencyDays": {
         "description": "Etiqueta para configuración de umbral de urgencia de proyecto"
     },

@@ -310,7 +310,7 @@ Implementation follow-ups to keep in mind:
 - Pagination convention: repositories expose “current window” streams; BLoC owns paging intents; widgets only provide scroll signals (no repo calls) (DEC-055A).
 - Bootstrap readiness/gating: `AppLifecycleBloc` gates app shell routes based on env/data/auth/maintenance readiness; screens assume dependencies are ready once routed (DEC-056A).
 
-- Refresh allocation wiring: My Day overflow action emits an intent; dispatcher routes to My Day BLoC; domain coordinator/use-case refreshes the allocation snapshot (DEC-057A).
+- Refresh allocation wiring: My Day overflow action emits an intent; dispatcher routes to My Day BLoC; the BLoC triggers a one-shot recomputation of allocation suggestions (no persistence) (DEC-057A).
 
 - Editor form framework + typing policy: standardize all editors on `flutter_form_builder`. Widgets own the `FormBuilder` state/key and field widgets, while the editor BLoC owns the entity subscription/snapshot, validation policy, and save/delete intents. The widget→BLoC boundary must use typed draft/value objects (no `Map<String, dynamic>` / stringly-typed field names crossing into BLoCs) (DEC-106A).
 
@@ -415,9 +415,9 @@ Implementation follow-ups to keep in mind:
 - Async state convention: sections emit `AsyncSectionState<T>`; screen templates decide whether loading/empty/error renders inline or escalates to screen-level gating (DEC-070C).
 - Selection convention: selection/multi-select state is screen-local in the screen BLoC (typed IDs), with platform-appropriate gestures; bulk actions are dispatched as intents via the central dispatcher (DEC-071A).
 
-- My Day row mapping (MVP): allocation snapshot is mapped into the shared `ListRowUiModel` union using explicit header rows + minimal hierarchy metadata (DEC-084A). The row model must support Project rows with Task rows underneath (hierarchy) as an expected near-future shape.
+- My Day row mapping (MVP): the ritual-selected tasks for the current home-day are mapped into the shared `ListRowUiModel` union using explicit header rows + minimal hierarchy metadata (DEC-084A). The row model must support Project rows with Task rows underneath (hierarchy) as an expected near-future shape.
 
-- My Day hierarchy + ordering (MVP): My Day renders a 3-level hierarchy: `ValueHeader` → `ProjectRow` → child `TaskRow`s. The `ValueHeader` must display the Value priority. Values are ordered by highest priority first (ties broken deterministically, e.g., by display name then ID). Within each value group, preserve the allocation snapshot’s provided deterministic ordering for projects and tasks (fallback to stable name/ID ordering only if snapshot ordering is unavailable) (DEC-110).
+- My Day hierarchy + ordering (MVP): My Day renders a 3-level hierarchy: `ValueHeader` → `ProjectRow` → child `TaskRow`s. The `ValueHeader` must display the Value priority. Values are ordered by highest priority first (ties broken deterministically, e.g., by display name then ID). Within each value group, preserve the ritual selection’s deterministic ordering (fallback to stable name/ID ordering only if no explicit order is recorded) (DEC-110).
 
 - My Day rowKey conventions (MVP): My Day `rowKey` includes the local day key plus hierarchy disambiguators to avoid collisions and stabilize per-day ephemeral UI state. Minimum disambiguators: ProjectRow includes `localDay` + `valueId` + project grouping ref key (`project:<id>` or `inbox`); TaskRow includes `localDay` + `valueId` + `taskId` (DEC-187A).
 
@@ -535,11 +535,11 @@ Acceptance criteria:
 
 Notes:
 - MVP semantics must be explicitly defined:
-  - My Day: allocation snapshot vs live allocation stream
+  - My Day: ritual selection vs live allocation suggestions
   - Scheduled: occurrences agenda vs tasks with date fields
 
 MVP semantics decisions (confirmed):
-- DEC-007C (My Day): Hybrid model. Snapshot is the primary surface; live signals may drive secondary UX (alerts/banners/refresh).
+- DEC-007C (My Day): Ritual selection is the primary surface for “today”; allocation produces suggestions that may assist selection, but does not persist snapshots.
 - DEC-008A (Scheduled): Occurrences agenda in a date range (RRULE expansion + exceptions).
 
 Day-1 auth/sync packaging decision (confirmed):

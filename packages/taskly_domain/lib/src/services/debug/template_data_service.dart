@@ -1,12 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_domain/src/allocation/contracts/allocation_snapshot_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
-import 'package:taskly_domain/src/interfaces/settings_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/value_repository_contract.dart';
-import 'package:taskly_domain/src/allocation/model/allocation_config.dart';
-import 'package:taskly_domain/src/allocation/model/focus_mode.dart';
-import 'package:taskly_domain/src/preferences/model/settings_key.dart';
 import 'package:taskly_domain/core/model/value_priority.dart';
 import 'package:taskly_domain/src/queries/project_query.dart';
 import 'package:taskly_domain/src/queries/task_query.dart';
@@ -183,21 +178,15 @@ class TemplateDataService {
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
-    required SettingsRepositoryContract settingsRepository,
-    required AllocationSnapshotRepositoryContract allocationSnapshotRepository,
     Clock clock = systemClock,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
-       _settingsRepository = settingsRepository,
-       _allocationSnapshotRepository = allocationSnapshotRepository,
        _clock = clock;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
-  final SettingsRepositoryContract _settingsRepository;
-  final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
   final Clock _clock;
 
   /// Deletes all user Tasks/Projects/Values and recreates template demo data.
@@ -209,10 +198,6 @@ class TemplateDataService {
     }
 
     // 1) Wipe existing entity data.
-    // Allocation snapshots are snapshot-first for My Day; clearing them ensures
-    // the allocator produces a fresh snapshot for the new demo dataset.
-    await _allocationSnapshotRepository.deleteAll();
-
     // Delete tasks first to avoid FK/join constraints.
     final tasks = await _taskRepository.getAll(TaskQuery.all());
     for (final task in tasks) {
@@ -229,18 +214,7 @@ class TemplateDataService {
       await _valueRepository.delete(value.id);
     }
 
-    // 2) Seed allocation settings for the demo.
-    const focusMode = FocusMode.sustainable;
-    await _settingsRepository.save(
-      SettingsKey.allocation,
-      AllocationConfig(
-        dailyLimit: 10,
-        focusMode: focusMode,
-        strategySettings: StrategySettings.forFocusMode(focusMode),
-      ),
-    );
-
-    // 3) Create Values (must exist or allocation soft-gates).
+    // 2) Create Values.
     const seeds = <_TemplateValueSeed>[
       _TemplateValueSeed(
         name: 'Life Admin',
@@ -348,7 +322,7 @@ class TemplateDataService {
 
     final projectIdByName = await _loadProjectIdByName();
 
-    // 5) Create Tasks.
+    // 4) Create Tasks.
     // Most tasks inherit their effective values from their project.
     // Only a few tasks explicitly override project values to demo that behavior.
 
@@ -515,7 +489,7 @@ class TemplateDataService {
       priority: 4,
     );
 
-    // 6) Pin only one task total to keep the demo focused.
+    // 5) Pin only one task total to keep the demo focused.
     await _pinTasksByName(pinnedTaskNames.take(1).toList());
   }
 

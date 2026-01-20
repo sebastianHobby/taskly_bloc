@@ -4,6 +4,11 @@
 Taskly balances meaning and urgency. Values guide direction; deadlines add
 constraints. The system must feel trustworthy and calm across all screens.
 
+Terminology:
+
+- **Planned day**: soft intent (“planned day to do it”)
+- **Due date**: hard constraint (“must finish by”)
+
 ## Core Principles
 - **Values-first guidance**: Values set direction; urgency nudges, not overrides.
 - **Trusted execution**: My Day is the focused action lens.
@@ -14,7 +19,7 @@ constraints. The system must feel trustworthy and calm across all screens.
 ## Screen Intent
 - **My Day**: Execution surface. Focus mode is allowed here only.
 - **Anytime**: Values-led planning and backlog view.
-- **Scheduled**: Deadline-led commitments view.
+- **Scheduled**: Due-date-led commitments view.
 
 ## Visual Hierarchy
 - **Values**

@@ -7,17 +7,10 @@ import 'package:taskly_domain/src/attention/model/attention_resolution.dart';
 import 'package:taskly_domain/src/attention/model/attention_rule.dart';
 import 'package:taskly_domain/src/attention/model/attention_rule_runtime_state.dart';
 import 'package:taskly_domain/src/attention/query/attention_query.dart';
-import 'package:taskly_domain/src/allocation/contracts/allocation_snapshot_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
-import 'package:taskly_domain/src/interfaces/settings_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
-import 'package:taskly_domain/src/allocation/model/allocation_snapshot.dart';
-import 'package:taskly_domain/src/preferences/model/settings_key.dart';
 import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/core/model/project.dart';
-import 'package:taskly_domain/src/allocation/engine/urgency_detector.dart';
-import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
-import 'package:taskly_domain/src/services/values/effective_values.dart';
 import 'package:taskly_domain/src/time/clock.dart';
 import 'package:uuid/uuid.dart';
 
@@ -31,26 +24,17 @@ class AttentionEngine implements AttentionEngineContract {
     required v2.AttentionRepositoryContract attentionRepository,
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
-    required AllocationSnapshotRepositoryContract allocationSnapshotRepository,
-    required SettingsRepositoryContract settingsRepository,
-    required HomeDayKeyService dayKeyService,
     required Stream<void> invalidations,
     Clock clock = systemClock,
   }) : _attentionRepository = attentionRepository,
        _taskRepository = taskRepository,
        _projectRepository = projectRepository,
-       _allocationSnapshotRepository = allocationSnapshotRepository,
-       _settingsRepository = settingsRepository,
-       _dayKeyService = dayKeyService,
        _clock = clock,
        _invalidations = invalidations;
 
   final v2.AttentionRepositoryContract _attentionRepository;
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
-  final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
-  final SettingsRepositoryContract _settingsRepository;
-  final HomeDayKeyService _dayKeyService;
   final Clock _clock;
   final Stream<void> _invalidations;
 
@@ -65,10 +49,6 @@ class AttentionEngine implements AttentionEngineContract {
       entityTypes: {AttentionEntityType.project},
       evaluate: _evaluateProjectPredicateV1,
     ),
-    'allocation_snapshot_task_v1': _EvaluatorSpec(
-      entityTypes: {AttentionEntityType.task},
-      evaluate: _evaluateAllocationSnapshotTaskV1,
-    ),
     'review_session_due_v1': _EvaluatorSpec(
       entityTypes: {AttentionEntityType.reviewSession},
       evaluate: _evaluateReviewSessionDueV1,
@@ -82,23 +62,6 @@ class AttentionEngine implements AttentionEngineContract {
         .map((_) => _clock.nowUtc().microsecondsSinceEpoch)
         .startWith(_clock.nowUtc().microsecondsSinceEpoch);
 
-    final dayUtc$ = pulse$
-        .map((_) => _dayKeyService.todayDayKeyUtc(nowUtc: _clock.nowUtc()))
-        .distinct((a, b) => a.isAtSameMomentAs(b));
-
-    final snapshot$ = dayUtc$.switchMap(
-      _allocationSnapshotRepository.watchLatestForUtcDay,
-    );
-
-    // Ensure pulses also cause re-evaluation even when snapshot/rules/tasks
-    // haven't changed.
-    final snapshotOrPulse$ =
-        Rx.combineLatest2<AllocationSnapshot?, int, AllocationSnapshot?>(
-          snapshot$,
-          pulse$,
-          (snapshot, _) => snapshot,
-        );
-
     final rules$ = _attentionRepository.watchActiveRules().map(
       (rules) => rules.where(query.matchesRule).toList(growable: false),
     );
@@ -107,23 +70,21 @@ class AttentionEngine implements AttentionEngineContract {
           List<AttentionRule>,
           List<Task>,
           List<Project>,
-          AllocationSnapshot?,
+          int,
           ({
             List<AttentionRule> rules,
             List<Task> tasks,
             List<Project> projects,
-            AllocationSnapshot? snapshot,
           })
         >(
           rules$,
           _taskRepository.watchAll(),
           _projectRepository.watchAll(),
-          snapshotOrPulse$,
-          (rules, tasks, projects, snapshot) => (
+          pulse$,
+          (rules, tasks, projects, _) => (
             rules: rules,
             tasks: tasks,
             projects: projects,
-            snapshot: snapshot,
           ),
         )
         .asyncMap((inputs) => _evaluate(query, inputs));
@@ -135,7 +96,6 @@ class AttentionEngine implements AttentionEngineContract {
       List<AttentionRule> rules,
       List<Task> tasks,
       List<Project> projects,
-      AllocationSnapshot? snapshot,
     })
     inputs,
   ) async {
@@ -162,7 +122,6 @@ class AttentionEngine implements AttentionEngineContract {
         (
           tasks: inputs.tasks,
           projects: inputs.projects,
-          snapshot: inputs.snapshot,
           now: now,
         ),
       );
@@ -355,70 +314,6 @@ class AttentionEngine implements AttentionEngineContract {
     return items;
   }
 
-  Future<List<_EvaluatedItem>> _evaluateAllocationSnapshotTaskV1(
-    AttentionRule rule,
-    _EvalInputs inputs,
-  ) async {
-    final snapshot = inputs.snapshot;
-    if (snapshot == null) return const <_EvaluatedItem>[];
-
-    final predicateRaw = rule.evaluatorParams['predicate'] as String?;
-    if (predicateRaw == null) return const <_EvaluatedItem>[];
-
-    // Back-compat: old predicate name before snapshot-based alerts.
-    final predicate = predicateRaw == 'excludedFromAllocation'
-        ? 'urgentValueless'
-        : predicateRaw;
-
-    final allocatedTaskIds = snapshot.allocated
-        .where((e) => e.entity.type == AllocationSnapshotEntityType.task)
-        .map((e) => e.entity.id)
-        .toSet();
-
-    final todayDayKeyUtc = _dayKeyService.todayDayKeyUtc(nowUtc: inputs.now);
-
-    final candidates = await _selectAllocationTaskCandidates(
-      inputs.tasks,
-      projects: inputs.projects,
-      predicate: predicate,
-      todayDayKeyUtc: todayDayKeyUtc,
-    );
-
-    final allocationVersion = snapshot.version;
-    final dayUtc = snapshot.dayUtc;
-    final now = inputs.now;
-
-    final items = <_EvaluatedItem>[];
-
-    for (final task in candidates) {
-      if (task.completed) continue;
-      if (allocatedTaskIds.contains(task.id)) continue;
-
-      final stateHash = _computeAllocationTaskStateHash(
-        task,
-        rule: rule,
-        predicate: predicate,
-        dayUtc: dayUtc,
-        allocationVersion: allocationVersion,
-      );
-
-      items.add(
-        _EvaluatedItem(
-          item: _createAllocationTaskItem(
-            rule,
-            task,
-            detectedAt: now,
-            dayUtc: dayUtc,
-            allocationVersion: allocationVersion,
-          ),
-          stateHash: stateHash,
-        ),
-      );
-    }
-
-    return items;
-  }
-
   Future<List<_EvaluatedItem>> _evaluateReviewSessionDueV1(
     AttentionRule rule,
     _EvalInputs inputs,
@@ -547,61 +442,6 @@ class AttentionEngine implements AttentionEngineContract {
   // ==========================================================================
 
   // ==========================================================================
-  // Allocation candidate selection
-  // ==========================================================================
-
-  Future<List<Task>> _selectAllocationTaskCandidates(
-    List<Task> tasks, {
-    required List<Project> projects,
-    required String predicate,
-    required DateTime todayDayKeyUtc,
-  }) async {
-    final allocationConfig = await _settingsRepository.load(
-      SettingsKey.allocation,
-    );
-    final urgencyDetector = UrgencyDetector.fromConfig(allocationConfig);
-
-    final projectById = {for (final p in projects) p.id: p};
-
-    return switch (predicate) {
-      'urgentValueless' =>
-        urgencyDetector
-            .findUrgentValuelessTasks(tasks, todayDayKeyUtc: todayDayKeyUtc)
-            .where((t) => !t.completed)
-            .toList(growable: false),
-      'urgentValueAligned' =>
-        tasks
-            .where(
-              (t) =>
-                  !t.completed &&
-                  urgencyDetector.isTaskUrgent(
-                    t,
-                    todayDayKeyUtc: todayDayKeyUtc,
-                  ) &&
-                  !t.isEffectivelyValueless,
-            )
-            .toList(growable: false),
-      'projectUrgentValueless' =>
-        tasks
-            .where((t) {
-              if (t.completed) return false;
-              if (!t.isEffectivelyValueless) return false;
-
-              final project =
-                  t.project ??
-                  (t.projectId == null ? null : projectById[t.projectId]);
-              if (project == null) return false;
-              return urgencyDetector.isProjectUrgent(
-                project,
-                todayDayKeyUtc: todayDayKeyUtc,
-              );
-            })
-            .toList(growable: false),
-      _ => const <Task>[],
-    };
-  }
-
-  // ==========================================================================
   // Item creators
   // ==========================================================================
 
@@ -692,31 +532,6 @@ class AttentionEngine implements AttentionEngineContract {
       'minUnscheduledCount=$minUnscheduledCount',
       ...unscheduledFingerprints.map((p) => 't=$p'),
     ]);
-  }
-
-  String _computeAllocationTaskStateHash(
-    Task task, {
-    required AttentionRule rule,
-    required String predicate,
-    required DateTime dayUtc,
-    required int allocationVersion,
-  }) {
-    final ruleFingerprint = _ruleFingerprint(rule, predicate: predicate);
-    final day = _dateOnlyUtc(dayUtc).toIso8601String();
-
-    return _stableFingerprint([
-      'entity=task',
-      'taskId=${task.id}',
-      'predicate=$predicate',
-      'rule=$ruleFingerprint',
-      'allocationDayUtc=$day',
-      'allocationVersion=$allocationVersion',
-    ]);
-  }
-
-  DateTime _dateOnlyUtc(DateTime utc) {
-    final asUtc = utc.toUtc();
-    return DateTime.utc(asUtc.year, asUtc.month, asUtc.day);
   }
 
   String _ruleFingerprint(AttentionRule rule, {required String predicate}) {
@@ -988,46 +803,6 @@ class AttentionEngine implements AttentionEngineContract {
     );
   }
 
-  AttentionItem _createAllocationTaskItem(
-    AttentionRule rule,
-    Task task, {
-    required DateTime detectedAt,
-    required DateTime dayUtc,
-    required int allocationVersion,
-  }) {
-    final displayConfig = rule.displayConfig;
-    return AttentionItem(
-      id: _uuid.v4(),
-      ruleId: rule.id,
-      ruleKey: rule.ruleKey,
-      bucket: rule.bucket,
-      entityId: task.id,
-      entityType: AttentionEntityType.task,
-      severity: rule.severity,
-      title: displayConfig['title'] as String? ?? 'Allocation Alert',
-      description: _formatTaskDescription(
-        displayConfig['description'] as String? ?? 'Task needs allocation',
-        task,
-      ),
-      availableActions: _parseResolutionActions(rule.resolutionActions),
-      detectedAt: detectedAt,
-      sortKey: _computeSortKey(
-        rule: rule,
-        entityType: AttentionEntityType.task,
-        entityId: task.id,
-        extra: allocationVersion.toString().padLeft(8, '0'),
-      ),
-      metadata: {
-        'entity_display_name': task.name,
-        'task_name': task.name,
-        'deadline_date': task.deadlineDate?.toIso8601String(),
-        'updated_at': task.updatedAt.toIso8601String(),
-        'allocation_day_utc': dayUtc.toIso8601String(),
-        'allocation_version': allocationVersion,
-      },
-    );
-  }
-
   String _computeReviewSessionStateHash({
     required AttentionRule rule,
     required int frequencyDays,
@@ -1074,7 +849,6 @@ class AttentionEngine implements AttentionEngineContract {
 typedef _EvalInputs = ({
   List<Task> tasks,
   List<Project> projects,
-  AllocationSnapshot? snapshot,
   DateTime now,
 });
 

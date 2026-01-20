@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/foundation.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -57,6 +58,16 @@ final class MyDayRitualConfirm extends MyDayRitualEvent {
   const MyDayRitualConfirm();
 }
 
+final class MyDayRitualSnoozeTaskRequested extends MyDayRitualEvent {
+  const MyDayRitualSnoozeTaskRequested({
+    required this.taskId,
+    required this.newStartDate,
+  });
+
+  final String taskId;
+  final DateTime newStartDate;
+}
+
 enum MyDayRitualAppendBucket {
   due,
   starts,
@@ -87,6 +98,7 @@ final class MyDayRitualReady extends MyDayRitualState {
   const MyDayRitualReady({
     required this.needsRitual,
     required this.focusMode,
+    required this.dueWindowDays,
     required this.planned,
     required this.curated,
     required this.curatedReasons,
@@ -98,6 +110,7 @@ final class MyDayRitualReady extends MyDayRitualState {
 
   final bool needsRitual;
   final FocusMode focusMode;
+  final int dueWindowDays;
   final List<Task> planned;
   final List<Task> curated;
   final Map<String, String> curatedReasons;
@@ -109,6 +122,7 @@ final class MyDayRitualReady extends MyDayRitualState {
   MyDayRitualReady copyWith({
     bool? needsRitual,
     FocusMode? focusMode,
+    int? dueWindowDays,
     List<Task>? planned,
     List<Task>? curated,
     Map<String, String>? curatedReasons,
@@ -120,6 +134,7 @@ final class MyDayRitualReady extends MyDayRitualState {
     return MyDayRitualReady(
       needsRitual: needsRitual ?? this.needsRitual,
       focusMode: focusMode ?? this.focusMode,
+      dueWindowDays: dueWindowDays ?? this.dueWindowDays,
       planned: planned ?? this.planned,
       curated: curated ?? this.curated,
       curatedReasons: curatedReasons ?? this.curatedReasons,
@@ -154,6 +169,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     on<MyDayRitualFocusModeChanged>(_onFocusModeChanged);
     on<MyDayRitualFocusModeWizardRequested>(_onFocusModeWizardRequested);
     on<MyDayRitualConfirm>(_onConfirm);
+    on<MyDayRitualSnoozeTaskRequested>(_onSnoozeTaskRequested);
     on<MyDayRitualAppendToToday>(_onAppendToToday);
     on<_MyDayRitualInputsChanged>(_onInputsChanged);
     add(const MyDayRitualStarted());
@@ -164,17 +180,21 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
   final TaskRepositoryContract _taskRepository;
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
 
   StreamSubscription? _allocationSub;
   StreamSubscription? _tasksSub;
   StreamSubscription? _settingsSub;
   StreamSubscription? _allocationConfigSub;
+  StreamSubscription? _globalSettingsSub;
   StreamSubscription? _daySub;
 
   AllocationResult? _allocationResult;
   List<Task> _tasks = const <Task>[];
   AllocationConfig _allocationConfig = const AllocationConfig();
   settings.MyDayRitualState _ritualState = const settings.MyDayRitualState();
+  settings.GlobalSettings _globalSettings = const settings.GlobalSettings();
   DateTime _dayKeyUtc;
 
   bool _hasUserSelection = false;
@@ -186,6 +206,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     await _tasksSub?.cancel();
     await _settingsSub?.cancel();
     await _allocationConfigSub?.cancel();
+    await _globalSettingsSub?.cancel();
     await _daySub?.cancel();
     return super.close();
   }
@@ -200,6 +221,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     await _tasksSub?.cancel();
     await _settingsSub?.cancel();
     await _allocationConfigSub?.cancel();
+    await _globalSettingsSub?.cancel();
     await _daySub?.cancel();
 
     _allocationSub = _allocationOrchestrator.watchAllocation().listen((result) {
@@ -225,6 +247,13 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         .watch<AllocationConfig>(SettingsKey.allocation)
         .listen((config) {
           _allocationConfig = config;
+          add(const _MyDayRitualInputsChanged());
+        });
+
+    _globalSettingsSub = _settingsRepository
+        .watch<settings.GlobalSettings>(SettingsKey.global)
+        .listen((settings) {
+          _globalSettings = settings;
           add(const _MyDayRitualInputsChanged());
         });
 
@@ -261,6 +290,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
       MyDayRitualReady(
         needsRitual: needsRitual,
         focusMode: _allocationConfig.focusMode,
+        dueWindowDays: _globalSettings.myDayDueWindowDays,
         planned: planned,
         curated: curated,
         curatedReasons: _buildCuratedReasonText(
@@ -329,10 +359,10 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     _hasUserSelection = true;
     final current = state as MyDayRitualReady;
     final today = dateOnly(current.dayKeyUtc);
+    final dueLimit = _dueLimit(today, current.dueWindowDays);
     final dueIds = current.planned
         .where((task) {
-          final deadline = _deadlineDateOnly(task);
-          return deadline != null && !deadline.isAfter(today);
+          return _isDueWithinWindow(task, dueLimit);
         })
         .map((task) => task.id)
         .toSet();
@@ -348,10 +378,12 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     _hasUserSelection = true;
     final current = state as MyDayRitualReady;
     final today = dateOnly(current.dayKeyUtc);
+    final dueLimit = _dueLimit(today, current.dueWindowDays);
     final startsIds = current.planned
         .where((task) {
-          final deadline = _deadlineDateOnly(task);
-          return deadline == null || deadline.isAfter(today);
+          final available = _isAvailableToStart(task, today);
+          if (!available) return false;
+          return !_isDueWithinWindow(task, dueLimit);
         })
         .map((task) => task.id)
         .toSet();
@@ -408,14 +440,17 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     }
 
     final today = dateOnly(current.dayKeyUtc);
+    final dueLimit = _dueLimit(today, current.dueWindowDays);
 
     final candidateDueOrdered = <String>[];
     final candidateStartsOrdered = <String>[];
     for (final task in planned) {
-      final deadline = _deadlineDateOnly(task);
-      if (deadline != null && !deadline.isAfter(today)) {
+      if (_isDueWithinWindow(task, dueLimit)) {
         candidateDueOrdered.add(task.id);
-      } else {
+        continue;
+      }
+
+      if (_isAvailableToStart(task, today)) {
         candidateStartsOrdered.add(task.id);
       }
     }
@@ -460,6 +495,51 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     );
 
     await _settingsRepository.save(SettingsKey.myDayRitual, updated);
+  }
+
+  Future<void> _onSnoozeTaskRequested(
+    MyDayRitualSnoozeTaskRequested event,
+    Emitter<MyDayRitualState> emit,
+  ) async {
+    final task = _tasks.cast<Task?>().firstWhere(
+      (t) => t?.id == event.taskId,
+      orElse: () => null,
+    );
+    if (task == null) return;
+
+    final valueIds = <String>[
+      if (task.overridePrimaryValueId != null) task.overridePrimaryValueId!,
+      if (task.overrideSecondaryValueId != null) task.overrideSecondaryValueId!,
+    ];
+
+    final context = _contextFactory.create(
+      feature: 'my_day',
+      screen: 'my_day_ritual',
+      intent: 'snooze_task',
+      operation: 'task.update',
+      entityType: 'task',
+      entityId: task.id,
+      extraFields: <String, Object?>{
+        'newStartDateUtc': encodeDateOnly(event.newStartDate),
+      },
+    );
+
+    await _taskRepository.update(
+      id: task.id,
+      name: task.name,
+      completed: task.completed,
+      description: task.description,
+      startDate: dateOnly(event.newStartDate),
+      deadlineDate: task.deadlineDate,
+      projectId: task.projectId,
+      priority: task.priority,
+      repeatIcalRrule: task.repeatIcalRrule,
+      repeatFromCompletion: task.repeatFromCompletion,
+      seriesEnded: task.seriesEnded,
+      valueIds: valueIds,
+      isPinned: task.isPinned,
+      context: context,
+    );
   }
 
   Future<void> _onAppendToToday(
@@ -510,7 +590,8 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
 
   List<Task> _buildPlanned(List<Task> tasks, DateTime dayKeyUtc) {
     final today = dateOnly(dayKeyUtc);
-    final dueSoonLimit = today.add(const Duration(days: 3));
+    final dueWindowDays = _globalSettings.myDayDueWindowDays;
+    final dueSoonLimit = today.add(Duration(days: dueWindowDays - 1));
 
     bool isPlanned(Task task) {
       if (_isCompleted(task)) return false;
@@ -529,6 +610,26 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
   DateTime? _deadlineDateOnly(Task task) {
     final raw = task.occurrence?.deadline ?? task.deadlineDate;
     return dateOnlyOrNull(raw);
+  }
+
+  DateTime? _startDateOnly(Task task) {
+    final raw = task.occurrence?.date ?? task.startDate;
+    return dateOnlyOrNull(raw);
+  }
+
+  bool _isAvailableToStart(Task task, DateTime today) {
+    final start = _startDateOnly(task);
+    return start != null && !start.isAfter(today);
+  }
+
+  bool _isDueWithinWindow(Task task, DateTime dueLimit) {
+    final deadline = _deadlineDateOnly(task);
+    return deadline != null && !deadline.isAfter(dueLimit);
+  }
+
+  DateTime _dueLimit(DateTime today, int dueWindowDays) {
+    final days = dueWindowDays.clamp(1, 30);
+    return today.add(Duration(days: days - 1));
   }
 
   List<Task> _buildCurated(

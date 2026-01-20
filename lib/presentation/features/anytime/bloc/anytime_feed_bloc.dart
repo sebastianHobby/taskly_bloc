@@ -4,10 +4,11 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/row_key.dart';
-import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_domain/settings.dart' as settings;
 import 'package:taskly_domain/services.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -54,12 +55,12 @@ final class AnytimeFeedError extends AnytimeFeedState {
 class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   AnytimeFeedBloc({
     required TaskRepositoryContract taskRepository,
-    required AllocationSnapshotRepositoryContract allocationSnapshotRepository,
+    required SettingsRepositoryContract settingsRepository,
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
     AnytimeScope? scope,
   }) : _taskRepository = taskRepository,
-       _allocationSnapshotRepository = allocationSnapshotRepository,
+       _settingsRepository = settingsRepository,
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
        _scope = scope,
@@ -75,7 +76,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   }
 
   final TaskRepositoryContract _taskRepository;
-  final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
+  final SettingsRepositoryContract _settingsRepository;
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
   final AnytimeScope? _scope;
@@ -83,7 +84,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   List<Task> _latestTasks = const <Task>[];
   Map<String, OccurrenceData> _nextTaskOccurrenceById =
       const <String, OccurrenceData>{};
-  Set<String> _allocatedTaskIds = const <String>{};
+  Set<String> _todaySelectedTaskIds = const <String>{};
   bool _focusOnly = false;
 
   Future<void> _onStarted(
@@ -112,6 +113,10 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   Future<void> _bind(Emitter<AnytimeFeedState> emit) async {
     final query = _scopeQuery(TaskQuery.incomplete(), _scope);
 
+    final ritual$ = _settingsRepository
+        .watch<settings.MyDayRitualState>(SettingsKey.myDayRitual)
+        .startWith(const settings.MyDayRitualState());
+
     final dayKeyStream = Rx.merge<DateTime>([
       Stream<DateTime>.value(_dayKeyService.todayDayKeyUtc()),
       _temporalTriggerService.events
@@ -121,9 +126,18 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
           .map((_) => _dayKeyService.todayDayKeyUtc()),
     ]).distinct().shareValue();
 
-    final allocatedRefsStream = dayKeyStream.switchMap(
-      _allocationSnapshotRepository.watchLatestTaskRefsForUtcDay,
-    );
+    final todaySelectionIdsStream =
+        Rx.combineLatest2<DateTime, settings.MyDayRitualState, Set<String>>(
+          dayKeyStream,
+          ritual$,
+          (dayKeyUtc, ritual) {
+            if (!ritual.isCompletedFor(dayKeyUtc)) return <String>{};
+            return ritual.selectedTaskIds
+                .map((id) => id.trim())
+                .where((id) => id.isNotEmpty)
+                .toSet();
+          },
+        ).distinct(_areSetsEqual);
 
     final nextOccurrenceByTaskIdStream = dayKeyStream.switchMap((dayKey) {
       // Anytime is not date-scoped, but "Complete" should target the next
@@ -156,13 +170,10 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
           emit(AnytimeFeedError(message: error.toString()));
         },
       ),
-      emit.onEach<List<AllocationSnapshotTaskRef>>(
-        allocatedRefsStream,
-        onData: (refs) {
-          _allocatedTaskIds = {
-            for (final r in refs)
-              if (r.taskId.trim().isNotEmpty) r.taskId,
-          };
+      emit.onEach<Set<String>>(
+        todaySelectionIdsStream,
+        onData: (selectedIds) {
+          _todaySelectedTaskIds = selectedIds;
           _emitRows(emit);
         },
         onError: (error, stackTrace) {
@@ -205,7 +216,9 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   void _emitRows(Emitter<AnytimeFeedState> emit) {
     try {
       final tasks = _focusOnly
-          ? _latestTasks.where((t) => _allocatedTaskIds.contains(t.id)).toList()
+          ? _latestTasks
+                .where((t) => _todaySelectedTaskIds.contains(t.id))
+                .toList()
           : _latestTasks;
 
       final tasksWithNextOccurrence = tasks
@@ -217,6 +230,12 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     } catch (e) {
       emit(AnytimeFeedError(message: e.toString()));
     }
+  }
+
+  bool _areSetsEqual(Set<String> a, Set<String> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    return a.containsAll(b);
   }
 
   Task _decorateWithNextOccurrence(Task task) {

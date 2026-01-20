@@ -21,7 +21,7 @@ ProjectTileModel buildProjectListRowTileModel(
   final startDateLabel = switch (start) {
     null => null,
     final startDate =>
-      DateTime(startDate.year, startDate.month, startDate.day).isAfter(today)
+      !DateTime(startDate.year, startDate.month, startDate.day).isBefore(today)
           ? _formatMonthDay(context, startDate)
           : null,
   };
@@ -53,7 +53,7 @@ ProjectTileModel buildProjectListRowTileModel(
       completed: project.completed,
       today: today,
     ),
-    hasRepeat: project.repeatIcalRrule != null,
+    hasRepeat: project.isRepeating,
     showBothDatesIfPresent: true,
     showPriorityMarkerOnRight: true,
     priority: project.priority,

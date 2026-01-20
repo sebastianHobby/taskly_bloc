@@ -149,9 +149,9 @@ Normative rules:
   (for example, `GoRouter` or `Navigator` route pushes), not presenting
   UI-only overlays like dialogs or bottom sheets.
 - `taskly_ui` must not depend on **app intent/action infrastructure**:
-  - forbidden: `TileIntent` types, `TileIntentDispatcher`, overflow action
-    catalogs, app analytics/logging dispatch, or any other “do something in the
-    app” orchestration.
+  - forbidden: app-owned orchestration/dispatch types (for example
+    `TileIntentDispatcher`), overflow action catalogs, app analytics/logging
+    dispatch, or any other “do something in the app” coordination layer.
 - Reusable UI must follow **data in / events out** APIs (props + callbacks).
 - App code must not deep-import `taskly_ui` internals (`package:taskly_ui/src/...`).
   Import only public entrypoints under `packages/taskly_ui/lib/`:
@@ -195,6 +195,33 @@ Rationale:
 See: [doc/architecture/README.md](README.md)
 
 See also: [BLOC_GUIDELINES.md](BLOC_GUIDELINES.md)
+
+### 2.1.2 Entity tiles are intent-driven (strict)
+
+Taskly’s canonical Task/Project/Value “entity tiles” are shared UI and must be
+consumed using the **intent, not config** pattern.
+
+Normative rules:
+
+- App code must consume entity tiles via the tiered public entrypoints:
+  - `package:taskly_ui/taskly_ui_entities.dart`
+  - `package:taskly_ui/taskly_ui_sections.dart`
+  - Do not import `package:taskly_ui/taskly_ui_catalog.dart` from app code.
+    The catalog is for demos/examples and may expose extra knobs.
+
+- Entity tiles must not be configured via one-off visual knobs.
+  - The app supplies a **rendering intent** (`*TileIntent`) to describe the
+    screen/flow.
+  - The app supplies **actions** (`*TileActions`) and the tile derives
+    affordances from callback presence (for example overflow only when
+    `onOverflowMenuRequestedAt` is provided).
+  - Semantic markers (for example “pinned”) must be passed via explicit
+    markers/models, not via ad-hoc badge lists.
+
+- `taskly_ui` remains pure UI.
+  - Intents and actions are UI-level types.
+  - Any routing, writes, overflow menu orchestration, analytics, etc. remain in
+    the app’s presentation layer. `taskly_ui` only raises callbacks.
 
 ### 2.2 UI composition model (4-tier) (strict)
 
