@@ -116,10 +116,13 @@ class TaskEntityTile extends StatelessWidget {
                   ).colorScheme.onSurfaceVariant.withValues(alpha: 0.85),
                 ),
               ),
-            _SelectPill(
-              selected: selected,
-              onPressed: actions.onToggleSelected ?? actions.onTap,
-            ),
+            if (actions.onToggleSelected != null || actions.onTap != null)
+              _SelectPill(
+                selected: selected,
+                onPressed: actions.onToggleSelected ?? actions.onTap,
+              )
+            else if (model.completed)
+              const _CompletedStatusChip(),
           ],
         ),
       ),
@@ -256,6 +259,42 @@ class _SelectPill extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CompletedStatusChip extends StatelessWidget {
+  const _CompletedStatusChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.check_circle_rounded,
+            size: 16,
+            color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Completed',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
