@@ -40,8 +40,7 @@ class ScheduledPage extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => ScheduledFeedBloc(
-            scheduledOccurrencesService: getIt(),
-            homeDayService: getIt(),
+            queryService: getIt(),
             scope: scope,
           ),
         ),

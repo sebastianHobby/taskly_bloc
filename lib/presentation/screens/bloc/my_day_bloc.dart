@@ -4,7 +4,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_domain/core.dart';
 
 import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
-import 'package:taskly_bloc/presentation/screens/services/my_day_query_service.dart';
+import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
 
 sealed class MyDayEvent {
   const MyDayEvent();
@@ -81,14 +81,14 @@ final class MyDayError extends MyDayState {
 
 final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
   MyDayBloc({
-    required MyDayQueryService queryService,
+    required MyDaySessionQueryService queryService,
   }) : _queryService = queryService,
        super(const MyDayLoading()) {
     on<MyDayStarted>(_onStarted, transformer: restartable());
     add(const MyDayStarted());
   }
 
-  final MyDayQueryService _queryService;
+  final MyDaySessionQueryService _queryService;
 
   Future<void> _onStarted(MyDayStarted event, Emitter<MyDayState> emit) async {
     await emit.forEach<MyDayState>(
@@ -101,7 +101,7 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
   }
 
   Stream<MyDayState> _watchState() {
-    return _queryService.watchMyDayViewModel().map(
+    return _queryService.viewModel.map(
       (vm) => MyDayLoaded(
         summary: vm.summary,
         mix: vm.mix,

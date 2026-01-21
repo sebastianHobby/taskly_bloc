@@ -4,11 +4,9 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/row_key.dart';
-import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
 
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 
@@ -71,15 +69,9 @@ final class AnytimeFeedError extends AnytimeFeedState {
 
 class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   AnytimeFeedBloc({
-    required OccurrenceReadService occurrenceReadService,
-    required MyDayRepositoryContract myDayRepository,
-    required HomeDayKeyService dayKeyService,
-    required TemporalTriggerService temporalTriggerService,
+    required AnytimeSessionQueryService queryService,
     AnytimeScope? scope,
-  }) : _occurrenceReadService = occurrenceReadService,
-       _myDayRepository = myDayRepository,
-       _dayKeyService = dayKeyService,
-       _temporalTriggerService = temporalTriggerService,
+  }) : _queryService = queryService,
        _scope = scope,
        super(const AnytimeFeedLoading()) {
     on<AnytimeFeedStarted>(_onStarted, transformer: restartable());
@@ -95,10 +87,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     add(const AnytimeFeedStarted());
   }
 
-  final OccurrenceReadService _occurrenceReadService;
-  final MyDayRepositoryContract _myDayRepository;
-  final HomeDayKeyService _dayKeyService;
-  final TemporalTriggerService _temporalTriggerService;
+  final AnytimeSessionQueryService _queryService;
   final AnytimeScope? _scope;
 
   List<Task> _latestTasks = const <Task>[];
@@ -160,89 +149,18 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   }
 
   Future<void> _bind(Emitter<AnytimeFeedState> emit) async {
-    final dayKeyStream = Rx.merge<DateTime>([
-      Stream<DateTime>.value(_dayKeyService.todayDayKeyUtc()),
-      _temporalTriggerService.events
-          .where(
-            (event) => event is HomeDayBoundaryCrossed || event is AppResumed,
-          )
-          .map((_) => _dayKeyService.todayDayKeyUtc()),
-    ]).distinct().shareValue();
-
-    final tasksStream = dayKeyStream.switchMap((dayKey) {
-      // Anytime is not date-scoped, but repeating tasks need a single “next”
-      // occurrence for correct rendering + completion targeting.
-      final preview = OccurrencePolicy.anytimePreview(asOfDayKey: dayKey);
-      final query = _scopeQuery(TaskQuery.incomplete(), _scope);
-      return _occurrenceReadService.watchTasksWithOccurrencePreview(
-        query: query,
-        preview: preview,
-      );
-    });
-
-    final todaySelectionIdsStream = dayKeyStream
-        .switchMap(_myDayRepository.watchDay)
-        .map((picks) {
-          if (picks.ritualCompletedAtUtc == null) return <String>{};
-          return picks.selectedTaskIds
-              .map((id) => id.trim())
-              .where((id) => id.isNotEmpty)
-              .toSet();
-        })
-        .distinct(_areSetsEqual);
-
-    await Future.wait<void>([
-      emit.onEach<DateTime>(
-        dayKeyStream,
-        onData: (dayKey) {
-          _todayDayKeyUtc = dayKey;
-          _emitRows(emit);
-        },
-        onError: (error, stackTrace) {
-          emit(AnytimeFeedError(message: error.toString()));
-        },
-      ),
-      emit.onEach<List<Task>>(
-        tasksStream,
-        onData: (tasks) {
-          _latestTasks = tasks;
-          _emitRows(emit);
-        },
-        onError: (error, stackTrace) {
-          emit(AnytimeFeedError(message: error.toString()));
-        },
-      ),
-      emit.onEach<Set<String>>(
-        todaySelectionIdsStream,
-        onData: (selectedIds) {
-          _todaySelectedTaskIds = selectedIds;
-          _emitRows(emit);
-        },
-        onError: (error, stackTrace) {
-          emit(AnytimeFeedError(message: error.toString()));
-        },
-      ),
-    ]);
-  }
-
-  TaskQuery _scopeQuery(TaskQuery base, AnytimeScope? scope) {
-    if (scope == null) return base;
-
-    return switch (scope) {
-      AnytimeProjectScope(:final projectId) => base.withAdditionalPredicates([
-        TaskProjectPredicate(
-          operator: ProjectOperator.matches,
-          projectId: projectId,
-        ),
-      ]),
-      AnytimeValueScope(:final valueId) => base.withAdditionalPredicates([
-        TaskValuePredicate(
-          operator: ValueOperator.hasAll,
-          valueIds: [valueId],
-          includeInherited: true,
-        ),
-      ]),
-    };
+    await emit.onEach<AnytimeBaseSnapshot>(
+      _queryService.watchBase(scope: _scope),
+      onData: (snapshot) {
+        _todayDayKeyUtc = snapshot.todayDayKeyUtc;
+        _latestTasks = snapshot.tasks;
+        _todaySelectedTaskIds = snapshot.todaySelectedTaskIds;
+        _emitRows(emit);
+      },
+      onError: (error, stackTrace) {
+        emit(AnytimeFeedError(message: error.toString()));
+      },
+    );
   }
 
   void _emitRows(Emitter<AnytimeFeedState> emit) {
@@ -260,12 +178,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     } catch (e) {
       emit(AnytimeFeedError(message: e.toString()));
     }
-  }
-
-  bool _areSetsEqual(Set<String> a, Set<String> b) {
-    if (identical(a, b)) return true;
-    if (a.length != b.length) return false;
-    return a.containsAll(b);
   }
 
   bool _isStartLater(Task task) {
