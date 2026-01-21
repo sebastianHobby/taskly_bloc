@@ -15,6 +15,7 @@ import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
@@ -698,7 +699,11 @@ class _ScheduledAgenda extends StatelessWidget {
     if (hasOverdueBucket) {
       final overdueDueRows = overdueItems
           .map(
-            (o) => _buildAgendaRowForOccurrence(context, occurrence: o),
+            (o) => _buildAgendaRowForOccurrence(
+              context,
+              occurrence: o,
+              forceShowDeadlineChip: true,
+            ),
           )
           .whereType<TasklyAgendaRowModel>()
           .toList(growable: false);
@@ -732,6 +737,7 @@ class _ScheduledAgenda extends StatelessWidget {
           TasklyAgendaCardModel(
             key: 'overdue',
             title: 'Overdue',
+            leadingIcon: Icons.warning_amber_rounded,
             isCollapsed: overdueCollapsed,
             onHeaderTap: () => context.read<ScheduledFeedBloc>().add(
               const ScheduledBucketCollapseToggled(bucketKey: 'overdue'),
@@ -745,6 +751,7 @@ class _ScheduledAgenda extends StatelessWidget {
 
     for (final entry in dayDueRows.entries) {
       final day = entry.key;
+
       final planned = dayPlannedRows[day] ?? const <TasklyAgendaRowModel>[];
       final due = entry.value;
 
@@ -782,6 +789,7 @@ class _ScheduledAgenda extends StatelessWidget {
   static TasklyAgendaRowModel? _buildAgendaRowForOccurrence(
     BuildContext context, {
     required ScheduledOccurrence occurrence,
+    bool forceShowDeadlineChip = false,
   }) {
     final normalizedDay = DateTime(
       occurrence.localDay.year,
@@ -796,6 +804,36 @@ class _ScheduledAgenda extends StatelessWidget {
       final task = occurrence.task!;
       final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
 
+      final now = context.read<NowService>().nowLocal();
+      final today = DateTime(now.year, now.month, now.day);
+
+      final cardDay = DateTime(
+        occurrence.localDay.year,
+        occurrence.localDay.month,
+        occurrence.localDay.day,
+      );
+
+      final deadline = task.occurrence?.deadline ?? task.deadlineDate;
+      final deadlineDay = deadline == null
+          ? null
+          : DateTime(deadline.year, deadline.month, deadline.day);
+
+      final daysUntil = deadlineDay?.difference(today).inDays;
+
+      final isOverdue =
+          deadlineDay != null && deadlineDay.isBefore(today) && !task.completed;
+
+      final isWithin3Days =
+          daysUntil != null && daysUntil >= 0 && daysUntil <= 3;
+
+      final differsFromCardDay = deadlineDay != null && deadlineDay != cardDay;
+
+      final shouldShowPlannedDeadlineChip =
+          forceShowDeadlineChip ||
+          (occurrence.tag == ScheduledDateTag.starts &&
+              deadlineDay != null &&
+              (differsFromCardDay || isWithin3Days || isOverdue));
+
       final selection = context.read<SelectionCubit>();
       final key = SelectionKey(entityType: EntityType.task, entityId: task.id);
       final selectionMode = selection.isSelectionMode;
@@ -806,14 +844,9 @@ class _ScheduledAgenda extends StatelessWidget {
         task: task,
         tileCapabilities: tileCapabilities,
         showProjectLabel: false,
-        showDates: false,
-        showOnlyDeadlineDate: false,
-        showPrimaryValueOnTitleLine: true,
-        showValuesInMetaLine: false,
-        showSecondaryValues: false,
-        showPriorityMarkerOnRight: false,
-        showRepeatIcon: false,
-        showOverflowEllipsisWhenMetaHidden: false,
+        showDates: shouldShowPlannedDeadlineChip,
+        showOnlyDeadlineDate: true,
+        overrideIsOverdue: forceShowDeadlineChip ? isOverdue : null,
       );
 
       return TasklyAgendaTaskRowModel(

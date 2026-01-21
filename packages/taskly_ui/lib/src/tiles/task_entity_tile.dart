@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/primitives/value_icon.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_intents.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 import 'package:taskly_ui/src/tiles/task_list_row_tile.dart';
@@ -143,9 +144,12 @@ class TaskEntityTile extends StatelessWidget {
         subtitle: null,
         titlePrefix: titlePrefix,
         footer: footer,
-        trailing: _TrailingOverflowButton(
-          onOverflowMenuRequestedAt: actions.onOverflowMenuRequestedAt,
-        ),
+        trailing: model.titlePrimaryValue == null
+            ? const SizedBox.shrink()
+            : Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: ValueIcon(data: model.titlePrimaryValue!),
+              ),
       ),
     };
   }
@@ -206,32 +210,6 @@ class _PinnedGlyph extends StatelessWidget {
             color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _TrailingOverflowButton extends StatelessWidget {
-  const _TrailingOverflowButton({
-    required this.onOverflowMenuRequestedAt,
-  });
-
-  final ValueChanged<Offset>? onOverflowMenuRequestedAt;
-
-  @override
-  Widget build(BuildContext context) {
-    if (onOverflowMenuRequestedAt == null) return const SizedBox.shrink();
-
-    final scheme = Theme.of(context).colorScheme;
-    final iconColor = scheme.onSurfaceVariant.withValues(alpha: 0.85);
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (details) =>
-          onOverflowMenuRequestedAt!(details.globalPosition),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Icon(Icons.more_horiz, size: 20, color: iconColor),
       ),
     );
   }

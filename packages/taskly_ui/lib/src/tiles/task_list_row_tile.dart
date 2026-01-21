@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:taskly_ui/src/primitives/value_icon.dart';
 import 'package:taskly_ui/src/tiles/entity_meta_line.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 
@@ -108,10 +107,6 @@ class TaskListRowTile extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (model.titlePrimaryValue != null) ...[
-                              const SizedBox(width: 10),
-                              ValueIcon(data: model.titlePrimaryValue!),
-                            ],
                           ],
                         ),
                         if (subtitle != null) ...[

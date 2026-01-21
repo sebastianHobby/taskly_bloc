@@ -32,6 +32,8 @@ class ValueIcon extends StatelessWidget {
 
     return Tooltip(
       message: data.label,
+      triggerMode: TooltipTriggerMode.tap,
+      showDuration: const Duration(seconds: 10),
       child: Container(
         width: size,
         height: size,

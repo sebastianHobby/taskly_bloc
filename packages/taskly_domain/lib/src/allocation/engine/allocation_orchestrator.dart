@@ -15,7 +15,6 @@ import 'package:taskly_domain/src/allocation/engine/urgency_detector.dart';
 import 'package:taskly_domain/src/services/analytics/analytics_service.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/time/clock.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 /// Orchestrates task allocation using pinned labels and allocation strategies.
@@ -48,31 +47,50 @@ class AllocationOrchestrator {
   final HomeDayKeyService _dayKeyService;
   final Clock _clock;
 
-  /// Watch the full allocation result (pinned + allocated tasks)
-  Stream<AllocationResult> watchAllocation() {
-    AppLog.routine('domain.allocation', 'watchAllocation started');
+  /// Compute a single allocation snapshot (pinned + allocated tasks).
+  ///
+  /// This intentionally does **not** keep a live stream subscription.
+  /// Callers should re-trigger this explicitly (e.g. on ritual open, day
+  /// boundary, or app resume).
+  Future<AllocationResult> getAllocationSnapshot({DateTime? nowUtc}) async {
+    final resolvedNowUtc = nowUtc ?? _clock.nowUtc();
+    final todayUtc = _dayKeyService.todayDayKeyUtc(nowUtc: resolvedNowUtc);
 
-    // Latest inputs win: cancel in-flight computations when inputs change.
-    return combineStreams().switchMap(
-      (combined) => Stream.fromFuture(_computeAllocation(combined)),
+    AppLog.routine(
+      'domain.allocation',
+      'getAllocationSnapshot: nowUtc=${resolvedNowUtc.toIso8601String()} '
+          'todayUtc=${todayUtc.toIso8601String()}',
+    );
+
+    final results = await Future.wait([
+      _taskRepository.getAll(TaskQuery.incomplete()),
+      _projectRepository.getAll(),
+      _settingsRepository.load(SettingsKey.allocation),
+    ]);
+
+    final tasks = results[0] as List<Task>;
+    final projects = results[1] as List<Project>;
+    final allocationConfig = results[2] as AllocationConfig;
+
+    return _computeAllocation(
+      tasks: tasks,
+      projects: projects,
+      allocationConfig: allocationConfig,
+      nowUtc: resolvedNowUtc,
+      todayDayKeyUtc: todayUtc,
     );
   }
 
-  Future<AllocationResult> _computeAllocation(
-    (List<Task>, List<Project>, AllocationConfig) combined,
-  ) async {
-    final tasks = combined.$1;
-    final projects = combined.$2;
-    final allocationConfig = combined.$3;
-
-    final nowUtc = _clock.nowUtc();
-    final todayUtc = _dayKeyService.todayDayKeyUtc(nowUtc: nowUtc);
-
-    AppLog.routineThrottled(
-      'allocation.stream_update',
-      const Duration(seconds: 10),
+  Future<AllocationResult> _computeAllocation({
+    required List<Task> tasks,
+    required List<Project> projects,
+    required AllocationConfig allocationConfig,
+    required DateTime nowUtc,
+    required DateTime todayDayKeyUtc,
+  }) async {
+    AppLog.routine(
       'domain.allocation',
-      'Stream update: ${tasks.length} tasks, ${projects.length} projects, '
+      'Compute: ${tasks.length} tasks, ${projects.length} projects, '
           'dailyLimit=${allocationConfig.dailyLimit}',
     );
 
@@ -149,7 +167,7 @@ class AllocationOrchestrator {
       regularTasks,
       allocationConfig,
       nowUtc: nowUtc,
-      todayDayKeyUtc: todayUtc,
+      todayDayKeyUtc: todayDayKeyUtc,
     );
 
     final allAllocatedTasks = [
@@ -161,7 +179,7 @@ class AllocationOrchestrator {
     final urgencyDetector = UrgencyDetector.fromConfig(allocationConfig);
     final urgentValueless = urgencyDetector.findUrgentValuelessTasks(
       regularTasks,
-      todayDayKeyUtc: todayUtc,
+      todayDayKeyUtc: todayDayKeyUtc,
     );
     if (urgentValueless.isNotEmpty) {
       talker.debug(
@@ -274,46 +292,6 @@ class AllocationOrchestrator {
     );
 
     return engine.allocate(parameters);
-  }
-
-  /// Combine all necessary streams
-  Stream<
-    (
-      List<Task>,
-      List<Project>,
-      AllocationConfig,
-    )
-  >
-  combineStreams() {
-    // Watch incomplete tasks
-    final tasksStream = _taskRepository.watchAll(TaskQuery.incomplete());
-
-    // Watch projects (if repository available)
-    final projectsStream = _projectRepository.watchAll();
-
-    // Watch settings
-    final allocationConfigStream = _settingsRepository.watch(
-      SettingsKey.allocation,
-    );
-
-    // Combine all streams
-    return Rx.combineLatest3(
-      tasksStream,
-      projectsStream,
-      allocationConfigStream,
-      (tasks, projects, allocationConfig) {
-        talker.debug(
-          '[AllocationOrchestrator] _combineStreams loaded:\n'
-          '  allocationConfig.dailyLimit=${allocationConfig.dailyLimit}',
-        );
-
-        return (
-          tasks,
-          projects,
-          allocationConfig,
-        );
-      },
-    );
   }
 
   /// Pin a task

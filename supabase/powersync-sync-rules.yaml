@@ -22,8 +22,6 @@ bucket_definitions:
       - SELECT * FROM my_day_days WHERE user_id = bucket.user_id
       - SELECT * FROM my_day_picks WHERE user_id = bucket.user_id
 
-      # Screen Definitions
-      - SELECT * FROM screen_definitions WHERE user_id = bucket.user_id
 
 
       # Pending Notifications
@@ -88,5 +86,3 @@ bucket_definitions:
       - SELECT * FROM tracker_state_entry WHERE user_id = bucket.user_id
       - SELECT * FROM tracker_state_day WHERE user_id = bucket.user_id
 
-      # Attention Condition States (time-gated alerts like “no next action”)
-      - SELECT * FROM attention_condition_states WHERE user_id = bucket.user_id

@@ -1,6 +1,11 @@
 {
     "pinAction": "Pin",
     "unpinAction": "Unpin",
+    "selectedCountLabel": "{count} selected",
+    "pinToMyDayAction": "Pin to My Day",
+    "unpinFromMyDayAction": "Unpin from My Day",
+    "moveToProjectAction": "Move to project",
+    "completeSeriesAction": "Complete series",
     "selectValuesHint": "Select values",
     "projectCompletedLabel": "Completed",
     "selectProjectTitle": "Select project",
@@ -31,6 +36,120 @@
     "valuesPrimaryTooltip": "Make primary",
     "projectFormValuesRequired": "Select at least one value.",
     "@@locale": "en",
+    "@pinAction": {
+        "description": "Action label to pin an item (task/project/etc)."
+    },
+    "@unpinAction": {
+        "description": "Action label to unpin an item (task/project/etc)."
+    },
+    "@selectedCountLabel": {
+        "description": "Label showing how many items are currently selected.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "@pinToMyDayAction": {
+        "description": "Bulk action label to pin selected items to My Day."
+    },
+    "@unpinFromMyDayAction": {
+        "description": "Bulk action label to unpin selected items from My Day."
+    },
+    "@moveToProjectAction": {
+        "description": "Bulk action label to move selected items to a project."
+    },
+    "@completeSeriesAction": {
+        "description": "Bulk action label to complete a task series."
+    },
+    "@selectValuesHint": {
+        "description": "Hint text for selecting values in pickers/editors."
+    },
+    "@projectCompletedLabel": {
+        "description": "Label shown to indicate a project is completed."
+    },
+    "@selectProjectTitle": {
+        "description": "Title for the project selection screen/dialog."
+    },
+    "@projectPickerNoProjectInbox": {
+        "description": "Project picker option meaning no project (Inbox)."
+    },
+    "@projectPickerRecentTitle": {
+        "description": "Heading/label for recent projects in the project picker."
+    },
+    "@projectPickerSearchHint": {
+        "description": "Hint text for the project picker search field."
+    },
+    "@projectPickerNoMatchingProjects": {
+        "description": "Empty-state shown when project search has no matches."
+    },
+    "@doneLabel": {
+        "description": "Generic done/confirm label."
+    },
+    "@recurrenceTitle": {
+        "description": "Title for recurrence/repeat settings."
+    },
+    "@recurrenceRepeatFromCompletionLabel": {
+        "description": "Label for the 'repeat from completion' recurrence option."
+    },
+    "@recurrenceSeriesEndedLabel": {
+        "description": "Label for ending a repeating series."
+    },
+    "@scheduleHelperText": {
+        "description": "Helper text explaining the difference between planned and due."
+    },
+    "@taskFormScheduleHelperText": {
+        "description": "Helper text in the task form explaining planned vs due."
+    },
+    "@valuesAlignedToTitle": {
+        "description": "Label/title indicating tasks/projects are aligned to values."
+    },
+    "@valuesNoneSelected": {
+        "description": "Label shown when no values are selected."
+    },
+    "@valuesNoneInherited": {
+        "description": "Label shown when there are no inherited project values."
+    },
+    "@valuesExplicitSelectionLabel": {
+        "description": "Label indicating values were explicitly selected."
+    },
+    "@valuesAlignmentHelperText": {
+        "description": "Helper text describing why values alignment matters."
+    },
+    "@valuesInheritLabel": {
+        "description": "Label for inheriting values from a project."
+    },
+    "@valuesOverrideLabel": {
+        "description": "Label for overriding inherited values."
+    },
+    "@valuesInheritHelp": {
+        "description": "Helper text explaining inherit behavior for values."
+    },
+    "@valuesOverrideHelp": {
+        "description": "Helper text explaining override behavior for values."
+    },
+    "@valuesProjectHelp": {
+        "description": "Helper text explaining how to choose values for a task."
+    },
+    "@valuesNoProjectSelected": {
+        "description": "Message shown when a project is required but none is selected."
+    },
+    "@valuesInheritedFromProject": {
+        "description": "Label indicating values are inherited from the project."
+    },
+    "@valuesProjectHasNoValues": {
+        "description": "Message shown when the selected project has no values."
+    },
+    "@valuesOptionalFooter": {
+        "description": "Footer text indicating values are optional."
+    },
+    "@valuesPrimaryTooltip": {
+        "description": "Tooltip for the action to mark a value as primary."
+    },
+    "@projectFormValuesRequired": {
+        "description": "Validation error shown when a project requires at least one value."
+    },
     "counterAppBarTitle": "Counter",
     "@counterAppBarTitle": {
         "description": "Text shown in the AppBar of the Counter Page"
@@ -607,9 +726,75 @@
     "@dateTomorrow": {
         "description": "Relative date label for tomorrow"
     },
+    "dateNextWeek": "Next week",
+    "@dateNextWeek": {
+        "description": "Relative date label for next week"
+    },
     "dateYesterday": "Yesterday",
     "@dateYesterday": {
         "description": "Relative date label for yesterday"
+    },
+    "changeButton": "Change",
+    "@changeButton": {
+        "description": "Generic button label for changing a selection"
+    },
+    "snoozeTitle": "Snooze",
+    "@snoozeTitle": {
+        "description": "Title for the snooze sheet/menu"
+    },
+    "snoozeSubtitle": "Set a new planned day (availability).",
+    "@snoozeSubtitle": {
+        "description": "Subtitle explaining snooze behavior"
+    },
+    "pickDateButton": "Pick date…",
+    "@pickDateButton": {
+        "description": "Button/row label that opens a date picker"
+    },
+    "focusModeHelperLine": "Mode: {mode} · {tagline}",
+    "@focusModeHelperLine": {
+        "description": "Helper line describing the active focus mode.",
+        "placeholders": {
+            "mode": {
+                "type": "String",
+                "example": "Balanced"
+            },
+            "tagline": {
+                "type": "String",
+                "example": "Keep my values in balance"
+            }
+        }
+    },
+    "showMoreCountLabel": "Show {count} more · {label} ({total})",
+    "@showMoreCountLabel": {
+        "description": "Label for expanding a list to show more items.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            },
+            "label": {
+                "type": "String",
+                "example": "Focus"
+            },
+            "total": {
+                "type": "int",
+                "example": "12"
+            }
+        }
+    },
+    "labelWithTotal": "{label} ({total})",
+    "@labelWithTotal": {
+        "description": "Generic label with a total count suffix.",
+        "placeholders": {
+            "label": {
+                "type": "String",
+                "example": "Focus"
+            },
+            "total": {
+                "type": "int",
+                "example": "12"
+            }
+        }
     },
     "dateInDays": "In {days} days",
     "@dateInDays": {
@@ -1339,6 +1524,164 @@
     "myDayTitle": "My Day",
     "@myDayTitle": {
         "description": "Title for the My Day screen"
+    },
+    "myDayPreparingTitle": "Preparing My Day",
+    "@myDayPreparingTitle": {
+        "description": "Title shown while My Day is preparing/loading."
+    },
+    "myDayPreparingSubtitle": "Loading your suggestions and today’s context…",
+    "@myDayPreparingSubtitle": {
+        "description": "Subtitle shown while My Day is preparing/loading."
+    },
+    "myDayAddedToFocusSnackbar": "Added to Today’s Focus.",
+    "@myDayAddedToFocusSnackbar": {
+        "description": "Snack bar message shown after adding a task to today's Focus bucket from My Day."
+    },
+    "myDayAddedToTodaySnackbar": "Added to today.",
+    "@myDayAddedToTodaySnackbar": {
+        "description": "Snack bar message shown after adding a task to today from My Day."
+    },
+    "myDayRitualAllSetTitle": "All set for today.",
+    "@myDayRitualAllSetTitle": {
+        "description": "Title shown when the user has completed everything planned for today in the My Day ritual."
+    },
+    "myDayRitualAllSetSubtitle": "You completed everything you planned today.",
+    "@myDayRitualAllSetSubtitle": {
+        "description": "Subtitle shown when the user has completed everything planned for today in the My Day ritual."
+    },
+    "myDayRitualAddOneMoreFocus": "Add one more focus",
+    "@myDayRitualAddOneMoreFocus": {
+        "description": "Button label to add one more focus item during the My Day ritual."
+    },
+    "myDayRitualOverdueDueTitle": "Overdue & due",
+    "@myDayRitualOverdueDueTitle": {
+        "description": "Section title for overdue and due tasks in the My Day ritual."
+    },
+    "myDayRitualStartsTodayTitle": "Starts today",
+    "@myDayRitualStartsTodayTitle": {
+        "description": "Section title for tasks that start today in the My Day ritual."
+    },
+    "myDayRitualTodaysFocusTitle": "Today’s Focus",
+    "@myDayRitualTodaysFocusTitle": {
+        "description": "Section title for today's Focus bucket in the My Day ritual."
+    },
+    "myDayRitualNotInTodayLabel": "not in today",
+    "@myDayRitualNotInTodayLabel": {
+        "description": "Label suffix used to indicate items that are not in today's plan."
+    },
+    "myDayRitualCaughtUpTitle": "You’re caught up.",
+    "@myDayRitualCaughtUpTitle": {
+        "description": "Empty state title indicating there are no overdue or due items in the plan."
+    },
+    "myDayRitualDueEmptySubtitle": "No overdue or due items in your plan.",
+    "@myDayRitualDueEmptySubtitle": {
+        "description": "Empty state subtitle for the overdue & due section when there are no items."
+    },
+    "myDayRitualNothingAddedHereYetTitle": "Nothing added here yet.",
+    "@myDayRitualNothingAddedHereYetTitle": {
+        "description": "Empty state title shown when nothing has been accepted into a section yet."
+    },
+    "myDayRitualReviewAvailableAboveSubtitle": "Review what’s available above if you want to add any.",
+    "@myDayRitualReviewAvailableAboveSubtitle": {
+        "description": "Empty state subtitle prompting the user to review available items and add them."
+    },
+    "myDayRitualStartsEmptyTitle": "Nothing scheduled to start today.",
+    "@myDayRitualStartsEmptyTitle": {
+        "description": "Empty state title for the starts-today section when there are no tasks."
+    },
+    "myDayRitualStartsEmptySubtitle": "This section will appear when tasks become available.",
+    "@myDayRitualStartsEmptySubtitle": {
+        "description": "Empty state subtitle explaining when the starts-today section will appear."
+    },
+    "myDayRitualFocusEmptyTitle": "Nothing accepted here.",
+    "@myDayRitualFocusEmptyTitle": {
+        "description": "Empty state title for the today's Focus section when nothing is accepted."
+    },
+    "myDayRitualFocusEmptySubtitle": "No focus items accepted for today.",
+    "@myDayRitualFocusEmptySubtitle": {
+        "description": "Empty state subtitle for the today's Focus section when nothing is accepted."
+    },
+    "myDayRitualNothingAddedYetTitle": "Nothing added yet.",
+    "@myDayRitualNothingAddedYetTitle": {
+        "description": "Empty state title used when a section has zero accepted items but has items available to add."
+    },
+    "myDayRitualOtherNotInTodayHint": "{count, plural, one{1 task} other{{count} tasks}} not in today. Tap to review and add.",
+    "@myDayRitualOtherNotInTodayHint": {
+        "description": "Hint shown when there are items not yet added to today's plan.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "myDayRitualShowFewer": "Show fewer",
+    "@myDayRitualShowFewer": {
+        "description": "Button label to collapse an expanded list in the My Day ritual section."
+    },
+    "myDayRitualShowMore": "Show {count} more ({total})",
+    "@myDayRitualShowMore": {
+        "description": "Button label to expand a list in the My Day ritual section.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            },
+            "total": {
+                "type": "int",
+                "example": "12"
+            }
+        }
+    },
+    "myDayRitualAcceptedCount": "{count, plural, one{1 accepted} other{{count} accepted}}",
+    "@myDayRitualAcceptedCount": {
+        "description": "Accepted count label used in section header counts.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "dotSeparator": " · ",
+    "@dotSeparator": {
+        "description": "Separator used between two short inline labels."
+    },
+    "countWithLabel": "{count} {label}",
+    "@countWithLabel": {
+        "description": "Generic count + label formatter.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            },
+            "label": {
+                "type": "String",
+                "example": "not in today"
+            }
+        }
+    },
+    "snoozePastDueDateTitle": "Snooze past due date?",
+    "@snoozePastDueDateTitle": {
+        "description": "Confirmation dialog title shown when snoozing past a task's due date."
+    },
+    "snoozePastDueDateBody": "This task is due on {dueDate}. Snoozing to {newStartDate} keeps the due date the same.",
+    "@snoozePastDueDateBody": {
+        "description": "Confirmation dialog body shown when snoozing past a task's due date.",
+        "placeholders": {
+            "dueDate": {
+                "type": "String",
+                "example": "Jan 21, 2026"
+            },
+            "newStartDate": {
+                "type": "String",
+                "example": "Jan 28, 2026"
+            }
+        }
+    },
+    "snoozeAnywayButton": "Snooze anyway",
+    "@snoozeAnywayButton": {
+        "description": "Button label to proceed with snoozing even when it goes past the due date."
     },
     "myDayAlertBannerSingular": "1 item outside Focus",
     "@myDayAlertBannerSingular": {

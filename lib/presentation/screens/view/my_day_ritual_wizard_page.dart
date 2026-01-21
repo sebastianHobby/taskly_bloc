@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
@@ -800,7 +801,10 @@ class _FocusModeHelperLine extends StatelessWidget {
       runSpacing: 6,
       children: [
         Text(
-          'Mode: ${focusMode.displayName} · ${focusMode.tagline}',
+          context.l10n.focusModeHelperLine(
+            focusMode.displayName,
+            focusMode.tagline,
+          ),
           style: helperStyle,
         ),
         TextButton(
@@ -813,7 +817,7 @@ class _FocusModeHelperLine extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          child: const Text('Change'),
+          child: Text(context.l10n.changeButton),
         ),
       ],
     );
@@ -878,8 +882,12 @@ class _ShowMoreRow extends StatelessWidget {
     final label = isExpanded
         ? labelExpanded
         : remainingCount > 0
-        ? 'Show $remainingCount more · $labelCollapsed ($totalCount)'
-        : '$labelCollapsed ($totalCount)';
+        ? context.l10n.showMoreCountLabel(
+            remainingCount,
+            labelCollapsed,
+            totalCount,
+          )
+        : context.l10n.labelWithTotal(labelCollapsed, totalCount);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
@@ -923,7 +931,7 @@ class _TaskTileRow extends StatelessWidget {
       context,
       task: task,
       tileCapabilities: tileCapabilities,
-      showProjectLabel: true,
+      showProjectLabel: false,
     );
 
     return SelectableTaskEntityTile(
@@ -971,12 +979,12 @@ class _TaskTileRow extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                title: const Text('Snooze'),
-                subtitle: const Text('Set a new planned day (availability).'),
+                title: Text(context.l10n.snoozeTitle),
+                subtitle: Text(context.l10n.snoozeSubtitle),
               ),
               ListTile(
                 leading: const Icon(Icons.today),
-                title: const Text('Tomorrow'),
+                title: Text(context.l10n.dateTomorrow),
                 onTap: () async {
                   await _confirmAndDispatchSnooze(
                     parentContext,
@@ -988,7 +996,7 @@ class _TaskTileRow extends StatelessWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.date_range),
-                title: const Text('Next week'),
+                title: Text(context.l10n.dateNextWeek),
                 onTap: () async {
                   await _confirmAndDispatchSnooze(
                     parentContext,
@@ -1000,7 +1008,7 @@ class _TaskTileRow extends StatelessWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.event),
-                title: const Text('Pick date…'),
+                title: Text(context.l10n.pickDateButton),
                 onTap: () async {
                   final picked = await showDatePicker(
                     context: sheetContext,
@@ -1042,20 +1050,21 @@ class _TaskTileRow extends StatelessWidget {
         context: sheetContext,
         builder: (dialogContext) {
           return AlertDialog(
-            title: const Text('Snooze past due date?'),
+            title: Text(dialogContext.l10n.snoozePastDueDateTitle),
             content: Text(
-              'This task is due on ${localizations.formatMediumDate(deadline)}. '
-              'Snoozing to ${localizations.formatMediumDate(newStartDate)} '
-              'keeps the due date the same.',
+              dialogContext.l10n.snoozePastDueDateBody(
+                localizations.formatMediumDate(deadline),
+                localizations.formatMediumDate(newStartDate),
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Cancel'),
+                child: Text(dialogContext.l10n.cancelLabel),
               ),
               FilledButton(
                 onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('Snooze anyway'),
+                child: Text(dialogContext.l10n.snoozeAnywayButton),
               ),
             ],
           );

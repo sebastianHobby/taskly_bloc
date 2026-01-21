@@ -99,13 +99,7 @@ class _StandardListRow extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.topRight,
                   child: switch (bulkSelected) {
-                    null =>
-                      actions.onOverflowMenuRequestedAt == null
-                          ? const SizedBox.shrink()
-                          : _TrailingOverflowButton(
-                              onOverflowRequestedAt:
-                                  actions.onOverflowMenuRequestedAt!,
-                            ),
+                    null => const SizedBox.shrink(),
                     final selected => _BulkSelectIcon(
                       selected: selected,
                       onPressed: actions.onToggleSelected ?? actions.onTap,
@@ -179,11 +173,6 @@ class _MyValuesCardV1 extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (actions.onOverflowMenuRequestedAt != null)
-                          _TrailingOverflowButton(
-                            onOverflowRequestedAt:
-                                actions.onOverflowMenuRequestedAt!,
-                          ),
                       ],
                     ),
                     const SizedBox(height: 10),
@@ -257,52 +246,27 @@ class _StatsRow extends StatelessWidget {
 
     return Row(
       children: [
-        SizedBox(
-          width: 78,
+        Expanded(
           child: Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
               color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
             ),
           ),
         ),
-        Expanded(
-          child: Text(
-            value,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurface,
-            ),
+        const SizedBox(width: 12),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: scheme.onSurface,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
-    );
-  }
-}
-
-class _TrailingOverflowButton extends StatelessWidget {
-  const _TrailingOverflowButton({
-    required this.onOverflowRequestedAt,
-  });
-
-  final ValueChanged<Offset> onOverflowRequestedAt;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final iconColor = scheme.onSurfaceVariant.withValues(alpha: 0.85);
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (details) => onOverflowRequestedAt(details.globalPosition),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Icon(
-          Icons.more_horiz,
-          size: 20,
-          color: iconColor,
-        ),
-      ),
     );
   }
 }

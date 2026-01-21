@@ -203,11 +203,6 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
-  StreamSubscription? _allocationSub;
-  StreamSubscription? _tasksSub;
-  StreamSubscription? _dayPicksSub;
-  StreamSubscription? _allocationConfigSub;
-  StreamSubscription? _globalSettingsSub;
   StreamSubscription? _daySub;
 
   AllocationResult? _allocationResult;
@@ -217,16 +212,13 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
   settings.GlobalSettings _globalSettings = const settings.GlobalSettings();
   DateTime _dayKeyUtc;
 
+  Completer<void>? _refreshCompleter;
+
   bool _hasUserSelection = false;
   Set<String> _selectedTaskIds = <String>{};
 
   @override
   Future<void> close() async {
-    await _allocationSub?.cancel();
-    await _tasksSub?.cancel();
-    await _dayPicksSub?.cancel();
-    await _allocationConfigSub?.cancel();
-    await _globalSettingsSub?.cancel();
     await _daySub?.cancel();
     return super.close();
   }
@@ -247,32 +239,73 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
       picks: const <my_day.MyDayPick>[],
     );
 
-    await _allocationSub?.cancel();
-    await _tasksSub?.cancel();
-    await _dayPicksSub?.cancel();
-    await _allocationConfigSub?.cancel();
-    await _globalSettingsSub?.cancel();
     await _daySub?.cancel();
 
-    _allocationSub = _allocationOrchestrator.watchAllocation().listen((result) {
-      _allocationResult = result;
-      add(const _MyDayRitualInputsChanged());
-    });
+    emit(const MyDayRitualLoading());
+    await _refreshSnapshots(resetSelection: true);
+    add(const _MyDayRitualInputsChanged());
 
-    _tasksSub = _taskRepository.watchAll(TaskQuery.incomplete()).listen((
-      tasks,
-    ) {
-      _tasks = tasks;
-      add(const _MyDayRitualInputsChanged());
-    });
+    _daySub = _temporalTriggerService.events
+        .where((e) => e is HomeDayBoundaryCrossed || e is AppResumed)
+        .listen((event) async {
+          final nextDay = _dayKeyService.todayDayKeyUtc();
+          final isDayChange = !_isSameDayUtc(nextDay, _dayKeyUtc);
 
-    _dayPicksSub = _myDayRepository.watchDay(_dayKeyUtc).listen((picks) {
+          if (isDayChange) {
+            myDayTrace(
+              '[MyDayRitualBloc#$_instanceId] day boundary crossed '
+              'dayKeyUtc:${_dayKeyUtc.toIso8601String()} -> ${nextDay.toIso8601String()}',
+            );
+            _dayKeyUtc = nextDay;
+            await _refreshSnapshots(resetSelection: true);
+            add(const _MyDayRitualInputsChanged());
+            return;
+          }
+
+          // Optional refresh on app resume, but avoid clobbering in-progress
+          // ritual selection.
+          if (event is AppResumed && !_hasUserSelection) {
+            myDayTrace(
+              '[MyDayRitualBloc#$_instanceId] app resumed; refreshing snapshots',
+            );
+            await _refreshSnapshots(resetSelection: false);
+            add(const _MyDayRitualInputsChanged());
+          }
+        });
+  }
+
+  Future<void> _refreshSnapshots({required bool resetSelection}) async {
+    final inFlight = _refreshCompleter;
+    if (inFlight != null) {
+      await inFlight.future;
+      return;
+    }
+    final completer = Completer<void>();
+    _refreshCompleter = completer;
+
+    if (resetSelection) {
+      _hasUserSelection = false;
+      _selectedTaskIds = <String>{};
+    }
+
+    try {
+      final results = await Future.wait([
+        _settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
+        _settingsRepository.load<settings.GlobalSettings>(SettingsKey.global),
+        _myDayRepository.loadDay(_dayKeyUtc),
+        _taskRepository.getAll(TaskQuery.incomplete()),
+        _allocationOrchestrator.getAllocationSnapshot(),
+      ]);
+
+      _allocationConfig = results[0] as AllocationConfig;
+      _globalSettings = results[1] as settings.GlobalSettings;
+
+      final picks = results[2] as my_day.MyDayDayPicks;
       final before = _dayPicks.ritualCompletedAtUtc;
       _dayPicks = picks;
-
       if (before != _dayPicks.ritualCompletedAtUtc) {
         myDayTrace(
-          '[MyDayRitualBloc#$_instanceId] dayPicks changed '
+          '[MyDayRitualBloc#$_instanceId] dayPicks loaded '
           'dayKeyUtc=${_dayPicks.dayKeyUtc.toIso8601String()} '
           'ritualCompletedAtUtc:${before?.toIso8601String() ?? "<null>"}'
           ' -> ${_dayPicks.ritualCompletedAtUtc?.toIso8601String() ?? "<null>"} '
@@ -281,48 +314,13 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
           'lastConfirmCorrelationId=${_lastConfirmCorrelationId ?? "<null>"}',
         );
       }
-      add(const _MyDayRitualInputsChanged());
-    });
 
-    _allocationConfigSub = _settingsRepository
-        .watch<AllocationConfig>(SettingsKey.allocation)
-        .listen((config) {
-          _allocationConfig = config;
-          add(const _MyDayRitualInputsChanged());
-        });
-
-    _globalSettingsSub = _settingsRepository
-        .watch<settings.GlobalSettings>(SettingsKey.global)
-        .listen((settings) {
-          _globalSettings = settings;
-          add(const _MyDayRitualInputsChanged());
-        });
-
-    _daySub = _temporalTriggerService.events
-        .where((e) => e is HomeDayBoundaryCrossed || e is AppResumed)
-        .listen((_) {
-          final nextDay = _dayKeyService.todayDayKeyUtc();
-          if (!_isSameDayUtc(nextDay, _dayKeyUtc)) {
-            myDayTrace(
-              '[MyDayRitualBloc#$_instanceId] day boundary crossed '
-              'dayKeyUtc:${_dayKeyUtc.toIso8601String()} -> ${nextDay.toIso8601String()}',
-            );
-            _dayKeyUtc = nextDay;
-            _dayPicks = my_day.MyDayDayPicks(
-              dayKeyUtc: dateOnly(_dayKeyUtc),
-              ritualCompletedAtUtc: null,
-              picks: const <my_day.MyDayPick>[],
-            );
-            _hasUserSelection = false;
-            _selectedTaskIds = <String>{};
-            _dayPicksSub?.cancel();
-            _dayPicksSub = _myDayRepository.watchDay(_dayKeyUtc).listen((p) {
-              _dayPicks = p;
-              add(const _MyDayRitualInputsChanged());
-            });
-            add(const _MyDayRitualInputsChanged());
-          }
-        });
+      _tasks = results[3] as List<Task>;
+      _allocationResult = results[4] as AllocationResult;
+    } finally {
+      _refreshCompleter = null;
+      completer.complete();
+    }
   }
 
   void _onInputsChanged(
@@ -662,6 +660,13 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         context: context,
       );
 
+      _dayPicks = my_day.MyDayDayPicks(
+        dayKeyUtc: dateOnly(_dayKeyUtc),
+        ritualCompletedAtUtc: nowUtc,
+        picks: picks,
+      );
+      add(const _MyDayRitualInputsChanged());
+
       myDayTrace(
         '[MyDayRitualBloc#$_instanceId] setDayPicks done '
         'correlationId=${context.correlationId}',
@@ -752,6 +757,9 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
       bucket: bucket,
       context: context,
     );
+
+    _dayPicks = await _myDayRepository.loadDay(_dayKeyUtc);
+    add(const _MyDayRitualInputsChanged());
   }
 
   List<Task> _buildPlanned(List<Task> tasks, DateTime dayKeyUtc) {

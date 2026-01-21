@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
@@ -150,7 +151,7 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'All set for today.',
+                            context.l10n.myDayRitualAllSetTitle,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
@@ -160,7 +161,7 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'You completed everything you planned today.',
+                      context.l10n.myDayRitualAllSetSubtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: cs.onSurfaceVariant,
                       ),
@@ -172,7 +173,7 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
                         child: TextButton.icon(
                           onPressed: widget.onAddOneMoreFocus,
                           icon: const Icon(Icons.add_rounded, size: 18),
-                          label: const Text('Add one more focus'),
+                          label: Text(context.l10n.myDayRitualAddOneMoreFocus),
                         ),
                       ),
                   ],
@@ -181,54 +182,54 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
               const SizedBox(height: 10),
             ],
             _BucketSection(
-              title: 'Overdue & due',
+              title: context.l10n.myDayRitualOverdueDueTitle,
               acceptedTasks: widget.acceptedDue,
               counts: widget.dueCounts,
               expanded: _dueExpanded,
               onToggleExpanded: () =>
                   setState(() => _dueExpanded = !_dueExpanded),
               onTapOther: widget.onAddMissingDue,
-              otherLabel: 'not in today',
+              otherLabel: context.l10n.myDayRitualNotInTodayLabel,
               emptyTitle: widget.dueCounts.otherCount == 0
-                  ? "You're caught up."
-                  : 'Nothing added here yet.',
+                  ? context.l10n.myDayRitualCaughtUpTitle
+                  : context.l10n.myDayRitualNothingAddedHereYetTitle,
               emptySubtitle: widget.dueCounts.otherCount == 0
-                  ? 'No overdue or due items in your plan.'
-                  : 'Review what’s available above if you want to add any.',
+                  ? context.l10n.myDayRitualDueEmptySubtitle
+                  : context.l10n.myDayRitualReviewAvailableAboveSubtitle,
               previewCount: _previewCount,
             ),
             if (!hideStartsSection) ...[
               const SizedBox(height: 10),
               _BucketSection(
-                title: 'Starts today',
+                title: context.l10n.myDayRitualStartsTodayTitle,
                 acceptedTasks: widget.acceptedStarts,
                 counts: widget.startsCounts,
                 expanded: _startsExpanded,
                 onToggleExpanded: () =>
                     setState(() => _startsExpanded = !_startsExpanded),
                 onTapOther: widget.onAddMissingStarts,
-                otherLabel: 'not in today',
+                otherLabel: context.l10n.myDayRitualNotInTodayLabel,
                 emptyTitle: widget.startsCounts.otherCount == 0
-                    ? 'Nothing scheduled to start today.'
-                    : 'Nothing added here yet.',
+                    ? context.l10n.myDayRitualStartsEmptyTitle
+                    : context.l10n.myDayRitualNothingAddedHereYetTitle,
                 emptySubtitle: widget.startsCounts.otherCount == 0
-                    ? 'This section will appear when tasks become available.'
-                    : 'Review what’s available above if you want to add any.',
+                    ? context.l10n.myDayRitualStartsEmptySubtitle
+                    : context.l10n.myDayRitualReviewAvailableAboveSubtitle,
                 previewCount: _previewCount,
               ),
             ],
             const SizedBox(height: 10),
             _BucketSection(
-              title: 'Today’s Focus',
+              title: context.l10n.myDayRitualTodaysFocusTitle,
               acceptedTasks: widget.acceptedFocus,
               counts: widget.focusCounts,
               expanded: _focusExpanded,
               onToggleExpanded: () =>
                   setState(() => _focusExpanded = !_focusExpanded),
               onTapOther: null,
-              otherLabel: 'not in today',
-              emptyTitle: 'Nothing accepted here.',
-              emptySubtitle: 'No focus items accepted for today.',
+              otherLabel: context.l10n.myDayRitualNotInTodayLabel,
+              emptyTitle: context.l10n.myDayRitualFocusEmptyTitle,
+              emptySubtitle: context.l10n.myDayRitualFocusEmptySubtitle,
               previewCount: _previewCount,
               subtitleForTask: (task) {
                 final reason = widget.focusReasons[task.id];
@@ -292,15 +293,11 @@ class _BucketSection extends StatelessWidget {
         counts.otherCount > 0;
 
     final effectiveEmptyTitle = suppressCountsLine
-        ? 'Nothing added yet.'
+        ? context.l10n.myDayRitualNothingAddedYetTitle
         : emptyTitle;
 
     final effectiveEmptySubtitle = suppressCountsLine
-        ? () {
-            final otherCount = counts.otherCount;
-            final n = otherCount == 1 ? '1 task' : '$otherCount tasks';
-            return '$n not in today. Tap to review and add.';
-          }()
+        ? context.l10n.myDayRitualOtherNotInTodayHint(counts.otherCount)
         : emptySubtitle;
 
     return Padding(
@@ -383,8 +380,11 @@ class _BucketSection extends StatelessWidget {
                     onPressed: onToggleExpanded,
                     child: Text(
                       expanded
-                          ? 'Show fewer'
-                          : 'Show $remaining more (${acceptedTasks.length})',
+                          ? context.l10n.myDayRitualShowFewer
+                          : context.l10n.myDayRitualShowMore(
+                              remaining,
+                              acceptedTasks.length,
+                            ),
                       style: theme.textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -418,7 +418,7 @@ class _AcceptedTaskTile extends StatelessWidget {
       context,
       task: task,
       tileCapabilities: tileCapabilities,
-      showProjectLabel: true,
+      showProjectLabel: false,
     );
 
     final subtitleText = this.subtitleText;
@@ -490,8 +490,8 @@ class _CountsLine extends StatelessWidget {
       TextSpan(
         style: baseStyle,
         children: [
-          TextSpan(text: '$acceptedCount accepted'),
-          if (otherCount > 0) const TextSpan(text: ' · '),
+          TextSpan(text: context.l10n.myDayRitualAcceptedCount(acceptedCount)),
+          if (otherCount > 0) TextSpan(text: context.l10n.dotSeparator),
           if (otherCount > 0 && showOtherAsLink)
             WidgetSpan(
               alignment: PlaceholderAlignment.baseline,
@@ -512,7 +512,7 @@ class _CountsLine extends StatelessWidget {
                         vertical: 2,
                       ),
                       child: Text(
-                        '$otherCount $otherLabel',
+                        context.l10n.countWithLabel(otherCount, otherLabel),
                         style: chipTextStyle,
                       ),
                     ),
@@ -521,7 +521,7 @@ class _CountsLine extends StatelessWidget {
               ),
             )
           else if (otherCount > 0)
-            TextSpan(text: '$otherCount $otherLabel'),
+            TextSpan(text: context.l10n.countWithLabel(otherCount, otherLabel)),
         ],
       ),
     );

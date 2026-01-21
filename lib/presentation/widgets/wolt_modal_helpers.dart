@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_ui/taskly_ui_forms.dart';
 
 /// Helper to centralize modal usage for detail sheets.
 ///
@@ -70,6 +71,7 @@ Future<T?> _showAsBottomSheet<T>({
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
+    showDragHandle: showDragHandle,
     isDismissible: barrierDismissible,
     useSafeArea: useSafeArea,
     backgroundColor: Theme.of(context).colorScheme.surface,
@@ -86,18 +88,6 @@ Future<T?> _showAsBottomSheet<T>({
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (showDragHandle)
-                Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 8),
-                  width: 32,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      modalContext,
-                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
               Flexible(
                 child: ModalChromeScope(
                   modalHasDragHandle: showDragHandle,
@@ -150,29 +140,4 @@ Future<T?> _showAsDialog<T>({
       );
     },
   );
-}
-
-/// Inherited config for coordinating modal chrome between containers (sheet/
-/// dialog) and inner content widgets.
-///
-/// This is used to avoid duplicated affordances like drag handles when the
-/// modal container already renders one.
-class ModalChromeScope extends InheritedWidget {
-  const ModalChromeScope({
-    required super.child,
-    required this.modalHasDragHandle,
-    super.key,
-  });
-
-  /// True when the modal container already renders a drag handle.
-  final bool modalHasDragHandle;
-
-  static ModalChromeScope? maybeOf(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<ModalChromeScope>();
-  }
-
-  @override
-  bool updateShouldNotify(ModalChromeScope oldWidget) {
-    return modalHasDragHandle != oldWidget.modalHasDragHandle;
-  }
 }

@@ -26,8 +26,8 @@ Key goals:
 
 Primary entrypoints:
 
-- `AllocationOrchestrator.watchAllocation()` computes the **Suggested** list
-  (ephemeral suggestions).
+- `AllocationOrchestrator.getAllocationSnapshot()` computes the **Suggested**
+  list (ephemeral suggestions).
 - `MyDayRepositoryContract.watchDay(dayKeyUtc)` provides the **persisted ritual
   selection** for the day (source of truth for “today”).
 
@@ -44,8 +44,8 @@ My Day screen (Presentation)
     -> else: show ritual flow and suggestions
 
 Ritual flow (Presentation)
-  -> AllocationOrchestrator.watchAllocation()
-    -> repositories/watchers (tasks, projects, settings)
+  -> AllocationOrchestrator.getAllocationSnapshot()
+    -> repositories (tasks, projects, settings)
     -> build value category weights (from Value.priority)
     -> (optional) AnalyticsService.getRecentCompletionsByValue()
     -> SuggestedPicksEngine.allocate(parameters)

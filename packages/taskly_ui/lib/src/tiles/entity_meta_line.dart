@@ -114,7 +114,6 @@ class EntityMetaLine extends StatelessWidget {
 
           // --- Optional extras (project / repeat / priority) with overflow ---
           final optionalWidgets = <Widget>[];
-          var hiddenCount = 0;
 
           final hasProjectName =
               model.projectName != null && model.projectName!.trim().isNotEmpty;
@@ -223,49 +222,11 @@ class EntityMetaLine extends StatelessWidget {
               );
               remaining -= total;
             } else {
-              hiddenCount += 1;
+              // Extra does not fit; skip it.
             }
           }
 
-          final showEllipsis = hiddenCount > 0 || model.showOverflowEllipsis;
-
-          final overflowWidget = !showEllipsis
-              ? null
-              : _TapAbsorber(
-                  child: Text(
-                    '…',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.75),
-                      fontSize: 14,
-                      height: 1,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                  ),
-                );
-
-          if (overflowWidget != null) {
-            final overflowWidth = _measureTextWidth(
-              context,
-              text: '…',
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            );
-
-            final needsSpacing = optionalWidgets.isNotEmpty;
-            final total = overflowWidth + (needsSpacing ? spacing : 0);
-
-            if (remaining >= total) {
-              if (needsSpacing) {
-                optionalWidgets.add(const SizedBox(width: spacing));
-              }
-              optionalWidgets.add(overflowWidget);
-            }
-          }
+          // Meta overflow indicator is intentionally not rendered.
 
           return Row(
             crossAxisAlignment: CrossAxisAlignment.center,
