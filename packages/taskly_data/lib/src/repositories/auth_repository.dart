@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/telemetry.dart';
@@ -11,10 +12,14 @@ class AuthRepository implements AuthRepositoryContract {
 
   final SupabaseClient _client;
 
+  late final Stream<AuthState> _authStateStream = _client.auth.onAuthStateChange
+      // Shared + replay-last so multiple UI listeners can attach safely.
+      .shareReplay(maxSize: 1);
+
   @override
   Stream<AuthState> watchAuthState() {
     AppLog.routine('data.auth', 'watchAuthState: subscribing to auth changes');
-    return _client.auth.onAuthStateChange;
+    return _authStateStream;
   }
 
   @override
@@ -25,7 +30,9 @@ class AuthRepository implements AuthRepositoryContract {
 
   @override
   Future<AuthResponse> signInWithPassword({
-    required String email, required String password, OperationContext? context,
+    required String email,
+    required String password,
+    OperationContext? context,
   }) async {
     AppLog.info(
       'data.auth',
@@ -53,7 +60,9 @@ class AuthRepository implements AuthRepositoryContract {
 
   @override
   Future<AuthResponse> signUp({
-    required String email, required String password, OperationContext? context,
+    required String email,
+    required String password,
+    OperationContext? context,
   }) async {
     AppLog.info('data.auth', 'signUp: email=${AppLog.maskEmail(email)}');
     try {

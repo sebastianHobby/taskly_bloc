@@ -3,6 +3,7 @@ import 'package:taskly_domain/src/preferences/model/sort_preferences.dart';
 import 'package:taskly_domain/src/time/date_only.dart';
 import 'package:taskly_domain/src/queries/value_match_mode.dart';
 import 'package:taskly_domain/src/queries/occurrence_expansion.dart';
+import 'package:taskly_domain/src/queries/occurrence_preview.dart';
 import 'package:taskly_domain/src/queries/query_filter.dart';
 import 'package:taskly_domain/src/queries/task_predicate.dart';
 
@@ -16,6 +17,7 @@ class TaskQuery {
     this.filter = const QueryFilter<TaskPredicate>.matchAll(),
     this.sortCriteria = const [],
     this.occurrenceExpansion,
+    this.occurrencePreview,
   });
 
   factory TaskQuery.fromJson(Map<String, dynamic> json) {
@@ -33,6 +35,11 @@ class TaskQuery {
       occurrenceExpansion: json['occurrenceExpansion'] != null
           ? OccurrenceExpansion.fromJson(
               json['occurrenceExpansion'] as Map<String, dynamic>,
+            )
+          : null,
+      occurrencePreview: json['occurrencePreview'] != null
+          ? OccurrencePreview.fromJson(
+              json['occurrencePreview'] as Map<String, dynamic>,
             )
           : null,
     );
@@ -373,12 +380,20 @@ class TaskQuery {
   /// Optional configuration for expanding repeating tasks into occurrences.
   final OccurrenceExpansion? occurrenceExpansion;
 
+  /// Optional configuration for previewing the next (single) occurrence.
+  ///
+  /// This is mutually exclusive with [occurrenceExpansion].
+  final OccurrencePreview? occurrencePreview;
+
   // ========================================================================
   // Helper Properties
   // ========================================================================
 
   /// Whether this query should expand repeating tasks into occurrences.
   bool get shouldExpandOccurrences => occurrenceExpansion != null;
+
+  /// Whether this query should compute a single next occurrence preview.
+  bool get hasOccurrencePreview => occurrencePreview != null;
 
   /// Whether this query filters by project.
   bool get hasProjectFilter {
@@ -401,13 +416,27 @@ class TaskQuery {
     List<SortCriterion>? sortCriteria,
     OccurrenceExpansion? occurrenceExpansion,
     bool clearOccurrenceExpansion = false,
+    OccurrencePreview? occurrencePreview,
+    bool clearOccurrencePreview = false,
   }) {
+    final nextOccurrenceExpansion = clearOccurrenceExpansion
+        ? null
+        : (occurrenceExpansion ?? this.occurrenceExpansion);
+
+    final nextOccurrencePreview = clearOccurrencePreview
+        ? null
+        : (occurrencePreview ?? this.occurrencePreview);
+
+    assert(
+      nextOccurrenceExpansion == null || nextOccurrencePreview == null,
+      'TaskQuery cannot set both occurrenceExpansion and occurrencePreview.',
+    );
+
     return TaskQuery(
       filter: filter ?? this.filter,
       sortCriteria: sortCriteria ?? this.sortCriteria,
-      occurrenceExpansion: clearOccurrenceExpansion
-          ? null
-          : (occurrenceExpansion ?? this.occurrenceExpansion),
+      occurrenceExpansion: nextOccurrenceExpansion,
+      occurrencePreview: nextOccurrencePreview,
     );
   }
 
@@ -428,6 +457,11 @@ class TaskQuery {
     return copyWith(occurrenceExpansion: expansion);
   }
 
+  /// Creates a copy with occurrence preview enabled.
+  TaskQuery withOccurrencePreview(OccurrencePreview preview) {
+    return copyWith(occurrencePreview: preview);
+  }
+
   // ========================================================================
   // Equality & Hash
   // ========================================================================
@@ -438,7 +472,8 @@ class TaskQuery {
     return other is TaskQuery &&
         other.filter == filter &&
         _listEquals(other.sortCriteria, sortCriteria) &&
-        other.occurrenceExpansion == occurrenceExpansion;
+        other.occurrenceExpansion == occurrenceExpansion &&
+        other.occurrencePreview == occurrencePreview;
   }
 
   @override
@@ -446,12 +481,14 @@ class TaskQuery {
     filter,
     Object.hashAll(sortCriteria),
     occurrenceExpansion,
+    occurrencePreview,
   );
 
   @override
   String toString() {
     return 'TaskQuery(filter: $filter, sortCriteria: $sortCriteria, '
-        'occurrenceExpansion: $occurrenceExpansion)';
+        'occurrenceExpansion: $occurrenceExpansion, '
+        'occurrencePreview: $occurrencePreview)';
   }
 
   // ========================================================================
@@ -462,6 +499,7 @@ class TaskQuery {
     'filter': filter.toJson((p) => p.toJson()),
     'sortCriteria': sortCriteria.map((s) => s.toJson()).toList(),
     'occurrenceExpansion': occurrenceExpansion?.toJson(),
+    'occurrencePreview': occurrencePreview?.toJson(),
   };
 
   // ========================================================================

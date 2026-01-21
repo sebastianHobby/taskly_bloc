@@ -102,8 +102,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   final AnytimeScope? _scope;
 
   List<Task> _latestTasks = const <Task>[];
-  Map<String, OccurrenceData> _nextTaskOccurrenceById =
-      const <String, OccurrenceData>{};
   Set<String> _todaySelectedTaskIds = const <String>{};
   DateTime _todayDayKeyUtc = DateTime.fromMillisecondsSinceEpoch(
     0,
@@ -162,8 +160,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   }
 
   Future<void> _bind(Emitter<AnytimeFeedState> emit) async {
-    final query = _scopeQuery(TaskQuery.incomplete(), _scope);
-
     final dayKeyStream = Rx.merge<DateTime>([
       Stream<DateTime>.value(_dayKeyService.todayDayKeyUtc()),
       _temporalTriggerService.events
@@ -172,6 +168,14 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
           )
           .map((_) => _dayKeyService.todayDayKeyUtc()),
     ]).distinct().shareValue();
+
+    final queryStream = dayKeyStream.map((dayKey) {
+      // Anytime is not date-scoped, but repeating tasks need a single “next”
+      // occurrence for correct rendering + completion targeting.
+      final preview = OccurrencePreview(asOfDayKey: dayKey);
+      final base = TaskQuery.incomplete().withOccurrencePreview(preview);
+      return _scopeQuery(base, _scope);
+    });
 
     final todaySelectionIdsStream = dayKeyStream
         .switchMap(_myDayRepository.watchDay)
@@ -183,26 +187,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
               .toSet();
         })
         .distinct(_areSetsEqual);
-
-    final nextOccurrenceByTaskIdStream = dayKeyStream.switchMap((dayKey) {
-      // Anytime is not date-scoped, but "Complete" should target the next
-      // occurrence for repeating tasks. We maintain a map of the next
-      // uncompleted occurrence per task id.
-      //
-      // Keep the range wide enough to catch rolling schedules.
-      final rangeStart = dayKey.subtract(const Duration(days: 365));
-      final rangeEnd = dayKey.add(const Duration(days: 730));
-
-      return _taskRepository
-          .watchOccurrences(rangeStart: rangeStart, rangeEnd: rangeEnd)
-          .map(
-            (occurrences) =>
-                NextOccurrenceSelector.nextUncompletedTaskOccurrenceByTaskId(
-                  expandedTasks: occurrences,
-                  asOfDay: dayKey,
-                ),
-          );
-    });
 
     await Future.wait<void>([
       emit.onEach<DateTime>(
@@ -216,7 +200,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
         },
       ),
       emit.onEach<List<Task>>(
-        _taskRepository.watchAll(query),
+        queryStream.switchMap(_taskRepository.watchAll),
         onData: (tasks) {
           _latestTasks = tasks;
           _emitRows(emit);
@@ -229,16 +213,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
         todaySelectionIdsStream,
         onData: (selectedIds) {
           _todaySelectedTaskIds = selectedIds;
-          _emitRows(emit);
-        },
-        onError: (error, stackTrace) {
-          emit(AnytimeFeedError(message: error.toString()));
-        },
-      ),
-      emit.onEach<Map<String, OccurrenceData>>(
-        nextOccurrenceByTaskIdStream,
-        onData: (map) {
-          _nextTaskOccurrenceById = map;
           _emitRows(emit);
         },
         onError: (error, stackTrace) {
@@ -278,11 +252,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
           .where((t) => search.isEmpty || _matchesSearch(t, search))
           .toList(growable: false);
 
-      final tasksWithNextOccurrence = tasks
-          .map(_decorateWithNextOccurrence)
-          .toList(growable: false);
-
-      final rows = _mapToRows(tasksWithNextOccurrence);
+      final rows = _mapToRows(tasks);
       emit(AnytimeFeedLoaded(rows: rows));
     } catch (e) {
       emit(AnytimeFeedError(message: e.toString()));
@@ -295,17 +265,8 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     return a.containsAll(b);
   }
 
-  Task _decorateWithNextOccurrence(Task task) {
-    if (!task.isRepeating || task.seriesEnded) return task;
-
-    final next = _nextTaskOccurrenceById[task.id];
-    if (next == null) return task;
-
-    return task.copyWith(occurrence: next);
-  }
-
   bool _isStartLater(Task task) {
-    final taskStart = task.startDate;
+    final taskStart = task.occurrence?.date ?? task.startDate;
     if (taskStart != null && taskStart.isAfter(_todayDayKeyUtc)) return true;
 
     final projectStart = task.project?.startDate;

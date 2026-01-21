@@ -13,6 +13,14 @@ import 'package:taskly_domain/src/telemetry/operation_context.dart';
 /// Repository contract for journal data.
 ///
 /// Phase 02 replaces the tracker-related APIs.
+///
+/// Stream contract (all `watch*` methods unless otherwise documented):
+/// - broadcast: do not assume (treat as single-subscription per returned stream)
+/// - replay: none
+/// - cold/hot: typically hot (backed by local persistence watchers)
+///
+/// Implementation rule: if an implementation caches any `watch*` stream, the
+/// cached stream must be broadcast/shared (do not cache raw single-sub streams).
 abstract class JournalRepositoryContract {
   // === Journal Entries ===
 

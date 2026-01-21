@@ -6,6 +6,11 @@ abstract class ValueRepositoryContract {
   /// Watch values with optional filtering.
   ///
   /// If [query] is null, returns all values.
+  ///
+  /// Stream contract:
+  /// - broadcast: do not assume
+  /// - replay: none
+  /// - cold/hot: typically hot
   Stream<List<Value>> watchAll([ValueQuery? query]);
 
   /// Get values with optional filtering.
@@ -13,6 +18,12 @@ abstract class ValueRepositoryContract {
   /// If [query] is null, returns all values.
   Future<List<Value>> getAll([ValueQuery? query]);
 
+  /// Watch a value by id.
+  ///
+  /// Stream contract:
+  /// - broadcast: do not assume
+  /// - replay: none
+  /// - cold/hot: typically hot
   Stream<Value?> watchById(String id);
   Future<Value?> getById(String id);
 
