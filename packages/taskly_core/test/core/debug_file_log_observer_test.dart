@@ -60,7 +60,7 @@ void main() {
       expect(content, contains('Oops'));
     });
 
-    testSafe('init rotates an existing oversized log file', () async {
+    testSafe('init truncates an existing oversized log file', () async {
       final tempDir = await Directory.systemTemp.createTemp(
         'taskly_core_logs_',
       );
@@ -72,6 +72,7 @@ void main() {
       await existing.writeAsString('B' * 1000);
 
       final observer = DebugFileLogObserver(
+        maxFileBytes: 100,
         supportDirectoryProvider: () async => tempDir,
       );
       await observer.ensureInitializedForTest();
@@ -80,7 +81,8 @@ void main() {
       expect(await rotated0.exists(), isFalse);
 
       final content = await existing.readAsString();
-      expect(content, contains('B'));
+      expect(content, isNot(contains('B')));
+      expect(content, contains('cleared'));
     });
 
     testSafe('init failure causes subsequent writes to be no-ops', () async {

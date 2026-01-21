@@ -35,12 +35,14 @@ final class TasklyStandardTileListIconHeaderRowModel
     required super.depth,
     required this.title,
     required this.leadingIcon,
+    this.trailingLabel,
     this.onTap,
     this.trailingIcon = Icons.chevron_right,
   });
 
   final String title;
   final IconData leadingIcon;
+  final String? trailingLabel;
   final VoidCallback? onTap;
   final IconData? trailingIcon;
 }
@@ -205,6 +207,17 @@ class _IconHeaderRow extends StatelessWidget {
             ),
           ),
         ),
+        if (row.trailingLabel != null) ...[
+          Text(
+            row.trailingLabel!,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.72),
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
         if (tappable && row.trailingIcon != null)
           Icon(row.trailingIcon, size: 18, color: scheme.onSurfaceVariant),
       ],

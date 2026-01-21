@@ -162,9 +162,61 @@
     "@cancelLabel": {
         "description": "Generic cancel action label"
     },
+    "backLabel": "Back",
+    "@backLabel": {
+        "description": "Generic back navigation label."
+    },
     "closeLabel": "Close",
     "@closeLabel": {
         "description": "Generic close action label"
+    },
+    "manageLabel": "Manage",
+    "@manageLabel": {
+        "description": "Generic label for managing settings/items."
+    },
+    "clearLabel": "Clear",
+    "@clearLabel": {
+        "description": "Generic clear/reset action label (clears a selection)."
+    },
+    "priorityLabel": "Priority",
+    "@priorityLabel": {
+        "description": "Generic label for priority selection."
+    },
+    "allLabel": "All",
+    "@allLabel": {
+        "description": "Generic label meaning all items/scopes."
+    },
+    "anytimeScopePickerTitle": "Choose scope",
+    "@anytimeScopePickerTitle": {
+        "description": "Title for the Anytime scope picker sheet."
+    },
+    "anytimeScopePickerSearchHint": "Search values and projects",
+    "@anytimeScopePickerSearchHint": {
+        "description": "Hint text for searching values and projects in the Anytime scope picker."
+    },
+    "anytimeScopePickerNoMatchesTitle": "No matches",
+    "@anytimeScopePickerNoMatchesTitle": {
+        "description": "Title shown when the Anytime scope picker search has no matches."
+    },
+    "anytimeScopePickerNoMatchesBody": "Try a different search.",
+    "@anytimeScopePickerNoMatchesBody": {
+        "description": "Body text shown when the Anytime scope picker search has no matches."
+    },
+    "anytimeScopePickerNoValuesTitle": "No values yet",
+    "@anytimeScopePickerNoValuesTitle": {
+        "description": "Title shown when there are no values to pick in the Anytime scope picker."
+    },
+    "anytimeScopePickerNoValuesBody": "Create a value to filter by it.",
+    "@anytimeScopePickerNoValuesBody": {
+        "description": "Body text shown when there are no values to pick in the Anytime scope picker."
+    },
+    "anytimeScopePickerNoProjectsTitle": "No projects yet",
+    "@anytimeScopePickerNoProjectsTitle": {
+        "description": "Title shown when there are no projects to pick in the Anytime scope picker."
+    },
+    "anytimeScopePickerNoProjectsBody": "Create a project to filter by it.",
+    "@anytimeScopePickerNoProjectsBody": {
+        "description": "Body text shown when there are no projects to pick in the Anytime scope picker."
     },
     "deleteLabel": "Delete",
     "@deleteLabel": {
@@ -1521,9 +1573,125 @@
     "@setUpMyValues": {
         "description": "Button to set up values"
     },
+    "focusSetupFinalizeTitle": "Ready to use Focus.",
+    "@focusSetupFinalizeTitle": {
+        "description": "Title shown on the finalize step of the Focus Setup wizard."
+    },
+    "focusSetupFinalizeSubtitle": "You can change this anytime in settings.",
+    "@focusSetupFinalizeSubtitle": {
+        "description": "Subtitle shown on the finalize step of the Focus Setup wizard."
+    },
+    "focusSetupFinalizeFocusModeLabel": "Focus mode: {modeName}",
+    "@focusSetupFinalizeFocusModeLabel": {
+        "description": "Label showing the selected focus mode on the finalize step.",
+        "placeholders": {
+            "modeName": {
+                "type": "String",
+                "example": "Deep Work"
+            }
+        }
+    },
+    "focusSetupFinalizeValuesLabel": "Values: {count}",
+    "@focusSetupFinalizeValuesLabel": {
+        "description": "Label showing the number of values configured on the finalize step.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "focusSetupSuggestionsPerBatchTitle": "Suggestions per batch",
+    "@focusSetupSuggestionsPerBatchTitle": {
+        "description": "Title for the suggestions-per-batch setting on the Focus Setup finalize step."
+    },
+    "focusSetupSuggestionsPerBatchDescription": "How many Suggested items to show when you generate a new batch in My Day.",
+    "@focusSetupSuggestionsPerBatchDescription": {
+        "description": "Helper text describing suggestions-per-batch on the Focus Setup finalize step."
+    },
+    "focusSetupValueBalancingTitle": "Value balancing",
+    "@focusSetupValueBalancingTitle": {
+        "description": "Title for the value balancing section in Focus Setup."
+    },
+    "focusSetupValueBalancingSwitchLabel": "Keep my values in balance",
+    "@focusSetupValueBalancingSwitchLabel": {
+        "description": "Label for the value balancing switch in Focus Setup."
+    },
+    "focusSetupValueBalancingTooltip": "About value balancing\n\nWhen enabled, Suggested picks may include a small number of tasks from values you've focused on less recently. It's always a gentle nudge and never overrides your plan.",
+    "@focusSetupValueBalancingTooltip": {
+        "description": "Tooltip text explaining value balancing in Focus Setup."
+    },
+    "focusSetupValueBalancingSubtitle": "Suggested picks can gently rebalance across your values.",
+    "@focusSetupValueBalancingSubtitle": {
+        "description": "Subtitle describing the effect of value balancing in Focus Setup."
+    },
+    "focusSetupSafetyNetTitle": "Safety net alerts",
+    "@focusSetupSafetyNetTitle": {
+        "description": "Title for the safety net alerts card in Focus Setup."
+    },
+    "focusSetupSafetyNetBody": "Even if you pick a values-first mode, Taskly can still warn you about urgent deadlines or big gaps. Alerts are optional and fully configurable.",
+    "@focusSetupSafetyNetBody": {
+        "description": "Body text describing safety net alerts in Focus Setup."
+    },
+    "focusSetupValuesCtaTitle": "Focus works best when you define what matters to you.",
+    "@focusSetupValuesCtaTitle": {
+        "description": "Title text in the values CTA step of Focus Setup."
+    },
+    "focusSetupValuesCtaBody": "Add at least one value (Health, Family, Craft, Learning…) so values-first modes can make smart tradeoffs.",
+    "@focusSetupValuesCtaBody": {
+        "description": "Body text in the values CTA step of Focus Setup."
+    },
+    "focusSetupValuesCountLabel": "{count, plural, =1{You have 1 value} other{You have {count} values}}",
+    "@focusSetupValuesCountLabel": {
+        "description": "Label showing how many values the user has during Focus Setup.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "focusSetupQuickAddValueLabel": "Quick add a value",
+    "@focusSetupQuickAddValueLabel": {
+        "description": "Label text for the quick-add value field in Focus Setup."
+    },
+    "focusSetupQuickAddValueHint": "e.g. Health",
+    "@focusSetupQuickAddValueHint": {
+        "description": "Hint text for the quick-add value field in Focus Setup."
+    },
+    "focusSetupCreateCustomValueLabel": "Create a custom value",
+    "@focusSetupCreateCustomValueLabel": {
+        "description": "Button label to open the custom value editor during Focus Setup."
+    },
+    "focusSetupOpenValuesLabel": "Open Values",
+    "@focusSetupOpenValuesLabel": {
+        "description": "Button label to open the Values screen from Focus Setup."
+    },
     "myDayTitle": "My Day",
     "@myDayTitle": {
         "description": "Title for the My Day screen"
+    },
+    "myDayUpdatePlanTitle": "Update plan",
+    "@myDayUpdatePlanTitle": {
+        "description": "Title/label used for updating today's plan in My Day."
+    },
+    "myDayPlanCardTitle": "Plan for today",
+    "@myDayPlanCardTitle": {
+        "description": "Title shown in the My Day plan card when nothing is selected yet."
+    },
+    "myDayPlanCardTitleWithPicked": "Plan for today · {count}",
+    "@myDayPlanCardTitleWithPicked": {
+        "description": "Title shown in the My Day plan card when items have been selected.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "myDayPlanCardButtonPlan": "Plan",
+    "@myDayPlanCardButtonPlan": {
+        "description": "Button label to start planning My Day (open the ritual wizard)."
     },
     "myDayPreparingTitle": "Preparing My Day",
     "@myDayPreparingTitle": {
@@ -1556,6 +1724,186 @@
     "myDayRitualOverdueDueTitle": "Overdue & due",
     "@myDayRitualOverdueDueTitle": {
         "description": "Section title for overdue and due tasks in the My Day ritual."
+    },
+    "myDayRitualTitle": "Choose what matters",
+    "@myDayRitualTitle": {
+        "description": "Title shown at the top of the My Day ritual wizard when planning."
+    },
+    "myDayRitualSubtitle": "My Day keeps you on track.",
+    "@myDayRitualSubtitle": {
+        "description": "Subtitle shown at the top of the My Day ritual wizard when planning."
+    },
+    "myDayUpdatePlanSubtitle": "Review today’s picks. Add or remove anything.",
+    "@myDayUpdatePlanSubtitle": {
+        "description": "Subtitle shown at the top of the My Day ritual wizard when resuming and no completed picks exist."
+    },
+    "myDayUpdatePlanSubtitleWithCompleted": "Review today’s picks. Completed items are locked.",
+    "@myDayUpdatePlanSubtitleWithCompleted": {
+        "description": "Subtitle shown at the top of the My Day ritual wizard when resuming and some picks are completed."
+    },
+    "myDayClearMyDayLabel": "Clear My Day",
+    "@myDayClearMyDayLabel": {
+        "description": "Bottom bar button label when clearing today's plan (resume flow with zero picks)."
+    },
+    "myDayUpdateMyDayLabel": "Update My Day · {count}",
+    "@myDayUpdateMyDayLabel": {
+        "description": "Bottom bar button label when updating today's plan (resume flow).",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "myDaySelectItemsToContinueLabel": "Select items to continue",
+    "@myDaySelectItemsToContinueLabel": {
+        "description": "Bottom bar label when planning My Day but nothing is selected yet."
+    },
+    "myDayContinueToMyDayLabel": "Continue to My Day · {count}",
+    "@myDayContinueToMyDayLabel": {
+        "description": "Bottom bar label when planning My Day with some selected items.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "myDayClearPlanDialogTitle": "Clear today’s plan?",
+    "@myDayClearPlanDialogTitle": {
+        "description": "Title for the confirmation dialog shown when clearing today's plan."
+    },
+    "myDayClearPlanDialogBody": "This will remove all remaining picks from My Day.",
+    "@myDayClearPlanDialogBody": {
+        "description": "Body text for the confirmation dialog shown when clearing today's plan."
+    },
+    "myDayPickAllConfirmBody": "This will add {count} items to today. You can unpick any after.",
+    "@myDayPickAllConfirmBody": {
+        "description": "Body text for pick-all confirmation sheets in the My Day ritual.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "7"
+            }
+        }
+    },
+    "myDayPickAllButton": "Pick all",
+    "@myDayPickAllButton": {
+        "description": "Button label to confirm picking all items in a My Day ritual section."
+    },
+    "myDayPickAllDueTitle": "Pick all due items?",
+    "@myDayPickAllDueTitle": {
+        "description": "Title for the confirmation sheet to pick all overdue/due items in the My Day ritual."
+    },
+    "myDayPickAllAvailableTitle": "Pick all available items?",
+    "@myDayPickAllAvailableTitle": {
+        "description": "Title for the confirmation sheet to pick all available items in the My Day ritual."
+    },
+    "myDayPickAllSuggestedTitle": "Pick all suggested items?",
+    "@myDayPickAllSuggestedTitle": {
+        "description": "Title for the confirmation sheet to pick all suggested items in the My Day ritual."
+    },
+    "myDayCompletedSectionTitle": "Completed",
+    "@myDayCompletedSectionTitle": {
+        "description": "Section header title for completed picks in the My Day ritual."
+    },
+    "myDayCompletedSectionSubtitle": "Locked for today",
+    "@myDayCompletedSectionSubtitle": {
+        "description": "Section header subtitle for completed picks in the My Day ritual."
+    },
+    "myDayPickAllDueMenuLabel": "Pick all due",
+    "@myDayPickAllDueMenuLabel": {
+        "description": "Overflow menu item label to pick all overdue/due items."
+    },
+    "myDayPickAllAvailableMenuLabel": "Pick all available",
+    "@myDayPickAllAvailableMenuLabel": {
+        "description": "Overflow menu item label to pick all available items."
+    },
+    "myDayPickAllPicksMenuLabel": "Pick all picks",
+    "@myDayPickAllPicksMenuLabel": {
+        "description": "Overflow menu item label to pick all suggested picks."
+    },
+    "myDayShowFewerLabel": "Show fewer",
+    "@myDayShowFewerLabel": {
+        "description": "Label used in show-more rows to collapse a section."
+    },
+    "myDayShowAllDueItemsLabel": "Show all due items",
+    "@myDayShowAllDueItemsLabel": {
+        "description": "Label used in show-more rows to expand overdue/due section."
+    },
+    "myDayShowAllAvailableLabel": "Show all available",
+    "@myDayShowAllAvailableLabel": {
+        "description": "Label used in show-more rows to expand the available/starts section."
+    },
+    "myDayNothingPlannedYetTitle": "Nothing planned yet",
+    "@myDayNothingPlannedYetTitle": {
+        "description": "Empty-state title shown when there are no due or available tasks in the My Day ritual."
+    },
+    "myDayNothingPlannedYetBody": "No tasks are due soon or available to start.",
+    "@myDayNothingPlannedYetBody": {
+        "description": "Empty-state body shown when there are no due or available tasks in the My Day ritual."
+    },
+    "myDayYoureCaughtUpBody": "You’re caught up.",
+    "@myDayYoureCaughtUpBody": {
+        "description": "Empty-state body shown when there are no overdue/due tasks in the My Day ritual."
+    },
+    "myDayPlannedForTodayTitle": "Planned for today (or earlier)",
+    "@myDayPlannedForTodayTitle": {
+        "description": "Section title for tasks planned for today (or earlier) in the My Day ritual."
+    },
+    "myDayPlannedForTodaySubtitle": "Tasks whose planned day is today or earlier.",
+    "@myDayPlannedForTodaySubtitle": {
+        "description": "Section subtitle describing the planned-for-today section in the My Day ritual."
+    },
+    "myDayPlannedForTodayEmptyBody": "Tasks whose planned day is today or earlier. Nothing available right now.",
+    "@myDayPlannedForTodayEmptyBody": {
+        "description": "Empty-state body shown when the planned-for-today section is empty."
+    },
+    "myDaySuggestedCompleteTitle": "Suggested complete",
+    "@myDaySuggestedCompleteTitle": {
+        "description": "Empty-state title shown when all suggested picks have been completed for today."
+    },
+    "myDaySuggestedCompleteBody": "You’ve completed your suggested picks for today. Generate a new batch for more suggestions.",
+    "@myDaySuggestedCompleteBody": {
+        "description": "Empty-state body shown when all suggested picks have been completed for today."
+    },
+    "myDayGenerateNewBatchLabel": "Generate new batch",
+    "@myDayGenerateNewBatchLabel": {
+        "description": "Button label to generate a new batch of suggested picks in My Day."
+    },
+    "myDayGenerateLabel": "Generate",
+    "@myDayGenerateLabel": {
+        "description": "Short button label to generate more suggestions in My Day."
+    },
+    "myDayStartSetupLabel": "Start setup",
+    "@myDayStartSetupLabel": {
+        "description": "Button label to start setup when suggestions are gated in My Day."
+    },
+    "myDayUnlockSuggestionsTitle": "Unlock suggestions",
+    "@myDayUnlockSuggestionsTitle": {
+        "description": "Title shown in the My Day suggestions setup card when suggestions are gated."
+    },
+    "myDayUnlockSuggestionsBody": "Set up a focus mode and add your first value to get tailored picks here.",
+    "@myDayUnlockSuggestionsBody": {
+        "description": "Body text shown in the My Day suggestions setup card when suggestions are gated."
+    },
+    "myDayChooseFocusModeLabel": "Choose a focus mode",
+    "@myDayChooseFocusModeLabel": {
+        "description": "Label for the focus-mode setup requirement row in the My Day suggestions setup card."
+    },
+    "myDayAddFirstValueLabel": "Add your first value",
+    "@myDayAddFirstValueLabel": {
+        "description": "Label for the values setup requirement row in the My Day suggestions setup card."
+    },
+    "myDaySuggestedForYouTitle": "Suggested for you · {count}",
+    "@myDaySuggestedForYouTitle": {
+        "description": "Section header title for suggested picks in the My Day ritual.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
     },
     "myDayRitualStartsTodayTitle": "Starts today",
     "@myDayRitualStartsTodayTitle": {

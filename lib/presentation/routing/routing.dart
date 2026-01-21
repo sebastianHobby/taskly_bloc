@@ -53,7 +53,6 @@ abstract final class Routing {
   /// should count as an active navigation destination.
   static const Set<String> _navigationScreenKeys = {
     'my_day',
-    'inbox',
     'scheduled',
     'someday',
     'journal',
@@ -171,10 +170,6 @@ abstract final class Routing {
 
   static void toProjectEdit(BuildContext context, String projectId) =>
       GoRouter.of(context).push('/project/$projectId/edit');
-
-  /// Navigate to the global Inbox feed.
-  static void toInbox(BuildContext context) =>
-      GoRouter.of(context).go('/inbox');
 
   // === SCOPED FEED ROUTES (MVP) ===
 

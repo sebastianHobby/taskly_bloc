@@ -5,7 +5,6 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
-import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -58,7 +57,9 @@ final class MyDayRitualFocusModeWizardRequested extends MyDayRitualEvent {
 }
 
 final class MyDayRitualConfirm extends MyDayRitualEvent {
-  const MyDayRitualConfirm();
+  const MyDayRitualConfirm({this.closeOnSuccess = false});
+
+  final bool closeOnSuccess;
 }
 
 final class MyDayRitualSnoozeTaskRequested extends MyDayRitualEvent {
@@ -69,6 +70,10 @@ final class MyDayRitualSnoozeTaskRequested extends MyDayRitualEvent {
 
   final String taskId;
   final DateTime newStartDate;
+}
+
+final class MyDayRitualMoreSuggestionsRequested extends MyDayRitualEvent {
+  const MyDayRitualMoreSuggestionsRequested();
 }
 
 enum MyDayRitualAppendBucket {
@@ -94,6 +99,7 @@ final class MyDayRitualLoading extends MyDayRitualState {
 
 enum MyDayRitualNav {
   openFocusSetupWizard,
+  closeWizard,
 }
 
 @immutable
@@ -102,8 +108,10 @@ final class MyDayRitualReady extends MyDayRitualState {
     required this.needsRitual,
     required this.focusMode,
     required this.dueWindowDays,
+    required this.suggestionsPerBatch,
     required this.planned,
     required this.curated,
+    required this.completedPicks,
     required this.curatedReasons,
     required this.curatedReasonTooltips,
     required this.selectedTaskIds,
@@ -115,8 +123,10 @@ final class MyDayRitualReady extends MyDayRitualState {
   final bool needsRitual;
   final FocusMode focusMode;
   final int dueWindowDays;
+  final int suggestionsPerBatch;
   final List<Task> planned;
   final List<Task> curated;
+  final List<Task> completedPicks;
   final Map<String, String> curatedReasons;
   final Map<String, String> curatedReasonTooltips;
   final Set<String> selectedTaskIds;
@@ -128,8 +138,10 @@ final class MyDayRitualReady extends MyDayRitualState {
     bool? needsRitual,
     FocusMode? focusMode,
     int? dueWindowDays,
+    int? suggestionsPerBatch,
     List<Task>? planned,
     List<Task>? curated,
+    List<Task>? completedPicks,
     Map<String, String>? curatedReasons,
     Map<String, String>? curatedReasonTooltips,
     Set<String>? selectedTaskIds,
@@ -141,8 +153,10 @@ final class MyDayRitualReady extends MyDayRitualState {
       needsRitual: needsRitual ?? this.needsRitual,
       focusMode: focusMode ?? this.focusMode,
       dueWindowDays: dueWindowDays ?? this.dueWindowDays,
+      suggestionsPerBatch: suggestionsPerBatch ?? this.suggestionsPerBatch,
       planned: planned ?? this.planned,
       curated: curated ?? this.curated,
+      completedPicks: completedPicks ?? this.completedPicks,
       curatedReasons: curatedReasons ?? this.curatedReasons,
       curatedReasonTooltips:
           curatedReasonTooltips ?? this.curatedReasonTooltips,
@@ -183,15 +197,12 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     on<MyDayRitualConfirm>(_onConfirm);
     on<MyDayRitualSnoozeTaskRequested>(_onSnoozeTaskRequested);
     on<MyDayRitualAppendToToday>(_onAppendToToday);
+    on<MyDayRitualMoreSuggestionsRequested>(_onMoreSuggestionsRequested);
     on<_MyDayRitualInputsChanged>(_onInputsChanged);
     add(const MyDayRitualStarted());
   }
 
-  final int _instanceId = identityHashCode(Object());
-  DateTime? _lastObservedRitualCompletedAtUtc;
   bool? _lastObservedNeedsRitual;
-  DateTime? _lastConfirmRequestedAtUtc;
-  String? _lastConfirmCorrelationId;
 
   final SettingsRepositoryContract _settingsRepository;
   final MyDayRepositoryContract _myDayRepository;
@@ -212,6 +223,12 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
   settings.GlobalSettings _globalSettings = const settings.GlobalSettings();
   DateTime _dayKeyUtc;
 
+  bool _hasGeneratedMoreSuggestions = false;
+  int _suggestionsPerBatch = 7;
+  int _suggestionsRequestedCount = 7;
+  List<Task> _completedPicks = const <Task>[];
+  Set<String> _lockedCompletedPickIds = const <String>{};
+
   Completer<void>? _refreshCompleter;
 
   bool _hasUserSelection = false;
@@ -227,12 +244,12 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     MyDayRitualStarted event,
     Emitter<MyDayRitualState> emit,
   ) async {
-    myDayTrace(
-      '[MyDayRitualBloc#$_instanceId] started '
-      'dayKeyUtc=${_dayKeyService.todayDayKeyUtc().toIso8601String()}',
-    );
-
     _dayKeyUtc = _dayKeyService.todayDayKeyUtc();
+    _hasGeneratedMoreSuggestions = false;
+    _suggestionsPerBatch = 7;
+    _suggestionsRequestedCount = 7;
+    _completedPicks = const <Task>[];
+    _lockedCompletedPickIds = const <String>{};
     _dayPicks = my_day.MyDayDayPicks(
       dayKeyUtc: dateOnly(_dayKeyUtc),
       ritualCompletedAtUtc: null,
@@ -252,10 +269,6 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
           final isDayChange = !_isSameDayUtc(nextDay, _dayKeyUtc);
 
           if (isDayChange) {
-            myDayTrace(
-              '[MyDayRitualBloc#$_instanceId] day boundary crossed '
-              'dayKeyUtc:${_dayKeyUtc.toIso8601String()} -> ${nextDay.toIso8601String()}',
-            );
             _dayKeyUtc = nextDay;
             await _refreshSnapshots(resetSelection: true);
             add(const _MyDayRitualInputsChanged());
@@ -265,9 +278,6 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
           // Optional refresh on app resume, but avoid clobbering in-progress
           // ritual selection.
           if (event is AppResumed && !_hasUserSelection) {
-            myDayTrace(
-              '[MyDayRitualBloc#$_instanceId] app resumed; refreshing snapshots',
-            );
             await _refreshSnapshots(resetSelection: false);
             add(const _MyDayRitualInputsChanged());
           }
@@ -294,29 +304,44 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         _settingsRepository.load<settings.GlobalSettings>(SettingsKey.global),
         _myDayRepository.loadDay(_dayKeyUtc),
         _taskRepository.getAll(TaskQuery.incomplete()),
-        _allocationOrchestrator.getAllocationSnapshot(),
       ]);
 
       _allocationConfig = results[0] as AllocationConfig;
       _globalSettings = results[1] as settings.GlobalSettings;
 
+      _suggestionsPerBatch = _allocationConfig.suggestionsPerBatch.clamp(1, 50);
+      if (!_hasGeneratedMoreSuggestions) {
+        _suggestionsRequestedCount = _suggestionsPerBatch;
+      }
+
       final picks = results[2] as my_day.MyDayDayPicks;
       final before = _dayPicks.ritualCompletedAtUtc;
       _dayPicks = picks;
-      if (before != _dayPicks.ritualCompletedAtUtc) {
-        myDayTrace(
-          '[MyDayRitualBloc#$_instanceId] dayPicks loaded '
-          'dayKeyUtc=${_dayPicks.dayKeyUtc.toIso8601String()} '
-          'ritualCompletedAtUtc:${before?.toIso8601String() ?? "<null>"}'
-          ' -> ${_dayPicks.ritualCompletedAtUtc?.toIso8601String() ?? "<null>"} '
-          'pickCount=${_dayPicks.picks.length} '
-          'lastConfirmAtUtc=${_lastConfirmRequestedAtUtc?.toIso8601String() ?? "<null>"} '
-          'lastConfirmCorrelationId=${_lastConfirmCorrelationId ?? "<null>"}',
-        );
-      }
+      if (before != _dayPicks.ritualCompletedAtUtc) {}
 
-      _tasks = results[3] as List<Task>;
-      _allocationResult = results[4] as AllocationResult;
+      final incompleteTasks = results[3] as List<Task>;
+
+      final pickedIds = _dayPicks.picks.map((p) => p.taskId).toSet();
+      final incompleteIds = incompleteTasks.map((t) => t.id).toSet();
+      final missingPickIds = pickedIds.difference(incompleteIds);
+
+      final missingPickTasks = missingPickIds.isEmpty
+          ? const <Task>[]
+          : await _taskRepository.getByIds(missingPickIds);
+
+      _completedPicks = missingPickTasks
+          .where((t) => t.completed)
+          .toList(growable: false);
+
+      _lockedCompletedPickIds = Set.unmodifiable(
+        _completedPicks.map((t) => t.id),
+      );
+
+      _tasks = [...incompleteTasks, ...missingPickTasks];
+
+      _allocationResult = await _allocationOrchestrator.getAllocationSnapshot(
+        maxTasksOverride: _suggestionsRequestedCount,
+      );
     } finally {
       _refreshCompleter = null;
       completer.complete();
@@ -328,44 +353,25 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     Emitter<MyDayRitualState> emit,
   ) {
     final planned = _buildPlanned(_tasks, _dayKeyUtc);
-    final curated = _buildCurated(
-      _allocationResult,
-      plannedIds: planned.map((t) => t.id).toSet(),
-    );
+    final plannedIds = planned.map((t) => t.id).toSet();
 
     if (!_hasUserSelection) {
-      _selectedTaskIds = <String>{};
+      _selectedTaskIds = _dayPicks.ritualCompletedAtUtc == null
+          ? <String>{}
+          : _dayPicks.selectedTaskIds;
     }
+
+    final curated = _buildCurated(
+      _allocationResult,
+      plannedIds: plannedIds,
+      selectedTaskIds: _selectedTaskIds,
+    );
 
     final needsRitual = _dayPicks.ritualCompletedAtUtc == null;
 
     final previousNeedsRitual = _lastObservedNeedsRitual;
-    final previousRitualCompletedAtUtc = _lastObservedRitualCompletedAtUtc;
     if (previousNeedsRitual == null || previousNeedsRitual != needsRitual) {
-      final nowUtc = _nowService.nowUtc();
-      final secondsSinceConfirm = _lastConfirmRequestedAtUtc == null
-          ? null
-          : nowUtc.difference(_lastConfirmRequestedAtUtc!).inMilliseconds /
-                1000.0;
-
-      final suspiciousFlipToNeedsRitual =
-          needsRitual && (secondsSinceConfirm ?? 999999) < 10;
-
-      myDayTrace(
-        '[MyDayRitualBloc#$_instanceId] needsRitual '
-        '${previousNeedsRitual ?? "<unset>"} -> $needsRitual '
-        'dayKeyUtc=${_dayKeyUtc.toIso8601String()} '
-        'ritualCompletedAtUtc:${previousRitualCompletedAtUtc?.toIso8601String() ?? "<unset>"}'
-        ' -> ${_dayPicks.ritualCompletedAtUtc?.toIso8601String() ?? "<null>"} '
-        'pickCount=${_dayPicks.picks.length} '
-        'selectedCount=${_selectedTaskIds.length} '
-        'hasUserSelection=$_hasUserSelection '
-        'secondsSinceConfirm=${secondsSinceConfirm?.toStringAsFixed(2) ?? "<null>"} '
-        'suspicious=$suspiciousFlipToNeedsRitual',
-      );
-
       _lastObservedNeedsRitual = needsRitual;
-      _lastObservedRitualCompletedAtUtc = _dayPicks.ritualCompletedAtUtc;
     }
 
     final curatedReasonDetails = _buildCuratedReasonDetails(
@@ -378,8 +384,10 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         needsRitual: needsRitual,
         focusMode: _allocationConfig.focusMode,
         dueWindowDays: _globalSettings.myDayDueWindowDays,
+        suggestionsPerBatch: _suggestionsPerBatch,
         planned: planned,
         curated: curated,
+        completedPicks: _completedPicks,
         curatedReasons: curatedReasonDetails.reasonLineByTaskId,
         curatedReasonTooltips: curatedReasonDetails.tooltipByTaskId,
         selectedTaskIds: _selectedTaskIds,
@@ -394,6 +402,12 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     Emitter<MyDayRitualState> emit,
   ) {
     if (state is! MyDayRitualReady) return;
+
+    // Completed picks are locked for the day (they remain in the plan/history).
+    if (!event.selected && _lockedCompletedPickIds.contains(event.taskId)) {
+      return;
+    }
+
     _hasUserSelection = true;
     if (event.selected) {
       _selectedTaskIds = {..._selectedTaskIds, event.taskId};
@@ -508,16 +522,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     final curated = current.curated;
     final selectedIds = _selectedTaskIds;
 
-    if (selectedIds.isEmpty) return;
-
-    _lastConfirmRequestedAtUtc = _nowService.nowUtc();
-    myDayTrace(
-      '[MyDayRitualBloc#$_instanceId] confirm requested '
-      'dayKeyUtc=${current.dayKeyUtc.toIso8601String()} '
-      'selectedCount=${selectedIds.length} '
-      'plannedCount=${planned.length} '
-      'curatedCount=${curated.length}',
-    );
+    if (selectedIds.isEmpty && !event.closeOnSuccess) return;
 
     final ordered = <String>[];
     for (final task in planned) {
@@ -642,16 +647,6 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
       },
     );
 
-    _lastConfirmCorrelationId = context.correlationId;
-    myDayTrace(
-      '[MyDayRitualBloc#$_instanceId] setDayPicks start '
-      'correlationId=${context.correlationId} '
-      'dayKeyUtc=${_dayKeyUtc.toIso8601String()} '
-      'ritualCompletedAtUtc=${nowUtc.toIso8601String()} '
-      'pickedCount=${picks.length} '
-      'bucketCounts={due:${dueSelectedIds.length},starts:${startsSelectedIds.length},focus:${focusSelectedIds.length}}',
-    );
-
     try {
       await _myDayRepository.setDayPicks(
         dayKeyUtc: _dayKeyUtc,
@@ -665,17 +660,18 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         ritualCompletedAtUtc: nowUtc,
         picks: picks,
       );
-      add(const _MyDayRitualInputsChanged());
 
-      myDayTrace(
-        '[MyDayRitualBloc#$_instanceId] setDayPicks done '
-        'correlationId=${context.correlationId}',
-      );
-    } catch (e, s) {
-      myDayTrace(
-        '[MyDayRitualBloc#$_instanceId] setDayPicks failed '
-        'correlationId=${context.correlationId} error=$e\n$s',
-      );
+      if (event.closeOnSuccess && state is MyDayRitualReady) {
+        final ready = state as MyDayRitualReady;
+        emit(
+          ready.copyWith(
+            nav: MyDayRitualNav.closeWizard,
+            navRequestId: ready.navRequestId + 1,
+          ),
+        );
+      }
+      add(const _MyDayRitualInputsChanged());
+    } catch (e) {
       rethrow;
     }
   }
@@ -762,6 +758,16 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     add(const _MyDayRitualInputsChanged());
   }
 
+  Future<void> _onMoreSuggestionsRequested(
+    MyDayRitualMoreSuggestionsRequested event,
+    Emitter<MyDayRitualState> emit,
+  ) async {
+    _hasGeneratedMoreSuggestions = true;
+    _suggestionsRequestedCount += _suggestionsPerBatch;
+    await _refreshSnapshots(resetSelection: false);
+    add(const _MyDayRitualInputsChanged());
+  }
+
   List<Task> _buildPlanned(List<Task> tasks, DateTime dayKeyUtc) {
     final today = dateOnly(dayKeyUtc);
     final dueWindowDays = _globalSettings.myDayDueWindowDays;
@@ -809,15 +815,34 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
   List<Task> _buildCurated(
     AllocationResult? allocation, {
     required Set<String> plannedIds,
+    required Set<String> selectedTaskIds,
   }) {
-    if (allocation == null) return const <Task>[];
     final curated = <Task>[];
+
+    final tasksById = {for (final task in _tasks) task.id: task};
+
+    // Always include already-picked tasks that are NOT part of the planned set
+    // so "resume" shows the current plan even if allocation candidates change.
+    for (final pick in _dayPicks.picks) {
+      final taskId = pick.taskId;
+      if (!selectedTaskIds.contains(taskId)) continue;
+      if (plannedIds.contains(taskId)) continue;
+      final task = tasksById[taskId];
+      if (task == null) continue;
+      if (_isCompleted(task)) continue;
+      curated.add(task);
+    }
+
+    if (allocation == null) return curated;
+
     for (final entry in allocation.allocatedTasks) {
       final task = entry.task;
       if (plannedIds.contains(task.id)) continue;
+      if (curated.any((t) => t.id == task.id)) continue;
+      if (_isCompleted(task)) continue;
       curated.add(task);
-      if (curated.length >= 7) break;
     }
+
     return curated;
   }
 

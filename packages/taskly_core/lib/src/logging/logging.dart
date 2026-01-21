@@ -69,7 +69,10 @@ void initializeLogging() {
   final observer = kDebugMode
       ? MultiTalkerObserver(
           observers: <TalkerObserver>[
-            DebugFileLogObserver(),
+            DebugFileLogObserver(
+              includedTitles: const <String>{'ERROR'},
+              maxFileBytes: 1024 * 1024,
+            ),
           ],
         )
       : null;
@@ -78,20 +81,6 @@ void initializeLogging() {
   _backend = TasklyTalker(raw);
   talker = _TasklyLogAdapter(_backend);
   _isInitialized = true;
-}
-
-/// Writes a targeted trace entry to `debug_errors.log`.
-///
-/// This is intended for "hard to repro" flows where we need high-signal,
-/// timestamped breadcrumbs in the same place crash logs already land.
-void myDayTrace(String message) {
-  if (!_isInitialized) return;
-  _backend.logCustom(
-    _DebugFileTraceLog(
-      message,
-      titleText: _DebugFileTraceLog.titleMyDayTrace,
-    ),
-  );
 }
 
 /// Initialize logging for tests.
@@ -374,26 +363,6 @@ class TasklyLogRecord extends TalkerLog {
   AnsiPen get pen => AnsiPen()..green();
 }
 
-final class _DebugFileTraceLog extends TalkerLog {
-  _DebugFileTraceLog(
-    super.message, {
-    required String titleText,
-  }) : _titleText = titleText;
-
-  static const String titleMyDayTrace = 'MY_DAY_TRACE';
-
-  final String _titleText;
-
-  @override
-  String get title => _titleText;
-
-  @override
-  String get key => 'debug_file_trace_${_titleText.toLowerCase()}';
-
-  @override
-  AnsiPen get pen => AnsiPen()..cyan();
-}
-
 class MultiTalkerObserver extends TalkerObserver {
   MultiTalkerObserver({
     required List<TalkerObserver> observers,
@@ -427,6 +396,7 @@ class DebugFileLogObserver extends TalkerObserver {
   DebugFileLogObserver({
     this.dedupeWindow = const Duration(seconds: 2),
     this.maxStackTraceLines = 60,
+    this.maxFileBytes = 1024 * 1024,
     Future<Directory> Function()? supportDirectoryProvider,
     this.includedTitles,
   }) : _supportDirectoryProvider =
@@ -442,6 +412,12 @@ class DebugFileLogObserver extends TalkerObserver {
 
   /// Limits stack trace verbosity written to file.
   final int maxStackTraceLines;
+
+  /// Maximum size for `debug_errors.log` before it is truncated.
+  ///
+  /// This keeps the file high-signal and bounded, while still allowing a
+  /// developer to share the most recent context for a crash or hard-to-repro.
+  final int maxFileBytes;
 
   final Future<Directory> Function() _supportDirectoryProvider;
 
@@ -467,7 +443,11 @@ class DebugFileLogObserver extends TalkerObserver {
     try {
       final dir = await _supportDirectoryProvider();
       _logFile = File('${dir.path}/debug_errors.log');
-      _writer = _AppendFileWriter(file: _logFile!, headerLabel: 'Log');
+      _writer = _AppendFileWriter(
+        file: _logFile!,
+        headerLabel: 'Log',
+        maxBytes: maxFileBytes,
+      );
       _isInitialized = true;
 
       debugPrint('Debug log file: ${_logFile!.path}');
@@ -627,11 +607,14 @@ class _AppendFileWriter {
   _AppendFileWriter({
     required File file,
     required String headerLabel,
+    required int maxBytes,
   }) : _file = file,
-       _headerLabel = headerLabel;
+       _headerLabel = headerLabel,
+       _maxBytes = maxBytes;
 
   final File _file;
   final String _headerLabel;
+  final int _maxBytes;
 
   bool _initialized = false;
 
@@ -642,6 +625,10 @@ class _AppendFileWriter {
         await _file.create(recursive: true);
       }
       _initialized = true;
+
+      await _truncateIfOversized(
+        reason: 'max size exceeded ($_maxBytes bytes)',
+      );
 
       await _file.writeAsString(
         '--- $_headerLabel started at ${DateTime.now()} ---\n',
@@ -655,6 +642,9 @@ class _AppendFileWriter {
   void write(String text) {
     if (!_initialized) return;
     try {
+      _truncateIfOversizedSync(
+        reason: 'max size exceeded ($_maxBytes bytes)',
+      );
       _file.writeAsStringSync(text, mode: FileMode.append, flush: true);
     } catch (_) {
       // Best-effort only.
@@ -667,6 +657,33 @@ class _AppendFileWriter {
       final header =
           '--- $_headerLabel cleared at ${DateTime.now()} ($reason) ---\n';
       await _file.writeAsString(header, mode: FileMode.write);
+    } catch (_) {
+      // Best-effort only.
+    }
+  }
+
+  Future<void> _truncateIfOversized({required String reason}) async {
+    try {
+      if (_maxBytes <= 0) return;
+      final size = await _file.length();
+      if (size <= _maxBytes) return;
+      final header =
+          '--- $_headerLabel cleared at ${DateTime.now()} ($reason) ---\n';
+      await _file.writeAsString(header, mode: FileMode.write);
+    } catch (_) {
+      // Best-effort only.
+    }
+  }
+
+  void _truncateIfOversizedSync({required String reason}) {
+    try {
+      if (_maxBytes <= 0) return;
+      if (!_file.existsSync()) return;
+      final size = _file.lengthSync();
+      if (size <= _maxBytes) return;
+      final header =
+          '--- $_headerLabel cleared at ${DateTime.now()} ($reason) ---\n';
+      _file.writeAsStringSync(header, mode: FileMode.write, flush: true);
     } catch (_) {
       // Best-effort only.
     }

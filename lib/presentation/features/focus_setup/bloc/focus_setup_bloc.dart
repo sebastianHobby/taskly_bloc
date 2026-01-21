@@ -49,6 +49,9 @@ sealed class FocusSetupEvent with _$FocusSetupEvent {
   const factory FocusSetupEvent.neglectEnabledChanged(bool enabled) =
       FocusSetupNeglectEnabledChanged;
 
+  const factory FocusSetupEvent.suggestionsPerBatchChanged(int value) =
+      FocusSetupSuggestionsPerBatchChanged;
+
   const factory FocusSetupEvent.finalizePressed() = FocusSetupFinalizePressed;
 
   const factory FocusSetupEvent.allocationStreamUpdated(
@@ -84,6 +87,7 @@ sealed class FocusSetupState with _$FocusSetupState {
     /// Draft allocation settings.
     FocusMode? draftFocusMode,
     bool? draftNeglectEnabled,
+    int? draftSuggestionsPerBatch,
     @Default(false) bool showAdvancedSettings,
 
     @Default(false) bool saveSucceeded,
@@ -154,6 +158,14 @@ sealed class FocusSetupState with _$FocusSetupState {
     }
     return false;
   }
+
+  int get effectiveSuggestionsPerBatch {
+    final draft = draftSuggestionsPerBatch;
+    if (draft != null) return draft.clamp(1, 50);
+    final persisted = persistedAllocationConfig;
+    if (persisted != null) return persisted.suggestionsPerBatch.clamp(1, 50);
+    return 7;
+  }
 }
 
 class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
@@ -184,6 +196,11 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     );
     on<FocusSetupNeglectEnabledChanged>(
       _onNeglectEnabledChanged,
+      transformer: droppable(),
+    );
+
+    on<FocusSetupSuggestionsPerBatchChanged>(
+      _onSuggestionsPerBatchChanged,
       transformer: droppable(),
     );
 
@@ -475,6 +492,13 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     emit(state.copyWith(draftNeglectEnabled: event.enabled));
   }
 
+  void _onSuggestionsPerBatchChanged(
+    FocusSetupSuggestionsPerBatchChanged event,
+    Emitter<FocusSetupState> emit,
+  ) {
+    emit(state.copyWith(draftSuggestionsPerBatch: event.value.clamp(1, 50)));
+  }
+
   Future<void> _onFinalizePressed(
     FocusSetupFinalizePressed event,
     Emitter<FocusSetupState> emit,
@@ -510,6 +534,7 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
       final updatedConfig = persisted.copyWith(
         hasSelectedFocusMode: true,
         focusMode: focusMode,
+        suggestionsPerBatch: state.effectiveSuggestionsPerBatch,
         strategySettings: strategySettings,
       );
 

@@ -30,6 +30,7 @@ import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.
 
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/services/my_day_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
 
@@ -246,8 +247,8 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
       ),
     )
-    ..registerFactory<MyDayBloc>(
-      () => MyDayBloc(
+    ..registerFactory<MyDayQueryService>(
+      () => MyDayQueryService(
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
@@ -255,6 +256,11 @@ Future<void> setupDependencies() async {
         myDayRepository: getIt<MyDayRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
+      ),
+    )
+    ..registerFactory<MyDayBloc>(
+      () => MyDayBloc(
+        queryService: getIt<MyDayQueryService>(),
       ),
     )
     ..registerFactory<MyDayRitualBloc>(

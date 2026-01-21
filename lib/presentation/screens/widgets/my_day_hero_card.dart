@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
 
 class MyDayHeroCard extends StatelessWidget {

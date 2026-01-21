@@ -162,7 +162,7 @@ class _BulkSelectIcon extends StatelessWidget {
   });
 
   final bool selected;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +222,7 @@ class _SelectPill extends StatelessWidget {
   });
 
   final bool selected;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {

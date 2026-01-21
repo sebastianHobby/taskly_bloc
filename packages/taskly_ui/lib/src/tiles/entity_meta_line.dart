@@ -114,6 +114,7 @@ class EntityMetaLine extends StatelessWidget {
 
           // --- Optional extras (project / repeat / priority) with overflow ---
           final optionalWidgets = <Widget>[];
+          var omittedExtrasCount = 0;
 
           final hasProjectName =
               model.projectName != null && model.projectName!.trim().isNotEmpty;
@@ -223,10 +224,15 @@ class EntityMetaLine extends StatelessWidget {
               remaining -= total;
             } else {
               // Extra does not fit; skip it.
+              omittedExtrasCount += 1;
             }
           }
 
-          // Meta overflow indicator is intentionally not rendered.
+          final overflowIndicator = _MetaOverflowIndicator.maybeBuild(
+            context,
+            omittedExtrasCount: omittedExtrasCount,
+            showEllipsis: model.showOverflowEllipsis,
+          );
 
           return Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -241,9 +247,87 @@ class EntityMetaLine extends StatelessWidget {
               ?constrainedDeadline,
               if (optionalWidgets.isNotEmpty) const SizedBox(width: spacing),
               ...optionalWidgets,
+              if (overflowIndicator != null) ...[
+                if (optionalWidgets.isNotEmpty ||
+                    valueCluster != null ||
+                    constrainedStart != null ||
+                    constrainedDeadline != null)
+                  const SizedBox(width: spacing),
+                overflowIndicator,
+              ],
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _MetaOverflowIndicator extends StatelessWidget {
+  const _MetaOverflowIndicator._({
+    required this.label,
+    required this.semantics,
+  });
+
+  final String label;
+  final String semantics;
+
+  static Widget? maybeBuild(
+    BuildContext context, {
+    required int omittedExtrasCount,
+    required bool showEllipsis,
+  }) {
+    if (omittedExtrasCount <= 0 && !showEllipsis) return null;
+
+    if (omittedExtrasCount > 0) {
+      final n = omittedExtrasCount;
+      return _TapAbsorber(
+        child: _MetaOverflowIndicator._(
+          label: '+$n',
+          semantics: n == 1
+              ? 'More metadata: 1 item'
+              : 'More metadata: $n items',
+        ),
+      );
+    }
+
+    return _TapAbsorber(
+      child: const _MetaOverflowIndicator._(
+        label: '…',
+        semantics: 'More metadata',
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Semantics(
+      label: semantics,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: scheme.outlineVariant.withValues(alpha: 0.5),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+            fontWeight: FontWeight.w800,
+            height: 1.1,
+            fontSize: 12,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
+        ),
       ),
     );
   }

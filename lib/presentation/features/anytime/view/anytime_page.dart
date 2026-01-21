@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/scope_context/bloc/scope_context_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
-import 'package:taskly_bloc/presentation/features/scope_context/view/scope_header.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
@@ -22,6 +23,7 @@ import 'package:taskly_ui/taskly_ui_sections.dart';
 
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_feed_bloc.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_screen_bloc.dart';
+import 'package:taskly_bloc/presentation/features/anytime/widgets/anytime_scope_picker_sheet.dart';
 
 class AnytimePage extends StatelessWidget {
   const AnytimePage({
@@ -52,10 +54,44 @@ class AnytimePage extends StatelessWidget {
   }
 }
 
-class _AnytimeView extends StatelessWidget {
+class _AnytimeView extends StatefulWidget {
   const _AnytimeView({required this.scope});
 
   final AnytimeScope? scope;
+
+  @override
+  State<_AnytimeView> createState() => _AnytimeViewState();
+}
+
+class _AnytimeViewState extends State<_AnytimeView> {
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _isSearching = false;
+
+  AnytimeScope? get scope => widget.scope;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _setSearchActive(bool active) {
+    if (_isSearching == active) return;
+    setState(() => _isSearching = active);
+
+    if (!active) {
+      _searchController.clear();
+      context.read<AnytimeScreenBloc>().add(
+        const AnytimeSearchQueryChanged(''),
+      );
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _searchFocusNode.requestFocus();
+      });
+    }
+  }
 
   Future<void> _openNewTaskEditor(
     BuildContext context, {
@@ -98,14 +134,40 @@ class _AnytimeView extends StatelessWidget {
           },
         ),
         BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
+          listenWhen: (prev, next) =>
+              prev.showStartLaterItems != next.showStartLaterItems,
+          listener: (context, state) {
+            context.read<AnytimeFeedBloc>().add(
+              AnytimeFeedShowStartLaterItemsChanged(
+                enabled: state.showStartLaterItems,
+              ),
+            );
+          },
+        ),
+        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
+          listenWhen: (prev, next) => prev.searchQuery != next.searchQuery,
+          listener: (context, state) {
+            context.read<AnytimeFeedBloc>().add(
+              AnytimeFeedSearchQueryChanged(query: state.searchQuery),
+            );
+          },
+        ),
+        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
+          listenWhen: (prev, next) =>
+              prev.inboxCollapsed != next.inboxCollapsed,
+          listener: (context, state) {
+            context.read<AnytimeFeedBloc>().add(
+              AnytimeFeedInboxCollapsedChanged(collapsed: state.inboxCollapsed),
+            );
+          },
+        ),
+        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
           listenWhen: (prev, next) => prev.effect != next.effect,
           listener: (context, state) {
             final effect = state.effect;
             if (effect == null) return;
 
             switch (effect) {
-              case AnytimeNavigateToInbox():
-                Routing.toInbox(context);
               case AnytimeNavigateToProjectAnytime(:final projectId):
                 Routing.pushProjectAnytime(context, projectId);
               case AnytimeNavigateToTaskEdit(:final taskId):
@@ -133,10 +195,37 @@ class _AnytimeView extends StatelessWidget {
             appBar: selectionState.isSelectionMode
                 ? const SelectionAppBar(baseTitle: 'Anytime', onExit: _noop)
                 : AppBar(
-                    title: const Text('Anytime'),
+                    title: _isSearching
+                        ? TextField(
+                            controller: _searchController,
+                            focusNode: _searchFocusNode,
+                            decoration: const InputDecoration(
+                              hintText: 'Search tasks and projects',
+                              border: InputBorder.none,
+                            ),
+                            textInputAction: TextInputAction.search,
+                            onChanged: (value) {
+                              context.read<AnytimeScreenBloc>().add(
+                                AnytimeSearchQueryChanged(value),
+                              );
+                            },
+                          )
+                        : const Text('Anytime'),
                     actions: TasklyAppBarActions.withAttentionBell(
                       context,
                       actions: [
+                        if (!_isSearching)
+                          IconButton(
+                            tooltip: 'Search',
+                            icon: const Icon(Icons.search),
+                            onPressed: () => _setSearchActive(true),
+                          )
+                        else
+                          IconButton(
+                            tooltip: 'Close search',
+                            icon: const Icon(Icons.close),
+                            onPressed: () => _setSearchActive(false),
+                          ),
                         if (!isCompact)
                           EntityAddMenuButton(
                             onCreateTask: () =>
@@ -186,37 +275,91 @@ class _AnytimeView extends StatelessWidget {
                 : null,
             body: Column(
               children: [
-                if (scope != null) ScopeHeader(scope: scope!),
-                Expanded(
-                  child: BlocBuilder<AnytimeFeedBloc, AnytimeFeedState>(
-                    builder: (context, state) {
-                      return switch (state) {
-                        AnytimeFeedLoading() => const FeedBody.loading(),
-                        AnytimeFeedError(:final message) => FeedBody.error(
-                          message: message,
-                          retryLabel: context.l10n.retryButton,
-                          onRetry: () => context.read<AnytimeFeedBloc>().add(
-                            const AnytimeFeedRetryRequested(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: (scope == null)
+                      ? _AnytimeScopeAndFiltersRow(
+                          scope: scope,
+                          onPickScope: () async {
+                            final selected = await AnytimeScopePickerSheet.show(
+                              context,
+                              scope,
+                            );
+                            if (!context.mounted) return;
+                            if (selected == null && scope == null) return;
+
+                            switch (selected) {
+                              case null:
+                                await GoRouter.of(context).push('/anytime');
+                              case AnytimeProjectScope(:final projectId):
+                                Routing.pushProjectAnytime(context, projectId);
+                              case AnytimeValueScope(:final valueId):
+                                Routing.pushValueAnytime(context, valueId);
+                            }
+                          },
+                        )
+                      : BlocProvider(
+                          create: (_) => ScopeContextBloc(
+                            scope: scope!,
+                            taskRepository: getIt<TaskRepositoryContract>(),
+                            projectRepository:
+                                getIt<ProjectRepositoryContract>(),
+                            valueRepository: getIt<ValueRepositoryContract>(),
+                          ),
+                          child: _AnytimeScopeAndFiltersRow(
+                            scope: scope,
+                            onPickScope: () async {
+                              final selected =
+                                  await AnytimeScopePickerSheet.show(
+                                    context,
+                                    scope,
+                                  );
+                              if (!context.mounted) return;
+                              if (selected == null && scope == null) return;
+
+                              switch (selected) {
+                                case null:
+                                  await GoRouter.of(context).push('/anytime');
+                                case AnytimeProjectScope(:final projectId):
+                                  Routing.pushProjectAnytime(
+                                    context,
+                                    projectId,
+                                  );
+                                case AnytimeValueScope(:final valueId):
+                                  Routing.pushValueAnytime(context, valueId);
+                              }
+                            },
                           ),
                         ),
-                        AnytimeFeedLoaded(:final rows) when rows.isEmpty =>
-                          FeedBody.empty(
-                            child: EmptyStateWidget.noTasks(
-                              title: 'No tasks',
-                              description: 'Create a task to start planning.',
-                              actionLabel: 'Create task',
-                              onAction: () =>
-                                  context.read<AnytimeScreenBloc>().add(
-                                    const AnytimeCreateTaskRequested(),
+                ),
+                Expanded(
+                  child: BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
+                    buildWhen: (p, n) =>
+                        p.searchQuery != n.searchQuery ||
+                        p.showStartLaterItems != n.showStartLaterItems,
+                    builder: (context, screenState) {
+                      return BlocBuilder<AnytimeFeedBloc, AnytimeFeedState>(
+                        builder: (context, state) {
+                          return switch (state) {
+                            AnytimeFeedLoading() => const FeedBody.loading(),
+                            AnytimeFeedError(:final message) => FeedBody.error(
+                              message: message,
+                              retryLabel: context.l10n.retryButton,
+                              onRetry: () =>
+                                  context.read<AnytimeFeedBloc>().add(
+                                    const AnytimeFeedRetryRequested(),
                                   ),
                             ),
-                          ),
-                        AnytimeFeedLoaded(:final rows) => FeedBody.child(
-                          child: TasklyStandardTileListSection(
-                            rows: _buildStandardRows(context, rows),
-                          ),
-                        ),
-                      };
+                            AnytimeFeedLoaded(:final rows) when rows.isEmpty =>
+                              _buildEmptyBody(context, scope, screenState),
+                            AnytimeFeedLoaded(:final rows) => FeedBody.child(
+                              child: TasklyStandardTileListSection(
+                                rows: _buildStandardRows(context, rows),
+                              ),
+                            ),
+                          };
+                        },
+                      );
                     },
                   ),
                 ),
@@ -230,6 +373,123 @@ class _AnytimeView extends StatelessWidget {
 }
 
 void _noop() {}
+
+Widget _buildEmptyBody(
+  BuildContext context,
+  AnytimeScope? scope,
+  AnytimeScreenState screenState,
+) {
+  final query = screenState.searchQuery.trim();
+  if (query.isNotEmpty) {
+    return FeedBody.empty(
+      child: EmptyStateWidget(
+        icon: Icons.search,
+        title: 'No matches',
+        description: 'Try a different keyword.',
+        actionLabel: 'Clear search',
+        onAction: () {
+          context.read<AnytimeScreenBloc>().add(
+            const AnytimeSearchQueryChanged(''),
+          );
+        },
+      ),
+    );
+  }
+
+  if (scope != null) {
+    return FeedBody.empty(
+      child: EmptyStateWidget(
+        icon: Icons.inbox_outlined,
+        title: 'Nothing in this scope yet',
+        description: "Try a different scope or show 'Start later' items.",
+        actionLabel: 'Create task',
+        onAction: () => context.read<AnytimeScreenBloc>().add(
+          const AnytimeCreateTaskRequested(),
+        ),
+      ),
+    );
+  }
+
+  return FeedBody.empty(
+    child: EmptyStateWidget.noTasks(
+      title: 'No backlog items yet',
+      description: 'Create a task to start planning.',
+      actionLabel: 'Create task',
+      onAction: () => context.read<AnytimeScreenBloc>().add(
+        const AnytimeCreateTaskRequested(),
+      ),
+    ),
+  );
+}
+
+class _AnytimeScopeAndFiltersRow extends StatelessWidget {
+  const _AnytimeScopeAndFiltersRow({
+    required this.scope,
+    required this.onPickScope,
+  });
+
+  final AnytimeScope? scope;
+  final VoidCallback onPickScope;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
+      buildWhen: (p, n) => p.showStartLaterItems != n.showStartLaterItems,
+      builder: (context, state) {
+        final showStartLater = state.showStartLaterItems;
+        final label = showStartLater
+            ? 'Start later: Shown'
+            : 'Start later: Hidden';
+
+        final scopeLabel = (scope == null) ? 'Scope: All' : null;
+
+        return Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: onPickScope,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: (scopeLabel != null)
+                      ? Text(
+                          scopeLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : BlocBuilder<ScopeContextBloc, ScopeContextState>(
+                          buildWhen: (p, n) => p.runtimeType != n.runtimeType,
+                          builder: (context, scopeState) {
+                            final title = switch (scopeState) {
+                              ScopeContextLoaded(title: final title) => title,
+                              _ => 'Scope',
+                            };
+
+                            return Text(
+                              'Scope: $title',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          },
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            FilterChip(
+              label: Text(label),
+              selected: showStartLater,
+              onSelected: (selected) {
+                context.read<AnytimeScreenBloc>().add(
+                  AnytimeShowStartLaterSet(selected),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
 
 List<TasklyStandardTileListRowModel> _buildStandardRows(
   BuildContext context,
@@ -270,9 +530,15 @@ List<TasklyStandardTileListRowModel> _buildStandardRows(
               leadingIcon: projectRef.isInbox
                   ? Icons.inbox_outlined
                   : Icons.folder_outlined,
+              trailingLabel: row.trailingLabel,
               onTap: () => context.read<AnytimeScreenBloc>().add(
                 AnytimeProjectHeaderTapped(projectRef: projectRef),
               ),
+              trailingIcon: projectRef.isInbox
+                  ? ((row.isCollapsed ?? false)
+                        ? Icons.expand_more
+                        : Icons.expand_less)
+                  : Icons.chevron_right,
             ),
           TaskRowUiModel(:final task) => () {
             final tileCapabilities = EntityTileCapabilitiesResolver.forTask(

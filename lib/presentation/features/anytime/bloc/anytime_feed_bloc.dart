@@ -30,6 +30,25 @@ final class AnytimeFeedFocusOnlyChanged extends AnytimeFeedEvent {
   final bool enabled;
 }
 
+final class AnytimeFeedShowStartLaterItemsChanged extends AnytimeFeedEvent {
+  const AnytimeFeedShowStartLaterItemsChanged({required this.enabled});
+
+  /// When true, items with a future planned day (start date) are included.
+  final bool enabled;
+}
+
+final class AnytimeFeedSearchQueryChanged extends AnytimeFeedEvent {
+  const AnytimeFeedSearchQueryChanged({required this.query});
+
+  final String query;
+}
+
+final class AnytimeFeedInboxCollapsedChanged extends AnytimeFeedEvent {
+  const AnytimeFeedInboxCollapsedChanged({required this.collapsed});
+
+  final bool collapsed;
+}
+
 sealed class AnytimeFeedState {
   const AnytimeFeedState();
 }
@@ -69,6 +88,9 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       transformer: restartable(),
     );
     on<AnytimeFeedFocusOnlyChanged>(_onFocusOnlyChanged);
+    on<AnytimeFeedShowStartLaterItemsChanged>(_onShowStartLaterItemsChanged);
+    on<AnytimeFeedSearchQueryChanged>(_onSearchQueryChanged);
+    on<AnytimeFeedInboxCollapsedChanged>(_onInboxCollapsedChanged);
 
     add(const AnytimeFeedStarted());
   }
@@ -83,7 +105,14 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   Map<String, OccurrenceData> _nextTaskOccurrenceById =
       const <String, OccurrenceData>{};
   Set<String> _todaySelectedTaskIds = const <String>{};
+  DateTime _todayDayKeyUtc = DateTime.fromMillisecondsSinceEpoch(
+    0,
+    isUtc: true,
+  );
   bool _focusOnly = false;
+  bool _showStartLaterItems = false;
+  bool _inboxCollapsed = false;
+  String _searchQuery = '';
 
   Future<void> _onStarted(
     AnytimeFeedStarted event,
@@ -105,6 +134,30 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     Emitter<AnytimeFeedState> emit,
   ) {
     _focusOnly = event.enabled;
+    _emitRows(emit);
+  }
+
+  void _onShowStartLaterItemsChanged(
+    AnytimeFeedShowStartLaterItemsChanged event,
+    Emitter<AnytimeFeedState> emit,
+  ) {
+    _showStartLaterItems = event.enabled;
+    _emitRows(emit);
+  }
+
+  void _onSearchQueryChanged(
+    AnytimeFeedSearchQueryChanged event,
+    Emitter<AnytimeFeedState> emit,
+  ) {
+    _searchQuery = event.query.trim();
+    _emitRows(emit);
+  }
+
+  void _onInboxCollapsedChanged(
+    AnytimeFeedInboxCollapsedChanged event,
+    Emitter<AnytimeFeedState> emit,
+  ) {
+    _inboxCollapsed = event.collapsed;
     _emitRows(emit);
   }
 
@@ -152,6 +205,16 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     });
 
     await Future.wait<void>([
+      emit.onEach<DateTime>(
+        dayKeyStream,
+        onData: (dayKey) {
+          _todayDayKeyUtc = dayKey;
+          _emitRows(emit);
+        },
+        onError: (error, stackTrace) {
+          emit(AnytimeFeedError(message: error.toString()));
+        },
+      ),
       emit.onEach<List<Task>>(
         _taskRepository.watchAll(query),
         onData: (tasks) {
@@ -207,11 +270,13 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
   void _emitRows(Emitter<AnytimeFeedState> emit) {
     try {
-      final tasks = _focusOnly
-          ? _latestTasks
-                .where((t) => _todaySelectedTaskIds.contains(t.id))
-                .toList()
-          : _latestTasks;
+      final search = _searchQuery.toLowerCase();
+
+      final tasks = _latestTasks
+          .where((t) => !_focusOnly || _todaySelectedTaskIds.contains(t.id))
+          .where((t) => _showStartLaterItems || !_isStartLater(t))
+          .where((t) => search.isEmpty || _matchesSearch(t, search))
+          .toList(growable: false);
 
       final tasksWithNextOccurrence = tasks
           .map(_decorateWithNextOccurrence)
@@ -239,6 +304,31 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     return task.copyWith(occurrence: next);
   }
 
+  bool _isStartLater(Task task) {
+    final taskStart = task.startDate;
+    if (taskStart != null && taskStart.isAfter(_todayDayKeyUtc)) return true;
+
+    final projectStart = task.project?.startDate;
+    if (projectStart != null && projectStart.isAfter(_todayDayKeyUtc)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool _matchesSearch(Task task, String searchLower) {
+    final title = task.name.trim().toLowerCase();
+    if (title.contains(searchLower)) return true;
+
+    final projectName = task.project?.name.trim().toLowerCase();
+    if (projectName != null && projectName.contains(searchLower)) return true;
+
+    final valueName = task.effectivePrimaryValue?.name.trim().toLowerCase();
+    if (valueName != null && valueName.contains(searchLower)) return true;
+
+    return false;
+  }
+
   List<ListRowUiModel> _mapToRows(List<Task> tasks) {
     if (tasks.isEmpty) return const <ListRowUiModel>[];
 
@@ -251,9 +341,74 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       _ => null,
     };
 
+    final rows = <ListRowUiModel>[];
+
+    final canShowGlobalInbox = scopedProjectId == null;
+
+    final inboxTasks = !canShowGlobalInbox
+        ? const <Task>[]
+        : tasks
+              .where((t) {
+                final pid = t.projectId;
+                return pid == null || pid.trim().isEmpty;
+              })
+              .toList(growable: false);
+
+    if (inboxTasks.isNotEmpty) {
+      rows.add(
+        ProjectHeaderRowUiModel(
+          rowKey: RowKey.v1(
+            screen: 'anytime',
+            rowType: 'group_header',
+            params: <String, String>{
+              'kind': 'project',
+              'project': 'inbox',
+              'scope': scopedValueId ?? 'all',
+            },
+          ),
+          depth: 0,
+          title: 'Inbox',
+          projectRef: const ProjectGroupingRef.inbox(),
+          trailingLabel: '${inboxTasks.length}',
+          isCollapsed: _inboxCollapsed,
+        ),
+      );
+
+      if (!_inboxCollapsed) {
+        final sortedInboxTasks = inboxTasks.toList(growable: false)
+          ..sort(_compareTasks);
+
+        for (final task in sortedInboxTasks) {
+          rows.add(
+            TaskRowUiModel(
+              rowKey: RowKey.v1(
+                screen: 'anytime',
+                rowType: 'task',
+                params: <String, String>{'id': task.id},
+              ),
+              depth: 1,
+              task: task,
+              showProjectLabel: false,
+            ),
+          );
+        }
+      }
+    }
+
+    final nonInboxTasks = canShowGlobalInbox
+        ? tasks
+              .where((t) {
+                final pid = t.projectId;
+                return pid != null && pid.trim().isNotEmpty;
+              })
+              .toList(growable: false)
+        : tasks;
+
+    if (nonInboxTasks.isEmpty) return rows;
+
     final groups = <String, _ValueGroup>{};
 
-    for (final task in tasks) {
+    for (final task in nonInboxTasks) {
       final valueId = task.effectivePrimaryValueId;
       final key = valueId ?? '__none__';
 
@@ -270,8 +425,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
     final sortedGroups = groups.values.toList(growable: false)
       ..sort(_compareValueGroups);
-
-    final rows = <ListRowUiModel>[];
 
     for (final group in sortedGroups) {
       final valueTitle = group.value?.name ?? 'No Value Assigned';
