@@ -7,12 +7,94 @@
 >
 > These are **invariants** (rules), not feature requirements.
 
+This is the **single source of truth** for normative architecture and testing
+rules in this repo.
+
+All other documents under `doc/architecture/` are **descriptive guides** and
+must not introduce new “must/shall” rules.
+
 ## 0) How to use this document
 
 - When adding new code, keep changes compliant with these invariants.
-- When refactoring legacy areas, move them toward these invariants.
+- When refactoring existing areas, move them toward these invariants.
 - If an invariant blocks progress, treat it as an explicit decision: document
   why, scope the exception narrowly, and plan removal.
+
+See the descriptive overview for the mental model:
+- [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)
+
+## 0.1 Vocabulary and boundary ownership (strict)
+
+Taskly’s architecture stays maintainable when each layer owns a specific kind
+of logic.
+
+Normative definitions:
+
+- **Business semantics**: rules that define product meaning and must remain
+  consistent across screens (for example recurrence targeting semantics,
+  canonical filtering/sorting rules, validation, write orchestration).
+- **Presentation policy**: how the app *feels* and renders state on a specific
+  screen (loading/retry UX, debouncing, pagination mechanics, sectioning,
+  optimistic UI flags, mapping domain entities into widget-ready models).
+- **Pure UI**: render-only widgets and small UI helpers (data in / events out).
+
+Ownership table:
+
+| Concern | Lives in | Notes |
+|---|---|---|
+| Business semantics | Domain | Must not depend on Flutter UI or persistence frameworks. |
+| Writes (user intents -> mutations) | Domain (use-cases / write facades) | Presentation interprets the user intent and passes `OperationContext`. |
+| Reactive composition for a screen | Presentation (BLoC + optional query services) | Domain provides facts/streams; presentation decides combination + screen state machine. |
+| Formatting/localization/accessibility strings | Presentation / UI | Domain must not produce localized strings or UI copy. |
+| Widgets, styling, reusable entities/sections | `packages/taskly_ui` | Pure UI only; no BLoCs, DI, repositories, or routing. |
+
+### 0.1.1 Domain outputs must be view-neutral (strict)
+
+Domain APIs must not expose screen-specific models or UI-ready DTOs.
+
+Normative rules:
+
+- Domain must not return models named after screens/routes (for example
+  `AnytimeScreenModel`, `MyDayViewModel`, `TaskTileModel`).
+- Domain must not return localized strings, UI copy, or accessibility labels.
+- Domain may expose view-neutral facts (booleans/flags), identifiers, domain
+  entities, and pure functions/selectors that are stable across screens.
+
+Rationale:
+
+- Keeps Domain reusable and stable.
+- Keeps UX iteration cheap (screen model changes remain in presentation).
+
+## 0.2 Layer index (where the rules fit)
+
+This section is a navigation aid. The normative text lives in the linked
+sections.
+
+### 0.2.1 Presentation layer (widgets/screens/BLoCs)
+
+- Presentation must not depend on Data: [1.1](#11-dependency-direction-strict)
+- Presentation boundary (BLoC-only): [2](#2-presentation-boundary-bloc-only)
+- Reactive subscription lifecycle rules: [3.1](#31-reactive-subscription-lifecycle-strict)
+
+### 0.2.2 Domain layer (business semantics/use-cases/contracts)
+
+- Dependency direction + domain purity: [1.1](#11-dependency-direction-strict),
+  [1.4](#14-domain-purity-strict-pragmatic)
+- Domain outputs are view-neutral: [0.1.1](#011-domain-outputs-must-be-view-neutral-strict)
+- Recurrence occurrence targeting is a domain concern: [4.3](#43-recurrence-command-boundary-strict)
+- Occurrence-aware read orchestration is a domain concern: [4.4](#44-recurrence-read-boundary-strict)
+
+### 0.2.3 Data + sync layer (repositories/persistence/sync)
+
+- Package API boundaries (no `src/` deep imports): [1.3](#13-package-public-api-boundary-strict)
+- PowerSync/SQLite view write constraints show up in feature contracts (see
+  recurrence contract and sync deep-dive):
+  - [specs/RECURRENCE_SYNC_CONTRACT.md](specs/RECURRENCE_SYNC_CONTRACT.md)
+  - [deep_dives/POWERSYNC_SUPABASE.md](deep_dives/POWERSYNC_SUPABASE.md)
+
+### 0.2.4 Testing (repo-wide)
+
+- Test invariants and directory/tag contract: [3.3](#33-testing-invariants-repo-wide-strict)
 
 ## 1) Layering and dependency direction
 
@@ -89,6 +171,10 @@ Normative rules:
 - Domain must not depend on database, network, or serialization frameworks:
   - forbidden: Drift table/query APIs, Supabase clients, PostgREST payload
     models, JSON codecs that are tied to persistence (those belong in Data)
+- Domain must not define or return presentation-layer models or UI strings.
+  - forbidden: screen view models, tile/section models, localized text, UI copy,
+    accessibility labels, or formatting helpers that embed presentation policy
+    (those belong in Presentation or `taskly_ui`).
 - Domain may depend on:
   - Dart SDK libraries (e.g., `dart:core`, `dart:async`, `dart:math`)
   - pure-Dart utility packages (e.g., `package:meta`, `package:collection`)
@@ -134,6 +220,26 @@ exception document under:
 Required format (example):
 
 - `// ignore-layering-guardrail (see doc/architecture/exceptions/EXC-YYYYMMDD-short-title.md; owner=<name>; expires=YYYY-MM-DD)`
+
+### 2.0.1 Presentation query services for repeatable screen logic (recommended)
+
+Repeatable, screen-shaped reactive composition may live in small
+presentation-layer helpers (for example `*QueryService`, `*ScreenModelBuilder`).
+
+Normative rules:
+
+- These helpers live in the presentation layer (typically under
+  `lib/presentation/...`).
+- They may depend on Domain and repository contracts.
+- They must not import Flutter widget libraries.
+- They must not perform writes or app routing.
+- They should prefer producing **one derived stream** per screen that is bound
+  in the BLoC with `emit.forEach` / `emit.onEach`.
+
+Rationale:
+
+- Keeps BLoCs thin without pushing screen concerns into Domain.
+- Encourages deterministic, cancellation-safe subscription patterns.
 
 ### 2.1 Shared UI extraction: `packages/taskly_ui` (strict)
 
@@ -194,7 +300,7 @@ Rationale:
 
 See: [doc/architecture/README.md](README.md)
 
-See also: [BLOC_GUIDELINES.md](BLOC_GUIDELINES.md)
+See also: [guides/BLOC_GUIDELINES.md](guides/BLOC_GUIDELINES.md)
 
 ### 2.1.2 Entity tiles are intent-driven (strict)
 
@@ -253,6 +359,9 @@ To keep shared UI consistent and avoid “shadow design systems” in app code:
 
 - Screens/Templates must not introduce new **Primitives / Entities / Sections**
   in app code, even if they are used only once.
+- Screens/Templates may use **private, file-local widgets** for layout-only
+  composition (spacing, ordering, small `Column`/`Row` helpers) as long as they
+  do not introduce new visual tokens, reusable component APIs, or new semantics.
 - In particular, do not create screen-local widgets that represent:
   - a reusable “section” block (headers + lists + empty/error states),
   - a reusable “entity” presentation (for example, a Task/Project tile),
@@ -294,7 +403,7 @@ Changes to `packages/taskly_ui` are governed differently depending on whether
 they change the shared public surface (API + default visuals/behavior) or are
 internal-only.
 
-See also: [TASKLY_UI_GOVERNANCE.md](TASKLY_UI_GOVERNANCE.md)
+See also: [guides/TASKLY_UI_GOVERNANCE.md](guides/TASKLY_UI_GOVERNANCE.md)
 
 Definitions:
 
@@ -445,6 +554,98 @@ Guardrails:
 - Script (repo-wide): [tool/no_raw_test_wrappers.dart](../../tool/no_raw_test_wrappers.dart)
 - Pre-push (staged-file focused): implemented in [git_hooks.dart](../../git_hooks.dart)
 
+### 3.3 Testing invariants (repo-wide) (strict)
+
+These invariants are in addition to any layer-specific rules above (for
+example, presentation boundary rules also apply in widget tests).
+
+#### TG-001-A — Hermetic-by-default for unit/widget tests
+
+Tests tagged `unit` or `widget` must be hermetic. They must not:
+
+- require network access
+- touch a real Supabase/PowerSync stack
+- require non-temp filesystem state
+- depend on wall-clock time (`DateTime.now()`)
+
+If the behavior requires real persistence/network, it must be tested under an
+explicit tag such as `integration`, `repository`, or `pipeline`.
+
+#### TG-002-A — Mandatory safe wrappers for new tests
+
+New tests must use the repo’s safe wrappers instead of raw `test()` /
+`testWidgets()` / `blocTest()`.
+
+#### TG-003-A — No leaked resources after a test
+
+Every resource created in a test must be cleaned up deterministically.
+
+Examples (non-exhaustive):
+
+- stream controllers / stream subscriptions
+- timers
+- BLoCs
+- database handles
+
+Cleanup must be registered immediately using `addTearDown(...)` (or test helper
+APIs built on top of it).
+
+#### TG-004-A — Presentation boundary holds in tests
+
+Widget tests must not call repositories/services directly and must not
+subscribe to domain/data streams from widget code.
+
+In widget tests, repositories are mocked/faked behind the BLoC and the widget
+renders BLoC state.
+
+#### TG-005-A — Tagging is directory-driven and enforceable
+
+Test type is determined by directory and must align with tags and presets.
+
+If a test does not fit the directory contract, move it or change its tag.
+
+#### TG-006-A — OperationContext propagation is verified for write flows
+
+Any test that validates a user-initiated write path must assert:
+
+- the `OperationContext` is created at the presentation boundary (typically the
+  BLoC handler interpreting user intent), and
+- the same context (correlation id) is passed through domain/data write APIs.
+
+#### TG-007-A — No `src/` deep imports in tests across packages
+
+Tests outside a package must not import `package:<local_package>/src/...`.
+
+Tests may import only public APIs (`package:<pkg>/<pkg>.dart` or other `lib/`
+entrypoints).
+
+#### TG-008-A — Flakiness policy: quarantine over retries
+
+Flaky tests must be quarantined and kept out of default presets.
+
+- Use an explicit tag (`flaky`) and exclude it from `fast/quick`.
+- Do not enable global retries by default to mask nondeterminism.
+
+#### TG-009-A — Performance budgets are manually enforced per preset
+
+Tests that meaningfully slow the developer loop must be tagged `slow` and
+excluded from the fast presets.
+
+Use timing artifacts (for example `test/last_run.json`) to identify regressions.
+
+### 3.4 Testing taxonomy (directory contract) (strict)
+
+| Directory | Primary tags | IO policy | Typical scope |
+| --- | --- | --- | --- |
+| `test/core/**` | `unit` | hermetic | cross-cutting pure logic |
+| `test/domain/**` | `unit` | hermetic | domain rules, reducers, mapping |
+| `test/presentation/**` | `widget` (or `unit` for pure BLoC/state) | hermetic | widget composition + BLoC wiring |
+| `test/data/**` | `repository` / `integration` | local DB only | repository behavior against real DB |
+| `test/integration/**` | `integration` | local DB only | multi-component flows without network |
+| `test/integration_test/**` | `pipeline` | local stack only | local Supabase/PowerSync pipeline |
+| `test/contracts/**` | `unit` | hermetic | shared expectations across impls |
+| `test/diagnosis/**` | `diagnosis` (optional) | varies | repros/investigations (not default) |
+
 ## 4) Write boundary and atomicity
 
 ### 4.1 Single write boundary per feature
@@ -503,6 +704,38 @@ Rationale:
 - Prevents subtle bugs from duplicating occurrence-selection logic in UI.
 - Preserves the offline-first recurrence storage contract.
 
+### 4.4 Recurrence read boundary (strict)
+
+Recurring entities (tasks/projects with RRULEs) have *virtual occurrences*.
+Any read that depends on occurrence-aware semantics (previewing or expanding
+occurrences, or filtering by occurrence dates) is a **domain concern**.
+
+Normative rules:
+
+- Occurrence-aware read orchestration must live in `taskly_domain`.
+  - Use `OccurrenceReadService` for:
+    - “Anytime-style” next-occurrence preview decoration.
+    - “Scheduled-style” window expansion with two-phase filtering.
+- Callers (presentation, analytics, other services) must not set
+  `occurrenceExpansion` / `occurrencePreview` on `TaskQuery`/`ProjectQuery`.
+  Those flags are legacy and are not an approved integration surface.
+- Data repository implementations must not interpret query-level occurrence
+  flags.
+  - If occurrence flags are present, repositories should fail fast (so we do
+    not silently fork semantics across layers).
+- Scheduled/range reads that filter by date must apply the date semantics
+  against occurrence-aware dates via Domain’s two-phase approach:
+  - SQL candidate set (date predicates removed)
+  - post-expansion filter evaluation on occurrence dates
+
+Rationale:
+
+- Keeps recurrence semantics stable across screens and non-UI callers.
+- Prevents subtle mismatches where SQL date predicates disagree with occurrence
+  dates after RRULE expansion.
+- Enforces the layering rule: Data provides persistence; Domain owns product
+  semantics.
+
 ### 4.2 Transactionality
 
 - If a write touches multiple tables, it must be **atomic** using a database
@@ -524,7 +757,7 @@ PowerSync applies schema using SQLite views. SQLite cannot UPSERT views.
   schema.
 - Prefer update-then-insert or insert-or-ignore patterns.
 
-See: [doc/architecture/POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md](POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md)
+See: [deep_dives/POWERSYNC_SUPABASE.md](deep_dives/POWERSYNC_SUPABASE.md)
 
 Guardrail: the repo includes a lightweight check to prevent accidental usage.
 
@@ -586,7 +819,7 @@ Guardrail:
   - Escape hatch (use sparingly): `// ignore-datetime-now-guardrail`
 
 Recurrence + date-only semantics are further specified in:
-- [doc/architecture/RECURRENCE_SYNC_CONTRACT.md](RECURRENCE_SYNC_CONTRACT.md)
+- [specs/RECURRENCE_SYNC_CONTRACT.md](specs/RECURRENCE_SYNC_CONTRACT.md)
 
 ## 8) Error handling across boundaries
 
@@ -604,12 +837,17 @@ All **user-initiated mutations** must be correlated end-to-end with an
 
 Normative rules:
 
-- Presentation creates an `OperationContext` **at the boundary of the user
-  intent** (typically in the BLoC event handler) and passes it down through
-  domain write APIs into repository mutations.
+- Presentation creates a **non-null** `OperationContext` **at the boundary of
+  the user intent** (typically in the BLoC event handler) for every
+  user-initiated mutation and passes it down through domain write APIs into
+  repository mutations.
 - Any domain/data API that performs a mutation **must accept** an optional
   `OperationContext? context` parameter and **must forward it** when delegating
   to deeper layers.
+- Public write surfaces intended for user actions (domain use-cases / feature
+  write facades) must treat a missing context as a bug. If a system/internal
+  write legitimately has no user intent, it must be explicitly documented as
+  such at the call site.
 - Data-layer write implementations must include the `OperationContext` fields
   (at minimum `correlationId`, `feature`, `screen`, `intent`, `operation`, and
   entity identifiers when present) in structured logs.
@@ -629,5 +867,5 @@ generate `OperationContext` with a UUID v4 correlation id.
 ## 9) Documentation invariants
 
 - Documents under `doc/architecture/` describe the **future-state** architecture.
-- Legacy architecture details are centralized in:
-  - [doc/architecture/LEGACY_ARCHITECTURE_OVERVIEW.md](LEGACY_ARCHITECTURE_OVERVIEW.md)
+- Historical/archived notes (when present) are **non-normative** and must not
+  be treated as required reading for new work.

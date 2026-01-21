@@ -41,7 +41,7 @@ Architecture clarifications (locked):
 - Presentation boundary: widgets do not subscribe to domain/data streams directly; BLoCs own subscriptions.
   - [doc/architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md](../../architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md)
 - Attention evaluation stays in domain; presentation consumes derived counts/severity.
-  - [doc/architecture/ATTENTION_SYSTEM_ARCHITECTURE.md](../../architecture/ATTENTION_SYSTEM_ARCHITECTURE.md)
+  - [doc/architecture/deep_dives/ATTENTION_SYSTEM.md](../../architecture/deep_dives/ATTENTION_SYSTEM.md)
 
 ## Phases
 

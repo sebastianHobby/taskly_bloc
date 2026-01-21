@@ -9,16 +9,20 @@ Taskly’s invariants are intended to keep the codebase clean long-term. When an
 invariant blocks progress, we allow a *narrow*, *temporary* exception — but only
 when it is explicitly documented and has an owner and an expiry.
 
-## Rules (strict)
+## How exceptions work
 
-- Any `ignore-*-guardrail` usage must reference an exception document in this
-  folder.
-- Exceptions must have:
-  - an owner
-  - a clear scope (which files/areas are affected)
-  - a concrete removal plan
-  - an expiry date
-- Expired exceptions should be treated as bugs and removed or renewed.
+This folder is the tracking mechanism for temporary exceptions.
+
+Canonical policy:
+
+- [../INVARIANTS.md](../INVARIANTS.md) (guardrail escape hatch policy)
+
+Practical expectations for an exception document:
+
+- Owner
+- Clear scope (which files/areas)
+- Concrete removal plan
+- Expiry date
 
 ## Naming
 

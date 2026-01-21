@@ -10,6 +10,7 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_entities.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
 enum MyDayRitualWizardInitialSection { due, starts, suggested }
 
@@ -136,7 +137,6 @@ class _RitualBody extends StatelessWidget {
             child: _RitualCard(
               focusMode: data.focusMode,
               dayKeyUtc: data.dayKeyUtc,
-              suggestionsPerBatch: data.suggestionsPerBatch,
               planned: planned,
               dueWindowDays: data.dueWindowDays,
               curated: curated,
@@ -329,7 +329,6 @@ class _RitualCard extends StatefulWidget {
   const _RitualCard({
     required this.focusMode,
     required this.dayKeyUtc,
-    required this.suggestionsPerBatch,
     required this.planned,
     required this.dueWindowDays,
     required this.curated,
@@ -349,7 +348,6 @@ class _RitualCard extends StatefulWidget {
 
   final FocusMode focusMode;
   final DateTime dayKeyUtc;
-  final int suggestionsPerBatch;
   final List<Task> planned;
   final int dueWindowDays;
   final List<Task> curated;
@@ -873,8 +871,7 @@ class _RitualCardState extends State<_RitualCard> {
                     enableSnooze: false,
                     enableSelection: true,
                   ),
-                  if (curatedCount >= widget.suggestionsPerBatch &&
-                      widget.curated.isNotEmpty &&
+                  if (widget.curated.isNotEmpty &&
                       widget.curated.every(
                         (t) => widget.selected.contains(t.id),
                       ))
@@ -1293,92 +1290,30 @@ class _TaskTileColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (final task in tasks)
-          _TaskTileRow(
+    final items = tasks
+        .map(
+          (task) => _toPickerItem(
+            context,
             dayKeyUtc: dayKeyUtc,
             task: task,
             selected: selected.contains(task.id),
             reasonText: reasonTextByTaskId[task.id],
             reasonTooltipText: reasonTooltipTextByTaskId[task.id],
-            enableSnooze: enableSnooze,
-            enableSelection: enableSelection,
           ),
-      ],
-    );
+        )
+        .toList(growable: false);
+
+    return MyDayPlanPickerTaskListSection(items: items);
   }
-}
 
-class _ShowMoreRow extends StatelessWidget {
-  const _ShowMoreRow({
-    required this.isExpanded,
-    required this.remainingCount,
-    required this.totalCount,
-    required this.labelExpanded,
-    required this.labelCollapsed,
-    required this.onPressed,
-  });
-
-  final bool isExpanded;
-  final int remainingCount;
-  final int totalCount;
-  final String labelExpanded;
-  final String labelCollapsed;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final label = isExpanded
-        ? labelExpanded
-        : remainingCount > 0
-        ? context.l10n.showMoreCountLabel(
-            remainingCount,
-            labelCollapsed,
-            totalCount,
-          )
-        : context.l10n.labelWithTotal(labelCollapsed, totalCount);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: TextButton(
-          onPressed: onPressed,
-          child: Text(
-            label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TaskTileRow extends StatelessWidget {
-  const _TaskTileRow({
-    required this.dayKeyUtc,
-    required this.task,
-    required this.selected,
-    required this.reasonText,
-    required this.reasonTooltipText,
-    required this.enableSnooze,
-    required this.enableSelection,
-  });
-
-  final DateTime dayKeyUtc;
-  final Task task;
-  final bool selected;
-  final String? reasonText;
-  final String? reasonTooltipText;
-  final bool enableSnooze;
-  final bool enableSelection;
-
-  @override
-  Widget build(BuildContext context) {
+  MyDayPlanPickerTaskItem _toPickerItem(
+    BuildContext context, {
+    required DateTime dayKeyUtc,
+    required Task task,
+    required bool selected,
+    required String? reasonText,
+    required String? reasonTooltipText,
+  }) {
     final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
     final model = buildTaskListRowTileModel(
       context,
@@ -1387,34 +1322,26 @@ class _TaskTileRow extends StatelessWidget {
       showProjectLabel: false,
     );
 
-    return TaskEntityTile(
+    return MyDayPlanPickerTaskItem(
       model: model,
-      intent: TaskTileIntent.ritualPick(selected: selected),
+      selected: selected,
       supportingText: reasonText,
       supportingTooltipText: reasonTooltipText,
       markers: TaskTileMarkers(pinned: task.isPinned),
-      actions: TaskTileActions(
-        onTap: !enableSelection ? null : () => _toggleSelection(context),
-        onToggleSelected: !enableSelection
-            ? null
-            : () => _toggleSelection(context),
-        onSnoozeRequested: !enableSnooze
-            ? null
-            : () => _showSnoozeSheet(
-                context,
-                dayKeyUtc: dayKeyUtc,
-                task: task,
-              ),
-      ),
-    );
-  }
-
-  void _toggleSelection(BuildContext context) {
-    context.read<MyDayRitualBloc>().add(
-      MyDayRitualToggleTask(
-        task.id,
-        selected: !selected,
-      ),
+      onToggleSelected: !enableSelection
+          ? null
+          : () {
+              context.read<MyDayRitualBloc>().add(
+                MyDayRitualToggleTask(task.id, selected: !selected),
+              );
+            },
+      onSnoozeRequested: !enableSnooze
+          ? null
+          : () => _showSnoozeSheet(
+              context,
+              dayKeyUtc: dayKeyUtc,
+              task: task,
+            ),
     );
   }
 
@@ -1465,27 +1392,6 @@ class _TaskTileRow extends StatelessWidget {
                   );
                 },
               ),
-              ListTile(
-                leading: const Icon(Icons.event),
-                title: Text(context.l10n.pickDateButton),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: sheetContext,
-                    initialDate: tomorrow,
-                    firstDate: tomorrow,
-                    lastDate: today.add(const Duration(days: 365 * 5)),
-                  );
-                  if (picked == null) return;
-                  if (!sheetContext.mounted || !parentContext.mounted) return;
-                  await _confirmAndDispatchSnooze(
-                    parentContext,
-                    sheetContext,
-                    task: task,
-                    newStartDate: dateOnly(picked),
-                  );
-                },
-              ),
-              const SizedBox(height: 12),
             ],
           ),
         );
@@ -1543,6 +1449,54 @@ class _TaskTileRow extends StatelessWidget {
       MyDayRitualSnoozeTaskRequested(
         taskId: task.id,
         newStartDate: newStartDate,
+      ),
+    );
+  }
+}
+
+class _ShowMoreRow extends StatelessWidget {
+  const _ShowMoreRow({
+    required this.isExpanded,
+    required this.remainingCount,
+    required this.totalCount,
+    required this.labelExpanded,
+    required this.labelCollapsed,
+    required this.onPressed,
+  });
+
+  final bool isExpanded;
+  final int remainingCount;
+  final int totalCount;
+  final String labelExpanded;
+  final String labelCollapsed;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final label = isExpanded
+        ? labelExpanded
+        : remainingCount > 0
+        ? context.l10n.showMoreCountLabel(
+            remainingCount,
+            labelCollapsed,
+            totalCount,
+          )
+        : context.l10n.labelWithTotal(labelCollapsed, totalCount);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton(
+          onPressed: onPressed,
+          child: Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -158,4 +158,4 @@ Keep (conceptually, but re-implement):
 - Review doc/architecture/ before implementing.
 - Run `flutter analyze` for this phase.
 - Ensure any errors or warnings introduced (or discovered) are fixed by the end of the phase.
-- If changes affect sync/persistence architecture, update doc/architecture/POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md.
+- If changes affect sync/persistence architecture, update doc/architecture/deep_dives/POWERSYNC_SUPABASE.md.

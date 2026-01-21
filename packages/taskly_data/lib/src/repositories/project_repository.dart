@@ -18,9 +18,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     required this.occurrenceExpander,
     required this.occurrenceWriteHelper,
     required this.idGenerator,
-    required HomeDayKeyService dayKeyService,
-  }) : _predicateMapper = ProjectPredicateMapper(driftDb: driftDb),
-       _dayKeyService = dayKeyService;
+  }) : _predicateMapper = ProjectPredicateMapper(driftDb: driftDb);
 
   // Task counts are merged into Project domain objects. We intentionally keep
   // the project+values join separate from task counting to avoid join row
@@ -32,7 +30,6 @@ class ProjectRepository implements ProjectRepositoryContract {
   final OccurrenceWriteHelperContract occurrenceWriteHelper;
   final IdGenerator idGenerator;
   final ProjectPredicateMapper _predicateMapper;
-  final HomeDayKeyService _dayKeyService;
 
   // Shared streams using RxDart for efficient multi-subscriber support
   ValueStream<List<Project>>? _sharedProjectsWithRelated;
@@ -213,8 +210,12 @@ class ProjectRepository implements ProjectRepositoryContract {
     }
 
     // With query = use query-specific logic
-    if (query.shouldExpandOccurrences) {
-      return _buildAndExecuteQuery(query);
+    if (query.shouldExpandOccurrences || query.hasOccurrencePreview) {
+      throw UnsupportedError(
+        'ProjectRepository does not support occurrenceExpansion/occurrencePreview '
+        'query flags. Use OccurrenceReadService (taskly_domain) for '
+        'occurrence-aware reads.',
+      );
     }
 
     // Conservative policy: don't cache date-based queries by default.
@@ -263,8 +264,12 @@ class ProjectRepository implements ProjectRepositoryContract {
     }
 
     // With query = use query-specific logic
-    if (query.shouldExpandOccurrences) {
-      return _buildAndExecuteQuery(query).first;
+    if (query.shouldExpandOccurrences || query.hasOccurrencePreview) {
+      throw UnsupportedError(
+        'ProjectRepository does not support occurrenceExpansion/occurrencePreview '
+        'query flags. Use OccurrenceReadService (taskly_domain) for '
+        'occurrence-aware reads.',
+      );
     }
 
     final join = _projectWithRelatedJoin(filter: query.filter);
@@ -283,10 +288,12 @@ class ProjectRepository implements ProjectRepositoryContract {
   Stream<int> watchAllCount([ProjectQuery? query]) {
     query ??= ProjectQuery.all();
 
-    if (query.shouldExpandOccurrences) {
-      return _buildAndExecuteQuery(
-        query,
-      ).map((items) => items.length).distinct();
+    if (query.shouldExpandOccurrences || query.hasOccurrencePreview) {
+      throw UnsupportedError(
+        'ProjectRepository does not support occurrenceExpansion/occurrencePreview '
+        'query flags. Use OccurrenceReadService (taskly_domain) for '
+        'occurrence-aware reads.',
+      );
     }
 
     final countExp = driftDb.projectTable.id.count();
@@ -303,68 +310,6 @@ class ProjectRepository implements ProjectRepositoryContract {
         .watchSingle()
         .map((row) => row.read(countExp) ?? 0)
         .distinct();
-  }
-
-  Stream<List<Project>> _buildAndExecuteQuery(ProjectQuery query) {
-    final sqlFilter = query.shouldExpandOccurrences
-        ? _removeDatePredicates(query.filter)
-        : query.filter;
-
-    // Always load with related labels - domain model is always complete
-    final join = _projectWithRelatedJoin(filter: sqlFilter);
-    final Stream<List<Project>> baseStream = join.joined.watch().map(
-      (rows) => ProjectAggregation.fromRows(
-        rows: rows,
-        driftDb: driftDb,
-        primaryValueTable: join.primaryValueTable,
-        secondaryValueTable: join.secondaryValueTable,
-      ).toProjects(),
-    );
-
-    if (!query.shouldExpandOccurrences) return baseStream;
-
-    final expansion = query.occurrenceExpansion!;
-    final completionsStream = driftDb
-        .select(driftDb.projectCompletionHistoryTable)
-        .watch()
-        .map((rows) => rows.map(_toCompletionData).toList());
-    final exceptionsStream = driftDb
-        .select(driftDb.projectRecurrenceExceptionsTable)
-        .watch()
-        .map((rows) => rows.map(_toExceptionData).toList());
-
-    final evaluator = ProjectFilterEvaluator();
-    final ctx = EvaluationContext(today: _dayKeyService.todayDayKeyUtc());
-
-    return occurrenceExpander.expandProjectOccurrences(
-      projectsStream: baseStream,
-      completionsStream: completionsStream,
-      exceptionsStream: exceptionsStream,
-      rangeStart: expansion.rangeStart,
-      rangeEnd: expansion.rangeEnd,
-      postExpansionFilter: (p) => evaluator.matches(p, query.filter, ctx),
-    );
-  }
-
-  QueryFilter<ProjectPredicate> _removeDatePredicates(
-    QueryFilter<ProjectPredicate> filter,
-  ) {
-    return QueryFilter<ProjectPredicate>(
-      shared: filter.shared
-          .where((p) => p is! ProjectDatePredicate)
-          .toList(
-            growable: false,
-          ),
-      orGroups: filter.orGroups
-          .map(
-            (g) => g
-                .where((p) => p is! ProjectDatePredicate)
-                .toList(
-                  growable: false,
-                ),
-          )
-          .toList(growable: false),
-    );
   }
 
   drift_pkg.Expression<bool>? _whereExpressionFromFilter(
@@ -773,6 +718,22 @@ class ProjectRepository implements ProjectRepositoryContract {
   // OCCURRENCE METHODS
   // ===========================================================================
 
+  @override
+  Stream<List<CompletionHistoryData>> watchCompletionHistory() {
+    return driftDb
+        .select(driftDb.projectCompletionHistoryTable)
+        .watch()
+        .map((rows) => rows.map(_toCompletionData).toList());
+  }
+
+  @override
+  Stream<List<RecurrenceExceptionData>> watchRecurrenceExceptions() {
+    return driftDb
+        .select(driftDb.projectRecurrenceExceptionsTable)
+        .watch()
+        .map((rows) => rows.map(_toExceptionData).toList());
+  }
+
   /// Converts [ProjectCompletionHistoryTableData] to [CompletionHistoryData].
   CompletionHistoryData _toCompletionData(
     ProjectCompletionHistoryTableData c,
@@ -815,6 +776,31 @@ class ProjectRepository implements ProjectRepositoryContract {
     final exceptions = await driftDb
         .select(driftDb.projectRecurrenceExceptionsTable)
         .get();
+
+    return occurrenceExpander.expandProjectOccurrencesSync(
+      projects: projects.map(projectFromTable).toList(),
+      completions: completions.map(_toCompletionData).toList(),
+      exceptions: exceptions.map(_toExceptionData).toList(),
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    );
+  }
+
+  @override
+  Future<List<Project>> getOccurrencesForProject({
+    required String projectId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final projects = await (driftDb.select(
+      driftDb.projectTable,
+    )..where((p) => p.id.equals(projectId))).get();
+    final completions = await (driftDb.select(
+      driftDb.projectCompletionHistoryTable,
+    )..where((c) => c.projectId.equals(projectId))).get();
+    final exceptions = await (driftDb.select(
+      driftDb.projectRecurrenceExceptionsTable,
+    )..where((e) => e.projectId.equals(projectId))).get();
 
     return occurrenceExpander.expandProjectOccurrencesSync(
       projects: projects.map(projectFromTable).toList(),

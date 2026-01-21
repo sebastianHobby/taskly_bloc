@@ -53,10 +53,13 @@ final class MyDayQueryService {
   }
 
   Stream<MyDayViewModel> _watchForDay(DateTime dayKeyUtc) {
-    final values$ = Stream.fromFuture(_valueRepository.getAll());
-
-    final global$ = Stream.fromFuture(
-      _settingsRepository.load<settings.GlobalSettings>(SettingsKey.global),
+    // Important: `Stream.fromFuture(...)` creates a single-subscription stream.
+    // This method uses `switchMap`, so the inner stream can be re-subscribed
+    // multiple times as inputs change.
+    // Keep the *Future* stable, but create a fresh Stream per subscription.
+    final valuesFuture = _valueRepository.getAll();
+    final globalFuture = _settingsRepository.load<settings.GlobalSettings>(
+      SettingsKey.global,
     );
 
     final dayPicks$ = Rx.concat([
@@ -66,6 +69,9 @@ final class MyDayQueryService {
 
     return dayPicks$.switchMap((dayPicks) {
       if (dayPicks.ritualCompletedAtUtc != null) {
+        final values$ = Stream.fromFuture(valuesFuture);
+        final global$ = Stream.fromFuture(globalFuture);
+
         final tasks$ = Rx.concat([
           Stream.fromFuture(_taskRepository.getAll(TaskQuery.incomplete())),
           _taskRepository.watchAll(TaskQuery.incomplete()),

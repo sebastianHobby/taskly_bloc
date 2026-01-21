@@ -108,7 +108,6 @@ final class MyDayRitualReady extends MyDayRitualState {
     required this.needsRitual,
     required this.focusMode,
     required this.dueWindowDays,
-    required this.suggestionsPerBatch,
     required this.planned,
     required this.curated,
     required this.completedPicks,
@@ -123,7 +122,6 @@ final class MyDayRitualReady extends MyDayRitualState {
   final bool needsRitual;
   final FocusMode focusMode;
   final int dueWindowDays;
-  final int suggestionsPerBatch;
   final List<Task> planned;
   final List<Task> curated;
   final List<Task> completedPicks;
@@ -138,7 +136,6 @@ final class MyDayRitualReady extends MyDayRitualState {
     bool? needsRitual,
     FocusMode? focusMode,
     int? dueWindowDays,
-    int? suggestionsPerBatch,
     List<Task>? planned,
     List<Task>? curated,
     List<Task>? completedPicks,
@@ -153,7 +150,6 @@ final class MyDayRitualReady extends MyDayRitualState {
       needsRitual: needsRitual ?? this.needsRitual,
       focusMode: focusMode ?? this.focusMode,
       dueWindowDays: dueWindowDays ?? this.dueWindowDays,
-      suggestionsPerBatch: suggestionsPerBatch ?? this.suggestionsPerBatch,
       planned: planned ?? this.planned,
       curated: curated ?? this.curated,
       completedPicks: completedPicks ?? this.completedPicks,
@@ -213,6 +209,8 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
   final NowService _nowService;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
+  final my_day.MyDayRitualComposer _composer =
+      const my_day.MyDayRitualComposer();
 
   StreamSubscription? _daySub;
 
@@ -223,9 +221,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
   settings.GlobalSettings _globalSettings = const settings.GlobalSettings();
   DateTime _dayKeyUtc;
 
-  bool _hasGeneratedMoreSuggestions = false;
-  int _suggestionsPerBatch = 7;
-  int _suggestionsRequestedCount = 7;
+  int _suggestionBatchCount = 1;
   List<Task> _completedPicks = const <Task>[];
   Set<String> _lockedCompletedPickIds = const <String>{};
 
@@ -245,9 +241,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     Emitter<MyDayRitualState> emit,
   ) async {
     _dayKeyUtc = _dayKeyService.todayDayKeyUtc();
-    _hasGeneratedMoreSuggestions = false;
-    _suggestionsPerBatch = 7;
-    _suggestionsRequestedCount = 7;
+    _suggestionBatchCount = 1;
     _completedPicks = const <Task>[];
     _lockedCompletedPickIds = const <String>{};
     _dayPicks = my_day.MyDayDayPicks(
@@ -296,6 +290,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     if (resetSelection) {
       _hasUserSelection = false;
       _selectedTaskIds = <String>{};
+      _suggestionBatchCount = 1;
     }
 
     try {
@@ -308,11 +303,6 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
 
       _allocationConfig = results[0] as AllocationConfig;
       _globalSettings = results[1] as settings.GlobalSettings;
-
-      _suggestionsPerBatch = _allocationConfig.suggestionsPerBatch.clamp(1, 50);
-      if (!_hasGeneratedMoreSuggestions) {
-        _suggestionsRequestedCount = _suggestionsPerBatch;
-      }
 
       final picks = results[2] as my_day.MyDayDayPicks;
       final before = _dayPicks.ritualCompletedAtUtc;
@@ -339,8 +329,8 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
 
       _tasks = [...incompleteTasks, ...missingPickTasks];
 
-      _allocationResult = await _allocationOrchestrator.getAllocationSnapshot(
-        maxTasksOverride: _suggestionsRequestedCount,
+      _allocationResult = await _allocationOrchestrator.getSuggestedSnapshot(
+        batchCount: _suggestionBatchCount,
       );
     } finally {
       _refreshCompleter = null;
@@ -352,20 +342,23 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     _MyDayRitualInputsChanged event,
     Emitter<MyDayRitualState> emit,
   ) {
-    final planned = _buildPlanned(_tasks, _dayKeyUtc);
-    final plannedIds = planned.map((t) => t.id).toSet();
-
     if (!_hasUserSelection) {
       _selectedTaskIds = _dayPicks.ritualCompletedAtUtc == null
           ? <String>{}
           : _dayPicks.selectedTaskIds;
     }
 
-    final curated = _buildCurated(
-      _allocationResult,
-      plannedIds: plannedIds,
+    final composition = _composer.compose(
+      tasks: _tasks,
+      dayKeyUtc: _dayKeyUtc,
+      dueWindowDays: _globalSettings.myDayDueWindowDays,
+      dayPicks: _dayPicks,
       selectedTaskIds: _selectedTaskIds,
+      allocation: _allocationResult,
     );
+
+    final planned = composition.planned;
+    final curated = composition.curated;
 
     final needsRitual = _dayPicks.ritualCompletedAtUtc == null;
 
@@ -374,22 +367,16 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
       _lastObservedNeedsRitual = needsRitual;
     }
 
-    final curatedReasonDetails = _buildCuratedReasonDetails(
-      curated,
-      allocation: _allocationResult,
-    );
-
     emit(
       MyDayRitualReady(
         needsRitual: needsRitual,
         focusMode: _allocationConfig.focusMode,
         dueWindowDays: _globalSettings.myDayDueWindowDays,
-        suggestionsPerBatch: _suggestionsPerBatch,
         planned: planned,
         curated: curated,
         completedPicks: _completedPicks,
-        curatedReasons: curatedReasonDetails.reasonLineByTaskId,
-        curatedReasonTooltips: curatedReasonDetails.tooltipByTaskId,
+        curatedReasons: composition.curatedReasonLineByTaskId,
+        curatedReasonTooltips: composition.curatedTooltipByTaskId,
         selectedTaskIds: _selectedTaskIds,
         dayKeyUtc: _dayKeyUtc,
         nav: null,
@@ -762,29 +749,9 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     MyDayRitualMoreSuggestionsRequested event,
     Emitter<MyDayRitualState> emit,
   ) async {
-    _hasGeneratedMoreSuggestions = true;
-    _suggestionsRequestedCount += _suggestionsPerBatch;
+    _suggestionBatchCount += 1;
     await _refreshSnapshots(resetSelection: false);
     add(const _MyDayRitualInputsChanged());
-  }
-
-  List<Task> _buildPlanned(List<Task> tasks, DateTime dayKeyUtc) {
-    final today = dateOnly(dayKeyUtc);
-    final dueWindowDays = _globalSettings.myDayDueWindowDays;
-    final dueSoonLimit = today.add(Duration(days: dueWindowDays - 1));
-
-    bool isPlanned(Task task) {
-      if (_isCompleted(task)) return false;
-      final start = dateOnlyOrNull(task.occurrence?.date ?? task.startDate);
-      final deadline = dateOnlyOrNull(
-        task.occurrence?.deadline ?? task.deadlineDate,
-      );
-      final startEligible = start != null && !start.isAfter(today);
-      final dueSoon = deadline != null && !deadline.isAfter(dueSoonLimit);
-      return startEligible || dueSoon;
-    }
-
-    return tasks.where(isPlanned).toList(growable: false);
   }
 
   DateTime? _deadlineDateOnly(Task task) {
@@ -810,209 +777,6 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
   DateTime _dueLimit(DateTime today, int dueWindowDays) {
     final days = dueWindowDays.clamp(1, 30);
     return today.add(Duration(days: days - 1));
-  }
-
-  List<Task> _buildCurated(
-    AllocationResult? allocation, {
-    required Set<String> plannedIds,
-    required Set<String> selectedTaskIds,
-  }) {
-    final curated = <Task>[];
-
-    final tasksById = {for (final task in _tasks) task.id: task};
-
-    // Always include already-picked tasks that are NOT part of the planned set
-    // so "resume" shows the current plan even if allocation candidates change.
-    for (final pick in _dayPicks.picks) {
-      final taskId = pick.taskId;
-      if (!selectedTaskIds.contains(taskId)) continue;
-      if (plannedIds.contains(taskId)) continue;
-      final task = tasksById[taskId];
-      if (task == null) continue;
-      if (_isCompleted(task)) continue;
-      curated.add(task);
-    }
-
-    if (allocation == null) return curated;
-
-    for (final entry in allocation.allocatedTasks) {
-      final task = entry.task;
-      if (plannedIds.contains(task.id)) continue;
-      if (curated.any((t) => t.id == task.id)) continue;
-      if (_isCompleted(task)) continue;
-      curated.add(task);
-    }
-
-    return curated;
-  }
-
-  ({
-    Map<String, String> reasonLineByTaskId,
-    Map<String, String> tooltipByTaskId,
-  })
-  _buildCuratedReasonDetails(
-    List<Task> curated, {
-    required AllocationResult? allocation,
-  }) {
-    if (allocation == null) {
-      return (
-        reasonLineByTaskId: const <String, String>{},
-        tooltipByTaskId: const <String, String>{},
-      );
-    }
-
-    final reasonsByTaskId = <String, List<AllocationReasonCode>>{};
-    for (final entry in allocation.allocatedTasks) {
-      reasonsByTaskId[entry.task.id] = entry.reasonCodes;
-    }
-
-    final reasonLineByTaskId = <String, String>{};
-    final tooltipByTaskId = <String, String>{};
-
-    for (final task in curated) {
-      final reasonCodes = reasonsByTaskId[task.id] ?? const [];
-      final reasonLine = _reasonLineForTask(task, reasonCodes);
-      final tooltip = _reasonTooltipForTask(task, reasonCodes);
-
-      if (reasonLine.isNotEmpty) {
-        reasonLineByTaskId[task.id] = reasonLine;
-      }
-      if (tooltip.isNotEmpty) {
-        tooltipByTaskId[task.id] = tooltip;
-      }
-    }
-
-    return (
-      reasonLineByTaskId: reasonLineByTaskId,
-      tooltipByTaskId: tooltipByTaskId,
-    );
-  }
-
-  String _reasonLineForTask(Task task, List<AllocationReasonCode> reasonCodes) {
-    final whyNow = _whyNowToken(task, reasonCodes);
-    final whyItMatters = _whyItMattersToken(task, reasonCodes);
-
-    if (whyNow.isEmpty && whyItMatters.isEmpty) return '';
-    if (whyNow.isEmpty) return whyItMatters;
-    if (whyItMatters.isEmpty) return whyNow;
-    if (whyNow == whyItMatters) return whyNow;
-    return '$whyNow · $whyItMatters';
-  }
-
-  String _whyNowToken(Task task, List<AllocationReasonCode> reasonCodes) {
-    if (reasonCodes.contains(AllocationReasonCode.urgency)) {
-      return _deadlineLabel(task);
-    }
-
-    if (reasonCodes.contains(AllocationReasonCode.neglectBalance)) {
-      final primaryValueName = task.effectivePrimaryValue?.name.trim();
-      if (primaryValueName != null && primaryValueName.isNotEmpty) {
-        return 'Rebalancing toward $primaryValueName';
-      }
-      return 'Rebalancing';
-    }
-
-    if (reasonCodes.contains(AllocationReasonCode.priority)) {
-      return 'Priority';
-    }
-
-    return 'Suggested';
-  }
-
-  String _whyItMattersToken(Task task, List<AllocationReasonCode> reasonCodes) {
-    if (reasonCodes.contains(AllocationReasonCode.crossValue)) {
-      return 'Cross-value';
-    }
-
-    if (reasonCodes.contains(AllocationReasonCode.neglectBalance)) {
-      return '';
-    }
-
-    final primaryValueName = task.effectivePrimaryValue?.name.trim();
-    if (primaryValueName != null && primaryValueName.isNotEmpty) {
-      return primaryValueName;
-    }
-
-    if (reasonCodes.contains(AllocationReasonCode.neglectBalance)) {
-      return 'Balance';
-    }
-
-    if (reasonCodes.contains(AllocationReasonCode.priority)) {
-      return 'Priority';
-    }
-
-    return '';
-  }
-
-  String _reasonTooltipForTask(
-    Task task,
-    List<AllocationReasonCode> reasonCodes,
-  ) {
-    if (reasonCodes.isEmpty && task.isEffectivelyValueless) return '';
-
-    final bullets = <String>[];
-
-    if (reasonCodes.contains(AllocationReasonCode.urgency)) {
-      bullets.add(_deadlineLabel(task));
-    }
-
-    if (reasonCodes.contains(AllocationReasonCode.priority)) {
-      bullets.add('High priority');
-    }
-
-    if (reasonCodes.contains(AllocationReasonCode.neglectBalance)) {
-      final primaryValueName = task.effectivePrimaryValue?.name.trim();
-      if (primaryValueName != null && primaryValueName.isNotEmpty) {
-        bullets.add('Rebalancing toward $primaryValueName');
-      } else {
-        bullets.add('Rebalancing');
-      }
-    }
-
-    if (reasonCodes.contains(AllocationReasonCode.crossValue)) {
-      final valueNames = task.effectiveValues
-          .map((v) => v.name.trim())
-          .where((n) => n.isNotEmpty)
-          .toList(growable: false);
-
-      if (valueNames.length >= 2) {
-        bullets.add(
-          'Cross-value: advances ${valueNames[0]} + ${valueNames[1]}',
-        );
-      } else {
-        bullets.add('Cross-value');
-      }
-    } else {
-      final primaryValueName = task.effectivePrimaryValue?.name.trim();
-      if (primaryValueName != null && primaryValueName.isNotEmpty) {
-        bullets.add('Supports $primaryValueName');
-      }
-    }
-
-    if (bullets.isEmpty) return '';
-
-    final buffer = StringBuffer('Why suggested');
-    for (final item in bullets) {
-      buffer.write('\n• $item');
-    }
-    return buffer.toString();
-  }
-
-  String _deadlineLabel(Task task) {
-    final deadline = dateOnlyOrNull(task.deadlineDate);
-    if (deadline == null) return 'Due soon';
-
-    final today = dateOnly(_dayKeyUtc);
-    final diff = deadline.difference(today).inDays;
-
-    if (diff < 0) return 'Past due';
-    if (diff == 0) return 'Due today';
-    if (diff == 1) return 'Due tomorrow';
-    return 'Due in ${diff}d';
-  }
-
-  bool _isCompleted(Task task) {
-    return task.occurrence?.isCompleted ?? task.completed;
   }
 
   bool _isSameDayUtc(DateTime a, DateTime b) {

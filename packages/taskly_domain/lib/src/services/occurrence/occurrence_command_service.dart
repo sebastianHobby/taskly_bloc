@@ -289,18 +289,16 @@ class OccurrenceCommandService {
     required String taskId,
     required DateTime asOfDay,
   }) async {
-    final expanded = await _taskRepository.getOccurrences(
-      rangeStart: asOfDay.subtract(const Duration(days: 365)),
-      rangeEnd: asOfDay.add(const Duration(days: 1825)),
+    final range = OccurrencePolicy.commandResolutionRange(asOfDayKey: asOfDay);
+    final expanded = await _taskRepository.getOccurrencesForTask(
+      taskId: taskId,
+      rangeStart: range.rangeStart,
+      rangeEnd: range.rangeEnd,
     );
-
-    final forTask = expanded
-        .where((t) => t.id == taskId)
-        .toList(growable: false);
 
     final nextById =
         NextOccurrenceSelector.nextUncompletedTaskOccurrenceByTaskId(
-          expandedTasks: forTask,
+          expandedTasks: expanded,
           asOfDay: asOfDay,
         );
 
@@ -316,15 +314,16 @@ class OccurrenceCommandService {
     required String taskId,
     required DateTime asOfDay,
   }) async {
-    final expanded = await _taskRepository.getOccurrences(
-      rangeStart: asOfDay.subtract(const Duration(days: 365)),
-      rangeEnd: asOfDay.add(const Duration(days: 1825)),
+    final range = OccurrencePolicy.commandResolutionRange(asOfDayKey: asOfDay);
+    final expanded = await _taskRepository.getOccurrencesForTask(
+      taskId: taskId,
+      rangeStart: range.rangeStart,
+      rangeEnd: range.rangeEnd,
     );
 
     final candidates = <OccurrenceData>[];
 
     for (final t in expanded) {
-      if (t.id != taskId) continue;
       final o = t.occurrence;
       if (o == null) continue;
       if (!o.isCompleted) continue;
@@ -352,18 +351,16 @@ class OccurrenceCommandService {
     required String projectId,
     required DateTime asOfDay,
   }) async {
-    final expanded = await _projectRepository.getOccurrences(
-      rangeStart: asOfDay.subtract(const Duration(days: 365)),
-      rangeEnd: asOfDay.add(const Duration(days: 1825)),
+    final range = OccurrencePolicy.commandResolutionRange(asOfDayKey: asOfDay);
+    final expanded = await _projectRepository.getOccurrencesForProject(
+      projectId: projectId,
+      rangeStart: range.rangeStart,
+      rangeEnd: range.rangeEnd,
     );
-
-    final forProject = expanded
-        .where((p) => p.id == projectId)
-        .toList(growable: false);
 
     final nextById =
         NextOccurrenceSelector.nextUncompletedProjectOccurrenceByProjectId(
-          expandedProjects: forProject,
+          expandedProjects: expanded,
           asOfDay: asOfDay,
         );
 
@@ -381,15 +378,16 @@ class OccurrenceCommandService {
     required String projectId,
     required DateTime asOfDay,
   }) async {
-    final expanded = await _projectRepository.getOccurrences(
-      rangeStart: asOfDay.subtract(const Duration(days: 365)),
-      rangeEnd: asOfDay.add(const Duration(days: 1825)),
+    final range = OccurrencePolicy.commandResolutionRange(asOfDayKey: asOfDay);
+    final expanded = await _projectRepository.getOccurrencesForProject(
+      projectId: projectId,
+      rangeStart: range.rangeStart,
+      rangeEnd: range.rangeEnd,
     );
 
     final candidates = <OccurrenceData>[];
 
     for (final p in expanded) {
-      if (p.id != projectId) continue;
       final o = p.occurrence;
       if (o == null) continue;
       if (!o.isCompleted) continue;

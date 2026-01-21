@@ -31,9 +31,9 @@ Architecturally:
 - **Data** persists locally with Drift (PowerSync-backed) and implements
   repository contracts.
 
-Normative presentation boundary: widgets do not call repositories directly and
-must not subscribe to domain/data streams directly. BLoCs own subscriptions and
-expose widget-friendly state.
+Canonical presentation boundary:
+
+- [../INVARIANTS.md](../INVARIANTS.md#2-presentation-boundary-bloc-only)
 
 ---
 
@@ -145,7 +145,7 @@ that emit `ON CONFLICT` clauses against PowerSync schema tables. Prefer
 update-then-insert or insert-or-ignore patterns.
 
 See:
-- [POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md](POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md)
+- [POWERSYNC_SUPABASE.md](POWERSYNC_SUPABASE.md)
 
 ### 3.3 Seeding system trackers
 
@@ -165,9 +165,6 @@ Journal screens subscribe to repository streams through BLoCs:
 
 - BLoCs combine tracker definitions, entry streams, and event streams.
 - Widgets render the BLoC state.
-
-Legacy USM integration details are documented only in:
-- [LEGACY_ARCHITECTURE_OVERVIEW.md](LEGACY_ARCHITECTURE_OVERVIEW.md)
 
 ---
 
@@ -223,14 +220,11 @@ Entry points:
 
 ---
 
-## 5) Operational Notes & Invariants
+## 5) Operational Notes
 
-### 5.1 Ownership and layering
+Ownership and layering rules live in:
 
-- Widgets must not talk to repositories/services directly.
-- BLoCs own subscriptions and expose derived state.
-- Domain must not import presentation.
-- Data implementations must be hidden behind contracts.
+- [../INVARIANTS.md](../INVARIANTS.md)
 
 ### 5.2 Performance
 

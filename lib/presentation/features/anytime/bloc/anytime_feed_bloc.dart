@@ -71,12 +71,12 @@ final class AnytimeFeedError extends AnytimeFeedState {
 
 class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   AnytimeFeedBloc({
-    required TaskRepositoryContract taskRepository,
+    required OccurrenceReadService occurrenceReadService,
     required MyDayRepositoryContract myDayRepository,
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
     AnytimeScope? scope,
-  }) : _taskRepository = taskRepository,
+  }) : _occurrenceReadService = occurrenceReadService,
        _myDayRepository = myDayRepository,
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
@@ -95,7 +95,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     add(const AnytimeFeedStarted());
   }
 
-  final TaskRepositoryContract _taskRepository;
+  final OccurrenceReadService _occurrenceReadService;
   final MyDayRepositoryContract _myDayRepository;
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
@@ -169,12 +169,15 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
           .map((_) => _dayKeyService.todayDayKeyUtc()),
     ]).distinct().shareValue();
 
-    final queryStream = dayKeyStream.map((dayKey) {
+    final tasksStream = dayKeyStream.switchMap((dayKey) {
       // Anytime is not date-scoped, but repeating tasks need a single “next”
       // occurrence for correct rendering + completion targeting.
-      final preview = OccurrencePreview(asOfDayKey: dayKey);
-      final base = TaskQuery.incomplete().withOccurrencePreview(preview);
-      return _scopeQuery(base, _scope);
+      final preview = OccurrencePolicy.anytimePreview(asOfDayKey: dayKey);
+      final query = _scopeQuery(TaskQuery.incomplete(), _scope);
+      return _occurrenceReadService.watchTasksWithOccurrencePreview(
+        query: query,
+        preview: preview,
+      );
     });
 
     final todaySelectionIdsStream = dayKeyStream
@@ -200,7 +203,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
         },
       ),
       emit.onEach<List<Task>>(
-        queryStream.switchMap(_taskRepository.watchAll),
+        tasksStream,
         onData: (tasks) {
           _latestTasks = tasks;
           _emitRows(emit);

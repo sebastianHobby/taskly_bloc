@@ -1,6 +1,7 @@
 import 'package:taskly_domain/src/attention/model/attention_resolution.dart';
 import 'package:taskly_domain/src/attention/model/attention_rule.dart';
 import 'package:taskly_domain/src/attention/model/attention_rule_runtime_state.dart';
+import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 /// Repository contract for attention system data access.
 ///
@@ -37,7 +38,10 @@ abstract class AttentionRepositoryContract {
     String ruleId,
     String entityId,
   );
-  Future<void> recordResolution(AttentionResolution resolution);
+  Future<void> recordResolution(
+    AttentionResolution resolution, {
+    OperationContext? context,
+  });
 
   // ===== Runtime state (engine semantics) =====
   Stream<List<AttentionRuleRuntimeState>> watchRuntimeStateForRule(

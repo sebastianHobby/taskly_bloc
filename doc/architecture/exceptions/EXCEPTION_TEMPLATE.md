@@ -43,6 +43,6 @@ Concrete steps to remove the exception.
 
 ## Required code annotation
 
-Every ignore must reference this doc, e.g.
+Every ignore references this doc, e.g.
 
 - `// ignore-layering-guardrail (see doc/architecture/exceptions/EXC-YYYYMMDD-short-title.md; owner=<name>; expires=YYYY-MM-DD)`

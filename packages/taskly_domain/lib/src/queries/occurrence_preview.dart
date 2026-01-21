@@ -9,8 +9,8 @@ import 'package:flutter/foundation.dart';
 class OccurrencePreview {
   const OccurrencePreview({
     required this.asOfDayKey,
-    this.pastDays = 365,
-    this.futureDays = 730,
+    required this.pastDays,
+    required this.futureDays,
   });
 
   factory OccurrencePreview.fromJson(Map<String, dynamic> json) {

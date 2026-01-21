@@ -13,7 +13,6 @@ dependencies:
   get_it: any
   meta: any
   powersync: any
-  rrule: any
   rxdart: any
   supabase_flutter: any
   talker: any
