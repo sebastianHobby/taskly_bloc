@@ -11,249 +11,61 @@ Taskly is a Flutter app with a layered architecture and an offline-first data
 model:
 
 - **Presentation** renders UI, routes navigation, and hosts feature flows.
-- **Domain** implements business rules and orchestrates use-cases.
+- **Domain** implements business semantics and orchestrates use-cases.
 - **Data** persists locally (SQLite) and integrates with sync/backends.
 - **Offline-first**: the local DB is the primary source of truth for UI; sync is
   responsible for convergence.
 
-### 1.1 Presentation boundary rule (BLoC-only)
+Boundary rule of thumb:
 
-**Normative rule:** Widgets/pages in the presentation layer must not talk to
-repositories or domain/data services directly, and must not subscribe to
-non-UI streams directly.
+- Domain outputs are **view-neutral** (no screen models, no UI strings).
+- Presentation owns screen-shaped policy (composition, sectioning, paging,
+  # Taskly — Architecture Docs
 
-- Presentation widgets/pages may only interact with other layers through a
-  **BLoC** that is owned by the presentation layer.
-- BLoCs may depend on domain services/use-cases and repository
-  contracts.
-- Streams belong below the widget layer: any stream subscriptions that produce
-  UI state must live in the BLoC (or deeper), and the widget consumes the
-  resulting BLoC state.
+  > Audience: developers + AI agents
+  >
+  > Goal: a **clear architectural overview** + a single place for **normative
+  > invariants**.
 
-#### Allowed exceptions (narrow)
+  ## Start here (10 minutes)
 
-- **Ephemeral UI-only state** that does not represent domain/data state, such as
-  `AnimationController`s, `TextEditingController`s, focus nodes, scroll
-  controllers, and other widget-local concerns.
-- **Already-cached UI-only streams** that do not touch repositories/services
-  (for example, navigation badge streams that are derived from UI-layer state).
+  1) Architecture mental model (descriptive): [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)
+  2) Non-negotiable rules (normative, single source of truth):
+     [INVARIANTS.md](INVARIANTS.md)
 
-If an exception starts to depend on domain/data or becomes shared across screens,
-promote it into a BLoC (or lower layer) and expose a BLoC state instead.
+  If you need to violate a guardrail, follow:
+  - [EXCEPTIONS.md](EXCEPTIONS.md)
 
-Related invariants/guides:
-- Stream subscription lifecycle + safe fan-out: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md)
-  (section 3.1) and [BLOC_GUIDELINES.md](BLOC_GUIDELINES.md) (Rx fan-out).
-- Nullable identifiers canonicalization (for example “no project = NULL”):
-  [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section 4.1.1).
+  ## Guides (how to build)
 
-### 1.1.2 UI composition model (4-tier)
+  These are descriptive playbooks. They must not introduce new “must” rules.
 
-All UI in Taskly uses a consistent 4-tier composition model:
+  - BLoC patterns and stream safety: [guides/BLOC_GUIDELINES.md](guides/BLOC_GUIDELINES.md)
+  - Screen composition + routing: [guides/SCREEN_ARCHITECTURE.md](guides/SCREEN_ARCHITECTURE.md)
+  - Shared UI governance and patterns: [guides/TASKLY_UI_GOVERNANCE.md](guides/TASKLY_UI_GOVERNANCE.md)
+  - “Intent, not config” pattern: [guides/TASKLY_UI_INTENT_NOT_CONFIG.md](guides/TASKLY_UI_INTENT_NOT_CONFIG.md)
+  - Testing guide (policy + taxonomy; invariants live in INVARIANTS):
+    [guides/TESTING_ARCHITECTURE.md](guides/TESTING_ARCHITECTURE.md)
 
-- **Primitives / Entities / Sections**: shared, reusable UI that follows “data
-  in / events out”. Shared components belong in `packages/taskly_ui`.
-- **Screens/Templates**: full pages and flows (routing + BLoC wiring + effects).
-  These live in the app presentation layer (typically under `lib/presentation/`).
+  ## Deep dives (subsystems)
 
-Canonical entity tiles (for example Task/Project tiles) follow this split:
+  - Sync pipeline: [deep_dives/POWERSYNC_SUPABASE.md](deep_dives/POWERSYNC_SUPABASE.md)
+  - Attention system: [deep_dives/ATTENTION_SYSTEM.md](deep_dives/ATTENTION_SYSTEM.md)
+  - Journal + analytics: [deep_dives/JOURNAL_AND_STATISTICS.md](deep_dives/JOURNAL_AND_STATISTICS.md)
+  - Suggested picks (allocation): [deep_dives/SUGGESTED_PICKS.md](deep_dives/SUGGESTED_PICKS.md)
 
-- `packages/taskly_ui`: primitives/entities/sections + UI-only models.
-  Prefer the tiered public entrypoints:
-  - `package:taskly_ui/taskly_ui_entities.dart`
-  - `package:taskly_ui/taskly_ui_sections.dart`
-  - `package:taskly_ui/taskly_ui_models.dart`
-  - `package:taskly_ui/taskly_ui_forms.dart`
-- app (`lib/`): screens/templates (routing + BLoC wiring) plus domain→UI mapping
-  and policy/side-effects (routing, overflow menus, intent dispatch).
-  `taskly_ui` surfaces interactions via callbacks (events out). For entity
-  tiles, the default pattern is **intent, not config**: pass a `*TileIntent`
-  and a `*TileActions` object and let the shared tile derive affordances from
-  callback presence.
+  ## Specs (locked implementer contracts)
 
-See also: [TASKLY_UI_INTENT_NOT_CONFIG.md](TASKLY_UI_INTENT_NOT_CONFIG.md)
+  - Recurrence + sync contract: [specs/RECURRENCE_SYNC_CONTRACT.md](specs/RECURRENCE_SYNC_CONTRACT.md)
 
-Governance note:
+  ## Runbooks (operational)
 
-- The app owns only Screens/Templates; primitives/entities/sections live in
-  `packages/taskly_ui`. Exceptions require explicit user approval.
+  - Local Supabase + PowerSync E2E stack: [runbooks/LOCAL_E2E_STACK.md](runbooks/LOCAL_E2E_STACK.md)
 
-Normative details live in: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md)
-(section 2.2).
+  ## Product meaning
 
-### 1.1.1 Write correlation rule (OperationContext)
-
-**Normative rule:** Every user-initiated mutation must pass an
-`OperationContext` (with a correlation id) from presentation into domain/data
-writes for structured logging and consistent failure mapping.
-
-See: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section: 8.1)
-
-### 1.2 System-level architecture diagram
-
-```text
-+-----------------------------------------------------------------------+
-|                              Presentation                             |
-|  - routing / pages / widgets / feature state                           |
-+------------------------------------+----------------------------------+
-                                     |
-                                     v
-+-----------------------------------------------------------------------+
-|                                 Domain                                |
-|  - business services (allocation, attention, etc.)                     |
-|  - repository contracts (interfaces)                                  |
-+------------------------------------+----------------------------------+
-                                     |
-                                     v
-+-----------------------------------------------------------------------+
-|                                  Data                                 |
-|  - repository implementations                                           |
-|  - local persistence (Drift over SQLite/PowerSync DB)                  |
-|  - sync connectors / serializers / normalization                       |
-+------------------------------------+----------------------------------+
-                                     |
-                                     v
-+-----------------------------------------------------------------------+
-|                         Sync + Backend (runtime)                       |
-|  PowerSync server <-> Supabase (Postgres + PostgREST + Auth JWT/RLS)   |
-+-----------------------------------------------------------------------+
-```
-
-## 2) Key Subsystems & How They Integrate
-
-This section is intentionally high-level and focuses on *integration points*.
-
-### 2.1 Screens + Routing
-
-Screens are **explicit Flutter pages** with **explicit routes** (no catch-all
-route-to-spec mapping). Presentation state and reactive subscriptions are owned
-by presentation-layer BLoCs.
-
-For the deeper dive see:
-- [SCREEN_ARCHITECTURE.md](SCREEN_ARCHITECTURE.md)
-
-### 2.2 Offline-first persistence + sync (PowerSync + Supabase)
-
-The app reads/writes to a local SQLite database via Drift.
-
-Important: PowerSync applies the client schema using SQLite views, and SQLite cannot
-UPSERT (`INSERT ... ON CONFLICT DO UPDATE`) a view. Avoid Drift UPSERT helpers on
-PowerSync schema tables; prefer update-then-insert or insert-or-ignore patterns.
-
-- **UI reads**: BLoCs read from the local DB (reactive watchers) and
-  drive UI updates.
-- **Writes**: recorded locally and uploaded to Supabase via PostgREST.
-- **Downloads**: arrive via PowerSync replication and are applied locally.
-
-Note: in this codebase, “UI reads” means **BLoCs read from the local
-DB/repositories and expose derived UI state**; widgets do not directly watch the
-DB or repository streams.
-
-#### Sync pipeline diagram
-
-```text
-Local UI <-> Drift (queries/transactions)
-            |
-            v
-     Local SQLite (PowerSync-backed)
-            |
-            +--> upload connector -> Supabase PostgREST (writes; RLS enforced)
-            |
-            +<-- PowerSync server replication (reads; filtered by sync rules)
-                              |
-                              v
-                      Supabase Postgres (canonical)
-```
-
-For the deeper dive see:
-- [POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md](POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md)
-
-### 2.3 Attention System (rule evaluation -> support sections)
-
-The attention system evaluates rules into user-facing “attention items” and
-surfaces them in screens and settings.
-
-Integration highlights:
-
-- BLoCs build an `AttentionQuery` and subscribe to the engine.
-- The engine combines persisted rule config, domain data, and time invalidation
-  pulses.
-- The output is rendered by feature screens and shared widgets.
-
-For the deeper dive see:
-- [ATTENTION_SYSTEM_ARCHITECTURE.md](ATTENTION_SYSTEM_ARCHITECTURE.md)
-
-### 2.4 Allocation System (daily focus list -> My Day)
-
-The allocation system computes **suggested focus items** based on user
-configuration and task/project signals. The **My Day ritual selection** is the
-source of truth for “today”, and the allocator provides suggestions to help the
-user choose.
-
-Integration highlights:
-
-- Allocation is invoked by domain orchestration (including time/day boundary
-  triggers).
-- My Day renders allocation outputs via explicit presentation widgets driven by
-  a My Day BLoC.
-- Allocation warnings via snapshots have been removed.
-
-For the deeper dive see:
-- [SUGGESTED_PICKS_ENGINE_ARCHITECTURE.md](SUGGESTED_PICKS_ENGINE_ARCHITECTURE.md)
-
-### 2.5 Journal + Statistics (entries + trackers -> trends/correlations)
-
-The journal system captures daily qualitative + quantitative signals via:
-
-- **Journal entries** (text + timestamps)
-- **Tracker events** (e.g. mood/exercise/meds) attached to entries/days
-- **Tracker definitions + preferences** (configuration, pinning, quick add)
-
-The statistics/analytics layer consumes journal + core domain data to produce:
-
-- mood trends and distributions
-- tracker value series and correlations (factors ↔ outcomes)
-- cached snapshots/insights where appropriate
-
-Integration highlights:
-
-- Journal screens use BLoCs that subscribe to journal repository streams.
-- Analytics services query journal repositories for mood/tracker series and
-  persist cached results through the analytics repository.
-
-For the deeper dive see:
-- [JOURNAL_AND_STATISTICS_ARCHITECTURE.md](JOURNAL_AND_STATISTICS_ARCHITECTURE.md)
-
-## 3) Architecture Docs Index (This Folder)
-
-- Architecture invariants (normative): [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md)
-- `taskly_ui` governance (normative): [TASKLY_UI_GOVERNANCE.md](TASKLY_UI_GOVERNANCE.md)
-- BLoC guidelines: [BLOC_GUIDELINES.md](BLOC_GUIDELINES.md)
-- Screen architecture (future): [SCREEN_ARCHITECTURE.md](SCREEN_ARCHITECTURE.md)
-- Legacy architecture overview: [LEGACY_ARCHITECTURE_OVERVIEW.md](LEGACY_ARCHITECTURE_OVERVIEW.md)
-- Journal + statistics: [JOURNAL_AND_STATISTICS_ARCHITECTURE.md](JOURNAL_AND_STATISTICS_ARCHITECTURE.md)
-- Screen purpose concepts: [screen_purpose_concepts.md](screen_purpose_concepts.md)
-- Offline-first + sync: [POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md](POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md)
-- Local dev / E2E (PowerSync + Supabase): [LOCAL_SUPABASE_POWERSYNC_E2E.md](LOCAL_SUPABASE_POWERSYNC_E2E.md)
-- Suggested picks: [SUGGESTED_PICKS_ENGINE_ARCHITECTURE.md](SUGGESTED_PICKS_ENGINE_ARCHITECTURE.md)
-- Attention: [ATTENTION_SYSTEM_ARCHITECTURE.md](ATTENTION_SYSTEM_ARCHITECTURE.md)
-- Recurrence + sync contract: [RECURRENCE_SYNC_CONTRACT.md](RECURRENCE_SYNC_CONTRACT.md)
-- Testing: [TESTING_ARCHITECTURE.md](TESTING_ARCHITECTURE.md)
-
-## Appendix A — Directory Layout (Conceptual)
-
-A concise “where does this belong?” map.
-
-### A.1 `lib/` (application source)
-
-- `lib/app/` — app shell composition and app-level wiring
-- `lib/core/` — dependency injection + cross-cutting infrastructure
-- `lib/domain/` — business rules, domain models, and contracts
-- `lib/data/` — repository implementations, persistence, and sync/backends
-- `lib/presentation/` — routing, pages, widgets, and state management
-- `lib/shared/` — shared utilities/building blocks (keep broadly reusable)
-- `lib/l10n/` — localization resources
-
+  Product intent lives outside architecture:
+  - [doc/product/README.md](../product/README.md)
 ### A.2 Project root (supporting folders)
 
 - `test/` — tests (unit/widget/integration), typically organized by layer/feature

@@ -10,7 +10,7 @@ Implementation date (UTC): 2026-01-14T23:28:10.5730906Z
   - Description line: "Your actionable backlog. Use filters to hide 'start later' items."
 - Added the "Include future starts" toggle in the section filter bar.
 - Added focus cues ("In Focus") in list rendering.
-- Updated architecture docs index to include `screen_purpose_concepts.md`.
+- Updated architecture docs index to include `doc/product/SCREEN_PURPOSE_CONCEPTS.md`.
 - `flutter analyze` is clean.
 
 ## Known issues / follow-ups

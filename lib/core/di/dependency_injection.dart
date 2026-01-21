@@ -67,6 +67,9 @@ Future<void> setupDependencies() async {
         clock: getIt<Clock>(),
       ),
     )
+    ..registerSingleton<OccurrenceReadService>(
+      getIt<TasklyDataBindings>().occurrenceReadService,
+    )
     ..registerSingleton<ProjectRepositoryContract>(
       getIt<TasklyDataBindings>().projectRepository,
     )
@@ -154,6 +157,7 @@ Future<void> setupDependencies() async {
       () => ScheduledOccurrencesService(
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
+        occurrenceReadService: getIt<OccurrenceReadService>(),
       ),
     )
     ..registerLazySingleton<TaskStatsCalculator>(TaskStatsCalculator.new)
@@ -179,6 +183,12 @@ Future<void> setupDependencies() async {
         engine: getIt<attention_engine_v2.AttentionEngineContract>(),
       ),
     )
+    ..registerLazySingleton<AttentionResolutionService>(
+      () => AttentionResolutionService(
+        repository: getIt<attention_repo_v2.AttentionRepositoryContract>(),
+        newResolutionId: getIt<IdGenerator>().attentionResolutionId,
+      ),
+    )
     // Debug/maintenance services (used by Settings in debug builds)
     ..registerLazySingleton<TemplateDataService>(
       () => TemplateDataService(
@@ -202,8 +212,7 @@ Future<void> setupDependencies() async {
     ..registerFactory<AttentionInboxBloc>(
       () => AttentionInboxBloc(
         engine: getIt<attention_engine_v2.AttentionEngineContract>(),
-        repository: getIt<attention_repo_v2.AttentionRepositoryContract>(),
-        idGenerator: getIt<IdGenerator>(),
+        resolutionService: getIt<AttentionResolutionService>(),
         nowService: getIt<NowService>(),
       ),
     )

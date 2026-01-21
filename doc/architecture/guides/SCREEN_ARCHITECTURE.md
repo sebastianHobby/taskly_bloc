@@ -10,11 +10,9 @@
 Future-state Taskly screens are built as **explicit Flutter pages** driven by
 **presentation-owned BLoCs**.
 
-Non-negotiable invariant:
+Canonical boundary:
 
-- Widgets/pages must not talk to repositories directly and must not subscribe to
-  domain/data streams directly. BLoCs own subscriptions and expose widget-ready
-  state.
+- [../INVARIANTS.md](../INVARIANTS.md#2-presentation-boundary-bloc-only)
 
 ## 2) Routing
 
@@ -34,8 +32,12 @@ A typical screen has:
   - read from domain/services/repositories
   - subscribe to reactive sources (DB watchers, streams)
   - expose state for rendering and drive side-effects via events
+- Optional **presentation query services** that:
+  - combine multiple streams into a single derived stream for the screen
+  - encode repeatable presentation policy (sectioning, debouncing, paging)
+  - remain side-effect free (no writes, no routing)
 - Optional **child widgets** that render subsets of the BLoC state.
-  - Under the strict UI ownership rule, these must not become app-owned
+  - Under the UI ownership rule, these should not become app-owned
     primitives/entities/sections. Prefer composing `taskly_ui` components
     directly in the screen.
 
@@ -45,6 +47,12 @@ This keeps data flow consistent and debuggable:
 UI events -> BLoC events -> domain/services/repositories
 DB/reactive streams -> BLoC state -> widgets
 ```
+
+Design intent:
+
+- BLoCs are thin orchestrators: interpret user intent, start/stop subscriptions,
+  map domain outputs into renderable state, and drive side-effects.
+- Domain owns business semantics; presentation owns screen-shaped policy.
 
 ## 3.1 Forms (FormBuilder-first preference)
 
@@ -68,48 +76,39 @@ services**, not from a runtime screen interpreter.
 
 Recommended reuse mechanisms:
 
-- Shared UI components in `packages/taskly_ui` (pure UI only; see below)
-- Screen-local widgets must not be used to introduce new primitives/entities/
-  sections (even if used once). If the UI block is more than trivial layout,
-  it belongs in `packages/taskly_ui`.
+- Shared UI components in `packages/taskly_ui` (pure UI only)
+- Prefer extracting non-trivial reusable UI blocks into `packages/taskly_ui`
+  instead of creating app-owned primitives/entities/sections.
 - Shared domain services/use-cases under `lib/domain/...` (or extracted packages)
+- Presentation query services when reuse is screen-shaped (reactive composition,
+  sectioning, pagination mechanics) but not business semantics.
 - Shared repositories/contracts and implementations
 
-## 4.2 UI composition model (4-tier) (strict)
+## 4.2 UI composition model (4-tier)
 
-All UI must use the same composition vocabulary:
+All UI uses the same composition vocabulary:
 
 - **Primitives**: tiny, style-driven building blocks with no domain meaning.
 - **Entities**: render-only UI for a single domain concept, still “data in /
   events out”.
 - **Sections**: composed, reusable chunks that group primitives/entities.
-  Sections must remain presentation-agnostic (no routing/state).
+  Sections stay presentation-agnostic (no routing/state).
 - **Screens/Templates**: full pages and flows (routing, BLoC wiring, effects,
   feature orchestration).
 
-Code placement is strict:
+Placement and boundaries (canonical):
 
-- Shared **Primitives / Entities / Sections** belong in `packages/taskly_ui`.
-- **Screens/Templates** belong in the app presentation layer.
+- [../INVARIANTS.md](../INVARIANTS.md) (UI composition + `taskly_ui` boundary)
 
-See the normative rule:
-- [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section 2.2)
-
-### 4.3 Shared UI package: `taskly_ui` (strict)
+### 4.3 Shared UI package: `taskly_ui`
 
 To reduce inconsistent look-and-feel and avoid ad-hoc cross-feature imports,
 prefer extracting reusable UI building blocks into `packages/taskly_ui`.
 
-Normative boundaries for `taskly_ui`:
+Boundaries for `taskly_ui` are defined in:
 
-- `taskly_ui` is **pure UI** (widgets + small UI helpers).
-- `taskly_ui` must not contain BLoCs/Cubits, subscribe to domain/data streams,
-  or call repositories/services/use-cases.
-- `taskly_ui` must not perform **app routing** (no `go_router`, no route
-  pushes). “Navigation” here means app routes; UI-only overlays like dialogs
-  or bottom sheets are fine.
-- Interactivity is expressed as **callbacks / UI events** that are handled by
-  the app-owned screen/BLoC.
+- [../INVARIANTS.md](../INVARIANTS.md) (`taskly_ui` boundary)
+- [TASKLY_UI_GOVERNANCE.md](TASKLY_UI_GOVERNANCE.md) (how to evolve shared UI)
 
 For entity tiles, the default approach is **intent, not config**:
 
@@ -131,7 +130,7 @@ Package hygiene (recommended):
   intended for app consumption; prefer tiered entrypoints.
 - Keep `taskly_ui` implementation private under `packages/taskly_ui/lib/src/`.
 
-Taxonomy layout (strict):
+Taxonomy layout (recommended):
 
 - `packages/taskly_ui/lib/src/primitives/`
 - `packages/taskly_ui/lib/src/entities/`
@@ -147,7 +146,7 @@ Governance:
   changes) require explicit user approval; internal-only refactors/bugfixes are
   allowed via fast path.
 
-See: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section 2.2.1)
+See: [../INVARIANTS.md](../INVARIANTS.md) (`taskly_ui` boundary)
 
 ## 5) Errors and Empty States
 
@@ -156,8 +155,7 @@ See: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section 2.2.1)
 
 ## 5.1 Mutations and OperationContext (strict)
 
-User-initiated mutations must be correlated end-to-end using
-`OperationContext`.
+User-initiated mutations are correlated end-to-end using `OperationContext`.
 
 - Create the `OperationContext` in the BLoC handler where the user intent is
   interpreted (tap/submit/confirm).
@@ -165,12 +163,7 @@ User-initiated mutations must be correlated end-to-end using
 - Ensure failures surfaced back to the BLoC preserve the context correlation id
   so logs and UI failures can be joined.
 
-See the normative rule in:
-- [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section: 8.1)
+See the canonical rule in:
+- [../INVARIANTS.md](../INVARIANTS.md) (OperationContext write correlation)
 
-## 6) Legacy Note
 
-Legacy USM concepts (spec-interpreted screens, template renderers, and
-catch-all routing) are documented only in:
-
-- [LEGACY_ARCHITECTURE_OVERVIEW.md](LEGACY_ARCHITECTURE_OVERVIEW.md)

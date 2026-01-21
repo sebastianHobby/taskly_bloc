@@ -11,15 +11,18 @@
 >
 > It does **not** prescribe screen/product behavior such as *which* occurrence a
 > user intent should target. That selection belongs in domain-level command
-> services (see `doc/architecture/ARCHITECTURE_INVARIANTS.md`, section 4.3).
+> services (see `doc/architecture/INVARIANTS.md`, section 4.3).
 
 ## 1) Core invariants
 
 ### 1.1 Offline-first + layering
 
-- Local SQLite (PowerSync-backed) is the **primary source of truth** for UI.
-- Presentation widgets/pages do not access repositories/streams directly;
-  BLoCs own subscriptions and expose UI state.
+This contract assumes Taskly’s offline-first model and standard layering.
+
+See:
+
+- [../INVARIANTS.md](../INVARIANTS.md#5-offline-first--powersync-constraints)
+- [../INVARIANTS.md](../INVARIANTS.md#2-presentation-boundary-bloc-only)
 
 ### 1.2 Date-only semantics
 
@@ -33,15 +36,16 @@
 PowerSync applies schema using SQLite views. SQLite does **not** allow
 `INSERT ... ON CONFLICT DO UPDATE` (UPSERT) against views.
 
-**Normative rule:** do not use Drift UPSERT helpers against tables that are
-part of the PowerSync schema.
+Canonical rule:
+
+- [../INVARIANTS.md](../INVARIANTS.md#52-sqlite-views-no-local-upsert-against-powersync-tables)
 
 Recommended view-safe patterns:
 
 - **Update-then-insert** for “upsert-like” semantics.
 - **Insert-or-ignore** for append-only/idempotent rows.
 
-Reference: `doc/architecture/POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md`.
+Reference: `doc/architecture/deep_dives/POWERSYNC_SUPABASE.md`.
 
 ## 2) Tables (logical model)
 
@@ -176,24 +180,11 @@ Rationale:
 
 ## 6) Implementation guidance (PowerSync-safe)
 
-## 6.0 Architecture guardrails (normative)
+## 6.0 Architecture alignment (see INVARIANTS)
 
-These are maintainability and correctness guardrails. Future changes should be
-reviewed against them.
-
-- Single write surface: recurrence tables must be written only through the
-  dedicated recurrence write helper/repository.
-- Dual-layer invariants: enforce invariants in Supabase (constraints/RLS) and
-  mirror the critical ones in the write helper to avoid local/remote drift.
-- Deterministic ID discipline: deterministic IDs represent logical events.
-  Never overwrite existing rows on ID conflict. Conflicts with materially
-  different payloads must emit a `SyncAnomaly`.
-- Schema + replication gate: any schema change that recurrence code depends on
-  must include Supabase migrations + RLS and PowerSync sync-rules updates, plus
-  local converters/schema updates.
-- Observability: emit `SyncAnomaly` consistently for blocked writes and
-  idempotency conflicts; include enough context to diagnose (correlation ID,
-  entity ref, original date, operation kind).
+Architecture rules (layering, PowerSync constraints, exception policy, etc.)
+live in `doc/architecture/INVARIANTS.md`. This section only covers
+recurrence-specific implementation guidance.
 
 ### 6.1 Single write surface
 

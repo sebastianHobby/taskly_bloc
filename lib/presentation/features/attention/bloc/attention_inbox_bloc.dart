@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_data/id.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:uuid/uuid.dart';
@@ -195,13 +195,11 @@ class AttentionInboxBloc
     extends Bloc<AttentionInboxEvent, AttentionInboxState> {
   AttentionInboxBloc({
     required AttentionEngineContract engine,
-    required AttentionRepositoryContract repository,
-    required IdGenerator idGenerator,
+    required AttentionResolutionService resolutionService,
     required NowService nowService,
     Duration undoWindow = const Duration(seconds: 5),
   }) : _engine = engine,
-       _repository = repository,
-       _idGenerator = idGenerator,
+       _resolutionService = resolutionService,
        _nowService = nowService,
        _undoWindow = undoWindow,
        super(
@@ -233,10 +231,12 @@ class AttentionInboxBloc
   }
 
   final AttentionEngineContract _engine;
-  final AttentionRepositoryContract _repository;
-  final IdGenerator _idGenerator;
+  final AttentionResolutionService _resolutionService;
   final NowService _nowService;
   final Duration _undoWindow;
+
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
 
   final _uuid = const Uuid();
 
@@ -548,36 +548,39 @@ class AttentionInboxBloc
     _pendingCommit = null;
 
     try {
+      final now = _nowService.nowUtc();
+      final baseContext = _contextFactory.create(
+        feature: 'attention',
+        screen: 'attention_inbox',
+        intent: 'attention_action_applied',
+        operation: 'attention.record_resolution_batch',
+        entityType: 'attention_batch',
+        entityId: pending.undoId,
+        extraFields: <String, Object?>{
+          'action': pending.action.name,
+          'count': pending.keys.length,
+        },
+      );
+
+      // Keep a single correlation id for the whole batch, but attach per-item
+      // identity for better logs/failure mapping.
       for (final item in pending.items) {
-        final now = _nowService.nowUtc();
-
-        final details = switch (pending.action) {
-          AttentionResolutionAction.snoozed => <String, dynamic>{
-            'snooze_until': now.add(const Duration(days: 1)).toIso8601String(),
-          },
-          AttentionResolutionAction.dismissed => _dismissDetails(item),
-          AttentionResolutionAction.reviewed ||
-          AttentionResolutionAction.skipped => null,
-        };
-
-        // If dismiss isn't possible, skip it rather than failing the batch.
-        if (pending.action == AttentionResolutionAction.dismissed &&
-            details == null) {
-          continue;
-        }
-
-        final resolution = AttentionResolution(
-          id: _idGenerator.attentionResolutionId(),
-          ruleId: item.ruleId,
+        final itemContext = baseContext.copyWith(
+          entityType: item.entityType.name,
           entityId: item.entityId,
-          entityType: item.entityType,
-          resolvedAt: now,
-          createdAt: now,
-          resolutionAction: pending.action,
-          actionDetails: details,
+          extraFields: <String, Object?>{
+            ...baseContext.extraFields,
+            'ruleId': item.ruleId,
+            'itemKey': _reasonKey(item),
+          },
         );
 
-        await _repository.recordResolution(resolution);
+        await _resolutionService.applyAction(
+          action: pending.action,
+          items: <AttentionItem>[item],
+          nowUtc: now,
+          context: itemContext,
+        );
       }
       return null;
     } catch (e) {
@@ -585,12 +588,6 @@ class AttentionInboxBloc
       _hiddenKeys.removeAll(pending.keys);
       return 'Failed to record action(s): $e';
     }
-  }
-
-  Map<String, dynamic>? _dismissDetails(AttentionItem item) {
-    final raw = item.metadata?['state_hash'];
-    if (raw is! String || raw.isEmpty) return null;
-    return <String, dynamic>{'state_hash': raw};
   }
 
   AttentionInboxState _buildLoadedState({

@@ -5,6 +5,8 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/time.dart';
 
+import 'package:taskly_domain/src/services/occurrence/occurrence_read_service.dart';
+
 import 'package:taskly_domain/src/models/scheduled/scheduled_date_tag.dart';
 import 'package:taskly_domain/src/models/scheduled/scheduled_occurrence.dart';
 import 'package:taskly_domain/src/models/scheduled/scheduled_occurrence_ref.dart';
@@ -18,8 +20,12 @@ final class ScheduledOccurrencesService {
   ScheduledOccurrencesService({
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
+    required OccurrenceReadService occurrenceReadService,
   }) : _taskRepository = taskRepository,
-       _projectRepository = projectRepository;
+       _projectRepository = projectRepository,
+       _occurrenceReadService = occurrenceReadService;
+
+  final OccurrenceReadService _occurrenceReadService;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
@@ -61,10 +67,19 @@ final class ScheduledOccurrencesService {
     final overdueProjectsStream = _projectRepository.watchAll(
       overdueProjectsQuery,
     );
-    final scheduledTasksStream = _taskRepository.watchAll(scheduledTasksQuery);
-    final scheduledProjectsStream = _projectRepository.watchAll(
-      scheduledProjectsQuery,
+    final scheduledTasksStream = _occurrenceReadService.watchTaskOccurrences(
+      query: scheduledTasksQuery,
+      rangeStartDay: startDay,
+      rangeEndDay: endDay,
+      todayDayKeyUtc: startDay,
     );
+    final scheduledProjectsStream = _occurrenceReadService
+        .watchProjectOccurrences(
+          query: scheduledProjectsQuery,
+          rangeStartDay: startDay,
+          rangeEndDay: endDay,
+          todayDayKeyUtc: startDay,
+        );
 
     return Rx.combineLatest4(
       overdueTasksStream,
@@ -154,9 +169,12 @@ final class ScheduledOccurrencesService {
   }) sync* {
     final name = task.name.trim().isEmpty ? 'Untitled task' : task.name;
 
+    final occurrenceStart = task.occurrence?.date ?? task.startDate;
+    final occurrenceDeadline = task.occurrence?.deadline ?? task.deadlineDate;
+
     final dates = _getDisplayDates(
-      start: task.startDate,
-      deadline: task.deadlineDate,
+      start: occurrenceStart,
+      deadline: occurrenceDeadline,
       isRepeating: task.isRepeating,
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
@@ -189,9 +207,13 @@ final class ScheduledOccurrencesService {
         ? 'Untitled project'
         : project.name;
 
+    final occurrenceStart = project.occurrence?.date ?? project.startDate;
+    final occurrenceDeadline =
+        project.occurrence?.deadline ?? project.deadlineDate;
+
     final dates = _getDisplayDates(
-      start: project.startDate,
-      deadline: project.deadlineDate,
+      start: occurrenceStart,
+      deadline: occurrenceDeadline,
       isRepeating: project.isRepeating,
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
@@ -378,10 +400,6 @@ final class ScheduledOccurrencesService {
           ],
         ],
       ),
-      occurrenceExpansion: OccurrenceExpansion(
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ),
     );
   }
 
@@ -417,10 +435,6 @@ final class ScheduledOccurrencesService {
             ),
           ],
         ],
-      ),
-      occurrenceExpansion: OccurrenceExpansion(
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
       ),
     );
   }

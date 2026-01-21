@@ -22,7 +22,7 @@ Accepted UI decisions:
 
 Architecture docs to consult:
 - [doc/architecture/README.md](../../../architecture/README.md)
-- [doc/architecture/ATTENTION_SYSTEM_ARCHITECTURE.md](../../../architecture/ATTENTION_SYSTEM_ARCHITECTURE.md)
+- [doc/architecture/deep_dives/ATTENTION_SYSTEM.md](../../../architecture/deep_dives/ATTENTION_SYSTEM.md)
 - [doc/architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md](../../../architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md)
 
 ## Phases

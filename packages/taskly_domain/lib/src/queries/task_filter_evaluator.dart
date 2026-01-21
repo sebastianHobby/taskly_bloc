@@ -77,8 +77,9 @@ class TaskFilterEvaluator {
 
   bool _evalDate(Task task, TaskDatePredicate p, EvaluationContext ctx) {
     final fieldValue = switch (p.field) {
-      TaskDateField.startDate => task.startDate,
-      TaskDateField.deadlineDate => task.deadlineDate,
+      TaskDateField.startDate => task.occurrence?.date ?? task.startDate,
+      TaskDateField.deadlineDate =>
+        task.occurrence?.deadline ?? task.deadlineDate,
       TaskDateField.createdAt => task.createdAt,
       TaskDateField.updatedAt => task.updatedAt,
       TaskDateField.completedAt => task.occurrence?.completedAt,

@@ -274,9 +274,23 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
   }) {
     final normalizedStartDate = _normalizeDate(startDate);
 
-    // Check if entity's start date is in range
-    if (normalizedStartDate.isBefore(rangeStart) ||
-        normalizedStartDate.isAfter(rangeEnd)) {
+    final normalizedDeadlineDate = deadlineDate == null
+        ? null
+        : _normalizeDate(deadlineDate);
+
+    final startInRange =
+        !normalizedStartDate.isBefore(rangeStart) &&
+        !normalizedStartDate.isAfter(rangeEnd);
+
+    final deadlineInRange =
+        normalizedDeadlineDate != null &&
+        !normalizedDeadlineDate.isBefore(rangeStart) &&
+        !normalizedDeadlineDate.isAfter(rangeEnd);
+
+    // Include the entity if either the start date OR deadline is in range.
+    // This preserves Scheduled semantics where entities can appear on due days
+    // even if the start day falls outside the window.
+    if (!startInRange && !deadlineInRange) {
       return [];
     }
 
@@ -286,7 +300,7 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
         .firstOrNull;
 
     final occurrence = OccurrenceData(
-      date: normalizedStartDate,
+      date: startInRange ? normalizedStartDate : normalizedDeadlineDate!,
       deadline: deadlineDate,
       isRescheduled: false,
       completionId: completion?.id,

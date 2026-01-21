@@ -5,10 +5,8 @@
 > Scope: how we write BLoCs in Taskly so they are safe, consistent, and aligned
 > with the architecture invariants.
 >
-> This document contains a mix of:
-> - **Normative rules** (hard requirements): must follow.
-> - **Guidelines** (strong recommendations): default approach unless there is a
->   clear reason not to.
+> This guide is descriptive. Architecture invariants (layering/boundaries) live
+> in: [../INVARIANTS.md](../INVARIANTS.md)
 
 ## 0) Why this exists
 
@@ -21,21 +19,17 @@ This doc standardizes patterns that:
 - make cancellation and retries deterministic,
 - prevent transient stream failures from permanently breaking UI.
 
-## 1) Normative rules (hard requirements)
+## 1) Core constraints
 
 ### 1.1 UI reads are BLoC-owned
 
-Widgets/pages must not:
-- call repositories/services directly
-- subscribe to domain/data streams directly
+This is an architecture invariant:
 
-BLoCs own subscriptions and expose widget-ready state.
-
-See: `doc/architecture/ARCHITECTURE_INVARIANTS.md`.
+- [../INVARIANTS.md](../INVARIANTS.md#2-presentation-boundary-bloc-only)
 
 ### 1.2 No `emit(...)` after the handler completes
 
-**Rule:** Do not call `emit(...)` from any async callback that may outlive the
+Do not call `emit(...)` from any async callback that may outlive the
 current event handler.
 
 This includes:
@@ -48,18 +42,18 @@ This includes:
 - If you `await` any async work and then need to `emit`, guard with:
   `if (emit.isDone) return;`.
 
-### 1.3 Retries must be deterministic and cancel in-flight work
+### 1.3 Retries should be deterministic and cancel in-flight work
 
-**Rule:** For events which (re)start watchers (ex: `Started`, `RetryRequested`,
-`RefreshRequested`), the handler must be cancellation-safe.
+For events which (re)start watchers (ex: `Started`, `RetryRequested`,
+`RefreshRequested`), the handler needs to be cancellation-safe.
 
 Default approach:
 - use `bloc_concurrency.restartable()` for the handler transformer, and
 - bind watchers via `emit.onEach`/`emit.forEach` so cancellation stops emissions.
 
-### 1.4 Stream failures must not permanently kill UI
+### 1.4 Stream failures should not permanently kill UI
 
-**Rule:** A transient stream failure must map into an explicit error state.
+A transient stream failure should map into an explicit error state.
 
 - Do not allow a stream error to terminate a BLoC without producing a usable
   state for the UI.
@@ -110,6 +104,37 @@ Guidelines:
 - Keep gate states small and explicit.
 - Avoid mixing gate logic into feed BLoCs.
 
+### 2.4 Thin orchestrators and where logic belongs
+
+Taskly BLoCs should be **thin orchestrators** by default.
+
+BLoCs own:
+
+- Interpreting user intent (events) and creating `OperationContext` for writes.
+- Binding/unbinding streams safely (`emit.forEach` / `emit.onEach`).
+- Mapping domain outputs into widget-ready state (small state machines).
+- Presentation side-effects (navigation, snackbars/dialog triggers) where
+  lifecycle is explicit.
+
+Domain owns:
+
+- Business semantics that are consistent across screens.
+- Use-cases / write facades (atomic mutations, recurrence targeting, validation).
+- View-neutral selectors/pure functions that are reusable across screens.
+
+Repeatable *screen-shaped* logic belongs in **presentation query services**
+(for example `*QueryService`, `*ScreenModelBuilder`):
+
+- Combine multiple streams into one derived stream for a screen.
+- Apply presentation policy (sectioning, debounce, paging mechanics, empty/error
+  shaping).
+- Remain side-effect free (no writes, no routing).
+
+Anti-goal:
+
+- Do not push screen models ("AnytimeScreenModel", tile models, UI copy) into
+  Domain. See: [../INVARIANTS.md](../INVARIANTS.md#011-domain-outputs-must-be-view-neutral-strict)
+
 ## 3) Using RxDart (where it helps)
 
 RxDart is allowed and recommended when it reduces complexity for multi-stream
@@ -127,7 +152,7 @@ Guidelines:
 
 ### 3.1 Fan-out (share upstream triggers)
 
-If one upstream stream is used by multiple downstream subscriptions, it must be
+If one upstream stream is used by multiple downstream subscriptions, it needs to be
 **shareable**.
 
 Common footgun:
@@ -186,3 +211,5 @@ Recommended defaults:
 - Start/retry handlers use `restartable()` unless justified otherwise.
 - Errors map into state + retry exists.
 - Writes create and pass `OperationContext`.
+- Repeated reactive composition is extracted into a presentation query service
+  (not duplicated across BLoCs and not pushed into Domain).

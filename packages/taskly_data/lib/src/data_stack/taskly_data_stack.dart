@@ -6,6 +6,7 @@ import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/taskly_domain.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_data/src/attention/repositories/attention_repository_v2.dart'
     as attention_repo_v2_impl;
 import 'package:taskly_data/src/features/analytics/repositories/analytics_repository_impl.dart';
@@ -23,7 +24,6 @@ import 'package:taskly_data/src/repositories/project_repository.dart';
 import 'package:taskly_data/src/repositories/settings_repository.dart';
 import 'package:taskly_data/src/repositories/task_repository.dart';
 import 'package:taskly_data/src/repositories/value_repository.dart';
-import 'package:taskly_data/src/services/occurrence_stream_expander.dart';
 import 'package:taskly_data/src/services/occurrence_write_helper.dart';
 import 'package:taskly_data/src/services/sync/powersync_initial_sync_service.dart';
 
@@ -43,6 +43,7 @@ final class TasklyDataBindings {
     required this.myDayRepository,
     required this.settingsRepository,
     required this.homeDayKeyService,
+    required this.occurrenceReadService,
     required this.attentionRepository,
     required this.analyticsRepository,
     required this.journalRepository,
@@ -64,6 +65,7 @@ final class TasklyDataBindings {
   final MyDayRepositoryContract myDayRepository;
   final SettingsRepositoryContract settingsRepository;
   final HomeDayKeyService homeDayKeyService;
+  final OccurrenceReadService occurrenceReadService;
   final AttentionRepositoryContract attentionRepository;
 
   final AnalyticsRepositoryContract analyticsRepository;
@@ -239,7 +241,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
   /// stack.
   ///
   /// The stack itself owns the wiring between infra + repositories. The app
-  /// provides occurrence services (still owned outside of `taskly_data` today).
+  /// consumes domain services via the returned bindings.
   TasklyDataBindings createBindings({
     Clock clock = systemClock,
   }) {
@@ -262,7 +264,6 @@ final class TasklyDataStack implements SyncAnomalyStream {
       occurrenceExpander: occurrenceExpander,
       occurrenceWriteHelper: occurrenceWriteHelper,
       idGenerator: idGenerator,
-      dayKeyService: homeDayKeyService,
     );
 
     final taskRepository = TaskRepository(
@@ -270,7 +271,6 @@ final class TasklyDataStack implements SyncAnomalyStream {
       occurrenceExpander: occurrenceExpander,
       occurrenceWriteHelper: occurrenceWriteHelper,
       idGenerator: idGenerator,
-      dayKeyService: homeDayKeyService,
     );
 
     final valueRepository = ValueRepository(
@@ -291,6 +291,13 @@ final class TasklyDataStack implements SyncAnomalyStream {
 
     final journalRepository = JournalRepositoryImpl(driftDb, idGenerator);
 
+    final occurrenceReadService = OccurrenceReadService(
+      taskRepository: taskRepository,
+      projectRepository: projectRepository,
+      dayKeyService: homeDayKeyService,
+      occurrenceExpander: occurrenceExpander,
+    );
+
     final analyticsService = AnalyticsServiceImpl(
       taskRepo: taskRepository,
       projectRepo: projectRepository,
@@ -298,6 +305,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
       journalRepo: journalRepository,
       analyticsRepo: analyticsRepository,
       dayKeyService: homeDayKeyService,
+      occurrenceReadService: occurrenceReadService,
       clock: clock,
     );
 
@@ -325,6 +333,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
       myDayRepository: myDayRepository,
       settingsRepository: settingsRepository,
       homeDayKeyService: homeDayKeyService,
+      occurrenceReadService: occurrenceReadService,
       attentionRepository: attentionRepository,
       analyticsRepository: analyticsRepository,
       journalRepository: journalRepository,

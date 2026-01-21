@@ -1,8 +1,15 @@
 import 'package:taskly_domain/src/domain.dart';
+import 'package:taskly_domain/src/interfaces/occurrence_stream_expander_contract.dart';
 import 'package:taskly_domain/src/queries/project_query.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 abstract class ProjectRepositoryContract {
+  /// Watches completion history records for projects.
+  Stream<List<CompletionHistoryData>> watchCompletionHistory();
+
+  /// Watches recurrence exception records for projects.
+  Stream<List<RecurrenceExceptionData>> watchRecurrenceExceptions();
+
   /// Watch projects with optional filtering, sorting, and occurrence expansion.
   ///
   /// If [query] is null, returns all projects with related labels.
@@ -97,6 +104,16 @@ abstract class ProjectRepositoryContract {
 
   /// Get project occurrences for a specific date range.
   Future<List<Project>> getOccurrences({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  });
+
+  /// Get occurrences for a single project within a specific date range.
+  ///
+  /// Prefer this over [getOccurrences] when you only need occurrences for a
+  /// single project, to avoid expanding all projects.
+  Future<List<Project>> getOccurrencesForProject({
+    required String projectId,
     required DateTime rangeStart,
     required DateTime rangeEnd,
   });

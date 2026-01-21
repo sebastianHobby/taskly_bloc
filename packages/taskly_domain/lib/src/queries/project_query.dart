@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:taskly_domain/src/preferences/model/sort_preferences.dart';
 import 'package:taskly_domain/src/queries/value_match_mode.dart';
 import 'package:taskly_domain/src/queries/occurrence_expansion.dart';
+import 'package:taskly_domain/src/queries/occurrence_preview.dart';
 import 'package:taskly_domain/src/queries/project_predicate.dart';
 import 'package:taskly_domain/src/queries/query_filter.dart';
 import 'package:taskly_domain/src/queries/task_predicate.dart'
@@ -21,6 +22,7 @@ class ProjectQuery {
     this.filter = const QueryFilter<ProjectPredicate>.matchAll(),
     this.sortCriteria = const <SortCriterion>[],
     this.occurrenceExpansion,
+    this.occurrencePreview,
   });
 
   factory ProjectQuery.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,11 @@ class ProjectQuery {
       occurrenceExpansion: json['occurrenceExpansion'] != null
           ? OccurrenceExpansion.fromJson(
               json['occurrenceExpansion'] as Map<String, dynamic>,
+            )
+          : null,
+      occurrencePreview: json['occurrencePreview'] != null
+          ? OccurrencePreview.fromJson(
+              json['occurrencePreview'] as Map<String, dynamic>,
             )
           : null,
     );
@@ -172,6 +179,11 @@ class ProjectQuery {
   /// Optional configuration for expanding repeating projects into occurrences.
   final OccurrenceExpansion? occurrenceExpansion;
 
+  /// Optional configuration for previewing the next (single) occurrence.
+  ///
+  /// This is mutually exclusive with [occurrenceExpansion].
+  final OccurrencePreview? occurrencePreview;
+
   // ========================================================================
   // Helper Properties
   // ========================================================================
@@ -179,10 +191,63 @@ class ProjectQuery {
   /// Whether this query should expand repeating projects into occurrences.
   bool get shouldExpandOccurrences => occurrenceExpansion != null;
 
+  /// Whether this query should compute a single next occurrence preview.
+  bool get hasOccurrencePreview => occurrencePreview != null;
+
   /// Whether this query has any date-based filtering rules.
   bool get hasDateFilter {
     return filter.shared.any((p) => p is ProjectDatePredicate) ||
         filter.orGroups.expand((g) => g).any((p) => p is ProjectDatePredicate);
+  }
+
+  // ========================================================================
+  // Modification Methods
+  // ========================================================================
+
+  ProjectQuery copyWith({
+    QueryFilter<ProjectPredicate>? filter,
+    List<SortCriterion>? sortCriteria,
+    OccurrenceExpansion? occurrenceExpansion,
+    bool clearOccurrenceExpansion = false,
+    OccurrencePreview? occurrencePreview,
+    bool clearOccurrencePreview = false,
+  }) {
+    final nextOccurrenceExpansion = clearOccurrenceExpansion
+        ? null
+        : (occurrenceExpansion ?? this.occurrenceExpansion);
+
+    final nextOccurrencePreview = clearOccurrencePreview
+        ? null
+        : (occurrencePreview ?? this.occurrencePreview);
+
+    assert(
+      nextOccurrenceExpansion == null || nextOccurrencePreview == null,
+      'ProjectQuery cannot set both occurrenceExpansion and occurrencePreview.',
+    );
+
+    return ProjectQuery(
+      filter: filter ?? this.filter,
+      sortCriteria: sortCriteria ?? this.sortCriteria,
+      occurrenceExpansion: nextOccurrenceExpansion,
+      occurrencePreview: nextOccurrencePreview,
+    );
+  }
+
+  /// Creates a copy with additional shared predicates added.
+  ProjectQuery withAdditionalPredicates(List<ProjectPredicate> predicates) {
+    return copyWith(
+      filter: filter.copyWith(shared: [...filter.shared, ...predicates]),
+    );
+  }
+
+  /// Creates a copy with occurrence expansion enabled.
+  ProjectQuery withOccurrenceExpansion(OccurrenceExpansion expansion) {
+    return copyWith(occurrenceExpansion: expansion);
+  }
+
+  /// Creates a copy with occurrence preview enabled.
+  ProjectQuery withOccurrencePreview(OccurrencePreview preview) {
+    return copyWith(occurrencePreview: preview);
   }
 
   // ========================================================================
@@ -195,7 +260,8 @@ class ProjectQuery {
     return other is ProjectQuery &&
         other.filter == filter &&
         listEquals(other.sortCriteria, sortCriteria) &&
-        other.occurrenceExpansion == occurrenceExpansion;
+        other.occurrenceExpansion == occurrenceExpansion &&
+        other.occurrencePreview == occurrencePreview;
   }
 
   @override
@@ -203,12 +269,14 @@ class ProjectQuery {
     filter,
     Object.hashAll(sortCriteria),
     occurrenceExpansion,
+    occurrencePreview,
   );
 
   @override
   String toString() {
     return 'ProjectQuery(filter: $filter, sortCriteria: $sortCriteria, '
-        'occurrenceExpansion: $occurrenceExpansion)';
+        'occurrenceExpansion: $occurrenceExpansion, '
+        'occurrencePreview: $occurrencePreview)';
   }
 
   // ========================================================================
@@ -219,6 +287,7 @@ class ProjectQuery {
     'filter': filter.toJson((p) => p.toJson()),
     'sortCriteria': sortCriteria.map((s) => s.toJson()).toList(),
     'occurrenceExpansion': occurrenceExpansion?.toJson(),
+    'occurrencePreview': occurrencePreview?.toJson(),
   };
 
   static const _defaultSortCriteria = [

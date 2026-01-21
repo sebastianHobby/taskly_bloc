@@ -28,6 +28,20 @@ class FakeTaskRepository implements TaskRepositoryContract {
   }
 
   @override
+  Stream<List<CompletionHistoryData>> watchCompletionHistory() {
+    return const Stream<List<CompletionHistoryData>>.empty().startWith(
+      const <CompletionHistoryData>[],
+    );
+  }
+
+  @override
+  Stream<List<RecurrenceExceptionData>> watchRecurrenceExceptions() {
+    return const Stream<List<RecurrenceExceptionData>>.empty().startWith(
+      const <RecurrenceExceptionData>[],
+    );
+  }
+
+  @override
   Stream<List<Task>> watchAll([TaskQuery? query]) => _controller.stream;
 
   @override
@@ -218,6 +232,15 @@ class FakeTaskRepository implements TaskRepositoryContract {
   }) async => _last;
 
   @override
+  Future<List<Task>> getOccurrencesForTask({
+    required String taskId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    return _last.where((t) => t.id == taskId).toList(growable: false);
+  }
+
+  @override
   Stream<List<Task>> watchOccurrences({
     required DateTime rangeStart,
     required DateTime rangeEnd,
@@ -383,6 +406,20 @@ class FakeProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
+  Stream<List<CompletionHistoryData>> watchCompletionHistory() {
+    return const Stream<List<CompletionHistoryData>>.empty().startWith(
+      const <CompletionHistoryData>[],
+    );
+  }
+
+  @override
+  Stream<List<RecurrenceExceptionData>> watchRecurrenceExceptions() {
+    return const Stream<List<RecurrenceExceptionData>>.empty().startWith(
+      const <RecurrenceExceptionData>[],
+    );
+  }
+
+  @override
   Stream<List<Project>> watchAll([ProjectQuery? query]) => _controller.stream;
 
   @override
@@ -517,6 +554,15 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     required DateTime rangeStart,
     required DateTime rangeEnd,
   }) async => _last;
+
+  @override
+  Future<List<Project>> getOccurrencesForProject({
+    required String projectId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    return _last.where((p) => p.id == projectId).toList(growable: false);
+  }
 
   @override
   Stream<List<Project>> watchOccurrences({

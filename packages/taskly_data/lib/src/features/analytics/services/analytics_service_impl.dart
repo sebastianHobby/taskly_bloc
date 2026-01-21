@@ -8,6 +8,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required ValueRepositoryContract valueRepo,
     required JournalRepositoryContract journalRepo,
     required HomeDayKeyService dayKeyService,
+    required OccurrenceReadService occurrenceReadService,
     Clock clock = systemClock,
   }) : _analyticsRepo = analyticsRepo,
        _taskRepo = taskRepo,
@@ -15,6 +16,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
        _valueRepo = valueRepo,
        _journalRepo = journalRepo,
        _dayKeyService = dayKeyService,
+       _occurrenceReadService = occurrenceReadService,
        _clock = clock,
        _taskStatsCalculator = TaskStatsCalculator(),
        _correlationCalculator = CorrelationCalculator();
@@ -24,6 +26,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
   final ValueRepositoryContract _valueRepo;
   final JournalRepositoryContract _journalRepo;
   final HomeDayKeyService _dayKeyService;
+  final OccurrenceReadService _occurrenceReadService;
   final Clock _clock;
   final TaskStatsCalculator _taskStatsCalculator;
   final CorrelationCalculator _correlationCalculator;
@@ -405,13 +408,19 @@ class AnalyticsServiceImpl implements AnalyticsService {
             ),
         ],
       ),
-      occurrenceExpansion: OccurrenceExpansion(
-        rangeStart: range.start,
-        rangeEnd: range.end,
-      ),
     );
 
-    final completions = await _taskRepo.getAll(query);
+    // REC-01A: occurrence-aware read orchestration is owned by Domain.
+    // Analytics delegates occurrence expansion + two-phase filtering to the
+    // Domain read service instead of using query-level occurrence flags.
+    final completions = await _occurrenceReadService
+        .watchTaskOccurrences(
+          query: query,
+          rangeStartDay: range.start,
+          rangeEndDay: range.end,
+          todayDayKeyUtc: _dayKeyService.todayDayKeyUtc(),
+        )
+        .first;
 
     final days = <DateTime>{};
     for (final task in completions) {

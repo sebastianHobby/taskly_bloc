@@ -71,8 +71,10 @@ class ProjectFilterEvaluator {
     EvaluationContext ctx,
   ) {
     final fieldValue = switch (p.field) {
-      ProjectDateField.startDate => project.startDate,
-      ProjectDateField.deadlineDate => project.deadlineDate,
+      ProjectDateField.startDate =>
+        project.occurrence?.date ?? project.startDate,
+      ProjectDateField.deadlineDate =>
+        project.occurrence?.deadline ?? project.deadlineDate,
       ProjectDateField.createdAt => project.createdAt,
       ProjectDateField.updatedAt => project.updatedAt,
       ProjectDateField.completedAt => project.occurrence?.completedAt,

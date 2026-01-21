@@ -37,9 +37,9 @@ Finish the cutover with confidence:
 - If new screen templates/modules were introduced:
 	- [doc/architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md](../../architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md)
 - If PowerSync/Drift schemas changed:
-	- [doc/architecture/POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md](../../architecture/POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md)
+	- [doc/architecture/deep_dives/POWERSYNC_SUPABASE.md](../../architecture/deep_dives/POWERSYNC_SUPABASE.md)
 - If attention/review terminology changed:
-	- [doc/architecture/ATTENTION_SYSTEM_ARCHITECTURE.md](../../architecture/ATTENTION_SYSTEM_ARCHITECTURE.md)
+	- [doc/architecture/deep_dives/ATTENTION_SYSTEM.md](../../architecture/deep_dives/ATTENTION_SYSTEM.md)
 
 ## Acceptance criteria
 

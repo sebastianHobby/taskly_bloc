@@ -14,16 +14,10 @@ Taskly uses an **offline-first** data architecture:
 - **Writes go through Supabase PostgREST** (not direct Postgres from clients).
 - **Reads/downloads come from PowerSync replication** (logical replication stream filtered by server-side sync rules).
 
-Presentation boundary (normative): widgets/pages do not call repositories
-directly and do not subscribe to Drift/repository streams directly. BLoCs own
-those subscriptions and expose derived UI state.
+Canonical architecture rules referenced by this document:
 
-Write correlation (normative): user-initiated mutations must carry an
-`OperationContext` (with a `correlationId`) from presentation into repository
-writes so upload/download anomalies and AppFailure mapping can be correlated in
-logs.
-
-See: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section: 8.1)
+- [../INVARIANTS.md](../INVARIANTS.md#2-presentation-boundary-bloc-only)
+- [../INVARIANTS.md](../INVARIANTS.md#81-operationcontext-for-write-correlation-strict)
 
 Key implications:
 
@@ -40,14 +34,16 @@ Important local SQLite limitation:
 - PowerSync applies the client schema using **SQLite views**.
 - SQLite does **not** allow `INSERT ... ON CONFLICT DO UPDATE` (UPSERT) against views.
 
-Practical rule for this codebase:
+Canonical rule for this codebase:
 
-- Avoid Drift UPSERT helpers like `insertOnConflictUpdate` / `insertAllOnConflictUpdate`
-  on tables that are part of the PowerSync schema.
+- Avoid Drift UPSERT helpers like `insertOnConflictUpdate` /
+  `insertAllOnConflictUpdate` on tables that are part of the PowerSync schema.
 - Prefer **update-then-insert** (try `UPDATE`; if no rows updated then `INSERT`), or
   `insertOrIgnore` for append-only / idempotent writes.
-- Server-side upsert via Supabase/PostgREST is fine; this limitation is about local
-  SQLite writes.
+- Server-side upsert via Supabase/PostgREST is fine; this limitation is about
+  local SQLite writes.
+
+See: [../INVARIANTS.md](../INVARIANTS.md#52-sqlite-views-no-local-upsert-against-powersync-tables)
 
 ### Drift write patterns (view-safe)
 
@@ -130,7 +126,7 @@ Note: this repo currently does not ship a dedicated migration for PowerSync repl
 
 ### Local E2E scripts + docs
 - Deterministic local stack docs:
-  - [doc/architecture/LOCAL_SUPABASE_POWERSYNC_E2E.md](LOCAL_SUPABASE_POWERSYNC_E2E.md)
+  - [../runbooks/LOCAL_E2E_STACK.md](../runbooks/LOCAL_E2E_STACK.md)
 - PowerShell helpers:
   - [tool/e2e/Start-LocalE2EStack.ps1](../../tool/e2e/Start-LocalE2EStack.ps1)
   - [tool/e2e/Run-LocalE2ETests.ps1](../../tool/e2e/Run-LocalE2ETests.ps1)
@@ -301,7 +297,7 @@ See [infra/powersync_local/config/powersync.yaml](../../infra/powersync_local/co
 PowerSync replication requires logical replication to be enabled/configured on the target Postgres.
 
 In this repo, local stack orchestration lives under:
-- [doc/architecture/LOCAL_SUPABASE_POWERSYNC_E2E.md](LOCAL_SUPABASE_POWERSYNC_E2E.md)
+- [../runbooks/LOCAL_E2E_STACK.md](../runbooks/LOCAL_E2E_STACK.md)
 - [infra/powersync_local/](../../infra/powersync_local/)
 
 If replication setup becomes a recurring source of drift, make the required publication/permissions explicit and reviewable via the local stack orchestration (Compose/config/scripts) and architecture docs.
@@ -352,7 +348,7 @@ The repo provides scripts to:
 - generate `dart_defines.local.json` from `supabase status`
 
 Entry points:
-- [doc/architecture/LOCAL_SUPABASE_POWERSYNC_E2E.md](LOCAL_SUPABASE_POWERSYNC_E2E.md)
+- [../runbooks/LOCAL_E2E_STACK.md](../runbooks/LOCAL_E2E_STACK.md)
 - [tool/e2e/Start-LocalE2EStack.ps1](../../tool/e2e/Start-LocalE2EStack.ps1)
 - [tool/e2e/Run-LocalE2ETests.ps1](../../tool/e2e/Run-LocalE2ETests.ps1)
 

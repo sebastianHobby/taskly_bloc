@@ -9,6 +9,7 @@ import 'package:taskly_domain/attention.dart' show AttentionRepositoryContract;
 import 'package:taskly_domain/attention.dart' as domain_resolution;
 import 'package:taskly_domain/attention.dart' as domain_rule;
 import 'package:taskly_domain/attention.dart' as domain_runtime;
+import 'package:taskly_domain/telemetry.dart';
 
 /// Drift-based repository for the new attention bounded context.
 ///
@@ -202,8 +203,10 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
 
   @override
   Future<void> recordResolution(
-    domain_resolution.AttentionResolution resolution,
-  ) async {
+    domain_resolution.AttentionResolution resolution, {
+    OperationContext? context,
+  }) async {
+    final correlationId = context?.correlationId;
     final updated =
         await (_db.update(
           _db.attentionResolutions,
@@ -225,6 +228,13 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
       await _db
           .into(_db.attentionResolutions)
           .insert(_resolutionToCompanion(resolution), mode: InsertMode.insert);
+    }
+
+    if (correlationId != null && correlationId.isNotEmpty) {
+      talker.repositoryLog(
+        'AttentionV2',
+        'Recorded resolution ${resolution.id} (cid=$correlationId)',
+      );
     }
   }
 

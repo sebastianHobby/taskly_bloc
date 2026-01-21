@@ -1,8 +1,21 @@
 import 'package:taskly_domain/src/domain.dart';
+import 'package:taskly_domain/src/interfaces/occurrence_stream_expander_contract.dart';
 import 'package:taskly_domain/src/queries/task_query.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 abstract class TaskRepositoryContract {
+  /// Watches completion history records for tasks.
+  ///
+  /// This is used by occurrence-aware read services to merge completion state
+  /// into expanded occurrences.
+  Stream<List<CompletionHistoryData>> watchCompletionHistory();
+
+  /// Watches recurrence exception records for tasks.
+  ///
+  /// This is used by occurrence-aware read services to apply skips/reschedules
+  /// during occurrence expansion.
+  Stream<List<RecurrenceExceptionData>> watchRecurrenceExceptions();
+
   /// Watch tasks with optional filtering, sorting, and occurrence expansion.
   ///
   /// If [query] is null, returns all tasks with related entities.
@@ -124,6 +137,16 @@ abstract class TaskRepositoryContract {
   /// exceptions (skip/reschedule). For non-repeating tasks, returns a single
   /// occurrence if the task's date falls within the range.
   Future<List<Task>> getOccurrences({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  });
+
+  /// Get occurrences for a single task within a specific date range.
+  ///
+  /// Prefer this over [getOccurrences] when you only need occurrences for a
+  /// single task, to avoid expanding all tasks.
+  Future<List<Task>> getOccurrencesForTask({
+    required String taskId,
     required DateTime rangeStart,
     required DateTime rangeEnd,
   });

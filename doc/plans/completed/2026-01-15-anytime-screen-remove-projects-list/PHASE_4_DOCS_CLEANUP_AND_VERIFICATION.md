@@ -19,7 +19,7 @@ Finalize the change set:
 ## Steps
 
 1) Update architecture index
-- Add a link to `doc/architecture/screen_purpose_concepts.md` from `doc/architecture/README.md`.
+- Add a link to `doc/product/SCREEN_PURPOSE_CONCEPTS.md` from `doc/architecture/README.md`.
 
 2) Cleanup
 - Re-check whether the project list template is still referenced.

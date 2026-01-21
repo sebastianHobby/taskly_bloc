@@ -23,9 +23,11 @@ The core idea:
   state changes” is implemented using engine-owned runtime state
   (state-hash + dismissal/snooze semantics).
 
-Prewarm policy (normative): any **attention prewarm** (e.g. seeding caches or
-priming common `AttentionQuery` results) must be triggered from **core
-bootstrap/post-auth maintenance**, not from widgets/pages.
+Prewarm policy: any **attention prewarm** (e.g. seeding caches or priming common
+`AttentionQuery` results) is triggered from **core bootstrap/post-auth
+maintenance**, not from widgets/pages, to keep side effects out of widgets.
+
+See: [../INVARIANTS.md](../INVARIANTS.md#2-presentation-boundary-bloc-only)
 
 ---
 
@@ -507,4 +509,4 @@ refresh.
 
 ---
 
-See also: [doc/architecture/SUGGESTED_PICKS_ENGINE_ARCHITECTURE.md](SUGGESTED_PICKS_ENGINE_ARCHITECTURE.md) for how suggested picks integrate with My Day.
+See also: [SUGGESTED_PICKS.md](SUGGESTED_PICKS.md) for how suggested picks integrate with My Day.

@@ -13,6 +13,7 @@ dependencies:
   json_annotation: ^4.9.0
   meta: any
   ml_linalg: ^13.12.6
+  rrule: any
   rxdart: any
   statistics: ^1.2.1
   supabase_flutter: ^2.10.3

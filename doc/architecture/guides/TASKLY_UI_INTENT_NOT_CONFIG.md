@@ -1,4 +1,4 @@
-# `taskly_ui` — Intent, Not Config (Normative)
+# `taskly_ui` — Intent, Not Config
 
 > Audience: developers
 >
@@ -37,29 +37,33 @@ Entity tiles expose three kinds of inputs:
   - small semantic facts that affect minor affordances
   - examples: pinned, selected
 
-## 3) Normative rules
+## 3) Guidance
 
-- Do not add new “knobs” like `badges`, `trailing`, or generic `variant` flags to
-  satisfy one-off screen needs.
+This is a descriptive guide. The canonical rules live in:
 
+- [../INVARIANTS.md](../INVARIANTS.md#212-entity-tiles-are-intent-driven-strict)
+- [../INVARIANTS.md](../INVARIANTS.md#13-package-public-api-boundary-strict)
+
+Practical guidance when extending entity tiles:
+
+- Avoid adding new visual configuration “knobs” (for example `badges`,
+  `trailing`, generic `variant` flags) to satisfy one-off screen needs.
 - Prefer making the intent explicit:
-  - add a new intent case only when multiple consumers truly need a distinct
+  - add a new intent case when multiple consumers truly need a distinct
     rendering intent.
-
 - Prefer deriving UI affordances from callback presence:
-  - overflow button shown only when `onOverflowMenuRequestedAt` exists
-  - completion toggle enabled only when `onToggleCompletion` exists
-
+  - show overflow only when `onOverflowMenuRequestedAt` exists
+  - enable completion only when `onToggleCompletion` exists
 - Avoid widget injection parameters on entity tiles.
   - if an extension point is unavoidable, keep it narrow and semantically named
     (e.g. `titlePrefix`) rather than exposing full custom builders.
 
-## 4) Package boundary rules
+## 4) Package boundaries
 
-- App code must not deep-import `package:taskly_ui/src/...`.
-- App code should prefer tiered entrypoints:
-  - `package:taskly_ui/taskly_ui_entities.dart`
-  - `package:taskly_ui/taskly_ui_sections.dart`
+Prefer consuming shared UI via curated entrypoints:
+
+- `package:taskly_ui/taskly_ui_entities.dart`
+- `package:taskly_ui/taskly_ui_sections.dart`
 
 ## 5) How to review changes
 

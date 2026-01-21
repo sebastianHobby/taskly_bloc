@@ -85,6 +85,51 @@ class AllocationOrchestrator {
     );
   }
 
+  /// Compute an allocation snapshot sized for the My Day "Suggested" ritual.
+  ///
+  /// Callers specify how many *batches* they want (1, 2, 3, ...).
+  /// The per-batch limit remains fully owned by allocation settings.
+  Future<AllocationResult> getSuggestedSnapshot({
+    required int batchCount,
+    DateTime? nowUtc,
+  }) async {
+    final resolvedNowUtc = nowUtc ?? _clock.nowUtc();
+    final todayUtc = _dayKeyService.todayDayKeyUtc(nowUtc: resolvedNowUtc);
+
+    AppLog.routine(
+      'domain.allocation',
+      'getSuggestedSnapshot: nowUtc=${resolvedNowUtc.toIso8601String()} '
+          'todayUtc=${todayUtc.toIso8601String()} '
+          'batchCount=$batchCount',
+    );
+
+    final results = await Future.wait([
+      _taskRepository.getAll(TaskQuery.incomplete()),
+      _projectRepository.getAll(),
+      _settingsRepository.load(SettingsKey.allocation),
+    ]);
+
+    final tasks = results[0] as List<Task>;
+    final projects = results[1] as List<Project>;
+    final allocationConfig = results[2] as AllocationConfig;
+
+    final safeBatchCount = batchCount.clamp(1, 50);
+    final safeSuggestionsPerBatch = allocationConfig.suggestionsPerBatch.clamp(
+      1,
+      50,
+    );
+    final maxTasksOverride = safeSuggestionsPerBatch * safeBatchCount;
+
+    return _computeAllocation(
+      tasks: tasks,
+      projects: projects,
+      allocationConfig: allocationConfig,
+      nowUtc: resolvedNowUtc,
+      todayDayKeyUtc: todayUtc,
+      maxTasksOverride: maxTasksOverride,
+    );
+  }
+
   Future<AllocationResult> _computeAllocation({
     required List<Task> tasks,
     required List<Project> projects,

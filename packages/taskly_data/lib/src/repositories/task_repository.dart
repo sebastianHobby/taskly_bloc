@@ -39,16 +39,13 @@ class TaskRepository implements TaskRepositoryContract {
     required this.occurrenceExpander,
     required this.occurrenceWriteHelper,
     required this.idGenerator,
-    required HomeDayKeyService dayKeyService,
-  }) : _predicateMapper = TaskPredicateMapper(driftDb: driftDb),
-       _dayKeyService = dayKeyService;
+  }) : _predicateMapper = TaskPredicateMapper(driftDb: driftDb);
 
   final AppDatabase driftDb;
   final OccurrenceStreamExpanderContract occurrenceExpander;
   final OccurrenceWriteHelperContract occurrenceWriteHelper;
   final IdGenerator idGenerator;
   final TaskPredicateMapper _predicateMapper;
-  final HomeDayKeyService _dayKeyService;
 
   // Tier-based shared streams for common query patterns
   // Reduces concurrent queries from 6-7 down to 2-3
@@ -71,6 +68,15 @@ class TaskRepository implements TaskRepositoryContract {
   Stream<List<Task>> watchAll([TaskQuery? query]) {
     final normalizedQuery = query ?? TaskQuery.all();
 
+    if (normalizedQuery.shouldExpandOccurrences ||
+        normalizedQuery.hasOccurrencePreview) {
+      throw UnsupportedError(
+        'TaskRepository does not support occurrenceExpansion/occurrencePreview '
+        'query flags. Use OccurrenceReadService (taskly_domain) for '
+        'occurrence-aware reads.',
+      );
+    }
+
     // Route to shared streams for common patterns.
     if (isInboxQuery(normalizedQuery)) {
       return getOrCreateInboxStream(normalizedQuery);
@@ -81,9 +87,7 @@ class TaskRepository implements TaskRepositoryContract {
     }
 
     // Conservative policy: don't cache date-based queries by default.
-    if (normalizedQuery.hasDateFilter ||
-        normalizedQuery.shouldExpandOccurrences ||
-        normalizedQuery.hasOccurrencePreview) {
+    if (normalizedQuery.hasDateFilter) {
       return buildAndExecuteQuery(normalizedQuery);
     }
 
@@ -103,10 +107,12 @@ class TaskRepository implements TaskRepositoryContract {
   Stream<int> watchAllCount([TaskQuery? query]) {
     query ??= TaskQuery.all();
 
-    if (query.shouldExpandOccurrences) {
-      return buildAndExecuteQuery(
-        query,
-      ).map((List<Task> items) => items.length).distinct();
+    if (query.shouldExpandOccurrences || query.hasOccurrencePreview) {
+      throw UnsupportedError(
+        'TaskRepository does not support occurrenceExpansion/occurrencePreview '
+        'query flags. Use OccurrenceReadService (taskly_domain) for '
+        'occurrence-aware reads.',
+      );
     }
 
     final countExp = driftDb.taskTable.id.count();
@@ -644,6 +650,22 @@ class TaskRepository implements TaskRepositoryContract {
   // ===========================================================================
 
   @override
+  Stream<List<CompletionHistoryData>> watchCompletionHistory() {
+    return driftDb
+        .select(driftDb.taskCompletionHistoryTable)
+        .watch()
+        .map((rows) => rows.map(toCompletionData).toList());
+  }
+
+  @override
+  Stream<List<RecurrenceExceptionData>> watchRecurrenceExceptions() {
+    return driftDb
+        .select(driftDb.taskRecurrenceExceptionsTable)
+        .watch()
+        .map((rows) => rows.map(toExceptionData).toList());
+  }
+
+  @override
   Future<List<Task>> getOccurrences({
     required DateTime rangeStart,
     required DateTime rangeEnd,
@@ -669,6 +691,33 @@ class TaskRepository implements TaskRepositoryContract {
       tasks: tasks,
       completions: completions,
       exceptions: exceptions,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    );
+  }
+
+  @override
+  Future<List<Task>> getOccurrencesForTask({
+    required String taskId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async {
+    final taskRows = await (driftDb.select(
+      driftDb.taskTable,
+    )..where((t) => t.id.equals(taskId))).get();
+    final tasks = taskRows.map(taskFromTable).toList();
+
+    final completionRows = await (driftDb.select(
+      driftDb.taskCompletionHistoryTable,
+    )..where((c) => c.taskId.equals(taskId))).get();
+    final exceptionRows = await (driftDb.select(
+      driftDb.taskRecurrenceExceptionsTable,
+    )..where((e) => e.taskId.equals(taskId))).get();
+
+    return occurrenceExpander.expandTaskOccurrencesSync(
+      tasks: tasks,
+      completions: completionRows.map(toCompletionData).toList(),
+      exceptions: exceptionRows.map(toExceptionData).toList(),
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
     );
@@ -831,22 +880,19 @@ class TaskRepository implements TaskRepositoryContract {
   /// For queries WITHOUT occurrence expansion:
   /// - All rules applied at SQL level for optimal performance
   Stream<List<Task>> buildAndExecuteQuery(TaskQuery query) {
-    if (query.shouldExpandOccurrences && query.hasOccurrencePreview) {
-      throw StateError(
-        'TaskQuery cannot use occurrenceExpansion and occurrencePreview '
-        'at the same time.',
+    if (query.shouldExpandOccurrences || query.hasOccurrencePreview) {
+      throw UnsupportedError(
+        'TaskRepository does not support occurrenceExpansion/occurrencePreview '
+        'query flags. Use OccurrenceReadService (taskly_domain) for '
+        'occurrence-aware reads.',
       );
     }
-
-    final QueryFilter<TaskPredicate> sqlFilter = query.shouldExpandOccurrences
-        ? removeDatePredicates(query.filter)
-        : query.filter;
 
     // Start with base query
     final select = driftDb.select(driftDb.taskTable);
 
     select.where((t) {
-      return whereExpressionFromFilter(sqlFilter, t) ??
+      return whereExpressionFromFilter(query.filter, t) ??
           const drift_pkg.Constant(true);
     });
 
@@ -963,93 +1009,7 @@ class TaskRepository implements TaskRepositoryContract {
       ).toTasks();
     });
 
-    Stream<List<Task>> stream = baseTasksStream;
-
-    // Apply occurrence preview (decorate base tasks with a single next
-    // uncompleted occurrence) if requested.
-    if (query.hasOccurrencePreview) {
-      final preview = query.occurrencePreview!;
-      final asOfDayKey = dateOnly(preview.asOfDayKey);
-      final rangeStart = asOfDayKey.subtract(Duration(days: preview.pastDays));
-      final rangeEnd = asOfDayKey.add(Duration(days: preview.futureDays));
-
-      final completionsStream = driftDb
-          .select(driftDb.taskCompletionHistoryTable)
-          .watch()
-          .map((rows) => rows.map(toCompletionData).toList());
-
-      final exceptionsStream = driftDb
-          .select(driftDb.taskRecurrenceExceptionsTable)
-          .watch()
-          .map((rows) => rows.map(toExceptionData).toList());
-
-      final nextOccurrenceByTaskIdStream = occurrenceExpander
-          .expandTaskOccurrences(
-            tasksStream: baseTasksStream,
-            completionsStream: completionsStream,
-            exceptionsStream: exceptionsStream,
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
-          )
-          .map(
-            (expandedTasks) =>
-                NextOccurrenceSelector.nextUncompletedTaskOccurrenceByTaskId(
-                  expandedTasks: expandedTasks,
-                  asOfDay: asOfDayKey,
-                ),
-          )
-          // Ensure the base tasks can render immediately; occurrence previews
-          // will be filled in on the next emission after expansion debounce.
-          .startWith(const <String, OccurrenceData>{});
-
-      stream = Rx.combineLatest2(
-        baseTasksStream,
-        nextOccurrenceByTaskIdStream,
-        (List<Task> tasks, Map<String, OccurrenceData> nextById) {
-          return tasks
-              .map((task) {
-                if (!task.isRepeating || task.seriesEnded) return task;
-
-                final next = nextById[task.id];
-                if (next == null) return task;
-
-                return task.copyWith(occurrence: next);
-              })
-              .toList(growable: false);
-        },
-      );
-    }
-
-    // Apply occurrence expansion if needed (with two-phase date filtering)
-    if (query.shouldExpandOccurrences) {
-      final expansion = query.occurrenceExpansion!;
-      final completionsStream = driftDb
-          .select(driftDb.taskCompletionHistoryTable)
-          .watch()
-          .map((rows) => rows.map(toCompletionData).toList());
-
-      final exceptionsStream = driftDb
-          .select(driftDb.taskRecurrenceExceptionsTable)
-          .watch()
-          .map((rows) => rows.map(toExceptionData).toList());
-
-      final evaluator = TaskFilterEvaluator();
-      final context = EvaluationContext(today: _dayKeyService.todayDayKeyUtc());
-      bool postExpansionFilter(Task task) {
-        return evaluator.matches(task, query.filter, context);
-      }
-
-      stream = occurrenceExpander.expandTaskOccurrences(
-        tasksStream: stream,
-        completionsStream: completionsStream,
-        exceptionsStream: exceptionsStream,
-        rangeStart: expansion.rangeStart,
-        rangeEnd: expansion.rangeEnd,
-        postExpansionFilter: postExpansionFilter,
-      );
-    }
-
-    return stream;
+    return baseTasksStream;
   }
 
   QueryFilter<TaskPredicate> removeDatePredicates(

@@ -1,4 +1,4 @@
-# `taskly_ui` governance (normative)
+# `taskly_ui` governance
 
 > Audience: developers
 >
@@ -6,17 +6,15 @@
 
 ## 1) Summary
 
-Taskly follows a strict UI ownership rule:
+Taskly follows a UI ownership rule:
 
 - The app owns only **Screens/Templates**.
 - All **Primitives / Entities / Sections** live in `packages/taskly_ui`.
 
-This is a strict placement rule, not a preference:
+This guide is descriptive. The canonical rules live in:
 
-- App code must not introduce new primitives/entities/sections (even if used
-  only once within a single screen).
-- If a screen needs a new UI building block, it must be created in
-  `packages/taskly_ui` and then composed from the screen.
+- [../INVARIANTS.md](../INVARIANTS.md#22-ui-composition-model-4-tier-strict)
+- [../INVARIANTS.md](../INVARIANTS.md#221-taskly_ui-shared-surface-governance-strict)
 
 Because `taskly_ui` is consumed across many screens, changes to its public
 surface are governed.
@@ -36,9 +34,9 @@ surface are governed.
 - **Internal-only change**: a change that does not alter the public surface and
   does not change default visuals/behavior.
 
-## 3) Requires explicit user approval
+## 3) Changes that typically need explicit approval
 
-Any of the following require explicit user approval before implementation:
+Any of the following typically require explicit user approval before implementation:
 
 - Adding a new shared entity/section/template.
 - Adding new public configuration options (constructor params, new exported
@@ -62,14 +60,14 @@ These may proceed without explicit user approval:
 - Bugfixes that restore intended behavior without changing defaults.
 - Performance improvements with no user-visible changes.
 
-## 5) Configuration hygiene (required)
+## 5) Configuration hygiene
 
 When changing `taskly_ui` entities/sections:
 
 - Remove unused options and unused callback wiring.
 - Avoid option creep: do not add new flags for one-off screen needs.
 
-### 5.1 Intent, not config (required)
+### 5.1 Intent, not config
 
 For entity tiles and list rows (Task/Project/Value), the default pattern is:
 
@@ -77,19 +75,9 @@ For entity tiles and list rows (Task/Project/Value), the default pattern is:
 - **Actions** describe what the user can do (callbacks opt into affordances).
 - **Markers** describe small semantic facts that affect minor affordances.
 
-Normative rules:
+See: [../INVARIANTS.md](../INVARIANTS.md#212-entity-tiles-are-intent-driven-strict).
 
-- Do not add visual/structural configuration knobs (for example “badge lists”,
-  “trailing spec”, “variant flags”) to satisfy one-off screen needs.
-- Prefer adding a new intent case when multiple screens truly need a distinct
-  rendering intent.
-- Prefer deriving affordances from the presence/absence of callbacks in the
-  `*Actions` object (for example, show overflow only when an
-  `onOverflowMenuRequestedAt` callback is provided).
-
-See: `doc/architecture/ARCHITECTURE_INVARIANTS.md` (UI + `taskly_ui` rules).
-
-### 5.2 Narrow extension points only (required)
+### 5.2 Narrow extension points only
 
 To keep shared UI consistent across screens:
 

@@ -40,7 +40,7 @@ class AnytimePage extends StatelessWidget {
         BlocProvider(create: (_) => AnytimeScreenBloc(scope: scope)),
         BlocProvider(
           create: (_) => AnytimeFeedBloc(
-            taskRepository: getIt<TaskRepositoryContract>(),
+            occurrenceReadService: getIt<OccurrenceReadService>(),
             myDayRepository: getIt<MyDayRepositoryContract>(),
             dayKeyService: getIt<HomeDayKeyService>(),
             temporalTriggerService: getIt<TemporalTriggerService>(),

@@ -31,13 +31,15 @@ mobile platforms.
 
 ### Architecture-first (required)
 
-* Before doing any repository analysis (beyond a quick scan to locate the relevant files) or making any significant change, first review the architecture docs under `doc/architecture/`.
+* Before making any **non-trivial change** (anything beyond a tiny/local refactor) or giving design options, do a quick architecture check:
+  * Read `doc/architecture/README.md` (entrypoint + where to look).
+  * Read `doc/architecture/INVARIANTS.md` and ensure the change complies.
+  * Read any **other relevant** architecture docs for the specific area you’re changing (e.g. guides, deep dives, specs). Do **not** blanket-read the entire folder.
 * Use that architecture context to guide recommendations, naming, layering, and where new code should live.
 * When changes affect architecture (new module boundaries, responsibilities, data flow, storage/sync behavior, cross-feature patterns), update the relevant files under `doc/architecture/` in the same PR.
 * If a change introduces a new architectural pattern or approach get explicit confirmation from user before implementing.
-* Architecture invariants are **strict**: review `doc/architecture/ARCHITECTURE_INVARIANTS.md` and obey them.
+* Architecture invariants are **strict**:
   * If a change would break an invariant, get **explicit user confirmation** and add a **documented architecture exception** (under `doc/architecture/`) before implementing.
-* Always review relevant architecture docs when making changes to ensure compliance with architecture rules/design patterns. Try to keep architecture clean and consistent wherever possible.
 * prefer powershell to delete or move files when needed.
 * Never use any git commands without explicit user confirmation.
 * For UI/UX design tasks ask the user questions to clarify the intended user experience and offer design options with Ids in batches of 3 with explanations of the pros and cons of each option and reccomendation. Keep offering design options in batches until user tells you to implement. Always tell users if a proposed chang would impact more then one screen/area.

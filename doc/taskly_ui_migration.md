@@ -14,13 +14,13 @@
 >   deep-import `package:taskly_ui/src/...`.
 > - **Architecture invariants are non-negotiable**. If an invariant blocks
 >   progress, follow the documented exception process in
->   `doc/architecture/ARCHITECTURE_INVARIANTS.md`.
+>   `doc/architecture/INVARIANTS.md`.
 > - **USM is not allowed in `taskly_ui`**: do not import any USM/interpreted
 >   screen system code into `packages/taskly_ui`.
 >   The strategic direction is to migrate off USM and delete USM code.
 >
 > References:
-> - `doc/architecture/ARCHITECTURE_INVARIANTS.md` (sections 2.1–2.2)
+> - `doc/architecture/INVARIANTS.md` (UI boundary + shared UI rules)
 > - `doc/architecture/README.md`
 >
 

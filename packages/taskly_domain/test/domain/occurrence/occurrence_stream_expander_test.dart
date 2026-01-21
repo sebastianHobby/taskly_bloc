@@ -3,16 +3,13 @@ library;
 
 import '../../helpers/test_imports.dart';
 
-import 'package:taskly_data/src/services/occurrence_stream_expander.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/services.dart';
 
 import '../../helpers/fixed_clock.dart';
 
 void main() {
-  setUpAll(setUpAllTestEnvironment);
-  setUp(setUpTestEnvironment);
-
   group('OccurrenceStreamExpander.expandTaskOccurrencesSync', () {
     testSafe(
       'expands non-repeating task into a single occurrence in range',
