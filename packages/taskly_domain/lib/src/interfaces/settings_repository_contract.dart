@@ -17,11 +17,24 @@ import 'package:taskly_domain/src/telemetry/operation_context.dart';
 /// ```
 abstract class SettingsRepositoryContract {
   /// Watch a setting for changes.
+  ///
+  /// Stream contract:
+  /// - broadcast: do not assume (treat as single-subscription unless otherwise
+  ///   documented by the implementation)
+  /// - replay: none (unless otherwise documented)
+  /// - cold/hot: typically hot (backed by local persistence watchers)
+  ///
+  /// Implementation rule: if the implementation caches streams, the cached
+  /// value must be broadcast/shared (do not cache raw single-sub streams).
   Stream<T> watch<T>(SettingsKey<T> key);
 
   /// Load the current value of a setting.
   Future<T> load<T>(SettingsKey<T> key);
 
   /// Save a new value for a setting.
-  Future<void> save<T>(SettingsKey<T> key, T value, {OperationContext? context});
+  Future<void> save<T>(
+    SettingsKey<T> key,
+    T value, {
+    OperationContext? context,
+  });
 }

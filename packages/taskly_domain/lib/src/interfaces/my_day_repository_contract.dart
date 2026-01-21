@@ -3,6 +3,12 @@ import 'package:taskly_domain/src/my_day/model/my_day_pick.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 abstract class MyDayRepositoryContract {
+  /// Watch persisted day picks for a specific day.
+  ///
+  /// Stream contract:
+  /// - broadcast: do not assume
+  /// - replay: none
+  /// - cold/hot: typically hot
   Stream<MyDayDayPicks> watchDay(DateTime dayKeyUtc);
 
   Future<MyDayDayPicks> loadDay(DateTime dayKeyUtc);

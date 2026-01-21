@@ -4,6 +4,11 @@ import 'package:taskly_domain/telemetry.dart';
 /// Contract for authentication operations.
 abstract class AuthRepositoryContract {
   /// Stream of authentication state changes.
+  ///
+  /// Stream contract:
+  /// - broadcast: yes (multiple listeners may attach)
+  /// - replay: last (late subscribers should immediately receive current state)
+  /// - cold/hot: hot
   Stream<AuthState> watchAuthState();
 
   /// Get the current session, if any.
@@ -14,12 +19,16 @@ abstract class AuthRepositoryContract {
 
   /// Sign in with email and password.
   Future<AuthResponse> signInWithPassword({
-    required String email, required String password, OperationContext? context,
+    required String email,
+    required String password,
+    OperationContext? context,
   });
 
   /// Sign up with email and password.
   Future<AuthResponse> signUp({
-    required String email, required String password, OperationContext? context,
+    required String email,
+    required String password,
+    OperationContext? context,
   });
 
   /// Sign out the current user.

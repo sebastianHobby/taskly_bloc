@@ -113,6 +113,10 @@ final class TasklyDataStack implements SyncAnomalyStream {
       StreamController<SyncAnomaly>.broadcast();
 
   @override
+  /// Stream contract:
+  /// - broadcast: yes
+  /// - replay: none
+  /// - cold/hot: hot
   Stream<SyncAnomaly> get anomalies => _syncAnomaliesController.stream;
 
   SupabaseConnector? _connector;

@@ -14,12 +14,23 @@ abstract class ProjectRepositoryContract {
   /// - Which projects to include (via filter)
   /// - How to sort results (via sortCriteria)
   /// - Whether to expand repeating projects into occurrences (via occurrenceExpansion)
+  ///
+  /// Stream contract:
+  /// - broadcast: do not assume (implementations may return shared streams for
+  ///   performance; consumers must not rely on multi-listen)
+  /// - replay: none unless otherwise documented
+  /// - cold/hot: typically hot
+  ///
+  /// Implementation rule: if an implementation caches streams, the cached
+  /// stream must be broadcast/shared (do not cache raw single-sub streams).
   Stream<List<Project>> watchAll([ProjectQuery? query]);
 
   /// Watch the count of projects matching the optional [query].
   ///
   /// When [query] includes `occurrenceExpansion`, this counts expanded
   /// occurrences (virtual rows) instead of base project rows.
+  ///
+  /// Stream contract: same as [watchAll].
   Stream<int> watchAllCount([ProjectQuery? query]);
 
   /// Get projects with optional filtering, sorting, and occurrence expansion.
@@ -32,6 +43,8 @@ abstract class ProjectRepositoryContract {
   /// Watch a project by ID with its related labels.
   ///
   /// See [watchAll] for the hydration contract.
+  ///
+  /// Stream contract: same as [watchAll].
   Stream<Project?> watchById(String id);
 
   /// Get a project by ID with its related labels.

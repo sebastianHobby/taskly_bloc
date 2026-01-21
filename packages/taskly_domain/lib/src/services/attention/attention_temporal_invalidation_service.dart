@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/src/services/time/temporal_trigger_service.dart';
 
 /// Emits in-app invalidation pulses for time-based attention rules.
@@ -15,11 +16,15 @@ class AttentionTemporalInvalidationService {
 
   final TemporalTriggerService _temporalTriggerService;
 
-  final StreamController<void> _invalidationsController =
-      StreamController<void>.broadcast();
+  final BehaviorSubject<void> _invalidationsSubject = BehaviorSubject<void>();
 
   /// Emits a value whenever attention should be re-evaluated.
-  Stream<void> get invalidations => _invalidationsController.stream;
+  ///
+  /// Stream contract:
+  /// - broadcast: yes
+  /// - replay: last (so late subscribers can evaluate immediately)
+  /// - cold/hot: hot
+  Stream<void> get invalidations => _invalidationsSubject.stream;
 
   StreamSubscription<TemporalTriggerEvent>? _sub;
   bool _started = false;
@@ -30,12 +35,12 @@ class AttentionTemporalInvalidationService {
 
     _sub = _temporalTriggerService.events.listen((event) {
       if (event is HomeDayBoundaryCrossed || event is AppResumed) {
-        _invalidationsController.add(null);
+        _invalidationsSubject.add(null);
       }
     });
 
     // Initial pulse so first subscribers can load immediately.
-    _invalidationsController.add(null);
+    _invalidationsSubject.add(null);
   }
 
   void stop() {
@@ -47,6 +52,6 @@ class AttentionTemporalInvalidationService {
 
   Future<void> dispose() async {
     stop();
-    await _invalidationsController.close();
+    await _invalidationsSubject.close();
   }
 }

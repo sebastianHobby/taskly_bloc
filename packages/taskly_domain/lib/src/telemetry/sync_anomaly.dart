@@ -111,5 +111,11 @@ enum SyncAnomalyReason {
 /// This is exposed across layers so that presentation can subscribe (via a
 /// BLoC) without depending on data-layer implementations.
 abstract interface class SyncAnomalyStream {
+  /// Emits diagnostic sync anomalies.
+  ///
+  /// Stream contract:
+  /// - broadcast: **required** (multiple listeners may attach)
+  /// - replay: none
+  /// - cold/hot: typically **hot** (emitted by the sync runtime)
   Stream<SyncAnomaly> get anomalies;
 }

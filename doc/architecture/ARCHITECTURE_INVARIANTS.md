@@ -394,6 +394,37 @@ Rationale:
 - Prevents "emit was called after an event handler completed normally" crashes.
 - Makes cancellation/retry deterministic.
 
+### 3.1.1 Stream fan-out and contract rules (strict)
+
+These rules exist to prevent multi-listen runtime crashes and subtle lifecycle
+bugs caused by caching or reusing single-subscription streams.
+
+Normative rules:
+
+- **Event bus streams must be broadcast (`*.events`).**
+  - Any `*.events` stream exposed by services/coordinators (lifecycle, temporal
+    triggers, sync anomalies, etc.) must be broadcast **by construction**
+    (typically `StreamController.broadcast()` or an RxDart broadcast primitive).
+- **Single-subscription streams must be per-call.**
+  - If an API returns a single-subscription stream, it must return a fresh
+    stream instance on each call.
+  - Do not cache a single-subscription stream instance and return it to
+    multiple consumers.
+- **No caching of raw streams unless shared.**
+  - If you cache streams (query caches, screen query services, etc.), the
+    cached value must be a broadcast/shared stream (or you cache results, not
+    the stream).
+- **Prefer one subscription per screen at the BLoC boundary.**
+  - Prefer a single derived upstream stream driving BLoC state (query-service
+    style) to avoid accidental re-listens during `switchMap`/refresh cycles.
+  - If a screen uses multiple subscriptions, the implementation must be
+    cancellation-safe and deterministic.
+- **Explicitly declare stream contracts.**
+  - For any public stream, document:
+    - whether it is broadcast,
+    - whether it replays (none / last / N), and
+    - whether it is cold or hot.
+
 ### 3.2 Test hang safety for reactive code (strict for new tests)
 
 New tests must avoid patterns that can hang indefinitely when streams and BLoCs

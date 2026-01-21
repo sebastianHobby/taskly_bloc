@@ -36,6 +36,11 @@ final class InitialSyncProgress {
 /// database is populated.
 abstract interface class InitialSyncService {
   /// Emits snapshots of the sync lifecycle.
+  ///
+  /// Stream contract:
+  /// - broadcast: **required** (multiple listeners may observe progress)
+  /// - replay: implementation-defined (prefer replay-last for UI)
+  /// - cold/hot: typically **hot** (backed by the sync runtime)
   Stream<InitialSyncProgress> get progress;
 
   /// Completes once the first full sync checkpoint is reached.

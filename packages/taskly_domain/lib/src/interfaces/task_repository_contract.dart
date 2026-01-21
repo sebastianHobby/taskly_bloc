@@ -18,6 +18,15 @@ abstract class TaskRepositoryContract {
   /// - Whether to expand repeating tasks into occurrences (via occurrenceExpansion)
   ///
   /// All filtering happens at the database level for optimal performance.
+  ///
+  /// Stream contract:
+  /// - broadcast: do not assume (implementations may return shared streams for
+  ///   performance; consumers must not rely on multi-listen)
+  /// - replay: none unless otherwise documented
+  /// - cold/hot: typically hot
+  ///
+  /// Implementation rule: if an implementation caches streams, the cached
+  /// stream must be broadcast/shared (do not cache raw single-sub streams).
   Stream<List<Task>> watchAll([TaskQuery? query]);
 
   /// Get tasks with optional filtering, sorting, and occurrence expansion.
@@ -31,6 +40,8 @@ abstract class TaskRepositoryContract {
   ///
   /// When [query] includes `occurrenceExpansion`, this counts expanded
   /// occurrences (virtual rows) instead of base task rows.
+  ///
+  /// Stream contract: same as [watchAll].
   Stream<int> watchAllCount([TaskQuery? query]);
 
   /// Get a single task by ID with related entities.
@@ -48,6 +59,8 @@ abstract class TaskRepositoryContract {
   /// Watch a single task by ID with related entities.
   ///
   /// See [watchAll] for the hydration contract.
+  ///
+  /// Stream contract: same as [watchAll].
   Stream<Task?> watchById(String id);
 
   /// Watch multiple tasks by ID with related entities.
@@ -55,6 +68,8 @@ abstract class TaskRepositoryContract {
   /// The emitted list preserves the order of [ids]. Missing tasks are omitted.
   ///
   /// See [watchAll] for the hydration contract.
+  ///
+  /// Stream contract: same as [watchAll].
   Stream<List<Task>> watchByIds(Iterable<String> ids);
 
   Future<void> create({
