@@ -32,6 +32,7 @@ import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.da
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/shared/sync/sync_anomaly_bloc.dart';
 import 'package:taskly_domain/telemetry.dart';
+import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
 
 /// Root application widget with auth-gated UI.
 ///
@@ -97,11 +98,19 @@ class App extends StatelessWidget {
             },
             listener: (context, state) {
               final coordinator = getIt<AuthenticatedAppServicesCoordinator>();
+              final sessionCoordinator =
+                  getIt<PresentationSessionServicesCoordinator>();
 
               if (state.status == AuthStatus.authenticated) {
-                unawaited(coordinator.start());
+                unawaited(() async {
+                  await coordinator.start();
+                  await sessionCoordinator.start();
+                }());
               } else {
-                unawaited(coordinator.stop());
+                unawaited(() async {
+                  await sessionCoordinator.stop();
+                  await coordinator.stop();
+                }());
               }
             },
             child: BlocBuilder<AuthBloc, AppAuthState>(

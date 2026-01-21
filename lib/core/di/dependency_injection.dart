@@ -25,14 +25,19 @@ import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_b
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/my_day_prewarm_cubit.dart';
+import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
+import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
 
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_query_service.dart';
+import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -118,6 +123,12 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
         lifecycleService: getIt<AppLifecycleService>(),
         clock: getIt<Clock>(),
+      ),
+    )
+    ..registerLazySingleton<SessionDayKeyService>(
+      () => SessionDayKeyService(
+        dayKeyService: getIt<HomeDayKeyService>(),
+        temporalTriggerService: getIt<TemporalTriggerService>(),
       ),
     )
     ..registerLazySingleton<AttentionTemporalInvalidationService>(
@@ -267,9 +278,38 @@ Future<void> setupDependencies() async {
         temporalTriggerService: getIt<TemporalTriggerService>(),
       ),
     )
+    ..registerLazySingleton<MyDaySessionQueryService>(
+      () => MyDaySessionQueryService(
+        queryService: getIt<MyDayQueryService>(),
+        appLifecycleService: getIt<AppLifecycleService>(),
+      ),
+    )
+    ..registerLazySingleton<ScheduledSessionQueryService>(
+      () => ScheduledSessionQueryService(
+        scheduledOccurrencesService: getIt<ScheduledOccurrencesService>(),
+        sessionDayKeyService: getIt<SessionDayKeyService>(),
+        appLifecycleService: getIt<AppLifecycleService>(),
+      ),
+    )
+    ..registerLazySingleton<AnytimeSessionQueryService>(
+      () => AnytimeSessionQueryService(
+        occurrenceReadService: getIt<OccurrenceReadService>(),
+        myDayRepository: getIt<MyDayRepositoryContract>(),
+        sessionDayKeyService: getIt<SessionDayKeyService>(),
+        appLifecycleService: getIt<AppLifecycleService>(),
+      ),
+    )
+    ..registerLazySingleton<PresentationSessionServicesCoordinator>(
+      () => PresentationSessionServicesCoordinator(
+        sessionDayKeyService: getIt<SessionDayKeyService>(),
+        myDaySessionQueryService: getIt<MyDaySessionQueryService>(),
+        scheduledSessionQueryService: getIt<ScheduledSessionQueryService>(),
+        anytimeSessionQueryService: getIt<AnytimeSessionQueryService>(),
+      ),
+    )
     ..registerFactory<MyDayBloc>(
       () => MyDayBloc(
-        queryService: getIt<MyDayQueryService>(),
+        queryService: getIt<MyDaySessionQueryService>(),
       ),
     )
     ..registerFactory<MyDayRitualBloc>(

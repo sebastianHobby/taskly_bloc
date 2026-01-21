@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/row_key.dart';
-import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
+import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 
 sealed class ScheduledFeedEvent {
   const ScheduledFeedEvent();
@@ -57,11 +57,9 @@ final class ScheduledFeedError extends ScheduledFeedState {
 
 class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
   ScheduledFeedBloc({
-    required ScheduledOccurrencesService scheduledOccurrencesService,
-    required HomeDayService homeDayService,
+    required ScheduledSessionQueryService queryService,
     ScheduledScope scope = const GlobalScheduledScope(),
-  }) : _scheduledOccurrencesService = scheduledOccurrencesService,
-       _homeDayService = homeDayService,
+  }) : _queryService = queryService,
        _scope = scope,
        super(const ScheduledFeedLoading()) {
     on<ScheduledFeedStarted>(_onStarted, transformer: restartable());
@@ -76,8 +74,7 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     add(const ScheduledFeedStarted());
   }
 
-  final ScheduledOccurrencesService _scheduledOccurrencesService;
-  final HomeDayService _homeDayService;
+  final ScheduledSessionQueryService _queryService;
   final ScheduledScope _scope;
 
   ScheduledOccurrencesResult? _latestResult;
@@ -100,16 +97,8 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
   }
 
   Future<void> _bind(Emitter<ScheduledFeedState> emit) async {
-    final todayDayKeyUtc = _homeDayService.todayDayKeyUtc();
-    final rangeStart = todayDayKeyUtc;
-    final rangeEnd = todayDayKeyUtc.add(const Duration(days: 30));
-
     await emit.forEach<ScheduledOccurrencesResult>(
-      _scheduledOccurrencesService.watchScheduledOccurrences(
-        rangeStartDay: rangeStart,
-        rangeEndDay: rangeEnd,
-        scope: _scope,
-      ),
+      _queryService.watchScheduledOccurrences(scope: _scope),
       onData: (result) {
         try {
           _latestResult = result;

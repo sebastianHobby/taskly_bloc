@@ -48,7 +48,7 @@ class MyDayPlanPickerTaskListSection extends StatelessWidget {
         for (final item in items)
           TaskEntityTile(
             model: item.model,
-            intent: TaskTileIntent.ritualPick(selected: item.selected),
+            intent: TaskTileIntent.selection(selected: item.selected),
             supportingText: item.supportingText,
             supportingTooltipText: item.supportingTooltipText,
             markers: item.markers,

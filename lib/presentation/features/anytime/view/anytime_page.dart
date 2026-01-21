@@ -23,6 +23,7 @@ import 'package:taskly_ui/taskly_ui_sections.dart';
 
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_feed_bloc.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_screen_bloc.dart';
+import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/anytime/widgets/anytime_scope_picker_sheet.dart';
 
 class AnytimePage extends StatelessWidget {
@@ -40,10 +41,7 @@ class AnytimePage extends StatelessWidget {
         BlocProvider(create: (_) => AnytimeScreenBloc(scope: scope)),
         BlocProvider(
           create: (_) => AnytimeFeedBloc(
-            occurrenceReadService: getIt<OccurrenceReadService>(),
-            myDayRepository: getIt<MyDayRepositoryContract>(),
-            dayKeyService: getIt<HomeDayKeyService>(),
-            temporalTriggerService: getIt<TemporalTriggerService>(),
+            queryService: getIt<AnytimeSessionQueryService>(),
             scope: scope,
           ),
         ),

@@ -12,7 +12,7 @@ import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_entities.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
 
-enum MyDayRitualWizardInitialSection { due, starts, suggested }
+enum MyDayRitualWizardInitialSection { suggested, due, starts }
 
 class MyDayRitualWizardPage extends StatelessWidget {
   const MyDayRitualWizardPage({
@@ -635,9 +635,13 @@ class _RitualCardState extends State<_RitualCard> {
         (widget.gateState!.needsFocusModeSetup ||
             widget.gateState!.needsValuesSetup);
 
+    final curatedIds = widget.curated.map((t) => t.id).toSet();
+
     final due = <Task>[];
     final starts = <Task>[];
     for (final task in widget.planned) {
+      // Defensive: do not duplicate tasks across sections.
+      if (curatedIds.contains(task.id)) continue;
       final deadline = _deadlineDateOnly(task);
       final isDue = deadline != null && !deadline.isAfter(dueLimit);
       if (isDue) {
@@ -698,6 +702,103 @@ class _RitualCardState extends State<_RitualCard> {
                 ),
               ),
             ],
+            // Suggested first.
+            KeyedSubtree(
+              key: _suggestedHeaderKey,
+              child: _SuggestedHeader(
+                count: curatedCount,
+                focusMode: widget.focusMode,
+                needsSetup: needsSetup,
+                onStartSetup: widget.onStartSetup,
+                onChangeFocusMode: widget.onChangeFocusMode,
+                onPickAllCurated: () =>
+                    _confirmPickAllCurated(context, count: curatedCount),
+              ),
+            ),
+            if (needsSetup)
+              _SuggestedSetupCard(gateState: widget.gateState!)
+            else if (curatedCount == 0)
+              _EmptyPanel(
+                title: context.l10n.myDaySuggestedCompleteTitle,
+                description: context.l10n.myDaySuggestedCompleteBody,
+                footer: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: widget.onGenerateMoreCurated,
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: Text(context.l10n.myDayGenerateNewBatchLabel),
+                  ),
+                ),
+              )
+            else
+              Column(
+                children: [
+                  _TaskTileColumn(
+                    dayKeyUtc: widget.dayKeyUtc,
+                    tasks: curatedVisible,
+                    selected: widget.selected,
+                    reasonTextByTaskId: widget.curatedReasons,
+                    reasonTooltipTextByTaskId: widget.curatedReasonTooltips,
+                    enableSnooze: false,
+                    enableSelection: true,
+                  ),
+                  if (widget.curated.isNotEmpty &&
+                      widget.curated.every(
+                        (t) => widget.selected.contains(t.id),
+                      ))
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                        decoration: BoxDecoration(
+                          color: cs.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: cs.outlineVariant.withOpacity(0.6),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Suggested complete — generate another batch?',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: widget.onGenerateMoreCurated,
+                              child: Text(context.l10n.myDayGenerateLabel),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (curatedHasMore)
+                    _ShowMoreRow(
+                      isExpanded: _curatedExpanded,
+                      remainingCount:
+                          widget.curated.length - curatedVisible.length,
+                      totalCount: widget.curated.length,
+                      labelExpanded: 'Show fewer',
+                      labelCollapsed: 'Show all picks',
+                      onPressed: () =>
+                          setState(() => _curatedExpanded = !_curatedExpanded),
+                    ),
+                ],
+              ),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: Divider(
+                color: cs.outlineVariant,
+                thickness: 1,
+                height: 1,
+              ),
+            ),
+
+            // Then Due, then Starts.
             if (plannedCount == 0)
               _EmptyPanel(
                 title: context.l10n.myDayNothingPlannedYetTitle,
@@ -821,100 +922,6 @@ class _RitualCardState extends State<_RitualCard> {
                             setState(() => _startsExpanded = !_startsExpanded),
                       ),
                   ],
-                ],
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: Divider(
-                color: cs.outlineVariant,
-                thickness: 1,
-                height: 1,
-              ),
-            ),
-
-            KeyedSubtree(
-              key: _suggestedHeaderKey,
-              child: _SuggestedHeader(
-                count: curatedCount,
-                focusMode: widget.focusMode,
-                needsSetup: needsSetup,
-                onStartSetup: widget.onStartSetup,
-                onChangeFocusMode: widget.onChangeFocusMode,
-                onPickAllCurated: () =>
-                    _confirmPickAllCurated(context, count: curatedCount),
-              ),
-            ),
-            if (needsSetup)
-              _SuggestedSetupCard(gateState: widget.gateState!)
-            else if (curatedCount == 0)
-              _EmptyPanel(
-                title: context.l10n.myDaySuggestedCompleteTitle,
-                description: context.l10n.myDaySuggestedCompleteBody,
-                footer: Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: widget.onGenerateMoreCurated,
-                    icon: const Icon(Icons.refresh_rounded, size: 18),
-                    label: Text(context.l10n.myDayGenerateNewBatchLabel),
-                  ),
-                ),
-              )
-            else
-              Column(
-                children: [
-                  _TaskTileColumn(
-                    dayKeyUtc: widget.dayKeyUtc,
-                    tasks: curatedVisible,
-                    selected: widget.selected,
-                    reasonTextByTaskId: widget.curatedReasons,
-                    reasonTooltipTextByTaskId: widget.curatedReasonTooltips,
-                    enableSnooze: false,
-                    enableSelection: true,
-                  ),
-                  if (widget.curated.isNotEmpty &&
-                      widget.curated.every(
-                        (t) => widget.selected.contains(t.id),
-                      ))
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                        decoration: BoxDecoration(
-                          color: cs.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: cs.outlineVariant.withOpacity(0.6),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                'Suggested complete — generate another batch?',
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: widget.onGenerateMoreCurated,
-                              child: Text(context.l10n.myDayGenerateLabel),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  if (curatedHasMore)
-                    _ShowMoreRow(
-                      isExpanded: _curatedExpanded,
-                      remainingCount:
-                          widget.curated.length - curatedVisible.length,
-                      totalCount: widget.curated.length,
-                      labelExpanded: 'Show fewer',
-                      labelCollapsed: 'Show all picks',
-                      onPressed: () =>
-                          setState(() => _curatedExpanded = !_curatedExpanded),
-                    ),
                 ],
               ),
           ],
