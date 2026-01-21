@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
@@ -83,14 +84,37 @@ class MyDayPage extends StatelessWidget {
             if (ritualState is MyDayRitualLoading) {
               return Scaffold(
                 appBar: AppBar(
-                  title: const Text('My Day'),
+                  title: Text(context.l10n.myDayTitle),
                   actions: TasklyAppBarActions.withAttentionBell(
                     context,
                     actions: const <Widget>[],
                   ),
                 ),
-                body: const Center(
-                  child: CircularProgressIndicator(),
+                body: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 16),
+                          Text(
+                            context.l10n.myDayPreparingTitle,
+                            style: Theme.of(context).textTheme.titleLarge,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            context.l10n.myDayPreparingSubtitle,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               );
             }
@@ -101,7 +125,7 @@ class MyDayPage extends StatelessWidget {
                   appBar: selectionState.isSelectionMode
                       ? SelectionAppBar(baseTitle: 'My Day', onExit: () {})
                       : AppBar(
-                          title: const Text('My Day'),
+                          title: Text(context.l10n.myDayTitle),
                           actions: TasklyAppBarActions.withAttentionBell(
                             context,
                             actions: const <Widget>[],
@@ -241,8 +265,10 @@ class _MyDayLoadedBody extends StatelessWidget {
                             Navigator.of(context).pop();
 
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Added to Today's Focus."),
+                              SnackBar(
+                                content: Text(
+                                  context.l10n.myDayAddedToFocusSnackbar,
+                                ),
                               ),
                             );
                           },
@@ -253,7 +279,7 @@ class _MyDayLoadedBody extends StatelessWidget {
                 const SizedBox(height: 12),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Done'),
+                  child: Text(context.l10n.doneButton),
                 ),
               ],
             ),
@@ -365,8 +391,10 @@ class _MyDayLoadedBody extends StatelessWidget {
                                 setState(() => justAdded.add(task.id));
 
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Added to today.'),
+                                  SnackBar(
+                                    content: Text(
+                                      context.l10n.myDayAddedToTodaySnackbar,
+                                    ),
                                   ),
                                 );
                               },
@@ -377,7 +405,7 @@ class _MyDayLoadedBody extends StatelessWidget {
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Done'),
+                      child: Text(context.l10n.doneButton),
                     ),
                   ],
                 );

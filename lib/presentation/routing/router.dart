@@ -20,7 +20,7 @@ import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_sc
 import 'package:taskly_domain/taskly_domain.dart'
     show ProjectScheduledScope, ValueScheduledScope;
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
-import 'package:taskly_bloc/presentation/screens/view/my_day_page.dart';
+import 'package:taskly_bloc/presentation/screens/view/my_day_entry_gate.dart';
 import 'package:taskly_bloc/presentation/features/attention/view/attention_inbox_page.dart';
 import 'package:taskly_bloc/presentation/features/attention/view/attention_rules_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_route_page.dart';
@@ -100,7 +100,7 @@ final router = GoRouter(
         GoRoute(
           path: Routing.screenPath('my_day'),
           builder: (_, __) {
-            return const MyDayPage();
+            return const MyDayEntryGate();
           },
         ),
         GoRoute(

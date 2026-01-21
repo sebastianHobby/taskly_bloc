@@ -24,6 +24,7 @@ import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banne
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
+import 'package:taskly_bloc/presentation/features/app/bloc/my_day_prewarm_cubit.dart';
 
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
 
@@ -234,6 +235,15 @@ Future<void> setupDependencies() async {
       () => MyDayGateBloc(
         settingsRepository: getIt<SettingsRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
+      ),
+    )
+    ..registerFactory<MyDayPrewarmCubit>(
+      () => MyDayPrewarmCubit(
+        allocationOrchestrator: getIt<AllocationOrchestrator>(),
+        settingsRepository: getIt<SettingsRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
+        myDayRepository: getIt<MyDayRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
       ),
     )
     ..registerFactory<MyDayBloc>(

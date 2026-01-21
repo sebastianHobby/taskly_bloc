@@ -274,7 +274,7 @@ List<TasklyStandardTileListRowModel> _buildStandardRows(
                 AnytimeProjectHeaderTapped(projectRef: projectRef),
               ),
             ),
-          TaskRowUiModel(:final task, :final showProjectLabel) => () {
+          TaskRowUiModel(:final task) => () {
             final tileCapabilities = EntityTileCapabilitiesResolver.forTask(
               task,
             );
@@ -288,7 +288,7 @@ List<TasklyStandardTileListRowModel> _buildStandardRows(
               context,
               task: task,
               tileCapabilities: tileCapabilities,
-              showProjectLabel: showProjectLabel,
+              showProjectLabel: false,
             );
 
             final isSelected = selection.isSelected(key);

@@ -129,6 +129,7 @@ final class TasklyAgendaCardModel {
   const TasklyAgendaCardModel({
     required this.key,
     required this.title,
+    this.leadingIcon,
     this.subtitle,
     this.headerKey,
     this.isCollapsed = false,
@@ -140,6 +141,7 @@ final class TasklyAgendaCardModel {
 
   final String key;
   final String title;
+  final IconData? leadingIcon;
   final String? subtitle;
 
   /// Optional key applied to the card header container.
@@ -212,6 +214,14 @@ class _AgendaCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (card.leadingIcon != null) ...[
+              Icon(
+                card.leadingIcon,
+                size: 18,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
+              ),
+              const SizedBox(width: 10),
+            ],
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,7 +286,12 @@ class _AgendaCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         header,
-        if (hasPlanned) const _SectionLabel(label: 'PLANNED'),
+        if (hasPlanned)
+          const _SectionLabel(
+            label: 'PLANNED',
+            icon: null,
+            emphasized: false,
+          ),
         if (hasPlanned) ..._buildRows(context, card.plannedRows),
         if (hasPlanned && hasDue)
           Divider(
@@ -284,7 +299,12 @@ class _AgendaCard extends StatelessWidget {
             thickness: 1,
             color: scheme.outlineVariant.withValues(alpha: 0.35),
           ),
-        if (hasDue) const _SectionLabel(label: 'DUE'),
+        if (hasDue)
+          const _SectionLabel(
+            label: 'DUE',
+            icon: Icons.alarm_rounded,
+            emphasized: true,
+          ),
         if (hasDue) ..._buildRows(context, card.dueRows),
       ],
     );
@@ -299,9 +319,15 @@ class _AgendaCard extends StatelessWidget {
 }
 
 class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label});
+  const _SectionLabel({
+    required this.label,
+    required this.icon,
+    required this.emphasized,
+  });
 
   final String label;
+  final IconData? icon;
+  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
@@ -310,13 +336,30 @@ class _SectionLabel extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: scheme.onSurfaceVariant,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.8,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              size: 14,
+              color: emphasized
+                  ? scheme.onSurface.withValues(alpha: 0.75)
+                  : scheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: emphasized
+                  ? scheme.onSurface.withValues(alpha: 0.75)
+                  : scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ],
       ),
     );
   }

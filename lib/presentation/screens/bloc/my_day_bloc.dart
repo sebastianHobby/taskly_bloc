@@ -167,26 +167,29 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
   }
 
   Stream<_MyDayViewModel> _watchForDay(DateTime dayKeyUtc) {
-    final values$ = _valueRepository.watchAll().startWith(const <Value>[]);
-    final global$ = _settingsRepository
-        .watch<settings.GlobalSettings>(SettingsKey.global)
-        .startWith(const settings.GlobalSettings());
+    final values$ = Rx.concat([
+      Stream.fromFuture(_valueRepository.getAll()),
+      _valueRepository.watchAll(),
+    ]);
 
-    final dayPicks$ = _myDayRepository
-        .watchDay(dayKeyUtc)
-        .startWith(
-          my_day.MyDayDayPicks(
-            dayKeyUtc: dateOnly(dayKeyUtc),
-            ritualCompletedAtUtc: null,
-            picks: const <my_day.MyDayPick>[],
-          ),
-        );
+    final global$ = Rx.concat([
+      Stream.fromFuture(
+        _settingsRepository.load<settings.GlobalSettings>(SettingsKey.global),
+      ),
+      _settingsRepository.watch<settings.GlobalSettings>(SettingsKey.global),
+    ]);
+
+    final dayPicks$ = Rx.concat([
+      Stream.fromFuture(_myDayRepository.loadDay(dayKeyUtc)),
+      _myDayRepository.watchDay(dayKeyUtc),
+    ]);
 
     return dayPicks$.switchMap((dayPicks) {
       if (dayPicks.ritualCompletedAtUtc != null) {
-        final tasks$ = _taskRepository
-            .watchAll(TaskQuery.incomplete())
-            .startWith(const <Task>[]);
+        final tasks$ = Rx.concat([
+          Stream.fromFuture(_taskRepository.getAll(TaskQuery.incomplete())),
+          _taskRepository.watchAll(TaskQuery.incomplete()),
+        ]);
 
         return Rx.combineLatest3<
           List<Task>,
@@ -207,12 +210,19 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         );
       }
 
-      return Rx.combineLatest2<AllocationResult, List<Value>, _MyDayViewModel>(
-        _allocationOrchestrator.watchAllocation(),
-        values$,
-        _buildFromAllocation,
-      );
+      return Stream.fromFuture(_loadAllocationViewModel());
     });
+  }
+
+  Future<_MyDayViewModel> _loadAllocationViewModel() async {
+    final results = await Future.wait([
+      _allocationOrchestrator.getAllocationSnapshot(),
+      _valueRepository.getAll(),
+    ]);
+
+    final allocation = results[0] as AllocationResult;
+    final values = results[1] as List<Value>;
+    return _buildFromAllocation(allocation, values);
   }
 
   _MyDayViewModel _buildFromAllocation(

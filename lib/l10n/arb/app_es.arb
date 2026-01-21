@@ -1,6 +1,11 @@
 {
     "pinAction": "Fijar",
     "unpinAction": "Desfijar",
+    "selectedCountLabel": "{count, plural, one{1 seleccionado} other{{count} seleccionados}}",
+    "pinToMyDayAction": "Fijar en Mi día",
+    "unpinFromMyDayAction": "Desfijar de Mi día",
+    "moveToProjectAction": "Mover al proyecto",
+    "completeSeriesAction": "Completar serie",
     "selectValuesHint": "Selecciona valores",
     "projectCompletedLabel": "Completado",
     "addProjectAction": "Añadir proyecto",
@@ -32,6 +37,216 @@
     "valuesPrimaryTooltip": "Hacer principal",
     "projectFormValuesRequired": "Selecciona al menos un valor.",
     "@@locale": "es",
+    "@pinAction": {
+        "description": "Etiqueta de acción para fijar un elemento (tarea/proyecto/etc.)."
+    },
+    "@unpinAction": {
+        "description": "Etiqueta de acción para desfijar un elemento (tarea/proyecto/etc.)."
+    },
+    "@selectedCountLabel": {
+        "description": "Etiqueta que muestra cuántos elementos están seleccionados actualmente.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "@pinToMyDayAction": {
+        "description": "Etiqueta de acción masiva para fijar elementos seleccionados en Mi día."
+    },
+    "@unpinFromMyDayAction": {
+        "description": "Etiqueta de acción masiva para desfijar elementos seleccionados de Mi día."
+    },
+    "@moveToProjectAction": {
+        "description": "Etiqueta de acción masiva para mover elementos seleccionados a un proyecto."
+    },
+    "@completeSeriesAction": {
+        "description": "Etiqueta de acción masiva para completar una serie de tareas."
+    },
+    "@selectValuesHint": {
+        "description": "Texto de ayuda para seleccionar valores en editores/seleccionadores."
+    },
+    "@projectCompletedLabel": {
+        "description": "Etiqueta mostrada para indicar que un proyecto está completado."
+    },
+    "@selectProjectTitle": {
+        "description": "Título de la pantalla/diálogo para seleccionar un proyecto."
+    },
+    "@projectPickerNoProjectInbox": {
+        "description": "Opción del selector de proyectos que significa sin proyecto (Bandeja de entrada)."
+    },
+    "@projectPickerRecentTitle": {
+        "description": "Título/encabezado para proyectos recientes en el selector de proyectos."
+    },
+    "@projectPickerSearchHint": {
+        "description": "Texto de ayuda del campo de búsqueda en el selector de proyectos."
+    },
+    "@projectPickerNoMatchingProjects": {
+        "description": "Estado vacío mostrado cuando la búsqueda de proyectos no tiene coincidencias."
+    },
+    "@doneLabel": {
+        "description": "Etiqueta genérica de acción para finalizar/confirmar."
+    },
+    "@recurrenceTitle": {
+        "description": "Título para la configuración de repetición/recurrencia."
+    },
+    "@recurrenceRepeatFromCompletionLabel": {
+        "description": "Etiqueta para la opción de recurrencia 'repetir desde la finalización'."
+    },
+    "@recurrenceSeriesEndedLabel": {
+        "description": "Etiqueta para finalizar una serie de repetición."
+    },
+    "@scheduleHelperText": {
+        "description": "Texto de ayuda que explica la diferencia entre planificado y entrega."
+    },
+    "@taskFormScheduleHelperText": {
+        "description": "Texto de ayuda en el formulario de tarea que explica planificado vs entrega."
+    },
+    "@valuesAlignedToTitle": {
+        "description": "Título/etiqueta que indica alineación con valores."
+    },
+    "@valuesNoneSelected": {
+        "description": "Etiqueta mostrada cuando no hay valores seleccionados."
+    },
+    "@valuesNoneInherited": {
+        "description": "Etiqueta mostrada cuando no hay valores heredados del proyecto."
+    },
+    "@valuesExplicitSelectionLabel": {
+        "description": "Etiqueta que indica que los valores fueron seleccionados explícitamente."
+    },
+    "@valuesAlignmentHelperText": {
+        "description": "Texto de ayuda que describe por qué importa la alineación con valores."
+    },
+    "@valuesInheritLabel": {
+        "description": "Etiqueta para heredar valores desde el proyecto."
+    },
+    "@valuesOverrideLabel": {
+        "description": "Etiqueta para anular valores heredados."
+    },
+    "@valuesInheritHelp": {
+        "description": "Texto de ayuda que explica el comportamiento de heredar valores."
+    },
+    "@valuesOverrideHelp": {
+        "description": "Texto de ayuda que explica el comportamiento de anular valores heredados."
+    },
+    "@valuesProjectHelp": {
+        "description": "Texto de ayuda que explica cómo elegir valores para una tarea."
+    },
+    "@valuesNoProjectSelected": {
+        "description": "Mensaje mostrado cuando se requiere un proyecto pero no hay ninguno seleccionado."
+    },
+    "@valuesInheritedFromProject": {
+        "description": "Etiqueta que indica que los valores se heredan del proyecto."
+    },
+    "@valuesProjectHasNoValues": {
+        "description": "Mensaje mostrado cuando el proyecto seleccionado no tiene valores."
+    },
+    "@valuesOptionalFooter": {
+        "description": "Texto de pie que indica que los valores son opcionales."
+    },
+    "@valuesPrimaryTooltip": {
+        "description": "Tooltip para la acción de marcar un valor como principal."
+    },
+    "@projectFormValuesRequired": {
+        "description": "Error de validación cuando se requiere al menos un valor."
+    },
+    "@myDayTitle": {
+        "description": "Título de la pantalla 'Mi día'."
+    },
+    "@myDayAlertBannerSingular": {
+        "description": "Banner de alertas de Mi día cuando hay exactamente 1 elemento fuera de Focus."
+    },
+    "@myDayAlertBannerPlural": {
+        "description": "Banner de alertas de Mi día cuando hay varios elementos fuera de Focus.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "@myDayAlertBannerReview": {
+        "description": "Acción/etiqueta para revisar los elementos fuera de Focus en Mi día."
+    },
+    "@alertTypeUrgent": {
+        "description": "Etiqueta del tipo de alerta: urgente."
+    },
+    "@alertTypeOverdue": {
+        "description": "Etiqueta del tipo de alerta: vencido/atrasado."
+    },
+    "@alertTypeNoValue": {
+        "description": "Etiqueta del tipo de alerta: sin valor asignado."
+    },
+    "@alertTypeLowPriority": {
+        "description": "Etiqueta del tipo de alerta: baja prioridad."
+    },
+    "@alertTypeQuotaFull": {
+        "description": "Etiqueta del tipo de alerta: cuota completa."
+    },
+    "@alertSeverityCritical": {
+        "description": "Etiqueta de severidad de alerta: crítica."
+    },
+    "@alertSeverityWarning": {
+        "description": "Etiqueta de severidad de alerta: advertencia."
+    },
+    "@alertSeverityNotice": {
+        "description": "Etiqueta de severidad de alerta: aviso."
+    },
+    "@dailyTaskLimitLabel": {
+        "description": "Etiqueta para el ajuste de límite diario de tareas."
+    },
+    "@dailyTaskLimitHelper": {
+        "description": "Texto de ayuda para el ajuste de límite diario de tareas."
+    },
+    "@strategyTitle": {
+        "description": "Título para la sección/ajuste de estrategia."
+    },
+    "@enableNeglectWeightingLabel": {
+        "description": "Etiqueta del ajuste para habilitar balanceo por descuido (neglect weighting)."
+    },
+    "@enableNeglectWeightingHelper": {
+        "description": "Texto de ayuda para el ajuste de balanceo por descuido."
+    },
+    "@displayTitle": {
+        "description": "Título para la sección/ajustes de visualización."
+    },
+    "@showOrphanTaskCountLabel": {
+        "description": "Etiqueta del ajuste para mostrar el conteo de tareas huérfanas."
+    },
+    "@showProjectNextTaskLabel": {
+        "description": "Etiqueta del ajuste para mostrar la próxima tarea del proyecto."
+    },
+    "@settingsSaved": {
+        "description": "Mensaje de confirmación cuando la configuración se guarda correctamente."
+    },
+    "@settingsSaveError": {
+        "description": "Mensaje de error cuando falla el guardado de la configuración.",
+        "placeholders": {
+            "error": {
+                "type": "String",
+                "example": "Error de red"
+            }
+        }
+    },
+    "@settingsLoadError": {
+        "description": "Mensaje de error cuando falla la carga de la configuración.",
+        "placeholders": {
+            "error": {
+                "type": "String",
+                "example": "Error de red"
+            }
+        }
+    },
+    "@deleteValue": {
+        "description": "Etiqueta para eliminar un valor."
+    },
+    "@editValue": {
+        "description": "Etiqueta para editar un valor."
+    },
+    "@valueNotFound": {
+        "description": "Mensaje de error cuando no se puede encontrar un valor."
+    },
     "counterAppBarTitle": "Contador",
     "@counterAppBarTitle": {
         "description": "Texto mostrado en la AppBar de la página del contador"
@@ -596,9 +811,75 @@
     "@dateTomorrow": {
         "description": "Etiqueta de fecha relativa para mañana"
     },
+    "dateNextWeek": "La semana que viene",
+    "@dateNextWeek": {
+        "description": "Etiqueta de fecha relativa para la próxima semana"
+    },
     "dateYesterday": "Ayer",
     "@dateYesterday": {
         "description": "Etiqueta de fecha relativa para ayer"
+    },
+    "changeButton": "Cambiar",
+    "@changeButton": {
+        "description": "Etiqueta genérica de botón para cambiar una selección"
+    },
+    "snoozeTitle": "Posponer",
+    "@snoozeTitle": {
+        "description": "Título de la hoja/menú de posponer"
+    },
+    "snoozeSubtitle": "Establece un nuevo día planificado (disponibilidad).",
+    "@snoozeSubtitle": {
+        "description": "Subtítulo que explica el comportamiento de posponer"
+    },
+    "pickDateButton": "Elegir fecha…",
+    "@pickDateButton": {
+        "description": "Etiqueta de botón/fila que abre un selector de fecha"
+    },
+    "focusModeHelperLine": "Modo: {mode} · {tagline}",
+    "@focusModeHelperLine": {
+        "description": "Línea de ayuda que describe el modo de enfoque activo.",
+        "placeholders": {
+            "mode": {
+                "type": "String",
+                "example": "Equilibrado"
+            },
+            "tagline": {
+                "type": "String",
+                "example": "Mantener mis valores en equilibrio"
+            }
+        }
+    },
+    "showMoreCountLabel": "Mostrar {count} más · {label} ({total})",
+    "@showMoreCountLabel": {
+        "description": "Etiqueta para expandir una lista y mostrar más elementos.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            },
+            "label": {
+                "type": "String",
+                "example": "Focus"
+            },
+            "total": {
+                "type": "int",
+                "example": "12"
+            }
+        }
+    },
+    "labelWithTotal": "{label} ({total})",
+    "@labelWithTotal": {
+        "description": "Etiqueta genérica con un sufijo de recuento total.",
+        "placeholders": {
+            "label": {
+                "type": "String",
+                "example": "Focus"
+            },
+            "total": {
+                "type": "int",
+                "example": "12"
+            }
+        }
     },
     "dateInDays": "En {days} días",
     "@dateInDays": {
@@ -1383,6 +1664,164 @@
         }
     },
     "myDayTitle": "Mi día",
+    "@myDayPreparingTitle": {
+        "description": "Título mostrado mientras Mi día se está preparando/cargando."
+    },
+    "@myDayPreparingSubtitle": {
+        "description": "Subtítulo mostrado mientras Mi día se está preparando/cargando."
+    },
+    "myDayPreparingTitle": "Preparando mi día",
+    "myDayPreparingSubtitle": "Cargando tus sugerencias y el contexto de hoy…",
+    "myDayAddedToFocusSnackbar": "Añadido al foco de hoy.",
+    "@myDayAddedToFocusSnackbar": {
+        "description": "Mensaje mostrado tras añadir una tarea al bloque Focus de hoy desde Mi día."
+    },
+    "myDayAddedToTodaySnackbar": "Añadido para hoy.",
+    "@myDayAddedToTodaySnackbar": {
+        "description": "Mensaje mostrado tras añadir una tarea a hoy desde Mi día."
+    },
+    "myDayRitualAllSetTitle": "Todo listo para hoy.",
+    "@myDayRitualAllSetTitle": {
+        "description": "Título mostrado cuando el usuario completó todo lo planificado para hoy en el ritual de Mi día."
+    },
+    "myDayRitualAllSetSubtitle": "Has completado todo lo que planificaste hoy.",
+    "@myDayRitualAllSetSubtitle": {
+        "description": "Subtítulo mostrado cuando el usuario completó todo lo planificado para hoy en el ritual de Mi día."
+    },
+    "myDayRitualAddOneMoreFocus": "Añadir un foco más",
+    "@myDayRitualAddOneMoreFocus": {
+        "description": "Etiqueta del botón para añadir un elemento más de foco durante el ritual de Mi día."
+    },
+    "myDayRitualOverdueDueTitle": "Vencidas y por vencer",
+    "@myDayRitualOverdueDueTitle": {
+        "description": "Título de sección para tareas vencidas y por vencer en el ritual de Mi día."
+    },
+    "myDayRitualStartsTodayTitle": "Empiezan hoy",
+    "@myDayRitualStartsTodayTitle": {
+        "description": "Título de sección para tareas que empiezan hoy en el ritual de Mi día."
+    },
+    "myDayRitualTodaysFocusTitle": "Focus de hoy",
+    "@myDayRitualTodaysFocusTitle": {
+        "description": "Título de sección para el bloque Focus de hoy en el ritual de Mi día."
+    },
+    "myDayRitualNotInTodayLabel": "fuera del plan de hoy",
+    "@myDayRitualNotInTodayLabel": {
+        "description": "Sufijo para indicar elementos que no están en el plan de hoy."
+    },
+    "myDayRitualCaughtUpTitle": "Estás al día.",
+    "@myDayRitualCaughtUpTitle": {
+        "description": "Título del estado vacío que indica que no hay elementos vencidos o por vencer en el plan."
+    },
+    "myDayRitualDueEmptySubtitle": "No hay elementos vencidos ni por vencer en tu plan.",
+    "@myDayRitualDueEmptySubtitle": {
+        "description": "Subtítulo del estado vacío para la sección de vencidas y por vencer cuando no hay elementos."
+    },
+    "myDayRitualNothingAddedHereYetTitle": "Aún no se ha añadido nada aquí.",
+    "@myDayRitualNothingAddedHereYetTitle": {
+        "description": "Título del estado vacío cuando todavía no se aceptó nada en una sección."
+    },
+    "myDayRitualReviewAvailableAboveSubtitle": "Revisa lo disponible arriba si quieres añadir algo.",
+    "@myDayRitualReviewAvailableAboveSubtitle": {
+        "description": "Subtítulo del estado vacío que invita a revisar lo disponible y añadirlo."
+    },
+    "myDayRitualStartsEmptyTitle": "No hay tareas programadas para empezar hoy.",
+    "@myDayRitualStartsEmptyTitle": {
+        "description": "Título del estado vacío para la sección de empieza hoy cuando no hay tareas."
+    },
+    "myDayRitualStartsEmptySubtitle": "Esta sección aparecerá cuando haya tareas disponibles.",
+    "@myDayRitualStartsEmptySubtitle": {
+        "description": "Subtítulo del estado vacío que explica cuándo aparecerá la sección de empieza hoy."
+    },
+    "myDayRitualFocusEmptyTitle": "No se aceptó nada aquí.",
+    "@myDayRitualFocusEmptyTitle": {
+        "description": "Título del estado vacío para la sección Focus de hoy cuando no se aceptó nada."
+    },
+    "myDayRitualFocusEmptySubtitle": "No hay elementos de Focus aceptados para hoy.",
+    "@myDayRitualFocusEmptySubtitle": {
+        "description": "Subtítulo del estado vacío para la sección Focus de hoy cuando no se aceptó nada."
+    },
+    "myDayRitualNothingAddedYetTitle": "Aún no se ha añadido nada.",
+    "@myDayRitualNothingAddedYetTitle": {
+        "description": "Título del estado vacío usado cuando una sección tiene cero aceptadas pero sí elementos disponibles para añadir."
+    },
+    "myDayRitualOtherNotInTodayHint": "{count, plural, one{1 tarea} other{{count} tareas}} fuera del plan de hoy. Toca para revisar y añadir.",
+    "@myDayRitualOtherNotInTodayHint": {
+        "description": "Pista mostrada cuando hay elementos que aún no se añadieron al plan de hoy.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "myDayRitualShowFewer": "Mostrar menos",
+    "@myDayRitualShowFewer": {
+        "description": "Etiqueta del botón para contraer una lista expandida en la sección del ritual de Mi día."
+    },
+    "myDayRitualShowMore": "Mostrar {count} más ({total})",
+    "@myDayRitualShowMore": {
+        "description": "Etiqueta del botón para expandir una lista en la sección del ritual de Mi día.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            },
+            "total": {
+                "type": "int",
+                "example": "12"
+            }
+        }
+    },
+    "myDayRitualAcceptedCount": "{count, plural, one{1 aceptada} other{{count} aceptadas}}",
+    "@myDayRitualAcceptedCount": {
+        "description": "Etiqueta del recuento de aceptadas usada en los encabezados de sección.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "dotSeparator": " · ",
+    "@dotSeparator": {
+        "description": "Separador usado entre dos etiquetas cortas en línea."
+    },
+    "countWithLabel": "{count} {label}",
+    "@countWithLabel": {
+        "description": "Formateador genérico de recuento + etiqueta.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            },
+            "label": {
+                "type": "String",
+                "example": "fuera del plan de hoy"
+            }
+        }
+    },
+    "snoozePastDueDateTitle": "¿Posponer después de la fecha de entrega?",
+    "@snoozePastDueDateTitle": {
+        "description": "Título del diálogo de confirmación al posponer más allá de la fecha de entrega."
+    },
+    "snoozePastDueDateBody": "Esta tarea vence el {dueDate}. Posponerla hasta el {newStartDate} mantiene la fecha de entrega igual.",
+    "@snoozePastDueDateBody": {
+        "description": "Cuerpo del diálogo de confirmación al posponer más allá de la fecha de entrega.",
+        "placeholders": {
+            "dueDate": {
+                "type": "String",
+                "example": "21 ene 2026"
+            },
+            "newStartDate": {
+                "type": "String",
+                "example": "28 ene 2026"
+            }
+        }
+    },
+    "snoozeAnywayButton": "Posponer de todos modos",
+    "@snoozeAnywayButton": {
+        "description": "Etiqueta del botón para continuar posponiendo incluso si supera la fecha de entrega."
+    },
     "myDayAlertBannerSingular": "1 elemento fuera de Focus",
     "myDayAlertBannerPlural": "{count} elementos fuera de Focus",
     "myDayAlertBannerReview": "Revisar",
