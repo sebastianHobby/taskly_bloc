@@ -14,7 +14,6 @@ import 'package:taskly_bloc/presentation/features/journal/view/journal_trackers_
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/values_page.dart';
-import 'package:taskly_bloc/presentation/features/inbox/view/inbox_page.dart';
 import 'package:taskly_bloc/presentation/features/anytime/view/anytime_page.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_domain/taskly_domain.dart'
@@ -174,13 +173,6 @@ final router = GoRouter(
               scope: ValueScheduledScope(valueId: id),
             );
           },
-        ),
-
-        // Inbox is a new global MVP route. Implementation will move to a real
-        // feed screen as part of Package D follow-ups.
-        GoRoute(
-          path: Routing.screenPath('inbox'),
-          builder: (_, __) => const InboxPage(),
         ),
 
         // === ENTITY EDITOR ROUTES (NAV-01) ===

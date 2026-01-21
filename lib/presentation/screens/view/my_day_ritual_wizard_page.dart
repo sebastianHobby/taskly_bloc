@@ -11,8 +11,17 @@ import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_entities.dart';
 
+enum MyDayRitualWizardInitialSection { due, starts, suggested }
+
 class MyDayRitualWizardPage extends StatelessWidget {
-  const MyDayRitualWizardPage({super.key});
+  const MyDayRitualWizardPage({
+    super.key,
+    this.allowClose = false,
+    this.initialSection,
+  });
+
+  final bool allowClose;
+  final MyDayRitualWizardInitialSection? initialSection;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +42,18 @@ class MyDayRitualWizardPage extends StatelessWidget {
             );
           },
         ),
+        BlocListener<MyDayRitualBloc, MyDayRitualState>(
+          listenWhen: (previous, current) {
+            if (!allowClose) return false;
+            return previous is MyDayRitualReady &&
+                current is MyDayRitualReady &&
+                previous.navRequestId != current.navRequestId &&
+                current.nav == MyDayRitualNav.closeWizard;
+          },
+          listener: (context, state) {
+            Navigator.of(context).maybePop();
+          },
+        ),
       ],
       child: BlocBuilder<MyDayRitualBloc, MyDayRitualState>(
         builder: (context, ritualState) {
@@ -43,14 +64,25 @@ class MyDayRitualWizardPage extends StatelessWidget {
                   body: Center(child: CircularProgressIndicator()),
                 ),
                 MyDayRitualReady() => Scaffold(
+                  appBar: allowClose
+                      ? AppBar(
+                          leading: const CloseButton(),
+                          title: Text(context.l10n.myDayUpdatePlanTitle),
+                        )
+                      : null,
                   body: SafeArea(
                     bottom: false,
                     child: _RitualBody(
                       data: ritualState,
                       gateState: gateState,
+                      isResume: allowClose,
+                      initialSection: initialSection,
                     ),
                   ),
-                  bottomNavigationBar: _RitualBottomBar(data: ritualState),
+                  bottomNavigationBar: _RitualBottomBar(
+                    data: ritualState,
+                    closeOnConfirm: allowClose,
+                  ),
                 ),
               };
             },
@@ -62,16 +94,25 @@ class MyDayRitualWizardPage extends StatelessWidget {
 }
 
 class _RitualBody extends StatelessWidget {
-  const _RitualBody({required this.data, required this.gateState});
+  const _RitualBody({
+    required this.data,
+    required this.gateState,
+    required this.isResume,
+    required this.initialSection,
+  });
 
   final MyDayRitualReady data;
   final MyDayGateState gateState;
+  final bool isResume;
+  final MyDayRitualWizardInitialSection? initialSection;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final planned = data.planned;
     final curated = data.curated;
     final selected = data.selectedTaskIds;
+    final completedPicks = data.completedPicks;
 
     final gate = gateState is MyDayGateLoaded
         ? gateState as MyDayGateLoaded
@@ -81,8 +122,12 @@ class _RitualBody extends StatelessWidget {
       slivers: [
         SliverToBoxAdapter(
           child: _HeroHeader(
-            title: 'Choose what matters',
-            subtitle: 'My Day keeps you on track.',
+            title: isResume ? l10n.myDayUpdatePlanTitle : l10n.myDayRitualTitle,
+            subtitle: isResume
+                ? (completedPicks.isEmpty
+                      ? l10n.myDayUpdatePlanSubtitle
+                      : l10n.myDayUpdatePlanSubtitleWithCompleted)
+                : l10n.myDayRitualSubtitle,
           ),
         ),
         SliverPadding(
@@ -91,9 +136,11 @@ class _RitualBody extends StatelessWidget {
             child: _RitualCard(
               focusMode: data.focusMode,
               dayKeyUtc: data.dayKeyUtc,
+              suggestionsPerBatch: data.suggestionsPerBatch,
               planned: planned,
               dueWindowDays: data.dueWindowDays,
               curated: curated,
+              completedPicks: completedPicks,
               selected: selected,
               curatedReasons: data.curatedReasons,
               curatedReasonTooltips: data.curatedReasonTooltips,
@@ -111,6 +158,10 @@ class _RitualBody extends StatelessWidget {
               onAcceptAllCurated: () => context.read<MyDayRitualBloc>().add(
                 const MyDayRitualAcceptAllCurated(),
               ),
+              onGenerateMoreCurated: () => context.read<MyDayRitualBloc>().add(
+                const MyDayRitualMoreSuggestionsRequested(),
+              ),
+              initialSection: initialSection,
             ),
           ),
         ),
@@ -139,17 +190,23 @@ class _RitualBody extends StatelessWidget {
 }
 
 class _RitualBottomBar extends StatelessWidget {
-  const _RitualBottomBar({required this.data});
+  const _RitualBottomBar({required this.data, required this.closeOnConfirm});
 
   final MyDayRitualReady data;
+  final bool closeOnConfirm;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final selectedCount = data.selectedTaskIds.length;
-    final isEnabled = selectedCount > 0;
-    final label = isEnabled
-        ? 'Continue to My Day · $selectedCount'
-        : 'Select items to continue';
+    final isEnabled = closeOnConfirm || selectedCount > 0;
+    final label = closeOnConfirm
+        ? (selectedCount == 0
+              ? l10n.myDayClearMyDayLabel
+              : l10n.myDayUpdateMyDayLabel(selectedCount))
+        : (selectedCount == 0
+              ? l10n.myDaySelectItemsToContinueLabel
+              : l10n.myDayContinueToMyDayLabel(selectedCount));
 
     return SafeArea(
       top: false,
@@ -169,9 +226,43 @@ class _RitualBottomBar extends StatelessWidget {
               child: FilledButton(
                 onPressed: !isEnabled
                     ? null
-                    : () => context.read<MyDayRitualBloc>().add(
-                        const MyDayRitualConfirm(),
-                      ),
+                    : () async {
+                        if (closeOnConfirm && selectedCount == 0) {
+                          final ok = await showDialog<bool>(
+                            context: context,
+                            builder: (dialogContext) {
+                              final dialogL10n = dialogContext.l10n;
+                              return AlertDialog(
+                                title: Text(
+                                  dialogL10n.myDayClearPlanDialogTitle,
+                                ),
+                                content: Text(
+                                  dialogL10n.myDayClearPlanDialogBody,
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogContext).pop(false),
+                                    child: Text(dialogL10n.cancelLabel),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () =>
+                                        Navigator.of(dialogContext).pop(true),
+                                    child: Text(dialogL10n.clearLabel),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                          if (ok != true) return;
+                        }
+
+                        if (!context.mounted) return;
+
+                        context.read<MyDayRitualBloc>().add(
+                          MyDayRitualConfirm(closeOnSuccess: closeOnConfirm),
+                        );
+                      },
                 child: Text(label),
               ),
             ),
@@ -238,9 +329,11 @@ class _RitualCard extends StatefulWidget {
   const _RitualCard({
     required this.focusMode,
     required this.dayKeyUtc,
+    required this.suggestionsPerBatch,
     required this.planned,
     required this.dueWindowDays,
     required this.curated,
+    required this.completedPicks,
     required this.selected,
     required this.curatedReasons,
     required this.curatedReasonTooltips,
@@ -250,13 +343,17 @@ class _RitualCard extends StatefulWidget {
     required this.onAcceptAllDue,
     required this.onAcceptAllStarts,
     required this.onAcceptAllCurated,
+    required this.onGenerateMoreCurated,
+    required this.initialSection,
   });
 
   final FocusMode focusMode;
   final DateTime dayKeyUtc;
+  final int suggestionsPerBatch;
   final List<Task> planned;
   final int dueWindowDays;
   final List<Task> curated;
+  final List<Task> completedPicks;
   final Set<String> selected;
   final Map<String, String> curatedReasons;
   final Map<String, String> curatedReasonTooltips;
@@ -266,6 +363,8 @@ class _RitualCard extends StatefulWidget {
   final VoidCallback onAcceptAllDue;
   final VoidCallback onAcceptAllStarts;
   final VoidCallback onAcceptAllCurated;
+  final VoidCallback onGenerateMoreCurated;
+  final MyDayRitualWizardInitialSection? initialSection;
 
   @override
   State<_RitualCard> createState() => _RitualCardState();
@@ -276,9 +375,11 @@ class _RitualCardState extends State<_RitualCard> {
   static const _plannedPreviewTotal = 4;
   static const _curatedPreviewCount = 4;
 
-  late bool _dueExpanded;
-  late bool _startsExpanded;
-  late bool _curatedExpanded;
+  static const _bulkPickConfirmThreshold = 5;
+
+  final GlobalKey<State<StatefulWidget>> _dueHeaderKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _startsHeaderKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _suggestedHeaderKey = GlobalKey();
 
   @override
   void initState() {
@@ -286,7 +387,224 @@ class _RitualCardState extends State<_RitualCard> {
     _dueExpanded = widget.planned.length <= _plannedPreviewTotal;
     _startsExpanded = widget.planned.length <= _plannedPreviewTotal;
     _curatedExpanded = false;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final section = widget.initialSection;
+      if (section == null) return;
+
+      final context = switch (section) {
+        MyDayRitualWizardInitialSection.due => _dueHeaderKey.currentContext,
+        MyDayRitualWizardInitialSection.starts =>
+          _startsHeaderKey.currentContext,
+        MyDayRitualWizardInitialSection.suggested =>
+          _suggestedHeaderKey.currentContext,
+      };
+
+      if (context == null) return;
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+        alignment: 0.08,
+      );
+    });
   }
+
+  Future<void> _confirmPickAllDue(BuildContext context, {required int count}) {
+    if (count <= 0) return Future.value();
+    if (count <= _bulkPickConfirmThreshold) {
+      widget.onAcceptAllDue();
+      return Future.value();
+    }
+
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final l10n = sheetContext.l10n;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.myDayPickAllDueTitle,
+                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.myDayPickAllConfirmBody(count),
+                  style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          widget.onAcceptAllDue();
+                        },
+                        child: Text(l10n.myDayPickAllButton),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        child: Text(l10n.cancelLabel),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmPickAllStarts(
+    BuildContext context, {
+    required int count,
+  }) {
+    if (count <= 0) return Future.value();
+    if (count <= _bulkPickConfirmThreshold) {
+      widget.onAcceptAllStarts();
+      return Future.value();
+    }
+
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final l10n = sheetContext.l10n;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.myDayPickAllAvailableTitle,
+                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.myDayPickAllConfirmBody(count),
+                  style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          widget.onAcceptAllStarts();
+                        },
+                        child: Text(l10n.myDayPickAllButton),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        child: Text(l10n.cancelLabel),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmPickAllCurated(
+    BuildContext context, {
+    required int count,
+  }) {
+    if (count <= 0) return Future.value();
+    if (count <= _bulkPickConfirmThreshold) {
+      widget.onAcceptAllCurated();
+      return Future.value();
+    }
+
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final l10n = sheetContext.l10n;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.myDayPickAllSuggestedTitle,
+                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.myDayPickAllConfirmBody(count),
+                  style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          widget.onAcceptAllCurated();
+                        },
+                        child: Text(l10n.myDayPickAllButton),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        child: Text(l10n.cancelLabel),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  late bool _dueExpanded;
+  late bool _startsExpanded;
+  late bool _curatedExpanded;
 
   @override
   void didUpdateWidget(covariant _RitualCard oldWidget) {
@@ -309,6 +627,7 @@ class _RitualCardState extends State<_RitualCard> {
     final cs = Theme.of(context).colorScheme;
     final plannedCount = widget.planned.length;
     final curatedCount = widget.curated.length;
+    final completedCount = widget.completedPicks.length;
     final today = dateOnly(widget.dayKeyUtc);
     final dueWindowDays = widget.dueWindowDays.clamp(1, 30);
     final dueLimit = today.add(Duration(days: dueWindowDays - 1));
@@ -357,25 +676,73 @@ class _RitualCardState extends State<_RitualCard> {
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
         child: Column(
           children: [
+            if (completedCount > 0) ...[
+              _SubsectionHeader(
+                title: context.l10n.myDayCompletedSectionTitle,
+                count: completedCount,
+                subtitle: context.l10n.myDayCompletedSectionSubtitle,
+              ),
+              _TaskTileColumn(
+                dayKeyUtc: widget.dayKeyUtc,
+                tasks: widget.completedPicks,
+                selected: widget.selected,
+                reasonTextByTaskId: const <String, String>{},
+                reasonTooltipTextByTaskId: const <String, String>{},
+                enableSnooze: false,
+                enableSelection: false,
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                child: Divider(
+                  color: cs.outlineVariant,
+                  thickness: 1,
+                  height: 1,
+                ),
+              ),
+            ],
             if (plannedCount == 0)
-              const _EmptyPanel(
-                title: 'Nothing planned yet',
-                description: 'No tasks are due soon or available to start.',
+              _EmptyPanel(
+                title: context.l10n.myDayNothingPlannedYetTitle,
+                description: context.l10n.myDayNothingPlannedYetBody,
               )
             else
               Column(
                 children: [
                   if (due.isEmpty)
-                    const _SectionEmptyPanel(
-                      title: 'Overdue & due',
-                      description: "You're caught up.",
+                    _SectionEmptyPanel(
+                      title: context.l10n.myDayRitualOverdueDueTitle,
+                      description: context.l10n.myDayYoureCaughtUpBody,
                     )
                   else ...[
-                    _SubsectionHeader(
-                      title: 'Overdue & due',
-                      count: due.length,
-                      actionLabel: 'Add all due',
-                      onAction: widget.onAcceptAllDue,
+                    KeyedSubtree(
+                      key: _dueHeaderKey,
+                      child: _SubsectionHeader(
+                        title: context.l10n.myDayRitualOverdueDueTitle,
+                        count: due.length,
+                        action: PopupMenuButton<_DueMenuAction>(
+                          tooltip: MaterialLocalizations.of(
+                            context,
+                          ).moreButtonTooltip,
+                          onSelected: (action) {
+                            switch (action) {
+                              case _DueMenuAction.pickAllDue:
+                                _confirmPickAllDue(
+                                  context,
+                                  count: due.length,
+                                );
+                            }
+                          },
+                          itemBuilder: (context) {
+                            final l10n = context.l10n;
+                            return <PopupMenuEntry<_DueMenuAction>>[
+                              PopupMenuItem(
+                                value: _DueMenuAction.pickAllDue,
+                                child: Text(l10n.myDayPickAllDueMenuLabel),
+                              ),
+                            ];
+                          },
+                        ),
+                      ),
                     ),
                     _TaskTileColumn(
                       dayKeyUtc: widget.dayKeyUtc,
@@ -384,32 +751,57 @@ class _RitualCardState extends State<_RitualCard> {
                       reasonTextByTaskId: const <String, String>{},
                       reasonTooltipTextByTaskId: const <String, String>{},
                       enableSnooze: true,
+                      enableSelection: true,
                     ),
                     if (dueHasMore)
                       _ShowMoreRow(
                         isExpanded: _dueExpanded,
                         remainingCount: due.length - dueVisible.length,
                         totalCount: due.length,
-                        labelExpanded: 'Show fewer',
-                        labelCollapsed: 'Show all due items',
+                        labelExpanded: context.l10n.myDayShowFewerLabel,
+                        labelCollapsed: context.l10n.myDayShowAllDueItemsLabel,
                         onPressed: () =>
                             setState(() => _dueExpanded = !_dueExpanded),
                       ),
                   ],
                   if (starts.isEmpty)
-                    const _SectionEmptyPanel(
-                      title: 'Planned for today (or earlier)',
-                      description:
-                          'Tasks whose planned day is today or earlier. '
-                          'Nothing available right now.',
+                    _SectionEmptyPanel(
+                      title: context.l10n.myDayPlannedForTodayTitle,
+                      description: context.l10n.myDayPlannedForTodayEmptyBody,
                     )
                   else ...[
-                    _SubsectionHeader(
-                      title: 'Planned for today (or earlier)',
-                      count: starts.length,
-                      subtitle: 'Tasks whose planned day is today or earlier.',
-                      actionLabel: 'Add all available',
-                      onAction: widget.onAcceptAllStarts,
+                    KeyedSubtree(
+                      key: _startsHeaderKey,
+                      child: _SubsectionHeader(
+                        title: context.l10n.myDayPlannedForTodayTitle,
+                        count: starts.length,
+                        subtitle: context.l10n.myDayPlannedForTodaySubtitle,
+                        action: PopupMenuButton<_StartsMenuAction>(
+                          tooltip: MaterialLocalizations.of(
+                            context,
+                          ).moreButtonTooltip,
+                          onSelected: (action) {
+                            switch (action) {
+                              case _StartsMenuAction.pickAllAvailable:
+                                _confirmPickAllStarts(
+                                  context,
+                                  count: starts.length,
+                                );
+                            }
+                          },
+                          itemBuilder: (context) {
+                            final l10n = context.l10n;
+                            return <PopupMenuEntry<_StartsMenuAction>>[
+                              PopupMenuItem(
+                                value: _StartsMenuAction.pickAllAvailable,
+                                child: Text(
+                                  l10n.myDayPickAllAvailableMenuLabel,
+                                ),
+                              ),
+                            ];
+                          },
+                        ),
+                      ),
                     ),
                     _TaskTileColumn(
                       dayKeyUtc: widget.dayKeyUtc,
@@ -418,14 +810,15 @@ class _RitualCardState extends State<_RitualCard> {
                       reasonTextByTaskId: const <String, String>{},
                       reasonTooltipTextByTaskId: const <String, String>{},
                       enableSnooze: true,
+                      enableSelection: true,
                     ),
                     if (startsHasMore)
                       _ShowMoreRow(
                         isExpanded: _startsExpanded,
                         remainingCount: starts.length - startsVisible.length,
                         totalCount: starts.length,
-                        labelExpanded: 'Show fewer',
-                        labelCollapsed: 'Show all available',
+                        labelExpanded: context.l10n.myDayShowFewerLabel,
+                        labelCollapsed: context.l10n.myDayShowAllAvailableLabel,
                         onPressed: () =>
                             setState(() => _startsExpanded = !_startsExpanded),
                       ),
@@ -440,20 +833,33 @@ class _RitualCardState extends State<_RitualCard> {
                 height: 1,
               ),
             ),
-            _SuggestedHeader(
-              count: curatedCount,
-              focusMode: widget.focusMode,
-              needsSetup: needsSetup,
-              onStartSetup: widget.onStartSetup,
-              onChangeFocusMode: widget.onChangeFocusMode,
-              onAcceptAllCurated: widget.onAcceptAllCurated,
+
+            KeyedSubtree(
+              key: _suggestedHeaderKey,
+              child: _SuggestedHeader(
+                count: curatedCount,
+                focusMode: widget.focusMode,
+                needsSetup: needsSetup,
+                onStartSetup: widget.onStartSetup,
+                onChangeFocusMode: widget.onChangeFocusMode,
+                onPickAllCurated: () =>
+                    _confirmPickAllCurated(context, count: curatedCount),
+              ),
             ),
             if (needsSetup)
               _SuggestedSetupCard(gateState: widget.gateState!)
             else if (curatedCount == 0)
-              const _EmptyPanel(
-                title: 'No suggested picks yet',
-                description: 'Check back later or adjust your focus mode.',
+              _EmptyPanel(
+                title: context.l10n.myDaySuggestedCompleteTitle,
+                description: context.l10n.myDaySuggestedCompleteBody,
+                footer: Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: widget.onGenerateMoreCurated,
+                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                    label: Text(context.l10n.myDayGenerateNewBatchLabel),
+                  ),
+                ),
               )
             else
               Column(
@@ -465,7 +871,42 @@ class _RitualCardState extends State<_RitualCard> {
                     reasonTextByTaskId: widget.curatedReasons,
                     reasonTooltipTextByTaskId: widget.curatedReasonTooltips,
                     enableSnooze: false,
+                    enableSelection: true,
                   ),
+                  if (curatedCount >= widget.suggestionsPerBatch &&
+                      widget.curated.isNotEmpty &&
+                      widget.curated.every(
+                        (t) => widget.selected.contains(t.id),
+                      ))
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                        decoration: BoxDecoration(
+                          color: cs.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: cs.outlineVariant.withOpacity(0.6),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Suggested complete — generate another batch?',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: widget.onGenerateMoreCurated,
+                              child: Text(context.l10n.myDayGenerateLabel),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   if (curatedHasMore)
                     _ShowMoreRow(
                       isExpanded: _curatedExpanded,
@@ -491,20 +932,28 @@ class _RitualCardState extends State<_RitualCard> {
   }
 }
 
+enum _DueMenuAction { pickAllDue }
+
+enum _StartsMenuAction { pickAllAvailable }
+
+enum _SuggestedMenuAction { pickAllPicks }
+
 class _SubsectionHeader extends StatelessWidget {
   const _SubsectionHeader({
     required this.title,
     required this.count,
     this.subtitle,
-    this.actionLabel,
-    this.onAction,
+    this.action,
   });
 
   final String title;
   final int count;
   final String? subtitle;
-  final String? actionLabel;
-  final VoidCallback? onAction;
+
+  /// Optional trailing action widget (e.g. overflow menu).
+  ///
+  /// When provided, this is rendered instead of [actionLabel]/[onAction].
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -524,17 +973,7 @@ class _SubsectionHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              if (actionLabel != null && onAction != null)
-                TextButton(
-                  onPressed: onAction,
-                  child: Text(
-                    actionLabel!,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+              ?action,
             ],
           ),
           if (subtitle != null) ...[
@@ -559,7 +998,7 @@ class _SuggestedHeader extends StatelessWidget {
     required this.needsSetup,
     required this.onStartSetup,
     required this.onChangeFocusMode,
-    required this.onAcceptAllCurated,
+    required this.onPickAllCurated,
   });
 
   final int count;
@@ -567,7 +1006,7 @@ class _SuggestedHeader extends StatelessWidget {
   final bool needsSetup;
   final VoidCallback onStartSetup;
   final VoidCallback onChangeFocusMode;
-  final VoidCallback onAcceptAllCurated;
+  final VoidCallback onPickAllCurated;
 
   @override
   Widget build(BuildContext context) {
@@ -581,28 +1020,36 @@ class _SuggestedHeader extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Suggested for you · $count',
+                  context.l10n.myDaySuggestedForYouTitle(count),
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               if (!needsSetup)
-                TextButton(
-                  onPressed: onAcceptAllCurated,
-                  child: Text(
-                    'Add all picks',
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                PopupMenuButton<_SuggestedMenuAction>(
+                  tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+                  onSelected: (action) {
+                    switch (action) {
+                      case _SuggestedMenuAction.pickAllPicks:
+                        onPickAllCurated();
+                    }
+                  },
+                  itemBuilder: (context) {
+                    final l10n = context.l10n;
+                    return <PopupMenuEntry<_SuggestedMenuAction>>[
+                      PopupMenuItem(
+                        value: _SuggestedMenuAction.pickAllPicks,
+                        child: Text(l10n.myDayPickAllPicksMenuLabel),
+                      ),
+                    ];
+                  },
                 )
               else
                 TextButton(
                   onPressed: onStartSetup,
                   child: Text(
-                    'Start setup',
+                    context.l10n.myDayStartSetupLabel,
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
@@ -632,6 +1079,7 @@ class _SuggestedSetupCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final l10n = context.l10n;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
@@ -644,14 +1092,14 @@ class _SuggestedSetupCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Unlock suggestions',
+                l10n.myDayUnlockSuggestionsTitle,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Set up a focus mode and add your first value to get tailored picks here.',
+                l10n.myDayUnlockSuggestionsBody,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: cs.onSurfaceVariant,
                   height: 1.4,
@@ -661,12 +1109,12 @@ class _SuggestedSetupCard extends StatelessWidget {
               if (gateState.needsFocusModeSetup)
                 _GateRow(
                   icon: Icons.tune,
-                  label: 'Choose a focus mode',
+                  label: l10n.myDayChooseFocusModeLabel,
                 ),
               if (gateState.needsValuesSetup)
                 _GateRow(
                   icon: Icons.favorite_outline,
-                  label: 'Add your first value',
+                  label: l10n.myDayAddFirstValueLabel,
                 ),
               const SizedBox(height: 16),
               SizedBox(
@@ -832,6 +1280,7 @@ class _TaskTileColumn extends StatelessWidget {
     required this.reasonTextByTaskId,
     required this.reasonTooltipTextByTaskId,
     required this.enableSnooze,
+    required this.enableSelection,
   });
 
   final DateTime dayKeyUtc;
@@ -840,6 +1289,7 @@ class _TaskTileColumn extends StatelessWidget {
   final Map<String, String> reasonTextByTaskId;
   final Map<String, String> reasonTooltipTextByTaskId;
   final bool enableSnooze;
+  final bool enableSelection;
 
   @override
   Widget build(BuildContext context) {
@@ -853,6 +1303,7 @@ class _TaskTileColumn extends StatelessWidget {
             reasonText: reasonTextByTaskId[task.id],
             reasonTooltipText: reasonTooltipTextByTaskId[task.id],
             enableSnooze: enableSnooze,
+            enableSelection: enableSelection,
           ),
       ],
     );
@@ -915,6 +1366,7 @@ class _TaskTileRow extends StatelessWidget {
     required this.reasonText,
     required this.reasonTooltipText,
     required this.enableSnooze,
+    required this.enableSelection,
   });
 
   final DateTime dayKeyUtc;
@@ -923,6 +1375,7 @@ class _TaskTileRow extends StatelessWidget {
   final String? reasonText;
   final String? reasonTooltipText;
   final bool enableSnooze;
+  final bool enableSelection;
 
   @override
   Widget build(BuildContext context) {
@@ -934,19 +1387,25 @@ class _TaskTileRow extends StatelessWidget {
       showProjectLabel: false,
     );
 
-    return SelectableTaskEntityTile(
+    return TaskEntityTile(
       model: model,
-      selected: selected,
-      reasonText: reasonText,
-      reasonTooltipText: reasonTooltipText,
-      onToggleSelected: () => _toggleSelection(context),
-      onSnoozeRequested: !enableSnooze
-          ? null
-          : () => _showSnoozeSheet(
-              context,
-              dayKeyUtc: dayKeyUtc,
-              task: task,
-            ),
+      intent: TaskTileIntent.ritualPick(selected: selected),
+      supportingText: reasonText,
+      supportingTooltipText: reasonTooltipText,
+      markers: TaskTileMarkers(pinned: task.isPinned),
+      actions: TaskTileActions(
+        onTap: !enableSelection ? null : () => _toggleSelection(context),
+        onToggleSelected: !enableSelection
+            ? null
+            : () => _toggleSelection(context),
+        onSnoozeRequested: !enableSnooze
+            ? null
+            : () => _showSnoozeSheet(
+                context,
+                dayKeyUtc: dayKeyUtc,
+                task: task,
+              ),
+      ),
     );
   }
 
@@ -1093,10 +1552,12 @@ class _EmptyPanel extends StatelessWidget {
   const _EmptyPanel({
     required this.title,
     required this.description,
+    this.footer,
   });
 
   final String title;
   final String description;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -1122,6 +1583,10 @@ class _EmptyPanel extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
+            if (footer != null) ...[
+              const SizedBox(height: 12),
+              footer!,
+            ],
           ],
         ),
       ),

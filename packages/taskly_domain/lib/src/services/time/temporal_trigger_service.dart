@@ -45,6 +45,9 @@ class TemporalTriggerService {
   final StreamController<TemporalTriggerEvent> _eventsController =
       StreamController<TemporalTriggerEvent>.broadcast();
 
+  /// Broadcast stream of temporal triggers.
+  ///
+  /// Multiple coordinators/BLoCs are expected to listen concurrently.
   Stream<TemporalTriggerEvent> get events => _eventsController.stream;
 
   StreamSubscription<AppLifecycleEvent>? _lifecycleSub;

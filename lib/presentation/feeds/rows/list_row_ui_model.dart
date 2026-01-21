@@ -36,10 +36,18 @@ final class ProjectHeaderRowUiModel extends ListRowUiModel {
     required super.depth,
     required this.title,
     required this.projectRef,
+    this.trailingLabel,
+    this.isCollapsed,
   });
 
   final String title;
   final ProjectGroupingRef projectRef;
+
+  /// Optional right-aligned label for the header (e.g. item count).
+  final String? trailingLabel;
+
+  /// Optional collapse state when the header controls hiding/showing children.
+  final bool? isCollapsed;
 }
 
 final class TaskRowUiModel extends ListRowUiModel {

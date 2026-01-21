@@ -35,7 +35,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'scheduled',
       'someday',
       'journal',
-      'inbox',
       'values',
       'review_inbox',
       'settings',
@@ -43,7 +42,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
 
     const labels = <String, String>{
       'my_day': 'My Day',
-      'inbox': 'Inbox',
       'scheduled': 'Scheduled',
       'someday': 'Anytime',
       'journal': 'Journal',
@@ -57,7 +55,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'scheduled': 1,
       'someday': 2,
       'journal': 3,
-      'inbox': 4,
       'values': 5,
       'review_inbox': 9,
       'settings': 100,

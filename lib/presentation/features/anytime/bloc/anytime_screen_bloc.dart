@@ -7,10 +7,6 @@ sealed class AnytimeScreenEffect {
   const AnytimeScreenEffect();
 }
 
-final class AnytimeNavigateToInbox extends AnytimeScreenEffect {
-  const AnytimeNavigateToInbox();
-}
-
 final class AnytimeNavigateToProjectAnytime extends AnytimeScreenEffect {
   const AnytimeNavigateToProjectAnytime({required this.projectId});
 
@@ -50,6 +46,19 @@ final class AnytimeFocusOnlySet extends AnytimeScreenEvent {
   final bool enabled;
 }
 
+final class AnytimeShowStartLaterSet extends AnytimeScreenEvent {
+  const AnytimeShowStartLaterSet(this.enabled);
+
+  /// When true, items with a future planned day (start date) are included.
+  final bool enabled;
+}
+
+final class AnytimeSearchQueryChanged extends AnytimeScreenEvent {
+  const AnytimeSearchQueryChanged(this.query);
+
+  final String query;
+}
+
 final class AnytimeCreateTaskRequested extends AnytimeScreenEvent {
   const AnytimeCreateTaskRequested();
 }
@@ -75,26 +84,90 @@ final class AnytimeEffectHandled extends AnytimeScreenEvent {
 }
 
 sealed class AnytimeScreenState {
-  const AnytimeScreenState({required this.focusOnly, this.effect});
+  const AnytimeScreenState({
+    required this.focusOnly,
+    required this.showStartLaterItems,
+    required this.inboxCollapsed,
+    required this.searchQuery,
+    this.effect,
+  });
 
   final bool focusOnly;
+
+  /// When true, items with a future planned day (start date) are included.
+  final bool showStartLaterItems;
+
+  /// Whether the global Inbox section in Anytime is collapsed.
+  final bool inboxCollapsed;
+
+  /// Ephemeral search query for the current route/scope.
+  final String searchQuery;
 
   final AnytimeScreenEffect? effect;
 }
 
 final class AnytimeScreenReady extends AnytimeScreenState {
-  const AnytimeScreenReady({required super.focusOnly, super.effect});
+  const AnytimeScreenReady({
+    required super.focusOnly,
+    required super.showStartLaterItems,
+    required super.inboxCollapsed,
+    required super.searchQuery,
+    super.effect,
+  });
 }
 
 class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
   AnytimeScreenBloc({AnytimeScope? scope})
     : _scope = scope,
-      super(const AnytimeScreenReady(focusOnly: false)) {
+      super(
+        const AnytimeScreenReady(
+          focusOnly: false,
+          showStartLaterItems: false,
+          inboxCollapsed: false,
+          searchQuery: '',
+        ),
+      ) {
     on<AnytimeFocusOnlyToggled>((event, emit) {
-      emit(AnytimeScreenReady(focusOnly: !state.focusOnly));
+      emit(
+        AnytimeScreenReady(
+          focusOnly: !state.focusOnly,
+          showStartLaterItems: state.showStartLaterItems,
+          inboxCollapsed: state.inboxCollapsed,
+          searchQuery: state.searchQuery,
+        ),
+      );
     });
     on<AnytimeFocusOnlySet>((event, emit) {
-      emit(AnytimeScreenReady(focusOnly: event.enabled));
+      emit(
+        AnytimeScreenReady(
+          focusOnly: event.enabled,
+          showStartLaterItems: state.showStartLaterItems,
+          inboxCollapsed: state.inboxCollapsed,
+          searchQuery: state.searchQuery,
+        ),
+      );
+    });
+
+    on<AnytimeShowStartLaterSet>((event, emit) {
+      emit(
+        AnytimeScreenReady(
+          focusOnly: state.focusOnly,
+          showStartLaterItems: event.enabled,
+          inboxCollapsed: state.inboxCollapsed,
+          searchQuery: state.searchQuery,
+        ),
+      );
+    });
+
+    on<AnytimeSearchQueryChanged>((event, emit) {
+      emit(
+        AnytimeScreenReady(
+          focusOnly: state.focusOnly,
+          showStartLaterItems: state.showStartLaterItems,
+          inboxCollapsed: state.inboxCollapsed,
+          searchQuery: event.query,
+        ),
+      );
     });
 
     on<AnytimeCreateTaskRequested>((event, emit) {
@@ -102,6 +175,9 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
       emit(
         AnytimeScreenReady(
           focusOnly: state.focusOnly,
+          showStartLaterItems: state.showStartLaterItems,
+          inboxCollapsed: state.inboxCollapsed,
+          searchQuery: state.searchQuery,
           effect: AnytimeNavigateToTaskNew(
             defaultProjectId: defaultProjectId,
             defaultValueId: defaultValueId,
@@ -114,6 +190,9 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
       emit(
         AnytimeScreenReady(
           focusOnly: state.focusOnly,
+          showStartLaterItems: state.showStartLaterItems,
+          inboxCollapsed: state.inboxCollapsed,
+          searchQuery: state.searchQuery,
           effect: AnytimeOpenProjectNew(
             openToValues: _scope is AnytimeValueScope,
           ),
@@ -127,6 +206,9 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
       emit(
         AnytimeScreenReady(
           focusOnly: state.focusOnly,
+          showStartLaterItems: state.showStartLaterItems,
+          inboxCollapsed: state.inboxCollapsed,
+          searchQuery: state.searchQuery,
           effect: AnytimeNavigateToTaskEdit(taskId: id),
         ),
       );
@@ -138,7 +220,9 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           emit(
             AnytimeScreenReady(
               focusOnly: state.focusOnly,
-              effect: const AnytimeNavigateToInbox(),
+              showStartLaterItems: state.showStartLaterItems,
+              inboxCollapsed: !state.inboxCollapsed,
+              searchQuery: state.searchQuery,
             ),
           );
         case ProjectProjectGroupingRef(:final projectId):
@@ -147,6 +231,9 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           emit(
             AnytimeScreenReady(
               focusOnly: state.focusOnly,
+              showStartLaterItems: state.showStartLaterItems,
+              inboxCollapsed: state.inboxCollapsed,
+              searchQuery: state.searchQuery,
               effect: AnytimeNavigateToProjectAnytime(projectId: id),
             ),
           );
@@ -155,7 +242,14 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
 
     on<AnytimeEffectHandled>((event, emit) {
       if (state.effect == null) return;
-      emit(AnytimeScreenReady(focusOnly: state.focusOnly));
+      emit(
+        AnytimeScreenReady(
+          focusOnly: state.focusOnly,
+          showStartLaterItems: state.showStartLaterItems,
+          inboxCollapsed: state.inboxCollapsed,
+          searchQuery: state.searchQuery,
+        ),
+      );
     });
   }
 

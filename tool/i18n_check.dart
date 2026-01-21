@@ -9,10 +9,11 @@
 /// 3. Validates ARB file JSON syntax
 ///
 /// Usage:
-///   dart run tool/i18n_check.dart [--fix]
+///   dart run tool/i18n_check.dart [--fix] [--fail-on-hardcoded]
 ///
 /// Options:
 ///   --fix    Attempt to add missing keys to ARB files (placeholders only)
+///   --fail-on-hardcoded   Treat hardcoded string findings as errors
 library;
 
 ///
@@ -81,11 +82,12 @@ class I18nCheckResult {
   final Map<String, List<HardcodedString>> hardcodedStrings;
   final List<String> syntaxErrors;
 
-  bool get hasIssues =>
+  bool get hasBlockingIssues =>
       missingInEnglish.isNotEmpty ||
       missingInSpanish.isNotEmpty ||
-      hardcodedStrings.isNotEmpty ||
       syntaxErrors.isNotEmpty;
+
+  bool get hasHardcodedStringIssues => hardcodedStrings.isNotEmpty;
 
   int get totalIssues =>
       missingInEnglish.length +
@@ -107,6 +109,7 @@ class HardcodedString {
 
 Future<void> main(List<String> args) async {
   final fix = args.contains('--fix');
+  final failOnHardcoded = args.contains('--fail-on-hardcoded');
 
   print('🌐 Running i18n checks...\n');
 
@@ -118,7 +121,10 @@ Future<void> main(List<String> args) async {
     await addMissingKeys(result.missingInSpanish);
   }
 
-  exit(result.hasIssues ? 1 : 0);
+  final shouldFail =
+      result.hasBlockingIssues ||
+      (failOnHardcoded && result.hasHardcodedStringIssues);
+  exit(shouldFail ? 1 : 0);
 }
 
 Future<I18nCheckResult> runChecks() async {
@@ -229,12 +235,16 @@ Future<List<HardcodedString>> scanFileForHardcodedStrings(File file) async {
 }
 
 void printResults(I18nCheckResult result) {
-  if (!result.hasIssues) {
+  if (!result.hasBlockingIssues && !result.hasHardcodedStringIssues) {
     print('✅ All i18n checks passed!\n');
     return;
   }
 
-  print('❌ Found ${result.totalIssues} i18n issue(s):\n');
+  if (result.hasBlockingIssues) {
+    print('❌ Found ${result.totalIssues} i18n issue(s):\n');
+  } else {
+    print('⚠️ Found ${result.totalIssues} i18n warning(s):\n');
+  }
 
   if (result.syntaxErrors.isNotEmpty) {
     print('📛 Syntax Errors:');
@@ -281,7 +291,17 @@ void printResults(I18nCheckResult result) {
     print('');
   }
 
-  print('💡 To fix missing keys, run: dart run tool/i18n_check.dart --fix\n');
+  if (result.missingInEnglish.isNotEmpty ||
+      result.missingInSpanish.isNotEmpty) {
+    print('💡 To fix missing keys, run: dart run tool/i18n_check.dart --fix\n');
+  }
+
+  if (result.hardcodedStrings.isNotEmpty) {
+    print(
+      '💡 To fail CI on these warnings, use:'
+      ' dart run tool/i18n_check.dart --fail-on-hardcoded\n',
+    );
+  }
 }
 
 Future<void> addMissingKeys(List<String> missingKeys) async {

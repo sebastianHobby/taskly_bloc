@@ -52,7 +52,10 @@ class AllocationOrchestrator {
   /// This intentionally does **not** keep a live stream subscription.
   /// Callers should re-trigger this explicitly (e.g. on ritual open, day
   /// boundary, or app resume).
-  Future<AllocationResult> getAllocationSnapshot({DateTime? nowUtc}) async {
+  Future<AllocationResult> getAllocationSnapshot({
+    DateTime? nowUtc,
+    int? maxTasksOverride,
+  }) async {
     final resolvedNowUtc = nowUtc ?? _clock.nowUtc();
     final todayUtc = _dayKeyService.todayDayKeyUtc(nowUtc: resolvedNowUtc);
 
@@ -78,6 +81,7 @@ class AllocationOrchestrator {
       allocationConfig: allocationConfig,
       nowUtc: resolvedNowUtc,
       todayDayKeyUtc: todayUtc,
+      maxTasksOverride: maxTasksOverride,
     );
   }
 
@@ -87,11 +91,14 @@ class AllocationOrchestrator {
     required AllocationConfig allocationConfig,
     required DateTime nowUtc,
     required DateTime todayDayKeyUtc,
+    int? maxTasksOverride,
   }) async {
+    final maxTasks = maxTasksOverride ?? allocationConfig.suggestionsPerBatch;
+
     AppLog.routine(
       'domain.allocation',
       'Compute: ${tasks.length} tasks, ${projects.length} projects, '
-          'dailyLimit=${allocationConfig.dailyLimit}',
+          'maxTasks=$maxTasks',
     );
 
     // Ensure values exist (soft-gate).
@@ -116,7 +123,7 @@ class AllocationOrchestrator {
       );
     }
 
-    if (allocationConfig.dailyLimit == 0) {
+    if (maxTasks <= 0) {
       return AllocationResult(
         allocatedTasks: const [],
         reasoning: const AllocationReasoning(
@@ -168,6 +175,7 @@ class AllocationOrchestrator {
       allocationConfig,
       nowUtc: nowUtc,
       todayDayKeyUtc: todayDayKeyUtc,
+      maxTasksOverride: maxTasksOverride,
     );
 
     final allAllocatedTasks = [
@@ -204,6 +212,7 @@ class AllocationOrchestrator {
     AllocationConfig config, {
     required DateTime nowUtc,
     required DateTime todayDayKeyUtc,
+    int? maxTasksOverride,
   }) async {
     // Get all values first - needed for both ranking check and allocation
     final values = await _valueRepository.getAll();
@@ -279,12 +288,14 @@ class AllocationOrchestrator {
     }
 
     // Run allocation
+    final maxTasks = maxTasksOverride ?? config.suggestionsPerBatch;
+
     final parameters = AllocationParameters(
       nowUtc: nowUtc,
       todayDayKeyUtc: todayDayKeyUtc,
       tasks: tasks,
       categories: categories,
-      maxTasks: config.dailyLimit,
+      maxTasks: maxTasks,
       taskUrgencyThresholdDays: settings.taskUrgencyThresholdDays,
       keepValuesInBalance:
           settings.enableNeglectWeighting && completionsByValue.isNotEmpty,

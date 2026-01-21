@@ -14,8 +14,6 @@ import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/my_day_ritual_sections_card.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_ritual_wizard_page.dart';
-import 'package:taskly_core/logging.dart';
-import 'package:taskly_domain/core.dart' as domain;
 
 class MyDayPage extends StatelessWidget {
   const MyDayPage({super.key});
@@ -64,14 +62,7 @@ class MyDayPage extends StatelessWidget {
           if (prevReady?.dayKeyUtc != nextReady?.dayKeyUtc) return true;
           return false;
         },
-        listener: (_, state) {
-          final ready = state is MyDayRitualReady ? state : null;
-          myDayTrace(
-            'MyDayPage gate: state=${state.runtimeType} '
-            'needsRitual=${ready?.needsRitual} '
-            'dayKey=${ready?.dayKeyUtc.toIso8601String()}',
-          );
-        },
+        listener: (_, state) {},
         child: BlocBuilder<MyDayRitualBloc, MyDayRitualState>(
           builder: (context, ritualState) {
             final needsRitual =
@@ -123,7 +114,10 @@ class MyDayPage extends StatelessWidget {
               builder: (context, selectionState) {
                 return Scaffold(
                   appBar: selectionState.isSelectionMode
-                      ? SelectionAppBar(baseTitle: 'My Day', onExit: () {})
+                      ? SelectionAppBar(
+                          baseTitle: context.l10n.myDayTitle,
+                          onExit: () {},
+                        )
                       : AppBar(
                           title: Text(context.l10n.myDayTitle),
                           actions: TasklyAppBarActions.withAttentionBell(
@@ -157,263 +151,29 @@ class MyDayPage extends StatelessWidget {
 class _MyDayLoadedBody extends StatelessWidget {
   const _MyDayLoadedBody();
 
-  Future<void> _showAddOneMoreFocusSheet(
+  Future<void> _openRitualResume(
     BuildContext context, {
-    required Set<String> excludedTaskIds,
-  }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) {
-        final theme = Theme.of(context);
+    MyDayRitualWizardInitialSection? initialSection,
+  }) async {
+    final ritualBloc = context.read<MyDayRitualBloc>();
+    final gateBloc = context.read<MyDayGateBloc>();
 
-        final ritualState = context.watch<MyDayRitualBloc>().state;
-        if (ritualState is! MyDayRitualReady) {
-          return const SizedBox.shrink();
-        }
+    ritualBloc.add(const MyDayRitualStarted());
 
-        final available = ritualState.curated
-            .where((t) => !excludedTaskIds.contains(t.id))
-            .toList(growable: false);
-
-        return SafeArea(
-          top: false,
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Add one more focus',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Only if you feel like it.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (available.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      'No extra focus suggestions right now.',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  )
-                else
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 520),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: available.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final task = available[index];
-                        final reason = ritualState.curatedReasons[task.id];
-
-                        return ListTile(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: theme.colorScheme.outlineVariant
-                                  .withOpacity(0.6),
-                            ),
-                          ),
-                          tileColor: theme.colorScheme.surface,
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                          contentPadding: const EdgeInsets.fromLTRB(
-                            12,
-                            10,
-                            10,
-                            10,
-                          ),
-                          title: Text(
-                            task.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: reason != null && reason.isNotEmpty
-                              ? Text(
-                                  reason,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                )
-                              : null,
-                          trailing: Icon(
-                            Icons.add_rounded,
-                            color: theme.colorScheme.primary,
-                          ),
-                          onTap: () {
-                            context.read<MyDayRitualBloc>().add(
-                              MyDayRitualAppendToToday(
-                                bucket: MyDayRitualAppendBucket.focus,
-                                taskId: task.id,
-                              ),
-                            );
-                            Navigator.of(context).pop();
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  context.l10n.myDayAddedToFocusSnackbar,
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(context.l10n.doneButton),
-                ),
-              ],
-            ),
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => MultiBlocProvider(
+          providers: [
+            BlocProvider<MyDayRitualBloc>.value(value: ritualBloc),
+            BlocProvider<MyDayGateBloc>.value(value: gateBloc),
+          ],
+          child: MyDayRitualWizardPage(
+            allowClose: true,
+            initialSection: initialSection,
           ),
-        );
-      },
-    );
-  }
-
-  Future<void> _showAddMissingSheet(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required List<domain.Task> tasks,
-    required MyDayRitualAppendBucket bucket,
-  }) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) {
-        final theme = Theme.of(context);
-        final justAdded = <String>{};
-
-        return SafeArea(
-          top: false,
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
-            ),
-            child: StatefulBuilder(
-              builder: (context, setState) {
-                final visible = tasks
-                    .where((t) => !justAdded.contains(t.id))
-                    .toList(growable: false);
-
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (visible.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Text(
-                          'Nothing to add right now.',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                      )
-                    else
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 520),
-                        child: ListView.separated(
-                          shrinkWrap: true,
-                          itemCount: visible.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 8),
-                          itemBuilder: (context, index) {
-                            final task = visible[index];
-
-                            return ListTile(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: BorderSide(
-                                  color: theme.colorScheme.outlineVariant
-                                      .withOpacity(0.6),
-                                ),
-                              ),
-                              tileColor: theme.colorScheme.surface,
-                              dense: true,
-                              visualDensity: VisualDensity.compact,
-                              contentPadding: const EdgeInsets.fromLTRB(
-                                12,
-                                10,
-                                10,
-                                10,
-                              ),
-                              title: Text(
-                                task.name,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              trailing: Icon(
-                                Icons.add_rounded,
-                                color: theme.colorScheme.primary,
-                              ),
-                              onTap: () {
-                                context.read<MyDayRitualBloc>().add(
-                                  MyDayRitualAppendToToday(
-                                    bucket: bucket,
-                                    taskId: task.id,
-                                  ),
-                                );
-                                setState(() => justAdded.add(task.id));
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      context.l10n.myDayAddedToTodaySnackbar,
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(context.l10n.doneButton),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -441,9 +201,6 @@ class _MyDayLoadedBody extends StatelessWidget {
             :final selectedTotalCount,
             :final missingDueCount,
             :final missingStartsCount,
-            :final missingDueTasks,
-            :final missingStartsTasks,
-            :final todaySelectedTaskIds,
           ) =>
             SafeArea(
               bottom: false,
@@ -454,52 +211,61 @@ class _MyDayLoadedBody extends StatelessWidget {
                     sliver: SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.only(top: 10),
-                        child: MyDayRitualSectionsCard(
-                          acceptedDue: acceptedDue,
-                          acceptedStarts: acceptedStarts,
-                          acceptedFocus: acceptedFocus,
-                          focusReasons: focusReasons,
-                          showCompletionMessage:
-                              selectedTotalCount > 0 &&
-                              acceptedDue.isEmpty &&
-                              acceptedStarts.isEmpty &&
-                              acceptedFocus.isEmpty,
-                          onAddOneMoreFocus: () => _showAddOneMoreFocusSheet(
-                            context,
-                            excludedTaskIds: todaySelectedTaskIds,
-                          ),
-                          dueCounts: MyDayBucketCounts(
-                            acceptedCount: dueAcceptedTotalCount,
-                            otherCount: missingDueCount,
-                          ),
-                          startsCounts: MyDayBucketCounts(
-                            acceptedCount: startsAcceptedTotalCount,
-                            otherCount: missingStartsCount,
-                          ),
-                          onAddMissingDue: missingDueCount > 0
-                              ? () => _showAddMissingSheet(
-                                  context,
-                                  title: 'Add overdue & due',
-                                  subtitle:
-                                      "These were eligible when you planned today, but you didn't add them.",
-                                  tasks: missingDueTasks,
-                                  bucket: MyDayRitualAppendBucket.due,
-                                )
-                              : null,
-                          onAddMissingStarts: missingStartsCount > 0
-                              ? () => _showAddMissingSheet(
-                                  context,
-                                  title: 'Add starts today',
-                                  subtitle:
-                                      "These were eligible when you planned today, but you didn't add them.",
-                                  tasks: missingStartsTasks,
-                                  bucket: MyDayRitualAppendBucket.starts,
-                                )
-                              : null,
-                          focusCounts: MyDayBucketCounts(
-                            acceptedCount: focusAcceptedTotalCount,
-                            otherCount: 0,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _UpdatePlanCard(
+                              selectedTotalCount: selectedTotalCount,
+                              onUpdatePlan: () => _openRitualResume(context),
+                            ),
+                            const SizedBox(height: 10),
+                            MyDayRitualSectionsCard(
+                              acceptedDue: acceptedDue,
+                              acceptedStarts: acceptedStarts,
+                              acceptedFocus: acceptedFocus,
+                              focusReasons: focusReasons,
+                              showCompletionMessage:
+                                  selectedTotalCount > 0 &&
+                                  acceptedDue.isEmpty &&
+                                  acceptedStarts.isEmpty &&
+                                  acceptedFocus.isEmpty,
+                              onAddOneMoreFocus: selectedTotalCount > 0
+                                  ? () => _openRitualResume(
+                                      context,
+                                      initialSection:
+                                          MyDayRitualWizardInitialSection
+                                              .suggested,
+                                    )
+                                  : null,
+                              dueCounts: MyDayBucketCounts(
+                                acceptedCount: dueAcceptedTotalCount,
+                                otherCount: missingDueCount,
+                              ),
+                              startsCounts: MyDayBucketCounts(
+                                acceptedCount: startsAcceptedTotalCount,
+                                otherCount: missingStartsCount,
+                              ),
+                              onAddMissingDue: missingDueCount > 0
+                                  ? () => _openRitualResume(
+                                      context,
+                                      initialSection:
+                                          MyDayRitualWizardInitialSection.due,
+                                    )
+                                  : null,
+                              onAddMissingStarts: missingStartsCount > 0
+                                  ? () => _openRitualResume(
+                                      context,
+                                      initialSection:
+                                          MyDayRitualWizardInitialSection
+                                              .starts,
+                                    )
+                                  : null,
+                              focusCounts: MyDayBucketCounts(
+                                acceptedCount: focusAcceptedTotalCount,
+                                otherCount: 0,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -509,6 +275,62 @@ class _MyDayLoadedBody extends StatelessWidget {
             ),
         };
       },
+    );
+  }
+}
+
+class _UpdatePlanCard extends StatelessWidget {
+  const _UpdatePlanCard({
+    required this.selectedTotalCount,
+    required this.onUpdatePlan,
+  });
+
+  final int selectedTotalCount;
+  final VoidCallback onUpdatePlan;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final l10n = context.l10n;
+
+    final title = selectedTotalCount == 0
+        ? l10n.myDayPlanCardTitle
+        : l10n.myDayPlanCardTitleWithPicked(selectedTotalCount);
+
+    final buttonLabel = selectedTotalCount == 0
+        ? l10n.myDayPlanCardButtonPlan
+        : l10n.myDayUpdatePlanTitle;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          FilledButton(
+            onPressed: onUpdatePlan,
+            child: Text(buttonLabel),
+          ),
+        ],
+      ),
     );
   }
 }

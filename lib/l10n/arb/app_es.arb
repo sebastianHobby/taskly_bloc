@@ -259,9 +259,61 @@
     "@cancelLabel": {
         "description": "Etiqueta de acción genérica de cancelar"
     },
+    "backLabel": "Atrás",
+    "@backLabel": {
+        "description": "Etiqueta genérica de navegación hacia atrás."
+    },
     "closeLabel": "Cerrar",
     "@closeLabel": {
         "description": "Etiqueta de acción genérica de cerrar"
+    },
+    "manageLabel": "Administrar",
+    "@manageLabel": {
+        "description": "Etiqueta genérica para administrar ajustes/elementos."
+    },
+    "clearLabel": "Limpiar",
+    "@clearLabel": {
+        "description": "Etiqueta genérica para limpiar/restablecer una selección."
+    },
+    "priorityLabel": "Prioridad",
+    "@priorityLabel": {
+        "description": "Etiqueta genérica para seleccionar la prioridad."
+    },
+    "allLabel": "Todo",
+    "@allLabel": {
+        "description": "Etiqueta genérica que significa todos los elementos/alcances."
+    },
+    "anytimeScopePickerTitle": "Elegir alcance",
+    "@anytimeScopePickerTitle": {
+        "description": "Título para la hoja de selección de alcance de Anytime."
+    },
+    "anytimeScopePickerSearchHint": "Buscar valores y proyectos",
+    "@anytimeScopePickerSearchHint": {
+        "description": "Texto de ayuda para buscar valores y proyectos en el selector de alcance de Anytime."
+    },
+    "anytimeScopePickerNoMatchesTitle": "Sin coincidencias",
+    "@anytimeScopePickerNoMatchesTitle": {
+        "description": "Título mostrado cuando la búsqueda del selector de alcance de Anytime no tiene resultados."
+    },
+    "anytimeScopePickerNoMatchesBody": "Prueba con otra búsqueda.",
+    "@anytimeScopePickerNoMatchesBody": {
+        "description": "Texto mostrado cuando la búsqueda del selector de alcance de Anytime no tiene resultados."
+    },
+    "anytimeScopePickerNoValuesTitle": "Aún no hay valores",
+    "@anytimeScopePickerNoValuesTitle": {
+        "description": "Título mostrado cuando no hay valores para elegir en el selector de alcance de Anytime."
+    },
+    "anytimeScopePickerNoValuesBody": "Crea un valor para poder filtrar por él.",
+    "@anytimeScopePickerNoValuesBody": {
+        "description": "Texto mostrado cuando no hay valores para elegir en el selector de alcance de Anytime."
+    },
+    "anytimeScopePickerNoProjectsTitle": "Aún no hay proyectos",
+    "@anytimeScopePickerNoProjectsTitle": {
+        "description": "Título mostrado cuando no hay proyectos para elegir en el selector de alcance de Anytime."
+    },
+    "anytimeScopePickerNoProjectsBody": "Crea un proyecto para poder filtrar por él.",
+    "@anytimeScopePickerNoProjectsBody": {
+        "description": "Texto mostrado cuando no hay proyectos para elegir en el selector de alcance de Anytime."
     },
     "deleteLabel": "Eliminar",
     "@deleteLabel": {
@@ -1606,6 +1658,100 @@
     "@setUpMyValues": {
         "description": "Botón para configurar valores"
     },
+    "focusSetupFinalizeTitle": "Listo para usar Focus.",
+    "@focusSetupFinalizeTitle": {
+        "description": "Título mostrado en el paso final del asistente de configuración de Focus."
+    },
+    "focusSetupFinalizeSubtitle": "Puedes cambiar esto en cualquier momento en ajustes.",
+    "@focusSetupFinalizeSubtitle": {
+        "description": "Subtítulo mostrado en el paso final del asistente de configuración de Focus."
+    },
+    "focusSetupFinalizeFocusModeLabel": "Modo de enfoque: {modeName}",
+    "@focusSetupFinalizeFocusModeLabel": {
+        "description": "Etiqueta que muestra el modo de enfoque seleccionado en el paso final.",
+        "placeholders": {
+            "modeName": {
+                "type": "String",
+                "example": "Trabajo profundo"
+            }
+        }
+    },
+    "focusSetupFinalizeValuesLabel": "Valores: {count}",
+    "@focusSetupFinalizeValuesLabel": {
+        "description": "Etiqueta que muestra la cantidad de valores configurados en el paso final.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "focusSetupSuggestionsPerBatchTitle": "Sugerencias por lote",
+    "@focusSetupSuggestionsPerBatchTitle": {
+        "description": "Título para el ajuste de sugerencias por lote en el paso final del asistente de Focus."
+    },
+    "focusSetupSuggestionsPerBatchDescription": "Cuántos elementos sugeridos mostrar cuando generas un nuevo lote en Mi Día.",
+    "@focusSetupSuggestionsPerBatchDescription": {
+        "description": "Texto de ayuda que describe sugerencias por lote en el paso final del asistente de Focus."
+    },
+    "focusSetupValueBalancingTitle": "Equilibrio de valores",
+    "@focusSetupValueBalancingTitle": {
+        "description": "Título para la sección de equilibrio de valores en la configuración de Focus."
+    },
+    "focusSetupValueBalancingSwitchLabel": "Mantener mis valores en equilibrio",
+    "@focusSetupValueBalancingSwitchLabel": {
+        "description": "Etiqueta del interruptor de equilibrio de valores en la configuración de Focus."
+    },
+    "focusSetupValueBalancingTooltip": "Acerca del equilibrio de valores\n\nCuando está activado, las sugerencias pueden incluir un pequeño número de tareas de valores a los que has dedicado menos atención recientemente. Es siempre un empujón suave y nunca reemplaza tu plan.",
+    "@focusSetupValueBalancingTooltip": {
+        "description": "Texto del tooltip que explica el equilibrio de valores en la configuración de Focus."
+    },
+    "focusSetupValueBalancingSubtitle": "Las sugerencias pueden reequilibrar suavemente entre tus valores.",
+    "@focusSetupValueBalancingSubtitle": {
+        "description": "Subtítulo que describe el efecto del equilibrio de valores en la configuración de Focus."
+    },
+    "focusSetupSafetyNetTitle": "Alertas de seguridad",
+    "@focusSetupSafetyNetTitle": {
+        "description": "Título de la tarjeta de alertas de seguridad en la configuración de Focus."
+    },
+    "focusSetupSafetyNetBody": "Incluso si eliges un modo basado en valores, Taskly aún puede avisarte sobre plazos urgentes o grandes brechas. Las alertas son opcionales y totalmente configurables.",
+    "@focusSetupSafetyNetBody": {
+        "description": "Texto que describe las alertas de seguridad en la configuración de Focus."
+    },
+    "focusSetupValuesCtaTitle": "Focus funciona mejor cuando defines lo que te importa.",
+    "@focusSetupValuesCtaTitle": {
+        "description": "Título del paso de invitación a configurar valores en Focus."
+    },
+    "focusSetupValuesCtaBody": "Agrega al menos un valor (Salud, Familia, Oficio, Aprendizaje…) para que los modos basados en valores puedan tomar decisiones inteligentes.",
+    "@focusSetupValuesCtaBody": {
+        "description": "Texto del paso de invitación a configurar valores en Focus."
+    },
+    "focusSetupValuesCountLabel": "{count, plural, =1{Tienes 1 valor} other{Tienes {count} valores}}",
+    "@focusSetupValuesCountLabel": {
+        "description": "Etiqueta que muestra cuántos valores tiene el usuario durante la configuración de Focus.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "focusSetupQuickAddValueLabel": "Agregar un valor rápido",
+    "@focusSetupQuickAddValueLabel": {
+        "description": "Etiqueta del campo para agregar valores rápidamente en la configuración de Focus."
+    },
+    "focusSetupQuickAddValueHint": "p. ej., Salud",
+    "@focusSetupQuickAddValueHint": {
+        "description": "Texto de ayuda del campo para agregar valores rápidamente en la configuración de Focus."
+    },
+    "focusSetupCreateCustomValueLabel": "Crear un valor personalizado",
+    "@focusSetupCreateCustomValueLabel": {
+        "description": "Etiqueta del botón para abrir el editor de valor personalizado durante la configuración de Focus."
+    },
+    "focusSetupOpenValuesLabel": "Abrir Valores",
+    "@focusSetupOpenValuesLabel": {
+        "description": "Etiqueta del botón para abrir la pantalla de Valores desde la configuración de Focus."
+    },
     "basicInfoSection": "Información Básica",
     "@basicInfoSection": {
         "description": "Section title for basic screen info"
@@ -1664,6 +1810,28 @@
         }
     },
     "myDayTitle": "Mi día",
+    "myDayUpdatePlanTitle": "Actualizar plan",
+    "@myDayUpdatePlanTitle": {
+        "description": "Título/etiqueta usada para actualizar el plan de hoy en Mi día."
+    },
+    "myDayPlanCardTitle": "Plan para hoy",
+    "@myDayPlanCardTitle": {
+        "description": "Título mostrado en la tarjeta de plan de Mi día cuando todavía no hay nada seleccionado."
+    },
+    "myDayPlanCardTitleWithPicked": "Plan para hoy · {count}",
+    "@myDayPlanCardTitleWithPicked": {
+        "description": "Título mostrado en la tarjeta de plan de Mi día cuando hay elementos seleccionados.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "myDayPlanCardButtonPlan": "Planificar",
+    "@myDayPlanCardButtonPlan": {
+        "description": "Etiqueta del botón para iniciar la planificación de Mi día (abre el asistente)."
+    },
     "@myDayPreparingTitle": {
         "description": "Título mostrado mientras Mi día se está preparando/cargando."
     },
@@ -1695,6 +1863,186 @@
     "myDayRitualOverdueDueTitle": "Vencidas y por vencer",
     "@myDayRitualOverdueDueTitle": {
         "description": "Título de sección para tareas vencidas y por vencer en el ritual de Mi día."
+    },
+    "myDayRitualTitle": "Elige lo que importa",
+    "@myDayRitualTitle": {
+        "description": "Título mostrado en la parte superior del asistente del ritual de Mi día al planificar."
+    },
+    "myDayRitualSubtitle": "Mi día te ayuda a mantenerte en camino.",
+    "@myDayRitualSubtitle": {
+        "description": "Subtítulo mostrado en la parte superior del asistente del ritual de Mi día al planificar."
+    },
+    "myDayUpdatePlanSubtitle": "Revisa las selecciones de hoy. Agrega o quita lo que quieras.",
+    "@myDayUpdatePlanSubtitle": {
+        "description": "Subtítulo mostrado al reanudar el plan y no hay selecciones completadas."
+    },
+    "myDayUpdatePlanSubtitleWithCompleted": "Revisa las selecciones de hoy. Los elementos completados están bloqueados.",
+    "@myDayUpdatePlanSubtitleWithCompleted": {
+        "description": "Subtítulo mostrado al reanudar el plan y hay selecciones completadas."
+    },
+    "myDayClearMyDayLabel": "Borrar Mi día",
+    "@myDayClearMyDayLabel": {
+        "description": "Etiqueta del botón inferior para borrar el plan de hoy (flujo de reanudar con cero selecciones)."
+    },
+    "myDayUpdateMyDayLabel": "Actualizar Mi día · {count}",
+    "@myDayUpdateMyDayLabel": {
+        "description": "Etiqueta del botón inferior para actualizar el plan de hoy (flujo de reanudar).",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "myDaySelectItemsToContinueLabel": "Selecciona elementos para continuar",
+    "@myDaySelectItemsToContinueLabel": {
+        "description": "Etiqueta del botón inferior cuando se planifica Mi día y aún no hay selecciones."
+    },
+    "myDayContinueToMyDayLabel": "Continuar a Mi día · {count}",
+    "@myDayContinueToMyDayLabel": {
+        "description": "Etiqueta del botón inferior cuando se planifica Mi día con elementos seleccionados.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "myDayClearPlanDialogTitle": "¿Borrar el plan de hoy?",
+    "@myDayClearPlanDialogTitle": {
+        "description": "Título del diálogo de confirmación al borrar el plan de hoy."
+    },
+    "myDayClearPlanDialogBody": "Esto eliminará todas las selecciones restantes de Mi día.",
+    "@myDayClearPlanDialogBody": {
+        "description": "Texto del diálogo de confirmación al borrar el plan de hoy."
+    },
+    "myDayPickAllConfirmBody": "Esto añadirá {count} elementos para hoy. Luego puedes quitar los que quieras.",
+    "@myDayPickAllConfirmBody": {
+        "description": "Texto del cuerpo para confirmaciones de 'elegir todo' en el ritual de Mi día.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "7"
+            }
+        }
+    },
+    "myDayPickAllButton": "Elegir todo",
+    "@myDayPickAllButton": {
+        "description": "Etiqueta del botón para confirmar 'elegir todo' en una sección del ritual de Mi día."
+    },
+    "myDayPickAllDueTitle": "¿Elegir todas las tareas vencidas y por vencer?",
+    "@myDayPickAllDueTitle": {
+        "description": "Título de la hoja de confirmación para elegir todas las tareas vencidas/por vencer en el ritual de Mi día."
+    },
+    "myDayPickAllAvailableTitle": "¿Elegir todas las tareas disponibles?",
+    "@myDayPickAllAvailableTitle": {
+        "description": "Título de la hoja de confirmación para elegir todas las tareas disponibles en el ritual de Mi día."
+    },
+    "myDayPickAllSuggestedTitle": "¿Elegir todas las sugerencias?",
+    "@myDayPickAllSuggestedTitle": {
+        "description": "Título de la hoja de confirmación para elegir todas las sugerencias en el ritual de Mi día."
+    },
+    "myDayCompletedSectionTitle": "Completado",
+    "@myDayCompletedSectionTitle": {
+        "description": "Título de sección para selecciones completadas en el ritual de Mi día."
+    },
+    "myDayCompletedSectionSubtitle": "Bloqueado por hoy",
+    "@myDayCompletedSectionSubtitle": {
+        "description": "Subtítulo de sección para selecciones completadas en el ritual de Mi día."
+    },
+    "myDayPickAllDueMenuLabel": "Elegir todos los vencidos",
+    "@myDayPickAllDueMenuLabel": {
+        "description": "Etiqueta del menú para elegir todas las tareas vencidas/por vencer."
+    },
+    "myDayPickAllAvailableMenuLabel": "Elegir todos los disponibles",
+    "@myDayPickAllAvailableMenuLabel": {
+        "description": "Etiqueta del menú para elegir todas las tareas disponibles."
+    },
+    "myDayPickAllPicksMenuLabel": "Elegir todas las selecciones",
+    "@myDayPickAllPicksMenuLabel": {
+        "description": "Etiqueta del menú para elegir todas las sugerencias."
+    },
+    "myDayShowFewerLabel": "Mostrar menos",
+    "@myDayShowFewerLabel": {
+        "description": "Etiqueta usada para colapsar una sección en filas de mostrar más/menos."
+    },
+    "myDayShowAllDueItemsLabel": "Mostrar todas las vencidas",
+    "@myDayShowAllDueItemsLabel": {
+        "description": "Etiqueta usada para expandir la sección de vencidas y por vencer."
+    },
+    "myDayShowAllAvailableLabel": "Mostrar todas las disponibles",
+    "@myDayShowAllAvailableLabel": {
+        "description": "Etiqueta usada para expandir la sección de disponibles."
+    },
+    "myDayNothingPlannedYetTitle": "Aún no hay plan",
+    "@myDayNothingPlannedYetTitle": {
+        "description": "Título del estado vacío cuando no hay tareas vencidas ni disponibles en el ritual de Mi día."
+    },
+    "myDayNothingPlannedYetBody": "No hay tareas próximas a vencer ni disponibles para empezar.",
+    "@myDayNothingPlannedYetBody": {
+        "description": "Texto del estado vacío cuando no hay tareas vencidas ni disponibles en el ritual de Mi día."
+    },
+    "myDayYoureCaughtUpBody": "Vas al día.",
+    "@myDayYoureCaughtUpBody": {
+        "description": "Texto del estado vacío cuando no hay tareas vencidas/por vencer en el ritual de Mi día."
+    },
+    "myDayPlannedForTodayTitle": "Planificadas para hoy (o antes)",
+    "@myDayPlannedForTodayTitle": {
+        "description": "Título de sección para tareas planificadas para hoy (o antes) en el ritual de Mi día."
+    },
+    "myDayPlannedForTodaySubtitle": "Tareas cuya fecha planificada es hoy o anterior.",
+    "@myDayPlannedForTodaySubtitle": {
+        "description": "Subtítulo que describe la sección de planificadas para hoy en el ritual de Mi día."
+    },
+    "myDayPlannedForTodayEmptyBody": "Tareas cuya fecha planificada es hoy o anterior. No hay nada disponible ahora.",
+    "@myDayPlannedForTodayEmptyBody": {
+        "description": "Texto del estado vacío cuando la sección de planificadas para hoy está vacía."
+    },
+    "myDaySuggestedCompleteTitle": "Sugerencias completadas",
+    "@myDaySuggestedCompleteTitle": {
+        "description": "Título del estado vacío cuando se completaron todas las sugerencias de hoy."
+    },
+    "myDaySuggestedCompleteBody": "Ya completaste las sugerencias de hoy. Genera un nuevo lote para ver más.",
+    "@myDaySuggestedCompleteBody": {
+        "description": "Texto del estado vacío cuando se completaron todas las sugerencias de hoy."
+    },
+    "myDayGenerateNewBatchLabel": "Generar nuevo lote",
+    "@myDayGenerateNewBatchLabel": {
+        "description": "Etiqueta del botón para generar un nuevo lote de sugerencias en Mi día."
+    },
+    "myDayGenerateLabel": "Generar",
+    "@myDayGenerateLabel": {
+        "description": "Etiqueta corta del botón para generar más sugerencias en Mi día."
+    },
+    "myDayStartSetupLabel": "Iniciar configuración",
+    "@myDayStartSetupLabel": {
+        "description": "Etiqueta del botón para iniciar configuración cuando las sugerencias están bloqueadas en Mi día."
+    },
+    "myDayUnlockSuggestionsTitle": "Desbloquear sugerencias",
+    "@myDayUnlockSuggestionsTitle": {
+        "description": "Título de la tarjeta de configuración de sugerencias en Mi día cuando están bloqueadas."
+    },
+    "myDayUnlockSuggestionsBody": "Configura un modo de enfoque y agrega tu primer valor para ver sugerencias personalizadas aquí.",
+    "@myDayUnlockSuggestionsBody": {
+        "description": "Texto de la tarjeta de configuración de sugerencias en Mi día cuando están bloqueadas."
+    },
+    "myDayChooseFocusModeLabel": "Elige un modo de enfoque",
+    "@myDayChooseFocusModeLabel": {
+        "description": "Etiqueta para el requisito de modo de enfoque en la tarjeta de configuración de sugerencias de Mi día."
+    },
+    "myDayAddFirstValueLabel": "Agrega tu primer valor",
+    "@myDayAddFirstValueLabel": {
+        "description": "Etiqueta para el requisito de valores en la tarjeta de configuración de sugerencias de Mi día."
+    },
+    "myDaySuggestedForYouTitle": "Sugerido para ti · {count}",
+    "@myDaySuggestedForYouTitle": {
+        "description": "Título de sección para sugerencias en el ritual de Mi día.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
     },
     "myDayRitualStartsTodayTitle": "Empiezan hoy",
     "@myDayRitualStartsTodayTitle": {

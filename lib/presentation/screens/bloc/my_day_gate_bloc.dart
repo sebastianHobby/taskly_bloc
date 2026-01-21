@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -50,20 +49,30 @@ class MyDayGateBloc extends Cubit<MyDayGateState> {
   final SettingsRepositoryContract _settingsRepository;
   final ValueRepositoryContract _valueRepository;
 
-  StreamSubscription<MyDayGateLoaded>? _sub;
+  StreamSubscription<AllocationConfig?>? _allocationSub;
+  StreamSubscription<List<Value>>? _valuesSub;
+
+  AllocationConfig? _latestAllocation;
+  List<Value>? _latestValues;
 
   @override
   Future<void> close() async {
-    await _sub?.cancel();
-    _sub = null;
+    await _allocationSub?.cancel();
+    await _valuesSub?.cancel();
+    _allocationSub = null;
+    _valuesSub = null;
     return super.close();
   }
 
   void _subscribe() {
-    final allocation$ = _settingsRepository
-        .watch<AllocationConfig>(SettingsKey.allocation)
-        .map<AllocationConfig?>((value) => value)
-        .startWith(null);
+    // Seed with null so the UI can treat this as "not configured" until a real
+    // AllocationConfig arrives.
+    final Stream<AllocationConfig?> allocation$ = (() async* {
+      yield null;
+      yield* _settingsRepository
+          .watch<AllocationConfig>(SettingsKey.allocation)
+          .map<AllocationConfig?>((value) => value);
+    })();
 
     // Use a real DB snapshot to avoid showing "Add Values" when values exist
     // but the watch stream is delayed or never emits.
@@ -71,44 +80,59 @@ class MyDayGateBloc extends Cubit<MyDayGateState> {
     // We intentionally seed locally (per consumer) instead of turning the
     // repository stream into a replaying subject, to keep lifecycle/memory
     // ownership in the presentation layer.
-    final values$ = Rx.concat<List<Value>>([
-      Stream.fromFuture(_valueRepository.getAll()),
-      _valueRepository.watchAll(),
-    ]);
+    final Stream<List<Value>> values$ = (() async* {
+      yield await _valueRepository.getAll();
+      yield* _valueRepository.watchAll();
+    })();
 
-    _sub =
-        Rx.combineLatest2<AllocationConfig?, List<Value>, MyDayGateLoaded>(
-          allocation$,
-          values$,
-          (allocation, values) {
-            final needsFocusModeSetup =
-                !(allocation?.hasSelectedFocusMode ?? false);
-            final needsValuesSetup = values.isEmpty;
+    void emitIfReady() {
+      final values = _latestValues;
+      if (values == null) return;
 
-            final ctaLabel = needsFocusModeSetup
-                ? 'Start Setup'
-                : needsValuesSetup
-                ? 'Add Values'
-                : 'Continue';
+      final allocation = _latestAllocation;
+      final needsFocusModeSetup = !(allocation?.hasSelectedFocusMode ?? false);
+      final needsValuesSetup = values.isEmpty;
 
-            final ctaIcon = needsFocusModeSetup
-                ? Icons.tune
-                : needsValuesSetup
-                ? Icons.favorite_outline
-                : Icons.arrow_forward;
+      final ctaLabel = needsFocusModeSetup
+          ? 'Start Setup'
+          : needsValuesSetup
+          ? 'Add Values'
+          : 'Continue';
 
-            return MyDayGateLoaded(
-              needsFocusModeSetup: needsFocusModeSetup,
-              needsValuesSetup: needsValuesSetup,
-              ctaLabel: ctaLabel,
-              ctaIcon: ctaIcon,
-            );
-          },
-        ).listen(
-          emit,
-          onError: (Object e) {
-            emit(MyDayGateError('Failed to load My Day prerequisites: $e'));
-          },
-        );
+      final ctaIcon = needsFocusModeSetup
+          ? Icons.tune
+          : needsValuesSetup
+          ? Icons.favorite_outline
+          : Icons.arrow_forward;
+
+      emit(
+        MyDayGateLoaded(
+          needsFocusModeSetup: needsFocusModeSetup,
+          needsValuesSetup: needsValuesSetup,
+          ctaLabel: ctaLabel,
+          ctaIcon: ctaIcon,
+        ),
+      );
+    }
+
+    _allocationSub = allocation$.listen(
+      (AllocationConfig? allocation) {
+        _latestAllocation = allocation;
+        emitIfReady();
+      },
+      onError: (Object e) {
+        emit(MyDayGateError('Failed to load My Day prerequisites: $e'));
+      },
+    );
+
+    _valuesSub = values$.listen(
+      (List<Value> values) {
+        _latestValues = values;
+        emitIfReady();
+      },
+      onError: (Object e) {
+        emit(MyDayGateError('Failed to load My Day prerequisites: $e'));
+      },
+    );
   }
 }

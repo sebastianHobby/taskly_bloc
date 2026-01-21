@@ -70,8 +70,13 @@ TaskTileModel buildTaskListRowTileModel(
 
   final primaryValueData = task.effectivePrimaryValue?.toChipData(context);
 
+  final projectId = task.projectId?.trim();
+  final isInbox = projectId == null || projectId.isEmpty;
+
   final meta = EntityMetaLineModel(
-    projectName: showProjectLabel ? task.project?.name : null,
+    projectName: !showProjectLabel
+        ? null
+        : (isInbox ? 'Inbox' : task.project?.name),
     showValuesInMetaLine: showValuesInMetaLine,
     primaryValue: primaryValueData,
     secondaryValues: !showSecondaryValues

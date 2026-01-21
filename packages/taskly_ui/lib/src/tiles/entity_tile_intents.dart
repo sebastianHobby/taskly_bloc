@@ -21,6 +21,13 @@ sealed class TaskTileIntent {
   const factory TaskTileIntent.selection({required bool selected}) =
       TaskTileIntentSelection;
 
+  /// A task row used for the My Day ritual picker.
+  ///
+  /// Uses the same selected/unselected affordance as bulk selection, but does
+  /// not imply a global "selection mode".
+  const factory TaskTileIntent.ritualPick({required bool selected}) =
+      TaskTileIntentRitualPick;
+
   /// A task row used for bulk selection mode.
   const factory TaskTileIntent.bulkSelection({required bool selected}) =
       TaskTileIntentBulkSelection;
@@ -36,6 +43,12 @@ final class TaskTileIntentMyDayList extends TaskTileIntent {
 
 final class TaskTileIntentSelection extends TaskTileIntent {
   const TaskTileIntentSelection({required this.selected});
+
+  final bool selected;
+}
+
+final class TaskTileIntentRitualPick extends TaskTileIntent {
+  const TaskTileIntentRitualPick({required this.selected});
 
   final bool selected;
 }
@@ -60,7 +73,7 @@ final class TaskTileMarkers {
 @immutable
 final class TaskTileActions {
   const TaskTileActions({
-    required this.onTap,
+    this.onTap,
     this.onToggleCompletion,
     this.onOverflowMenuRequestedAt,
     this.onToggleSelected,
@@ -68,7 +81,7 @@ final class TaskTileActions {
     this.onLongPress,
   });
 
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   /// When non-null, the completion checkbox is enabled.
   final ValueChanged<bool?>? onToggleCompletion;

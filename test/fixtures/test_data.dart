@@ -546,14 +546,14 @@ class TestData {
 
   /// Creates AllocationConfig for allocation strategy configuration.
   static AllocationConfig allocationConfig({
-    int dailyLimit = 10,
+    int suggestionsPerBatch = 7,
     bool hasSelectedFocusMode = false,
     FocusMode focusMode = FocusMode.sustainable,
     StrategySettings strategySettings = const StrategySettings(),
     DisplaySettings displaySettings = const DisplaySettings(),
   }) {
     return AllocationConfig(
-      dailyLimit: dailyLimit,
+      suggestionsPerBatch: suggestionsPerBatch,
       hasSelectedFocusMode: hasSelectedFocusMode,
       focusMode: focusMode,
       strategySettings: strategySettings,

@@ -38,7 +38,10 @@ enum UrgentTaskBehavior {
 @freezed
 abstract class AllocationConfig with _$AllocationConfig {
   const factory AllocationConfig({
-    @Default(10) int dailyLimit,
+    /// How many suggestions to show per generated batch in the My Day ritual.
+    ///
+    /// This controls how many focus suggestions are generated/shown at a time.
+    @Default(7) int suggestionsPerBatch,
 
     /// Whether the user has explicitly selected a focus mode.
     @Default(false) bool hasSelectedFocusMode,

@@ -20,6 +20,9 @@ class AppLifecycleService with WidgetsBindingObserver {
   final StreamController<AppLifecycleEvent> _eventsController =
       StreamController<AppLifecycleEvent>.broadcast();
 
+  /// Broadcast stream of lifecycle events.
+  ///
+  /// Multiple coordinators/services are expected to listen concurrently.
   Stream<AppLifecycleEvent> get events => _eventsController.stream;
 
   bool _started = false;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
@@ -100,7 +101,7 @@ class FocusSetupWizardPage extends StatelessWidget {
                         onPressed: () => context.read<FocusSetupBloc>().add(
                           const FocusSetupEvent.backPressed(),
                         ),
-                        child: const Text('Back'),
+                        child: Text(context.l10n.backLabel),
                       )
                     else
                       const SizedBox.shrink(),
@@ -200,6 +201,7 @@ class _FocusModeStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<FocusSetupBloc>();
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final selected = state.effectiveFocusMode;
     final keepValuesInBalance = state.effectiveNeglectEnabled;
 
@@ -207,7 +209,7 @@ class _FocusModeStep extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         Text(
-          'Choose how you want Focus to make tradeoffs.',
+          l10n.focusModeSectionSubtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -240,7 +242,7 @@ class _FocusModeStep extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Value balancing',
+                        l10n.focusSetupValueBalancingTitle,
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
@@ -255,22 +257,21 @@ class _FocusModeStep extends StatelessWidget {
                   onChanged: (v) => bloc.add(
                     FocusSetupEvent.neglectEnabledChanged(v),
                   ),
-                  title: const Row(
+                  title: Row(
                     children: [
-                      Expanded(child: Text('Keep my values in balance')),
+                      Expanded(
+                        child: Text(
+                          l10n.focusSetupValueBalancingSwitchLabel,
+                        ),
+                      ),
                       Tooltip(
-                        message:
-                            'About value balancing\n\n'
-                            'When enabled, Suggested picks may include a small '
-                            "number of tasks from values you've focused on less "
-                            "recently. It's always a gentle nudge and never "
-                            'overrides your plan.',
+                        message: l10n.focusSetupValueBalancingTooltip,
                         child: Icon(Icons.info_outline, size: 18),
                       ),
                     ],
                   ),
                   subtitle: Text(
-                    'Suggested picks can gently rebalance across your values.',
+                    l10n.focusSetupValueBalancingSubtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -329,6 +330,7 @@ class _SafetyNetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Card(
       child: Padding(
@@ -345,7 +347,7 @@ class _SafetyNetCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Safety net alerts',
+                    l10n.focusSetupSafetyNetTitle,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
@@ -353,15 +355,13 @@ class _SafetyNetCard extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: onManagePressed,
-                  child: const Text('Manage'),
+                  child: Text(l10n.manageLabel),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              'Even if you pick a values-first mode, Taskly can still warn you '
-              'about urgent deadlines or big gaps. Alerts are optional and '
-              'fully configurable.',
+              l10n.focusSetupSafetyNetBody,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -406,6 +406,7 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final valuesCount = widget.state.valuesCount;
 
     return ListView(
@@ -418,15 +419,14 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Focus works best when you define what matters to you.',
+                  l10n.focusSetupValuesCtaTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Add at least one value (Health, Family, Craft, Learning…) '
-                  'so values-first modes can make smart tradeoffs.',
+                  l10n.focusSetupValuesCtaBody,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -440,7 +440,7 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'You have $valuesCount value${valuesCount == 1 ? '' : 's'}',
+                      l10n.focusSetupValuesCountLabel(valuesCount),
                       style: theme.textTheme.labelLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -451,9 +451,9 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
                 TextField(
                   controller: _controller,
                   textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(
-                    labelText: 'Quick add a value',
-                    hintText: 'e.g. Health',
+                  decoration: InputDecoration(
+                    labelText: l10n.focusSetupQuickAddValueLabel,
+                    hintText: l10n.focusSetupQuickAddValueHint,
                   ),
                   onSubmitted: (text) => _submitQuickAdd(context, text),
                 ),
@@ -463,7 +463,7 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
                   child: OutlinedButton.icon(
                     onPressed: () => _openCustomValueEditor(context),
                     icon: const Icon(Icons.add_circle_outline),
-                    label: const Text('Create a custom value'),
+                    label: Text(l10n.focusSetupCreateCustomValueLabel),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -485,7 +485,7 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
                   child: TextButton.icon(
                     onPressed: () => context.push('/values'),
                     icon: const Icon(Icons.open_in_new),
-                    label: const Text('Open Values'),
+                    label: Text(l10n.focusSetupOpenValuesLabel),
                   ),
                 ),
               ],
@@ -600,7 +600,15 @@ class _FinalizeStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final mode = state.effectiveFocusMode;
+
+    const minSuggestions = 1;
+    const maxSuggestions = 20;
+    final suggestionsPerBatch = state.effectiveSuggestionsPerBatch.clamp(
+      minSuggestions,
+      maxSuggestions,
+    );
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -612,14 +620,14 @@ class _FinalizeStep extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Ready to use Focus.',
+                  l10n.focusSetupFinalizeTitle,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'You can change this anytime in settings.',
+                  l10n.focusSetupFinalizeSubtitle,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -634,7 +642,9 @@ class _FinalizeStep extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Focus mode: ${mode.displayName}',
+                        l10n.focusSetupFinalizeFocusModeLabel(
+                          mode.displayName,
+                        ),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
@@ -652,13 +662,63 @@ class _FinalizeStep extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Values: ${state.valuesCount}',
+                        l10n.focusSetupFinalizeValuesLabel(state.valuesCount),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
                   ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l10n.focusSetupSuggestionsPerBatchTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '$suggestionsPerBatch',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  l10n.focusSetupSuggestionsPerBatchDescription,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Slider(
+                  value: suggestionsPerBatch.toDouble(),
+                  min: minSuggestions.toDouble(),
+                  max: maxSuggestions.toDouble(),
+                  divisions: maxSuggestions - minSuggestions,
+                  label: '$suggestionsPerBatch',
+                  onChanged: (value) {
+                    context.read<FocusSetupBloc>().add(
+                      FocusSetupEvent.suggestionsPerBatchChanged(
+                        value.round(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
