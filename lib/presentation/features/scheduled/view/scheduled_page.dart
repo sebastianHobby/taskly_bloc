@@ -1,26 +1,19 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
-import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
-import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_domain/taskly_domain.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
-import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_feed_bloc.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_screen_bloc.dart';
+import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_timeline_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
-import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
-import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
-import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
-import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
-import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
-import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
+import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
-import 'package:taskly_ui/taskly_ui_entities.dart';
+import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class ScheduledPage extends StatelessWidget {
@@ -39,121 +32,109 @@ class ScheduledPage extends StatelessWidget {
           ),
         ),
         BlocProvider(
-          create: (_) => ScheduledFeedBloc(
-            queryService: getIt(),
+          create: (_) => ScheduledTimelineBloc(
+            occurrencesService: getIt(),
+            sessionDayKeyService: getIt(),
             scope: scope,
           ),
         ),
-        BlocProvider(create: (_) => SelectionCubit()),
       ],
-      child: _ScheduledView(scope: scope),
+      child: _ScheduledTimelineView(scope: scope),
     );
   }
 }
 
-class _ScheduledView extends StatefulWidget {
-  const _ScheduledView({required this.scope});
+class _ScheduledTimelineView extends StatefulWidget {
+  const _ScheduledTimelineView({required this.scope});
 
   final ScheduledScope scope;
 
   @override
-  State<_ScheduledView> createState() => _ScheduledViewState();
+  State<_ScheduledTimelineView> createState() => _ScheduledTimelineViewState();
 }
 
-class _ScheduledViewState extends State<_ScheduledView> {
-  final ScrollController _scrollController = ScrollController();
-  final GlobalKey _todayHeaderKey = GlobalKey(debugLabel: 'scheduled_today');
-  final Map<String, GlobalKey> _dayHeaderKeys = <String, GlobalKey>{};
+class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
+  final ItemScrollController _itemScrollController = ItemScrollController();
+  final ItemPositionsListener _itemPositionsListener =
+      ItemPositionsListener.create();
 
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  ScheduledAgendaFilter _filter = ScheduledAgendaFilter.all;
-  int _lastScrollToTodaySignal = 0;
+  int _lastScrollSignal = 0;
+  DateTime? _latestToday;
+  int _latestOverdueOffset = 0;
+  DateTime? _lastVisibleDay;
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
-      final next = _searchController.text.trim();
-      if (next == _searchQuery) return;
-      setState(() => _searchQuery = next);
-    });
+
+    _itemPositionsListener.itemPositions.addListener(_onPositionsChanged);
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
-    _searchController.dispose();
+    _itemPositionsListener.itemPositions.removeListener(_onPositionsChanged);
     super.dispose();
   }
 
-  static String _dayKey(DateTime day) {
-    final d = DateTime(day.year, day.month, day.day);
-    return '${d.year.toString().padLeft(4, '0')}-'
-        '${d.month.toString().padLeft(2, '0')}-'
-        '${d.day.toString().padLeft(2, '0')}';
+  void _onPositionsChanged() {
+    final today = _latestToday;
+    if (today == null) return;
+
+    final positions = _itemPositionsListener.itemPositions.value;
+    if (positions.isEmpty) return;
+
+    final visible = positions.where((p) => p.itemTrailingEdge > 0).toList();
+    if (visible.isEmpty) return;
+
+    final minIndex = visible
+        .map((p) => p.index)
+        .reduce((a, b) => a < b ? a : b);
+    final dayIndex = minIndex - _latestOverdueOffset;
+    if (dayIndex < 0) return;
+
+    final day = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).add(Duration(days: dayIndex));
+
+    final last = _lastVisibleDay;
+    if (last != null && _isSameDay(last, day)) return;
+    _lastVisibleDay = day;
+
+    context.read<ScheduledTimelineBloc>().add(
+      ScheduledTimelineVisibleDayChanged(day: day),
+    );
   }
 
-  void _scrollToDayIfPresent(DateTime day) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final key = _dayHeaderKeys[_dayKey(day)];
-      final ctx = key?.currentContext;
-      if (ctx == null) return;
-
-      Scrollable.ensureVisible(
-        ctx,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        alignment: 0,
-      );
-    });
-  }
-
-  Future<void> _pickDayAndScroll(DateTime today) async {
-    final todayDay = DateTime(today.year, today.month, today.day);
+  Future<void> _pickMonthAndJump({
+    required DateTime today,
+    required DateTime activeMonth,
+  }) async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: todayDay,
-      firstDate: todayDay,
-      lastDate: todayDay.add(const Duration(days: 30)),
+      initialDate: activeMonth,
+      firstDate: today,
+      lastDate: DateTime(today.year + 3, today.month, today.day),
     );
 
     if (picked == null) return;
-    _scrollToDayIfPresent(DateTime(picked.year, picked.month, picked.day));
-  }
+    if (!mounted) return;
 
-  void _scrollToTodayIfPresent() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ctx = _todayHeaderKey.currentContext;
-      if (ctx == null) return;
-
-      Scrollable.ensureVisible(
-        ctx,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        alignment: 0,
-      );
-    });
+    context.read<ScheduledTimelineBloc>().add(
+      ScheduledTimelineMonthJumpRequested(
+        month: DateTime(picked.year, picked.month, 1),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final scope = widget.scope;
     final showScopeHeader = scope is! GlobalScheduledScope;
-    final todayUtc = getIt<HomeDayService>().todayDayKeyUtc();
-    final today = DateTime(todayUtc.year, todayUtc.month, todayUtc.day);
 
     return MultiBlocListener(
       listeners: [
-        BlocListener<ScheduledFeedBloc, ScheduledFeedState>(
-          listenWhen: (previous, current) => current is ScheduledFeedLoaded,
-          listener: (context, state) {
-            if (state is! ScheduledFeedLoaded) return;
-            if (state.scrollToTodaySignal == _lastScrollToTodaySignal) return;
-            _lastScrollToTodaySignal = state.scrollToTodaySignal;
-            _scrollToTodayIfPresent();
-          },
-        ),
         BlocListener<ScheduledScreenBloc, ScheduledScreenState>(
           listenWhen: (prev, next) => prev.effect != next.effect,
           listener: (context, state) async {
@@ -210,685 +191,299 @@ class _ScheduledViewState extends State<_ScheduledView> {
             }
           },
         ),
+        BlocListener<ScheduledTimelineBloc, ScheduledTimelineState>(
+          listenWhen: (prev, next) {
+            return prev is ScheduledTimelineLoaded &&
+                next is ScheduledTimelineLoaded &&
+                prev.scrollToDaySignal != next.scrollToDaySignal;
+          },
+          listener: (context, state) async {
+            if (state is! ScheduledTimelineLoaded) return;
+            if (state.scrollToDaySignal == _lastScrollSignal) return;
+            _lastScrollSignal = state.scrollToDaySignal;
+
+            final targetDay = state.scrollTargetDay;
+            if (targetDay == null) return;
+
+            final overdueOffset = state.overdue.isEmpty ? 0 : 1;
+            final index =
+                overdueOffset +
+                targetDay
+                    .difference(
+                      DateTime(
+                        state.today.year,
+                        state.today.month,
+                        state.today.day,
+                      ),
+                    )
+                    .inDays;
+
+            if (!_itemScrollController.isAttached) return;
+
+            await _itemScrollController.scrollTo(
+              index: index.clamp(0, 1000000),
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+            );
+
+            if (context.mounted) {
+              context.read<ScheduledTimelineBloc>().add(
+                const ScheduledTimelineScrollEffectHandled(),
+              );
+            }
+          },
+        ),
       ],
-      child: BlocBuilder<SelectionCubit, SelectionState>(
-        builder: (context, selectionState) {
-          return Scaffold(
-            appBar: selectionState.isSelectionMode
-                ? SelectionAppBar(baseTitle: 'Scheduled', onExit: () {})
-                : AppBar(
-                    title: const Text('Scheduled'),
-                    actions: TasklyAppBarActions.withAttentionBell(
-                      context,
-                      actions: const <Widget>[],
-                    ),
-                  ),
-            floatingActionButton: selectionState.isSelectionMode
-                ? null
-                : EntityAddSpeedDial(
-                    heroTag: 'add_speed_dial_scheduled',
-                    onCreateTask: () => context.read<ScheduledScreenBloc>().add(
-                      ScheduledCreateTaskForDayRequested(day: today),
-                    ),
-                    onCreateProject: () =>
-                        context.read<ScheduledScreenBloc>().add(
-                          const ScheduledCreateProjectRequested(),
-                        ),
-                  ),
-            body: BlocBuilder<ScheduledFeedBloc, ScheduledFeedState>(
-              builder: (context, state) {
-                final feed = switch (state) {
-                  ScheduledFeedLoading() => const FeedBody.loading(),
-                  ScheduledFeedError(:final message) => FeedBody.error(
-                    message: message,
-                    retryLabel: context.l10n.retryButton,
-                    onRetry: () => context.read<ScheduledFeedBloc>().add(
-                      const ScheduledFeedRetryRequested(),
-                    ),
-                  ),
-                  ScheduledFeedLoaded(:final rows) when rows.isEmpty =>
-                    FeedBody.empty(
-                      child: EmptyStateWidget.noTasks(
-                        title: 'Nothing scheduled',
-                        description:
-                            'Add planned days or due dates to see items here.',
-                        actionLabel: 'Create task',
-                        onAction: () => context.read<ScheduledScreenBloc>().add(
-                          ScheduledCreateTaskForDayRequested(day: today),
-                        ),
-                      ),
-                    ),
-                  ScheduledFeedLoaded(:final rows) => Builder(
-                    builder: (context) {
-                      final selection = context.read<SelectionCubit>();
-
-                      final metas = <SelectionEntityMeta>[];
-                      for (final row in rows) {
-                        if (row is! ScheduledEntityRowUiModel) continue;
-
-                        final occurrence = row.occurrence;
-                        final key = SelectionKey(
-                          entityType: occurrence.ref.entityType,
-                          entityId: occurrence.ref.entityId,
-                        );
-
-                        switch (occurrence.ref.entityType) {
-                          case EntityType.task:
-                            final task = occurrence.task;
-                            if (task == null) continue;
-                            metas.add(
-                              SelectionEntityMeta(
-                                key: key,
-                                displayName: task.name,
-                                canDelete: true,
-                                completed: task.completed,
-                                pinned: task.isPinned,
-                                canCompleteSeries:
-                                    task.isRepeating && !task.seriesEnded,
-                              ),
-                            );
-                          case EntityType.project:
-                            final project = occurrence.project;
-                            if (project == null) continue;
-                            metas.add(
-                              SelectionEntityMeta(
-                                key: key,
-                                displayName: project.name,
-                                canDelete: true,
-                                completed: project.completed,
-                                pinned: project.isPinned,
-                                canCompleteSeries:
-                                    project.isRepeating && !project.seriesEnded,
-                              ),
-                            );
-                          case EntityType.value:
-                            continue;
-                        }
-                      }
-
-                      selection.updateVisibleEntities(metas);
-
-                      return FeedBody.child(
-                        child: _ScheduledAgenda(
-                          rows: rows,
-                          today: today,
-                          scrollController: _scrollController,
-                          todayHeaderKey: _todayHeaderKey,
-                          dayHeaderKeys: _dayHeaderKeys,
-                          searchQuery: _searchQuery,
-                          filter: _filter,
-                        ),
-                      );
-                    },
-                  ),
-                };
-
-                final filterBar = Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: SegmentedButton<ScheduledAgendaFilter>(
-                      segments: const <ButtonSegment<ScheduledAgendaFilter>>[
-                        ButtonSegment(
-                          value: ScheduledAgendaFilter.all,
-                          label: Text('All'),
-                        ),
-                        ButtonSegment(
-                          value: ScheduledAgendaFilter.planned,
-                          label: Text('Planned'),
-                        ),
-                        ButtonSegment(
-                          value: ScheduledAgendaFilter.due,
-                          label: Text('Due'),
-                        ),
-                      ],
-                      selected: <ScheduledAgendaFilter>{_filter},
-                      onSelectionChanged:
-                          (Set<ScheduledAgendaFilter> selected) {
-                            final next = selected.isEmpty
-                                ? ScheduledAgendaFilter.all
-                                : selected.first;
-                            if (next == _filter) return;
-                            setState(() => _filter = next);
-                          },
-                      showSelectedIcon: false,
-                    ),
-                  ),
-                );
-
-                final searchBar = Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Search',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIconConstraints: const BoxConstraints(minWidth: 0),
-                      suffixIcon: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_searchQuery.trim().isNotEmpty)
-                            IconButton(
-                              tooltip: 'Clear search',
-                              visualDensity: VisualDensity.compact,
-                              onPressed: _searchController.clear,
-                              icon: const Icon(Icons.clear_rounded),
-                            ),
-                          IconButton(
-                            tooltip: 'Jump to today',
-                            visualDensity: VisualDensity.compact,
-                            onPressed: () {
-                              context.read<ScheduledFeedBloc>().add(
-                                const ScheduledJumpToTodayRequested(),
-                              );
-                            },
-                            icon: const Icon(Icons.today_outlined),
-                          ),
-                          IconButton(
-                            tooltip: 'Pick a date',
-                            visualDensity: VisualDensity.compact,
-                            onPressed: () => _pickDayAndScroll(today),
-                            icon: const Icon(Icons.calendar_today_outlined),
-                          ),
-                        ],
-                      ),
-                      filled: true,
-                    ),
-                  ),
-                );
-
-                final content = Column(
-                  children: [
-                    searchBar,
-                    filterBar,
-                    Expanded(child: feed),
-                  ],
-                );
-
-                if (!showScopeHeader) return content;
-
-                return Column(
-                  children: [
-                    ScheduledScopeHeader(scope: scope),
-                    Expanded(child: content),
-                  ],
-                );
-              },
+      child: BlocBuilder<ScheduledTimelineBloc, ScheduledTimelineState>(
+        builder: (context, state) {
+          return switch (state) {
+            ScheduledTimelineLoading() => Scaffold(
+              appBar: AppBar(
+                title: const Text('Scheduled'),
+                actions: TasklyAppBarActions.withAttentionBell(
+                  context,
+                  actions: const <Widget>[],
+                ),
+              ),
+              body: const LoadingStateWidget(
+                message: 'Loading scheduled...',
+              ),
             ),
-          );
+            ScheduledTimelineError(:final message) => Scaffold(
+              appBar: AppBar(
+                title: const Text('Scheduled'),
+                actions: TasklyAppBarActions.withAttentionBell(
+                  context,
+                  actions: const <Widget>[],
+                ),
+              ),
+              body: ErrorStateWidget(
+                message: message,
+                onRetry: () => context.read<ScheduledTimelineBloc>().add(
+                  const ScheduledTimelineStarted(),
+                ),
+              ),
+            ),
+            ScheduledTimelineLoaded() => _buildLoaded(
+              context,
+              state,
+              showScopeHeader,
+            ),
+          };
         },
       ),
     );
   }
-}
 
-bool _isSameDay(DateTime a, DateTime b) {
-  return a.year == b.year && a.month == b.month && a.day == b.day;
-}
-
-String _semanticDayTitle(BuildContext context, DateTime day, DateTime today) {
-  final normalizedDay = DateTime(day.year, day.month, day.day);
-  final normalizedToday = DateTime(today.year, today.month, today.day);
-
-  final locale = Localizations.localeOf(context).toLanguageTag();
-  final absolute = DateFormat('E, MMM d', locale).format(normalizedDay);
-
-  if (_isSameDay(normalizedDay, normalizedToday)) {
-    return '${context.l10n.dateToday} · $absolute';
-  }
-
-  if (_isSameDay(normalizedDay, normalizedToday.add(const Duration(days: 1)))) {
-    return '${context.l10n.dateTomorrow} · $absolute';
-  }
-
-  return absolute;
-}
-
-class _ScheduledAgenda extends StatelessWidget {
-  const _ScheduledAgenda({
-    required this.rows,
-    required this.today,
-    required this.scrollController,
-    required this.todayHeaderKey,
-    required this.dayHeaderKeys,
-    required this.searchQuery,
-    required this.filter,
-  });
-
-  final List<ListRowUiModel> rows;
-  final DateTime today;
-  final ScrollController scrollController;
-  final GlobalKey todayHeaderKey;
-  final Map<String, GlobalKey> dayHeaderKeys;
-  final String searchQuery;
-  final ScheduledAgendaFilter filter;
-
-  static String _dayKey(DateTime day) {
-    final d = DateTime(day.year, day.month, day.day);
-    return '${d.year.toString().padLeft(4, '0')}-'
-        '${d.month.toString().padLeft(2, '0')}-'
-        '${d.day.toString().padLeft(2, '0')}';
-  }
-
-  static ({List<String> taskIds, List<String> projectIds})
-  _extractOverdueEntityIds(
-    List<ListRowUiModel> rows,
-    DateTime today,
+  Widget _buildLoaded(
+    BuildContext context,
+    ScheduledTimelineLoaded state,
+    bool showScopeHeader,
   ) {
-    final taskIds = <String>{};
-    final projectIds = <String>{};
-    var inOverdue = false;
+    _latestToday = state.today;
+    _latestOverdueOffset = state.overdue.isEmpty ? 0 : 1;
 
-    for (final row in rows) {
-      if (row is BucketHeaderRowUiModel) {
-        inOverdue = row.bucketKey == 'overdue';
-        continue;
-      }
+    final today = DateTime(
+      state.today.year,
+      state.today.month,
+      state.today.day,
+    );
+    final monthLabel = DateFormat.yMMMM().format(state.activeMonth);
 
-      if (!inOverdue) continue;
-      if (row is! ScheduledEntityRowUiModel) continue;
+    final overdueOffset = state.overdue.isEmpty ? 0 : 1;
+    final totalDays = state.rangeEndDay.difference(today).inDays + 1;
+    final itemCount = totalDays + overdueOffset;
 
-      final occurrence = row.occurrence;
-      final todayDay = DateTime(today.year, today.month, today.day);
-
-      switch (occurrence.ref.entityType) {
-        case EntityType.task:
-          final task = occurrence.task;
-          if (task == null) continue;
-          final deadline = task.deadlineDate;
-          if (deadline == null) continue;
-          final deadlineDay = DateTime(
-            deadline.year,
-            deadline.month,
-            deadline.day,
-          );
-          if (deadlineDay.isBefore(todayDay)) {
-            taskIds.add(task.id);
-          }
-        case EntityType.project:
-          final project = occurrence.project;
-          if (project == null) continue;
-          final deadline = project.deadlineDate;
-          if (deadline == null) continue;
-          final deadlineDay = DateTime(
-            deadline.year,
-
-            deadline.month,
-            deadline.day,
-          );
-          if (deadlineDay.isBefore(todayDay)) {
-            projectIds.add(project.id);
-          }
-        case EntityType.value:
-          continue;
-      }
+    final occurrencesByDay = <DateTime, List<ScheduledOccurrence>>{};
+    for (final o in state.occurrences) {
+      if (o.tag == ScheduledDateTag.ongoing) continue;
+      final d = DateTime(o.localDay.year, o.localDay.month, o.localDay.day);
+      if (d.isBefore(today)) continue;
+      (occurrencesByDay[d] ??= <ScheduledOccurrence>[]).add(o);
     }
 
-    return (
-      taskIds: taskIds.toList(growable: false),
-      projectIds: projectIds.toList(growable: false),
-    );
-  }
+    final overdueCards = state.overdue
+        .map((o) => _buildCardModel(context, o, forceDue: true))
+        .whereType<TasklyTimelineCardModel>()
+        .toList(growable: false);
 
-  static Future<DateTime?> _showRescheduleOverdueSheet(
-    BuildContext context, {
-    required int itemCount,
-    required DateTime today,
-  }) async {
-    final todayDay = DateTime(today.year, today.month, today.day);
-    final tomorrowDay = todayDay.add(const Duration(days: 1));
-
-    return showModalBottomSheet<DateTime>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: Text(
-                  itemCount == 1
-                      ? 'Reschedule 1 overdue item'
-                      : 'Reschedule $itemCount overdue items',
-                ),
-                subtitle: const Text('Pick a new due date.'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.today),
-                title: const Text('Today'),
-                onTap: () => Navigator.of(sheetContext).pop(todayDay),
-              ),
-              ListTile(
-                leading: const Icon(Icons.calendar_today),
-                title: const Text('Tomorrow'),
-                onTap: () => Navigator.of(sheetContext).pop(tomorrowDay),
-              ),
-              ListTile(
-                leading: const Icon(Icons.event),
-                title: const Text('Pick a date…'),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: sheetContext,
-                    initialDate: tomorrowDay,
-                    firstDate: todayDay,
-                    lastDate: todayDay.add(const Duration(days: 365)),
-                  );
-                  if (picked == null) return;
-                  if (!sheetContext.mounted) return;
-                  Navigator.of(sheetContext).pop(
-                    DateTime(picked.year, picked.month, picked.day),
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _pickMonthAndJump(
+            today: today,
+            activeMonth: state.activeMonth,
           ),
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final query = searchQuery.trim().toLowerCase();
-
-    final overdueIds = _extractOverdueEntityIds(rows, today);
-    final overdueTaskIds = overdueIds.taskIds;
-    final overdueProjectIds = overdueIds.projectIds;
-    final overdueCount = overdueTaskIds.length + overdueProjectIds.length;
-
-    var hasOverdueBucket = false;
-    var overdueCollapsed = false;
-    var inOverdue = false;
-    final overdueItems = <ScheduledOccurrence>[];
-
-    final dayPlannedRows = <DateTime, List<TasklyAgendaRowModel>>{};
-    final dayDueRows = <DateTime, List<TasklyAgendaRowModel>>{};
-    final dayDueEntityKeys = <DateTime, Set<String>>{};
-
-    DateTime? currentDay;
-
-    void addPlanned(DateTime day, TasklyAgendaRowModel row, String entityKey) {
-      final dueKeys = dayDueEntityKeys[day] ??= <String>{};
-      if (dueKeys.contains(entityKey)) return;
-      (dayPlannedRows[day] ??= <TasklyAgendaRowModel>[]).add(row);
-    }
-
-    void addDue(DateTime day, TasklyAgendaRowModel row, String entityKey) {
-      final dueKeys = dayDueEntityKeys[day] ??= <String>{};
-      dueKeys.add(entityKey);
-      (dayDueRows[day] ??= <TasklyAgendaRowModel>[]).add(row);
-
-      final planned = dayPlannedRows[day];
-      if (planned == null || planned.isEmpty) return;
-      dayPlannedRows[day] = planned
-          .where(
-            (r) => switch (r) {
-              TasklyAgendaTaskRowModel() => 'task:${r.entityId}' != entityKey,
-              TasklyAgendaProjectRowModel() =>
-                'project:${r.entityId}' != entityKey,
-              _ => true,
-            },
-          )
-          .toList(growable: false);
-    }
-
-    for (final row in rows) {
-      switch (row) {
-        case BucketHeaderRowUiModel(:final bucketKey, :final isCollapsed):
-          inOverdue = bucketKey == 'overdue';
-          if (inOverdue) {
-            hasOverdueBucket = true;
-            overdueCollapsed = isCollapsed;
-          }
-          currentDay = null;
-
-        case DateHeaderRowUiModel(:final date):
-          inOverdue = false;
-          currentDay = DateTime(date.year, date.month, date.day);
-          dayPlannedRows.putIfAbsent(
-            currentDay,
-            () => <TasklyAgendaRowModel>[],
-          );
-          dayDueRows.putIfAbsent(currentDay, () => <TasklyAgendaRowModel>[]);
-
-        case ScheduledEntityRowUiModel(:final occurrence):
-          if (query.isNotEmpty &&
-              !occurrence.name.toLowerCase().contains(query)) {
-            continue;
-          }
-
-          if (inOverdue) {
-            if (!overdueCollapsed) overdueItems.add(occurrence);
-            continue;
-          }
-
-          final day = currentDay;
-          if (day == null) continue;
-
-          if (occurrence.tag == ScheduledDateTag.ongoing) continue;
-
-          // Build a minimal tile row model.
-          final rowModel = _buildAgendaRowForOccurrence(
-            context,
-            occurrence: occurrence,
-          );
-          if (rowModel == null) continue;
-
-          final entityKey =
-              '${occurrence.entityType.name}:${occurrence.entityId}';
-
-          switch (occurrence.tag) {
-            case ScheduledDateTag.due:
-              addDue(day, rowModel, entityKey);
-            case ScheduledDateTag.starts:
-              addPlanned(day, rowModel, entityKey);
-            case ScheduledDateTag.ongoing:
-              continue;
-          }
-
-        default:
-          continue;
-      }
-    }
-
-    final cards = <TasklyAgendaCardModel>[];
-
-    if (hasOverdueBucket) {
-      final overdueDueRows = overdueItems
-          .map(
-            (o) => _buildAgendaRowForOccurrence(
-              context,
-              occurrence: o,
-              forceShowDeadlineChip: true,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Text(monthLabel),
+          ),
+        ),
+        actions: TasklyAppBarActions.withAttentionBell(
+          context,
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => context.read<ScheduledTimelineBloc>().add(
+                const ScheduledTimelineJumpToTodayRequested(),
+              ),
+              child: const Text('Today'),
             ),
-          )
-          .whereType<TasklyAgendaRowModel>()
-          .toList(growable: false);
+          ],
+        ),
+      ),
+      floatingActionButton: EntityAddSpeedDial(
+        heroTag: 'add_speed_dial_scheduled_timeline',
+        onCreateTask: () => context.read<ScheduledScreenBloc>().add(
+          ScheduledCreateTaskForDayRequested(day: today),
+        ),
+        onCreateProject: () => context.read<ScheduledScreenBloc>().add(
+          const ScheduledCreateProjectRequested(),
+        ),
+      ),
+      body: Column(
+        children: [
+          if (showScopeHeader)
+            ScheduledScopeHeader(
+              scope: widget.scope,
+            ),
+          Expanded(
+            child: ScrollablePositionedList.builder(
+              itemScrollController: _itemScrollController,
+              itemPositionsListener: _itemPositionsListener,
+              itemCount: itemCount,
+              itemBuilder: (context, index) {
+                if (overdueOffset == 1 && index == 0) {
+                  final actionEnabled = overdueCards.isNotEmpty;
 
-      if (filter != ScheduledAgendaFilter.planned) {
-        final action = overdueCount > 0
-            ? TasklyAgendaCardHeaderAction(
-                label: 'Reschedule all',
-                icon: Icons.event,
-                tooltip: 'Reschedule overdue items',
-                onPressed: () async {
-                  final newDeadlineDay = await _showRescheduleOverdueSheet(
-                    context,
-                    itemCount: overdueCount,
-                    today: today,
-                  );
-                  if (newDeadlineDay == null) return;
-                  if (!context.mounted) return;
-                  context.read<ScheduledScreenBloc>().add(
-                    ScheduledRescheduleEntitiesDeadlineRequested(
-                      taskIds: overdueTaskIds,
-                      projectIds: overdueProjectIds,
-                      newDeadlineDay: newDeadlineDay,
+                  return TasklyOverdueStackSection(
+                    model: TasklyOverdueStackModel(
+                      title: 'Overdue',
+                      countLabel: overdueCards.length.toString(),
+                      isCollapsed: state.overdueCollapsed,
+                      onToggleCollapsed: () =>
+                          context.read<ScheduledTimelineBloc>().add(
+                            const ScheduledTimelineOverdueCollapsedToggled(),
+                          ),
+                      cards: overdueCards,
+                      actionLabel: actionEnabled ? 'Reschedule all' : null,
+                      actionTooltip: 'Reschedule overdue items',
+                      onActionPressed: !actionEnabled
+                          ? null
+                          : () async {
+                              final newDeadlineDay =
+                                  await _showRescheduleOverduePicker(
+                                    context,
+                                    itemCount: overdueCards.length,
+                                    today: today,
+                                  );
+                              if (newDeadlineDay == null) return;
+                              if (!context.mounted) return;
+
+                              final taskIds = state.overdue
+                                  .where((o) => o.entityType == EntityType.task)
+                                  .map((o) => o.entityId)
+                                  .toList(growable: false);
+                              final projectIds = state.overdue
+                                  .where(
+                                    (o) => o.entityType == EntityType.project,
+                                  )
+                                  .map((o) => o.entityId)
+                                  .toList(growable: false);
+
+                              context.read<ScheduledScreenBloc>().add(
+                                ScheduledRescheduleEntitiesDeadlineRequested(
+                                  taskIds: taskIds,
+                                  projectIds: projectIds,
+                                  newDeadlineDay: newDeadlineDay,
+                                ),
+                              );
+                            },
                     ),
                   );
-                },
-              )
-            : null;
+                }
 
-        cards.add(
-          TasklyAgendaCardModel(
-            key: 'overdue',
-            title: 'Overdue',
-            leadingIcon: Icons.warning_amber_rounded,
-            isCollapsed: overdueCollapsed,
-            onHeaderTap: () => context.read<ScheduledFeedBloc>().add(
-              const ScheduledBucketCollapseToggled(bucketKey: 'overdue'),
+                final dayIndex = index - overdueOffset;
+                final day = today.add(Duration(days: dayIndex));
+
+                final list =
+                    occurrencesByDay[day] ?? const <ScheduledOccurrence>[];
+                final cards =
+                    list
+                        .map((o) => _buildCardModel(context, o))
+                        .whereType<TasklyTimelineCardModel>()
+                        .toList(growable: false)
+                      ..sort(_compareCards);
+
+                final header = DateFormat('EEEE, MMM d').format(day);
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 18),
+                  child: TasklyTimelineDaySection(
+                    model: TasklyTimelineDayModel(
+                      day: day,
+                      title: header,
+                      isToday: dayIndex == 0,
+                      cards: cards,
+                      emptyLabel: 'No tasks',
+                      onAddRequested: () => context
+                          .read<ScheduledScreenBloc>()
+                          .add(ScheduledCreateTaskForDayRequested(day: day)),
+                    ),
+                  ),
+                );
+              },
             ),
-            action: action,
-            dueRows: overdueDueRows,
           ),
-        );
-      }
-    }
-
-    for (final entry in dayDueRows.entries) {
-      final day = entry.key;
-
-      final planned = dayPlannedRows[day] ?? const <TasklyAgendaRowModel>[];
-      final due = entry.value;
-
-      final subtitle = switch ((due.length, planned.length)) {
-        (final d, final p) when d > 0 && p > 0 => '$d due · $p planned',
-        (final d, _) when d > 0 => '$d due',
-        (_, final p) when p > 0 => '$p planned',
-        _ => null,
-      };
-
-      final effectivePlanned = (filter == ScheduledAgendaFilter.due)
-          ? const <TasklyAgendaRowModel>[]
-          : planned;
-      final effectiveDue = (filter == ScheduledAgendaFilter.planned)
-          ? const <TasklyAgendaRowModel>[]
-          : due;
-
-      if (effectivePlanned.isEmpty && effectiveDue.isEmpty) continue;
-
-      final dayKey = _dayKey(day);
-      final headerKey = _isSameDay(day, today)
-          ? todayHeaderKey
-          : dayHeaderKeys.putIfAbsent(dayKey, GlobalKey.new);
-
-      cards.add(
-        TasklyAgendaCardModel(
-          key: dayKey,
-          title: _semanticDayTitle(context, day, today),
-          subtitle: subtitle,
-          headerKey: headerKey,
-          plannedRows: effectivePlanned,
-          dueRows: effectiveDue,
-        ),
-      );
-    }
-
-    return TasklyAgendaSection(
-      cards: cards,
-      compactRows: true,
-      showSectionLabels: false,
-      emphasizeDueRows: true,
-      controller: scrollController,
+        ],
+      ),
     );
   }
 
-  static TasklyAgendaRowModel? _buildAgendaRowForOccurrence(
-    BuildContext context, {
-    required ScheduledOccurrence occurrence,
-    bool forceShowDeadlineChip = false,
-  }) {
-    final normalizedDay = DateTime(
-      occurrence.localDay.year,
-      occurrence.localDay.month,
-      occurrence.localDay.day,
-    );
+  static int _compareCards(
+    TasklyTimelineCardModel a,
+    TasklyTimelineCardModel b,
+  ) {
+    if (a.status != b.status) {
+      return a.status == TasklyTimelineStatus.due ? -1 : 1;
+    }
+    return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+  }
 
-    final rowKey =
-        '${occurrence.entityType.name}:${occurrence.entityId}:${_dayKey(normalizedDay)}:${occurrence.tag.name}';
+  static TasklyTimelineCardModel? _buildCardModel(
+    BuildContext context,
+    ScheduledOccurrence occurrence, {
+    bool forceDue = false,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+
+    final status = (forceDue || occurrence.tag == ScheduledDateTag.due)
+        ? TasklyTimelineStatus.due
+        : TasklyTimelineStatus.planned;
+
+    final accent = status == TasklyTimelineStatus.due ? scheme.error : null;
 
     if (occurrence.entityType == EntityType.task && occurrence.task != null) {
       final task = occurrence.task!;
+      final completed = task.occurrence?.isCompleted ?? task.completed;
+
       final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
-
-      final now = context.read<NowService>().nowLocal();
-      final today = DateTime(now.year, now.month, now.day);
-
-      final cardDay = DateTime(
-        occurrence.localDay.year,
-        occurrence.localDay.month,
-        occurrence.localDay.day,
-      );
-
-      final deadline = task.occurrence?.deadline ?? task.deadlineDate;
-      final deadlineDay = deadline == null
-          ? null
-          : DateTime(deadline.year, deadline.month, deadline.day);
-
-      final daysUntil = deadlineDay?.difference(today).inDays;
-
-      final isOverdue =
-          deadlineDay != null && deadlineDay.isBefore(today) && !task.completed;
-
-      final isWithin3Days =
-          daysUntil != null && daysUntil >= 0 && daysUntil <= 3;
-
-      final differsFromCardDay = deadlineDay != null && deadlineDay != cardDay;
-
-      final shouldShowTitleDeadlineChip =
-          forceShowDeadlineChip ||
-          (occurrence.tag == ScheduledDateTag.starts &&
-              deadlineDay != null &&
-              (differsFromCardDay || isWithin3Days || isOverdue));
-
-      final selection = context.read<SelectionCubit>();
-      final key = SelectionKey(entityType: EntityType.task, entityId: task.id);
-      final selectionMode = selection.isSelectionMode;
-      final isSelected = selection.isSelected(key);
-
-      final model = buildTaskListRowTileModel(
+      final onToggle = buildTaskToggleCompletionHandler(
         context,
         task: task,
         tileCapabilities: tileCapabilities,
-        showProjectLabel: false,
-        showDates: false,
-        showOnlyDeadlineDate: true,
-        showDeadlineChipOnTitleLine: shouldShowTitleDeadlineChip,
-        overrideIsOverdue: forceShowDeadlineChip ? isOverdue : null,
       );
 
-      return TasklyAgendaTaskRowModel(
-        key: rowKey,
-        depth: 0,
-        entityId: task.id,
-        model: model,
-        intent: selectionMode
-            ? TaskTileIntent.bulkSelection(selected: isSelected)
-            : const TaskTileIntent.standardList(),
-        markers: TaskTileMarkers(pinned: task.isPinned),
-        actions: TaskTileActions(
-          onTap: () {
-            if (selection.shouldInterceptTapAsSelection()) {
-              selection.handleEntityTap(key);
-              return;
-            }
-            model.onTap();
-          },
-          onLongPress: () {
-            selection.enterSelectionMode(initialSelection: key);
-          },
-          onToggleSelected: () =>
-              selection.toggleSelection(key, extendRange: false),
-          onToggleCompletion: buildTaskToggleCompletionHandler(
-            context,
-            task: task,
-            tileCapabilities: tileCapabilities,
-          ),
-          onOverflowMenuRequestedAt: null,
-        ),
+      return TasklyTimelineCardModel(
+        key:
+            '${task.id}:${occurrence.localDay.toIso8601String()}:${occurrence.tag.name}',
+        title: occurrence.name,
+        completed: completed,
+        status: status,
+        primaryValue: task.effectivePrimaryValue?.toChipData(context),
+        onTap: () => Routing.toTaskEdit(context, task.id),
+        onToggleCompletion: onToggle,
+        leadingAccentColor: accent,
       );
     }
 
@@ -896,87 +491,42 @@ class _ScheduledAgenda extends StatelessWidget {
         occurrence.project != null) {
       final project = occurrence.project!;
 
-      final now = context.read<NowService>().nowLocal();
-      final today = DateTime(now.year, now.month, now.day);
-      final cardDay = DateTime(
-        occurrence.localDay.year,
-        occurrence.localDay.month,
-        occurrence.localDay.day,
-      );
-
-      final deadline = project.deadlineDate;
-      final deadlineDay = deadline == null
-          ? null
-          : DateTime(deadline.year, deadline.month, deadline.day);
-
-      final isOverdue =
-          deadlineDay != null &&
-          deadlineDay.isBefore(today) &&
-          !project.completed;
-
-      final daysUntil = deadlineDay?.difference(today).inDays;
-      final isWithin3Days =
-          daysUntil != null && daysUntil >= 0 && daysUntil <= 3;
-
-      final differsFromCardDay = deadlineDay != null && deadlineDay != cardDay;
-
-      final shouldShowTitleDeadlineChip =
-          forceShowDeadlineChip ||
-          (occurrence.tag == ScheduledDateTag.starts &&
-              deadlineDay != null &&
-              (differsFromCardDay || isWithin3Days || isOverdue));
-
-      final selection = context.read<SelectionCubit>();
-      final key = SelectionKey(
-        entityType: EntityType.project,
-        entityId: project.id,
-      );
-      final selectionMode = selection.isSelectionMode;
-      final isSelected = selection.isSelected(key);
-
-      return TasklyAgendaProjectRowModel(
-        key: rowKey,
-        depth: 0,
-        entityId: project.id,
-        model: buildProjectListRowTileModel(
-          context,
-          project: project,
-          taskCount: project.taskCount,
-          completedTaskCount: project.completedTaskCount,
-          showDates: false,
-          showOnlyDeadlineDate: false,
-          showDeadlineChipOnTitleLine: shouldShowTitleDeadlineChip,
-          overrideIsOverdue: forceShowDeadlineChip ? isOverdue : null,
-          showPrimaryValueOnTitleLine: true,
-          showValuesInMetaLine: false,
-          showSecondaryValues: false,
-          showPriorityMarkerOnRight: false,
-          showRepeatIcon: false,
-          showOverflowEllipsisWhenMetaHidden: false,
-        ),
-        intent: selectionMode
-            ? ProjectTileIntent.bulkSelection(selected: isSelected)
-            : const ProjectTileIntent.agenda(),
-        actions: ProjectTileActions(
-          onTap: () {
-            if (selection.shouldInterceptTapAsSelection()) {
-              selection.handleEntityTap(key);
-              return;
-            }
-            Routing.toProjectEdit(context, project.id);
-          },
-          onLongPress: () {
-            selection.enterSelectionMode(initialSelection: key);
-          },
-          onToggleSelected: () =>
-              selection.toggleSelection(key, extendRange: false),
-          onOverflowMenuRequestedAt: null,
-        ),
+      return TasklyTimelineCardModel(
+        key:
+            '${project.id}:${occurrence.localDay.toIso8601String()}:${occurrence.tag.name}',
+        title: occurrence.name,
+        completed: project.completed,
+        status: status,
+        primaryValue: project.primaryValue?.toChipData(context),
+        onTap: () => Routing.toProjectEdit(context, project.id),
+        onToggleCompletion: null,
+        leadingAccentColor: accent,
       );
     }
 
     return null;
   }
-}
 
-enum ScheduledAgendaFilter { all, planned, due }
+  Future<DateTime?> _showRescheduleOverduePicker(
+    BuildContext context, {
+    required int itemCount,
+    required DateTime today,
+  }) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: today,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 365)),
+      helpText: itemCount == 1
+          ? 'Reschedule 1 item'
+          : 'Reschedule $itemCount items',
+    );
+
+    if (picked == null) return null;
+    return DateTime(picked.year, picked.month, picked.day);
+  }
+
+  static bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}

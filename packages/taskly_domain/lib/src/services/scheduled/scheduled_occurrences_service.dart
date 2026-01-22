@@ -37,19 +37,21 @@ final class ScheduledOccurrencesService {
   Stream<ScheduledOccurrencesResult> watchScheduledOccurrences({
     required DateTime rangeStartDay,
     required DateTime rangeEndDay,
+    required DateTime todayDayKeyUtc,
     ScheduledScope scope = const GlobalScheduledScope(),
   }) {
     final startDay = dateOnly(rangeStartDay);
     final endDay = dateOnly(rangeEndDay);
+    final today = dateOnly(todayDayKeyUtc);
 
     final effectiveScope = switch (scope) {
       GlobalScheduledScope() => null,
       _ => scope,
     };
 
-    final overdueTasksQuery = _buildOverdueTasksQuery(startDay, effectiveScope);
+    final overdueTasksQuery = _buildOverdueTasksQuery(today, effectiveScope);
     final overdueProjectsQuery = _buildOverdueProjectsQuery(
-      startDay,
+      today,
       effectiveScope,
     );
     final scheduledTasksQuery = _buildScheduledTasksQuery(
@@ -71,14 +73,14 @@ final class ScheduledOccurrencesService {
       query: scheduledTasksQuery,
       rangeStartDay: startDay,
       rangeEndDay: endDay,
-      todayDayKeyUtc: startDay,
+      todayDayKeyUtc: today,
     );
     final scheduledProjectsStream = _occurrenceReadService
         .watchProjectOccurrences(
           query: scheduledProjectsQuery,
           rangeStartDay: startDay,
           rangeEndDay: endDay,
-          todayDayKeyUtc: startDay,
+          todayDayKeyUtc: today,
         );
 
     return Rx.combineLatest4(
@@ -88,8 +90,8 @@ final class ScheduledOccurrencesService {
       scheduledProjectsStream,
       (overdueTasks, overdueProjects, scheduledTasks, scheduledProjects) {
         final overdue = <ScheduledOccurrence>[
-          ...overdueTasks.map((t) => _overdueTask(t, today: startDay)),
-          ...overdueProjects.map((p) => _overdueProject(p, today: startDay)),
+          ...overdueTasks.map((t) => _overdueTask(t, today: today)),
+          ...overdueProjects.map((p) => _overdueProject(p, today: today)),
         ];
 
         final occurrences = <ScheduledOccurrence>[];
