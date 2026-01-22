@@ -74,6 +74,7 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     final selection = context.read<SelectionCubit>();
 
@@ -181,55 +182,22 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
               ),
               const SizedBox(height: 10),
             ],
-            _BucketSection(
-              title: context.l10n.myDayRitualOverdueDueTitle,
-              acceptedTasks: widget.acceptedDue,
-              counts: widget.dueCounts,
-              expanded: _dueExpanded,
-              onToggleExpanded: () =>
-                  setState(() => _dueExpanded = !_dueExpanded),
-              onTapOther: widget.onAddMissingDue,
-              otherLabel: context.l10n.myDayRitualNotInTodayLabel,
-              emptyTitle: widget.dueCounts.otherCount == 0
-                  ? context.l10n.myDayRitualCaughtUpTitle
-                  : context.l10n.myDayRitualNothingAddedHereYetTitle,
-              emptySubtitle: widget.dueCounts.otherCount == 0
-                  ? context.l10n.myDayRitualDueEmptySubtitle
-                  : context.l10n.myDayRitualReviewAvailableAboveSubtitle,
-              previewCount: _previewCount,
+            _GroupHeader(
+              title: l10n.myDayWhatMattersSectionTitle,
+              subtitle: l10n.myDayWhatMattersSubtitle,
             ),
-            if (!hideStartsSection) ...[
-              const SizedBox(height: 10),
-              _BucketSection(
-                title: context.l10n.myDayRitualStartsTodayTitle,
-                acceptedTasks: widget.acceptedStarts,
-                counts: widget.startsCounts,
-                expanded: _startsExpanded,
-                onToggleExpanded: () =>
-                    setState(() => _startsExpanded = !_startsExpanded),
-                onTapOther: widget.onAddMissingStarts,
-                otherLabel: context.l10n.myDayRitualNotInTodayLabel,
-                emptyTitle: widget.startsCounts.otherCount == 0
-                    ? context.l10n.myDayRitualStartsEmptyTitle
-                    : context.l10n.myDayRitualNothingAddedHereYetTitle,
-                emptySubtitle: widget.startsCounts.otherCount == 0
-                    ? context.l10n.myDayRitualStartsEmptySubtitle
-                    : context.l10n.myDayRitualReviewAvailableAboveSubtitle,
-                previewCount: _previewCount,
-              ),
-            ],
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             _BucketSection(
-              title: context.l10n.myDayRitualTodaysFocusTitle,
+              title: l10n.myDayRitualTodaysFocusTitle,
               acceptedTasks: widget.acceptedFocus,
               counts: widget.focusCounts,
               expanded: _focusExpanded,
               onToggleExpanded: () =>
                   setState(() => _focusExpanded = !_focusExpanded),
               onTapOther: null,
-              otherLabel: context.l10n.myDayRitualNotInTodayLabel,
-              emptyTitle: context.l10n.myDayRitualFocusEmptyTitle,
-              emptySubtitle: context.l10n.myDayRitualFocusEmptySubtitle,
+              otherLabel: l10n.myDayRitualNotInTodayLabel,
+              emptyTitle: l10n.myDayRitualFocusEmptyTitle,
+              emptySubtitle: l10n.myDayRitualFocusEmptySubtitle,
               previewCount: _previewCount,
               subtitleForTask: (task) {
                 final reason = widget.focusReasons[task.id];
@@ -237,8 +205,89 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
                 return reason;
               },
             ),
+            const SizedBox(height: 14),
+            _GroupHeader(
+              title: l10n.myDayWhatsWaitingSectionTitle,
+              subtitle: l10n.myDayWhatsWaitingSubtitle,
+            ),
+            const SizedBox(height: 8),
+            _BucketSection(
+              title: l10n.myDayDueSoonLabel,
+              acceptedTasks: widget.acceptedDue,
+              counts: widget.dueCounts,
+              expanded: _dueExpanded,
+              onToggleExpanded: () =>
+                  setState(() => _dueExpanded = !_dueExpanded),
+              onTapOther: widget.onAddMissingDue,
+              otherLabel: l10n.myDayRitualNotInTodayLabel,
+              emptyTitle: widget.dueCounts.otherCount == 0
+                  ? l10n.myDayRitualCaughtUpTitle
+                  : l10n.myDayRitualNothingAddedHereYetTitle,
+              emptySubtitle: widget.dueCounts.otherCount == 0
+                  ? l10n.myDayRitualDueEmptySubtitle
+                  : l10n.myDayRitualReviewAvailableAboveSubtitle,
+              previewCount: _previewCount,
+            ),
+            if (!hideStartsSection) ...[
+              const SizedBox(height: 10),
+              _BucketSection(
+                title: l10n.myDayAvailableToStartLabel,
+                acceptedTasks: widget.acceptedStarts,
+                counts: widget.startsCounts,
+                expanded: _startsExpanded,
+                onToggleExpanded: () =>
+                    setState(() => _startsExpanded = !_startsExpanded),
+                onTapOther: widget.onAddMissingStarts,
+                otherLabel: l10n.myDayRitualNotInTodayLabel,
+                emptyTitle: widget.startsCounts.otherCount == 0
+                    ? l10n.myDayRitualStartsEmptyTitle
+                    : l10n.myDayRitualNothingAddedHereYetTitle,
+                emptySubtitle: widget.startsCounts.otherCount == 0
+                    ? l10n.myDayRitualStartsEmptySubtitle
+                    : l10n.myDayRitualReviewAvailableAboveSubtitle,
+                previewCount: _previewCount,
+              ),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -280,6 +329,8 @@ class _BucketSection extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
+    final universeCount = counts.acceptedCount + counts.otherCount;
+
     final visible = expanded
         ? acceptedTasks
         : acceptedTasks.take(previewCount).toList(growable: false);
@@ -309,7 +360,7 @@ class _BucketSection extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  title,
+                  '$title · $universeCount',
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),

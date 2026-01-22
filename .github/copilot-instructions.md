@@ -48,7 +48,8 @@ If a change would violate an invariant:
 ## UI/UX tasks
 
 When asked to design UI/UX:
-
+- Review UI documentation and code related to the area being changed.
+- Review related screens for consistency.
 - Ask clarifying questions about intended experience.
 - Offer design options in batches of 3 (with ids, pros/cons, recommendation).
 - Keep offering options until the user asks to implement.

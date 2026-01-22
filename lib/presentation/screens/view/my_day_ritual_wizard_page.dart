@@ -19,10 +19,21 @@ class MyDayRitualWizardPage extends StatelessWidget {
     super.key,
     this.allowClose = false,
     this.initialSection,
+    this.onCloseRequested,
   });
 
   final bool allowClose;
   final MyDayRitualWizardInitialSection? initialSection;
+  final VoidCallback? onCloseRequested;
+
+  void _handleClose(BuildContext context) {
+    final handler = onCloseRequested;
+    if (handler != null) {
+      handler();
+      return;
+    }
+    Navigator.of(context).maybePop();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +48,7 @@ class MyDayRitualWizardPage extends StatelessWidget {
                 current.nav == MyDayRitualNav.closeWizard;
           },
           listener: (context, state) {
-            Navigator.of(context).maybePop();
+            _handleClose(context);
           },
         ),
       ],
@@ -52,7 +63,10 @@ class MyDayRitualWizardPage extends StatelessWidget {
                 MyDayRitualReady() => Scaffold(
                   appBar: allowClose
                       ? AppBar(
-                          leading: const CloseButton(),
+                          leading: IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => _handleClose(context),
+                          ),
                           title: Text(context.l10n.myDayUpdatePlanTitle),
                         )
                       : null,
@@ -357,7 +371,6 @@ class _RitualCardState extends State<_RitualCard> {
   static const _bulkPickConfirmThreshold = 5;
 
   final GlobalKey<State<StatefulWidget>> _suggestedHeaderKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _timePlanBannerKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _whatsWaitingHeaderKey = GlobalKey();
 
   @override
@@ -434,6 +447,34 @@ class _RitualCardState extends State<_RitualCard> {
   late bool _snoozedExpanded;
   late bool _dueExpanded;
   late bool _startsExpanded;
+
+  String _supportingTextForWhatMattersTask(BuildContext context, Task task) {
+    final l10n = context.l10n;
+    final primaryValueName = task.effectivePrimaryValue?.name.trim();
+    if (primaryValueName == null || primaryValueName.isEmpty) return '';
+
+    final reasonCodes =
+        widget.curatedReasonCodesByTaskId[task.id] ??
+        const <AllocationReasonCode>[];
+
+    final suffixes = <String>[];
+    if (reasonCodes.contains(AllocationReasonCode.urgency)) {
+      suffixes.add(l10n.myDayDueSoonLabel);
+    }
+    if (reasonCodes.contains(AllocationReasonCode.priority)) {
+      suffixes.add(l10n.priorityLabel);
+    }
+    if (reasonCodes.contains(AllocationReasonCode.neglectBalance)) {
+      suffixes.add(l10n.myDayWhyTheseSignalBalance);
+    }
+    if (reasonCodes.contains(AllocationReasonCode.crossValue)) {
+      suffixes.add(l10n.myDayWhyTheseSignalCrossValue);
+    }
+
+    final base = l10n.myDaySupportsValueLabel(primaryValueName);
+    if (suffixes.isEmpty) return base;
+    return '$base · ${suffixes.join(' · ')}';
+  }
 
   String _signalsSummaryForTasks(BuildContext context, List<Task> tasks) {
     final l10n = context.l10n;
@@ -858,26 +899,6 @@ class _RitualCardState extends State<_RitualCard> {
               ),
             ],
 
-            // UX‑MD‑04B: Always-visible “Don’t miss” banner.
-            KeyedSubtree(
-              key: _timePlanBannerKey,
-              child: _HeadsUpBanner(
-                dueSoonCount: due.length,
-                availableToStartCount: starts.length,
-                showAvailableToStart: widget.showAvailableToStart,
-                onShowMePressed: () {
-                  final waitingContext = _whatsWaitingHeaderKey.currentContext;
-                  if (waitingContext == null) return;
-                  Scrollable.ensureVisible(
-                    waitingContext,
-                    duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeOutCubic,
-                    alignment: 0.08,
-                  );
-                },
-              ),
-            ),
-
             // Suggested first.
             KeyedSubtree(
               key: _suggestedHeaderKey,
@@ -948,20 +969,37 @@ class _RitualCardState extends State<_RitualCard> {
                                     title: key,
                                     count: groupTasks.length,
                                   ),
-                                  _TaskTileColumn(
-                                    dayKeyUtc: widget.dayKeyUtc,
-                                    tasks: visibleGroupTasks,
-                                    selected: widget.selected,
-                                    reasonTextByTaskId: widget.curatedReasons,
-                                    reasonTooltipTextByTaskId:
-                                        const <String, String>{},
-                                    enableSnooze: false,
-                                    enableSelection: true,
-                                    selectionPillLabel:
-                                        l10n.myDayAddToMyDayAction,
-                                    selectionPillSelectedLabel:
-                                        l10n.myDayAddedLabel,
-                                    snoozeTooltip: l10n.myDaySnoozeAction,
+                                  Builder(
+                                    builder: (context) {
+                                      final supportingTextById =
+                                          <String, String>{};
+                                      for (final task in visibleGroupTasks) {
+                                        final text =
+                                            _supportingTextForWhatMattersTask(
+                                              context,
+                                              task,
+                                            );
+                                        if (text.isNotEmpty) {
+                                          supportingTextById[task.id] = text;
+                                        }
+                                      }
+
+                                      return _TaskTileColumn(
+                                        dayKeyUtc: widget.dayKeyUtc,
+                                        tasks: visibleGroupTasks,
+                                        selected: widget.selected,
+                                        reasonTextByTaskId: supportingTextById,
+                                        reasonTooltipTextByTaskId:
+                                            const <String, String>{},
+                                        enableSnooze: false,
+                                        enableSelection: true,
+                                        selectionPillLabel:
+                                            l10n.myDayAddToMyDayAction,
+                                        selectionPillSelectedLabel:
+                                            l10n.myDayAddedLabel,
+                                        snoozeTooltip: l10n.myDaySnoozeAction,
+                                      );
+                                    },
                                   ),
                                 ],
                               );
@@ -1054,7 +1092,7 @@ class _RitualCardState extends State<_RitualCard> {
                   if (whatsWaitingCount == 0)
                     _SectionEmptyPanel(
                       title: l10n.myDayWhatsWaitingSectionTitle,
-                      description: l10n.myDayHeadsUpCaughtUpSubtitle,
+                      description: l10n.myDayYoureCaughtUpBody,
                     )
                   else
                     Column(
@@ -1327,95 +1365,6 @@ class _SnoozedTaskRow extends StatelessWidget {
 }
 
 enum _SuggestedMenuAction { pickAllPicks, suggestionSettings }
-
-class _HeadsUpBanner extends StatelessWidget {
-  const _HeadsUpBanner({
-    required this.dueSoonCount,
-    required this.availableToStartCount,
-    required this.showAvailableToStart,
-    required this.onShowMePressed,
-  });
-
-  final int dueSoonCount;
-  final int availableToStartCount;
-  final bool showAvailableToStart;
-  final VoidCallback onShowMePressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final l10n = context.l10n;
-    final titleStyle = Theme.of(context).textTheme.titleSmall?.copyWith(
-      fontWeight: FontWeight.w800,
-    );
-    final subtitleStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: cs.onSurfaceVariant,
-      height: 1.25,
-    );
-
-    final availablePart = showAvailableToStart
-        ? l10n.myDayAvailableToStartCountPart(availableToStartCount)
-        : '';
-    final subtitle = (dueSoonCount == 0 && availableToStartCount == 0)
-        ? l10n.myDayHeadsUpCaughtUpSubtitle
-        : l10n.myDayHeadsUpWaitingSummary(dueSoonCount, availablePart);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-      child: Material(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onShowMePressed,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                Container(
-                  height: 36,
-                  width: 36,
-                  decoration: BoxDecoration(
-                    color: cs.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.notifications_active_outlined,
-                    color: cs.onPrimaryContainer,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.myDayHeadsUpBannerTitle,
-                        style: titleStyle,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: subtitleStyle,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: onShowMePressed,
-                  child: Text(l10n.myDayHeadsUpBannerCta),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _SubsectionHeader extends StatelessWidget {
   const _SubsectionHeader({

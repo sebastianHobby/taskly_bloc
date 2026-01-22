@@ -16,6 +16,7 @@ class EntityMetaLineModel {
     this.showDates = true,
     this.showOnlyDeadlineDate = false,
     this.showBothDatesIfPresent = false,
+    this.showDeadlineChipOnTitleLine = false,
     this.startDateLabel,
     this.deadlineDateLabel,
     this.isOverdue = false,
@@ -43,6 +44,12 @@ class EntityMetaLineModel {
 
   /// When false, no date chips are rendered.
   final bool showDates;
+
+  /// When true, renders the deadline chip on the title row (typically trailing)
+  /// instead of in the meta line.
+  ///
+  /// Intended for dense agenda layouts.
+  final bool showDeadlineChipOnTitleLine;
 
   /// When true, only the due date chip is shown (planned day suppressed).
   final bool showOnlyDeadlineDate;

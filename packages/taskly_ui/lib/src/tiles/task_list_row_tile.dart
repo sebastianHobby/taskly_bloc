@@ -13,6 +13,8 @@ class TaskListRowTile extends StatelessWidget {
     this.titlePrefix,
     this.subtitle,
     this.footer,
+    this.leadingAccentColor,
+    this.compact = false,
     super.key,
   });
 
@@ -36,12 +38,19 @@ class TaskListRowTile extends StatelessWidget {
   /// Optional footer widget shown below the meta line.
   final Widget? footer;
 
+  /// Optional left-edge accent (used to subtly emphasize urgency).
+  final Color? leadingAccentColor;
+
+  /// When true, uses tighter vertical spacing and typically forces
+  /// single-line titles.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    final isCompact = MediaQuery.sizeOf(context).width < 420;
+    final isCompact = compact || MediaQuery.sizeOf(context).width < 420;
 
     return Container(
       key: Key('task-${model.id}'),
@@ -50,6 +59,9 @@ class TaskListRowTile extends StatelessWidget {
             ? scheme.surfaceContainerLowest.withValues(alpha: 0.5)
             : scheme.surface,
         border: Border(
+          left: leadingAccentColor == null
+              ? BorderSide.none
+              : BorderSide(color: leadingAccentColor!, width: 3),
           bottom: BorderSide(
             color: scheme.outlineVariant.withValues(alpha: 0.2),
             width: 1,
@@ -64,23 +76,27 @@ class TaskListRowTile extends StatelessWidget {
             Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: isCompact ? 10 : 12,
+                vertical: isCompact ? 8 : 12,
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox.square(
-                    dimension: isCompact ? 40 : 44,
-                    child: Center(
-                      child: _TaskCompletionCheckbox(
-                        completed: model.completed,
-                        isOverdue: model.meta.isOverdue,
-                        onChanged: onToggleCompletion,
-                        semanticLabel: model.checkboxSemanticLabel,
+                    dimension: isCompact ? 36 : 44,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: EdgeInsets.only(top: isCompact ? 2 : 4),
+                        child: _TaskCompletionCheckbox(
+                          completed: model.completed,
+                          isOverdue: model.meta.isOverdue,
+                          onChanged: onToggleCompletion,
+                          semanticLabel: model.checkboxSemanticLabel,
+                        ),
                       ),
                     ),
                   ),
-                  SizedBox(width: isCompact ? 10 : 12),
+                  SizedBox(width: isCompact ? 8 : 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,7 +119,7 @@ class TaskListRowTile extends StatelessWidget {
                                       ? scheme.onSurface.withValues(alpha: 0.5)
                                       : scheme.onSurface,
                                 ),
-                                maxLines: 2,
+                                maxLines: isCompact ? 1 : 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -124,7 +140,7 @@ class TaskListRowTile extends StatelessWidget {
                   const SizedBox(width: 8),
                   ConstrainedBox(
                     constraints: BoxConstraints(
-                      minWidth: isCompact ? 48 : 56,
+                      minWidth: isCompact ? 44 : 56,
                     ),
                     child: Align(
                       alignment: Alignment.topRight,

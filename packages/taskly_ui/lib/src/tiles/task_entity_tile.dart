@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/models/value_chip_data.dart';
+import 'package:taskly_ui/src/primitives/date_chip.dart';
 import 'package:taskly_ui/src/primitives/value_icon.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_intents.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
@@ -11,6 +13,9 @@ class TaskEntityTile extends StatelessWidget {
     required this.actions,
     this.intent = const TaskTileIntent.standardList(),
     this.markers = const TaskTileMarkers(),
+    this.titlePrefixOverride,
+    this.leadingAccentColor,
+    this.compact = false,
     this.supportingText,
     this.supportingTooltipText,
     this.completedStatusLabel,
@@ -29,6 +34,17 @@ class TaskEntityTile extends StatelessWidget {
   final TaskTileIntent intent;
   final TaskTileMarkers markers;
   final TaskTileActions actions;
+
+  /// Optional override for the leading title prefix (e.g., urgency glyph).
+  ///
+  /// When provided and the task is pinned, both glyphs are shown.
+  final Widget? titlePrefixOverride;
+
+  /// Optional left-edge accent (used to subtly emphasize urgency).
+  final Color? leadingAccentColor;
+
+  /// When true, uses a denser layout for list/agenda contexts.
+  final bool compact;
 
   /// Optional supporting text shown between title and meta line.
   final String? supportingText;
@@ -81,9 +97,23 @@ class TaskEntityTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget? titlePrefix = markers.pinned
+    final pinnedPrefix = markers.pinned
         ? _PinnedGlyph(label: pinnedSemanticLabel)
         : null;
+
+    final Widget? titlePrefix = switch ((titlePrefixOverride, pinnedPrefix)) {
+      (null, null) => null,
+      (final Widget a?, null) => a,
+      (null, final Widget b?) => b,
+      (final Widget a?, final Widget b?) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          a,
+          const SizedBox(width: 6),
+          b,
+        ],
+      ),
+    };
 
     final effectiveSupportingText = supportingText?.trim();
     final effectiveTooltipText = supportingTooltipText?.trim();
@@ -146,6 +176,8 @@ class TaskEntityTile extends StatelessWidget {
         subtitle: null,
         titlePrefix: titlePrefix,
         footer: footer,
+        leadingAccentColor: leadingAccentColor,
+        compact: compact,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -188,6 +220,8 @@ class TaskEntityTile extends StatelessWidget {
         subtitle: null,
         titlePrefix: titlePrefix,
         footer: footer,
+        leadingAccentColor: leadingAccentColor,
+        compact: compact,
         trailing: _BulkSelectIcon(
           selected: selected,
           onPressed: actions.onToggleSelected ?? actions.onTap,
@@ -203,14 +237,75 @@ class TaskEntityTile extends StatelessWidget {
         subtitle: null,
         titlePrefix: titlePrefix,
         footer: footer,
-        trailing: model.titlePrimaryValue == null
-            ? const SizedBox.shrink()
-            : Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: ValueIcon(data: model.titlePrimaryValue!),
-              ),
+        leadingAccentColor: leadingAccentColor,
+        compact: compact,
+        trailing: _TitleTrailing(
+          meta: model.meta,
+          titlePrimaryValue: model.titlePrimaryValue,
+        ),
       ),
     };
+  }
+}
+
+class _TitleTrailing extends StatelessWidget {
+  const _TitleTrailing({required this.meta, required this.titlePrimaryValue});
+
+  final EntityMetaLineModel meta;
+  final ValueChipData? titlePrimaryValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final deadlineLabel = meta.deadlineDateLabel?.trim();
+    final showDeadlineChip =
+        meta.showDeadlineChipOnTitleLine &&
+        deadlineLabel != null &&
+        deadlineLabel.isNotEmpty;
+
+    final showValueIcon = titlePrimaryValue != null;
+    if (!showDeadlineChip && !showValueIcon) return const SizedBox.shrink();
+
+    final children = <Widget>[];
+
+    if (showDeadlineChip) {
+      children.add(
+        _TapAbsorber(
+          child: DateChip.deadline(
+            context: context,
+            label: deadlineLabel,
+            isOverdue: meta.isOverdue,
+            isDueToday: meta.isDueToday,
+            isDueSoon: meta.isDueSoon,
+          ),
+        ),
+      );
+    }
+
+    if (showDeadlineChip && showValueIcon) {
+      children.add(const SizedBox(width: 8));
+    }
+
+    if (showValueIcon) {
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: ValueIcon(data: titlePrimaryValue!),
+        ),
+      );
+    }
+
+    return Row(mainAxisSize: MainAxisSize.min, children: children);
+  }
+}
+
+class _TapAbsorber extends StatelessWidget {
+  const _TapAbsorber({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AbsorbPointer(child: ExcludeSemantics(child: child));
   }
 }
 

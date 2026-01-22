@@ -160,11 +160,23 @@ final class TasklyAgendaCardModel {
 class TasklyAgendaSection extends StatelessWidget {
   const TasklyAgendaSection({
     required this.cards,
+    this.compactRows = false,
+    this.showSectionLabels = true,
+    this.emphasizeDueRows = false,
     this.controller,
     super.key,
   });
 
   final List<TasklyAgendaCardModel> cards;
+  final bool compactRows;
+
+  /// Controls whether "DUE" / "PLANNED" section headers are rendered inside
+  /// each card when both sections exist.
+  final bool showSectionLabels;
+
+  /// When true, due rows get extra emphasis (colored due glyph + subtle accent)
+  /// so they remain scannable even without section headers.
+  final bool emphasizeDueRows;
   final ScrollController? controller;
 
   @override
@@ -184,7 +196,12 @@ class TasklyAgendaSection extends StatelessWidget {
             elevation: 0,
             borderRadius: BorderRadius.circular(18),
             clipBehavior: Clip.antiAlias,
-            child: _AgendaCard(card: card),
+            child: _AgendaCard(
+              card: card,
+              compactRows: compactRows,
+              showSectionLabels: showSectionLabels,
+              emphasizeDueRows: emphasizeDueRows,
+            ),
           ),
         );
       },
@@ -193,9 +210,17 @@ class TasklyAgendaSection extends StatelessWidget {
 }
 
 class _AgendaCard extends StatelessWidget {
-  const _AgendaCard({required this.card});
+  const _AgendaCard({
+    required this.card,
+    required this.compactRows,
+    required this.showSectionLabels,
+    required this.emphasizeDueRows,
+  });
 
   final TasklyAgendaCardModel card;
+  final bool compactRows;
+  final bool showSectionLabels;
+  final bool emphasizeDueRows;
 
   @override
   Widget build(BuildContext context) {
@@ -205,6 +230,7 @@ class _AgendaCard extends StatelessWidget {
     final action = card.action;
     final hasPlanned = card.plannedRows.isNotEmpty;
     final hasDue = card.dueRows.isNotEmpty;
+    final showLabels = showSectionLabels && hasPlanned && hasDue;
 
     final header = InkWell(
       key: card.headerKey,
@@ -286,35 +312,58 @@ class _AgendaCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         header,
-        if (hasPlanned)
+        if (hasDue && showLabels)
           const _SectionLabel(
-            label: 'PLANNED',
-            icon: null,
-            emphasized: false,
+            label: 'DUE',
+            icon: Icons.alarm_rounded,
+            emphasized: true,
           ),
-        if (hasPlanned) ..._buildRows(context, card.plannedRows),
+        if (hasDue)
+          ..._buildRows(
+            context,
+            card.dueRows,
+            compact: compactRows,
+            isDueRow: true,
+          ),
         if (hasPlanned && hasDue)
           Divider(
             height: 1,
             thickness: 1,
             color: scheme.outlineVariant.withValues(alpha: 0.35),
           ),
-        if (hasDue)
+        if (hasPlanned && showLabels)
           const _SectionLabel(
-            label: 'DUE',
-            icon: Icons.alarm_rounded,
-            emphasized: true,
+            label: 'PLANNED',
+            icon: null,
+            emphasized: false,
           ),
-        if (hasDue) ..._buildRows(context, card.dueRows),
+        if (hasPlanned)
+          ..._buildRows(
+            context,
+            card.plannedRows,
+            compact: compactRows,
+            isDueRow: false,
+          ),
       ],
     );
   }
 
   List<Widget> _buildRows(
     BuildContext context,
-    List<TasklyAgendaRowModel> rows,
-  ) {
-    return rows.map((r) => _AgendaCardRow(row: r)).toList(growable: false);
+    List<TasklyAgendaRowModel> rows, {
+    required bool compact,
+    required bool isDueRow,
+  }) {
+    return rows
+        .map(
+          (r) => _AgendaCardRow(
+            row: r,
+            compact: compact,
+            isDueRow: isDueRow,
+            emphasizeDueRows: emphasizeDueRows,
+          ),
+        )
+        .toList(growable: false);
   }
 }
 
@@ -366,9 +415,17 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _AgendaCardRow extends StatelessWidget {
-  const _AgendaCardRow({required this.row});
+  const _AgendaCardRow({
+    required this.row,
+    required this.compact,
+    required this.isDueRow,
+    required this.emphasizeDueRows,
+  });
 
   final TasklyAgendaRowModel row;
+  final bool compact;
+  final bool isDueRow;
+  final bool emphasizeDueRows;
 
   @override
   Widget build(BuildContext context) {
@@ -388,7 +445,14 @@ class _AgendaCardRow extends StatelessWidget {
             intent: intent,
             markers: markers,
             actions: actions,
+            compact: compact,
             supportingText: supportingText,
+            titlePrefixOverride: (emphasizeDueRows && isDueRow)
+                ? _DueGlyph(meta: model.meta)
+                : null,
+            leadingAccentColor: (emphasizeDueRows && isDueRow)
+                ? _dueAccentColor(context, model.meta)
+                : null,
           ),
         ),
       TasklyAgendaProjectRowModel(
@@ -403,9 +467,61 @@ class _AgendaCardRow extends StatelessWidget {
             model: model,
             intent: intent,
             actions: actions,
+            compact: compact,
+            titlePrefixOverride: (emphasizeDueRows && isDueRow)
+                ? _DueGlyph(meta: model.meta)
+                : null,
+            leadingAccentColor: (emphasizeDueRows && isDueRow)
+                ? _dueAccentColor(context, model.meta)
+                : null,
           ),
         ),
       _ => const SizedBox.shrink(),
     };
   }
+}
+
+class _DueGlyph extends StatelessWidget {
+  const _DueGlyph({required this.meta});
+
+  final EntityMetaLineModel meta;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    final Color color;
+    if (meta.isOverdue) {
+      color = scheme.error;
+    } else if (meta.isDueToday) {
+      color = scheme.primary;
+    } else if (meta.isDueSoon) {
+      color = scheme.tertiary;
+    } else {
+      color = scheme.onSurfaceVariant.withValues(alpha: 0.85);
+    }
+
+    return Semantics(
+      label: 'Due',
+      child: SizedBox(
+        width: 18,
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Icon(
+            Icons.alarm_rounded,
+            size: 16,
+            color: color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Color _dueAccentColor(BuildContext context, EntityMetaLineModel meta) {
+  final scheme = Theme.of(context).colorScheme;
+  if (meta.isOverdue) return scheme.error;
+  if (meta.isDueToday) return scheme.primary;
+  if (meta.isDueSoon) return scheme.tertiary;
+  return scheme.onSurfaceVariant.withValues(alpha: 0.35);
 }

@@ -15,6 +15,7 @@ ProjectTileModel buildProjectListRowTileModel(
   bool showTrailingProgressLabel = false,
   bool showDates = true,
   bool showOnlyDeadlineDate = false,
+  bool showDeadlineChipOnTitleLine = false,
   bool showPrimaryValueOnTitleLine = false,
   bool showValuesInMetaLine = true,
   bool showSecondaryValues = true,
@@ -71,6 +72,7 @@ ProjectTileModel buildProjectListRowTileModel(
     showOverflowEllipsis: shouldShowOverflowEllipsis,
     showDates: showDates,
     showOnlyDeadlineDate: showOnlyDeadlineDate,
+    showDeadlineChipOnTitleLine: showDeadlineChipOnTitleLine,
     startDateLabel: resolvedStartDateLabel,
     deadlineDateLabel: resolvedDeadlineDateLabel,
     isOverdue:

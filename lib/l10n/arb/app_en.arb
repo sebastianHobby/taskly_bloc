@@ -798,11 +798,11 @@
     "@snoozeSubtitle": {
         "description": "Subtitle explaining snooze behavior"
     },
-    "myDayWhatMattersSectionTitle": "What matters",
+    "myDayWhatMattersSectionTitle": "Values aligned",
     "@myDayWhatMattersSectionTitle": {
         "description": "Section title for value-aligned suggestions in the My Day ritual (B1)."
     },
-    "myDayWhatsWaitingSectionTitle": "What’s waiting",
+    "myDayWhatsWaitingSectionTitle": "Time sensitive",
     "@myDayWhatsWaitingSectionTitle": {
         "description": "Section title for scheduled/review tasks in the My Day ritual (B1)."
     },
@@ -870,7 +870,7 @@
     "@myDayWhyTheseTitle": {
         "description": "Title for the explainability bottom sheet in the My Day ritual."
     },
-    "myDayWhyTheseWhatMattersBody": "We suggest tasks that align with your values, gently rebalance neglected values, and factor in urgency and priority.",
+    "myDayWhyTheseWhatMattersBody": "Values aligned highlights tasks linked to your values. Suggestions may also rebalance neglected values and consider urgency and priority.",
     "@myDayWhyTheseWhatMattersBody": {
         "description": "Body text for the 'Why these?' sheet for the What matters section."
     },
@@ -884,7 +884,7 @@
             }
         }
     },
-    "myDayWhyTheseWhatsWaitingBody": "These are time-sensitive items to avoid surprises. You’ll see tasks due soon (within the next {days} days) and tasks that are available to start.",
+    "myDayWhyTheseWhatsWaitingBody": "Time sensitive helps you avoid surprises. You’ll see tasks due soon (within the next {days} days) and tasks that are available to start.",
     "@myDayWhyTheseWhatsWaitingBody": {
         "description": "Body text for the 'Why these?' sheet for the What’s waiting section.",
         "placeholders": {
@@ -902,6 +902,16 @@
     "@myDayWhyTheseSignalCrossValue": {
         "description": "Short signal label shown in the 'Why these?' sheet indicating a task advances multiple values."
     },
+    "myDaySupportsValueLabel": "Supports {value}",
+    "@myDaySupportsValueLabel": {
+        "description": "Values-led supporting text prefix used for What matters rows in the My Day ritual.",
+        "placeholders": {
+            "value": {
+                "type": "String",
+                "example": "Health"
+            }
+        }
+    },
     "myDayShowMoreCountLabel": "Show {count} more",
     "@myDayShowMoreCountLabel": {
         "description": "Collapsed label for expanding a truncated list in the My Day ritual.",
@@ -916,11 +926,11 @@
     "@myDayWhySuggestedSemanticLabel": {
         "description": "Accessibility label for the info tooltip button explaining why a task was suggested in the My Day ritual."
     },
-    "myDayWhatMattersSubtitle": "Values-led suggestions for today.",
+    "myDayWhatMattersSubtitle": "Value-led picks for today.",
     "@myDayWhatMattersSubtitle": {
         "description": "Subtitle for the What matters section in the My Day ritual."
     },
-    "myDayWhatsWaitingSubtitle": "Time-sensitive items to avoid surprises.",
+    "myDayWhatsWaitingSubtitle": "Due soon or ready to start.",
     "@myDayWhatsWaitingSubtitle": {
         "description": "Subtitle for the What’s waiting section in the My Day ritual."
     },
@@ -944,7 +954,7 @@
     "@myDaySuggestionSettingsTitle": {
         "description": "Title for the My Day ritual suggestion settings sheet."
     },
-    "myDaySuggestionSettingsBody": "Tune what shows up in “What’s waiting”.",
+    "myDaySuggestionSettingsBody": "Tune what shows up in “Time sensitive”.",
     "@myDaySuggestionSettingsBody": {
         "description": "Body text for the suggestion settings sheet in the My Day ritual."
     },
