@@ -21,13 +21,6 @@ sealed class TaskTileIntent {
   const factory TaskTileIntent.selection({required bool selected}) =
       TaskTileIntentSelection;
 
-  /// A task row used for the My Day ritual picker.
-  ///
-  /// Uses the same selected/unselected affordance as bulk selection, but does
-  /// not imply a global "selection mode".
-  const factory TaskTileIntent.ritualPick({required bool selected}) =
-      TaskTileIntentRitualPick;
-
   /// A task row used for bulk selection mode.
   const factory TaskTileIntent.bulkSelection({required bool selected}) =
       TaskTileIntentBulkSelection;
@@ -43,12 +36,6 @@ final class TaskTileIntentMyDayList extends TaskTileIntent {
 
 final class TaskTileIntentSelection extends TaskTileIntent {
   const TaskTileIntentSelection({required this.selected});
-
-  final bool selected;
-}
-
-final class TaskTileIntentRitualPick extends TaskTileIntent {
-  const TaskTileIntentRitualPick({required this.selected});
 
   final bool selected;
 }

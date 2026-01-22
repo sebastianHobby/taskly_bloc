@@ -51,6 +51,11 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
   const factory GlobalSettingsEvent.myDayDueWindowDaysChanged(int days) =
       GlobalSettingsMyDayDueWindowDaysChanged;
 
+  /// User toggled whether to show the "Available to start" lane.
+  const factory GlobalSettingsEvent.myDayShowAvailableToStartChanged(
+    bool enabled,
+  ) = GlobalSettingsMyDayShowAvailableToStartChanged;
+
   /// User completed onboarding.
   const factory GlobalSettingsEvent.onboardingCompleted() =
       GlobalSettingsOnboardingCompleted;
@@ -145,6 +150,10 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsMyDayDueWindowDaysChanged>(
       _onMyDayDueWindowDaysChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMyDayShowAvailableToStartChanged>(
+      _onMyDayShowAvailableToStartChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsOnboardingCompleted>(
@@ -490,6 +499,40 @@ class GlobalSettingsBloc
         st,
         context: context,
         message: '[GlobalSettingsBloc] my day due window persist failed',
+      );
+    }
+  }
+
+  Future<void> _onMyDayShowAvailableToStartChanged(
+    GlobalSettingsMyDayShowAvailableToStartChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      myDayShowAvailableToStart: event.enabled,
+    );
+    final context = _newContext(
+      intent: 'settings_my_day_show_available_to_start_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+    try {
+      await _settingsRepository.save(
+        SettingsKey.global,
+        updated,
+        context: context,
+      );
+    } catch (e, st) {
+      talker.error(
+        '[settings.global] My Day show available-to-start persist FAILED',
+        e,
+        st,
+      );
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message:
+            '[GlobalSettingsBloc] my day show available-to-start persist failed',
       );
     }
   }

@@ -1737,7 +1737,7 @@
     "@myDayUpdatePlanSubtitle": {
         "description": "Subtitle shown at the top of the My Day ritual wizard when resuming and no completed picks exist."
     },
-    "myDayUpdatePlanSubtitleWithCompleted": "Review today’s picks. Completed items are locked.",
+    "myDayUpdatePlanSubtitleWithCompleted": "Review today’s picks. Completed items are shown below.",
     "@myDayUpdatePlanSubtitleWithCompleted": {
         "description": "Subtitle shown at the top of the My Day ritual wizard when resuming and some picks are completed."
     },
@@ -1807,9 +1807,13 @@
     "@myDayCompletedSectionTitle": {
         "description": "Section header title for completed picks in the My Day ritual."
     },
-    "myDayCompletedSectionSubtitle": "Locked for today",
-    "@myDayCompletedSectionSubtitle": {
-        "description": "Section header subtitle for completed picks in the My Day ritual."
+    "myDayShowCompletedLabel": "Show completed",
+    "@myDayShowCompletedLabel": {
+        "description": "Label for the collapsed toggle that reveals the completed picks list in the My Day update plan flow."
+    },
+    "myDayHideCompletedLabel": "Hide completed",
+    "@myDayHideCompletedLabel": {
+        "description": "Label for the toggle that collapses the completed picks list in the My Day update plan flow."
     },
     "myDayPickAllDueMenuLabel": "Pick all due",
     "@myDayPickAllDueMenuLabel": {
@@ -1822,6 +1826,40 @@
     "myDayPickAllPicksMenuLabel": "Pick all picks",
     "@myDayPickAllPicksMenuLabel": {
         "description": "Overflow menu item label to pick all suggested picks."
+    },
+    "myDayTimePlanBannerTitle": "Time & plan based",
+    "@myDayTimePlanBannerTitle": {
+        "description": "Title for the always-visible banner under Suggested in the My Day ritual that opens the time/plan bottom sheet."
+    },
+    "myDayTimePlanSheetTitle": "Time & plan based",
+    "@myDayTimePlanSheetTitle": {
+        "description": "Title for the bottom sheet opened from the time/plan banner in the My Day ritual."
+    },
+    "myDayTimePlanBannerSubtitle": "{dueCount} time-critical • {plannedCount} planned",
+    "@myDayTimePlanBannerSubtitle": {
+        "description": "Subtitle shown in the time/plan banner and sheet, summarizing counts.",
+        "placeholders": {
+            "dueCount": {
+                "type": "int",
+                "example": "2"
+            },
+            "plannedCount": {
+                "type": "int",
+                "example": "1"
+            }
+        }
+    },
+    "myDayTimePlanBannerEmptySubtitle": "No time-critical or planned items today.",
+    "@myDayTimePlanBannerEmptySubtitle": {
+        "description": "Subtitle shown in the time/plan banner and sheet when both sections are empty."
+    },
+    "myDayTimeCriticalSectionTitle": "Time-critical",
+    "@myDayTimeCriticalSectionTitle": {
+        "description": "Section title for tasks that are due soon (time-critical) in the time/plan sheet during the My Day ritual."
+    },
+    "myDayPlannedSectionTitle": "Planned",
+    "@myDayPlannedSectionTitle": {
+        "description": "Section title for planned tasks shown in the time/plan sheet during the My Day ritual."
     },
     "myDayShowFewerLabel": "Show fewer",
     "@myDayShowFewerLabel": {

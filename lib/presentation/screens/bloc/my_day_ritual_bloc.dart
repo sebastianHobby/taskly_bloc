@@ -46,14 +46,16 @@ final class MyDayRitualAcceptAllCurated extends MyDayRitualEvent {
   const MyDayRitualAcceptAllCurated();
 }
 
-final class MyDayRitualFocusModeChanged extends MyDayRitualEvent {
-  const MyDayRitualFocusModeChanged(this.focusMode);
+final class MyDayRitualDueWindowDaysChanged extends MyDayRitualEvent {
+  const MyDayRitualDueWindowDaysChanged(this.days);
 
-  final FocusMode focusMode;
+  final int days;
 }
 
-final class MyDayRitualFocusModeWizardRequested extends MyDayRitualEvent {
-  const MyDayRitualFocusModeWizardRequested();
+final class MyDayRitualShowAvailableToStartChanged extends MyDayRitualEvent {
+  const MyDayRitualShowAvailableToStartChanged(this.enabled);
+
+  final bool enabled;
 }
 
 final class MyDayRitualConfirm extends MyDayRitualEvent {
@@ -98,7 +100,6 @@ final class MyDayRitualLoading extends MyDayRitualState {
 }
 
 enum MyDayRitualNav {
-  openFocusSetupWizard,
   closeWizard,
 }
 
@@ -106,8 +107,8 @@ enum MyDayRitualNav {
 final class MyDayRitualReady extends MyDayRitualState {
   const MyDayRitualReady({
     required this.needsRitual,
-    required this.focusMode,
     required this.dueWindowDays,
+    required this.showAvailableToStart,
     required this.planned,
     required this.curated,
     required this.completedPicks,
@@ -120,8 +121,8 @@ final class MyDayRitualReady extends MyDayRitualState {
   });
 
   final bool needsRitual;
-  final FocusMode focusMode;
   final int dueWindowDays;
+  final bool showAvailableToStart;
   final List<Task> planned;
   final List<Task> curated;
   final List<Task> completedPicks;
@@ -134,8 +135,8 @@ final class MyDayRitualReady extends MyDayRitualState {
 
   MyDayRitualReady copyWith({
     bool? needsRitual,
-    FocusMode? focusMode,
     int? dueWindowDays,
+    bool? showAvailableToStart,
     List<Task>? planned,
     List<Task>? curated,
     List<Task>? completedPicks,
@@ -148,8 +149,8 @@ final class MyDayRitualReady extends MyDayRitualState {
   }) {
     return MyDayRitualReady(
       needsRitual: needsRitual ?? this.needsRitual,
-      focusMode: focusMode ?? this.focusMode,
       dueWindowDays: dueWindowDays ?? this.dueWindowDays,
+      showAvailableToStart: showAvailableToStart ?? this.showAvailableToStart,
       planned: planned ?? this.planned,
       curated: curated ?? this.curated,
       completedPicks: completedPicks ?? this.completedPicks,
@@ -188,8 +189,10 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     on<MyDayRitualAcceptAllDue>(_onAcceptAllDue);
     on<MyDayRitualAcceptAllStarts>(_onAcceptAllStarts);
     on<MyDayRitualAcceptAllCurated>(_onAcceptAllCurated);
-    on<MyDayRitualFocusModeChanged>(_onFocusModeChanged);
-    on<MyDayRitualFocusModeWizardRequested>(_onFocusModeWizardRequested);
+    on<MyDayRitualDueWindowDaysChanged>(_onDueWindowDaysChanged);
+    on<MyDayRitualShowAvailableToStartChanged>(
+      _onShowAvailableToStartChanged,
+    );
     on<MyDayRitualConfirm>(_onConfirm);
     on<MyDayRitualSnoozeTaskRequested>(_onSnoozeTaskRequested);
     on<MyDayRitualAppendToToday>(_onAppendToToday);
@@ -276,6 +279,29 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
             add(const _MyDayRitualInputsChanged());
           }
         });
+  }
+
+  Future<void> _onDueWindowDaysChanged(
+    MyDayRitualDueWindowDaysChanged event,
+    Emitter<MyDayRitualState> emit,
+  ) async {
+    final clamped = event.days.clamp(1, 30);
+    if (clamped == _globalSettings.myDayDueWindowDays) return;
+
+    final updated = _globalSettings.copyWith(myDayDueWindowDays: clamped);
+    await _settingsRepository.save(SettingsKey.global, updated);
+  }
+
+  Future<void> _onShowAvailableToStartChanged(
+    MyDayRitualShowAvailableToStartChanged event,
+    Emitter<MyDayRitualState> emit,
+  ) async {
+    if (event.enabled == _globalSettings.myDayShowAvailableToStart) return;
+
+    final updated = _globalSettings.copyWith(
+      myDayShowAvailableToStart: event.enabled,
+    );
+    await _settingsRepository.save(SettingsKey.global, updated);
   }
 
   Future<void> _refreshSnapshots({required bool resetSelection}) async {
@@ -370,8 +396,8 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     emit(
       MyDayRitualReady(
         needsRitual: needsRitual,
-        focusMode: _allocationConfig.focusMode,
         dueWindowDays: _globalSettings.myDayDueWindowDays,
+        showAvailableToStart: _globalSettings.myDayShowAvailableToStart,
         planned: planned,
         curated: curated,
         completedPicks: _completedPicks,
@@ -474,28 +500,6 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         .toSet();
     _selectedTaskIds = {..._selectedTaskIds, ...startsIds};
     emit(current.copyWith(selectedTaskIds: _selectedTaskIds));
-  }
-
-  Future<void> _onFocusModeChanged(
-    MyDayRitualFocusModeChanged event,
-    Emitter<MyDayRitualState> emit,
-  ) async {
-    final updated = _allocationConfig.copyWith(focusMode: event.focusMode);
-    await _settingsRepository.save(SettingsKey.allocation, updated);
-  }
-
-  void _onFocusModeWizardRequested(
-    MyDayRitualFocusModeWizardRequested event,
-    Emitter<MyDayRitualState> emit,
-  ) {
-    if (state is! MyDayRitualReady) return;
-    final current = state as MyDayRitualReady;
-    emit(
-      current.copyWith(
-        nav: MyDayRitualNav.openFocusSetupWizard,
-        navRequestId: current.navRequestId + 1,
-      ),
-    );
   }
 
   Future<void> _onConfirm(

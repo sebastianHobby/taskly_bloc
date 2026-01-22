@@ -23,8 +23,6 @@ import 'package:taskly_ui/taskly_ui_sections.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  static const bool _showLegacyFocusItems = false;
-
   @override
   Widget build(BuildContext context) {
     return BlocProvider<SettingsMaintenanceCubit>(
@@ -61,6 +59,7 @@ class SettingsScreen extends StatelessWidget {
                     title: 'My Day',
                     children: [
                       _MyDayDueWindowSlider(settings: settings),
+                      _MyDayShowAvailableToStartToggle(settings: settings),
                     ],
                   ),
                   _buildSection(
@@ -75,10 +74,7 @@ class SettingsScreen extends StatelessWidget {
                     context: context,
                     title: 'Customization',
                     children: [
-                      if (_showLegacyFocusItems)
-                        _buildTaskAllocationItem(context),
-                      if (_showLegacyFocusItems)
-                        _buildAttentionRulesItem(context),
+                      const SizedBox.shrink(),
                     ],
                   ),
                   _buildSection(
@@ -127,26 +123,6 @@ class SettingsScreen extends StatelessWidget {
         ),
         ...children,
       ],
-    );
-  }
-
-  Widget _buildTaskAllocationItem(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.tune),
-      title: const Text('Task Allocation'),
-      subtitle: const Text('Strategy, limits, and value ranking'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Routing.toScreenKey(context, 'focus_setup'),
-    );
-  }
-
-  Widget _buildAttentionRulesItem(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.notifications_active),
-      title: const Text('Attention Rules'),
-      subtitle: const Text('Configure problem detection and review reminders'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Routing.toScreenKey(context, 'focus_setup'),
     );
   }
 
@@ -327,6 +303,26 @@ class _MyDayDueWindowSlider extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MyDayShowAvailableToStartToggle extends StatelessWidget {
+  const _MyDayShowAvailableToStartToggle({required this.settings});
+
+  final GlobalSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile.adaptive(
+      title: const Text('Show “Available to start”'),
+      subtitle: const Text('Tasks with a start date of today or earlier'),
+      value: settings.myDayShowAvailableToStart,
+      onChanged: (enabled) {
+        context.read<GlobalSettingsBloc>().add(
+          GlobalSettingsEvent.myDayShowAvailableToStartChanged(enabled),
+        );
+      },
     );
   }
 }

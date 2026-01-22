@@ -13,6 +13,7 @@ class TaskEntityTile extends StatelessWidget {
     this.markers = const TaskTileMarkers(),
     this.supportingText,
     this.supportingTooltipText,
+    this.completedStatusLabel,
     super.key,
   });
 
@@ -30,6 +31,11 @@ class TaskEntityTile extends StatelessWidget {
   /// When provided, a small info icon is rendered next to the supporting text.
   /// The tooltip is shown on tap.
   final String? supportingTooltipText;
+
+  /// Optional label used for the completed status chip in selection flows.
+  ///
+  /// When null, the default English label is used.
+  final String? completedStatusLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -122,7 +128,9 @@ class TaskEntityTile extends StatelessWidget {
                 onPressed: actions.onToggleSelected ?? actions.onTap,
               )
             else if (model.completed)
-              const _CompletedStatusChip(),
+              _CompletedStatusChip(
+                label: completedStatusLabel,
+              ),
           ],
         ),
       ),
@@ -265,7 +273,9 @@ class _SelectPill extends StatelessWidget {
 }
 
 class _CompletedStatusChip extends StatelessWidget {
-  const _CompletedStatusChip();
+  const _CompletedStatusChip({required this.label});
+
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -288,7 +298,7 @@ class _CompletedStatusChip extends StatelessWidget {
           ),
           const SizedBox(width: 6),
           Text(
-            'Completed',
+            label ?? 'Completed',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w700,

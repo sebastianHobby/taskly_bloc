@@ -15,17 +15,19 @@ class FocusModeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const modes = <FocusMode>[FocusMode.sustainable, FocusMode.responsive];
+
     return SizedBox(
-      height: 180,
+      height: 260,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: FocusMode.values.length,
+        itemCount: modes.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final focusMode = FocusMode.values[index];
+          final focusMode = modes[index];
           return SizedBox(
-            width: 160,
+            width: 320,
             child: FocusModeCard(
               focusMode: focusMode,
               isSelected: focusMode == currentFocusMode,

@@ -79,10 +79,6 @@ class NavigationIconResolver {
         icon: Icons.timeline_outlined,
         selectedIcon: Icons.timeline,
       ),
-      'focus_setup' || 'focus-setup' => (
-        icon: Icons.tune_outlined,
-        selectedIcon: Icons.tune,
-      ),
       'tasks' => (
         icon: Icons.checklist_outlined,
         selectedIcon: Icons.checklist,
