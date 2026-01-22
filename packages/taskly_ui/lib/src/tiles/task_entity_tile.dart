@@ -14,6 +14,13 @@ class TaskEntityTile extends StatelessWidget {
     this.supportingText,
     this.supportingTooltipText,
     this.completedStatusLabel,
+    this.pinnedSemanticLabel,
+    this.supportingTooltipSemanticLabel,
+    this.snoozeTooltip,
+    this.selectionPillLabel,
+    this.selectionPillSelectedLabel,
+    this.bulkSelectTooltip,
+    this.bulkDeselectTooltip,
     super.key,
   });
 
@@ -37,9 +44,46 @@ class TaskEntityTile extends StatelessWidget {
   /// When null, the default English label is used.
   final String? completedStatusLabel;
 
+  /// Optional semantics label for the pinned marker icon.
+  ///
+  /// When null, the default English label is used.
+  final String? pinnedSemanticLabel;
+
+  /// Optional semantics label for the supporting-tooltip info button.
+  ///
+  /// When null, the default English label is used.
+  final String? supportingTooltipSemanticLabel;
+
+  /// Optional tooltip for the snooze icon in selection flows.
+  ///
+  /// When null, the default English label is used.
+  final String? snoozeTooltip;
+
+  /// Optional label for the selection pill in selection flows.
+  ///
+  /// When null, the default English label is used.
+  final String? selectionPillLabel;
+
+  /// Optional label for the selection pill when the row is already selected.
+  ///
+  /// When null, the default English label is used.
+  final String? selectionPillSelectedLabel;
+
+  /// Optional tooltip for bulk-selection (not selected).
+  ///
+  /// When null, the default English label is used.
+  final String? bulkSelectTooltip;
+
+  /// Optional tooltip for bulk-selection (selected).
+  ///
+  /// When null, the default English label is used.
+  final String? bulkDeselectTooltip;
+
   @override
   Widget build(BuildContext context) {
-    final Widget? titlePrefix = markers.pinned ? const _PinnedGlyph() : null;
+    final Widget? titlePrefix = markers.pinned
+        ? _PinnedGlyph(label: pinnedSemanticLabel)
+        : null;
 
     final effectiveSupportingText = supportingText?.trim();
     final effectiveTooltipText = supportingTooltipText?.trim();
@@ -70,7 +114,7 @@ class TaskEntityTile extends StatelessWidget {
                 const SizedBox(width: 6),
                 Semantics(
                   button: true,
-                  label: 'Why suggested',
+                  label: supportingTooltipSemanticLabel ?? 'Why suggested',
                   child: Tooltip(
                     message: effectiveTooltipText,
                     triggerMode: TooltipTriggerMode.tap,
@@ -107,7 +151,7 @@ class TaskEntityTile extends StatelessWidget {
           children: [
             if (actions.onSnoozeRequested != null)
               IconButton(
-                tooltip: 'Snooze',
+                tooltip: snoozeTooltip ?? 'Snooze',
                 onPressed: actions.onSnoozeRequested,
                 style: IconButton.styleFrom(
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -126,6 +170,8 @@ class TaskEntityTile extends StatelessWidget {
               _SelectPill(
                 selected: selected,
                 onPressed: actions.onToggleSelected ?? actions.onTap,
+                label: selectionPillLabel,
+                selectedLabel: selectionPillSelectedLabel,
               )
             else if (model.completed)
               _CompletedStatusChip(
@@ -145,6 +191,8 @@ class TaskEntityTile extends StatelessWidget {
         trailing: _BulkSelectIcon(
           selected: selected,
           onPressed: actions.onToggleSelected ?? actions.onTap,
+          tooltipSelected: bulkDeselectTooltip,
+          tooltipNotSelected: bulkSelectTooltip,
         ),
       ),
       _ => TaskListRowTile(
@@ -170,16 +218,22 @@ class _BulkSelectIcon extends StatelessWidget {
   const _BulkSelectIcon({
     required this.selected,
     required this.onPressed,
+    this.tooltipSelected,
+    this.tooltipNotSelected,
   });
 
   final bool selected;
   final VoidCallback? onPressed;
+  final String? tooltipSelected;
+  final String? tooltipNotSelected;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return IconButton(
-      tooltip: selected ? 'Deselect' : 'Select',
+      tooltip: selected
+          ? (tooltipSelected ?? 'Deselect')
+          : (tooltipNotSelected ?? 'Select'),
       onPressed: onPressed,
       icon: Icon(
         selected
@@ -203,14 +257,16 @@ String _capWithEllipsis(String text, int maxChars) {
 }
 
 class _PinnedGlyph extends StatelessWidget {
-  const _PinnedGlyph();
+  const _PinnedGlyph({required this.label});
+
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
     return Semantics(
-      label: 'Pinned',
+      label: label ?? 'Pinned',
       child: SizedBox(
         width: 18,
         child: Align(
@@ -230,16 +286,22 @@ class _SelectPill extends StatelessWidget {
   const _SelectPill({
     required this.selected,
     required this.onPressed,
+    this.label,
+    this.selectedLabel,
   });
 
   final bool selected;
   final VoidCallback? onPressed;
+  final String? label;
+  final String? selectedLabel;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    final label = selected ? 'Added' : 'Add';
+    final effectiveLabel = selected
+        ? (selectedLabel ?? 'Added')
+        : (label ?? 'Add');
 
     final background = selected
         ? scheme.surfaceContainerLow
@@ -261,7 +323,7 @@ class _SelectPill extends StatelessWidget {
           border: border,
         ),
         child: Text(
-          label,
+          effectiveLabel,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: foreground,
             fontWeight: FontWeight.w700,

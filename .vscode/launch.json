@@ -1,21 +1,26 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
-    
-
     {
-      "name": "taskly_bloc (dev)",
+      "name": "Run Android (prod)",
       "request": "launch",
       "type": "dart",
-      "program": "lib/main.dart",
-      "args": [
-        // Mirrors production: values provided via --dart-define.
-        // In debug on non-web platforms, .env (if present) still takes precedence.
-        "--dart-define-from-file=dart_defines.json"
-      ]
+      "program": "lib/main_prod.dart",
+      "deviceId": "android"
     },
+    {
+      "name": "Run Web (Chrome, prod)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_prod.dart",
+      "deviceId": "chrome"
+    },
+    {
+      "name": "Run Desktop (Windows, prod)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_prod.dart",
+      "deviceId": "windows"
+    }
   ]
 }

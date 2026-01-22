@@ -82,19 +82,12 @@ if ($IncludeStartup) {
     }
 }
 
-$definesPath = Join-Path $root 'dart_defines.local.json'
-if (-not (Test-Path $definesPath)) {
-    Write-Host ''
-    Write-Host 'WARNING: dart_defines.local.json not found.'
-    Write-Host 'Pipeline tests will likely skip/fail unless you run Start-LocalE2EStack.ps1 (or create defines manually).'
-}
-
 $excludePipeline = Invoke-Measured -Name 'flutter test (exclude pipeline tag)' -Count $Iterations -Block {
     flutter test --exclude-tags=pipeline --reporter=$Reporter | Out-Host
 }
 
 $pipelineOnly = Invoke-Measured -Name 'flutter test (pipeline tag only)' -Count $Iterations -Block {
-    flutter test --tags=pipeline --dart-define-from-file=$definesPath --reporter=$Reporter | Out-Host
+    flutter test --tags=pipeline --reporter=$Reporter | Out-Host
 }
 
 Write-Host ''

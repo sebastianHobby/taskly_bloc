@@ -82,9 +82,8 @@ class _BootstrapFailureApp extends StatelessWidget {
                   'App failed to start.\n\n'
                   'Error: $error\n\n'
                   'Hints:\n'
-                  '- Web (Chrome) cannot read .env; use --dart-define or '
-                  '--dart-define-from-file=dart_defines.json\n'
-                  '- Desktop/mobile debug can use .env (see ENVIRONMENT_SETUP.md)\n\n'
+                  '- Prefer build-time config via entrypoints: lib/main_local.dart or lib/main_prod.dart\n'
+                  '- Web builds must use a build-time entrypoint (e.g. lib/main_prod.dart)\n\n'
                   'StackTrace:\n$stackTrace',
                 ),
               ),

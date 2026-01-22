@@ -56,6 +56,7 @@ Task taskFromTable(
     description: t.description,
     startDate: dateOnlyOrNull(t.startDate),
     deadlineDate: dateOnlyOrNull(t.deadlineDate),
+    myDaySnoozedUntilUtc: t.myDaySnoozedUntilUtc,
     projectId: t.projectId,
     repeatIcalRrule: t.repeatIcalRrule,
     repeatFromCompletion: t.repeatFromCompletion,

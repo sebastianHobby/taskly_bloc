@@ -49,12 +49,7 @@ jobs:
       
       - name: Build web preview
         run: |
-          flutter build web --release --base-href "/taskly_bloc/pr-${{ github.event.pull_request.number }}/" \
-            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-            --dart-define=SUPABASE_PUBLISHABLE_KEY="${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" \
-            --dart-define=POWERSYNC_URL="${{ secrets.POWERSYNC_URL }}" \
-            --dart-define=DEV_USERNAME="ci_user" \
-            --dart-define=DEV_PASSWORD="ci_pass"
+          flutter build web --release --base-href "/taskly_bloc/pr-${{ github.event.pull_request.number }}/" -t lib/main_prod.dart
       
       - name: Add .nojekyll file
         run: touch build/web/.nojekyll

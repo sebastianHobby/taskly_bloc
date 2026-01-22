@@ -151,6 +151,26 @@ class FakeTaskRepository implements TaskRepositoryContract {
   }
 
   @override
+  Future<void> setMyDaySnoozedUntil({
+    required String id,
+    required DateTime? untilUtc,
+    OperationContext? context,
+  }) async {
+    final idx = _last.indexWhere((t) => t.id == id);
+    if (idx == -1) return;
+
+    final old = _last[idx];
+    final updated = [..._last];
+    updated[idx] = old.copyWith(
+      myDaySnoozedUntilUtc: untilUtc?.toUtc(),
+      updatedAt: _now(),
+    );
+
+    _last = updated;
+    _controller.add(_last);
+  }
+
+  @override
   Future<void> create({
     required String name,
     String? description,

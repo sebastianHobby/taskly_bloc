@@ -130,11 +130,10 @@ Note: this repo currently does not ship a dedicated migration for PowerSync repl
 - PowerShell helpers:
   - [tool/e2e/Start-LocalE2EStack.ps1](../../tool/e2e/Start-LocalE2EStack.ps1)
   - [tool/e2e/Run-LocalE2ETests.ps1](../../tool/e2e/Run-LocalE2ETests.ps1)
-  - [tool/e2e/New-LocalE2EDefines.ps1](../../tool/e2e/New-LocalE2EDefines.ps1)
 
 ### Tests + CI
-- Pipeline integration test:
-  - [test/integration_test/powersync_supabase_pipeline_test.dart](../../test/integration_test/powersync_supabase_pipeline_test.dart)
+- Pipeline integration tests:
+  - Live under `test/` and are tagged `pipeline`.
 - GitHub Actions workflow (local stack + full suite):
   - [.github/workflows/main.yaml](../../.github/workflows/main.yaml)
 
@@ -345,7 +344,6 @@ The repo provides scripts to:
 - start Supabase
 - optionally reset DB (`supabase db reset` applies the locally generated schema + seed)
 - start PowerSync (compose)
-- generate `dart_defines.local.json` from `supabase status`
 
 Entry points:
 - [../runbooks/LOCAL_E2E_STACK.md](../runbooks/LOCAL_E2E_STACK.md)
@@ -360,7 +358,7 @@ The pipeline integration test validates *both directions*:
 - Download: PostgREST update -> PowerSync download -> Drift read validates row
 
 See:
-- [test/integration_test/powersync_supabase_pipeline_test.dart](../../test/integration_test/powersync_supabase_pipeline_test.dart)
+- Pipeline tests live under `test/` and are tagged `pipeline`.
 
 ### 7.3 CI workflow
 
@@ -368,7 +366,7 @@ GitHub Actions runs the full test suite against a fully local stack on `ubuntu-l
 
 - `supabase start` + `supabase db reset`
 - PowerSync compose up + liveness wait
-- `flutter test ... --dart-define=...`
+- `flutter test ...`
 
 See:
 - [.github/workflows/main.yaml](../../.github/workflows/main.yaml)

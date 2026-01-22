@@ -70,12 +70,6 @@ if (-not (Test-Path $envFile)) {
     Write-Host "Created $envFile from template."
 }
 
-# Generate local dart defines
-$definesPath = Join-Path $PSScriptRoot "..\..\dart_defines.local.json"
-$definesPath = (Resolve-Path (Split-Path $definesPath -Parent)).Path + "\dart_defines.local.json"
-
-& (Join-Path $PSScriptRoot "New-LocalE2EDefines.ps1") -OutputPath $definesPath -PowerSyncPort $PowerSyncPort
-
 Write-Host "Starting PowerSync (docker compose)..."
 Push-Location (Join-Path $PSScriptRoot "..\..\infra\powersync_local")
 try {

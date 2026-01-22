@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_core/env.dart';
 
@@ -7,9 +6,8 @@ Future<void> loadSupabase() async {
   final supabaseAnonKey = Env.supabasePublishableKey.trim();
 
   if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
-    const hint = kIsWeb
-        ? 'On web, pass values via --dart-define (recommended: --dart-define-from-file=dart_defines.json).'
-        : 'Create a .env file (see ENVIRONMENT_SETUP.md) or pass values via --dart-define.';
+    const hint =
+        'Run with a configured entrypoint (lib/main_local.dart or lib/main_prod.dart).';
 
     throw StateError(
       'Supabase configuration is missing. '
