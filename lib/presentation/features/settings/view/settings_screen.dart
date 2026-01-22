@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker_flutter/talker_flutter.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/settings.dart';

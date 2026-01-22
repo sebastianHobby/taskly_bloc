@@ -4,3 +4,4 @@
 library;
 
 export 'src/env/env.dart';
+export 'src/env/env_config.dart';

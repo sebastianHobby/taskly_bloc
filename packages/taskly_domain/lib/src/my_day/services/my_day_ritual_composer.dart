@@ -12,12 +12,14 @@ final class MyDayRitualComposition {
     required this.curated,
     required this.curatedReasonLineByTaskId,
     required this.curatedTooltipByTaskId,
+    required this.curatedReasonCodesByTaskId,
   });
 
   final List<Task> planned;
   final List<Task> curated;
   final Map<String, String> curatedReasonLineByTaskId;
   final Map<String, String> curatedTooltipByTaskId;
+  final Map<String, List<AllocationReasonCode>> curatedReasonCodesByTaskId;
 }
 
 /// Domain policy for composing the My Day ritual task lists.
@@ -58,6 +60,7 @@ final class MyDayRitualComposer {
       curated: curated,
       curatedReasonLineByTaskId: details.reasonLineByTaskId,
       curatedTooltipByTaskId: details.tooltipByTaskId,
+      curatedReasonCodesByTaskId: details.reasonCodesByTaskId,
     );
   }
 
@@ -122,6 +125,7 @@ final class MyDayRitualComposer {
   ({
     Map<String, String> reasonLineByTaskId,
     Map<String, String> tooltipByTaskId,
+    Map<String, List<AllocationReasonCode>> reasonCodesByTaskId,
   })
   _buildCuratedReasonDetails(
     List<Task> curated, {
@@ -132,6 +136,7 @@ final class MyDayRitualComposer {
       return (
         reasonLineByTaskId: const <String, String>{},
         tooltipByTaskId: const <String, String>{},
+        reasonCodesByTaskId: const <String, List<AllocationReasonCode>>{},
       );
     }
 
@@ -159,6 +164,7 @@ final class MyDayRitualComposer {
     return (
       reasonLineByTaskId: reasonLineByTaskId,
       tooltipByTaskId: tooltipByTaskId,
+      reasonCodesByTaskId: reasonsByTaskId,
     );
   }
 

@@ -37,6 +37,13 @@ class MyDayPlanPickerTaskListSection extends StatelessWidget {
   const MyDayPlanPickerTaskListSection({
     required this.items,
     this.completedStatusLabel,
+    this.pinnedSemanticLabel,
+    this.selectionPillLabel,
+    this.selectionPillSelectedLabel,
+    this.snoozeTooltip,
+    this.supportingTooltipSemanticLabel,
+    this.bulkSelectTooltip,
+    this.bulkDeselectTooltip,
     super.key,
   });
 
@@ -46,6 +53,31 @@ class MyDayPlanPickerTaskListSection extends StatelessWidget {
   ///
   /// Must be provided by the caller (no app l10n inside taskly_ui).
   final String? completedStatusLabel;
+
+  /// Optional semantics label for the pinned marker icon.
+  ///
+  /// When null, the default English label is used.
+  final String? pinnedSemanticLabel;
+
+  /// Optional label for the selection pill shown on each row.
+  ///
+  /// Intended for callers to provide localized / screen-specific wording.
+  final String? selectionPillLabel;
+
+  /// Optional label for the selection pill when a row is already selected.
+  final String? selectionPillSelectedLabel;
+
+  /// Optional tooltip for the snooze icon.
+  final String? snoozeTooltip;
+
+  /// Optional semantics label for the supporting-tooltip info button.
+  final String? supportingTooltipSemanticLabel;
+
+  /// Optional tooltip for bulk-selection (not selected).
+  final String? bulkSelectTooltip;
+
+  /// Optional tooltip for bulk-selection (selected).
+  final String? bulkDeselectTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +90,13 @@ class MyDayPlanPickerTaskListSection extends StatelessWidget {
             supportingText: item.supportingText,
             supportingTooltipText: item.supportingTooltipText,
             completedStatusLabel: completedStatusLabel,
+            pinnedSemanticLabel: pinnedSemanticLabel,
+            selectionPillLabel: selectionPillLabel,
+            selectionPillSelectedLabel: selectionPillSelectedLabel,
+            snoozeTooltip: snoozeTooltip,
+            supportingTooltipSemanticLabel: supportingTooltipSemanticLabel,
+            bulkSelectTooltip: bulkSelectTooltip,
+            bulkDeselectTooltip: bulkDeselectTooltip,
             markers: item.markers,
             actions: TaskTileActions(
               onTap: item.onToggleSelected,

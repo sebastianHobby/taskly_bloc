@@ -124,6 +124,16 @@ abstract class TaskRepositoryContract {
     OperationContext? context,
   });
 
+  /// Sets (or clears) the My Day snooze-until timestamp for a task.
+  ///
+  /// When [untilUtc] is non-null and in the future, My Day surfaces should
+  /// suppress this task until that time.
+  Future<void> setMyDaySnoozedUntil({
+    required String id,
+    required DateTime? untilUtc,
+    OperationContext? context,
+  });
+
   Future<void> delete(String id, {OperationContext? context});
 
   // =========================================================================

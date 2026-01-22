@@ -195,5 +195,14 @@ final class _RecordingTaskRepository implements TaskRepositoryContract {
   }
 
   @override
+  Future<void> setMyDaySnoozedUntil({
+    required String id,
+    required DateTime? untilUtc,
+    OperationContext? context,
+  }) async {
+    // Not used by these tests.
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

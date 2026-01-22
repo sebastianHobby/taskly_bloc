@@ -798,6 +798,248 @@
     "@snoozeSubtitle": {
         "description": "Subtitle explaining snooze behavior"
     },
+    "myDayWhatMattersSectionTitle": "What matters",
+    "@myDayWhatMattersSectionTitle": {
+        "description": "Section title for value-aligned suggestions in the My Day ritual (B1)."
+    },
+    "myDayWhatsWaitingSectionTitle": "What’s waiting",
+    "@myDayWhatsWaitingSectionTitle": {
+        "description": "Section title for scheduled/review tasks in the My Day ritual (B1)."
+    },
+    "myDayHeadsUpBannerTitle": "A quick heads-up",
+    "@myDayHeadsUpBannerTitle": {
+        "description": "Title for the My Day ritual heads-up banner (Banner 1)."
+    },
+    "myDayHeadsUpBannerCta": "Show me",
+    "@myDayHeadsUpBannerCta": {
+        "description": "CTA label for the heads-up banner in the My Day ritual (Banner 1)."
+    },
+    "myDayHeadsUpCaughtUpSubtitle": "You're caught up.",
+    "@myDayHeadsUpCaughtUpSubtitle": {
+        "description": "Short subtitle in the heads-up banner when there are no waiting tasks."
+    },
+    "myDayHeadsUpWaitingSummary": "{dueCount} due soon{availablePart}",
+    "@myDayHeadsUpWaitingSummary": {
+        "description": "Short summary in the heads-up banner for waiting tasks.",
+        "placeholders": {
+            "dueCount": {
+                "type": "int",
+                "example": "2"
+            },
+            "availablePart": {
+                "type": "String",
+                "example": " • 3 available to start"
+            }
+        }
+    },
+    "myDayAvailableToStartCountPart": " • {count} available to start",
+    "@myDayAvailableToStartCountPart": {
+        "description": "Suffix part appended to the heads-up summary when the 'available to start' lane is enabled.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "myDayChooseAction": "Choose",
+    "@myDayChooseAction": {
+        "description": "Action label used for value-aligned options in the My Day ritual (S1)."
+    },
+    "myDayDoTodayAction": "Do today",
+    "@myDayDoTodayAction": {
+        "description": "Action label used to commit a waiting task to today in the My Day ritual (S1)."
+    },
+    "myDayAddToMyDayAction": "Add to My Day",
+    "@myDayAddToMyDayAction": {
+        "description": "Primary action label for adding an item to My Day in the ritual."
+    },
+    "myDayAddedLabel": "Added",
+    "@myDayAddedLabel": {
+        "description": "Selected-state label for an item that has been added to My Day in the ritual."
+    },
+    "myDaySnoozeAction": "Snooze",
+    "@myDaySnoozeAction": {
+        "description": "Action label for snoozing a task in the My Day ritual (S1)."
+    },
+    "myDayWhyTheseAction": "Why these?",
+    "@myDayWhyTheseAction": {
+        "description": "Button label that opens a sheet explaining why items are shown in a section."
+    },
+    "myDayWhyTheseTitle": "Why these?",
+    "@myDayWhyTheseTitle": {
+        "description": "Title for the explainability bottom sheet in the My Day ritual."
+    },
+    "myDayWhyTheseWhatMattersBody": "We suggest tasks that align with your values, gently rebalance neglected values, and factor in urgency and priority.",
+    "@myDayWhyTheseWhatMattersBody": {
+        "description": "Body text for the 'Why these?' sheet for the What matters section."
+    },
+    "myDayWhyTheseValueGroupCount": "{count} picks",
+    "@myDayWhyTheseValueGroupCount": {
+        "description": "Subtitle shown per value group in the 'Why these?' sheet.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "myDayWhyTheseWhatsWaitingBody": "These are time-sensitive items to avoid surprises. You’ll see tasks due soon (within the next {days} days) and tasks that are available to start.",
+    "@myDayWhyTheseWhatsWaitingBody": {
+        "description": "Body text for the 'Why these?' sheet for the What’s waiting section.",
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "7"
+            }
+        }
+    },
+    "myDayWhyTheseSignalBalance": "Balance",
+    "@myDayWhyTheseSignalBalance": {
+        "description": "Short signal label shown in the 'Why these?' sheet indicating value rebalancing/neglect nudges."
+    },
+    "myDayWhyTheseSignalCrossValue": "Cross-value",
+    "@myDayWhyTheseSignalCrossValue": {
+        "description": "Short signal label shown in the 'Why these?' sheet indicating a task advances multiple values."
+    },
+    "myDayShowMoreCountLabel": "Show {count} more",
+    "@myDayShowMoreCountLabel": {
+        "description": "Collapsed label for expanding a truncated list in the My Day ritual.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "myDayWhySuggestedSemanticLabel": "Why suggested",
+    "@myDayWhySuggestedSemanticLabel": {
+        "description": "Accessibility label for the info tooltip button explaining why a task was suggested in the My Day ritual."
+    },
+    "myDayWhatMattersSubtitle": "Values-led suggestions for today.",
+    "@myDayWhatMattersSubtitle": {
+        "description": "Subtitle for the What matters section in the My Day ritual."
+    },
+    "myDayWhatsWaitingSubtitle": "Time-sensitive items to avoid surprises.",
+    "@myDayWhatsWaitingSubtitle": {
+        "description": "Subtitle for the What’s waiting section in the My Day ritual."
+    },
+    "myDayValueAlignedLabel": "Value-aligned",
+    "@myDayValueAlignedLabel": {
+        "description": "Short label indicating a task is linked to a value in the My Day ritual."
+    },
+    "myDayValueAlignedTooltip": "This task is linked to one of your values.",
+    "@myDayValueAlignedTooltip": {
+        "description": "Tooltip explaining value alignment in the My Day ritual."
+    },
+    "myDayDueSoonLabel": "Due soon",
+    "@myDayDueSoonLabel": {
+        "description": "Label for tasks that are due soon in the My Day ritual."
+    },
+    "myDayAvailableToStartLabel": "Available to start",
+    "@myDayAvailableToStartLabel": {
+        "description": "Label for tasks that are available to start in the My Day ritual."
+    },
+    "myDaySuggestionSettingsTitle": "Suggestion settings",
+    "@myDaySuggestionSettingsTitle": {
+        "description": "Title for the My Day ritual suggestion settings sheet."
+    },
+    "myDaySuggestionSettingsBody": "Tune what shows up in “What’s waiting”.",
+    "@myDaySuggestionSettingsBody": {
+        "description": "Body text for the suggestion settings sheet in the My Day ritual."
+    },
+    "myDayDueSoonWindowLabel": "Due soon window · {days} days",
+    "@myDayDueSoonWindowLabel": {
+        "description": "Label for the due-soon window slider in the My Day ritual suggestion settings.",
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "7"
+            }
+        }
+    },
+    "myDayDueSoonWindowHelp": "Shows tasks with due dates within the next {days} days.",
+    "@myDayDueSoonWindowHelp": {
+        "description": "Helper text describing the due-soon window slider in the My Day ritual suggestion settings.",
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "7"
+            }
+        }
+    },
+    "myDayShowAvailableToStartSettingTitle": "Show \"Available to start\"",
+    "@myDayShowAvailableToStartSettingTitle": {
+        "description": "Title for the switch that toggles the available-to-start lane in the My Day ritual suggestion settings."
+    },
+    "myDayShowAvailableToStartSettingSubtitle": "Tasks with a start date of today or earlier.",
+    "@myDayShowAvailableToStartSettingSubtitle": {
+        "description": "Subtitle for the switch that toggles the available-to-start lane in the My Day ritual suggestion settings."
+    },
+    "myDayShowAllPicksLabel": "Show all picks",
+    "@myDayShowAllPicksLabel": {
+        "description": "Collapsed label for expanding the full list of suggested picks in the My Day ritual."
+    },
+    "myDaySuggestedAnotherBatchPrompt": "Suggested complete — generate another batch?",
+    "@myDaySuggestedAnotherBatchPrompt": {
+        "description": "Prompt shown when all suggested picks are chosen in the My Day ritual."
+    },
+    "myDaySnoozedSectionTitle": "Snoozed",
+    "@myDaySnoozedSectionTitle": {
+        "description": "Section title for snoozed tasks in the My Day ritual."
+    },
+    "myDaySnoozedCollapsedTitle": "Snoozed · {count}",
+    "@myDaySnoozedCollapsedTitle": {
+        "description": "Collapsed header for the snoozed tasks section in the My Day ritual.",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "myDayHideLabel": "Hide",
+    "@myDayHideLabel": {
+        "description": "Generic hide label used in My Day ritual collapsible sections."
+    },
+    "myDaySnoozedRowSubtitle": "Snoozed",
+    "@myDaySnoozedRowSubtitle": {
+        "description": "Subtitle for a snoozed task row when there is no until date."
+    },
+    "myDaySnoozedUntilRowSubtitle": "Until {date}",
+    "@myDaySnoozedUntilRowSubtitle": {
+        "description": "Subtitle for a snoozed task row showing the snooze-until date.",
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "Jan 22, 2026"
+            }
+        }
+    },
+    "myDaySnoozedOptionsTooltip": "Snooze options",
+    "@myDaySnoozedOptionsTooltip": {
+        "description": "Tooltip for the snoozed task row overflow menu button."
+    },
+    "myDayUnsnoozeAction": "Unsnooze",
+    "@myDayUnsnoozeAction": {
+        "description": "Menu label to unsnooze (show again) a task in the My Day ritual."
+    },
+    "myDayChangeSnoozeAction": "Change…",
+    "@myDayChangeSnoozeAction": {
+        "description": "Menu label to change the snooze-until date in the My Day ritual."
+    },
+    "myDayMyDaySnoozeSheetTitle": "Hide from My Day",
+    "@myDayMyDaySnoozeSheetTitle": {
+        "description": "Title for the My Day snooze-until sheet (hide from My Day until…)."
+    },
+    "myDayMyDaySnoozeSheetSubtitle": "Hide this task from My Day until…",
+    "@myDayMyDaySnoozeSheetSubtitle": {
+        "description": "Subtitle for the My Day snooze-until sheet (does not change schedule dates)."
+    },
+    "pinnedSemanticLabel": "Pinned",
+    "@pinnedSemanticLabel": {
+        "description": "Semantics label for a pinned marker icon (screen reader)."
+    },
     "pickDateButton": "Pick date…",
     "@pickDateButton": {
         "description": "Button/row label that opens a date picker"

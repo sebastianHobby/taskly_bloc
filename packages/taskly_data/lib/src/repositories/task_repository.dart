@@ -567,6 +567,9 @@ class TaskRepository implements TaskRepositoryContract {
                   deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
                   projectId: drift_pkg.Value(normalizedProjectId),
                   priority: drift_pkg.Value(priority),
+                  myDaySnoozedUntilUtc: drift_pkg.Value(
+                    existing.myDaySnoozedUntilUtc,
+                  ),
                   isPinned: isPinned == null
                       ? drift_pkg.Value(existing.isPinned)
                       : drift_pkg.Value(isPinned),
@@ -626,6 +629,39 @@ class TaskRepository implements TaskRepositoryContract {
       },
       area: 'data.task',
       opName: 'setPinned',
+      context: context,
+    );
+  }
+
+  @override
+  Future<void> setMyDaySnoozedUntil({
+    required String id,
+    required DateTime? untilUtc,
+    OperationContext? context,
+  }) async {
+    await FailureGuard.run(
+      () async {
+        talker.debug(
+          '[TaskRepository] setMyDaySnoozedUntil: id=$id, untilUtc=$untilUtc',
+        );
+
+        final normalized = untilUtc?.toUtc();
+        final psMetadata = encodeCrudMetadata(context);
+
+        await (driftDb.update(
+          driftDb.taskTable,
+        )..where((t) => t.id.equals(id))).write(
+          TaskTableCompanion(
+            myDaySnoozedUntilUtc: drift_pkg.Value(normalized),
+            psMetadata: psMetadata == null
+                ? const drift_pkg.Value<String?>.absent()
+                : drift_pkg.Value(psMetadata),
+            updatedAt: drift_pkg.Value(DateTime.now()),
+          ),
+        );
+      },
+      area: 'data.task',
+      opName: 'setMyDaySnoozedUntil',
       context: context,
     );
   }

@@ -1,7 +1,6 @@
 import '../helpers/test_imports.dart';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:taskly_core/env.dart';
 import 'package:taskly_core/logging.dart';
 
@@ -118,14 +117,11 @@ void main() {
         talker = previous;
       });
 
-      // Ensure dotenv is initialized with a mix of valid/invalid/empty values.
-      dotenv.testLoad(
-        fileInput:
-            'SUPABASE_URL=not-a-url\n'
-            'SUPABASE_PUBLISHABLE_KEY=supersecretkeyvalue\n'
-            'POWERSYNC_URL=\n'
-            'DEV_USERNAME=\n'
-            'DEV_PASSWORD=short\n',
+      Env.config = const EnvConfig(
+        name: 'diagnostics_test',
+        supabaseUrl: 'not-a-url',
+        supabasePublishableKey: 'supersecretkeyvalue',
+        powersyncUrl: '',
       );
 
       Env.logDiagnostics();
@@ -141,7 +137,6 @@ void main() {
       // Secrets should be masked.
       expect(joined, contains('SUPABASE_PUBLISHABLE_KEY'));
       expect(joined, isNot(contains('supersecretkeyvalue')));
-      expect(joined, contains('DEV_PASSWORD'));
     });
 
     testSafe('validateRequired logs and throws with missing keys', () async {
@@ -157,7 +152,7 @@ void main() {
       });
 
       Env.resetForTest();
-      dotenv.testLoad(fileInput: '');
+      Env.resetForTest();
 
       expect(Env.validateRequired, throwsA(isA<StateError>()));
 

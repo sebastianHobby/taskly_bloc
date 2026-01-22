@@ -250,7 +250,13 @@ Once GitHub Pages is enabled and the first deployment succeeds:
 
 ### 2. Configure Required Repository Secrets
 
-**CRITICAL:** The workflows require environment variables for the app to build successfully. These must be configured as GitHub Secrets.
+If you use entrypoint-based build-time configuration (for example
+`lib/main_prod.dart`), the workflows do **not** require Supabase/PowerSync
+values to be passed as GitHub Secrets.
+
+You may still choose to configure secrets if you want CI to inject environment
+values (for example, staging vs prod without changing source), but it is
+optional.
 
 #### Step-by-Step Secret Configuration
 
@@ -259,8 +265,9 @@ Once GitHub Pages is enabled and the first deployment succeeds:
    - Click **Settings** → **Secrets and variables** → **Actions**
    - You'll see options for **Repository secrets** and **Environment secrets**
 
-2. **Add Required Secrets**
-   Click **New repository secret** for each of the following:
+2. **Add Optional Secrets**
+   Click **New repository secret** for any of the following (only needed if CI
+   injects config or generates config files):
 
    **`SUPABASE_URL`**
    - Your Supabase project URL
@@ -277,16 +284,8 @@ Once GitHub Pages is enabled and the first deployment succeeds:
    - Format: `https://xxxxx.powersync.com`
    - Find in PowerSync dashboard
 
-   **`DEV_USERNAME`**
-   - Development/test user username
-   - Used for automated testing
-
-   **`DEV_PASSWORD`**
-   - Development/test user password
-   - Used for automated testing
-
 3. **Verify Secrets Configuration**
-   - After adding all secrets, you should see 5 secrets listed
+   - After adding all secrets, you should see 3 secrets listed
    - Secret values are hidden and cannot be viewed after creation
    - You can update secrets by clicking on them and entering new values
 
@@ -298,10 +297,10 @@ For Codecov integration:
 
 #### Security Best Practices
 
-⚠️ **Never commit secrets to Git**
-- Secrets are encrypted in GitHub Actions
-- They're never exposed in logs
-- Use separate secrets for production vs development
+⚠️ **Client-side config is not secret**
+- Values like `SUPABASE_URL` and publishable/anon keys are not secrets once
+   shipped in an app.
+- Protect data via Supabase auth + RLS policies.
 
 ⚠️ **Rotate secrets regularly**
 - Change passwords every 90 days
@@ -415,14 +414,9 @@ flutter pub run build_runner build --delete-conflicting-outputs
 
 **Issue:** `envied_generator ^1.3.2` requires `analyzer >=8.0.0` which conflicts with Flutter SDK's test packages.
 
-**Solution Implemented:** The CI/CD workflows now generate the `.env` file from GitHub Secrets before running code generation. This allows `envied_generator` to work properly without depending on `very_good_cli`'s package resolution.
-
-**Required GitHub Secrets:** The following secrets must be configured in your repository settings:
-- `SUPABASE_URL`
-- `SUPABASE_PUBLISHABLE_KEY`
-- `POWERSYNC_URL`
-
-**Note:** `DEV_USERNAME` and `DEV_PASSWORD` are hardcoded as placeholder values in CI/CD since they're only needed for local development.
+**Note:** This repo now supports entrypoint-based build-time configuration
+(for example `lib/main_prod.dart`), so GitHub Secrets are not required just to
+provide Supabase/PowerSync endpoints for builds.
 
 **pubspec.yaml Configuration:**
 ```yaml
@@ -430,8 +424,9 @@ dependency_overrides:
   envied_generator: 1.3.2
 ```
 
-**Workflow Steps:**
-All workflows include these steps before code generation:
+**Workflow Steps (optional):**
+If you choose to generate config files in CI, add steps like the following
+before code generation:
 ```yaml
 - name: Get dependencies
   run: flutter pub get
@@ -441,8 +436,6 @@ All workflows include these steps before code generation:
     echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
     echo "SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" >> .env
     echo "POWERSYNC_URL=${{ secrets.POWERSYNC_URL }}" >> .env
-    echo "DEV_USERNAME=ci_user" >> .env
-    echo "DEV_PASSWORD=ci_pass" >> .env
 
 - name: Generate code
   run: flutter pub run build_runner build --delete-conflicting-outputs
@@ -450,10 +443,8 @@ All workflows include these steps before code generation:
 
 **Local Development:**
 If you encounter dependency conflicts locally:
-1. Ensure you have a `.env` file with all required variables
-2. Delete `pubspec.lock`
-3. Run `flutter pub get`
-4. Run code generation: `flutter pub run build_runner build --delete-conflicting-outputs`
+1. Run `flutter pub get`
+2. Run code generation: `dart run build_runner build --delete-conflicting-outputs`
 
 ### GitHub Pages Shows 404
 **Solutions:**

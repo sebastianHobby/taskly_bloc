@@ -12,6 +12,7 @@ const schema = Schema([
     Column.integer('completed'),
     Column.text('start_date'),
     Column.text('deadline_date'),
+    Column.text('my_day_snoozed_until'),
     Column.text('description'),
     Column.text('project_id'),
     Column.text('user_id'),

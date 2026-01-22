@@ -4,7 +4,9 @@ This repo can run a fully local stack for E2E-style tests:
 - Supabase local dev (via Supabase CLI + Docker)
 - PowerSync self-hosted service (Docker) connected to that local Supabase
 
-The Flutter app already supports switching environments via `--dart-define-from-file`.
+The Flutter app uses entrypoint-based build-time configuration:
+- Local dev: `lib/main_local.dart`
+- Prod: `lib/main_prod.dart`
 
 ## Workflow 1: Deterministic local E2E run
 
@@ -36,12 +38,11 @@ What reset does:
 - Windows PowerShell: `powershell -File tool/e2e/Run-LocalE2ETests.ps1 -ResetDb`
 
 Notes:
-- The scripts generate `dart_defines.local.json` from `supabase status`.
-- Prefer `dart_defines.local.json` for local E2E runs. The checked-in `dart_defines.json` may point to non-local (e.g. hosted) environments.
+- The app’s local endpoints/keys are selected via `lib/main_local.dart`.
 - PowerSync sync rules are mounted from `supabase/powersync-sync-rules.yaml`.
 
 What the test script runs:
-- `flutter test test/integration_test --dart-define-from-file=dart_defines.local.json`
+- `flutter test test/integration_test`
 
 ## Schema notes (prod -> local)
 

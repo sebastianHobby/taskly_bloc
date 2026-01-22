@@ -89,6 +89,8 @@ class TaskTable extends Table {
       text().map(dateOnlyStringConverter).nullable().named('start_date')();
   TextColumn get deadlineDate =>
       text().map(dateOnlyStringConverter).nullable().named('deadline_date')();
+  DateTimeColumn get myDaySnoozedUntilUtc =>
+      dateTime().nullable().named('my_day_snoozed_until')();
   TextColumn get description => text().nullable().named('description')();
   TextColumn get projectId => text()
       .nullable()

@@ -1,6 +1,5 @@
-import 'package:taskly_bloc/bootstrap.dart';
-import 'package:taskly_bloc/presentation/features/app/app.dart';
+import 'package:taskly_bloc/main_local.dart' as local;
 
 Future<void> main() async {
-  await bootstrap(() => const App());
+  await local.main();
 }

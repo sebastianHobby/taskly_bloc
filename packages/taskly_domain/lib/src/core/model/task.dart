@@ -19,6 +19,7 @@ class Task {
     required this.completed,
     this.startDate,
     this.deadlineDate,
+    this.myDaySnoozedUntilUtc,
     this.description,
     this.projectId,
     this.priority,
@@ -40,6 +41,13 @@ class Task {
   final bool completed;
   final DateTime? startDate;
   final DateTime? deadlineDate;
+
+  /// When set and in the future, this task is temporarily suppressed from
+  /// My Day surfaces.
+  ///
+  /// This is a My Day-specific visibility hint; it must not change the task's
+  /// real scheduling semantics (start/deadline).
+  final DateTime? myDaySnoozedUntilUtc;
   final String? description;
   final String? projectId;
 
@@ -99,6 +107,7 @@ class Task {
     bool? completed,
     DateTime? startDate,
     DateTime? deadlineDate,
+    DateTime? myDaySnoozedUntilUtc,
     String? description,
     String? projectId,
     int? priority,
@@ -120,6 +129,7 @@ class Task {
       completed: completed ?? this.completed,
       startDate: startDate ?? this.startDate,
       deadlineDate: deadlineDate ?? this.deadlineDate,
+      myDaySnoozedUntilUtc: myDaySnoozedUntilUtc ?? this.myDaySnoozedUntilUtc,
       description: description ?? this.description,
       projectId: projectId ?? this.projectId,
       priority: priority ?? this.priority,
@@ -148,6 +158,7 @@ class Task {
         other.completed == completed &&
         other.startDate == startDate &&
         other.deadlineDate == deadlineDate &&
+        other.myDaySnoozedUntilUtc == myDaySnoozedUntilUtc &&
         other.description == description &&
         other.projectId == projectId &&
         other.priority == priority &&
@@ -172,6 +183,7 @@ class Task {
       completed,
       startDate,
       deadlineDate,
+      myDaySnoozedUntilUtc,
       description,
       projectId,
       priority,
