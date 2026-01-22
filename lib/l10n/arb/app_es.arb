@@ -883,11 +883,11 @@
     "@snoozeSubtitle": {
         "description": "Subtítulo que explica el comportamiento de posponer"
     },
-    "myDayWhatMattersSectionTitle": "Lo que importa",
+    "myDayWhatMattersSectionTitle": "Alineado con valores",
     "@myDayWhatMattersSectionTitle": {
         "description": "Section title for value-aligned suggestions in the My Day ritual (B1)."
     },
-    "myDayWhatsWaitingSectionTitle": "Lo que está pendiente",
+    "myDayWhatsWaitingSectionTitle": "Sensible al tiempo",
     "@myDayWhatsWaitingSectionTitle": {
         "description": "Section title for scheduled/review tasks in the My Day ritual (B1)."
     },
@@ -955,7 +955,7 @@
     "@myDayWhyTheseTitle": {
         "description": "Title for the explainability bottom sheet in the My Day ritual."
     },
-    "myDayWhyTheseWhatMattersBody": "Sugerimos tareas que se alinean con tus valores, reequilibran suavemente los valores más descuidados y tienen en cuenta la urgencia y la prioridad.",
+    "myDayWhyTheseWhatMattersBody": "Alineado con valores destaca tareas vinculadas a tus valores. Las sugerencias también pueden reequilibrar valores descuidados y considerar la urgencia y la prioridad.",
     "@myDayWhyTheseWhatMattersBody": {
         "description": "Body text for the 'Why these?' sheet for the What matters section."
     },
@@ -969,7 +969,7 @@
             }
         }
     },
-    "myDayWhyTheseWhatsWaitingBody": "Estos son elementos sensibles al tiempo para evitar sorpresas. Verás tareas que vencen pronto (en los próximos {days} días) y tareas que están disponibles para empezar.",
+    "myDayWhyTheseWhatsWaitingBody": "Sensible al tiempo te ayuda a evitar sorpresas. Verás tareas que vencen pronto (en los próximos {days} días) y tareas que están disponibles para empezar.",
     "@myDayWhyTheseWhatsWaitingBody": {
         "description": "Body text for the 'Why these?' sheet for the What’s waiting section.",
         "placeholders": {
@@ -986,6 +986,16 @@
     "myDayWhyTheseSignalCrossValue": "Entre valores",
     "@myDayWhyTheseSignalCrossValue": {
         "description": "Short signal label shown in the 'Why these?' sheet indicating a task advances multiple values."
+    },
+    "myDaySupportsValueLabel": "Apoya {value}",
+    "@myDaySupportsValueLabel": {
+        "description": "Values-led supporting text prefix used for What matters rows in the My Day ritual.",
+        "placeholders": {
+            "value": {
+                "type": "String",
+                "example": "Salud"
+            }
+        }
     },
     "myDayShowMoreCountLabel": "Mostrar {count} más",
     "@myDayShowMoreCountLabel": {
@@ -1005,7 +1015,7 @@
     "@myDayWhatMattersSubtitle": {
         "description": "Subtitle for the What matters section in the My Day ritual."
     },
-    "myDayWhatsWaitingSubtitle": "Elementos sensibles al tiempo para evitar sorpresas.",
+    "myDayWhatsWaitingSubtitle": "Vencen pronto o están listas para empezar.",
     "@myDayWhatsWaitingSubtitle": {
         "description": "Subtitle for the What’s waiting section in the My Day ritual."
     },
@@ -1029,7 +1039,7 @@
     "@myDaySuggestionSettingsTitle": {
         "description": "Title for the My Day ritual suggestion settings sheet."
     },
-    "myDaySuggestionSettingsBody": "Ajusta lo que aparece en la sección \"Lo que está pendiente\".",
+    "myDaySuggestionSettingsBody": "Ajusta lo que aparece en la sección \"Sensible al tiempo\".",
     "@myDaySuggestionSettingsBody": {
         "description": "Body text for the suggestion settings sheet in the My Day ritual."
     },

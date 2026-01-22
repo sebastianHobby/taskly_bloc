@@ -754,6 +754,13 @@ class _ScheduledAgenda extends StatelessWidget {
       final planned = dayPlannedRows[day] ?? const <TasklyAgendaRowModel>[];
       final due = entry.value;
 
+      final subtitle = switch ((due.length, planned.length)) {
+        (final d, final p) when d > 0 && p > 0 => '$d due · $p planned',
+        (final d, _) when d > 0 => '$d due',
+        (_, final p) when p > 0 => '$p planned',
+        _ => null,
+      };
+
       final effectivePlanned = (filter == ScheduledAgendaFilter.due)
           ? const <TasklyAgendaRowModel>[]
           : planned;
@@ -772,6 +779,7 @@ class _ScheduledAgenda extends StatelessWidget {
         TasklyAgendaCardModel(
           key: dayKey,
           title: _semanticDayTitle(context, day, today),
+          subtitle: subtitle,
           headerKey: headerKey,
           plannedRows: effectivePlanned,
           dueRows: effectiveDue,
@@ -781,6 +789,9 @@ class _ScheduledAgenda extends StatelessWidget {
 
     return TasklyAgendaSection(
       cards: cards,
+      compactRows: true,
+      showSectionLabels: false,
+      emphasizeDueRows: true,
       controller: scrollController,
     );
   }
@@ -827,7 +838,7 @@ class _ScheduledAgenda extends StatelessWidget {
 
       final differsFromCardDay = deadlineDay != null && deadlineDay != cardDay;
 
-      final shouldShowPlannedDeadlineChip =
+      final shouldShowTitleDeadlineChip =
           forceShowDeadlineChip ||
           (occurrence.tag == ScheduledDateTag.starts &&
               deadlineDay != null &&
@@ -843,8 +854,9 @@ class _ScheduledAgenda extends StatelessWidget {
         task: task,
         tileCapabilities: tileCapabilities,
         showProjectLabel: false,
-        showDates: shouldShowPlannedDeadlineChip,
+        showDates: false,
         showOnlyDeadlineDate: true,
+        showDeadlineChipOnTitleLine: shouldShowTitleDeadlineChip,
         overrideIsOverdue: forceShowDeadlineChip ? isOverdue : null,
       );
 
@@ -883,6 +895,37 @@ class _ScheduledAgenda extends StatelessWidget {
     if (occurrence.entityType == EntityType.project &&
         occurrence.project != null) {
       final project = occurrence.project!;
+
+      final now = context.read<NowService>().nowLocal();
+      final today = DateTime(now.year, now.month, now.day);
+      final cardDay = DateTime(
+        occurrence.localDay.year,
+        occurrence.localDay.month,
+        occurrence.localDay.day,
+      );
+
+      final deadline = project.deadlineDate;
+      final deadlineDay = deadline == null
+          ? null
+          : DateTime(deadline.year, deadline.month, deadline.day);
+
+      final isOverdue =
+          deadlineDay != null &&
+          deadlineDay.isBefore(today) &&
+          !project.completed;
+
+      final daysUntil = deadlineDay?.difference(today).inDays;
+      final isWithin3Days =
+          daysUntil != null && daysUntil >= 0 && daysUntil <= 3;
+
+      final differsFromCardDay = deadlineDay != null && deadlineDay != cardDay;
+
+      final shouldShowTitleDeadlineChip =
+          forceShowDeadlineChip ||
+          (occurrence.tag == ScheduledDateTag.starts &&
+              deadlineDay != null &&
+              (differsFromCardDay || isWithin3Days || isOverdue));
+
       final selection = context.read<SelectionCubit>();
       final key = SelectionKey(
         entityType: EntityType.project,
@@ -902,6 +945,8 @@ class _ScheduledAgenda extends StatelessWidget {
           completedTaskCount: project.completedTaskCount,
           showDates: false,
           showOnlyDeadlineDate: false,
+          showDeadlineChipOnTitleLine: shouldShowTitleDeadlineChip,
+          overrideIsOverdue: forceShowDeadlineChip ? isOverdue : null,
           showPrimaryValueOnTitleLine: true,
           showValuesInMetaLine: false,
           showSecondaryValues: false,

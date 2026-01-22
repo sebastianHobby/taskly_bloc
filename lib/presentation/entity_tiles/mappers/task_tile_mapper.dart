@@ -20,6 +20,7 @@ TaskTileModel buildTaskListRowTileModel(
   bool showProjectLabel = false,
   bool showDates = true,
   bool showOnlyDeadlineDate = false,
+  bool showDeadlineChipOnTitleLine = false,
   bool showPrimaryValueOnTitleLine = true,
   bool showValuesInMetaLine = false,
   bool showSecondaryValues = false,
@@ -88,6 +89,7 @@ TaskTileModel buildTaskListRowTileModel(
     showOverflowEllipsis: shouldShowOverflowEllipsis,
     showDates: showDates,
     showOnlyDeadlineDate: showOnlyDeadlineDate,
+    showDeadlineChipOnTitleLine: showDeadlineChipOnTitleLine,
     startDateLabel: resolvedStartDateLabel,
     deadlineDateLabel: resolvedDeadlineDateLabel,
     isOverdue:

@@ -9,6 +9,9 @@ class ProjectEntityTile extends StatelessWidget {
     required this.model,
     this.intent = const ProjectTileIntent.standardList(),
     this.actions = const ProjectTileActions(),
+    this.titlePrefixOverride,
+    this.leadingAccentColor,
+    this.compact = false,
     super.key,
   });
 
@@ -17,16 +20,43 @@ class ProjectEntityTile extends StatelessWidget {
   final ProjectTileIntent intent;
   final ProjectTileActions actions;
 
+  /// Optional override for the leading title prefix (e.g., urgency glyph).
+  ///
+  /// When provided and the project is pinned, both glyphs are shown.
+  final Widget? titlePrefixOverride;
+
+  /// Optional left-edge accent (used to subtly emphasize urgency).
+  final Color? leadingAccentColor;
+
+  /// When true, uses a denser layout for list/agenda contexts.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
-    final titlePrefix = model.pinned ? const _PinnedGlyph() : null;
+    final pinnedPrefix = model.pinned ? const _PinnedGlyph() : null;
+
+    final Widget? titlePrefix = switch ((titlePrefixOverride, pinnedPrefix)) {
+      (null, null) => null,
+      (final Widget a?, null) => a,
+      (null, final Widget b?) => b,
+      (final Widget a?, final Widget b?) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          a,
+          const SizedBox(width: 6),
+          b,
+        ],
+      ),
+    };
 
     return switch (intent) {
       ProjectTileIntentBulkSelection(:final selected) => ProjectListRowTile(
         model: model,
         onTap: actions.onToggleSelected ?? actions.onTap,
         onLongPress: actions.onLongPress,
+        compact: compact,
         titlePrefix: titlePrefix,
+        leadingAccentColor: leadingAccentColor,
         trailing: _BulkSelectIcon(
           selected: selected,
           onPressed: actions.onToggleSelected ?? actions.onTap,
@@ -36,7 +66,9 @@ class ProjectEntityTile extends StatelessWidget {
         model: model,
         onTap: actions.onTap,
         onLongPress: actions.onLongPress,
+        compact: compact,
         titlePrefix: titlePrefix,
+        leadingAccentColor: leadingAccentColor,
         trailing: const SizedBox.shrink(),
       ),
     };

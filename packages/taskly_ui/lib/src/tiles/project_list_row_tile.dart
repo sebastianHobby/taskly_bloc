@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/primitives/date_chip.dart';
 import 'package:taskly_ui/src/primitives/pinned_gutter_marker.dart';
 import 'package:taskly_ui/src/primitives/value_icon.dart';
 import 'package:taskly_ui/src/tiles/entity_meta_line.dart';
@@ -13,6 +14,7 @@ class ProjectListRowTile extends StatelessWidget {
     this.trailing,
     this.titlePrefix,
     this.statusBadge,
+    this.leadingAccentColor,
     super.key,
     this.compact = false,
   });
@@ -27,6 +29,9 @@ class ProjectListRowTile extends StatelessWidget {
 
   final Widget? titlePrefix;
   final Widget? statusBadge;
+
+  /// Optional left-edge accent (used to subtly emphasize urgency).
+  final Color? leadingAccentColor;
 
   final bool compact;
 
@@ -51,6 +56,9 @@ class ProjectListRowTile extends StatelessWidget {
             ? scheme.surfaceContainerLowest.withValues(alpha: 0.5)
             : scheme.surface,
         border: Border(
+          left: leadingAccentColor == null
+              ? BorderSide.none
+              : BorderSide(color: leadingAccentColor!, width: 3),
           bottom: BorderSide(
             color: scheme.outlineVariant.withValues(alpha: 0.2),
             width: 1,
@@ -65,18 +73,22 @@ class ProjectListRowTile extends StatelessWidget {
             Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: effectiveCompact ? 10 : 12,
+                vertical: effectiveCompact ? 8 : 12,
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox.square(
-                    dimension: effectiveCompact ? 40 : 44,
-                    child: Center(
-                      child: Icon(
-                        Icons.folder_outlined,
-                        size: 22,
-                        color: scheme.onSurfaceVariant,
+                    dimension: effectiveCompact ? 38 : 44,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: EdgeInsets.only(top: effectiveCompact ? 2 : 4),
+                        child: Icon(
+                          Icons.folder_outlined,
+                          size: 22,
+                          color: scheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ),
@@ -107,6 +119,22 @@ class ProjectListRowTile extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            if (model.meta.showDeadlineChipOnTitleLine &&
+                                model.meta.deadlineDateLabel != null &&
+                                model.meta.deadlineDateLabel!
+                                    .trim()
+                                    .isNotEmpty) ...[
+                              const SizedBox(width: 10),
+                              _TapAbsorber(
+                                child: DateChip.deadline(
+                                  context: context,
+                                  label: model.meta.deadlineDateLabel!.trim(),
+                                  isOverdue: model.meta.isOverdue,
+                                  isDueToday: model.meta.isDueToday,
+                                  isDueSoon: model.meta.isDueSoon,
+                                ),
+                              ),
+                            ],
                             if (model.titlePrimaryValue != null) ...[
                               const SizedBox(width: 10),
                               ValueIcon(data: model.titlePrimaryValue!),
@@ -177,6 +205,17 @@ class ProjectListRowTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _TapAbsorber extends StatelessWidget {
+  const _TapAbsorber({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AbsorbPointer(child: ExcludeSemantics(child: child));
   }
 }
 

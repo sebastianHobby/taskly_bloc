@@ -15,8 +15,18 @@ import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/my_day_ritual_sections_card.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_ritual_wizard_page.dart';
 
-class MyDayPage extends StatelessWidget {
+enum _MyDayMode { execute, plan }
+
+class MyDayPage extends StatefulWidget {
   const MyDayPage({super.key});
+
+  @override
+  State<MyDayPage> createState() => _MyDayPageState();
+}
+
+class _MyDayPageState extends State<MyDayPage> {
+  _MyDayMode _mode = _MyDayMode.execute;
+  MyDayRitualWizardInitialSection? _planInitialSection;
 
   Future<void> _openNewTaskEditor(
     BuildContext context, {
@@ -39,6 +49,25 @@ class MyDayPage extends StatelessWidget {
     );
   }
 
+  void _enterPlanMode(
+    BuildContext context, {
+    MyDayRitualWizardInitialSection? initialSection,
+  }) {
+    context.read<MyDayRitualBloc>().add(const MyDayRitualStarted());
+
+    setState(() {
+      _mode = _MyDayMode.plan;
+      _planInitialSection = initialSection;
+    });
+  }
+
+  void _exitPlanMode() {
+    setState(() {
+      _mode = _MyDayMode.execute;
+      _planInitialSection = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final today = getIt<HomeDayService>().todayDayKeyUtc().toLocal();
@@ -50,132 +79,106 @@ class MyDayPage extends StatelessWidget {
         BlocProvider<MyDayRitualBloc>(create: (_) => getIt<MyDayRitualBloc>()),
         BlocProvider(create: (_) => SelectionCubit()),
       ],
-      child: BlocListener<MyDayRitualBloc, MyDayRitualState>(
-        listenWhen: (previous, next) {
-          final prevReady = previous is MyDayRitualReady ? previous : null;
-          final nextReady = next is MyDayRitualReady ? next : null;
+      child: BlocBuilder<MyDayRitualBloc, MyDayRitualState>(
+        builder: (context, ritualState) {
+          final needsRitual =
+              ritualState is MyDayRitualReady && ritualState.needsRitual;
 
-          final prevNeeds = prevReady?.needsRitual;
-          final nextNeeds = nextReady?.needsRitual;
+          final effectiveMode = needsRitual ? _MyDayMode.plan : _mode;
 
-          if (prevNeeds != nextNeeds) return true;
-          if (prevReady?.dayKeyUtc != nextReady?.dayKeyUtc) return true;
-          return false;
-        },
-        listener: (_, state) {},
-        child: BlocBuilder<MyDayRitualBloc, MyDayRitualState>(
-          builder: (context, ritualState) {
-            final needsRitual =
-                ritualState is MyDayRitualReady && ritualState.needsRitual;
+          if (effectiveMode == _MyDayMode.plan) {
+            return MyDayRitualWizardPage(
+              allowClose: !needsRitual,
+              initialSection: _planInitialSection,
+              onCloseRequested: _exitPlanMode,
+            );
+          }
 
-            if (needsRitual) {
-              return const MyDayRitualWizardPage();
-            }
-
-            if (ritualState is MyDayRitualLoading) {
-              return Scaffold(
-                appBar: AppBar(
-                  title: Text(context.l10n.myDayTitle),
-                  actions: TasklyAppBarActions.withAttentionBell(
-                    context,
-                    actions: const <Widget>[],
-                  ),
+          if (ritualState is MyDayRitualLoading) {
+            return Scaffold(
+              appBar: AppBar(
+                title: Text(context.l10n.myDayTitle),
+                actions: TasklyAppBarActions.withAttentionBell(
+                  context,
+                  actions: const <Widget>[],
                 ),
-                body: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 420),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CircularProgressIndicator(),
-                          const SizedBox(height: 16),
-                          Text(
-                            context.l10n.myDayPreparingTitle,
-                            style: Theme.of(context).textTheme.titleLarge,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            context.l10n.myDayPreparingSubtitle,
-                            style: Theme.of(context).textTheme.bodyMedium,
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
+              ),
+              body: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        Text(
+                          context.l10n.myDayPreparingTitle,
+                          style: Theme.of(context).textTheme.titleLarge,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          context.l10n.myDayPreparingSubtitle,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              );
-            }
-
-            return BlocBuilder<SelectionCubit, SelectionState>(
-              builder: (context, selectionState) {
-                return Scaffold(
-                  appBar: selectionState.isSelectionMode
-                      ? SelectionAppBar(
-                          baseTitle: context.l10n.myDayTitle,
-                          onExit: () {},
-                        )
-                      : AppBar(
-                          title: Text(context.l10n.myDayTitle),
-                          actions: TasklyAppBarActions.withAttentionBell(
-                            context,
-                            actions: const <Widget>[],
-                          ),
-                        ),
-                  floatingActionButton: selectionState.isSelectionMode
-                      ? null
-                      : EntityAddSpeedDial(
-                          heroTag: 'add_speed_dial_my_day',
-                          onCreateTask: () => _openNewTaskEditor(
-                            context,
-                            defaultDay: today,
-                          ),
-                          onCreateProject: () => _openNewProjectEditor(
-                            context,
-                          ),
-                        ),
-                  body: const _MyDayLoadedBody(),
-                );
-              },
+              ),
             );
-          },
-        ),
+          }
+
+          return BlocBuilder<SelectionCubit, SelectionState>(
+            builder: (context, selectionState) {
+              return Scaffold(
+                appBar: selectionState.isSelectionMode
+                    ? SelectionAppBar(
+                        baseTitle: context.l10n.myDayTitle,
+                        onExit: () {},
+                      )
+                    : AppBar(
+                        title: Text(context.l10n.myDayTitle),
+                        actions: TasklyAppBarActions.withAttentionBell(
+                          context,
+                          actions: const <Widget>[],
+                        ),
+                      ),
+                floatingActionButton: selectionState.isSelectionMode
+                    ? null
+                    : EntityAddSpeedDial(
+                        heroTag: 'add_speed_dial_my_day',
+                        onCreateTask: () => _openNewTaskEditor(
+                          context,
+                          defaultDay: today,
+                        ),
+                        onCreateProject: () => _openNewProjectEditor(
+                          context,
+                        ),
+                      ),
+                body: _MyDayLoadedBody(
+                  onOpenPlan: (initialSection) => _enterPlanMode(
+                    context,
+                    initialSection: initialSection,
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
 }
 
 class _MyDayLoadedBody extends StatelessWidget {
-  const _MyDayLoadedBody();
+  const _MyDayLoadedBody({required this.onOpenPlan});
 
-  Future<void> _openRitualResume(
-    BuildContext context, {
-    MyDayRitualWizardInitialSection? initialSection,
-  }) async {
-    final ritualBloc = context.read<MyDayRitualBloc>();
-    final gateBloc = context.read<MyDayGateBloc>();
-
-    ritualBloc.add(const MyDayRitualStarted());
-
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => MultiBlocProvider(
-          providers: [
-            BlocProvider<MyDayRitualBloc>.value(value: ritualBloc),
-            BlocProvider<MyDayGateBloc>.value(value: gateBloc),
-          ],
-          child: MyDayRitualWizardPage(
-            allowClose: true,
-            initialSection: initialSection,
-          ),
-        ),
-      ),
-    );
-  }
+  final void Function(MyDayRitualWizardInitialSection? initialSection)
+  onOpenPlan;
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +195,7 @@ class _MyDayLoadedBody extends StatelessWidget {
           ),
           MyDayError(:final message) => Center(child: Text(message)),
           MyDayLoaded(
+            :final summary,
             :final acceptedDue,
             :final acceptedStarts,
             :final acceptedFocus,
@@ -216,7 +220,12 @@ class _MyDayLoadedBody extends StatelessWidget {
                           children: [
                             _UpdatePlanCard(
                               selectedTotalCount: selectedTotalCount,
-                              onUpdatePlan: () => _openRitualResume(context),
+                              progressLabel: context.l10n
+                                  .projectDetailCompletedCount(
+                                    summary.doneCount,
+                                    summary.totalCount,
+                                  ),
+                              onUpdatePlan: () => onOpenPlan(null),
                             ),
                             const SizedBox(height: 10),
                             MyDayRitualSectionsCard(
@@ -277,15 +286,24 @@ class _MyDayLoadedBody extends StatelessWidget {
       },
     );
   }
+
+  void _openRitualResume(
+    BuildContext context, {
+    MyDayRitualWizardInitialSection? initialSection,
+  }) {
+    onOpenPlan(initialSection);
+  }
 }
 
 class _UpdatePlanCard extends StatelessWidget {
   const _UpdatePlanCard({
     required this.selectedTotalCount,
+    required this.progressLabel,
     required this.onUpdatePlan,
   });
 
   final int selectedTotalCount;
+  final String progressLabel;
   final VoidCallback onUpdatePlan;
 
   @override
@@ -319,6 +337,14 @@ class _UpdatePlanCard extends StatelessWidget {
                   title,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  progressLabel,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
