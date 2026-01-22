@@ -105,6 +105,7 @@ final class ScheduledSessionQueryService {
           return _scheduledOccurrencesService.watchScheduledOccurrences(
             rangeStartDay: rangeStart,
             rangeEndDay: rangeEnd,
+            todayDayKeyUtc: todayDayKeyUtc,
             scope: scope,
           );
         })
