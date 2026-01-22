@@ -34,7 +34,6 @@ import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
@@ -254,7 +253,6 @@ Future<void> setupDependencies() async {
     )
     ..registerFactory<MyDayGateBloc>(
       () => MyDayGateBloc(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
       ),
     )
@@ -321,11 +319,6 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
         nowService: getIt<NowService>(),
-      ),
-    )
-    ..registerFactory<MyDayHeaderBloc>(
-      () => MyDayHeaderBloc(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
       ),
     )
     ..registerFactory<SettingsMaintenanceCubit>(

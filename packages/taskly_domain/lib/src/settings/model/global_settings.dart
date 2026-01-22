@@ -24,6 +24,11 @@ abstract class GlobalSettings with _$GlobalSettings {
     ///
     /// Clamped to 1–30 days.
     @Default(GlobalSettings.defaultMyDayDueWindowDays) int myDayDueWindowDays,
+
+    /// My Day ritual: show the "Available to start" lane.
+    ///
+    /// When disabled, we still keep due-soon items visible.
+    @Default(true) bool myDayShowAvailableToStart,
     @Default(1.0) double textScaleFactor,
     @Default(false) bool onboardingCompleted,
   }) = _GlobalSettings;
@@ -32,6 +37,9 @@ abstract class GlobalSettings with _$GlobalSettings {
     final rawMyDayDueWindowDays =
         (json['myDayDueWindowDays'] as num?)?.toInt() ??
         defaultMyDayDueWindowDays;
+
+    final rawMyDayShowAvailableToStart =
+      json['myDayShowAvailableToStart'] as bool?;
 
     return GlobalSettings(
       themeMode: AppThemeMode.fromName(json['themeMode'] as String?),
@@ -44,6 +52,7 @@ abstract class GlobalSettings with _$GlobalSettings {
           (json['homeTimeZoneOffsetMinutes'] as num?)?.toInt() ??
           defaultHomeTimeZoneOffsetMinutes,
       myDayDueWindowDays: rawMyDayDueWindowDays.clamp(1, 30),
+      myDayShowAvailableToStart: rawMyDayShowAvailableToStart ?? true,
       textScaleFactor: (json['textScaleFactor'] as num?)?.toDouble() ?? 1.0,
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
     );
@@ -99,6 +108,7 @@ extension GlobalSettingsJson on GlobalSettings {
     'locale': localeCode,
     'homeTimeZoneOffsetMinutes': homeTimeZoneOffsetMinutes,
     'myDayDueWindowDays': myDayDueWindowDays.clamp(1, 30),
+    'myDayShowAvailableToStart': myDayShowAvailableToStart,
     'textScaleFactor': textScaleFactor,
     'onboardingCompleted': onboardingCompleted,
   };

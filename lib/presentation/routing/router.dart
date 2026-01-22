@@ -22,7 +22,6 @@ import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.
 import 'package:taskly_bloc/presentation/screens/view/my_day_entry_gate.dart';
 import 'package:taskly_bloc/presentation/features/attention/view/attention_inbox_page.dart';
 import 'package:taskly_bloc/presentation/features/attention/view/attention_rules_settings_page.dart';
-import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_route_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/presentation/features/trackers/view/trackers_page.dart';
 
@@ -299,12 +298,6 @@ final router = GoRouter(
         GoRoute(
           path: Routing.screenPath('trackers'),
           builder: (_, __) => const TrackersPage(),
-        ),
-        GoRoute(
-          path: Routing.screenPath('focus_setup'),
-          builder: (_, state) => FocusSetupWizardRoutePage(
-            initialStep: FocusSetupWizardRoutePage.parseInitialStep(state.uri),
-          ),
         ),
         GoRoute(
           path: Routing.screenPath('attention_rules'),

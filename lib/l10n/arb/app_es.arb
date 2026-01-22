@@ -1876,7 +1876,7 @@
     "@myDayUpdatePlanSubtitle": {
         "description": "Subtítulo mostrado al reanudar el plan y no hay selecciones completadas."
     },
-    "myDayUpdatePlanSubtitleWithCompleted": "Revisa las selecciones de hoy. Los elementos completados están bloqueados.",
+    "myDayUpdatePlanSubtitleWithCompleted": "Revisa las selecciones de hoy. Las completadas se muestran abajo.",
     "@myDayUpdatePlanSubtitleWithCompleted": {
         "description": "Subtítulo mostrado al reanudar el plan y hay selecciones completadas."
     },
@@ -1946,9 +1946,13 @@
     "@myDayCompletedSectionTitle": {
         "description": "Título de sección para selecciones completadas en el ritual de Mi día."
     },
-    "myDayCompletedSectionSubtitle": "Bloqueado por hoy",
-    "@myDayCompletedSectionSubtitle": {
-        "description": "Subtítulo de sección para selecciones completadas en el ritual de Mi día."
+    "myDayShowCompletedLabel": "Mostrar completadas",
+    "@myDayShowCompletedLabel": {
+        "description": "Etiqueta para el control colapsado que revela la lista de selecciones completadas en el flujo de actualizar el plan de Mi día."
+    },
+    "myDayHideCompletedLabel": "Ocultar completadas",
+    "@myDayHideCompletedLabel": {
+        "description": "Etiqueta para el control que colapsa la lista de selecciones completadas en el flujo de actualizar el plan de Mi día."
     },
     "myDayPickAllDueMenuLabel": "Elegir todos los vencidos",
     "@myDayPickAllDueMenuLabel": {
@@ -1961,6 +1965,40 @@
     "myDayPickAllPicksMenuLabel": "Elegir todas las selecciones",
     "@myDayPickAllPicksMenuLabel": {
         "description": "Etiqueta del menú para elegir todas las sugerencias."
+    },
+    "myDayTimePlanBannerTitle": "Basado en tiempo y plan",
+    "@myDayTimePlanBannerTitle": {
+        "description": "Título del banner siempre visible bajo Sugeridas en el ritual de Mi día que abre la hoja de tiempo/plan."
+    },
+    "myDayTimePlanSheetTitle": "Basado en tiempo y plan",
+    "@myDayTimePlanSheetTitle": {
+        "description": "Título de la hoja inferior abierta desde el banner de tiempo/plan en el ritual de Mi día."
+    },
+    "myDayTimePlanBannerSubtitle": "{dueCount} críticas por tiempo • {plannedCount} planificadas",
+    "@myDayTimePlanBannerSubtitle": {
+        "description": "Subtítulo mostrado en el banner y la hoja de tiempo/plan, resumiendo cantidades.",
+        "placeholders": {
+            "dueCount": {
+                "type": "int",
+                "example": "2"
+            },
+            "plannedCount": {
+                "type": "int",
+                "example": "1"
+            }
+        }
+    },
+    "myDayTimePlanBannerEmptySubtitle": "No hay elementos críticos por tiempo ni planificados hoy.",
+    "@myDayTimePlanBannerEmptySubtitle": {
+        "description": "Subtítulo mostrado en el banner y la hoja de tiempo/plan cuando ambas secciones están vacías."
+    },
+    "myDayTimeCriticalSectionTitle": "Críticas por tiempo",
+    "@myDayTimeCriticalSectionTitle": {
+        "description": "Título de sección para tareas que vencen pronto (críticas por tiempo) en la hoja de tiempo/plan durante el ritual de Mi día."
+    },
+    "myDayPlannedSectionTitle": "Planificadas",
+    "@myDayPlannedSectionTitle": {
+        "description": "Título de sección para tareas planificadas mostradas en la hoja de tiempo/plan durante el ritual de Mi día."
     },
     "myDayShowFewerLabel": "Mostrar menos",
     "@myDayShowFewerLabel": {

@@ -25,18 +25,20 @@ enum FocusMode {
 extension FocusModeX on FocusMode {
   /// Human-readable name for display.
   String get displayName => switch (this) {
-    FocusMode.intentional => 'Intentional',
-    FocusMode.sustainable => 'Balanced',
-    FocusMode.responsive => 'Responsive',
-    FocusMode.personalized => 'Personalized',
+    // Two-mode UX: keep legacy enum values for persistence/back-compat,
+    // but map them to the closest user-facing day style.
+    FocusMode.intentional => 'Invest in values',
+    FocusMode.sustainable => 'Invest in values',
+    FocusMode.responsive => 'Protect deadlines',
+    FocusMode.personalized => 'Invest in values',
   };
 
   /// Short tagline for the focus mode.
   String get tagline => switch (this) {
-    FocusMode.intentional => 'Do what matters most today.',
-    FocusMode.sustainable => 'Balance your values.',
-    FocusMode.responsive => 'Handle what’s time-sensitive first.',
-    FocusMode.personalized => 'Run today your way.',
+    FocusMode.intentional => 'Deadlines are guardrails.',
+    FocusMode.sustainable => 'Deadlines are guardrails.',
+    FocusMode.responsive => 'Handle time risk first.',
+    FocusMode.personalized => 'Deadlines are guardrails.',
   };
 
   /// Tagline used in the Focus Setup wizard cards.
@@ -45,40 +47,40 @@ extension FocusModeX on FocusMode {
   /// Short description used in the Focus Setup wizard cards.
   String get wizardDescription => switch (this) {
     FocusMode.intentional =>
-      'Do what matters most, not what shouts loudest. Value-first prioritization '
-          'with fewer urgent distractions.',
+      'Suggested picks are chosen from your values. Time-sensitive tasks still '
+          'show up so nothing slips.',
     FocusMode.sustainable =>
-      'A calibrated mix of importance and urgency. Keeps momentum across values '
-          'while staying realistic about deadlines.',
+      'Suggested picks are chosen from your values. Time-sensitive tasks still '
+          'show up so nothing slips.',
     FocusMode.responsive =>
-      'Clear the time-sensitive stuff with confidence. Due-date-first '
-          'prioritization to prevent slips.',
+      'Time-sensitive tasks come first. Once you’re safe, Suggested picks fill '
+          'the rest with value-aligned work.',
     FocusMode.personalized =>
-      'Run today your way—without fighting the defaults. Custom weights for '
-          'importance/urgency/balance.',
+      'Suggested picks are chosen from your values. Time-sensitive tasks still '
+          'show up so nothing slips.',
   };
 
   /// Longer description explaining the focus mode behavior.
   String get description => switch (this) {
     FocusMode.intentional =>
-      'Deep work on primary values. Focuses on what matters most to you, '
-          'filtering out urgency-driven distractions.',
+      'Values-first suggestions with clear, explicit guardrails for deadlines '
+          'and start dates.',
     FocusMode.sustainable =>
-      'A calibrated approach that balances importance and urgency to keep '
-          'momentum across values, without overcommitting.',
+      'Values-first suggestions with clear, explicit guardrails for deadlines '
+          'and start dates.',
     FocusMode.responsive =>
-      'Urgency-first prioritization. Ensures time-sensitive tasks get '
-          'attention regardless of their value alignment.',
+      'Deadline-first triage: focus on what’s at risk, then fill remaining '
+          'attention with value-aligned suggestions.',
     FocusMode.personalized =>
-      'Custom configuration of all parameters. Fine-tune importance, '
-          'urgency, synergy, and balance weights.',
+      'Values-first suggestions with clear, explicit guardrails for deadlines '
+          'and start dates.',
   };
 
   /// Icon name for the focus mode (Material icons).
   String get iconName => switch (this) {
-    FocusMode.intentional => 'target', // 🎯
-    FocusMode.sustainable => 'tune', // 🎛️
-    FocusMode.responsive => 'bolt', // ⚡
-    FocusMode.personalized => 'tune', // 🎛️
+    FocusMode.intentional => 'target',
+    FocusMode.sustainable => 'target',
+    FocusMode.responsive => 'bolt',
+    FocusMode.personalized => 'target',
   };
 }

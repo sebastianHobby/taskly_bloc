@@ -36,10 +36,16 @@ final class MyDayPlanPickerTaskItem {
 class MyDayPlanPickerTaskListSection extends StatelessWidget {
   const MyDayPlanPickerTaskListSection({
     required this.items,
+    this.completedStatusLabel,
     super.key,
   });
 
   final List<MyDayPlanPickerTaskItem> items;
+
+  /// Label used for completed rows when selection is disabled.
+  ///
+  /// Must be provided by the caller (no app l10n inside taskly_ui).
+  final String? completedStatusLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +57,7 @@ class MyDayPlanPickerTaskListSection extends StatelessWidget {
             intent: TaskTileIntent.selection(selected: item.selected),
             supportingText: item.supportingText,
             supportingTooltipText: item.supportingTooltipText,
+            completedStatusLabel: completedStatusLabel,
             markers: item.markers,
             actions: TaskTileActions(
               onTap: item.onToggleSelected,
