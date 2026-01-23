@@ -6,7 +6,7 @@ export 'src/sections/confirmation_dialog.dart';
 export 'src/sections/task_status_filter_bar.dart';
 
 export 'src/tiles/entity_tile_models.dart';
-export 'src/tiles/project_list_row_tile.dart';
+export 'src/tiles/project_entity_tile.dart';
 
 export 'src/sections/icon_picker_dialog.dart';
 export 'src/sections/settings_section_card.dart';

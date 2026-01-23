@@ -9,8 +9,6 @@
 library;
 
 export 'src/catalog/taskly_catalog_types.dart';
-
-export 'src/sections/taskly_agenda_section.dart';
 export 'src/sections/taskly_standard_tile_list_section.dart';
 
 export 'src/tiles/task_entity_tile.dart';

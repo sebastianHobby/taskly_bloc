@@ -42,8 +42,6 @@ class MyDayPlanPickerTaskListSection extends StatelessWidget {
     this.selectionPillSelectedLabel,
     this.snoozeTooltip,
     this.supportingTooltipSemanticLabel,
-    this.bulkSelectTooltip,
-    this.bulkDeselectTooltip,
     super.key,
   });
 
@@ -73,12 +71,6 @@ class MyDayPlanPickerTaskListSection extends StatelessWidget {
   /// Optional semantics label for the supporting-tooltip info button.
   final String? supportingTooltipSemanticLabel;
 
-  /// Optional tooltip for bulk-selection (not selected).
-  final String? bulkSelectTooltip;
-
-  /// Optional tooltip for bulk-selection (selected).
-  final String? bulkDeselectTooltip;
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -95,8 +87,6 @@ class MyDayPlanPickerTaskListSection extends StatelessWidget {
             selectionPillSelectedLabel: selectionPillSelectedLabel,
             snoozeTooltip: snoozeTooltip,
             supportingTooltipSemanticLabel: supportingTooltipSemanticLabel,
-            bulkSelectTooltip: bulkSelectTooltip,
-            bulkDeselectTooltip: bulkDeselectTooltip,
             markers: item.markers,
             actions: TaskTileActions(
               onTap: item.onToggleSelected,

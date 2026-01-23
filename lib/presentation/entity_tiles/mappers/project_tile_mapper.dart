@@ -60,6 +60,16 @@ ProjectTileModel buildProjectListRowTileModel(
 
   final primaryValueData = project.primaryValue?.toChipData(context);
 
+  final subtitle = switch (project.description?.trim()) {
+    null => null,
+    '' => null,
+    final v => v,
+  };
+
+  final effectiveTaskCount = taskCount ?? project.taskCount;
+  final effectiveCompletedTaskCount =
+      completedTaskCount ?? project.completedTaskCount;
+
   final meta = EntityMetaLineModel(
     showValuesInMetaLine: showValuesInMetaLine,
     primaryValue: primaryValueData,
@@ -112,10 +122,12 @@ ProjectTileModel buildProjectListRowTileModel(
     completed: project.completed,
     pinned: project.isPinned,
     meta: meta,
+    leadingChip: primaryValueData,
+    subtitle: subtitle,
     titlePrimaryValue: showPrimaryValueOnTitleLine ? primaryValueData : null,
-    taskCount: taskCount,
-    completedTaskCount: completedTaskCount,
-    emptyTasksLabel: taskCount == 0 ? 'No tasks yet' : null,
+    taskCount: effectiveTaskCount,
+    completedTaskCount: effectiveCompletedTaskCount,
+    emptyTasksLabel: effectiveTaskCount == 0 ? 'No tasks yet' : null,
     showTrailingProgressLabel: showTrailingProgressLabel,
   );
 }

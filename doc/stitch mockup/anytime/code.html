@@ -50,16 +50,6 @@
         }
     </style>
 <style>
-        body {
-            min-height: max(884px, 100dvh);
-        }
-    </style>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
-    }
-  </style>
-<style>
     body {
       min-height: max(884px, 100dvh);
     }
@@ -115,22 +105,22 @@
 <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 border-t border-gray-100 dark:border-gray-800/50">
 <button class="flex items-center gap-1.5 px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-[11px] font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0">
 <span class="material-symbols-outlined text-[14px]">tune</span>
-            Filters
-        </button>
+                    Filters
+                </button>
 <div class="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-1 shrink-0"></div>
 <button class="flex items-center gap-1 px-2.5 py-1 bg-card-light dark:bg-card-dark border border-gray-200 dark:border-gray-700 rounded-full text-[11px] font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors shrink-0">
-            Due Soon
-        </button>
+                    Due Soon
+                </button>
 <button class="flex items-center gap-1 px-2.5 py-1 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-full text-[11px] font-medium text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shrink-0">
-            Overdue
-            <span class="ml-1 bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 text-[9px] px-1 rounded-sm">3</span>
+                    Overdue
+                    <span class="ml-1 bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 text-[9px] px-1 rounded-sm">3</span>
 </button>
 <button class="flex items-center gap-1 px-2.5 py-1 bg-card-light dark:bg-card-dark border border-gray-200 dark:border-gray-700 rounded-full text-[11px] font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors shrink-0">
-            P1 Priority
-        </button>
+                    P1 Priority
+                </button>
 <button class="flex items-center gap-1 px-2.5 py-1 bg-card-light dark:bg-card-dark border border-gray-200 dark:border-gray-700 rounded-full text-[11px] font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors shrink-0">
-            Stalled
-        </button>
+                    Stalled
+                </button>
 </div>
 </div>
 <div class="flex flex-col gap-4 pt-4">
@@ -150,7 +140,11 @@
 </div>
 </div>
 <div class="px-4 pb-4 flex flex-col gap-3 border-t border-gray-100 dark:border-gray-800/50 pt-4">
-<div class="bg-gray-50 dark:bg-black/20 rounded-xl p-4 border border-gray-100 dark:border-gray-800 hover:border-blue-500/30 transition-colors group relative">
+<div class="bg-gray-50 dark:bg-black/20 rounded-xl p-4 border border-gray-100 dark:border-gray-800 hover:border-blue-500/30 transition-colors group relative flex gap-3">
+<div class="shrink-0 pt-0.5">
+<input class="w-5 h-5 rounded-full border-gray-300 text-primary focus:ring-primary focus:ring-offset-0 bg-white dark:bg-white/5 cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex-1">
 <div class="flex items-start justify-between mb-3">
 <div>
 <h4 class="font-bold text-[15px] leading-tight text-gray-900 dark:text-white mb-1">Q4 Strategy Report</h4>
@@ -167,18 +161,23 @@
 <div class="h-full bg-blue-500 rounded-full" style="width: 75%"></div>
 </div>
 </div>
-<div class="flex items-center gap-4 text-[11px]">
+<div class="flex items-center gap-3 text-[11px]">
 <div class="flex items-center gap-1.5 text-gray-600 dark:text-gray-400 bg-white dark:bg-white/5 px-2 py-1 rounded border border-gray-100 dark:border-white/5">
-<span class="material-symbols-outlined text-[14px]">calendar_today</span>
-<span>Plan: <b class="text-gray-900 dark:text-white">Oct 30</b></span>
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span class="font-bold text-gray-900 dark:text-white">Oct 30</span>
 </div>
 <div class="flex items-center gap-1.5 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 px-2 py-1 rounded border border-red-100 dark:border-red-900/20">
-<span class="material-symbols-outlined text-[14px] fill-1">flag</span>
-<span>Due: <b>Nov 02</b></span>
+<span class="material-symbols-outlined text-[16px] fill-1">flag</span>
+<span class="font-bold">Nov 02</span>
 </div>
 </div>
 </div>
-<div class="bg-gray-50 dark:bg-black/20 rounded-xl p-4 border border-gray-100 dark:border-gray-800 hover:border-blue-500/30 transition-colors group">
+</div>
+<div class="bg-gray-50 dark:bg-black/20 rounded-xl p-4 border border-gray-100 dark:border-gray-800 hover:border-blue-500/30 transition-colors group flex gap-3">
+<div class="shrink-0 pt-0.5">
+<input class="w-5 h-5 rounded-full border-gray-300 text-primary focus:ring-primary focus:ring-offset-0 bg-white dark:bg-white/5 cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex-1">
 <div class="flex items-start justify-between mb-3">
 <div>
 <h4 class="font-bold text-[15px] leading-tight text-gray-900 dark:text-white mb-1">Design System Update</h4>
@@ -195,10 +194,11 @@
 <div class="h-full bg-blue-500 rounded-full" style="width: 30%"></div>
 </div>
 </div>
-<div class="flex items-center gap-4 text-[11px]">
+<div class="flex items-center gap-3 text-[11px]">
 <div class="flex items-center gap-1.5 text-gray-600 dark:text-gray-400 bg-white dark:bg-white/5 px-2 py-1 rounded border border-gray-100 dark:border-white/5">
-<span class="material-symbols-outlined text-[14px]">calendar_today</span>
-<span>Plan: <b class="text-gray-900 dark:text-white">Nov 05</b></span>
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span class="font-bold text-gray-900 dark:text-white">Nov 05</span>
+</div>
 </div>
 </div>
 </div>
@@ -260,4 +260,5 @@
 <span class="material-symbols-outlined text-3xl">add</span>
 </button>
 </div>
+
 </body></html>

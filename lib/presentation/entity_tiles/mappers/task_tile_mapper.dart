@@ -58,6 +58,12 @@ TaskTileModel buildTaskListRowTileModel(
   final resolvedDeadlineDateLabel =
       overrideDeadlineDateLabel ?? deadlineDateLabel;
 
+  // Only show a due label when there is a concrete deadline date.
+  // This intentionally suppresses non-date concepts like “Daily/Flexible/No Date”.
+  final effectiveResolvedDeadlineDateLabel = effectiveDeadlineDate == null
+      ? null
+      : resolvedDeadlineDateLabel;
+
   final hasExtraSecondaryValues = task.effectiveSecondaryValues.length > 1;
 
   final shouldShowOverflowEllipsis =
@@ -91,7 +97,7 @@ TaskTileModel buildTaskListRowTileModel(
     showOnlyDeadlineDate: showOnlyDeadlineDate,
     showDeadlineChipOnTitleLine: showDeadlineChipOnTitleLine,
     startDateLabel: resolvedStartDateLabel,
-    deadlineDateLabel: resolvedDeadlineDateLabel,
+    deadlineDateLabel: effectiveResolvedDeadlineDateLabel,
     isOverdue:
         overrideIsOverdue ??
         _isOverdue(
@@ -142,6 +148,7 @@ TaskTileModel buildTaskListRowTileModel(
     completed: isCompleted,
     onTap: onTap,
     meta: meta,
+    leadingChip: primaryValueData,
     titlePrimaryValue: showPrimaryValueOnTitleLine ? primaryValueData : null,
     checkboxSemanticLabel: isCompleted
         ? 'Mark "${task.name}" as incomplete'
