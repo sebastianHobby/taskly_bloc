@@ -2,11 +2,23 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Run Android (prod) - pick device",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main_prod.dart",
+      "toolArgs": [
+        "-v"
+      ]
+    },
+    {
       "name": "Run Android (prod)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main_prod.dart",
-      "deviceId": "android"
+      "deviceId": "emulator-5556",
+      "toolArgs": [
+        "-v"
+      ]
     },
     {
       "name": "Run Web (Chrome, prod)",

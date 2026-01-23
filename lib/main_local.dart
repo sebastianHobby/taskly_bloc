@@ -1,14 +1,17 @@
 import 'package:taskly_bloc/bootstrap.dart';
+import 'package:taskly_bloc/bootstrap/local_dev_host.dart';
 import 'package:taskly_bloc/presentation/features/app/app.dart';
 import 'package:taskly_core/env.dart';
 
 Future<void> main() async {
-  Env.config = const EnvConfig(
+  final host = localDevHost();
+
+  Env.config = EnvConfig(
     name: 'local',
-    supabaseUrl: 'http://127.0.0.1:54321',
+    supabaseUrl: 'http://$host:54321',
     supabasePublishableKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0',
-    powersyncUrl: 'http://localhost:8080',
+    powersyncUrl: 'http://$host:8080',
   );
 
   await bootstrap(() => const App());

@@ -91,6 +91,8 @@ class TaskTileModel {
     required this.meta,
     this.titlePrimaryValue,
     this.checkboxSemanticLabel,
+    this.leadingChip,
+    this.deemphasized = false,
   });
 
   final String id;
@@ -106,6 +108,16 @@ class TaskTileModel {
 
   /// Optional semantics label for the completion toggle (app-owned).
   final String? checkboxSemanticLabel;
+
+  /// Optional leading chip (typically the task's primary Value/category).
+  ///
+  /// This is used for the mock-aligned category chip at the top of the tile.
+  final ValueChipData? leadingChip;
+
+  /// When true, renders the tile in a deemphasized state (reduced opacity).
+  ///
+  /// Intended for "not today" rows, collapsed groups, etc.
+  final bool deemphasized;
 }
 
 class ProjectTileModel {
@@ -120,6 +132,9 @@ class ProjectTileModel {
     this.completedTaskCount,
     this.emptyTasksLabel,
     this.showTrailingProgressLabel = false,
+    this.leadingChip,
+    this.subtitle,
+    this.deemphasized = false,
   });
 
   final String id;
@@ -141,6 +156,15 @@ class ProjectTileModel {
 
   /// Mirrors legacy behavior: show a small done/total label under actions.
   final bool showTrailingProgressLabel;
+
+  /// Optional leading chip (typically the project's primary Value/category).
+  final ValueChipData? leadingChip;
+
+  /// Optional subtitle shown under the project title (app-owned string).
+  final String? subtitle;
+
+  /// When true, renders the tile in a deemphasized state (reduced opacity).
+  final bool deemphasized;
 }
 
 /// Curated visual variants for value tiles.

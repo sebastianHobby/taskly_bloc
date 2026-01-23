@@ -14,11 +14,9 @@ export 'src/sections/task_status_filter_bar.dart';
 export 'src/sections/confirmation_dialog.dart';
 export 'src/sections/icon_picker_dialog.dart';
 export 'src/sections/settings_section_card.dart';
-
-export 'src/sections/taskly_agenda_section.dart';
 export 'src/sections/taskly_standard_tile_list_section.dart';
 
-export 'src/sections/taskly_timeline_day_section.dart';
-export 'src/sections/taskly_overdue_stack_section.dart';
+export 'src/sections/taskly_scheduled_day_section.dart';
+export 'src/sections/taskly_scheduled_overdue_section.dart';
 
 export 'src/sections/my_day_plan_picker_task_list_section.dart';

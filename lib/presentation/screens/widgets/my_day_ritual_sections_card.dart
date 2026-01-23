@@ -478,7 +478,7 @@ class _AcceptedTaskTile extends StatelessWidget {
       model: model,
       intent: selectionMode
           ? TaskTileIntent.bulkSelection(selected: isSelected)
-          : const TaskTileIntent.myDayList(),
+          : const TaskTileIntent.standardList(),
       supportingText: subtitleText,
       markers: TaskTileMarkers(pinned: task.isPinned),
       actions: TaskTileActions(

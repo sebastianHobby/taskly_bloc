@@ -21,6 +21,5 @@ export 'src/tiles/entity_tile_models.dart'
 export 'src/tiles/task_entity_tile.dart';
 export 'src/tiles/project_entity_tile.dart';
 export 'src/tiles/value_entity_tile.dart';
-export 'src/tiles/selectable_task_entity_tile.dart';
 
 export 'src/entities/priority_flag.dart';

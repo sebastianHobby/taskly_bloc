@@ -12,9 +12,6 @@ sealed class TaskTileIntent {
   /// Default task list tile used across most lists.
   const factory TaskTileIntent.standardList() = TaskTileIntentStandardList;
 
-  /// A task list tile optimized for "My Day" surfaces.
-  const factory TaskTileIntent.myDayList() = TaskTileIntentMyDayList;
-
   /// A task row used for selection flows (e.g., "pick tasks").
   ///
   /// The selection state is part of the intent.
@@ -28,10 +25,6 @@ sealed class TaskTileIntent {
 
 final class TaskTileIntentStandardList extends TaskTileIntent {
   const TaskTileIntentStandardList();
-}
-
-final class TaskTileIntentMyDayList extends TaskTileIntent {
-  const TaskTileIntentMyDayList();
 }
 
 final class TaskTileIntentSelection extends TaskTileIntent {

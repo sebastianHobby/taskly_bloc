@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'package:taskly_ui/src/sections/taskly_timeline_day_section.dart';
-
 @immutable
-final class TasklyOverdueStackModel {
-  const TasklyOverdueStackModel({
+final class TasklyScheduledOverdueModel {
+  const TasklyScheduledOverdueModel({
     required this.title,
     required this.countLabel,
     required this.isCollapsed,
     required this.onToggleCollapsed,
-    required this.cards,
+    required this.children,
     this.actionLabel,
     this.actionTooltip,
     this.onActionPressed,
@@ -21,33 +19,39 @@ final class TasklyOverdueStackModel {
   final bool isCollapsed;
   final VoidCallback? onToggleCollapsed;
 
+  /// Canonical entity tiles for overdue items.
+  ///
   /// When collapsed, only the first 3 are shown.
-  final List<TasklyTimelineCardModel> cards;
+  final List<Widget> children;
 
   final String? actionLabel;
   final String? actionTooltip;
   final VoidCallback? onActionPressed;
 }
 
-class TasklyOverdueStackSection extends StatelessWidget {
-  const TasklyOverdueStackSection({
-    required this.model,
-    super.key,
-  });
+/// Stitch-aligned overdue stack block, kept as a first-class section.
+///
+/// This section intentionally composes canonical entity tiles rather than
+/// rendering bespoke "overdue cards", to preserve a single tile system.
+class TasklyScheduledOverdueSection extends StatelessWidget {
+  const TasklyScheduledOverdueSection({required this.model, super.key});
 
-  final TasklyOverdueStackModel model;
+  final TasklyScheduledOverdueModel model;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    final actionLabel = model.actionLabel;
-    final hasAction = actionLabel != null && model.onActionPressed != null;
+    final actionLabel = model.actionLabel?.trim();
+    final hasAction =
+        actionLabel != null &&
+        actionLabel.isNotEmpty &&
+        model.onActionPressed != null;
 
-    final visibleCards = model.isCollapsed
-        ? model.cards.take(3).toList(growable: false)
-        : model.cards;
+    final visibleChildren = model.isCollapsed
+        ? model.children.take(3).toList(growable: false)
+        : model.children;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
@@ -127,8 +131,8 @@ class TasklyOverdueStackSection extends StatelessWidget {
                 ),
               ),
             ),
-            if (!model.isCollapsed || model.cards.isNotEmpty) ...[
-              if (visibleCards.isEmpty)
+            if (!model.isCollapsed || model.children.isNotEmpty) ...[
+              if (visibleChildren.isEmpty)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                   child: Text(
@@ -144,92 +148,16 @@ class TasklyOverdueStackSection extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                   child: Column(
                     children: [
-                      for (final c in visibleCards)
+                      for (final c in visibleChildren)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 12),
-                          child: _OverdueCard(card: c),
+                          child: c,
                         ),
                     ],
                   ),
                 ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _OverdueCard extends StatelessWidget {
-  const _OverdueCard({required this.card});
-
-  final TasklyTimelineCardModel card;
-
-  @override
-  Widget build(BuildContext context) {
-    // Reuse the same visual as timeline cards by composing TasklyTimelineDaySection's
-    // internal card layout would be ideal, but it's private.
-    // For now, render using a small inline card with the same model.
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Material(
-      color: scheme.surface,
-      elevation: 0,
-      borderRadius: BorderRadius.circular(18),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: card.onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-          child: Row(
-            children: [
-              if (card.onToggleCompletion != null) ...[
-                Checkbox(
-                  value: card.completed,
-                  onChanged: card.onToggleCompletion,
-                  shape: const CircleBorder(),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                const SizedBox(width: 10),
-              ],
-              Expanded(
-                child: Text(
-                  card.title,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    decoration: card.completed
-                        ? TextDecoration.lineThrough
-                        : null,
-                    color: card.completed
-                        ? scheme.onSurface.withValues(alpha: 0.55)
-                        : scheme.onSurface,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: scheme.errorContainer.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'DUE',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: scheme.onErrorContainer,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
