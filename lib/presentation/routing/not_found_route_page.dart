@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_core/logging.dart';
-import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
 class NotFoundRoutePage extends StatelessWidget {
   const NotFoundRoutePage({
@@ -31,17 +31,17 @@ class NotFoundRoutePage extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          ErrorStateWidget.notFound(message: text),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () =>
+      child: TasklyFeedRenderer(
+        spec: TasklyFeedSpec.empty(
+          empty: TasklyEmptyStateSpec(
+            icon: Icons.warning_amber_rounded,
+            title: text,
+            description: 'This page does not exist.',
+            actionLabel: 'Go Home',
+            onAction: () =>
                 GoRouter.of(context).go(Routing.screenPath('my_day')),
-            child: const Text('Go Home'),
           ),
-        ],
+        ),
       ),
     );
   }

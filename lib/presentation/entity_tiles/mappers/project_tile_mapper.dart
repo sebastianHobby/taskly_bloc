@@ -5,19 +5,17 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_ui/taskly_ui_entities.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
-ProjectTileModel buildProjectListRowTileModel(
+TasklyProjectRowData buildProjectRowData(
   BuildContext context, {
   required Project project,
   int? taskCount,
   int? completedTaskCount,
-  bool showTrailingProgressLabel = false,
   bool showDates = true,
   bool showOnlyDeadlineDate = false,
   bool showDeadlineChipOnTitleLine = false,
   bool showPrimaryValueOnTitleLine = false,
-  bool showValuesInMetaLine = true,
   bool showSecondaryValues = true,
   String? overrideStartDateLabel,
   String? overrideDeadlineDateLabel,
@@ -70,8 +68,7 @@ ProjectTileModel buildProjectListRowTileModel(
   final effectiveCompletedTaskCount =
       completedTaskCount ?? project.completedTaskCount;
 
-  final meta = EntityMetaLineModel(
-    showValuesInMetaLine: showValuesInMetaLine,
+  final meta = TasklyEntityMetaData(
     primaryValue: primaryValueData,
     secondaryValues: !showSecondaryValues
         ? const []
@@ -116,7 +113,7 @@ ProjectTileModel buildProjectListRowTileModel(
         : 'Priority P${project.priority}',
   );
 
-  return ProjectTileModel(
+  return TasklyProjectRowData(
     id: project.id,
     title: project.name,
     completed: project.completed,
@@ -127,8 +124,6 @@ ProjectTileModel buildProjectListRowTileModel(
     titlePrimaryValue: showPrimaryValueOnTitleLine ? primaryValueData : null,
     taskCount: effectiveTaskCount,
     completedTaskCount: effectiveCompletedTaskCount,
-    emptyTasksLabel: effectiveTaskCount == 0 ? 'No tasks yet' : null,
-    showTrailingProgressLabel: showTrailingProgressLabel,
   );
 }
 

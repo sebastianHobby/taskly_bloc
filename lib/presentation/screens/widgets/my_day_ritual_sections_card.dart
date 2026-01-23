@@ -7,7 +7,7 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart'
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
-import 'package:taskly_ui/taskly_ui_entities.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
 final class MyDayBucketCounts {
   const MyDayBucketCounts({
@@ -351,6 +351,74 @@ class _BucketSection extends StatelessWidget {
         ? context.l10n.myDayRitualOtherNotInTodayHint(counts.otherCount)
         : emptySubtitle;
 
+    TasklyRowSpec buildRow(Task task) {
+      final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
+
+      final selection = context.read<SelectionCubit>();
+      final key = SelectionKey(entityType: EntityType.task, entityId: task.id);
+      final selectionMode = selection.isSelectionMode;
+      final isSelected = selection.isSelected(key);
+
+      final data = buildTaskRowData(
+        context,
+        task: task,
+        tileCapabilities: tileCapabilities,
+        showProjectLabel: false,
+      );
+
+      final openEditor = buildTaskOpenEditorHandler(context, task: task);
+
+      final labels = TasklyTaskRowLabels(
+        pinnedSemanticLabel: context.l10n.pinnedSemanticLabel,
+      );
+
+      final updatedData = TasklyTaskRowData(
+        id: data.id,
+        title: data.title,
+        completed: data.completed,
+        meta: data.meta,
+        titlePrimaryValue: data.titlePrimaryValue,
+        leadingChip: data.leadingChip,
+        supportingText: subtitleForTask?.call(task),
+        supportingTooltipText: null,
+        deemphasized: data.deemphasized,
+        checkboxSemanticLabel: data.checkboxSemanticLabel,
+        labels: labels,
+      );
+
+      return TasklyRowSpec.task(
+        key: 'myday-accepted-${task.id}',
+        data: updatedData,
+        intent: selectionMode
+            ? TasklyTaskRowIntent.bulkSelection(selected: isSelected)
+            : const TasklyTaskRowIntent.standard(),
+        markers: TasklyTaskRowMarkers(pinned: task.isPinned),
+        actions: TasklyTaskRowActions(
+          onTap: () {
+            if (selection.shouldInterceptTapAsSelection()) {
+              selection.handleEntityTap(key);
+              return;
+            }
+            openEditor();
+          },
+          onLongPress: () {
+            selection.enterSelectionMode(initialSelection: key);
+          },
+          onToggleSelected: () => selection.toggleSelection(
+            key,
+            extendRange: false,
+          ),
+          onToggleCompletion: buildTaskToggleCompletionHandler(
+            context,
+            task: task,
+            tileCapabilities: tileCapabilities,
+          ),
+        ),
+      );
+    }
+
+    final rows = visible.map(buildRow).toList(growable: false);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
       child: Column(
@@ -417,11 +485,12 @@ class _BucketSection extends StatelessWidget {
               ),
             )
           else ...[
-            for (final task in visible)
-              _AcceptedTaskTile(
-                task: task,
-                subtitleText: subtitleForTask?.call(task),
+            TasklyFeedRenderer.buildSection(
+              TasklySectionSpec.standardList(
+                id: 'myday-accepted',
+                rows: rows,
               ),
+            ),
             if (acceptedTasks.length > previewCount)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
@@ -445,63 +514,6 @@ class _BucketSection extends StatelessWidget {
               ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _AcceptedTaskTile extends StatelessWidget {
-  const _AcceptedTaskTile({required this.task, this.subtitleText});
-
-  final Task task;
-  final String? subtitleText;
-
-  @override
-  Widget build(BuildContext context) {
-    final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
-
-    final selection = context.read<SelectionCubit>();
-    final key = SelectionKey(entityType: EntityType.task, entityId: task.id);
-    final selectionMode = selection.isSelectionMode;
-    final isSelected = selection.isSelected(key);
-
-    final model = buildTaskListRowTileModel(
-      context,
-      task: task,
-      tileCapabilities: tileCapabilities,
-      showProjectLabel: false,
-    );
-
-    final subtitleText = this.subtitleText;
-
-    return TaskEntityTile(
-      model: model,
-      intent: selectionMode
-          ? TaskTileIntent.bulkSelection(selected: isSelected)
-          : const TaskTileIntent.standardList(),
-      supportingText: subtitleText,
-      markers: TaskTileMarkers(pinned: task.isPinned),
-      actions: TaskTileActions(
-        onTap: () {
-          if (selection.shouldInterceptTapAsSelection()) {
-            selection.handleEntityTap(key);
-            return;
-          }
-          model.onTap();
-        },
-        onLongPress: () {
-          selection.enterSelectionMode(initialSelection: key);
-        },
-        onToggleSelected: () => selection.toggleSelection(
-          key,
-          extendRange: false,
-        ),
-        onToggleCompletion: buildTaskToggleCompletionHandler(
-          context,
-          task: task,
-          tileCapabilities: tileCapabilities,
-        ),
-        onOverflowMenuRequestedAt: null,
       ),
     );
   }

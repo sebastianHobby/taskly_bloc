@@ -13,7 +13,7 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_domain/contracts.dart';
-import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
 class ValuesPage extends StatelessWidget {
   const ValuesPage({super.key});
@@ -69,23 +69,32 @@ class ValuesPage extends StatelessWidget {
                   builder: (context, state) {
                     return switch (state) {
                       ValueListInitial() ||
-                      ValueListLoading() => const FeedBody.loading(),
-                      ValueListError(:final error) => FeedBody.error(
-                        message: friendlyErrorMessageForUi(error, context.l10n),
-                        retryLabel: context.l10n.retryButton,
-                        onRetry: () => context.read<ValueListBloc>().add(
-                          const ValueListEvent.subscriptionRequested(),
+                      ValueListLoading() => const TasklyFeedRenderer(
+                        spec: TasklyFeedSpec.loading(),
+                      ),
+                      ValueListError(:final error) => TasklyFeedRenderer(
+                        spec: TasklyFeedSpec.error(
+                          message: friendlyErrorMessageForUi(
+                            error,
+                            context.l10n,
+                          ),
+                          retryLabel: context.l10n.retryButton,
+                          onRetry: () => context.read<ValueListBloc>().add(
+                            const ValueListEvent.subscriptionRequested(),
+                          ),
                         ),
                       ),
                       ValueListLoaded(:final values) when values.isEmpty =>
-                        FeedBody.empty(
-                          child: EmptyStateWidget(
-                            icon: Icons.favorite_border,
-                            title: 'No values yet',
-                            description:
-                                'Create a value to clarify what matters most.',
-                            actionLabel: context.l10n.createValueOption,
-                            onAction: () => _createValue(context),
+                        TasklyFeedRenderer(
+                          spec: TasklyFeedSpec.empty(
+                            empty: TasklyEmptyStateSpec(
+                              icon: Icons.favorite_border,
+                              title: 'No values yet',
+                              description:
+                                  'Create a value to clarify what matters most.',
+                              actionLabel: context.l10n.createValueOption,
+                              onAction: () => _createValue(context),
+                            ),
                           ),
                         ),
                       ValueListLoaded(:final values) => ValuesListView(

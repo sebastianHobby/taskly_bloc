@@ -69,19 +69,19 @@ When changing `taskly_ui` entities/sections:
 
 ### 5.1 Intent, not config
 
-For entity tiles and list rows (Task/Project/Value), the default pattern is:
+For entity rows (Task/Project/Value), the default pattern is:
 
-- **Intent** describes *why* the tile is being shown (screen/flow).
+- **Intent** describes *why* the row is being shown (screen/flow).
 - **Actions** describe what the user can do (callbacks opt into affordances).
 - **Markers** describe small semantic facts that affect minor affordances.
 
-See: [../INVARIANTS.md](../INVARIANTS.md#212-entity-tiles-are-intent-driven-strict).
+See: [../INVARIANTS.md](../INVARIANTS.md#212-entity-rows-are-intent-driven-strict).
 
 ### 5.2 Narrow extension points only
 
 To keep shared UI consistent across screens:
 
-- Avoid “widget injection” parameters for entity tiles.
+- Avoid “widget injection” parameters for entity rows.
 - Prefer strings and UI-only models (data-in) and callbacks (events-out).
 - If an extension point is unavoidable, keep it narrow and semantically named
   (for example a `titlePrefix` widget) rather than exposing a full `trailing`

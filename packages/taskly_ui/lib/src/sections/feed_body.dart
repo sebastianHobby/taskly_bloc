@@ -64,9 +64,8 @@ class FeedBody extends StatelessWidget {
 
   /// Custom loaded state.
   ///
-  /// Use this when you already have a canonical section widget that owns its
-  /// own scrolling behavior (e.g. catalogue sections like
-  /// TasklyStandardTileListSection).
+  /// Use this when you already have a canonical widget that owns its
+  /// own scrolling behavior.
   const FeedBody.child({
     required Widget child,
     Key? key,

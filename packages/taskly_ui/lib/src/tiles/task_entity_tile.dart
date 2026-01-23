@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:taskly_ui/src/models/value_chip_data.dart';
-import 'package:taskly_ui/src/tiles/entity_tile_intents.dart';
-import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
+import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
 
 /// Canonical Task tile (rows/cards) aligned to Stitch mockups.
@@ -13,78 +12,34 @@ class TaskEntityTile extends StatelessWidget {
   const TaskEntityTile({
     required this.model,
     required this.actions,
-    this.intent = const TaskTileIntent.standardList(),
-    this.markers = const TaskTileMarkers(),
+    this.intent = const TasklyTaskRowIntent.standard(),
+    this.markers = const TasklyTaskRowMarkers(),
     this.leadingAccentColor,
-    this.compact = false,
-    this.supportingText,
-    this.supportingTooltipText,
-    this.completedStatusLabel,
-    this.pinnedSemanticLabel,
-    this.supportingTooltipSemanticLabel,
-    this.snoozeTooltip,
-    this.selectionPillLabel,
-    this.selectionPillSelectedLabel,
-    this.bulkSelectTooltip,
-    this.bulkDeselectTooltip,
     super.key,
   });
 
-  final TaskTileModel model;
+  final TasklyTaskRowData model;
 
-  final TaskTileIntent intent;
-  final TaskTileMarkers markers;
-  final TaskTileActions actions;
+  final TasklyTaskRowIntent intent;
+  final TasklyTaskRowMarkers markers;
+  final TasklyTaskRowActions actions;
 
   /// Optional left-edge accent (used to subtly emphasize urgency).
   final Color? leadingAccentColor;
 
-  /// When true, uses a denser layout for list/agenda contexts.
-  final bool compact;
-
-  /// Optional supporting text shown between title and meta line.
-  final String? supportingText;
-
-  /// Optional tooltip text for the supporting text.
-  ///
-  /// When provided, a small info icon is rendered next to the supporting text.
-  final String? supportingTooltipText;
-
-  /// Optional label used for the completed status label in selection flows.
-  final String? completedStatusLabel;
-
-  /// Optional semantics label for the pinned marker icon.
-  final String? pinnedSemanticLabel;
-
-  /// Optional semantics label for the supporting-tooltip info button.
-  final String? supportingTooltipSemanticLabel;
-
-  /// Optional tooltip for the snooze icon in selection flows.
-  final String? snoozeTooltip;
-
-  /// Optional label for the selection pill in selection flows.
-  final String? selectionPillLabel;
-
-  /// Optional label for the selection pill when selected.
-  final String? selectionPillSelectedLabel;
-
-  /// Optional tooltip for bulk-selection (not selected).
-  final String? bulkSelectTooltip;
-
-  /// Optional tooltip for bulk-selection (selected).
-  final String? bulkDeselectTooltip;
-
   bool get _isSelectionIntent =>
-      intent is TaskTileIntentSelection ||
-      intent is TaskTileIntentBulkSelection;
+      intent is TasklyTaskRowIntentSelectionPicker ||
+      intent is TasklyTaskRowIntentBulkSelection;
 
-  bool get _isBulkSelectionIntent => intent is TaskTileIntentBulkSelection;
+  bool get _isBulkSelectionIntent =>
+      intent is TasklyTaskRowIntentBulkSelection;
 
-  bool get _isPickerSelectionIntent => intent is TaskTileIntentSelection;
+  bool get _isPickerSelectionIntent =>
+      intent is TasklyTaskRowIntentSelectionPicker;
 
   bool? get _selected => switch (intent) {
-    TaskTileIntentSelection(:final selected) => selected,
-    TaskTileIntentBulkSelection(:final selected) => selected,
+    TasklyTaskRowIntentSelectionPicker(:final selected) => selected,
+    TasklyTaskRowIntentBulkSelection(:final selected) => selected,
     _ => null,
   };
 
@@ -94,10 +49,10 @@ class TaskEntityTile extends StatelessWidget {
     final scheme = theme.colorScheme;
     final tokens = TasklyEntityTileTheme.of(context);
 
-    final effectiveCompact = compact || MediaQuery.sizeOf(context).width < 420;
+    final effectiveCompact = MediaQuery.sizeOf(context).width < 420;
 
     final pinnedPrefix = markers.pinned
-        ? _PinnedGlyph(label: pinnedSemanticLabel)
+        ? _PinnedGlyph(label: model.labels?.pinnedSemanticLabel)
         : null;
 
     final Widget? titlePrefix = pinnedPrefix;
@@ -111,17 +66,18 @@ class TaskEntityTile extends StatelessWidget {
     final showCompletionControl = !_isBulkSelectionIntent;
 
     final VoidCallback? onTap = switch (intent) {
-      TaskTileIntentSelection() => actions.onToggleSelected ?? actions.onTap,
-      TaskTileIntentBulkSelection() =>
+      TasklyTaskRowIntentSelectionPicker() =>
+        actions.onToggleSelected ?? actions.onTap,
+      TasklyTaskRowIntentBulkSelection() =>
         actions.onToggleSelected ?? actions.onTap,
       _ => actions.onTap,
     };
 
     final String? pickerPillLabel = switch (intent) {
-      TaskTileIntentSelection(:final selected) =>
+      TasklyTaskRowIntentSelectionPicker(:final selected) =>
         selected
-            ? (selectionPillSelectedLabel ?? 'Added')
-            : (selectionPillLabel ?? 'Add'),
+            ? (model.labels?.selectionPillSelectedLabel ?? 'Added')
+            : (model.labels?.selectionPillLabel ?? 'Add'),
       _ => null,
     };
 
@@ -129,9 +85,9 @@ class TaskEntityTile extends StatelessWidget {
         _isPickerSelectionIntent &&
         actions.onToggleSelected == null &&
         model.completed &&
-        (completedStatusLabel?.trim().isNotEmpty ?? false);
+        (model.labels?.completedStatusLabel?.trim().isNotEmpty ?? false);
 
-    final effectiveSupportingText = supportingText?.trim();
+    final effectiveSupportingText = model.supportingText?.trim();
     final hasSupportingText =
         effectiveSupportingText != null && effectiveSupportingText.isNotEmpty;
 
@@ -196,14 +152,16 @@ class TaskEntityTile extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _TopRow(
-                              leadingChip: model.leadingChip,
-                              priority: model.meta.priority,
+            _TopRow(
+              leadingChip: model.leadingChip,
+              priority: model.meta.priority,
                               selected: _isBulkSelectionIntent
                                   ? _selected
                                   : null,
-                              bulkSelectTooltip: bulkSelectTooltip,
-                              bulkDeselectTooltip: bulkDeselectTooltip,
+                              bulkSelectTooltip:
+                                  model.labels?.bulkSelectTooltip,
+                              bulkDeselectTooltip:
+                                  model.labels?.bulkDeselectTooltip,
                               onToggleSelected: actions.onToggleSelected,
                             ),
                             const SizedBox(height: 6),
@@ -238,9 +196,9 @@ class TaskEntityTile extends StatelessWidget {
                               const SizedBox(height: 6),
                               _SupportingText(
                                 text: effectiveSupportingText,
-                                tooltipText: supportingTooltipText,
+                                tooltipText: model.supportingTooltipText,
                                 tooltipSemanticLabel:
-                                    supportingTooltipSemanticLabel,
+                                    model.labels?.supportingTooltipSemanticLabel,
                               ),
                             ],
                             const SizedBox(height: 8),
@@ -252,7 +210,7 @@ class TaskEntityTile extends StatelessWidget {
                         const SizedBox(width: 8),
                         if (showCompletedStatusPill)
                           _PickerStatusPill(
-                            label: completedStatusLabel!.trim(),
+                            label: model.labels!.completedStatusLabel!.trim(),
                           )
                         else if (pickerPillLabel != null)
                           _PickerSelectionPill(
@@ -261,11 +219,11 @@ class TaskEntityTile extends StatelessWidget {
                             enabled: actions.onToggleSelected != null,
                             onPressed: actions.onToggleSelected,
                           ),
-                        if (intent is TaskTileIntentSelection &&
-                            actions.onSnoozeRequested != null) ...[
+        if (intent is TasklyTaskRowIntentSelectionPicker &&
+            actions.onSnoozeRequested != null) ...[
                           const SizedBox(width: 8),
                           IconButton(
-                            tooltip: snoozeTooltip ?? 'Snooze',
+                            tooltip: model.labels?.snoozeTooltip ?? 'Snooze',
                             onPressed: actions.onSnoozeRequested,
                             style: IconButton.styleFrom(
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -301,7 +259,7 @@ class TaskEntityTile extends StatelessWidget {
 }
 
 class _TopRow extends StatelessWidget {
-  const _TopRow({
+      const _TopRow({
     required this.leadingChip,
     required this.priority,
     required this.selected,
@@ -426,7 +384,7 @@ class _SupportingText extends StatelessWidget {
 class _PlanDueRow extends StatelessWidget {
   const _PlanDueRow({required this.meta, required this.tokens});
 
-  final EntityMetaLineModel meta;
+  final TasklyEntityMetaData meta;
   final TasklyEntityTileTheme tokens;
 
   @override

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_screen_bloc.dart';
@@ -11,15 +12,13 @@ import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/formatters/date_label_formatter.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
-import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_ui/taskly_ui_entities.dart';
-import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
 class ScheduledPage extends StatelessWidget {
   const ScheduledPage({super.key, this.scope = const GlobalScheduledScope()});
@@ -251,8 +250,8 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   actions: const <Widget>[],
                 ),
               ),
-              body: const LoadingStateWidget(
-                message: 'Loading scheduled...',
+              body: const TasklyFeedRenderer(
+                spec: TasklyFeedSpec.loading(),
               ),
             ),
             ScheduledTimelineError(:final message) => Scaffold(
@@ -263,10 +262,13 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   actions: const <Widget>[],
                 ),
               ),
-              body: ErrorStateWidget(
-                message: message,
-                onRetry: () => context.read<ScheduledTimelineBloc>().add(
-                  const ScheduledTimelineStarted(),
+              body: TasklyFeedRenderer(
+                spec: TasklyFeedSpec.error(
+                  message: message,
+                  retryLabel: 'Retry',
+                  onRetry: () => context.read<ScheduledTimelineBloc>().add(
+                    const ScheduledTimelineStarted(),
+                  ),
                 ),
               ),
             ),
@@ -387,9 +389,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
 
         selection.updateVisibleEntities(visibleEntities);
 
-        final overdueTiles = state.overdue
+        final overdueRows = state.overdue
             .map(
-              (o) => _buildOccurrenceTile(
+              (o) => _buildOccurrenceRow(
                 context,
                 o,
                 selectionState: selectionState,
@@ -400,10 +402,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 ),
                 today: today,
                 forceDue: true,
-                compact: true,
               ),
             )
-            .whereType<Widget>()
+            .whereType<TasklyRowSpec>()
             .toList(growable: false);
 
         return Scaffold(
@@ -462,18 +463,19 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   itemCount: itemCount,
                   itemBuilder: (context, index) {
                     if (overdueOffset == 1 && index == 0) {
-                      final actionEnabled = overdueTiles.isNotEmpty;
+                      final actionEnabled = overdueRows.isNotEmpty;
 
-                      return TasklyScheduledOverdueSection(
-                        model: TasklyScheduledOverdueModel(
+                      return TasklyFeedRenderer.buildSection(
+                        TasklySectionSpec.scheduledOverdue(
+                          id: 'scheduled-overdue',
                           title: 'Overdue',
-                          countLabel: overdueTiles.length.toString(),
+                          countLabel: overdueRows.length.toString(),
                           isCollapsed: state.overdueCollapsed,
                           onToggleCollapsed: () =>
                               context.read<ScheduledTimelineBloc>().add(
                                 const ScheduledTimelineOverdueCollapsedToggled(),
                               ),
-                          children: overdueTiles,
+                          rows: overdueRows,
                           actionLabel: actionEnabled ? 'Reschedule all' : null,
                           actionTooltip: 'Reschedule overdue items',
                           onActionPressed:
@@ -483,7 +485,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                                   final newDeadlineDay =
                                       await _showRescheduleOverduePicker(
                                         context,
-                                        itemCount: overdueTiles.length,
+                                        itemCount: overdueRows.length,
                                         today: today,
                                       );
                                   if (newDeadlineDay == null) return;
@@ -524,36 +526,36 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                     final sorted = list.toList(growable: false)
                       ..sort(_compareOccurrences);
 
-                    final tiles = sorted
+                    final rows = sorted
                         .map(
-                          (o) => _buildOccurrenceTile(
+                          (o) => _buildOccurrenceRow(
                             context,
                             o,
                             selectionState: selectionState,
                             day: day,
                             today: today,
                             forceDue: false,
-                            compact: false,
                           ),
                         )
-                        .whereType<Widget>()
+                        .whereType<TasklyRowSpec>()
                         .toList(growable: false);
 
                     final header = DateFormat('EEEE, MMM d').format(day);
-                    final count = tiles.length;
+                    final count = rows.length;
                     final countLabel = count == 0
                         ? null
                         : (count == 1 ? '1 task' : '$count tasks');
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 18),
-                      child: TasklyScheduledDaySection(
-                        model: TasklyScheduledDayModel(
+                      child: TasklyFeedRenderer.buildSection(
+                        TasklySectionSpec.scheduledDay(
+                          id: 'scheduled-${day.toIso8601String()}',
                           day: day,
                           title: header,
                           isToday: dayIndex == 0,
                           countLabel: countLabel,
-                          children: tiles,
+                          rows: rows,
                           emptyLabel: 'No tasks',
                           onAddRequested: selectionState.isSelectionMode
                               ? null
@@ -582,20 +584,15 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     return a.name.toLowerCase().compareTo(b.name.toLowerCase());
   }
 
-  static Widget? _buildOccurrenceTile(
+  static TasklyRowSpec? _buildOccurrenceRow(
     BuildContext context,
     ScheduledOccurrence occurrence, {
     required SelectionState selectionState,
     required DateTime day,
     required DateTime today,
     required bool forceDue,
-    required bool compact,
   }) {
-    final scheme = Theme.of(context).colorScheme;
     final selection = context.read<SelectionCubit>();
-
-    // Overdue-only emphasis: only the overdue section forces the accent.
-    final leadingAccentColor = forceDue ? scheme.error : null;
 
     if (occurrence.isTask && occurrence.task != null) {
       final task = occurrence.task!;
@@ -623,7 +620,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
               dueDate,
             );
 
-      final model = buildTaskListRowTileModel(
+      final data = buildTaskRowData(
         context,
         task: task,
         tileCapabilities: tileCapabilities,
@@ -632,25 +629,28 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         showOnlyDeadlineDate: false,
         showDeadlineChipOnTitleLine: false,
         showPrimaryValueOnTitleLine: false,
-        showValuesInMetaLine: false,
         showSecondaryValues: false,
         overrideStartDateLabel: plannedLabel,
         overrideDeadlineDateLabel: dueLabel,
       );
 
-      return TaskEntityTile(
-        model: model,
+      final openEditor = buildTaskOpenEditorHandler(context, task: task);
+
+      return TasklyRowSpec.task(
+        key: 'scheduled-task-${task.id}-${occurrence.localDay.toIso8601String()}',
+        data: data,
+        markers: TasklyTaskRowMarkers(pinned: task.isPinned),
         intent: selectionState.isSelectionMode
-            ? TaskTileIntent.bulkSelection(selected: isSelected)
-            : const TaskTileIntent.standardList(),
-        markers: TaskTileMarkers(pinned: task.isPinned),
-        actions: TaskTileActions(
+            ? TasklyTaskRowIntent.bulkSelection(selected: isSelected)
+            : const TasklyTaskRowIntent.standard(),
+        emphasis: forceDue ? TasklyRowEmphasis.overdue : TasklyRowEmphasis.none,
+        actions: TasklyTaskRowActions(
           onTap: () {
             if (selection.shouldInterceptTapAsSelection()) {
               selection.handleEntityTap(key);
               return;
             }
-            model.onTap();
+            openEditor();
           },
           onToggleCompletion: onToggle,
           onToggleSelected: selectionState.isSelectionMode
@@ -660,8 +660,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
             initialSelection: key,
           ),
         ),
-        leadingAccentColor: leadingAccentColor,
-        compact: compact,
       );
     }
 
@@ -705,36 +703,31 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         today: today,
       );
 
-      final leadingChip = project.primaryValue?.toChipData(context);
-
-      final meta = EntityMetaLineModel(
+      final data = buildProjectRowData(
+        context,
+        project: project,
         showDates: true,
         showOnlyDeadlineDate: false,
-        showBothDatesIfPresent: true,
-        startDateLabel: plannedLabel,
-        deadlineDateLabel: dueLabel,
-        isOverdue: isOverdue,
-        isDueToday: isDueToday,
-        isDueSoon: isDueSoon,
-        priority: project.priority,
+        showDeadlineChipOnTitleLine: false,
+        showPrimaryValueOnTitleLine: false,
+        showSecondaryValues: true,
+        overrideStartDateLabel: plannedLabel,
+        overrideDeadlineDateLabel: dueLabel,
+        overrideIsOverdue: isOverdue,
+        overrideIsDueToday: isDueToday,
+        overrideIsDueSoon: isDueSoon,
         showPriorityMarkerOnRight: false,
       );
 
-      final model = ProjectTileModel(
-        id: project.id,
-        title: project.name,
-        completed: project.completed,
-        pinned: project.isPinned,
-        meta: meta,
-        leadingChip: leadingChip,
-      );
-
-      return ProjectEntityTile(
-        model: model,
+      return TasklyRowSpec.project(
+        key:
+            'scheduled-project-${project.id}-${occurrence.localDay.toIso8601String()}',
+        data: data,
         intent: selectionState.isSelectionMode
-            ? ProjectTileIntent.bulkSelection(selected: isSelected)
-            : const ProjectTileIntent.standardList(),
-        actions: ProjectTileActions(
+            ? TasklyProjectRowIntent.bulkSelection(selected: isSelected)
+            : const TasklyProjectRowIntent.standard(),
+        emphasis: forceDue ? TasklyRowEmphasis.overdue : TasklyRowEmphasis.none,
+        actions: TasklyProjectRowActions(
           onTap: () {
             if (selection.shouldInterceptTapAsSelection()) {
               selection.handleEntityTap(key);
@@ -749,8 +742,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
             initialSelection: key,
           ),
         ),
-        leadingAccentColor: leadingAccentColor,
-        compact: compact,
       );
     }
 

@@ -9,8 +9,7 @@ import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
-import 'package:taskly_ui/taskly_ui_entities.dart';
-import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
 enum MyDayRitualWizardInitialSection { suggested, due, starts }
 
@@ -1719,53 +1718,85 @@ class _TaskTileColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = <MyDayPlanPickerTaskItem>[
+    final labels = TasklyTaskRowLabels(
+      completedStatusLabel: completedStatusLabel,
+      pinnedSemanticLabel: context.l10n.pinnedSemanticLabel,
+      selectionPillLabel: selectionPillLabel,
+      selectionPillSelectedLabel: selectionPillSelectedLabel,
+      snoozeTooltip: snoozeTooltip,
+    );
+
+    final rows = <TasklyRowSpec>[
       for (final task in tasks)
         () {
           final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
           final isSelected = selected.contains(task.id);
 
-          final model = buildTaskListRowTileModel(
+          final data = buildTaskRowData(
             context,
             task: task,
             tileCapabilities: tileCapabilities,
             showProjectLabel: false,
           );
 
-          return MyDayPlanPickerTaskItem(
-            model: model,
-            selected: isSelected,
-            markers: TaskTileMarkers(pinned: task.isPinned),
-            supportingText: reasonTextByTaskId[task.id],
-            supportingTooltipText: reasonTooltipTextByTaskId[task.id],
-            onToggleSelected: !enableSelection
-                ? null
-                : () => context.read<MyDayRitualBloc>().add(
-                    MyDayRitualToggleTask(
-                      task.id,
-                      selected: !isSelected,
-                    ),
-                  ),
-            onSnoozeRequested: !enableSnooze
-                ? null
-                : () => _showSnoozeSheet(
-                    context,
-                    dayKeyUtc: dayKeyUtc,
-                    task: task,
-                  ),
+          final supportingText = reasonTextByTaskId[task.id];
+          final supportingTooltipText = reasonTooltipTextByTaskId[task.id];
+
+          final updatedData = TasklyTaskRowData(
+            id: data.id,
+            title: data.title,
+            completed: data.completed,
+            meta: data.meta,
+            titlePrimaryValue: data.titlePrimaryValue,
+            leadingChip: data.leadingChip,
+            supportingText: supportingText,
+            supportingTooltipText: supportingTooltipText,
+            deemphasized: data.deemphasized,
+            checkboxSemanticLabel: data.checkboxSemanticLabel,
+            labels: labels,
+          );
+
+          return TasklyRowSpec.task(
+            key: 'myday-picker-${task.id}',
+            data: updatedData,
+            intent: TasklyTaskRowIntent.selectionPicker(selected: isSelected),
+            markers: TasklyTaskRowMarkers(pinned: task.isPinned),
+            actions: TasklyTaskRowActions(
+              onTap: !enableSelection
+                  ? null
+                  : () => context.read<MyDayRitualBloc>().add(
+                        MyDayRitualToggleTask(
+                          task.id,
+                          selected: !isSelected,
+                        ),
+                      ),
+              onToggleSelected: !enableSelection
+                  ? null
+                  : () => context.read<MyDayRitualBloc>().add(
+                        MyDayRitualToggleTask(
+                          task.id,
+                          selected: !isSelected,
+                        ),
+                      ),
+              onSnoozeRequested: !enableSnooze
+                  ? null
+                  : () => _showSnoozeSheet(
+                        context,
+                        dayKeyUtc: dayKeyUtc,
+                        task: task,
+                      ),
+            ),
           );
         }(),
     ];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: MyDayPlanPickerTaskListSection(
-        items: items,
-        completedStatusLabel: completedStatusLabel,
-        pinnedSemanticLabel: context.l10n.pinnedSemanticLabel,
-        selectionPillLabel: selectionPillLabel,
-        selectionPillSelectedLabel: selectionPillSelectedLabel,
-        snoozeTooltip: snoozeTooltip,
+      child: TasklyFeedRenderer.buildSection(
+        TasklySectionSpec.standardList(
+          id: 'myday-plan-picker',
+          rows: rows,
+        ),
       ),
     );
   }
