@@ -39,6 +39,7 @@ surface are governed.
 Any of the following typically require explicit user approval before implementation:
 
 - Adding a new shared entity/section/template.
+- Adding a new tile preset or changing an existing preset's visuals/behavior.
 - Adding new public configuration options (constructor params, new exported
   models, new enums/variants, new entrypoints).
 - Any breaking change or downstream migration requirement.
@@ -67,15 +68,15 @@ When changing `taskly_ui` entities/sections:
 - Remove unused options and unused callback wiring.
 - Avoid option creep: do not add new flags for one-off screen needs.
 
-### 5.1 Intent, not config
+### 5.1 Presets, not config
 
 For entity rows (Task/Project/Value), the default pattern is:
 
-- **Intent** describes *why* the row is being shown (screen/flow).
+- **Preset** describes *which supported tile layout* to render.
 - **Actions** describe what the user can do (callbacks opt into affordances).
 - **Markers** describe small semantic facts that affect minor affordances.
 
-See: [../INVARIANTS.md](../INVARIANTS.md#212-entity-rows-are-intent-driven-strict).
+See: [../INVARIANTS.md](../INVARIANTS.md#25-entity-tile-presets-and-catalog-strict).
 
 ### 5.2 Narrow extension points only
 
@@ -86,3 +87,8 @@ To keep shared UI consistent across screens:
 - If an extension point is unavoidable, keep it narrow and semantically named
   (for example a `titlePrefix` widget) rather than exposing a full `trailing`
   builder API.
+
+### 5.3 Tile catalog requirement
+
+All task/project/value tile presets must be represented in the shared catalog
+widget (`TasklyTileCatalog`) so the complete surface is visible in one place.

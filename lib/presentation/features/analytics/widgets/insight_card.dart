@@ -143,11 +143,8 @@ class InsightCard extends StatelessWidget {
   }
 
   Color _getInsightColor(BuildContext context) {
-    if (insight.isPositive) {
-      return Colors.green;
-    } else {
-      return Colors.orange;
-    }
+    final scheme = Theme.of(context).colorScheme;
+    return insight.isPositive ? scheme.tertiary : scheme.secondary;
   }
 
   String _formatDateRange() {

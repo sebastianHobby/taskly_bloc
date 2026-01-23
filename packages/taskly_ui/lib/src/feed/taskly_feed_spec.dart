@@ -1,5 +1,3 @@
-import 'dart:ui' show Offset;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -80,6 +78,13 @@ sealed class TasklySectionSpec {
     required List<TasklyRowSpec> rows,
   }) = TasklyStandardListSectionSpec;
 
+  const factory TasklySectionSpec.valueDistribution({
+    required String id,
+    required String title,
+    required String totalLabel,
+    required List<TasklyValueDistributionEntry> entries,
+  }) = TasklyValueDistributionSectionSpec;
+
   const factory TasklySectionSpec.scheduledOverdue({
     required String id,
     required String title,
@@ -112,6 +117,20 @@ final class TasklyStandardListSectionSpec extends TasklySectionSpec {
 
   final String id;
   final List<TasklyRowSpec> rows;
+}
+
+final class TasklyValueDistributionSectionSpec extends TasklySectionSpec {
+  const TasklyValueDistributionSectionSpec({
+    required this.id,
+    required this.title,
+    required this.totalLabel,
+    required this.entries,
+  });
+
+  final String id;
+  final String title;
+  final String totalLabel;
+  final List<TasklyValueDistributionEntry> entries;
 }
 
 final class TasklyScheduledOverdueSectionSpec extends TasklySectionSpec {
@@ -185,11 +204,21 @@ sealed class TasklyRowSpec {
     int depth,
   }) = TasklyInlineActionRowSpec;
 
+  const factory TasklyRowSpec.valueHeader({
+    required String key,
+    required String title,
+    required ValueChipData? leadingChip,
+    required String? trailingLabel,
+    required bool isCollapsed,
+    required VoidCallback onToggleCollapsed,
+    int depth,
+  }) = TasklyValueHeaderRowSpec;
+
   const factory TasklyRowSpec.task({
     required String key,
     required TasklyTaskRowData data,
     required TasklyTaskRowActions actions,
-    TasklyTaskRowIntent intent,
+    TasklyTaskRowPreset preset,
     TasklyTaskRowMarkers markers,
     TasklyRowEmphasis emphasis,
     int depth,
@@ -199,7 +228,7 @@ sealed class TasklyRowSpec {
     required String key,
     required TasklyProjectRowData data,
     required TasklyProjectRowActions actions,
-    TasklyProjectRowIntent intent,
+    TasklyProjectRowPreset preset,
     TasklyRowEmphasis emphasis,
     int depth,
   }) = TasklyProjectRowSpec;
@@ -208,7 +237,7 @@ sealed class TasklyRowSpec {
     required String key,
     required TasklyValueRowData data,
     required TasklyValueRowActions actions,
-    TasklyValueRowIntent intent,
+    TasklyValueRowPreset preset,
   }) = TasklyValueRowSpec;
 }
 
@@ -253,12 +282,32 @@ final class TasklyInlineActionRowSpec extends TasklyRowSpec {
   final int depth;
 }
 
+final class TasklyValueHeaderRowSpec extends TasklyRowSpec {
+  const TasklyValueHeaderRowSpec({
+    required this.key,
+    required this.title,
+    required this.leadingChip,
+    required this.trailingLabel,
+    required this.isCollapsed,
+    required this.onToggleCollapsed,
+    this.depth = 0,
+  });
+
+  final String key;
+  final String title;
+  final ValueChipData? leadingChip;
+  final String? trailingLabel;
+  final bool isCollapsed;
+  final VoidCallback onToggleCollapsed;
+  final int depth;
+}
+
 final class TasklyTaskRowSpec extends TasklyRowSpec {
   const TasklyTaskRowSpec({
     required this.key,
     required this.data,
     required this.actions,
-    this.intent = const TasklyTaskRowIntent.standard(),
+    this.preset = const TasklyTaskRowPreset.standard(),
     this.markers = const TasklyTaskRowMarkers(),
     this.emphasis = TasklyRowEmphasis.none,
     this.depth = 0,
@@ -267,7 +316,7 @@ final class TasklyTaskRowSpec extends TasklyRowSpec {
   final String key;
   final TasklyTaskRowData data;
   final TasklyTaskRowActions actions;
-  final TasklyTaskRowIntent intent;
+  final TasklyTaskRowPreset preset;
   final TasklyTaskRowMarkers markers;
   final TasklyRowEmphasis emphasis;
   final int depth;
@@ -278,7 +327,7 @@ final class TasklyProjectRowSpec extends TasklyRowSpec {
     required this.key,
     required this.data,
     required this.actions,
-    this.intent = const TasklyProjectRowIntent.standard(),
+    this.preset = const TasklyProjectRowPreset.standard(),
     this.emphasis = TasklyRowEmphasis.none,
     this.depth = 0,
   });
@@ -286,7 +335,7 @@ final class TasklyProjectRowSpec extends TasklyRowSpec {
   final String key;
   final TasklyProjectRowData data;
   final TasklyProjectRowActions actions;
-  final TasklyProjectRowIntent intent;
+  final TasklyProjectRowPreset preset;
   final TasklyRowEmphasis emphasis;
   final int depth;
 }
@@ -296,41 +345,43 @@ final class TasklyValueRowSpec extends TasklyRowSpec {
     required this.key,
     required this.data,
     required this.actions,
-    this.intent = const TasklyValueRowIntent.standard(),
+    this.preset = const TasklyValueRowPreset.standard(),
   });
 
   final String key;
   final TasklyValueRowData data;
   final TasklyValueRowActions actions;
-  final TasklyValueRowIntent intent;
+  final TasklyValueRowPreset preset;
 }
 
 enum TasklyRowEmphasis { none, overdue }
 
-sealed class TasklyTaskRowIntent {
-  const TasklyTaskRowIntent();
+sealed class TasklyTaskRowPreset {
+  const TasklyTaskRowPreset();
 
-  const factory TasklyTaskRowIntent.standard() = TasklyTaskRowIntentStandard;
+  const factory TasklyTaskRowPreset.standard() = TasklyTaskRowPresetStandard;
 
-  const factory TasklyTaskRowIntent.bulkSelection({required bool selected}) =
-      TasklyTaskRowIntentBulkSelection;
+  const factory TasklyTaskRowPreset.bulkSelection({
+    required bool selected,
+  }) = TasklyTaskRowPresetBulkSelection;
 
-  const factory TasklyTaskRowIntent.selectionPicker({required bool selected}) =
-      TasklyTaskRowIntentSelectionPicker;
+  const factory TasklyTaskRowPreset.picker({
+    required bool selected,
+  }) = TasklyTaskRowPresetPicker;
 }
 
-final class TasklyTaskRowIntentStandard extends TasklyTaskRowIntent {
-  const TasklyTaskRowIntentStandard();
+final class TasklyTaskRowPresetStandard extends TasklyTaskRowPreset {
+  const TasklyTaskRowPresetStandard();
 }
 
-final class TasklyTaskRowIntentBulkSelection extends TasklyTaskRowIntent {
-  const TasklyTaskRowIntentBulkSelection({required this.selected});
+final class TasklyTaskRowPresetBulkSelection extends TasklyTaskRowPreset {
+  const TasklyTaskRowPresetBulkSelection({required this.selected});
 
   final bool selected;
 }
 
-final class TasklyTaskRowIntentSelectionPicker extends TasklyTaskRowIntent {
-  const TasklyTaskRowIntentSelectionPicker({required this.selected});
+final class TasklyTaskRowPresetPicker extends TasklyTaskRowPreset {
+  const TasklyTaskRowPresetPicker({required this.selected});
 
   final bool selected;
 }
@@ -347,7 +398,6 @@ final class TasklyTaskRowActions {
   const TasklyTaskRowActions({
     this.onTap,
     this.onToggleCompletion,
-    this.onOverflowMenuRequestedAt,
     this.onToggleSelected,
     this.onSnoozeRequested,
     this.onLongPress,
@@ -355,38 +405,44 @@ final class TasklyTaskRowActions {
 
   final VoidCallback? onTap;
   final ValueChanged<bool?>? onToggleCompletion;
-  final ValueChanged<Offset>? onOverflowMenuRequestedAt;
   final VoidCallback? onToggleSelected;
   final VoidCallback? onSnoozeRequested;
   final VoidCallback? onLongPress;
 }
 
-sealed class TasklyProjectRowIntent {
-  const TasklyProjectRowIntent();
+sealed class TasklyProjectRowPreset {
+  const TasklyProjectRowPreset();
 
-  const factory TasklyProjectRowIntent.standard() =
-      TasklyProjectRowIntentStandard;
+  const factory TasklyProjectRowPreset.standard() =
+      TasklyProjectRowPresetStandard;
 
-  const factory TasklyProjectRowIntent.bulkSelection({required bool selected}) =
-      TasklyProjectRowIntentBulkSelection;
+  const factory TasklyProjectRowPreset.inbox() = TasklyProjectRowPresetInbox;
 
-  const factory TasklyProjectRowIntent.groupHeader({
+  const factory TasklyProjectRowPreset.bulkSelection({
+    required bool selected,
+  }) = TasklyProjectRowPresetBulkSelection;
+
+  const factory TasklyProjectRowPreset.groupHeader({
     required bool expanded,
-  }) = TasklyProjectRowIntentGroupHeader;
+  }) = TasklyProjectRowPresetGroupHeader;
 }
 
-final class TasklyProjectRowIntentStandard extends TasklyProjectRowIntent {
-  const TasklyProjectRowIntentStandard();
+final class TasklyProjectRowPresetStandard extends TasklyProjectRowPreset {
+  const TasklyProjectRowPresetStandard();
 }
 
-final class TasklyProjectRowIntentBulkSelection extends TasklyProjectRowIntent {
-  const TasklyProjectRowIntentBulkSelection({required this.selected});
+final class TasklyProjectRowPresetInbox extends TasklyProjectRowPreset {
+  const TasklyProjectRowPresetInbox();
+}
+
+final class TasklyProjectRowPresetBulkSelection extends TasklyProjectRowPreset {
+  const TasklyProjectRowPresetBulkSelection({required this.selected});
 
   final bool selected;
 }
 
-final class TasklyProjectRowIntentGroupHeader extends TasklyProjectRowIntent {
-  const TasklyProjectRowIntentGroupHeader({required this.expanded});
+final class TasklyProjectRowPresetGroupHeader extends TasklyProjectRowPreset {
+  const TasklyProjectRowPresetGroupHeader({required this.expanded});
 
   final bool expanded;
 }
@@ -395,34 +451,33 @@ final class TasklyProjectRowIntentGroupHeader extends TasklyProjectRowIntent {
 final class TasklyProjectRowActions {
   const TasklyProjectRowActions({
     this.onTap,
-    this.onOverflowMenuRequestedAt,
     this.onToggleSelected,
     this.onLongPress,
     this.onToggleExpanded,
   });
 
   final VoidCallback? onTap;
-  final ValueChanged<Offset>? onOverflowMenuRequestedAt;
   final VoidCallback? onToggleSelected;
   final VoidCallback? onLongPress;
   final VoidCallback? onToggleExpanded;
 }
 
-sealed class TasklyValueRowIntent {
-  const TasklyValueRowIntent();
+sealed class TasklyValueRowPreset {
+  const TasklyValueRowPreset();
 
-  const factory TasklyValueRowIntent.standard() = TasklyValueRowIntentStandard;
+  const factory TasklyValueRowPreset.standard() = TasklyValueRowPresetStandard;
 
-  const factory TasklyValueRowIntent.bulkSelection({required bool selected}) =
-      TasklyValueRowIntentBulkSelection;
+  const factory TasklyValueRowPreset.bulkSelection({
+    required bool selected,
+  }) = TasklyValueRowPresetBulkSelection;
 }
 
-final class TasklyValueRowIntentStandard extends TasklyValueRowIntent {
-  const TasklyValueRowIntentStandard();
+final class TasklyValueRowPresetStandard extends TasklyValueRowPreset {
+  const TasklyValueRowPresetStandard();
 }
 
-final class TasklyValueRowIntentBulkSelection extends TasklyValueRowIntent {
-  const TasklyValueRowIntentBulkSelection({required this.selected});
+final class TasklyValueRowPresetBulkSelection extends TasklyValueRowPreset {
+  const TasklyValueRowPresetBulkSelection({required this.selected});
 
   final bool selected;
 }
@@ -431,13 +486,11 @@ final class TasklyValueRowIntentBulkSelection extends TasklyValueRowIntent {
 final class TasklyValueRowActions {
   const TasklyValueRowActions({
     this.onTap,
-    this.onOverflowMenuRequestedAt,
     this.onToggleSelected,
     this.onLongPress,
   });
 
   final VoidCallback? onTap;
-  final ValueChanged<Offset>? onOverflowMenuRequestedAt;
   final VoidCallback? onToggleSelected;
   final VoidCallback? onLongPress;
 }
@@ -445,48 +498,26 @@ final class TasklyValueRowActions {
 @immutable
 final class TasklyEntityMetaData {
   const TasklyEntityMetaData({
-    this.projectName,
     this.primaryValue,
-    this.secondaryValues = const <ValueChipData>[],
     this.startDateLabel,
     this.deadlineDateLabel,
-    this.showDates = true,
     this.showOnlyDeadlineDate = false,
-    this.showBothDatesIfPresent = false,
-    this.showDeadlineChipOnTitleLine = false,
-    this.showOverflowEllipsis = false,
     this.isOverdue = false,
     this.isDueToday = false,
-    this.isDueSoon = false,
-    this.hasRepeat = false,
     this.priority,
-    this.priorityPillLabel,
-    this.priorityColor,
-    this.showPriorityMarkerOnRight = false,
   });
 
-  final String? projectName;
   final ValueChipData? primaryValue;
-  final List<ValueChipData> secondaryValues;
 
   final String? startDateLabel;
   final String? deadlineDateLabel;
 
-  final bool showDates;
   final bool showOnlyDeadlineDate;
-  final bool showBothDatesIfPresent;
-  final bool showDeadlineChipOnTitleLine;
-  final bool showOverflowEllipsis;
 
   final bool isOverdue;
   final bool isDueToday;
-  final bool isDueSoon;
-  final bool hasRepeat;
 
   final int? priority;
-  final String? priorityPillLabel;
-  final Color? priorityColor;
-  final bool showPriorityMarkerOnRight;
 }
 
 @immutable
@@ -496,7 +527,6 @@ final class TasklyTaskRowData {
     required this.title,
     required this.completed,
     required this.meta,
-    this.titlePrimaryValue,
     this.leadingChip,
     this.supportingText,
     this.supportingTooltipText,
@@ -509,7 +539,6 @@ final class TasklyTaskRowData {
   final String title;
   final bool completed;
   final TasklyEntityMetaData meta;
-  final ValueChipData? titlePrimaryValue;
   final ValueChipData? leadingChip;
   final String? supportingText;
   final String? supportingTooltipText;
@@ -549,9 +578,9 @@ final class TasklyProjectRowData {
     required this.completed,
     required this.pinned,
     required this.meta,
-    this.titlePrimaryValue,
     this.taskCount,
     this.completedTaskCount,
+    this.dueSoonCount,
     this.leadingChip,
     this.subtitle,
     this.deemphasized = false,
@@ -564,14 +593,25 @@ final class TasklyProjectRowData {
   final bool completed;
   final bool pinned;
   final TasklyEntityMetaData meta;
-  final ValueChipData? titlePrimaryValue;
   final int? taskCount;
   final int? completedTaskCount;
+  final int? dueSoonCount;
   final ValueChipData? leadingChip;
   final String? subtitle;
   final bool deemphasized;
   final IconData? groupLeadingIcon;
   final String? groupTrailingLabel;
+}
+
+@immutable
+final class TasklyValueDistributionEntry {
+  const TasklyValueDistributionEntry({
+    required this.value,
+    required this.count,
+  });
+
+  final ValueChipData value;
+  final int count;
 }
 
 @immutable

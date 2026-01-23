@@ -14,7 +14,7 @@ class FormBuilderColorPickerModern extends StatelessWidget {
     required this.name,
     this.label,
     this.hint,
-    this.initialValue = Colors.blue,
+    this.initialValue,
     this.validator,
     this.enabled = true,
     this.isRequired = false,
@@ -31,7 +31,7 @@ class FormBuilderColorPickerModern extends StatelessWidget {
   final String name;
   final String? label;
   final String? hint;
-  final Color initialValue;
+  final Color? initialValue;
   final String? Function(Color?)? validator;
   final bool enabled;
   final bool isRequired;
@@ -82,7 +82,7 @@ class FormBuilderColorPickerModern extends StatelessWidget {
           : const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: FormBuilderField<Color>(
         name: name,
-        initialValue: initialValue,
+        initialValue: initialValue ?? colorScheme.primary,
         validator: (value) {
           if (validator != null) {
             final error = validator!(value);
@@ -97,7 +97,7 @@ class FormBuilderColorPickerModern extends StatelessWidget {
         },
         enabled: enabled,
         builder: (FormFieldState<Color> field) {
-          final currentColor = field.value ?? initialValue;
+          final currentColor = field.value ?? initialValue ?? colorScheme.primary;
           final resolvedChipLabel =
               chipLabelBuilder?.call(currentColor) ??
               _defaultHexLabel(currentColor, includeAlpha: enableOpacity);
@@ -179,7 +179,7 @@ class FormBuilderColorPickerModern extends StatelessWidget {
   ) async {
     final pickedColor = await showColorPickerDialog(
       context,
-      field.value ?? initialValue,
+      field.value ?? initialValue ?? Theme.of(context).colorScheme.primary,
       title: dialogTitle != null
           ? Text(dialogTitle!)
           : (label != null ? Text(label!) : const SizedBox.shrink()),

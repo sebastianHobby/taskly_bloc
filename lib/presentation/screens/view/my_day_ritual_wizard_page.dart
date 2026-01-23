@@ -1736,7 +1736,6 @@ class _TaskTileColumn extends StatelessWidget {
             context,
             task: task,
             tileCapabilities: tileCapabilities,
-            showProjectLabel: false,
           );
 
           final supportingText = reasonTextByTaskId[task.id];
@@ -1747,7 +1746,6 @@ class _TaskTileColumn extends StatelessWidget {
             title: data.title,
             completed: data.completed,
             meta: data.meta,
-            titlePrimaryValue: data.titlePrimaryValue,
             leadingChip: data.leadingChip,
             supportingText: supportingText,
             supportingTooltipText: supportingTooltipText,
@@ -1759,7 +1757,7 @@ class _TaskTileColumn extends StatelessWidget {
           return TasklyRowSpec.task(
             key: 'myday-picker-${task.id}',
             data: updatedData,
-            intent: TasklyTaskRowIntent.selectionPicker(selected: isSelected),
+            preset: TasklyTaskRowPreset.picker(selected: isSelected),
             markers: TasklyTaskRowMarkers(pinned: task.isPinned),
             actions: TasklyTaskRowActions(
               onTap: !enableSelection

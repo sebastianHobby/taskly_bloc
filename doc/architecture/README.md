@@ -43,7 +43,7 @@ Boundary rule of thumb:
   - BLoC patterns and stream safety: [guides/BLOC_GUIDELINES.md](guides/BLOC_GUIDELINES.md)
   - Screen composition + routing: [guides/SCREEN_ARCHITECTURE.md](guides/SCREEN_ARCHITECTURE.md)
   - Shared UI governance and patterns: [guides/TASKLY_UI_GOVERNANCE.md](guides/TASKLY_UI_GOVERNANCE.md)
-  - “Intent, not config” pattern: [guides/TASKLY_UI_INTENT_NOT_CONFIG.md](guides/TASKLY_UI_INTENT_NOT_CONFIG.md)
+- “Preset, not config” pattern: [guides/TASKLY_UI_PRESET_NOT_CONFIG.md](guides/TASKLY_UI_PRESET_NOT_CONFIG.md)
   - Testing guide (policy + taxonomy; invariants live in INVARIANTS):
     [guides/TESTING_ARCHITECTURE.md](guides/TESTING_ARCHITECTURE.md)
 

@@ -572,10 +572,10 @@ class _MoodOptionButton extends StatelessWidget {
 
 Color _getMoodColor(MoodRating mood, ColorScheme colorScheme) {
   return switch (mood) {
-    MoodRating.veryLow => Colors.red.shade600,
-    MoodRating.low => Colors.orange.shade700,
-    MoodRating.neutral => colorScheme.primary,
-    MoodRating.good => Colors.teal.shade600,
-    MoodRating.excellent => Colors.green.shade700,
+    MoodRating.veryLow => colorScheme.error,
+    MoodRating.low => colorScheme.secondary,
+    MoodRating.neutral => colorScheme.onSurfaceVariant,
+    MoodRating.good => colorScheme.tertiary,
+    MoodRating.excellent => colorScheme.primary,
   };
 }

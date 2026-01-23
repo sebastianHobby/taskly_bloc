@@ -24,6 +24,7 @@ import 'package:taskly_bloc/presentation/features/attention/view/attention_inbox
 import 'package:taskly_bloc/presentation/features/attention/view/attention_rules_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/presentation/features/trackers/view/trackers_page.dart';
+import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 
 /// Router for authenticated app shell.
 ///
@@ -302,6 +303,10 @@ final router = GoRouter(
         GoRoute(
           path: Routing.screenPath('attention_rules'),
           builder: (_, __) => const AttentionRulesSettingsPage(),
+        ),
+        GoRoute(
+          path: '/debug/tiles',
+          builder: (_, __) => const TasklyTileCatalogPage(),
         ),
       ],
     ),

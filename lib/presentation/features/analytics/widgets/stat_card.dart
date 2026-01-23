@@ -63,6 +63,7 @@ class StatCard extends StatelessWidget {
   }
 
   Widget _buildTrendIndicator(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final icon = switch (stat.trend!) {
       TrendDirection.up => Icons.trending_up,
       TrendDirection.down => Icons.trending_down,
@@ -70,9 +71,9 @@ class StatCard extends StatelessWidget {
     };
 
     final color = switch (stat.trend!) {
-      TrendDirection.up => Colors.green,
-      TrendDirection.down => Colors.red,
-      TrendDirection.stable => Colors.grey,
+      TrendDirection.up => scheme.tertiary,
+      TrendDirection.down => scheme.error,
+      TrendDirection.stable => scheme.onSurfaceVariant,
     };
 
     return Icon(icon, color: color, size: 20);
@@ -85,9 +86,9 @@ class StatCard extends StatelessWidget {
 
     return switch (stat.severity!) {
       StatSeverity.normal => Theme.of(context).colorScheme.onSurface,
-      StatSeverity.warning => Colors.orange,
-      StatSeverity.critical => Colors.red,
-      StatSeverity.positive => Colors.green,
+      StatSeverity.warning => Theme.of(context).colorScheme.secondary,
+      StatSeverity.critical => Theme.of(context).colorScheme.error,
+      StatSeverity.positive => Theme.of(context).colorScheme.tertiary,
     };
   }
 }

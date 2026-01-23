@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
-import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 
@@ -12,19 +11,11 @@ TasklyProjectRowData buildProjectRowData(
   required Project project,
   int? taskCount,
   int? completedTaskCount,
-  bool showDates = true,
   bool showOnlyDeadlineDate = false,
-  bool showDeadlineChipOnTitleLine = false,
-  bool showPrimaryValueOnTitleLine = false,
-  bool showSecondaryValues = true,
   String? overrideStartDateLabel,
   String? overrideDeadlineDateLabel,
   bool? overrideIsOverdue,
   bool? overrideIsDueToday,
-  bool? overrideIsDueSoon,
-  bool showPriorityMarkerOnRight = true,
-  bool showRepeatIcon = true,
-  bool showOverflowEllipsisWhenMetaHidden = false,
 }) {
   final now = context.read<NowService>().nowLocal();
   final today = DateTime(now.year, now.month, now.day);
@@ -46,16 +37,6 @@ TasklyProjectRowData buildProjectRowData(
   final resolvedDeadlineDateLabel =
       overrideDeadlineDateLabel ?? deadlineDateLabel;
 
-  final hasExtraSecondaryValues = project.secondaryValues.length > 1;
-
-  final shouldShowOverflowEllipsis =
-      showOverflowEllipsisWhenMetaHidden &&
-      ((resolvedStartDateLabel != null) ||
-          (resolvedDeadlineDateLabel != null) ||
-          project.isRepeating ||
-          project.priority != null ||
-          hasExtraSecondaryValues);
-
   final primaryValueData = project.primaryValue?.toChipData(context);
 
   final subtitle = switch (project.description?.trim()) {
@@ -70,16 +51,7 @@ TasklyProjectRowData buildProjectRowData(
 
   final meta = TasklyEntityMetaData(
     primaryValue: primaryValueData,
-    secondaryValues: !showSecondaryValues
-        ? const []
-        : project.secondaryValues
-              .take(1)
-              .map((v) => v.toChipData(context))
-              .toList(growable: false),
-    showOverflowEllipsis: shouldShowOverflowEllipsis,
-    showDates: showDates,
     showOnlyDeadlineDate: showOnlyDeadlineDate,
-    showDeadlineChipOnTitleLine: showDeadlineChipOnTitleLine,
     startDateLabel: resolvedStartDateLabel,
     deadlineDateLabel: resolvedDeadlineDateLabel,
     isOverdue:
@@ -96,21 +68,7 @@ TasklyProjectRowData buildProjectRowData(
           completed: project.completed,
           today: today,
         ),
-    isDueSoon:
-        overrideIsDueSoon ??
-        _isDueSoon(
-          project.deadlineDate,
-          completed: project.completed,
-          today: today,
-        ),
-    hasRepeat: showRepeatIcon && project.isRepeating,
-    showBothDatesIfPresent: true,
-    showPriorityMarkerOnRight: showPriorityMarkerOnRight,
     priority: project.priority,
-    priorityColor: _priorityColor(project.priority),
-    priorityPillLabel: project.priority == null
-        ? null
-        : 'Priority P${project.priority}',
   );
 
   return TasklyProjectRowData(
@@ -121,7 +79,6 @@ TasklyProjectRowData buildProjectRowData(
     meta: meta,
     leadingChip: primaryValueData,
     subtitle: subtitle,
-    titlePrimaryValue: showPrimaryValueOnTitleLine ? primaryValueData : null,
     taskCount: effectiveTaskCount,
     completedTaskCount: effectiveCompletedTaskCount,
   );
@@ -147,26 +104,8 @@ bool _isDueToday(
   return deadlineDay.isAtSameMomentAs(today);
 }
 
-bool _isDueSoon(
-  DateTime? deadline, {
-  required bool completed,
-  required DateTime today,
-}) {
-  if (deadline == null || completed) return false;
-  final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
-  final daysUntil = deadlineDay.difference(today).inDays;
-  return daysUntil > 0 && daysUntil <= 3;
-}
-
 String _formatMonthDay(BuildContext context, DateTime date) {
   final locale = Localizations.localeOf(context);
   return DateFormat.MMMd(locale.toLanguageTag()).format(date);
 }
 
-Color? _priorityColor(int? p) {
-  return switch (p) {
-    1 => AppColors.rambutan80,
-    2 => AppColors.cempedak80,
-    _ => null,
-  };
-}

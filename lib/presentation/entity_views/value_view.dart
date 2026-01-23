@@ -518,7 +518,7 @@ class _CompactGapIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: stats.isSignificantGap
             ? gapColor.withOpacity(0.1)
-            : Colors.transparent,
+            : colorScheme.surface.withValues(alpha: 0),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
@@ -621,7 +621,7 @@ class _StatsRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: stats.isSignificantGap
                 ? gapColor.withOpacity(0.1)
-                : Colors.transparent,
+                : colorScheme.surface.withValues(alpha: 0),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(

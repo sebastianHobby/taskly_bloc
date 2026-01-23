@@ -16,6 +16,7 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
+import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
@@ -244,10 +245,21 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
           return switch (state) {
             ScheduledTimelineLoading() => Scaffold(
               appBar: AppBar(
-                title: const Text('Scheduled'),
+                centerTitle: true,
+                title: const Text('Schedule'),
+                toolbarHeight: TasklyChromeTheme.of(context).scheduledAppBarHeight,
+                leading: _CircleIconButton(
+                  icon: Icons.arrow_back,
+                  onPressed: () => Navigator.of(context).maybePop(),
+                ),
                 actions: TasklyAppBarActions.withAttentionBell(
                   context,
-                  actions: const <Widget>[],
+                  actions: [
+                    _CircleIconButton(
+                      icon: Icons.search,
+                      onPressed: () {},
+                    ),
+                  ],
                 ),
               ),
               body: const TasklyFeedRenderer(
@@ -256,10 +268,21 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
             ),
             ScheduledTimelineError(:final message) => Scaffold(
               appBar: AppBar(
-                title: const Text('Scheduled'),
+                centerTitle: true,
+                title: const Text('Schedule'),
+                toolbarHeight: TasklyChromeTheme.of(context).scheduledAppBarHeight,
+                leading: _CircleIconButton(
+                  icon: Icons.arrow_back,
+                  onPressed: () => Navigator.of(context).maybePop(),
+                ),
                 actions: TasklyAppBarActions.withAttentionBell(
                   context,
-                  actions: const <Widget>[],
+                  actions: [
+                    _CircleIconButton(
+                      icon: Icons.search,
+                      onPressed: () {},
+                    ),
+                  ],
                 ),
               ),
               body: TasklyFeedRenderer(
@@ -296,7 +319,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
       state.today.month,
       state.today.day,
     );
-    final monthLabel = DateFormat.yMMMM().format(state.activeMonth);
 
     final overdueOffset = state.overdue.isEmpty ? 0 : 1;
     final totalDays = state.rangeEndDay.difference(today).inDays + 1;
@@ -409,31 +431,22 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
 
         return Scaffold(
           appBar: selectionState.isSelectionMode
-              ? SelectionAppBar(baseTitle: 'Scheduled', onExit: () {})
+              ? SelectionAppBar(baseTitle: 'Schedule', onExit: () {})
               : AppBar(
-                  title: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => _pickMonthAndJump(
-                      today: today,
-                      activeMonth: state.activeMonth,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      child: Text(monthLabel),
-                    ),
+                  centerTitle: true,
+                  title: const Text('Schedule'),
+                  toolbarHeight:
+                      TasklyChromeTheme.of(context).scheduledAppBarHeight,
+                  leading: _CircleIconButton(
+                    icon: Icons.arrow_back,
+                    onPressed: () => Navigator.of(context).maybePop(),
                   ),
                   actions: TasklyAppBarActions.withAttentionBell(
                     context,
-                    actions: <Widget>[
-                      TextButton(
-                        onPressed: () =>
-                            context.read<ScheduledTimelineBloc>().add(
-                              const ScheduledTimelineJumpToTodayRequested(),
-                            ),
-                        child: const Text('Today'),
+                    actions: [
+                      _CircleIconButton(
+                        icon: Icons.search,
+                        onPressed: () {},
                       ),
                     ],
                   ),
@@ -456,6 +469,17 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 ScheduledScopeHeader(
                   scope: widget.scope,
                 ),
+              _MonthStrip(
+                activeMonth: state.activeMonth,
+                onMonthSelected: (month) =>
+                    context.read<ScheduledTimelineBloc>().add(
+                          ScheduledTimelineMonthJumpRequested(month: month),
+                        ),
+                onMonthPickerRequested: () => _pickMonthAndJump(
+                  today: today,
+                  activeMonth: state.activeMonth,
+                ),
+              ),
               Expanded(
                 child: ScrollablePositionedList.builder(
                   itemScrollController: _itemScrollController,
@@ -547,7 +571,10 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                         : (count == 1 ? '1 task' : '$count tasks');
 
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 18),
+                      padding: EdgeInsets.only(
+                        bottom: TasklyChromeTheme.of(context)
+                            .scheduledDaySectionSpacing,
+                      ),
                       child: TasklyFeedRenderer.buildSection(
                         TasklySectionSpec.scheduledDay(
                           id: 'scheduled-${day.toIso8601String()}',
@@ -624,12 +651,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         context,
         task: task,
         tileCapabilities: tileCapabilities,
-        showProjectLabel: false,
-        showDates: true,
-        showOnlyDeadlineDate: false,
-        showDeadlineChipOnTitleLine: false,
-        showPrimaryValueOnTitleLine: false,
-        showSecondaryValues: false,
         overrideStartDateLabel: plannedLabel,
         overrideDeadlineDateLabel: dueLabel,
       );
@@ -640,9 +661,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         key: 'scheduled-task-${task.id}-${occurrence.localDay.toIso8601String()}',
         data: data,
         markers: TasklyTaskRowMarkers(pinned: task.isPinned),
-        intent: selectionState.isSelectionMode
-            ? TasklyTaskRowIntent.bulkSelection(selected: isSelected)
-            : const TasklyTaskRowIntent.standard(),
+        preset: selectionState.isSelectionMode
+            ? TasklyTaskRowPreset.bulkSelection(selected: isSelected)
+            : const TasklyTaskRowPreset.standard(),
         emphasis: forceDue ? TasklyRowEmphasis.overdue : TasklyRowEmphasis.none,
         actions: TasklyTaskRowActions(
           onTap: () {
@@ -697,35 +718,22 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         today: today,
       );
 
-      final bool isDueSoon = _isDueSoonDeadline(
-        effectiveDeadline,
-        completed: project.completed,
-        today: today,
-      );
-
       final data = buildProjectRowData(
         context,
         project: project,
-        showDates: true,
-        showOnlyDeadlineDate: false,
-        showDeadlineChipOnTitleLine: false,
-        showPrimaryValueOnTitleLine: false,
-        showSecondaryValues: true,
         overrideStartDateLabel: plannedLabel,
         overrideDeadlineDateLabel: dueLabel,
         overrideIsOverdue: isOverdue,
         overrideIsDueToday: isDueToday,
-        overrideIsDueSoon: isDueSoon,
-        showPriorityMarkerOnRight: false,
       );
 
       return TasklyRowSpec.project(
         key:
             'scheduled-project-${project.id}-${occurrence.localDay.toIso8601String()}',
         data: data,
-        intent: selectionState.isSelectionMode
-            ? TasklyProjectRowIntent.bulkSelection(selected: isSelected)
-            : const TasklyProjectRowIntent.standard(),
+        preset: selectionState.isSelectionMode
+            ? TasklyProjectRowPreset.bulkSelection(selected: isSelected)
+            : const TasklyProjectRowPreset.standard(),
         emphasis: forceDue ? TasklyRowEmphasis.overdue : TasklyRowEmphasis.none,
         actions: TasklyProjectRowActions(
           onTap: () {
@@ -791,14 +799,127 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     return deadlineDay.isAtSameMomentAs(today);
   }
 
-  static bool _isDueSoonDeadline(
-    DateTime? deadline, {
-    required bool completed,
-    required DateTime today,
-  }) {
-    if (deadline == null || completed) return false;
-    final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
-    final daysUntil = deadlineDay.difference(today).inDays;
-    return daysUntil > 0 && daysUntil <= 3;
+}
+
+class _MonthStrip extends StatelessWidget {
+  const _MonthStrip({
+    required this.activeMonth,
+    required this.onMonthSelected,
+    required this.onMonthPickerRequested,
+  });
+
+  final DateTime activeMonth;
+  final ValueChanged<DateTime> onMonthSelected;
+  final VoidCallback onMonthPickerRequested;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyEntityTileTheme.of(context);
+    final chrome = TasklyChromeTheme.of(context);
+    final locale = Localizations.localeOf(context);
+
+    final months = List<DateTime>.generate(
+      5,
+      (index) => DateTime(activeMonth.year, activeMonth.month + index, 1),
+    );
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        chrome.monthStripPaddingV,
+        tokens.sectionPaddingH,
+        chrome.monthStripPaddingV,
+      ),
+      child: SizedBox(
+        height: chrome.monthStripHeight,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: months.length,
+          separatorBuilder: (_, __) =>
+              SizedBox(width: chrome.monthStripSpacing),
+          itemBuilder: (context, index) {
+            final month = months[index];
+            final isActive =
+                month.year == activeMonth.year &&
+                month.month == activeMonth.month;
+
+            final label = DateFormat.yMMM(locale.toLanguageTag()).format(month);
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                if (isActive) {
+                  onMonthPickerRequested();
+                } else {
+                  onMonthSelected(month);
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      label,
+                      style: (isActive
+                              ? chrome.monthStripLabelSelectedStyle
+                              : chrome.monthStripLabelStyle)
+                          .copyWith(
+                            color: isActive
+                                ? scheme.onSurface
+                                : scheme.onSurfaceVariant.withValues(
+                                    alpha: 0.7,
+                                  ),
+                          ),
+                    ),
+                    SizedBox(height: chrome.monthStripLabelSpacing),
+                    Container(
+                      width: chrome.monthStripDotSize,
+                      height: chrome.monthStripDotSize,
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? scheme.primary
+                            : scheme.surface.withValues(alpha: 0),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _CircleIconButton extends StatelessWidget {
+  const _CircleIconButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final chrome = TasklyChromeTheme.of(context);
+    return IconButton(
+      icon: Icon(icon),
+      onPressed: onPressed,
+      style: IconButton.styleFrom(
+        backgroundColor: scheme.surfaceContainerHighest.withValues(
+          alpha: chrome.iconButtonBackgroundAlpha,
+        ),
+        foregroundColor: scheme.onSurface,
+        shape: const CircleBorder(),
+        minimumSize: Size.square(chrome.iconButtonMinSize),
+        padding: chrome.iconButtonPadding,
+      ),
+    );
   }
 }

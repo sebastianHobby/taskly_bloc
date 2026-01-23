@@ -59,6 +59,12 @@ class AppColors {
   static const tasklyWarning = Color(0xFFFFD700); // Neon Gold
   static const rambutan90 = Color(0xFFE82754);
   static const rambutan100 = Color(0xFFE60F41);
+  static const tasklyLightBg = Color(0xFFF6F8F6);
+  static const tasklyLightSurface = Color(0xFFFFFFFF);
+  static const tasklyLightSurfaceAlt = Color(0xFFF0F3F0);
+  static const tasklyLightOutline = Color(0xFFE3E8E3);
+  static const tasklyTextPrimary = Color(0xFF0D1B12);
+  static const tasklyTextMuted = Color(0xFF5C6B60);
 
   static const whiteBg = Color(0xFFFFF5EE);
   static const mono0 = Color(0xFFFFFFFF);

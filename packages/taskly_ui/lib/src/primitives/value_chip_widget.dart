@@ -34,6 +34,7 @@ class ValueChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final color = data.color;
     final iconData = data.icon;
 
@@ -42,7 +43,7 @@ class ValueChip extends StatelessWidget {
     // - Secondary (outlined): icon-only, no fill.
     final backgroundColor = switch (variant) {
       ValueChipVariant.solid => color.withValues(alpha: 0.18),
-      ValueChipVariant.outlined => Colors.transparent,
+      ValueChipVariant.outlined => scheme.surface.withValues(alpha: 0),
     };
 
     final borderColor = switch (variant) {

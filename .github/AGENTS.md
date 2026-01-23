@@ -54,6 +54,9 @@ When asked to design UI/UX:
 - Offer design options in batches of 3 (with ids, pros/cons, recommendation).
 - Keep offering options until the user asks to implement.
 - Call out if the change impacts more than one screen/area.
+- For preset-driven UI, explicitly list which screens will be impacted by any
+  preset updates. If a new preset is required, state clearly that you are
+  creating a new preset.
 
 ## Tooling and quality
 

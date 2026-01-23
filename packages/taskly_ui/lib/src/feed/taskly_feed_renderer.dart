@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 import 'package:taskly_ui/src/sections/empty_state_widget.dart';
 import 'package:taskly_ui/src/sections/feed_body.dart';
+import 'package:taskly_ui/src/sections/value_distribution_section.dart';
+import 'package:taskly_ui/src/feed/taskly_feed_theme.dart';
+import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
 import 'package:taskly_ui/src/tiles/project_entity_tile.dart';
 import 'package:taskly_ui/src/tiles/task_entity_tile.dart';
 import 'package:taskly_ui/src/tiles/value_entity_tile.dart';
-
-const double _rowIndent = 10;
-const double _entityRowSpacing = 12;
-const double _sectionSpacing = 18;
 
 class TasklyFeedRenderer extends StatelessWidget {
   const TasklyFeedRenderer({
@@ -49,17 +48,22 @@ class TasklyFeedRenderer extends StatelessWidget {
         ),
       ),
       TasklyFeedContent(:final sections) => FeedBody.child(
-        child: ListView.builder(
-          controller: controller,
-          padding: padding,
-          itemCount: sections.length,
-          itemBuilder: (context, index) {
-            final section = sections[index];
-            final content = TasklyFeedRenderer.buildSection(section);
-            if (index == sections.length - 1) return content;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: _sectionSpacing),
-              child: content,
+        child: Builder(
+          builder: (context) {
+            final feedTheme = TasklyFeedTheme.of(context);
+            return ListView.builder(
+              controller: controller,
+              padding: padding,
+              itemCount: sections.length,
+              itemBuilder: (context, index) {
+                final section = sections[index];
+                final content = TasklyFeedRenderer.buildSection(section);
+                if (index == sections.length - 1) return content;
+                return Padding(
+                  padding: EdgeInsets.only(bottom: feedTheme.sectionSpacing),
+                  child: content,
+                );
+              },
             );
           },
         ),
@@ -69,8 +73,21 @@ class TasklyFeedRenderer extends StatelessWidget {
 
   static Widget buildSection(TasklySectionSpec section) {
     return switch (section) {
-      TasklyStandardListSectionSpec(:final rows) =>
-        _RowList(rows: rows, emptyLabel: null, onAddRequested: null),
+      TasklyStandardListSectionSpec(:final rows) => _RowList(
+        rows: rows,
+        emptyLabel: null,
+        onAddRequested: null,
+      ),
+      TasklyValueDistributionSectionSpec(
+        :final title,
+        :final totalLabel,
+        :final entries,
+      ) =>
+        ValueDistributionSection(
+          title: title,
+          totalLabel: totalLabel,
+          entries: entries,
+        ),
       TasklyScheduledDaySectionSpec(
         :final title,
         :final isToday,
@@ -110,11 +127,14 @@ class TasklyFeedRenderer extends StatelessWidget {
     };
   }
 
-  static Widget buildRow(TasklyRowSpec row) {
+  static Widget buildRow(TasklyRowSpec row, {BuildContext? context}) {
+    final feedTheme = context == null ? null : TasklyFeedTheme.of(context);
+    final rowIndent = feedTheme?.rowIndent ?? 10;
     final child = switch (row) {
       TasklyHeaderRowSpec() => _HeaderRow(row: row),
       TasklyDividerRowSpec() => _DividerRow(),
       TasklyInlineActionRowSpec() => _InlineActionRow(row: row),
+      TasklyValueHeaderRowSpec() => _ValueHeaderRow(row: row),
       TasklyTaskRowSpec() => _TaskRow(row: row),
       TasklyProjectRowSpec() => _ProjectRow(row: row),
       TasklyValueRowSpec() => _ValueRow(row: row),
@@ -124,6 +144,7 @@ class TasklyFeedRenderer extends StatelessWidget {
       TasklyHeaderRowSpec(:final key) => key,
       TasklyDividerRowSpec(:final key) => key,
       TasklyInlineActionRowSpec(:final key) => key,
+      TasklyValueHeaderRowSpec(:final key) => key,
       TasklyTaskRowSpec(:final key) => key,
       TasklyProjectRowSpec(:final key) => key,
       TasklyValueRowSpec(:final key) => key,
@@ -133,6 +154,7 @@ class TasklyFeedRenderer extends StatelessWidget {
       TasklyHeaderRowSpec(:final depth) => depth,
       TasklyDividerRowSpec(:final depth) => depth,
       TasklyInlineActionRowSpec(:final depth) => depth,
+      TasklyValueHeaderRowSpec(:final depth) => depth,
       TasklyTaskRowSpec(:final depth) => depth,
       TasklyProjectRowSpec(:final depth) => depth,
       TasklyValueRowSpec() => 0,
@@ -141,7 +163,7 @@ class TasklyFeedRenderer extends StatelessWidget {
     final indented = depth <= 0
         ? child
         : Padding(
-            padding: EdgeInsets.only(left: depth * _rowIndent),
+            padding: EdgeInsets.only(left: depth * rowIndent),
             child: child,
           );
 
@@ -169,19 +191,11 @@ class _RowList extends StatelessWidget {
       );
     }
 
-    final children = <Widget>[];
-    for (var i = 0; i < rows.length; i += 1) {
-      final row = rows[i];
-      children.add(TasklyFeedRenderer.buildRow(row));
+    final hasValueHeaders = rows.any((row) => row is TasklyValueHeaderRowSpec);
 
-      final isLast = i == rows.length - 1;
-      if (isLast) continue;
-
-      final spacing = _spacingAfter(row);
-      if (spacing > 0) {
-        children.add(SizedBox(height: spacing));
-      }
-    }
+    final children = hasValueHeaders
+        ? _buildValueGroups(context, rows)
+        : _buildFlatRows(context, rows);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -190,14 +204,70 @@ class _RowList extends StatelessWidget {
   }
 }
 
-double _spacingAfter(TasklyRowSpec row) {
+List<Widget> _buildFlatRows(BuildContext context, List<TasklyRowSpec> rows) {
+  final children = <Widget>[];
+  final feedTheme = TasklyFeedTheme.of(context);
+  for (var i = 0; i < rows.length; i += 1) {
+    final row = rows[i];
+    children.add(TasklyFeedRenderer.buildRow(row, context: context));
+
+    final isLast = i == rows.length - 1;
+    if (isLast) continue;
+
+    final spacing = _spacingAfter(row, feedTheme);
+    if (spacing > 0) {
+      children.add(SizedBox(height: spacing));
+    }
+  }
+  return children;
+}
+
+List<Widget> _buildValueGroups(
+  BuildContext context,
+  List<TasklyRowSpec> rows,
+) {
+  final groups = <Widget>[];
+  TasklyValueHeaderRowSpec? activeHeader;
+  final buffer = <TasklyRowSpec>[];
+
+  void flush() {
+    if (activeHeader == null) return;
+    groups.add(
+      _ValueGroupSection(
+        header: activeHeader,
+        rows: List<TasklyRowSpec>.from(buffer),
+      ),
+    );
+    buffer.clear();
+  }
+
+  for (final row in rows) {
+    if (row is TasklyValueHeaderRowSpec) {
+      flush();
+      activeHeader = row;
+      continue;
+    }
+    if (activeHeader == null) {
+      groups.add(TasklyFeedRenderer.buildRow(row, context: context));
+      continue;
+    }
+    buffer.add(row);
+  }
+
+  flush();
+
+  return groups;
+}
+
+double _spacingAfter(TasklyRowSpec row, TasklyFeedTheme feedTheme) {
   return switch (row) {
     TasklyHeaderRowSpec() => 0,
     TasklyDividerRowSpec() => 0,
-    TasklyInlineActionRowSpec() => _entityRowSpacing,
-    TasklyTaskRowSpec() => _entityRowSpacing,
-    TasklyProjectRowSpec() => _entityRowSpacing,
-    TasklyValueRowSpec() => _entityRowSpacing,
+    TasklyInlineActionRowSpec() => feedTheme.entityRowSpacing,
+    TasklyValueHeaderRowSpec() => feedTheme.entityRowSpacing,
+    TasklyTaskRowSpec() => feedTheme.entityRowSpacing,
+    TasklyProjectRowSpec() => feedTheme.entityRowSpacing,
+    TasklyValueRowSpec() => feedTheme.entityRowSpacing,
   };
 }
 
@@ -301,6 +371,187 @@ class _InlineActionRow extends StatelessWidget {
   }
 }
 
+class _ValueHeaderRow extends StatelessWidget {
+  const _ValueHeaderRow({required this.row});
+
+  final TasklyValueHeaderRowSpec row;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final tokens = TasklyEntityTileTheme.of(context);
+    final feedTheme = TasklyFeedTheme.of(context);
+
+    final chip = row.leadingChip;
+    final countLabel = row.trailingLabel?.trim();
+    final hasCount = countLabel != null && countLabel.isNotEmpty;
+
+    final content = DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            if (chip != null)
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: chip.color.withValues(
+                    alpha: scheme.brightness == Brightness.dark ? 0.28 : 0.18,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(chip.icon, size: 18, color: chip.color),
+              ),
+            if (chip != null) const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                row.title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: scheme.onSurface,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (hasCount) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  countLabel,
+                  style: feedTheme.valueHeaderCount.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Icon(
+              row.isCollapsed
+                  ? Icons.expand_more_rounded
+                  : Icons.expand_less_rounded,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        4,
+        tokens.sectionPaddingH,
+        4,
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: row.onToggleCollapsed,
+        child: content,
+      ),
+    );
+  }
+}
+
+class _ValueGroupSection extends StatelessWidget {
+  const _ValueGroupSection({
+    required this.header,
+    required this.rows,
+  });
+
+  final TasklyValueHeaderRowSpec header;
+  final List<TasklyRowSpec> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyEntityTileTheme.of(context);
+    final hasRows = rows.isNotEmpty;
+    final accentColor = header.leadingChip?.color;
+
+    final children = <Widget>[
+      _ValueHeaderRow(row: header),
+      if (hasRows)
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.sectionPaddingH + 8,
+            2,
+            tokens.sectionPaddingH,
+            4,
+          ),
+          child: Container(
+            height: 1,
+            color: scheme.outlineVariant.withValues(alpha: 0.4),
+          ),
+        ),
+    ];
+
+    if (hasRows) {
+      children.add(
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.sectionPaddingH + 18,
+            2,
+            tokens.sectionPaddingH,
+            12,
+          ),
+          child: Column(
+            children: _buildFlatRows(context, rows),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color:
+              accentColor?.withValues(alpha: 0.045) ??
+              scheme.surfaceContainerLowest.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Stack(
+          children: [
+            if (accentColor != null)
+              Positioned.fill(
+                left: tokens.sectionPaddingH + 6,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    width: 3,
+                    margin: const EdgeInsets.symmetric(vertical: 18),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _TaskRow extends StatelessWidget {
   const _TaskRow({required this.row});
 
@@ -315,7 +566,7 @@ class _TaskRow extends StatelessWidget {
 
     return TaskEntityTile(
       model: row.data,
-      intent: row.intent,
+      preset: row.preset,
       markers: row.markers,
       actions: row.actions,
       leadingAccentColor: leadingAccentColor,
@@ -330,8 +581,8 @@ class _ProjectRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (row.intent) {
-      TasklyProjectRowIntentGroupHeader(:final expanded) =>
+    return switch (row.preset) {
+      TasklyProjectRowPresetGroupHeader(:final expanded) =>
         _ProjectGroupHeaderRow(
           data: row.data,
           actions: row.actions,
@@ -339,7 +590,7 @@ class _ProjectRow extends StatelessWidget {
         ),
       _ => ProjectEntityTile(
         model: row.data,
-        intent: row.intent,
+        preset: row.preset,
         actions: row.actions,
         leadingAccentColor: row.emphasis == TasklyRowEmphasis.overdue
             ? Theme.of(context).colorScheme.error
@@ -368,8 +619,7 @@ class _ProjectGroupHeaderRow extends StatelessWidget {
     final onTap = actions.onToggleExpanded ?? actions.onTap;
 
     final trailingLabel = data.groupTrailingLabel?.trim();
-    final hasTrailingLabel =
-        trailingLabel != null && trailingLabel.isNotEmpty;
+    final hasTrailingLabel = trailingLabel != null && trailingLabel.isNotEmpty;
 
     final icon = data.groupLeadingIcon ?? Icons.folder_outlined;
 
@@ -436,7 +686,7 @@ class _ValueRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueEntityTile(
       model: row.data,
-      intent: row.intent,
+      preset: row.preset,
       actions: row.actions,
     );
   }
@@ -463,17 +713,24 @@ class _ScheduledDaySection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final tokens = TasklyEntityTileTheme.of(context);
+    final feedTheme = TasklyFeedTheme.of(context);
 
     final effectiveCount = countLabel?.trim();
     final hasCount = effectiveCount != null && effectiveCount.isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        0,
+        tokens.sectionPaddingH,
+        0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 10),
+            padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -483,10 +740,9 @@ class _ScheduledDaySection extends StatelessWidget {
                       Flexible(
                         child: Text(
                           title,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: scheme.onSurface,
-                          ),
+                        style: feedTheme.scheduledDayTitle.copyWith(
+                          color: scheme.onSurface,
+                        ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -501,9 +757,8 @@ class _ScheduledDaySection extends StatelessWidget {
                 if (hasCount)
                   Text(
                     effectiveCount,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.75),
+                    style: feedTheme.scheduledDayCount.copyWith(
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
                     ),
                   ),
               ],
@@ -615,112 +870,71 @@ class _ScheduledOverdueSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-
-    final trimmedLabel = actionLabel?.trim();
-    final hasAction =
-        trimmedLabel != null &&
-        trimmedLabel.isNotEmpty &&
-        onActionPressed != null;
+    final tokens = TasklyEntityTileTheme.of(context);
+    final feedTheme = TasklyFeedTheme.of(context);
 
     final visibleRows = isCollapsed ? rows.take(3).toList() : rows;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      child: Material(
-        color: scheme.surfaceContainerLow,
-        elevation: 0,
-        borderRadius: BorderRadius.circular(16),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            InkWell(
-              onTap: onToggleCollapsed,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      size: 18,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                        ),
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        8,
+        tokens.sectionPaddingH,
+        8,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: onToggleCollapsed,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: scheme.error,
                       ),
                     ),
-                    if (hasAction)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Tooltip(
-                          message: actionTooltip ?? trimmedLabel,
-                          child: TextButton.icon(
-                            onPressed: onActionPressed,
-                            icon: const Icon(Icons.event, size: 18),
-                            label: Text(trimmedLabel),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                          ),
-                        ),
-                      ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: scheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        countLabel,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
+                  ),
+                  Text(
+                    countLabel,
+                    style: feedTheme.scheduledOverdueCount.copyWith(
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
                     ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      isCollapsed
-                          ? Icons.expand_more_rounded
-                          : Icons.expand_less_rounded,
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    isCollapsed
+                        ? Icons.expand_more_rounded
+                        : Icons.expand_less_rounded,
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+                  ),
+                ],
               ),
             ),
-            if (!isCollapsed || rows.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                child: visibleRows.isEmpty
-                    ? Text(
-                        'Nothing overdue',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      )
-                    : _RowList(
-                        rows: visibleRows,
-                        emptyLabel: null,
-                        onAddRequested: null,
+          ),
+          if (!isCollapsed || rows.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: visibleRows.isEmpty
+                  ? Text(
+                      'Nothing overdue',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
                       ),
-              ),
-          ],
-        ),
+                    )
+                  : _RowList(
+                      rows: visibleRows,
+                      emptyLabel: null,
+                      onAddRequested: null,
+                    ),
+            ),
+        ],
       ),
     );
   }

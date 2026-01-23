@@ -120,7 +120,10 @@ class EntityHeader extends StatelessWidget {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: ColorUtils.fromHex(color),
+                        color: ColorUtils.fromHexWithThemeFallback(
+                          context,
+                          color,
+                        ),
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -179,12 +182,16 @@ class EntityHeader extends StatelessWidget {
                     children: values!.map((value) {
                       return Chip(
                         label: Text(value.name),
-                        backgroundColor: ColorUtils.fromHex(
+                        backgroundColor: ColorUtils.fromHexWithThemeFallback(
+                          context,
                           value.color,
                         ).withValues(alpha: 0.2),
                         side: BorderSide.none,
                         labelStyle: TextStyle(
-                          color: ColorUtils.fromHex(value.color),
+                          color: ColorUtils.fromHexWithThemeFallback(
+                            context,
+                            value.color,
+                          ),
                           fontSize: 12,
                         ),
                         padding: EdgeInsets.zero,

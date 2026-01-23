@@ -10,7 +10,7 @@ import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
 class ProjectEntityTile extends StatelessWidget {
   const ProjectEntityTile({
     required this.model,
-    this.intent = const TasklyProjectRowIntent.standard(),
+    this.preset = const TasklyProjectRowPreset.standard(),
     this.actions = const TasklyProjectRowActions(),
     this.leadingAccentColor,
     super.key,
@@ -18,16 +18,18 @@ class ProjectEntityTile extends StatelessWidget {
 
   final TasklyProjectRowData model;
 
-  final TasklyProjectRowIntent intent;
+  final TasklyProjectRowPreset preset;
   final TasklyProjectRowActions actions;
 
   /// Optional left-edge accent (used to subtly emphasize urgency).
   final Color? leadingAccentColor;
 
-  bool? get _selected => switch (intent) {
-    TasklyProjectRowIntentBulkSelection(:final selected) => selected,
+  bool? get _selected => switch (preset) {
+    TasklyProjectRowPresetBulkSelection(:final selected) => selected,
     _ => null,
   };
+
+  bool get _isInbox => preset is TasklyProjectRowPresetInbox;
 
   double? get _progress {
     final total = model.taskCount;
@@ -47,9 +49,6 @@ class ProjectEntityTile extends StatelessWidget {
         ? const EdgeInsets.all(16)
         : tokens.projectPadding;
 
-    final borderColor = scheme.outlineVariant.withValues(alpha: 0.55);
-    final surfaceColor = scheme.surface;
-
     final pinnedPrefix = model.pinned ? const _PinnedGlyph() : null;
 
     final Widget? titlePrefix = pinnedPrefix;
@@ -58,18 +57,24 @@ class ProjectEntityTile extends StatelessWidget {
     final completedOpacity = model.completed ? 0.75 : 1.0;
     final opacity = (baseOpacity * completedOpacity).clamp(0.0, 1.0);
 
-    final onTap = switch (intent) {
-      TasklyProjectRowIntentBulkSelection() =>
+    final onTap = switch (preset) {
+      TasklyProjectRowPresetBulkSelection() =>
         actions.onToggleSelected ?? actions.onTap,
       _ => actions.onTap,
     };
 
     final card = DecoratedBox(
       decoration: BoxDecoration(
-        color: surfaceColor,
+        color: tokens.cardSurfaceColor,
         borderRadius: BorderRadius.circular(tokens.projectRadius),
-        border: Border.all(color: borderColor),
-        boxShadow: [tokens.shadow],
+        border: Border.all(color: tokens.cardBorderColor),
+        boxShadow: [
+          BoxShadow(
+            color: tokens.cardShadowColor,
+            blurRadius: tokens.cardShadowBlur,
+            offset: tokens.cardShadowOffset,
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(tokens.projectRadius),
@@ -100,59 +105,88 @@ class ProjectEntityTile extends StatelessWidget {
                       _TopRow(
                         leadingChip: model.leadingChip,
                         priority: model.meta.priority,
+                        dueLabel: model.meta.deadlineDateLabel,
+                        isOverdue: model.meta.isOverdue,
+                        isDueToday: model.meta.isDueToday,
+                        showBadges: !_isInbox,
                         selected: _selected,
                         onToggleSelected: actions.onToggleSelected,
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (titlePrefix != null) ...[
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: titlePrefix,
+                          if (_progress != null && !_isInbox) ...[
+                            _ProgressRing(
+                              progress: _progress!,
+                              tokens: tokens,
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 12),
+                          ] else if (_isInbox) ...[
+                            _InboxGlyph(tokens: tokens),
+                            const SizedBox(width: 12),
                           ],
                           Expanded(
-                            child: Text(
-                              model.title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: tokens.projectTitle.copyWith(
-                                color: scheme.onSurface,
-                                decoration: model.completed
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                                decorationColor: scheme.onSurface.withValues(
-                                  alpha: 0.55,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (titlePrefix != null) ...[
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: titlePrefix,
+                                      ),
+                                      const SizedBox(width: 6),
+                                    ],
+                                    Expanded(
+                                      child: Text(
+                                        model.title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: tokens.projectTitle.copyWith(
+                                          color: scheme.onSurface,
+                                          decoration: model.completed
+                                              ? TextDecoration.lineThrough
+                                              : null,
+                                          decorationColor:
+                                              scheme.onSurface.withValues(
+                                            alpha: 0.55,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
+                                if (model.subtitle != null &&
+                                    model.subtitle!.trim().isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    model.subtitle!.trim(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: tokens.subtitle.copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                                if (model.taskCount != null)
+                                  ..._TaskMetaRow(
+                                    totalCount: model.taskCount!,
+                                    completedCount: model.completedTaskCount,
+                                    dueSoonCount: model.dueSoonCount,
+                                    showCompletionRatio: !_isInbox,
+                                  ).build(context),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      if (model.subtitle != null &&
-                          model.subtitle!.trim().isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          model.subtitle!.trim(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.subtitle.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
+                      if (_showPlanRow(model.meta)) ...[
+                        const SizedBox(height: 10),
+                        _PlanDueRow(meta: model.meta, tokens: tokens),
                       ],
-                      if (_progress != null) ...[
-                        const SizedBox(height: 12),
-                        _ProgressRow(
-                          progress: _progress!,
-                          tokens: tokens,
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                      _PlanDueRow(meta: model.meta, tokens: tokens),
                     ],
                   ),
                 ),
@@ -175,12 +209,20 @@ class _TopRow extends StatelessWidget {
   const _TopRow({
     required this.leadingChip,
     required this.priority,
+    required this.dueLabel,
+    required this.isOverdue,
+    required this.isDueToday,
+    required this.showBadges,
     required this.selected,
     required this.onToggleSelected,
   });
 
   final ValueChipData? leadingChip;
   final int? priority;
+  final String? dueLabel;
+  final bool isOverdue;
+  final bool isDueToday;
+  final bool showBadges;
   final bool? selected;
   final VoidCallback? onToggleSelected;
 
@@ -191,7 +233,15 @@ class _TopRow extends StatelessWidget {
 
     final chip = leadingChip;
 
-    final badge = _PriorityBadge(priority: priority, tokens: tokens);
+    final badge =
+        showBadges ? _PriorityBadge(priority: priority, tokens: tokens) : null;
+    final showDueBadge =
+        showBadges && dueLabel != null && dueLabel!.trim().isNotEmpty;
+    final dueBadge = _DueBadge(
+      label: dueLabel,
+      isOverdue: isOverdue,
+      isDueToday: isDueToday,
+    );
 
     Widget? selectionWidget;
     if (selected != null) {
@@ -216,15 +266,104 @@ class _TopRow extends StatelessWidget {
       children: [
         if (chip != null) _ValueChip(data: chip, textStyle: tokens.chipText),
         const Spacer(),
-        badge,
+        if (showDueBadge) ...[
+          dueBadge,
+          const SizedBox(width: 6),
+        ],
+        if (badge != null) badge,
         ...?(selectionWidget == null ? null : [selectionWidget]),
       ],
     );
   }
 }
 
-class _ProgressRow extends StatelessWidget {
-  const _ProgressRow({required this.progress, required this.tokens});
+class _TaskMetaRow {
+  _TaskMetaRow({
+    required this.totalCount,
+    required this.completedCount,
+    required this.dueSoonCount,
+    required this.showCompletionRatio,
+  });
+
+  final int totalCount;
+  final int? completedCount;
+  final int? dueSoonCount;
+  final bool showCompletionRatio;
+
+  List<Widget> build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyEntityTileTheme.of(context);
+
+    final textStyle = tokens.subtitle.copyWith(
+      color: scheme.onSurfaceVariant,
+    );
+
+    final children = <Widget>[];
+
+    if (showCompletionRatio && completedCount != null) {
+      children.add(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle_rounded,
+              size: 14,
+              color: scheme.secondary,
+            ),
+            const SizedBox(width: 4),
+            Text('$completedCount/$totalCount tasks', style: textStyle),
+          ],
+        ),
+      );
+    } else {
+      children.add(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.inbox_outlined,
+              size: 14,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+            const SizedBox(width: 4),
+            Text('$totalCount tasks', style: textStyle),
+          ],
+        ),
+      );
+    }
+
+    final dueSoon = dueSoonCount ?? 0;
+    if (dueSoon > 0) {
+      children.add(const SizedBox(width: 12));
+      children.add(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              size: 14,
+              color: scheme.error,
+            ),
+            const SizedBox(width: 4),
+            Text('$dueSoon due soon', style: textStyle),
+          ],
+        ),
+      );
+    }
+
+    return [
+      const SizedBox(height: 6),
+      Wrap(
+        spacing: 12,
+        runSpacing: 4,
+        children: children,
+      ),
+    ];
+  }
+}
+
+class _ProgressRing extends StatelessWidget {
+  const _ProgressRing({required this.progress, required this.tokens});
 
   final double progress;
   final TasklyEntityTileTheme tokens;
@@ -234,39 +373,62 @@ class _ProgressRow extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final percent = (progress * 100).round();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'PROGRESS',
-              style: tokens.metaLabelCaps.copyWith(
-                color: scheme.onSurfaceVariant.withValues(alpha: 0.75),
-              ),
-            ),
-            const Spacer(),
-            Text(
-              '$percent%',
-              style: tokens.metaValue.copyWith(
-                color: scheme.primary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: SizedBox(
-            height: 6,
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: scheme.surfaceContainerHighest,
-              valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
+    return SizedBox(
+      width: tokens.progressRingSize,
+      height: tokens.progressRingSize,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CircularProgressIndicator(
+            value: 1,
+            strokeWidth: tokens.progressRingStroke,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              tokens.progressTrackColor,
             ),
           ),
+          CircularProgressIndicator(
+            value: progress,
+            strokeWidth: tokens.progressRingStroke,
+            strokeCap: StrokeCap.round,
+            backgroundColor: scheme.surface.withValues(alpha: 0),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              tokens.progressFillColor,
+            ),
+          ),
+          Text(
+            '$percent%',
+            style: tokens.metaValue.copyWith(color: scheme.onSurface),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InboxGlyph extends StatelessWidget {
+  const _InboxGlyph({required this.tokens});
+
+  final TasklyEntityTileTheme tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      width: tokens.progressRingSize,
+      height: tokens.progressRingSize,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.6),
         ),
-      ],
+      ),
+      child: Icon(
+        Icons.inbox_outlined,
+        size: 20,
+        color: scheme.onSurfaceVariant,
+      ),
     );
   }
 }
@@ -313,22 +475,22 @@ class _PlanDueRow extends StatelessWidget {
       required String value,
       required Color iconColor,
     }) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerLowest.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: scheme.outlineVariant.withValues(alpha: 0.4),
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.4),
+        ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 16, color: iconColor),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Text(label, style: labelStyle),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Text(value, style: valueStyle),
           ],
         ),
@@ -371,16 +533,17 @@ class _ValueChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyEntityTileTheme.of(context);
     final isDark = scheme.brightness == Brightness.dark;
 
     final fg = data.color;
     final bg = data.color.withValues(alpha: isDark ? 0.22 : 0.14);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: tokens.chipPadding,
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(tokens.chipRadius),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -426,16 +589,16 @@ class _PriorityBadge extends StatelessWidget {
       fg = scheme.onSurfaceVariant;
       border = null;
     } else {
-      bg = Colors.transparent;
+      bg = scheme.surfaceContainerHighest.withValues(alpha: 0.65);
       fg = scheme.onSurfaceVariant;
-      border = BorderSide(color: scheme.outlineVariant);
+      border = null;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: tokens.badgePadding,
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(tokens.badgeRadius),
         border: border == null ? null : Border.fromBorderSide(border),
       ),
       child: Text(
@@ -444,6 +607,62 @@ class _PriorityBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DueBadge extends StatelessWidget {
+  const _DueBadge({
+    required this.label,
+    required this.isOverdue,
+    required this.isDueToday,
+  });
+
+  final String? label;
+  final bool isOverdue;
+  final bool isDueToday;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveLabel = label?.trim();
+    if (effectiveLabel == null || effectiveLabel.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyEntityTileTheme.of(context);
+
+    final bool urgent = isOverdue || isDueToday;
+    final Color bg = urgent
+        ? scheme.errorContainer.withValues(alpha: 0.4)
+        : scheme.surfaceContainerHighest;
+    final Color fg = urgent ? scheme.error : scheme.onSurfaceVariant;
+
+    final prefix = isOverdue ? 'OVERDUE ' : isDueToday ? 'DUE ' : 'DUE ';
+
+    return Container(
+      padding: tokens.badgePadding,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(tokens.badgeRadius),
+        border: Border.all(
+          color: urgent
+              ? scheme.error.withValues(alpha: 0.4)
+              : scheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Text(
+        '$prefix$effectiveLabel',
+        style: tokens.priorityBadge.copyWith(color: fg),
+      ),
+    );
+  }
+}
+
+bool _showPlanRow(TasklyEntityMetaData meta) {
+  final start = meta.startDateLabel?.trim();
+  final due = meta.deadlineDateLabel?.trim();
+  final hasStart = start != null && start.isNotEmpty;
+  final hasDue = due != null && due.isNotEmpty;
+  return hasStart && !hasDue;
 }
 
 class _PinnedGlyph extends StatelessWidget {

@@ -57,6 +57,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
 
     final isCompact = MediaQuery.sizeOf(context).width < 600;
 
@@ -73,6 +74,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
         widget.initialData?.color ??
             createDraft?.color ??
             ValueForm._defaultColorHex,
+        fallback: scheme.primary,
       ),
       ValueFieldKeys.iconName.id:
           widget.initialData?.iconName ?? createDraft?.iconName,
@@ -223,8 +225,8 @@ class _LiveValuePreviewCard extends StatelessWidget {
 
     final onColor =
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-        ? Colors.white
-        : Colors.black;
+            ? cs.surface
+            : cs.onSurface;
 
     final cardPadding = isCompact
         ? const EdgeInsets.all(14)

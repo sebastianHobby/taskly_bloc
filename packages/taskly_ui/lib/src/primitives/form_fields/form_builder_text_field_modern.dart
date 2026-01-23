@@ -124,7 +124,7 @@ class FormBuilderTextFieldModern extends StatelessWidget {
 
   Color _getFillColor(ColorScheme colorScheme) {
     return switch (fieldType) {
-      ModernFieldType.title => Colors.transparent,
+      ModernFieldType.title => colorScheme.surface.withValues(alpha: 0),
       ModernFieldType.description => colorScheme.surfaceContainerLow,
       ModernFieldType.standard => colorScheme.surfaceContainerLow,
     };

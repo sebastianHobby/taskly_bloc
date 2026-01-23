@@ -18,12 +18,18 @@ final class ValueHeaderRowUiModel extends ListRowUiModel {
     required this.title,
     required this.valueId,
     required this.priority,
+    required this.value,
+    required this.activeCount,
+    required this.isCollapsed,
     this.isTappableToScope = false,
   });
 
   final String title;
   final String? valueId;
   final ValuePriority? priority;
+  final Value? value;
+  final int activeCount;
+  final bool isCollapsed;
 
   /// Whether the UI should treat this header as tappable to scope navigation.
   final bool isTappableToScope;
@@ -54,11 +60,25 @@ final class TaskRowUiModel extends ListRowUiModel {
     required super.rowKey,
     required super.depth,
     required this.task,
-    this.showProjectLabel = true,
   });
 
   final Task task;
-  final bool showProjectLabel;
+}
+
+final class ProjectRowUiModel extends ListRowUiModel {
+  const ProjectRowUiModel({
+    required super.rowKey,
+    required super.depth,
+    required this.project,
+    required this.taskCount,
+    required this.completedTaskCount,
+    required this.dueSoonCount,
+  });
+
+  final Project? project;
+  final int taskCount;
+  final int completedTaskCount;
+  final int dueSoonCount;
 }
 
 /// Scheduled-only: high-level bucket header (This Week/Next Week/Later).

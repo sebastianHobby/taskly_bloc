@@ -65,8 +65,8 @@ class CorrelationCard extends StatelessWidget {
                           : Icons.arrow_downward,
                       size: 16,
                       color: correlation.differencePercent! > 0
-                          ? Colors.green
-                          : Colors.red,
+                          ? theme.colorScheme.tertiary
+                          : theme.colorScheme.error,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -148,11 +148,12 @@ class CorrelationCard extends StatelessWidget {
   }
 
   Color _getStrengthColor(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final abs = correlation.coefficient.abs();
 
-    if (abs > 0.5) return Colors.green;
-    if (abs > 0.3) return Colors.orange;
-    return Colors.grey;
+    if (abs > 0.5) return scheme.tertiary;
+    if (abs > 0.3) return scheme.secondary;
+    return scheme.onSurfaceVariant;
   }
 
   Widget _buildSignificanceInfo(BuildContext context) {
@@ -164,7 +165,9 @@ class CorrelationCard extends StatelessWidget {
         Icon(
           sig.isSignificant ? Icons.check_circle : Icons.info_outline,
           size: 14,
-          color: sig.isSignificant ? Colors.green : Colors.grey,
+          color: sig.isSignificant
+              ? theme.colorScheme.tertiary
+              : theme.colorScheme.onSurfaceVariant,
         ),
         const SizedBox(width: 4),
         Text(

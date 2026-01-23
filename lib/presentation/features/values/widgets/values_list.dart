@@ -47,9 +47,9 @@ class ValuesListView extends StatelessWidget {
           return TasklyRowSpec.value(
             key: 'value-${value.id}',
             data: value.toRowData(context),
-            intent: selectionMode
-                ? TasklyValueRowIntent.bulkSelection(selected: isSelected)
-                : const TasklyValueRowIntent.standard(),
+            preset: selectionMode
+                ? TasklyValueRowPreset.bulkSelection(selected: isSelected)
+                : const TasklyValueRowPreset.standard(),
             actions: TasklyValueRowActions(
               onTap: () async {
                 if (selection.shouldInterceptTapAsSelection()) {

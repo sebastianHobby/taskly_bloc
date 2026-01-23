@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Refined Plan My Day V3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "primary-dark": "#0eb545",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "card-light": "#ffffff",
+                        "card-dark": "#1c2e24",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        "soft": "0 2px 8px -2px rgba(0, 0, 0, 0.05)",
+                        "glow": "0 0 15px rgba(19, 236, 91, 0.3)"
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none
+        }
+        body {
+            min-height: max(884px, 100dvh)
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-[#0d1b12] dark:text-white font-display min-h-screen flex flex-col overflow-hidden relative">
+<div class="h-12 w-full bg-background-light dark:bg-background-dark shrink-0"></div>
+<header class="flex items-center justify-between px-4 py-3 bg-background-light dark:bg-background-dark z-20 sticky top-0 shrink-0 border-b border-gray-200 dark:border-gray-800">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-[#0d1b12] dark:text-white">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex flex-col items-center">
+<h2 class="text-[#0d1b12] dark:text-white text-lg font-bold tracking-tight">Plan My Day</h2>
+</div>
+<div class="w-10"></div>
+</header>
+<main class="flex-1 overflow-y-auto no-scrollbar pb-32 px-4 relative">
+<div class="flex flex-col gap-8 pt-6">
+<section>
+<div class="px-1 mb-3">
+<div class="flex items-center justify-between cursor-pointer group">
+<h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-500 fill-1">spa</span>
+                            Value aligned
+                        </h3>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200 transition-colors">expand_less</span>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="bg-white dark:bg-[#1c2e24] p-3 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-3 hover:border-primary/30 transition-colors">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 mb-1.5">
+<span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 px-1.5 py-0.5 rounded">P2</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400">
+<span class="material-symbols-outlined text-[12px]">favorite</span>
+                                    Health
+                                </span>
+</div>
+<h4 class="text-[14px] font-semibold text-gray-900 dark:text-white truncate mb-1.5">Morning Jog</h4>
+<div class="flex items-center gap-3 text-[11px] leading-none">
+<div class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[14px] opacity-70">calendar_today</span>
+<span class="font-semibold">Today</span>
+</div>
+<div class="w-px h-3 bg-gray-200 dark:bg-gray-700"></div>
+<div class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[14px] opacity-70">repeat</span>
+<span>Daily</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button aria-label="Snooze" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[20px]">snooze</span>
+</button>
+<button aria-label="Add to plan" class="w-10 h-10 rounded-full bg-primary text-[#0d1b12] hover:bg-primary-dark flex items-center justify-center transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+<div class="bg-white dark:bg-[#1c2e24] p-3 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-3 hover:border-primary/30 transition-colors">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 mb-1.5">
+<span class="text-[10px] font-bold text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 px-1.5 py-0.5 rounded">P3</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+<span class="material-symbols-outlined text-[12px]">menu_book</span>
+                                    Growth
+                                </span>
+</div>
+<h4 class="text-[14px] font-semibold text-gray-900 dark:text-white truncate mb-1.5">Read Chapter 4</h4>
+<div class="flex items-center gap-3 text-[11px] leading-none">
+<div class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[14px] opacity-70">calendar_today</span>
+<span class="font-semibold">Today</span>
+</div>
+<div class="w-px h-3 bg-gray-200 dark:bg-gray-700"></div>
+<div class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[14px] opacity-70">flag</span>
+<span>Flexible</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button aria-label="Snooze" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[20px]">snooze</span>
+</button>
+<button aria-label="Add to plan" class="w-10 h-10 rounded-full bg-primary text-[#0d1b12] hover:bg-primary-dark flex items-center justify-center transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-3 text-center">
+<button class="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">
+                        Show 2 more
+                    </button>
+</div>
+</section>
+<section>
+<div class="px-1 mb-4">
+<div class="flex items-center justify-between cursor-pointer group">
+<h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-500 fill-1">schedule</span>
+                            Time sensitive
+                        </h3>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200 transition-colors">expand_less</span>
+</div>
+</div>
+<div class="px-1 mb-2 ml-1 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-red-500">warning</span>
+<h4 class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Due (2)</h4>
+</div>
+<div class="flex flex-col gap-2">
+<div class="bg-white dark:bg-[#1c2e24] p-3 rounded-xl border border-l-4 border-l-red-500 border-y-gray-100 border-r-gray-100 dark:border-y-gray-800 dark:border-r-gray-800 shadow-sm flex items-center gap-3 hover:border-r-primary/30 hover:border-y-primary/30 transition-colors">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 mb-1.5">
+<span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">P1</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
+<span class="material-symbols-outlined text-[12px]">diversity_3</span>
+                                    Social
+                                </span>
+</div>
+<h4 class="text-[14px] font-semibold text-gray-900 dark:text-white truncate mb-1.5">RSVP Wedding</h4>
+<div class="flex items-center gap-3 text-[11px] leading-none">
+<div class="flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>Yesterday</span>
+</div>
+<div class="w-px h-3 bg-gray-200 dark:bg-gray-700"></div>
+<div class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[14px] opacity-70">flag</span>
+<span class="font-bold">Overdue</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button aria-label="Snooze" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[20px]">snooze</span>
+</button>
+<button aria-label="Add to plan" class="w-10 h-10 rounded-full bg-primary text-[#0d1b12] hover:bg-primary-dark flex items-center justify-center transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-2 mb-6 text-center">
+<button class="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors">
+                        Show 1 more
+                    </button>
+</div>
+<div class="px-1 mb-2 ml-1 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-blue-500">event</span>
+<h4 class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Planned (4)</h4>
+</div>
+<div class="flex flex-col gap-2">
+<div class="bg-white dark:bg-[#1c2e24] p-3 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-3 hover:border-primary/30 transition-colors">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 mb-1.5">
+<span class="text-[10px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded">P1</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+<span class="material-symbols-outlined text-[12px]">work</span>
+                                    Career
+                                </span>
+</div>
+<h4 class="text-[14px] font-semibold text-gray-900 dark:text-white truncate mb-1.5">Submit Q3 Report</h4>
+<div class="flex items-center gap-3 text-[11px] leading-none">
+<div class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[14px] opacity-70">calendar_today</span>
+<span class="font-semibold text-gray-900 dark:text-gray-200">Today</span>
+</div>
+<div class="w-px h-3 bg-gray-200 dark:bg-gray-700"></div>
+<div class="flex items-center gap-1 text-red-600 dark:text-red-400">
+<span class="material-symbols-outlined text-[14px] opacity-70">flag</span>
+<span class="font-bold">2:00 PM</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button aria-label="Snooze" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[20px]">snooze</span>
+</button>
+<button aria-label="Add to plan" class="w-10 h-10 rounded-full bg-primary text-[#0d1b12] hover:bg-primary-dark flex items-center justify-center transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+<div class="bg-white dark:bg-[#1c2e24] p-3 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-3 hover:border-primary/30 transition-colors">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 mb-1.5">
+<span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">P2</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+<span class="material-symbols-outlined text-[12px]">payments</span>
+                                    Finance
+                                </span>
+</div>
+<h4 class="text-[14px] font-semibold text-gray-900 dark:text-white truncate mb-1.5">Pay Utility Bills</h4>
+<div class="flex items-center gap-3 text-[11px] leading-none">
+<div class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[14px] opacity-70">calendar_today</span>
+<span class="font-semibold text-gray-900 dark:text-gray-200">Today</span>
+</div>
+<div class="w-px h-3 bg-gray-200 dark:bg-gray-700"></div>
+<div class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[14px] opacity-70">flag</span>
+<span>EOD</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button aria-label="Snooze" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[20px]">snooze</span>
+</button>
+<button aria-label="Add to plan" class="w-10 h-10 rounded-full bg-primary text-[#0d1b12] hover:bg-primary-dark flex items-center justify-center transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-3 text-center">
+<button class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+                        Show 2 more
+                    </button>
+</div>
+</section>
+</div>
+</main>
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm border-t border-gray-200 dark:border-gray-800 z-30">
+<button class="w-full bg-primary hover:bg-primary-dark text-[#0d1b12] font-bold py-3.5 rounded-2xl shadow-glow transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+            Start My Day
+            <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+
+</body></html>

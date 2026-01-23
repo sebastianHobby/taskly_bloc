@@ -9,20 +9,20 @@ import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 class ValueEntityTile extends StatelessWidget {
   const ValueEntityTile({
     required this.model,
-    this.intent = const TasklyValueRowIntent.standard(),
+    this.preset = const TasklyValueRowPreset.standard(),
     this.actions = const TasklyValueRowActions(),
     super.key,
   });
 
   final TasklyValueRowData model;
 
-  final TasklyValueRowIntent intent;
+  final TasklyValueRowPreset preset;
   final TasklyValueRowActions actions;
 
   @override
   Widget build(BuildContext context) {
-    return switch (intent) {
-      TasklyValueRowIntentBulkSelection(:final selected) => _StandardListRow(
+    return switch (preset) {
+      TasklyValueRowPresetBulkSelection(:final selected) => _StandardListRow(
         model: model,
         actions: actions,
         bulkSelected: selected,

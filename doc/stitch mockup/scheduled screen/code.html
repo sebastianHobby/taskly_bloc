@@ -57,6 +57,11 @@ body {
       min-height: max(884px, 100dvh);
     }
   </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
   </head>
 <body class="bg-background-light dark:bg-background-dark text-[#0d1b12] dark:text-white font-display min-h-screen flex flex-col overflow-hidden relative">
 <div class="h-12 w-full bg-background-light dark:bg-background-dark shrink-0"></div>
@@ -143,6 +148,37 @@ body {
 <span class="text-xs font-semibold text-gray-400 dark:text-gray-500">3 tasks</span>
 </div>
 <div class="flex flex-col gap-2">
+<div class="bg-white dark:bg-[#1c2e24] p-3.5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm relative overflow-hidden group hover:border-primary/50 transition-colors">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+<span class="material-symbols-outlined text-[12px]">work</span>
+                Career
+            </span>
+<span class="text-[10px] font-bold text-white bg-red-500 px-1.5 py-0.5 rounded">P1</span>
+</div>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 border border-red-100 dark:border-red-900/30">
+            Overdue Oct 25
+        </span>
+</div>
+<div class="flex items-center justify-between gap-3">
+<div class="flex flex-col gap-0.5">
+<h4 class="text-[15px] font-bold text-gray-900 dark:text-white">Q3 Review Cycle</h4>
+<div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+<span class="font-medium">9/12 tasks</span>
+<span class="w-0.5 h-0.5 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+<span class="text-amber-600 dark:text-amber-500 font-medium">2 due soon</span>
+</div>
+</div>
+<div class="relative w-10 h-10 flex items-center justify-center shrink-0">
+<svg class="w-full h-full -rotate-90 transform" viewBox="0 0 36 36">
+<path class="text-gray-100 dark:text-gray-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3.5"></path>
+<path class="text-primary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="75, 100" stroke-linecap="round" stroke-width="3.5"></path>
+</svg>
+<span class="absolute text-[9px] font-bold text-gray-900 dark:text-white">75%</span>
+</div>
+</div>
+</div>
 <label class="group relative flex items-start gap-3 bg-white dark:bg-[#1c2e24] p-3 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm cursor-pointer hover:border-primary/50 transition-colors">
 <input checked="" class="task-checkbox mt-1 h-5 w-5 rounded-full border-gray-300 dark:border-gray-600 text-primary focus:ring-primary/20 transition-all cursor-pointer" type="checkbox"/>
 <div class="flex-1 min-w-0">
@@ -315,5 +351,4 @@ body {
 </section>
 </div>
 </main>
-
 </body></html>
