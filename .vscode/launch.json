@@ -6,19 +6,13 @@
       "request": "launch",
       "type": "dart",
       "program": "lib/main_prod.dart",
-      "toolArgs": [
-        "-v"
-      ]
     },
     {
       "name": "Run Android (prod)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main_prod.dart",
-      "deviceId": "emulator-5556",
-      "toolArgs": [
-        "-v"
-      ]
+      "deviceId": "emulator-5554",
     },
     {
       "name": "Run Web (Chrome, prod)",

@@ -2392,6 +2392,20 @@
             }
         }
     },
+    "myDayTimeSensitiveSummary": "{dueCount, plural, one{1 vencida} other{{dueCount} vencidas}} y {plannedCount, plural, one{1 planificada} other{{plannedCount} planificadas}} fuera del plan de hoy.",
+    "@myDayTimeSensitiveSummary": {
+        "description": "Fila de resumen para tareas sensibles al tiempo fuera del plan de hoy en Mi Dia y Actualizar plan.",
+        "placeholders": {
+            "dueCount": {
+                "type": "int",
+                "example": "1"
+            },
+            "plannedCount": {
+                "type": "int",
+                "example": "4"
+            }
+        }
+    },
     "myDayRitualShowFewer": "Mostrar menos",
     "@myDayRitualShowFewer": {
         "description": "Etiqueta del botón para contraer una lista expandida en la sección del ritual de Mi día."

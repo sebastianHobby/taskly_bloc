@@ -26,9 +26,8 @@ import 'package:taskly_domain/core.dart';
 ///
 /// Entity paths use convention: `/${entityType}/${id}`.
 ///
-/// Note: legacy entity detail routes like `/project/:id` and `/value/:id` are
-/// intentionally not supported (no redirects); the canonical entrypoints are the
-/// editor routes (`/project/:id/edit`, `/value/:id/edit`).
+/// Note: entity editors (`/project/:id/edit`, `/value/:id/edit`) remain the
+/// canonical edit entrypoints; detail routes are separate.
 abstract final class Routing {
   // === PATH UTILITIES ===
 
@@ -119,7 +118,7 @@ abstract final class Routing {
 
   /// Navigate to project detail (pushes onto nav stack).
   static void toProject(BuildContext context, Project project) =>
-      GoRouter.of(context).push('/project/${project.id}/edit');
+      GoRouter.of(context).push('/project/${project.id}/detail');
 
   /// Navigate to value detail (pushes onto nav stack).
   static void toValue(BuildContext context, Value value) =>

@@ -1923,7 +1923,7 @@
     "@myDayTitle": {
         "description": "Title for the My Day screen"
     },
-    "myDayUpdatePlanTitle": "Update plan",
+    "myDayUpdatePlanTitle": "Update Plan",
     "@myDayUpdatePlanTitle": {
         "description": "Title/label used for updating today's plan in My Day."
     },
@@ -2250,6 +2250,20 @@
             "count": {
                 "type": "int",
                 "example": "3"
+            }
+        }
+    },
+    "myDayTimeSensitiveSummary": "{dueCount, plural, one{1 due} other{{dueCount} due}} and {plannedCount, plural, one{1 planned} other{{plannedCount} planned}} not in today's plan.",
+    "@myDayTimeSensitiveSummary": {
+        "description": "Summary row for time-sensitive tasks not in today's plan in My Day and Update Plan.",
+        "placeholders": {
+            "dueCount": {
+                "type": "int",
+                "example": "1"
+            },
+            "plannedCount": {
+                "type": "int",
+                "example": "4"
             }
         }
     },

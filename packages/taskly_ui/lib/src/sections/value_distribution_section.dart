@@ -21,38 +21,40 @@ class ValueDistributionSection extends StatelessWidget {
 
     final effectiveEntries =
         entries.where((entry) => entry.count > 0).toList(growable: false);
+    final sortedEntries = effectiveEntries.toList(growable: false)
+      ..sort((a, b) => b.count.compareTo(a.count));
 
-    if (effectiveEntries.isEmpty) {
+    if (sortedEntries.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: scheme.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: scheme.outlineVariant.withValues(alpha: 0.5),
           ),
           boxShadow: [
             BoxShadow(
-              color: scheme.shadow.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: scheme.shadow.withValues(alpha: 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _HeaderRow(title: title, totalLabel: totalLabel),
               const SizedBox(height: 12),
-              _SegmentBar(entries: effectiveEntries),
+              _SegmentBar(entries: sortedEntries),
               const SizedBox(height: 12),
-              _EntryGrid(entries: effectiveEntries),
+              _EntryLegend(entries: sortedEntries),
             ],
           ),
         ),
@@ -87,7 +89,7 @@ class _HeaderRow extends StatelessWidget {
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: scheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(999),
@@ -95,7 +97,7 @@ class _HeaderRow extends StatelessWidget {
           child: Text(
             totalLabel,
             style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
               color: scheme.onSurfaceVariant,
             ),
           ),
@@ -142,8 +144,8 @@ class _SegmentBar extends StatelessWidget {
   }
 }
 
-class _EntryGrid extends StatelessWidget {
-  const _EntryGrid({required this.entries});
+class _EntryLegend extends StatelessWidget {
+  const _EntryLegend({required this.entries});
 
   final List<TasklyValueDistributionEntry> entries;
 
@@ -151,47 +153,120 @@ class _EntryGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final textColor = scheme.onSurfaceVariant;
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-        childAspectRatio: 1.6,
-      ),
-      itemCount: entries.length,
-      itemBuilder: (context, index) {
-        final entry = entries[index];
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
+    final visible = entries.take(4).toList(growable: false);
+    final remaining = entries.length - visible.length;
+
+    return Row(
+      children: [
+        for (final entry in visible)
+          Expanded(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(entry.value.icon, size: 18, color: entry.value.color),
-                const SizedBox(width: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(entry.value.icon, size: 18, color: entry.value.color),
+                    const SizedBox(width: 4),
+                    Text(
+                      entry.count.toString(),
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
                 Text(
-                  entry.count.toString(),
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: scheme.onSurface,
+                  entry.value.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              entry.value.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: scheme.onSurfaceVariant,
+          ),
+        if (remaining > 0)
+          _MoreValuesPill(
+            count: remaining,
+            entries: entries,
+          ),
+      ],
+    );
+  }
+}
+
+class _MoreValuesPill extends StatelessWidget {
+  const _MoreValuesPill({
+    required this.count,
+    required this.entries,
+  });
+
+  final int count;
+  final List<TasklyValueDistributionEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: OutlinedButton(
+        onPressed: () => _showAllValues(context),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          minimumSize: const Size(0, 40),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          side: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.6),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        child: Text(
+          '+$count',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: scheme.onSurface,
               ),
-            ),
-          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAllValues(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        final scheme = Theme.of(context).colorScheme;
+        return ListView.separated(
+          itemCount: entries.length,
+          separatorBuilder: (_, __) => Divider(
+            height: 1,
+            color: scheme.outlineVariant.withValues(alpha: 0.4),
+          ),
+          itemBuilder: (context, index) {
+            final entry = entries[index];
+            return ListTile(
+              leading: Icon(entry.value.icon, color: entry.value.color),
+              title: Text(entry.value.label),
+              trailing: Text(
+                entry.count.toString(),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            );
+          },
         );
       },
     );

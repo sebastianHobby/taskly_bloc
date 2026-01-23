@@ -42,18 +42,18 @@ class ValueChip extends StatelessWidget {
     // - Primary (solid): icon + name, subtle tint fill.
     // - Secondary (outlined): icon-only, no fill.
     final backgroundColor = switch (variant) {
-      ValueChipVariant.solid => color.withValues(alpha: 0.18),
+      ValueChipVariant.solid => color.withValues(alpha: 0.1),
       ValueChipVariant.outlined => scheme.surface.withValues(alpha: 0),
     };
 
     final borderColor = switch (variant) {
-      ValueChipVariant.solid => color.withValues(alpha: 0.22),
+      ValueChipVariant.solid => color.withValues(alpha: 0.18),
       ValueChipVariant.outlined => color.withValues(
         alpha: iconOnly ? 0.45 : 0.55,
       ),
     };
 
-    final textColor = theme.colorScheme.onSurface;
+    final textColor = color;
 
     final chip = Container(
       decoration: BoxDecoration(
@@ -63,9 +63,9 @@ class ValueChip extends StatelessWidget {
       ),
       padding: EdgeInsets.symmetric(
         horizontal: iconOnly ? 6 : 8,
-        vertical: 2,
+        vertical: 4,
       ),
-      constraints: const BoxConstraints(minHeight: 20),
+      constraints: const BoxConstraints(minHeight: 22),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -84,8 +84,9 @@ class ValueChip extends StatelessWidget {
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: textColor,
                       fontWeight: FontWeight.w600,
-                      fontSize: 10,
+                      fontSize: 11,
                       height: 1.1,
+                      letterSpacing: 0.2,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

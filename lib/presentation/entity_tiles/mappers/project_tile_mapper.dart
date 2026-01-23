@@ -11,6 +11,7 @@ TasklyProjectRowData buildProjectRowData(
   required Project project,
   int? taskCount,
   int? completedTaskCount,
+  int? dueSoonCount,
   bool showOnlyDeadlineDate = false,
   String? overrideStartDateLabel,
   String? overrideDeadlineDateLabel,
@@ -81,6 +82,7 @@ TasklyProjectRowData buildProjectRowData(
     subtitle: subtitle,
     taskCount: effectiveTaskCount,
     completedTaskCount: effectiveCompletedTaskCount,
+    dueSoonCount: dueSoonCount,
   );
 }
 
@@ -108,4 +110,5 @@ String _formatMonthDay(BuildContext context, DateTime date) {
   final locale = Localizations.localeOf(context);
   return DateFormat.MMMd(locale.toLanguageTag()).format(date);
 }
+
 

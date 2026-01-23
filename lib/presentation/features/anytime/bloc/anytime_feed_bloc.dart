@@ -5,9 +5,9 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/row_key.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
 
+import 'package:taskly_bloc/presentation/features/anytime/model/anytime_sort.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 
 sealed class AnytimeFeedEvent {
@@ -20,12 +20,6 @@ final class AnytimeFeedStarted extends AnytimeFeedEvent {
 
 final class AnytimeFeedRetryRequested extends AnytimeFeedEvent {
   const AnytimeFeedRetryRequested();
-}
-
-final class AnytimeFeedFocusOnlyChanged extends AnytimeFeedEvent {
-  const AnytimeFeedFocusOnlyChanged({required this.enabled});
-
-  final bool enabled;
 }
 
 final class AnytimeFeedShowStartLaterItemsChanged extends AnytimeFeedEvent {
@@ -57,6 +51,12 @@ final class AnytimeFeedFilterPriorityChanged extends AnytimeFeedEvent {
   const AnytimeFeedFilterPriorityChanged({required this.enabled});
 
   final bool enabled;
+}
+
+final class AnytimeFeedSortOrderChanged extends AnytimeFeedEvent {
+  const AnytimeFeedSortOrderChanged({required this.order});
+
+  final AnytimeSortOrder order;
 }
 
 final class AnytimeFeedDueWindowDaysChanged extends AnytimeFeedEvent {
@@ -109,12 +109,12 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       _onRetryRequested,
       transformer: restartable(),
     );
-    on<AnytimeFeedFocusOnlyChanged>(_onFocusOnlyChanged);
     on<AnytimeFeedShowStartLaterItemsChanged>(_onShowStartLaterItemsChanged);
     on<AnytimeFeedSearchQueryChanged>(_onSearchQueryChanged);
     on<AnytimeFeedFilterDueSoonChanged>(_onFilterDueSoonChanged);
     on<AnytimeFeedFilterOverdueChanged>(_onFilterOverdueChanged);
     on<AnytimeFeedFilterPriorityChanged>(_onFilterPriorityChanged);
+    on<AnytimeFeedSortOrderChanged>(_onSortOrderChanged);
     on<AnytimeFeedDueWindowDaysChanged>(_onDueWindowDaysChanged);
     on<AnytimeFeedInboxCollapsedChanged>(_onInboxCollapsedChanged);
     on<AnytimeFeedValueCollapsedChanged>(_onValueCollapsedChanged);
@@ -131,14 +131,12 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     0,
     isUtc: true,
   );
-  bool _focusOnly = false;
   bool _showStartLaterItems = false;
-  bool _inboxCollapsed = false;
-  Set<String> _collapsedValueIds = const <String>{};
   String _searchQuery = '';
   bool _filterDueSoon = false;
   bool _filterOverdue = false;
   bool _filterPriority = false;
+  AnytimeSortOrder _sortOrder = AnytimeSortOrder.dueSoonest;
   int _dueWindowDays = 7;
 
   Future<void> _onStarted(
@@ -154,14 +152,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   ) async {
     emit(const AnytimeFeedLoading());
     await _bind(emit);
-  }
-
-  void _onFocusOnlyChanged(
-    AnytimeFeedFocusOnlyChanged event,
-    Emitter<AnytimeFeedState> emit,
-  ) {
-    _focusOnly = event.enabled;
-    _emitRows(emit);
   }
 
   void _onShowStartLaterItemsChanged(
@@ -204,6 +194,14 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     _emitRows(emit);
   }
 
+  void _onSortOrderChanged(
+    AnytimeFeedSortOrderChanged event,
+    Emitter<AnytimeFeedState> emit,
+  ) {
+    _sortOrder = event.order;
+    _emitRows(emit);
+  }
+
   void _onDueWindowDaysChanged(
     AnytimeFeedDueWindowDaysChanged event,
     Emitter<AnytimeFeedState> emit,
@@ -216,7 +214,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     AnytimeFeedInboxCollapsedChanged event,
     Emitter<AnytimeFeedState> emit,
   ) {
-    _inboxCollapsed = event.collapsed;
     _emitRows(emit);
   }
 
@@ -224,7 +221,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     AnytimeFeedValueCollapsedChanged event,
     Emitter<AnytimeFeedState> emit,
   ) {
-    _collapsedValueIds = event.collapsedValueIds;
     _emitRows(emit);
   }
 
@@ -245,12 +241,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
   void _emitRows(Emitter<AnytimeFeedState> emit) {
     try {
-      final tasks = _latestTasks
-          .where((t) => !_focusOnly || _todaySelectedTaskIds.contains(t.id))
-          .where((t) => _showStartLaterItems || !_isStartLater(t))
-          .toList(growable: false);
-
-      final rows = _mapToRows(tasks);
+      final rows = _mapToRows(_latestTasks);
       emit(AnytimeFeedLoaded(rows: rows));
     } catch (e) {
       emit(AnytimeFeedError(message: e.toString()));
@@ -299,11 +290,10 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   List<_ProjectAggregate> _aggregateProjects(List<Task> tasks) {
     final groups = <String, _ProjectAggregate>{};
 
-    final today = DateTime(
+    final today = DateTime.utc(
       _todayDayKeyUtc.year,
       _todayDayKeyUtc.month,
       _todayDayKeyUtc.day,
-      isUtc: _todayDayKeyUtc.isUtc,
     );
     final dueLimit = today.add(
       Duration(days: _dueWindowDays.clamp(1, 30) - 1),
@@ -326,24 +316,77 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
       final deadline = task.occurrence?.deadline ?? task.deadlineDate;
       if (deadline != null) {
-        final deadlineDay = DateTime(
+        final deadlineDay = DateTime.utc(
           deadline.year,
           deadline.month,
           deadline.day,
-          isUtc: deadline.isUtc,
         );
+        group.trackDeadline(deadlineDay);
         if (deadlineDay.isBefore(today)) {
-          group.overdueCount += 1;
+          group.taskOverdueCount += 1;
         } else if (!deadlineDay.isAfter(dueLimit)) {
-          group.dueSoonCount += 1;
+          group.taskDueSoonCount += 1;
         }
+      }
+
+      final isStartLater = _isStartLater(task);
+      if (isStartLater) {
+        group.hasStartLaterTask = true;
+      } else {
+        group.hasAvailableTask = true;
       }
     }
 
-    return groups.values.toList(growable: false);
+    final aggregates = groups.values.toList(growable: false);
+    for (final group in aggregates) {
+      final project = group.project;
+      if (project == null) {
+        group.overdueCount = group.taskOverdueCount;
+        group.dueSoonCount = group.taskDueSoonCount;
+        continue;
+      }
+
+      final deadline = project.deadlineDate;
+      if (deadline != null) {
+        final deadlineDay = DateTime.utc(
+          deadline.year,
+          deadline.month,
+          deadline.day,
+        );
+        group.trackDeadline(deadlineDay);
+      }
+
+      if (deadline == null || project.completed) {
+        group.overdueCount = 0;
+        group.dueSoonCount = 0;
+        continue;
+      }
+
+      final deadlineDay = DateTime.utc(
+        deadline.year,
+        deadline.month,
+        deadline.day,
+      );
+      if (deadlineDay.isBefore(today)) {
+        group.overdueCount = 1;
+        group.dueSoonCount = 0;
+      } else if (!deadlineDay.isAfter(dueLimit)) {
+        group.dueSoonCount = 1;
+        group.overdueCount = 0;
+      } else {
+        group.overdueCount = 0;
+        group.dueSoonCount = 0;
+      }
+    }
+
+    return aggregates;
   }
 
   bool _matchesFilters(_ProjectAggregate aggregate) {
+    if (aggregate.projectRef.isInbox && _noFiltersActive()) {
+      return true;
+    }
+
     final search = _searchQuery.toLowerCase().trim();
     if (search.isNotEmpty) {
       final title = aggregate.title.toLowerCase();
@@ -355,14 +398,29 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       if (!matchesTitle && !matchesValue) return false;
     }
 
+    final project = aggregate.project;
+
+    if (_scope case AnytimeValueScope(:final valueId)) {
+      if (project?.primaryValue?.id != valueId) return false;
+    }
+
     if (_filterPriority) {
-      if (aggregate.project?.priority != 1) return false;
+      if (project?.priority != 1) return false;
     }
 
     if (_filterOverdue && aggregate.overdueCount <= 0) return false;
 
     if (_filterDueSoon && aggregate.dueSoonCount <= 0) return false;
 
+    if (!_showStartLaterItems && !aggregate.hasAvailableTask) return false;
+
+    return true;
+  }
+
+  bool _noFiltersActive() {
+    if (_searchQuery.trim().isNotEmpty) return false;
+    if (_scope is AnytimeValueScope) return false;
+    if (_filterPriority || _filterOverdue || _filterDueSoon) return false;
     return true;
   }
 
@@ -371,17 +429,21 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       return a.projectRef.isInbox ? -1 : 1;
     }
 
-    final aOverdue = a.overdueCount > 0;
-    final bOverdue = b.overdueCount > 0;
-    if (aOverdue != bOverdue) return aOverdue ? -1 : 1;
+    final aDate = a.sortDeadline(_sortOrder);
+    final bDate = b.sortDeadline(_sortOrder);
+    final aHasDate = aDate != null;
+    final bHasDate = bDate != null;
 
-    final aDueSoon = a.dueSoonCount > 0;
-    final bDueSoon = b.dueSoonCount > 0;
-    if (aDueSoon != bDueSoon) return aDueSoon ? -1 : 1;
+    if (aHasDate != bHasDate) {
+      return aHasDate ? -1 : 1;
+    }
 
-    final ap = a.project?.priority ?? 99;
-    final bp = b.project?.priority ?? 99;
-    if (ap != bp) return ap.compareTo(bp);
+    if (aHasDate && bHasDate) {
+      final compare = aDate!.compareTo(bDate!);
+      if (compare != 0) {
+        return _sortOrder == AnytimeSortOrder.dueSoonest ? compare : -compare;
+      }
+    }
 
     final byName = a.title.toLowerCase().compareTo(b.title.toLowerCase());
     if (byName != 0) return byName;
@@ -405,6 +467,30 @@ class _ProjectAggregate {
   final List<Task> tasks = <Task>[];
   int dueSoonCount = 0;
   int overdueCount = 0;
+  int taskDueSoonCount = 0;
+  int taskOverdueCount = 0;
+  bool hasStartLaterTask = false;
+  bool hasAvailableTask = false;
+  DateTime? earliestDeadlineUtc;
+  DateTime? latestDeadlineUtc;
+
+  void trackDeadline(DateTime deadlineUtc) {
+    if (earliestDeadlineUtc == null ||
+        deadlineUtc.isBefore(earliestDeadlineUtc!)) {
+      earliestDeadlineUtc = deadlineUtc;
+    }
+    if (latestDeadlineUtc == null ||
+        deadlineUtc.isAfter(latestDeadlineUtc!)) {
+      latestDeadlineUtc = deadlineUtc;
+    }
+  }
+
+  DateTime? sortDeadline(AnytimeSortOrder order) {
+    return switch (order) {
+      AnytimeSortOrder.dueSoonest => earliestDeadlineUtc,
+      AnytimeSortOrder.dueLatest => latestDeadlineUtc ?? earliestDeadlineUtc,
+    };
+  }
 
   int get taskCount => project?.taskCount ?? tasks.length;
 

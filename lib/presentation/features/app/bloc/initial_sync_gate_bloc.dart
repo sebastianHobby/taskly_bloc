@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 
 sealed class InitialSyncGateEvent {
@@ -42,8 +44,12 @@ final class InitialSyncGateBloc
   InitialSyncGateBloc({
     required AuthenticatedAppServicesCoordinator coordinator,
     required InitialSyncService initialSyncService,
+    required TaskRepositoryContract taskRepository,
+    required ValueRepositoryContract valueRepository,
   }) : _coordinator = coordinator,
        _initialSyncService = initialSyncService,
+       _taskRepository = taskRepository,
+       _valueRepository = valueRepository,
        super(const InitialSyncGateInProgress(progress: null)) {
     on<InitialSyncGateStarted>(_onStarted);
     on<InitialSyncGateRetryRequested>(_onRetryRequested);
@@ -51,6 +57,8 @@ final class InitialSyncGateBloc
 
   final AuthenticatedAppServicesCoordinator _coordinator;
   final InitialSyncService _initialSyncService;
+  final TaskRepositoryContract _taskRepository;
+  final ValueRepositoryContract _valueRepository;
 
   Future<void> _onStarted(
     InitialSyncGateStarted event,
@@ -76,8 +84,6 @@ final class InitialSyncGateBloc
   }
 
   Stream<InitialSyncGateState> _gateStateStream() async* {
-    yield const InitialSyncGateInProgress(progress: null);
-
     try {
       await _coordinator.start();
     } catch (e) {
@@ -89,6 +95,15 @@ final class InitialSyncGateBloc
     }
 
     try {
+      final initial = await _initialSyncService.progress.first;
+      final shouldBlock = await _shouldBlock(initial);
+      if (!shouldBlock) {
+        yield const InitialSyncGateReady();
+        return;
+      }
+
+      yield InitialSyncGateInProgress(progress: initial);
+
       await for (final progress in _initialSyncService.progress) {
         yield InitialSyncGateInProgress(progress: progress);
 
@@ -105,5 +120,21 @@ final class InitialSyncGateBloc
         progress: null,
       );
     }
+  }
+
+  Future<bool> _shouldBlock(InitialSyncProgress progress) async {
+    final hasCheckpoint = progress.hasSynced || progress.lastSyncedAt != null;
+    if (hasCheckpoint) return false;
+
+    final results = await Future.wait<dynamic>([
+      _taskRepository.watchAllCount().first,
+      _valueRepository.getAll(),
+    ]);
+
+    final taskCount = results[0] as int;
+    final values = results[1] as List<Value>;
+    final hasLocalData = taskCount > 0 || values.isNotEmpty;
+
+    return !hasLocalData;
   }
 }

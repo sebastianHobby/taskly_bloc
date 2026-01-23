@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 import 'package:taskly_ui/src/models/value_chip_data.dart';
+import 'package:taskly_ui/src/primitives/meta_badges.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
+import 'package:taskly_ui/src/primitives/value_chip_widget.dart';
 
 /// Canonical Project tile aligned to Stitch mockups.
 ///
@@ -34,8 +36,9 @@ class ProjectEntityTile extends StatelessWidget {
   double? get _progress {
     final total = model.taskCount;
     final done = model.completedTaskCount;
-    if (total == null || done == null || total <= 0) return null;
-    return (done / total).clamp(0.0, 1.0);
+    if (total == null || total <= 0) return 0.0;
+    final safeDone = (done ?? 0).clamp(0, total);
+    return (safeDone / total).clamp(0.0, 1.0);
   }
 
   @override
@@ -43,6 +46,11 @@ class ProjectEntityTile extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final tokens = TasklyEntityTileTheme.of(context);
+    final isReadOnlyHeader =
+        !_isInbox &&
+        actions.onTap == null &&
+        actions.onLongPress == null &&
+        actions.onToggleSelected == null;
 
     final effectiveCompact = MediaQuery.sizeOf(context).width < 420;
     final padding = effectiveCompact
@@ -102,28 +110,17 @@ class ProjectEntityTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _TopRow(
-                        leadingChip: model.leadingChip,
-                        priority: model.meta.priority,
-                        dueLabel: model.meta.deadlineDateLabel,
-                        isOverdue: model.meta.isOverdue,
-                        isDueToday: model.meta.isDueToday,
-                        showBadges: !_isInbox,
-                        selected: _selected,
-                        onToggleSelected: actions.onToggleSelected,
-                      ),
-                      const SizedBox(height: 8),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_progress != null && !_isInbox) ...[
+                          if (_isInbox) ...[
+                            _InboxGlyph(tokens: tokens),
+                            const SizedBox(width: 12),
+                          ] else ...[
                             _ProgressRing(
-                              progress: _progress!,
+                              progress: _progress ?? 0.0,
                               tokens: tokens,
                             ),
-                            const SizedBox(width: 12),
-                          ] else if (_isInbox) ...[
-                            _InboxGlyph(tokens: tokens),
                             const SizedBox(width: 12),
                           ],
                           Expanded(
@@ -145,7 +142,10 @@ class ProjectEntityTile extends StatelessWidget {
                                         model.title,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
-                                        style: tokens.projectTitle.copyWith(
+                                        style: (isReadOnlyHeader
+                                                ? tokens.projectHeaderTitle
+                                                : tokens.projectTitle)
+                                            .copyWith(
                                           color: scheme.onSurface,
                                           decoration: model.completed
                                               ? TextDecoration.lineThrough
@@ -157,6 +157,29 @@ class ProjectEntityTile extends StatelessWidget {
                                         ),
                                       ),
                                     ),
+                                    if (_selected != null) ...[
+                                      const SizedBox(width: 6),
+                                      IconButton(
+                                        tooltip: (_selected ?? false)
+                                            ? 'Deselect'
+                                            : 'Select',
+                                        onPressed: actions.onToggleSelected,
+                                        icon: Icon(
+                                          (_selected ?? false)
+                                              ? Icons.check_circle_rounded
+                                              : Icons.radio_button_unchecked_rounded,
+                                          color: (_selected ?? false)
+                                              ? scheme.primary
+                                              : scheme.onSurfaceVariant,
+                                        ),
+                                        style: IconButton.styleFrom(
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                          minimumSize: const Size(40, 40),
+                                          padding: const EdgeInsets.all(8),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                                 if (model.subtitle != null &&
@@ -171,22 +194,25 @@ class ProjectEntityTile extends StatelessWidget {
                                     ),
                                   ),
                                 ],
-                                if (model.taskCount != null)
-                                  ..._TaskMetaRow(
+                                if (model.taskCount != null) ...[
+                                  const SizedBox(height: 6),
+                                  _ProjectMetaRow(
                                     totalCount: model.taskCount!,
                                     completedCount: model.completedTaskCount,
                                     dueSoonCount: model.dueSoonCount,
+                                    dueLabel: model.meta.deadlineDateLabel,
+                                    isOverdue: model.meta.isOverdue,
+                                    isDueToday: model.meta.isDueToday,
+                                    priority: model.meta.priority,
+                                    leadingChip: model.leadingChip,
                                     showCompletionRatio: !_isInbox,
-                                  ).build(context),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
                         ],
                       ),
-                      if (_showPlanRow(model.meta)) ...[
-                        const SizedBox(height: 10),
-                        _PlanDueRow(meta: model.meta, tokens: tokens),
-                      ],
                     ],
                   ),
                 ),
@@ -205,100 +231,43 @@ class ProjectEntityTile extends StatelessWidget {
   }
 }
 
-class _TopRow extends StatelessWidget {
-  const _TopRow({
-    required this.leadingChip,
-    required this.priority,
-    required this.dueLabel,
-    required this.isOverdue,
-    required this.isDueToday,
-    required this.showBadges,
-    required this.selected,
-    required this.onToggleSelected,
-  });
-
-  final ValueChipData? leadingChip;
-  final int? priority;
-  final String? dueLabel;
-  final bool isOverdue;
-  final bool isDueToday;
-  final bool showBadges;
-  final bool? selected;
-  final VoidCallback? onToggleSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final tokens = TasklyEntityTileTheme.of(context);
-
-    final chip = leadingChip;
-
-    final badge =
-        showBadges ? _PriorityBadge(priority: priority, tokens: tokens) : null;
-    final showDueBadge =
-        showBadges && dueLabel != null && dueLabel!.trim().isNotEmpty;
-    final dueBadge = _DueBadge(
-      label: dueLabel,
-      isOverdue: isOverdue,
-      isDueToday: isDueToday,
-    );
-
-    Widget? selectionWidget;
-    if (selected != null) {
-      selectionWidget = IconButton(
-        tooltip: (selected ?? false) ? 'Deselect' : 'Select',
-        onPressed: onToggleSelected,
-        icon: Icon(
-          (selected ?? false)
-              ? Icons.check_circle_rounded
-              : Icons.radio_button_unchecked_rounded,
-          color: (selected ?? false) ? scheme.primary : scheme.onSurfaceVariant,
-        ),
-        style: IconButton.styleFrom(
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          minimumSize: const Size(40, 40),
-          padding: const EdgeInsets.all(8),
-        ),
-      );
-    }
-
-    return Row(
-      children: [
-        if (chip != null) _ValueChip(data: chip, textStyle: tokens.chipText),
-        const Spacer(),
-        if (showDueBadge) ...[
-          dueBadge,
-          const SizedBox(width: 6),
-        ],
-        if (badge != null) badge,
-        ...?(selectionWidget == null ? null : [selectionWidget]),
-      ],
-    );
-  }
-}
-
-class _TaskMetaRow {
-  _TaskMetaRow({
+class _ProjectMetaRow extends StatelessWidget {
+  const _ProjectMetaRow({
     required this.totalCount,
     required this.completedCount,
     required this.dueSoonCount,
+    required this.dueLabel,
+    required this.isOverdue,
+    required this.isDueToday,
+    required this.priority,
+    required this.leadingChip,
     required this.showCompletionRatio,
   });
 
   final int totalCount;
   final int? completedCount;
   final int? dueSoonCount;
+  final String? dueLabel;
+  final bool isOverdue;
+  final bool isDueToday;
+  final int? priority;
+  final ValueChipData? leadingChip;
   final bool showCompletionRatio;
 
-  List<Widget> build(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final tokens = TasklyEntityTileTheme.of(context);
 
-    final textStyle = tokens.subtitle.copyWith(
+    final textStyle = tokens.metaValue.copyWith(
       color: scheme.onSurfaceVariant,
     );
 
     final children = <Widget>[];
+
+    if (leadingChip != null) {
+      children.add(ValueChip(data: leadingChip!));
+    }
 
     if (showCompletionRatio && completedCount != null) {
       children.add(
@@ -321,9 +290,13 @@ class _TaskMetaRow {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.inbox_outlined,
+              showCompletionRatio
+                  ? Icons.check_circle_rounded
+                  : Icons.inbox_outlined,
               size: 14,
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+              color: showCompletionRatio
+                  ? scheme.secondary
+                  : scheme.onSurfaceVariant.withValues(alpha: 0.8),
             ),
             const SizedBox(width: 4),
             Text('$totalCount tasks', style: textStyle),
@@ -332,33 +305,34 @@ class _TaskMetaRow {
       );
     }
 
+    if (priority != null) {
+      children.add(PriorityPill(priority: priority!));
+    }
+
     final dueSoon = dueSoonCount ?? 0;
-    if (dueSoon > 0) {
-      children.add(const SizedBox(width: 12));
+    final label = dueLabel?.trim();
+    final showLabel = label != null && label.isNotEmpty;
+    final showDue = showLabel || dueSoon > 0;
+      if (showDue) {
+      final dueColor = (isOverdue || isDueToday)
+          ? scheme.error
+          : scheme.onSurfaceVariant;
       children.add(
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              size: 14,
-              color: scheme.error,
-            ),
-            const SizedBox(width: 4),
-            Text('$dueSoon due soon', style: textStyle),
-          ],
+        MetaIconLabel(
+          icon: Icons.flag_rounded,
+          label: showLabel ? label : '$dueSoon due soon',
+          color: dueColor,
+          textStyle: textStyle,
         ),
       );
     }
 
-    return [
-      const SizedBox(height: 6),
-      Wrap(
-        spacing: 12,
-        runSpacing: 4,
-        children: children,
-      ),
-    ];
+    return Wrap(
+      spacing: 10,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: children,
+    );
   }
 }
 
@@ -374,21 +348,21 @@ class _ProgressRing extends StatelessWidget {
     final percent = (progress * 100).round();
 
     return SizedBox(
-      width: tokens.progressRingSize,
-      height: tokens.progressRingSize,
+      width: 28,
+      height: 28,
       child: Stack(
         alignment: Alignment.center,
         children: [
           CircularProgressIndicator(
             value: 1,
-            strokeWidth: tokens.progressRingStroke,
+            strokeWidth: 2,
             valueColor: AlwaysStoppedAnimation<Color>(
               tokens.progressTrackColor,
             ),
           ),
           CircularProgressIndicator(
             value: progress,
-            strokeWidth: tokens.progressRingStroke,
+            strokeWidth: 2,
             strokeCap: StrokeCap.round,
             backgroundColor: scheme.surface.withValues(alpha: 0),
             valueColor: AlwaysStoppedAnimation<Color>(
@@ -397,7 +371,11 @@ class _ProgressRing extends StatelessWidget {
           ),
           Text(
             '$percent%',
-            style: tokens.metaValue.copyWith(color: scheme.onSurface),
+            style: tokens.metaValue.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -431,238 +409,6 @@ class _InboxGlyph extends StatelessWidget {
       ),
     );
   }
-}
-
-class _PlanDueRow extends StatelessWidget {
-  const _PlanDueRow({required this.meta, required this.tokens});
-
-  final TasklyEntityMetaData meta;
-  final TasklyEntityTileTheme tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    final plan = meta.startDateLabel?.trim();
-    final due = meta.deadlineDateLabel?.trim();
-
-    final hasPlan =
-        plan != null && plan.isNotEmpty && !meta.showOnlyDeadlineDate;
-    final hasDue = due != null && due.isNotEmpty;
-
-    if (!hasPlan && !hasDue) return const SizedBox.shrink();
-
-    final labelStyle = tokens.metaLabelCaps.copyWith(
-      color: scheme.onSurfaceVariant.withValues(alpha: 0.75),
-    );
-
-    final dueColor = meta.isOverdue || meta.isDueToday
-        ? scheme.error
-        : scheme.onSurfaceVariant;
-
-    final dueLabelStyle = tokens.metaLabelCaps.copyWith(
-      color: dueColor.withValues(alpha: 0.9),
-    );
-
-    final valueStyle = tokens.metaValue.copyWith(color: scheme.onSurface);
-    final dueValueStyle = tokens.metaValue.copyWith(color: dueColor);
-
-    Widget item({
-      required IconData icon,
-      required TextStyle labelStyle,
-      required String label,
-      required TextStyle valueStyle,
-      required String value,
-      required Color iconColor,
-    }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.4),
-        ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: iconColor),
-            const SizedBox(width: 6),
-            Text(label, style: labelStyle),
-            const SizedBox(width: 6),
-            Text(value, style: valueStyle),
-          ],
-        ),
-      );
-    }
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 8,
-      children: [
-        if (hasPlan)
-          item(
-            icon: Icons.calendar_today_rounded,
-            labelStyle: labelStyle,
-            label: 'PLAN',
-            valueStyle: valueStyle,
-            value: plan,
-            iconColor: scheme.onSurfaceVariant.withValues(alpha: 0.8),
-          ),
-        if (hasDue)
-          item(
-            icon: Icons.flag_rounded,
-            labelStyle: dueLabelStyle,
-            label: 'DUE',
-            valueStyle: dueValueStyle,
-            value: due,
-            iconColor: dueColor,
-          ),
-      ],
-    );
-  }
-}
-
-class _ValueChip extends StatelessWidget {
-  const _ValueChip({required this.data, required this.textStyle});
-
-  final ValueChipData data;
-  final TextStyle textStyle;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final tokens = TasklyEntityTileTheme.of(context);
-    final isDark = scheme.brightness == Brightness.dark;
-
-    final fg = data.color;
-    final bg = data.color.withValues(alpha: isDark ? 0.22 : 0.14);
-
-    return Container(
-      padding: tokens.chipPadding,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(tokens.chipRadius),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(data.icon, size: 14, color: fg),
-          const SizedBox(width: 8),
-          Text(
-            data.label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textStyle.copyWith(color: fg),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PriorityBadge extends StatelessWidget {
-  const _PriorityBadge({required this.priority, required this.tokens});
-
-  final int? priority;
-  final TasklyEntityTileTheme tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = priority;
-    if (p == null) return const SizedBox.shrink();
-
-    final scheme = Theme.of(context).colorScheme;
-    final String label = 'P$p';
-
-    final Color bg;
-    final Color fg;
-    final BorderSide? border;
-
-    if (p == 1) {
-      bg = scheme.error;
-      fg = scheme.onError;
-      border = null;
-    } else if (p == 2) {
-      bg = scheme.surfaceContainerHighest;
-      fg = scheme.onSurfaceVariant;
-      border = null;
-    } else {
-      bg = scheme.surfaceContainerHighest.withValues(alpha: 0.65);
-      fg = scheme.onSurfaceVariant;
-      border = null;
-    }
-
-    return Container(
-      padding: tokens.badgePadding,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(tokens.badgeRadius),
-        border: border == null ? null : Border.fromBorderSide(border),
-      ),
-      child: Text(
-        label,
-        style: tokens.priorityBadge.copyWith(color: fg),
-      ),
-    );
-  }
-}
-
-class _DueBadge extends StatelessWidget {
-  const _DueBadge({
-    required this.label,
-    required this.isOverdue,
-    required this.isDueToday,
-  });
-
-  final String? label;
-  final bool isOverdue;
-  final bool isDueToday;
-
-  @override
-  Widget build(BuildContext context) {
-    final effectiveLabel = label?.trim();
-    if (effectiveLabel == null || effectiveLabel.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final scheme = Theme.of(context).colorScheme;
-    final tokens = TasklyEntityTileTheme.of(context);
-
-    final bool urgent = isOverdue || isDueToday;
-    final Color bg = urgent
-        ? scheme.errorContainer.withValues(alpha: 0.4)
-        : scheme.surfaceContainerHighest;
-    final Color fg = urgent ? scheme.error : scheme.onSurfaceVariant;
-
-    final prefix = isOverdue ? 'OVERDUE ' : isDueToday ? 'DUE ' : 'DUE ';
-
-    return Container(
-      padding: tokens.badgePadding,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(tokens.badgeRadius),
-        border: Border.all(
-          color: urgent
-              ? scheme.error.withValues(alpha: 0.4)
-              : scheme.outlineVariant.withValues(alpha: 0.6),
-        ),
-      ),
-      child: Text(
-        '$prefix$effectiveLabel',
-        style: tokens.priorityBadge.copyWith(color: fg),
-      ),
-    );
-  }
-}
-
-bool _showPlanRow(TasklyEntityMetaData meta) {
-  final start = meta.startDateLabel?.trim();
-  final due = meta.deadlineDateLabel?.trim();
-  final hasStart = start != null && start.isNotEmpty;
-  final hasDue = due != null && due.isNotEmpty;
-  return hasStart && !hasDue;
 }
 
 class _PinnedGlyph extends StatelessWidget {

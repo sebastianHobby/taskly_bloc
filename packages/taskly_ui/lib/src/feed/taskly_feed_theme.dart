@@ -23,7 +23,7 @@ class TasklyFeedTheme extends ThemeExtension<TasklyFeedTheme> {
     return TasklyFeedTheme(
       rowIndent: 10,
       entityRowSpacing: 10,
-      sectionSpacing: 20,
+      sectionSpacing: 24,
       scheduledDayTitle: base(textTheme.titleMedium).copyWith(
         fontSize: 16,
         fontWeight: FontWeight.w700,

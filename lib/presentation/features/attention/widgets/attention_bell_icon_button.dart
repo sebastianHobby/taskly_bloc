@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
+import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 
 enum AttentionBellSeverity { none, warning, critical }
 
@@ -16,6 +17,16 @@ class AttentionBellIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final chrome = TasklyChromeTheme.of(context);
+    final iconButtonStyle = IconButton.styleFrom(
+      backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(
+        alpha: chrome.iconButtonBackgroundAlpha,
+      ),
+      foregroundColor: theme.colorScheme.onSurface,
+      shape: const CircleBorder(),
+      minimumSize: Size.square(chrome.iconButtonMinSize),
+      padding: chrome.iconButtonPadding,
+    );
 
     return BlocBuilder<AttentionBellCubit, AttentionBellState>(
       bloc: getIt<AttentionBellCubit>(),
@@ -32,19 +43,26 @@ class AttentionBellIconButton extends StatelessWidget {
         };
 
         final showBadge = total > 0;
-        final (badgeColor, haloColor) = switch (severity) {
-          AttentionBellSeverity.critical => (
-            theme.colorScheme.error,
-            theme.colorScheme.error.withValues(alpha: 0.35),
-          ),
-          AttentionBellSeverity.warning => (
-            theme.colorScheme.secondary,
-            theme.colorScheme.secondary.withValues(alpha: 0.28),
-          ),
-          AttentionBellSeverity.none => (
-            theme.colorScheme.primary,
-            theme.colorScheme.surface.withValues(alpha: 0),
-          ),
+        final backgroundColor = switch (severity) {
+          AttentionBellSeverity.critical =>
+            theme.colorScheme.errorContainer.withValues(alpha: 0.55),
+          AttentionBellSeverity.warning =>
+            theme.colorScheme.secondaryContainer.withValues(alpha: 0.6),
+          AttentionBellSeverity.none =>
+            theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.6),
+        };
+        final haloColor = switch (severity) {
+          AttentionBellSeverity.critical =>
+            theme.colorScheme.errorContainer.withValues(alpha: 0.35),
+          AttentionBellSeverity.warning =>
+            theme.colorScheme.secondaryContainer.withValues(alpha: 0.35),
+          AttentionBellSeverity.none =>
+            theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0),
+        };
+        final badgeColor = switch (severity) {
+          AttentionBellSeverity.critical => theme.colorScheme.error,
+          AttentionBellSeverity.warning => theme.colorScheme.secondary,
+          AttentionBellSeverity.none => theme.colorScheme.primary,
         };
         final badgeTextColor = switch (severity) {
           AttentionBellSeverity.critical => theme.colorScheme.onError,
@@ -75,6 +93,7 @@ class AttentionBellIconButton extends StatelessWidget {
           child: IconButton(
             tooltip: 'Attention',
             onPressed: onPressed,
+            style: iconButtonStyle,
             icon: ExcludeSemantics(
               child: SizedBox(
                 width: 28,
@@ -82,6 +101,14 @@ class AttentionBellIconButton extends StatelessWidget {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: backgroundColor,
+                        ),
+                      ),
+                    ),
                     if (showBadge && severity != AttentionBellSeverity.none)
                       Positioned.fill(
                         child: DecoratedBox(

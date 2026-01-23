@@ -133,6 +133,42 @@ class TasklyTileCatalog extends StatelessWidget {
         actions: _taskActionsWithSnooze,
       ),
       TasklyRowSpec.header(
+        key: 'catalog-tasks-picker-action',
+        title: 'Task Â· Picker action',
+      ),
+      TasklyRowSpec.task(
+        key: 'catalog-task-picker-action-selected',
+        data: _taskData(
+          id: 't-picker-action-1',
+          title: 'Evening walk',
+          meta: TasklyEntityMetaData(primaryValue: valueHealth),
+          supportingText: 'Supports Health',
+          labels: const TasklyTaskRowLabels(
+            selectionPillLabel: 'Add',
+            selectionPillSelectedLabel: 'Added',
+            snoozeTooltip: 'Snooze',
+          ),
+        ),
+        preset: const TasklyTaskRowPreset.pickerAction(selected: true),
+        actions: _taskActionsWithSnooze,
+      ),
+      TasklyRowSpec.task(
+        key: 'catalog-task-picker-action-unselected',
+        data: _taskData(
+          id: 't-picker-action-2',
+          title: 'Review financial plan',
+          meta: TasklyEntityMetaData(primaryValue: valueFinance),
+          supportingText: 'Supports Finance',
+          labels: const TasklyTaskRowLabels(
+            selectionPillLabel: 'Add',
+            selectionPillSelectedLabel: 'Added',
+            snoozeTooltip: 'Snooze',
+          ),
+        ),
+        preset: const TasklyTaskRowPreset.pickerAction(selected: false),
+        actions: _taskActionsWithSnooze,
+      ),
+      TasklyRowSpec.header(
         key: 'catalog-projects',
         title: 'Projects',
         trailingLabel: 'Presets',
