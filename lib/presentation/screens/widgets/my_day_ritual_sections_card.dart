@@ -37,6 +37,7 @@ class MyDayRitualSectionsCard extends StatefulWidget {
     this.onAddMissingDue,
     this.onAddMissingStarts,
     this.onAddOneMoreFocus,
+    this.onWhyThese,
   });
 
   final List<Task> acceptedDue;
@@ -57,6 +58,7 @@ class MyDayRitualSectionsCard extends StatefulWidget {
   final VoidCallback? onAddMissingDue;
   final VoidCallback? onAddMissingStarts;
   final VoidCallback? onAddOneMoreFocus;
+  final VoidCallback? onWhyThese;
 
   @override
   State<MyDayRitualSectionsCard> createState() =>
@@ -121,151 +123,166 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
       ...focusVisible,
     ]);
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      color: cs.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
-        child: Column(
-          children: [
-            if (widget.showCompletionMessage) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                decoration: BoxDecoration(
-                  color: cs.surface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (widget.showCompletionMessage) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.check_circle_rounded,
-                          size: 18,
-                          color: cs.primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            context.l10n.myDayRitualAllSetTitle,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Icon(
+                      Icons.check_circle_rounded,
+                      size: 18,
+                      color: cs.primary,
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      context.l10n.myDayRitualAllSetSubtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        context.l10n.myDayRitualAllSetTitle,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    if (widget.onAddOneMoreFocus != null)
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: widget.onAddOneMoreFocus,
-                          icon: const Icon(Icons.add_rounded, size: 18),
-                          label: Text(context.l10n.myDayRitualAddOneMoreFocus),
-                        ),
-                      ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 10),
-            ],
-            _GroupHeader(
-              title: l10n.myDayWhatMattersSectionTitle,
-              subtitle: l10n.myDayWhatMattersSubtitle,
+                const SizedBox(height: 6),
+                Text(
+                  context.l10n.myDayRitualAllSetSubtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (widget.onAddOneMoreFocus != null)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: widget.onAddOneMoreFocus,
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: Text(context.l10n.myDayRitualAddOneMoreFocus),
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 8),
-            _BucketSection(
-              title: l10n.myDayRitualTodaysFocusTitle,
-              acceptedTasks: widget.acceptedFocus,
-              counts: widget.focusCounts,
-              expanded: _focusExpanded,
-              onToggleExpanded: () =>
-                  setState(() => _focusExpanded = !_focusExpanded),
-              onTapOther: null,
-              otherLabel: l10n.myDayRitualNotInTodayLabel,
-              emptyTitle: l10n.myDayRitualFocusEmptyTitle,
-              emptySubtitle: l10n.myDayRitualFocusEmptySubtitle,
-              previewCount: _previewCount,
-              subtitleForTask: (task) {
-                final reason = widget.focusReasons[task.id];
-                if (reason == null || reason.trim().isEmpty) return null;
-                return reason;
-              },
-            ),
-            const SizedBox(height: 14),
-            _GroupHeader(
-              title: l10n.myDayWhatsWaitingSectionTitle,
-              subtitle: l10n.myDayWhatsWaitingSubtitle,
-            ),
-            const SizedBox(height: 8),
-            _BucketSection(
-              title: l10n.myDayDueSoonLabel,
-              acceptedTasks: widget.acceptedDue,
-              counts: widget.dueCounts,
-              expanded: _dueExpanded,
-              onToggleExpanded: () =>
-                  setState(() => _dueExpanded = !_dueExpanded),
-              onTapOther: widget.onAddMissingDue,
-              otherLabel: l10n.myDayRitualNotInTodayLabel,
-              emptyTitle: widget.dueCounts.otherCount == 0
-                  ? l10n.myDayRitualCaughtUpTitle
-                  : l10n.myDayRitualNothingAddedHereYetTitle,
-              emptySubtitle: widget.dueCounts.otherCount == 0
-                  ? l10n.myDayRitualDueEmptySubtitle
-                  : l10n.myDayRitualReviewAvailableAboveSubtitle,
-              previewCount: _previewCount,
-            ),
-            if (!hideStartsSection) ...[
-              const SizedBox(height: 10),
-              _BucketSection(
-                title: l10n.myDayAvailableToStartLabel,
-                acceptedTasks: widget.acceptedStarts,
-                counts: widget.startsCounts,
-                expanded: _startsExpanded,
-                onToggleExpanded: () =>
-                    setState(() => _startsExpanded = !_startsExpanded),
-                onTapOther: widget.onAddMissingStarts,
-                otherLabel: l10n.myDayRitualNotInTodayLabel,
-                emptyTitle: widget.startsCounts.otherCount == 0
-                    ? l10n.myDayRitualStartsEmptyTitle
-                    : l10n.myDayRitualNothingAddedHereYetTitle,
-                emptySubtitle: widget.startsCounts.otherCount == 0
-                    ? l10n.myDayRitualStartsEmptySubtitle
-                    : l10n.myDayRitualReviewAvailableAboveSubtitle,
-                previewCount: _previewCount,
-              ),
-            ],
-          ],
+          ),
+          const SizedBox(height: 12),
+        ],
+        _SectionHeader(
+          icon: Icons.eco_rounded,
+          title: l10n.myDayWhatMattersSectionTitle,
+          count: widget.focusCounts.acceptedCount,
+          subtitle: l10n.myDayWhatMattersSubtitle,
+          actionLabel: l10n.myDayWhyTheseAction,
+          onAction: widget.onWhyThese,
         ),
-      ),
+        const SizedBox(height: 6),
+        _BucketSection(
+          icon: Icons.wb_sunny_outlined,
+          title: l10n.myDayRitualTodaysFocusTitle,
+          acceptedTasks: widget.acceptedFocus,
+          counts: widget.focusCounts,
+          expanded: _focusExpanded,
+          showFocusBadge: true,
+          onToggleExpanded: () =>
+              setState(() => _focusExpanded = !_focusExpanded),
+          onTapOther: null,
+          otherLabel: l10n.myDayRitualNotInTodayLabel,
+          emptyTitle: l10n.myDayRitualFocusEmptyTitle,
+          emptySubtitle: l10n.myDayRitualFocusEmptySubtitle,
+          previewCount: _previewCount,
+          subtitleForTask: (task) {
+            final reason = widget.focusReasons[task.id];
+            if (reason == null || reason.trim().isEmpty) return null;
+            return reason;
+          },
+        ),
+        const SizedBox(height: 12),
+        Divider(color: cs.outlineVariant.withOpacity(0.5), height: 1),
+        const SizedBox(height: 12),
+        _SectionHeader(
+          icon: Icons.access_time_rounded,
+          title: l10n.myDayWhatsWaitingSectionTitle,
+          count: widget.dueCounts.otherCount + widget.startsCounts.otherCount,
+          subtitle: l10n.myDayWhatsWaitingSubtitle,
+        ),
+        const SizedBox(height: 8),
+        _TimeSensitiveSummaryRow(
+          dueCount: widget.dueCounts.otherCount,
+          plannedCount: widget.startsCounts.otherCount,
+          onTap: widget.onAddMissingDue ?? widget.onAddMissingStarts,
+        ),
+        const SizedBox(height: 6),
+        _BucketSection(
+          icon: Icons.warning_rounded,
+          title: l10n.myDayDueSoonLabel,
+          acceptedTasks: widget.acceptedDue,
+          counts: widget.dueCounts,
+          expanded: _dueExpanded,
+          onToggleExpanded: () =>
+              setState(() => _dueExpanded = !_dueExpanded),
+          onTapOther: widget.onAddMissingDue,
+          otherLabel: l10n.myDayRitualNotInTodayLabel,
+          emptyTitle: widget.dueCounts.otherCount == 0
+              ? l10n.myDayRitualCaughtUpTitle
+              : l10n.myDayRitualNothingAddedHereYetTitle,
+          emptySubtitle: widget.dueCounts.otherCount == 0
+              ? l10n.myDayRitualDueEmptySubtitle
+              : l10n.myDayRitualReviewAvailableAboveSubtitle,
+          previewCount: _previewCount,
+        ),
+        if (!hideStartsSection) ...[
+          const SizedBox(height: 10),
+          _BucketSection(
+            icon: Icons.event_note_rounded,
+            title: l10n.myDayAvailableToStartLabel,
+            acceptedTasks: widget.acceptedStarts,
+            counts: widget.startsCounts,
+            expanded: _startsExpanded,
+            onToggleExpanded: () =>
+                setState(() => _startsExpanded = !_startsExpanded),
+            onTapOther: widget.onAddMissingStarts,
+            otherLabel: l10n.myDayRitualNotInTodayLabel,
+            emptyTitle: widget.startsCounts.otherCount == 0
+                ? l10n.myDayRitualStartsEmptyTitle
+                : l10n.myDayRitualNothingAddedHereYetTitle,
+            emptySubtitle: widget.startsCounts.otherCount == 0
+                ? l10n.myDayRitualStartsEmptySubtitle
+                : l10n.myDayRitualReviewAvailableAboveSubtitle,
+            previewCount: _previewCount,
+          ),
+        ],
+      ],
     );
   }
 }
 
-class _GroupHeader extends StatelessWidget {
-  const _GroupHeader({
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.icon,
     required this.title,
+    required this.count,
     required this.subtitle,
+    this.actionLabel,
+    this.onAction,
   });
 
+  final IconData icon;
   final String title;
+  final int count;
   final String subtitle;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -273,22 +290,66 @@ class _GroupHeader extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
+      padding: const EdgeInsets.fromLTRB(0, 6, 0, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: theme.textTheme.titleSmall?.copyWith(
+            style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: cs.onSurfaceVariant,
-            ),
+          Row(
+            children: [
+              Icon(icon, size: 16, color: cs.primary),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant.withOpacity(0.85),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$count',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: onAction,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    textStyle: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  child: Text(actionLabel!),
+                ),
+              ],
+            ],
           ),
         ],
       ),
@@ -298,6 +359,7 @@ class _GroupHeader extends StatelessWidget {
 
 class _BucketSection extends StatelessWidget {
   const _BucketSection({
+    required this.icon,
     required this.title,
     required this.acceptedTasks,
     required this.counts,
@@ -307,10 +369,12 @@ class _BucketSection extends StatelessWidget {
     required this.emptySubtitle,
     required this.previewCount,
     required this.otherLabel,
+    this.showFocusBadge = false,
     this.onTapOther,
     this.subtitleForTask,
   });
 
+  final IconData icon;
   final String title;
   final List<Task> acceptedTasks;
   final MyDayBucketCounts counts;
@@ -321,6 +385,7 @@ class _BucketSection extends StatelessWidget {
   final String emptyTitle;
   final String emptySubtitle;
   final int previewCount;
+  final bool showFocusBadge;
 
   /// Optional per-task subtitle text.
   ///
@@ -393,7 +458,10 @@ class _BucketSection extends StatelessWidget {
         preset: selectionMode
             ? TasklyTaskRowPreset.bulkSelection(selected: isSelected)
             : const TasklyTaskRowPreset.standard(),
-        markers: TasklyTaskRowMarkers(pinned: task.isPinned),
+        markers: TasklyTaskRowMarkers(
+          pinned: task.isPinned,
+          focused: showFocusBadge,
+        ),
         actions: TasklyTaskRowActions(
           onTap: () {
             if (selection.shouldInterceptTapAsSelection()) {
@@ -421,15 +489,17 @@ class _BucketSection extends StatelessWidget {
     final rows = visible.map(buildRow).toList(growable: false);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+      padding: const EdgeInsets.fromLTRB(0, 10, 0, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
+              Icon(icon, size: 16, color: cs.onSurfaceVariant),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '$title · $universeCount',
+                  '$title${context.l10n.dotSeparator}$universeCount',
                   style: theme.textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -454,30 +524,34 @@ class _BucketSection extends StatelessWidget {
               type: MaterialType.transparency,
               child: InkWell(
                 onTap: suppressCountsLine ? onTapOther : null,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-                  decoration: BoxDecoration(
-                    color: cs.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: cs.outlineVariant.withOpacity(0.6),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
                     children: [
-                      Text(
-                        effectiveEmptyTitle,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      Icon(
+                        Icons.inbox_outlined,
+                        size: 18,
+                        color: cs.onSurfaceVariant,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        effectiveEmptySubtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              effectiveEmptyTitle,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              effectiveEmptySubtitle,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -495,11 +569,13 @@ class _BucketSection extends StatelessWidget {
             if (acceptedTasks.length > previewCount)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
+                child: Center(
+                  child: TextButton.icon(
                     onPressed: onToggleExpanded,
-                    child: Text(
+                    icon: Icon(
+                      expanded ? Icons.expand_less : Icons.expand_more,
+                    ),
+                    label: Text(
                       expanded
                           ? context.l10n.myDayRitualShowFewer
                           : context.l10n.myDayRitualShowMore(
@@ -515,6 +591,56 @@ class _BucketSection extends StatelessWidget {
               ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _TimeSensitiveSummaryRow extends StatelessWidget {
+  const _TimeSensitiveSummaryRow({
+    required this.dueCount,
+    required this.plannedCount,
+    this.onTap,
+  });
+
+  final int dueCount;
+  final int plannedCount;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (dueCount == 0 && plannedCount == 0) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  context.l10n.myDayTimeSensitiveSummary(
+                    dueCount,
+                    plannedCount,
+                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -591,3 +717,5 @@ class _CountsLine extends StatelessWidget {
     );
   }
 }
+
+

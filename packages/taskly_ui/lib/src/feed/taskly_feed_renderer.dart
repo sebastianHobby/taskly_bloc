@@ -281,23 +281,20 @@ class _HeaderRow extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    final text = Text(
-      row.title,
-      style: theme.textTheme.titleSmall?.copyWith(
-        color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.4,
-      ),
+    final titleStyle = theme.textTheme.titleMedium?.copyWith(
+      color: scheme.onSurface,
+      fontWeight: FontWeight.w700,
     );
 
-    final content = DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
+    final trailingStyle = theme.textTheme.labelSmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
+
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
           children: [
             if (row.leadingIcon != null) ...[
               Icon(
@@ -307,31 +304,36 @@ class _HeaderRow extends StatelessWidget {
               ),
               const SizedBox(width: 8),
             ],
-            Expanded(child: text),
-            if (row.trailingLabel != null) ...[
-              Text(
-                row.trailingLabel!,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.72),
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.2,
-                ),
+            Expanded(
+              child: Text(
+                row.title,
+                style: titleStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
+            ),
+            if (row.trailingLabel != null) ...[
+              Text(row.trailingLabel!, style: trailingStyle),
               const SizedBox(width: 8),
             ],
             if (row.trailingIcon != null)
               Icon(row.trailingIcon, size: 18, color: scheme.onSurfaceVariant),
           ],
         ),
-      ),
+        const SizedBox(height: 8),
+        Container(
+          height: 1,
+          color: scheme.outlineVariant.withValues(alpha: 0.55),
+        ),
+      ],
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
       child: row.onTap == null
           ? content
           : InkWell(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               onTap: row.onTap,
               child: content,
             ),
@@ -559,17 +561,11 @@ class _TaskRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final emphasis = row.emphasis;
-    final leadingAccentColor = emphasis == TasklyRowEmphasis.overdue
-        ? Theme.of(context).colorScheme.error
-        : null;
-
     return TaskEntityTile(
       model: row.data,
       preset: row.preset,
       markers: row.markers,
       actions: row.actions,
-      leadingAccentColor: leadingAccentColor,
     );
   }
 }
@@ -592,9 +588,6 @@ class _ProjectRow extends StatelessWidget {
         model: row.data,
         preset: row.preset,
         actions: row.actions,
-        leadingAccentColor: row.emphasis == TasklyRowEmphasis.overdue
-            ? Theme.of(context).colorScheme.error
-            : null,
       ),
     };
   }
@@ -648,7 +641,7 @@ class _ProjectGroupHeaderRow extends StatelessWidget {
             ),
             if (hasTrailingLabel) ...[
               Text(
-                trailingLabel ?? '',
+                trailingLabel,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: scheme.onSurfaceVariant.withValues(alpha: 0.72),
                   fontWeight: FontWeight.w600,
@@ -816,11 +809,17 @@ class _EmptyRow extends StatelessWidget {
 
     return Material(
       color: scheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         child: Row(
           children: [
+            Icon(
+              Icons.inbox_outlined,
+              size: 18,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+            ),
+            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 label,
@@ -837,6 +836,14 @@ class _EmptyRow extends StatelessWidget {
                 onPressed: onAddRequested,
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: const Text('Add'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  minimumSize: const Size(0, 36),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
               ),
           ],
         ),

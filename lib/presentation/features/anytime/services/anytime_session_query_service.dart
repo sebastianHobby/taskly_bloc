@@ -170,13 +170,7 @@ final class AnytimeSessionQueryService {
           projectId: projectId,
         ),
       ]),
-      AnytimeValueScope(:final valueId) => base.withAdditionalPredicates([
-        TaskValuePredicate(
-          operator: ValueOperator.hasAll,
-          valueIds: [valueId],
-          includeInherited: true,
-        ),
-      ]),
+      AnytimeValueScope() => base,
     };
   }
 

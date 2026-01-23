@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:taskly_domain/core.dart';
 
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
+import 'package:taskly_bloc/presentation/features/anytime/model/anytime_sort.dart';
 
 sealed class AnytimeScreenEffect {
   const AnytimeScreenEffect();
@@ -71,6 +72,12 @@ final class AnytimeFilterPrioritySet extends AnytimeScreenEvent {
   final bool enabled;
 }
 
+final class AnytimeSortOrderSet extends AnytimeScreenEvent {
+  const AnytimeSortOrderSet(this.order);
+
+  final AnytimeSortOrder order;
+}
+
 final class AnytimeSearchQueryChanged extends AnytimeScreenEvent {
   const AnytimeSearchQueryChanged(this.query);
 
@@ -117,6 +124,7 @@ sealed class AnytimeScreenState {
     required this.filterDueSoon,
     required this.filterOverdue,
     required this.filterPriority,
+    required this.sortOrder,
     this.effect,
   });
 
@@ -136,6 +144,7 @@ sealed class AnytimeScreenState {
   final bool filterDueSoon;
   final bool filterOverdue;
   final bool filterPriority;
+  final AnytimeSortOrder sortOrder;
 
   final AnytimeScreenEffect? effect;
 }
@@ -150,6 +159,7 @@ final class AnytimeScreenReady extends AnytimeScreenState {
     required super.filterDueSoon,
     required super.filterOverdue,
     required super.filterPriority,
+    required super.sortOrder,
     super.effect,
   });
 }
@@ -167,6 +177,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: false,
           filterOverdue: false,
           filterPriority: false,
+          sortOrder: AnytimeSortOrder.dueSoonest,
         ),
       ) {
     on<AnytimeFocusOnlyToggled>((event, emit) {
@@ -180,6 +191,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: state.filterDueSoon,
           filterOverdue: state.filterOverdue,
           filterPriority: state.filterPriority,
+          sortOrder: state.sortOrder,
         ),
       );
     });
@@ -194,6 +206,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: state.filterDueSoon,
           filterOverdue: state.filterOverdue,
           filterPriority: state.filterPriority,
+          sortOrder: state.sortOrder,
         ),
       );
     });
@@ -209,6 +222,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: state.filterDueSoon,
           filterOverdue: state.filterOverdue,
           filterPriority: state.filterPriority,
+          sortOrder: state.sortOrder,
         ),
       );
     });
@@ -224,6 +238,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: state.filterDueSoon,
           filterOverdue: state.filterOverdue,
           filterPriority: state.filterPriority,
+          sortOrder: state.sortOrder,
         ),
       );
     });
@@ -239,6 +254,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: event.enabled,
           filterOverdue: state.filterOverdue,
           filterPriority: state.filterPriority,
+          sortOrder: state.sortOrder,
         ),
       );
     });
@@ -254,6 +270,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: state.filterDueSoon,
           filterOverdue: event.enabled,
           filterPriority: state.filterPriority,
+          sortOrder: state.sortOrder,
         ),
       );
     });
@@ -269,6 +286,23 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: state.filterDueSoon,
           filterOverdue: state.filterOverdue,
           filterPriority: event.enabled,
+          sortOrder: state.sortOrder,
+        ),
+      );
+    });
+
+    on<AnytimeSortOrderSet>((event, emit) {
+      emit(
+        AnytimeScreenReady(
+          focusOnly: state.focusOnly,
+          showStartLaterItems: state.showStartLaterItems,
+          inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: state.collapsedValueIds,
+          searchQuery: state.searchQuery,
+          filterDueSoon: state.filterDueSoon,
+          filterOverdue: state.filterOverdue,
+          filterPriority: state.filterPriority,
+          sortOrder: event.order,
         ),
       );
     });
@@ -285,6 +319,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: state.filterDueSoon,
           filterOverdue: state.filterOverdue,
           filterPriority: state.filterPriority,
+          sortOrder: state.sortOrder,
           effect: AnytimeNavigateToTaskNew(
             defaultProjectId: defaultProjectId,
             defaultValueId: defaultValueId,
@@ -304,6 +339,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: state.filterDueSoon,
           filterOverdue: state.filterOverdue,
           filterPriority: state.filterPriority,
+          sortOrder: state.sortOrder,
           effect: AnytimeOpenProjectNew(
             openToValues: _scope is AnytimeValueScope,
           ),
@@ -324,6 +360,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: state.filterDueSoon,
           filterOverdue: state.filterOverdue,
           filterPriority: state.filterPriority,
+          sortOrder: state.sortOrder,
           effect: AnytimeNavigateToTaskEdit(taskId: id),
         ),
       );
@@ -342,6 +379,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
               filterDueSoon: state.filterDueSoon,
               filterOverdue: state.filterOverdue,
               filterPriority: state.filterPriority,
+              sortOrder: state.sortOrder,
             ),
           );
         case ProjectProjectGroupingRef(:final projectId):
@@ -357,6 +395,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
               filterDueSoon: state.filterDueSoon,
               filterOverdue: state.filterOverdue,
               filterPriority: state.filterPriority,
+              sortOrder: state.sortOrder,
               effect: AnytimeNavigateToProjectAnytime(projectId: id),
             ),
           );
@@ -382,6 +421,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: state.filterDueSoon,
           filterOverdue: state.filterOverdue,
           filterPriority: state.filterPriority,
+          sortOrder: state.sortOrder,
         ),
       );
     });
@@ -398,6 +438,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           filterDueSoon: state.filterDueSoon,
           filterOverdue: state.filterOverdue,
           filterPriority: state.filterPriority,
+          sortOrder: state.sortOrder,
         ),
       );
     });

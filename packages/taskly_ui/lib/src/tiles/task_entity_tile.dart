@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 
 import 'package:taskly_ui/src/models/value_chip_data.dart';
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
+import 'package:taskly_ui/src/primitives/meta_badges.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
+import 'package:taskly_ui/src/primitives/value_chip_widget.dart';
 
 /// Canonical Task tile (rows/cards) aligned to Stitch mockups.
 ///
@@ -29,6 +31,7 @@ class TaskEntityTile extends StatelessWidget {
 
   bool get _isSelectionPreset =>
       preset is TasklyTaskRowPresetPicker ||
+      preset is TasklyTaskRowPresetPickerAction ||
       preset is TasklyTaskRowPresetBulkSelection;
 
   bool get _isBulkSelectionPreset =>
@@ -36,8 +39,13 @@ class TaskEntityTile extends StatelessWidget {
 
   bool get _isPickerPreset => preset is TasklyTaskRowPresetPicker;
 
+  bool get _isPickerActionPreset => preset is TasklyTaskRowPresetPickerAction;
+
+  bool get _isPickerLikePreset => _isPickerPreset || _isPickerActionPreset;
+
   bool? get _selected => switch (preset) {
     TasklyTaskRowPresetPicker(:final selected) => selected,
+    TasklyTaskRowPresetPickerAction(:final selected) => selected,
     TasklyTaskRowPresetBulkSelection(:final selected) => selected,
     _ => null,
   };
@@ -66,6 +74,8 @@ class TaskEntityTile extends StatelessWidget {
 
     final VoidCallback? onTap = switch (preset) {
       TasklyTaskRowPresetPicker() => actions.onToggleSelected ?? actions.onTap,
+      TasklyTaskRowPresetPickerAction() =>
+        actions.onToggleSelected ?? actions.onTap,
       TasklyTaskRowPresetBulkSelection() =>
         actions.onToggleSelected ?? actions.onTap,
       _ => actions.onTap,
@@ -151,24 +161,11 @@ class TaskEntityTile extends StatelessWidget {
                       ] else ...[
                         const SizedBox(width: 24, height: 24),
                       ],
-                      SizedBox(width: effectiveCompact ? 8 : 10),
+                      SizedBox(width: effectiveCompact ? 6 : 8),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-            _TopRow(
-              leadingChip: model.leadingChip,
-              priority: model.meta.priority,
-                              selected: _isBulkSelectionPreset
-                                  ? _selected
-                                  : null,
-                              bulkSelectTooltip:
-                                  model.labels?.bulkSelectTooltip,
-                              bulkDeselectTooltip:
-                                  model.labels?.bulkDeselectTooltip,
-                              onToggleSelected: actions.onToggleSelected,
-                            ),
-                            const SizedBox(height: 4),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -194,6 +191,31 @@ class TaskEntityTile extends StatelessWidget {
                                     ),
                                   ),
                                 ),
+                                if (_isBulkSelectionPreset) ...[
+                                  const SizedBox(width: 6),
+                                  IconButton(
+                                    tooltip: (_selected ?? false)
+                                        ? (model.labels?.bulkDeselectTooltip ??
+                                            'Deselect')
+                                        : (model.labels?.bulkSelectTooltip ??
+                                            'Select'),
+                                    onPressed: actions.onToggleSelected,
+                                    icon: Icon(
+                                      (_selected ?? false)
+                                          ? Icons.check_circle_rounded
+                                          : Icons.radio_button_unchecked_rounded,
+                                      color: (_selected ?? false)
+                                          ? scheme.primary
+                                          : scheme.onSurfaceVariant,
+                                    ),
+                                    style: IconButton.styleFrom(
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      minimumSize: const Size(40, 40),
+                                      padding: const EdgeInsets.all(8),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                             if (hasSupportingText) ...[
@@ -206,13 +228,23 @@ class TaskEntityTile extends StatelessWidget {
                               ),
                             ],
                             const SizedBox(height: 6),
-                            _PlanDueRow(meta: model.meta, tokens: tokens),
+                            _MetaRow(
+                              model: model,
+                              markers: markers,
+                              tokens: tokens,
+                            ),
                           ],
                         ),
                       ),
-                      if (_isPickerPreset) ...[
+                      if (_isPickerLikePreset) ...[
                         const SizedBox(width: 8),
-                        if (showCompletedStatusPill)
+                        if (_isPickerActionPreset)
+                          _PickerActionButton(
+                            selected: _selected ?? false,
+                            enabled: actions.onToggleSelected != null,
+                            onPressed: actions.onToggleSelected,
+                          )
+                        else if (showCompletedStatusPill)
                           _PickerStatusPill(
                             label: model.labels!.completedStatusLabel!.trim(),
                           )
@@ -223,22 +255,24 @@ class TaskEntityTile extends StatelessWidget {
                             enabled: actions.onToggleSelected != null,
                             onPressed: actions.onToggleSelected,
                           ),
-        if (preset is TasklyTaskRowPresetPicker &&
-            actions.onSnoozeRequested != null) ...[
-                          const SizedBox(width: 8),
-                          IconButton(
-                            tooltip: model.labels?.snoozeTooltip ?? 'Snooze',
+                        if (_isPickerPreset &&
+                            actions.onSnoozeRequested != null) ...[
+                          const SizedBox(width: 6),
+                          TextButton(
                             onPressed: actions.onSnoozeRequested,
-                            style: IconButton.styleFrom(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 6,
+                              ),
+                              minimumSize: const Size(0, 32),
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              minimumSize: const Size(40, 40),
-                              padding: const EdgeInsets.all(8),
                             ),
-                            icon: Icon(
-                              Icons.snooze,
-                              size: 20,
-                              color: scheme.onSurfaceVariant.withValues(
-                                alpha: 0.85,
+                            child: Text(
+                              model.labels?.snoozeTooltip ?? 'Snooze',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
@@ -258,63 +292,6 @@ class TaskEntityTile extends StatelessWidget {
       key: Key('task-${model.id}'),
       opacity: opacity,
       child: tile,
-    );
-  }
-}
-
-class _TopRow extends StatelessWidget {
-      const _TopRow({
-    required this.leadingChip,
-    required this.priority,
-    required this.selected,
-    required this.bulkSelectTooltip,
-    required this.bulkDeselectTooltip,
-    required this.onToggleSelected,
-  });
-
-  final ValueChipData? leadingChip;
-  final int? priority;
-
-  final bool? selected;
-  final String? bulkSelectTooltip;
-  final String? bulkDeselectTooltip;
-  final VoidCallback? onToggleSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final tokens = TasklyEntityTileTheme.of(context);
-
-    final chip = leadingChip;
-
-    Widget? selectionWidget;
-    if (selected != null) {
-      selectionWidget = IconButton(
-        tooltip: (selected ?? false)
-            ? (bulkDeselectTooltip ?? 'Deselect')
-            : (bulkSelectTooltip ?? 'Select'),
-        onPressed: onToggleSelected,
-        icon: Icon(
-          (selected ?? false)
-              ? Icons.check_circle_rounded
-              : Icons.radio_button_unchecked_rounded,
-          color: (selected ?? false) ? scheme.primary : scheme.onSurfaceVariant,
-        ),
-        style: IconButton.styleFrom(
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          minimumSize: const Size(40, 40),
-          padding: const EdgeInsets.all(8),
-        ),
-      );
-    }
-
-    return Row(
-      children: [
-        if (chip != null) _ValueChip(data: chip, textStyle: tokens.chipText),
-        const Spacer(),
-        _PriorityBadge(priority: priority, tokens: tokens),
-        ...?(selectionWidget == null ? null : [selectionWidget]),
-      ],
     );
   }
 }
@@ -385,85 +362,66 @@ class _SupportingText extends StatelessWidget {
   }
 }
 
-class _PlanDueRow extends StatelessWidget {
-  const _PlanDueRow({required this.meta, required this.tokens});
+class _MetaRow extends StatelessWidget {
+  const _MetaRow({
+    required this.model,
+    required this.markers,
+    required this.tokens,
+  });
 
-  final TasklyEntityMetaData meta;
+  final TasklyTaskRowData model;
+  final TasklyTaskRowMarkers markers;
   final TasklyEntityTileTheme tokens;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final meta = model.meta;
+
+    final valueChip = model.leadingChip;
+    final hasValue = valueChip != null;
+    final hasFocus = markers.focused;
 
     final plan = meta.startDateLabel?.trim();
     final due = meta.deadlineDateLabel?.trim();
 
     final hasPlan = plan != null && plan.isNotEmpty;
     final hasDue = due != null && due.isNotEmpty;
+    final hasPriority = meta.priority != null;
+    final hasMeta = hasPriority || hasPlan || hasDue;
 
-    if (!hasPlan && !hasDue) return const SizedBox.shrink();
+    if (!hasValue && !hasFocus && !hasMeta) {
+      return const SizedBox.shrink();
+    }
 
     final dueColor = meta.isOverdue || meta.isDueToday
         ? scheme.error
         : scheme.onSurfaceVariant;
 
-    final valueStyle = tokens.metaValue.copyWith(color: scheme.onSurface);
+    final valueStyle = tokens.metaValue.copyWith(color: scheme.onSurfaceVariant);
     final dueValueStyle = tokens.metaValue.copyWith(color: dueColor);
 
-    Widget item({
-      required IconData icon,
-      required TextStyle valueStyle,
-      required String value,
-      required Color iconColor,
-    }) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: iconColor),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              value,
-              style: valueStyle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              softWrap: false,
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Row(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        if (hasValue) ValueChip(data: valueChip!),
+        if (hasFocus) const _FocusPill(),
+        if (hasPriority) PriorityPill(priority: meta.priority!),
         if (hasPlan)
-          Flexible(
-            fit: FlexFit.loose,
-            child: item(
-              icon: Icons.calendar_today_rounded,
-              valueStyle: valueStyle,
-              value: plan,
-              iconColor: scheme.onSurfaceVariant.withValues(alpha: 0.8),
-            ),
+          MetaIconLabel(
+            icon: Icons.calendar_today_rounded,
+            label: plan,
+            color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+            textStyle: valueStyle,
           ),
-        if (hasPlan && hasDue) ...[
-          const SizedBox(width: 12),
-          Container(
-            width: 1,
-            height: 12,
-            color: scheme.outlineVariant.withValues(alpha: 0.7),
-          ),
-          const SizedBox(width: 12),
-        ],
         if (hasDue)
-          Flexible(
-            fit: FlexFit.loose,
-            child: item(
-              icon: Icons.flag_rounded,
-              valueStyle: dueValueStyle,
-              value: due,
-              iconColor: dueColor,
-            ),
+          MetaIconLabel(
+            icon: Icons.flag_rounded,
+            label: due,
+            color: dueColor,
+            textStyle: dueValueStyle,
           ),
       ],
     );
@@ -524,91 +482,6 @@ class _CompletionControl extends StatelessWidget {
   }
 }
 
-class _ValueChip extends StatelessWidget {
-  const _ValueChip({required this.data, required this.textStyle});
-
-  final ValueChipData data;
-  final TextStyle textStyle;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final tokens = TasklyEntityTileTheme.of(context);
-    final isDark = scheme.brightness == Brightness.dark;
-
-    final fg = data.color;
-    final bg = data.color.withValues(alpha: isDark ? 0.22 : 0.14);
-
-    return Container(
-      padding: tokens.chipPadding,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(tokens.chipRadius),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(data.icon, size: 12, color: fg),
-          const SizedBox(width: 6),
-          Text(
-            data.label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textStyle.copyWith(color: fg),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PriorityBadge extends StatelessWidget {
-  const _PriorityBadge({required this.priority, required this.tokens});
-
-  final int? priority;
-  final TasklyEntityTileTheme tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = priority;
-    if (p == null) return const SizedBox.shrink();
-
-    final scheme = Theme.of(context).colorScheme;
-    final String label = 'P$p';
-
-    final Color bg;
-    final Color fg;
-    final BorderSide? border;
-
-    if (p == 1) {
-      bg = scheme.error;
-      fg = scheme.onError;
-      border = null;
-    } else if (p == 2) {
-      bg = scheme.surfaceContainerHighest.withValues(alpha: 0.95);
-      fg = scheme.onSurfaceVariant.withValues(alpha: 0.85);
-      border = null;
-    } else {
-      bg = scheme.surfaceContainerHighest.withValues(alpha: 0.65);
-      fg = scheme.onSurfaceVariant.withValues(alpha: 0.7);
-      border = null;
-    }
-
-    return Container(
-      padding: tokens.badgePadding,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(tokens.badgeRadius),
-        border: border == null ? null : Border.fromBorderSide(border),
-      ),
-      child: Text(
-        label,
-        style: tokens.priorityBadge.copyWith(color: fg),
-      ),
-    );
-  }
-}
-
 class _PinnedGlyph extends StatelessWidget {
   const _PinnedGlyph({required this.label});
 
@@ -630,6 +503,45 @@ class _PinnedGlyph extends StatelessWidget {
             color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FocusPill extends StatelessWidget {
+  const _FocusPill();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.7),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.gps_fixed_rounded,
+            size: 12,
+            color: scheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'FOCUS',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: scheme.onSurfaceVariant,
+              letterSpacing: 0.4,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -658,35 +570,54 @@ class _PickerSelectionPill extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final Color bg = selected
-        ? scheme.primaryContainer
-        : scheme.surfaceContainerHighest.withValues(alpha: 0.9);
-
-    final Color fg = selected ? scheme.onPrimaryContainer : scheme.onSurface;
+    final Color fg = selected ? scheme.primary : scheme.onSurfaceVariant;
 
     return TextButton(
       onPressed: enabled ? onPressed : null,
       style: TextButton.styleFrom(
-        backgroundColor: bg,
         foregroundColor: fg,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        minimumSize: const Size(0, 40),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        minimumSize: const Size(0, 32),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-          side: selected
-              ? BorderSide.none
-              : BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.8)),
-        ),
       ),
       child: Text(
         effectiveLabel,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           letterSpacing: 0.2,
         ),
+      ),
+    );
+  }
+}
+
+class _PickerActionButton extends StatelessWidget {
+  const _PickerActionButton({
+    required this.selected,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final bool selected;
+  final bool enabled;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final bg = selected ? scheme.primaryContainer : scheme.primary;
+    final fg = selected ? scheme.primary : scheme.onPrimary;
+
+    return IconButton(
+      onPressed: enabled ? onPressed : null,
+      icon: Icon(selected ? Icons.check_rounded : Icons.add_rounded),
+      style: IconButton.styleFrom(
+        backgroundColor: bg,
+        foregroundColor: fg,
+        minimumSize: const Size(36, 36),
+        padding: const EdgeInsets.all(6),
       ),
     );
   }

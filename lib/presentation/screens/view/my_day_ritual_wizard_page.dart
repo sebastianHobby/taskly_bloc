@@ -131,7 +131,7 @@ class _RitualBody extends StatelessWidget {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverToBoxAdapter(
             child: _RitualCard(
               dayKeyUtc: data.dayKeyUtc,
@@ -251,6 +251,12 @@ class _RitualBottomBar extends StatelessWidget {
                           MyDayRitualConfirm(closeOnSuccess: closeOnConfirm),
                         );
                       },
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
                 child: Text(label),
               ),
             ),
@@ -273,42 +279,26 @@ class _HeroHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                theme.colorScheme.primary.withOpacity(0.12),
-                theme.colorScheme.surface,
-              ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -376,16 +366,20 @@ class _RitualCardState extends State<_RitualCard> {
   void initState() {
     super.initState();
     _curatedExpanded = false;
+    _curatedCollapsed = false;
     _completedExpanded = !widget.isResume;
     _snoozedExpanded = false;
 
     _dueExpanded = false;
     _startsExpanded = false;
+    _whatsWaitingCollapsed = false;
     if (widget.initialSection == MyDayRitualWizardInitialSection.due) {
       _dueExpanded = true;
+      _whatsWaitingCollapsed = false;
     }
     if (widget.initialSection == MyDayRitualWizardInitialSection.starts) {
       _startsExpanded = true;
+      _whatsWaitingCollapsed = false;
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -446,6 +440,8 @@ class _RitualCardState extends State<_RitualCard> {
   late bool _snoozedExpanded;
   late bool _dueExpanded;
   late bool _startsExpanded;
+  late bool _curatedCollapsed;
+  late bool _whatsWaitingCollapsed;
 
   String _supportingTextForWhatMattersTask(BuildContext context, Task task) {
     final l10n = context.l10n;
@@ -472,7 +468,7 @@ class _RitualCardState extends State<_RitualCard> {
 
     final base = l10n.myDaySupportsValueLabel(primaryValueName);
     if (suffixes.isEmpty) return base;
-    return '$base · ${suffixes.join(' · ')}';
+    return '$base · ${suffixes.join('')}';
   }
 
   String _signalsSummaryForTasks(BuildContext context, List<Task> tasks) {
@@ -831,17 +827,12 @@ class _RitualCardState extends State<_RitualCard> {
 
     final curatedVisibleIds = curatedVisible.map((t) => t.id).toSet();
 
-    return Card(
-      elevation: 0,
-      color: cs.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
-        child: Column(
-          children: [
+    return Column(
+      children: [
             if (completedCount > 0) ...[
               if (!_completedExpanded)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
@@ -858,6 +849,7 @@ class _RitualCardState extends State<_RitualCard> {
                 )
               else ...[
                 _SubsectionHeader(
+                  icon: Icons.check_circle_outline,
                   title: context.l10n.myDayCompletedSectionTitle,
                   count: completedCount,
                   action: TextButton(
@@ -889,7 +881,7 @@ class _RitualCardState extends State<_RitualCard> {
                 ),
               ],
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Divider(
                   color: cs.outlineVariant,
                   thickness: 1,
@@ -913,9 +905,14 @@ class _RitualCardState extends State<_RitualCard> {
                 ),
                 onPickAllCurated: () =>
                     _confirmPickAllCurated(context, count: curatedCount),
+                isCollapsed: _curatedCollapsed,
+                onToggleCollapsed: () =>
+                    setState(() => _curatedCollapsed = !_curatedCollapsed),
               ),
             ),
-            if (needsSetup)
+            if (_curatedCollapsed)
+              const SizedBox.shrink()
+            else if (needsSetup)
               _SuggestedSetupCard(gateState: widget.gateState!)
             else if (curatedCount == 0)
               _EmptyPanel(
@@ -965,6 +962,7 @@ class _RitualCardState extends State<_RitualCard> {
                               return Column(
                                 children: [
                                   _MiniGroupHeader(
+                                    icon: Icons.label_outline,
                                     title: key,
                                     count: groupTasks.length,
                                   ),
@@ -1012,7 +1010,7 @@ class _RitualCardState extends State<_RitualCard> {
                         (t) => widget.selected.contains(t.id),
                       ))
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -1055,7 +1053,7 @@ class _RitualCardState extends State<_RitualCard> {
               ),
 
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Divider(
                 color: cs.outlineVariant,
                 thickness: 1,
@@ -1068,6 +1066,7 @@ class _RitualCardState extends State<_RitualCard> {
               child: Column(
                 children: [
                   _SubsectionHeader(
+                    icon: Icons.access_time_rounded,
                     title: l10n.myDayWhatsWaitingSectionTitle,
                     count: whatsWaitingCount,
                     subtitle: l10n.myDayWhatsWaitingSubtitle,
@@ -1087,17 +1086,27 @@ class _RitualCardState extends State<_RitualCard> {
                       ),
                       child: Text(l10n.myDayWhyTheseAction),
                     ),
+                    isCollapsed: _whatsWaitingCollapsed,
+                    onToggleCollapsed: () => setState(
+                      () => _whatsWaitingCollapsed = !_whatsWaitingCollapsed,
+                    ),
                   ),
-                  if (whatsWaitingCount == 0)
-                    _SectionEmptyPanel(
-                      title: l10n.myDayWhatsWaitingSectionTitle,
-                      description: l10n.myDayYoureCaughtUpBody,
-                    )
-                  else
-                    Column(
-                      children: [
-                        if (due.isNotEmpty)
-                          () {
+                  if (!_whatsWaitingCollapsed) ...[
+                    _TimeSensitiveSummaryRow(
+                      dueCount: due.length,
+                      plannedCount: starts.length,
+                      onTap: () => setState(() => _dueExpanded = true),
+                    ),
+                    if (whatsWaitingCount == 0)
+                      _SectionEmptyPanel(
+                        title: l10n.myDayWhatsWaitingSectionTitle,
+                        description: l10n.myDayYoureCaughtUpBody,
+                      )
+                    else
+                      Column(
+                        children: [
+                          if (due.isNotEmpty)
+                            () {
                             final dueVisible = _dueExpanded
                                 ? due
                                 : due
@@ -1116,6 +1125,7 @@ class _RitualCardState extends State<_RitualCard> {
                             return Column(
                               children: [
                                 _MiniGroupHeader(
+                                  icon: Icons.warning_rounded,
                                   title: l10n.myDayDueSoonLabel,
                                   count: due.length,
                                 ),
@@ -1172,6 +1182,7 @@ class _RitualCardState extends State<_RitualCard> {
                             return Column(
                               children: [
                                 _MiniGroupHeader(
+                                  icon: Icons.event_note_rounded,
                                   title: l10n.myDayAvailableToStartLabel,
                                   count: starts.length,
                                 ),
@@ -1215,7 +1226,7 @@ class _RitualCardState extends State<_RitualCard> {
             ),
 
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Divider(
                 color: cs.outlineVariant,
                 thickness: 1,
@@ -1226,7 +1237,7 @@ class _RitualCardState extends State<_RitualCard> {
             if (snoozedCount > 0) ...[
               if (!_snoozedExpanded)
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
@@ -1242,6 +1253,7 @@ class _RitualCardState extends State<_RitualCard> {
                 )
               else ...[
                 _SubsectionHeader(
+                  icon: Icons.snooze_rounded,
                   title: context.l10n.myDaySnoozedSectionTitle,
                   count: snoozedCount,
                   action: TextButton(
@@ -1262,7 +1274,7 @@ class _RitualCardState extends State<_RitualCard> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     children: [
                       for (final task in widget.snoozed)
@@ -1367,41 +1379,70 @@ enum _SuggestedMenuAction { pickAllPicks, suggestionSettings }
 
 class _SubsectionHeader extends StatelessWidget {
   const _SubsectionHeader({
+    required this.icon,
     required this.title,
     required this.count,
     this.subtitle,
     this.action,
+    this.isCollapsed = false,
+    this.onToggleCollapsed,
   });
-
+  final IconData icon;
   final String title;
   final int count;
   final String? subtitle;
-
   /// Optional trailing action widget (e.g. overflow menu).
   ///
   /// When provided, this is rendered instead of [actionLabel]/[onAction].
   final Widget? action;
-
+  final bool isCollapsed;
+  final VoidCallback? onToggleCollapsed;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              Icon(icon, size: 16, color: cs.primary),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '$title · $count',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              ?action,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$count',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (action != null) action!,
+              if (onToggleCollapsed != null) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  onPressed: onToggleCollapsed,
+                  icon: Icon(
+                    isCollapsed ? Icons.expand_more : Icons.expand_less,
+                  ),
+                ),
+              ],
             ],
           ),
           if (subtitle != null) ...[
@@ -1410,10 +1451,68 @@ class _SubsectionHeader extends StatelessWidget {
               subtitle!,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
+          const SizedBox(height: 8),
+          Container(
+            height: 1,
+            color: cs.outlineVariant.withOpacity(0.5),
+          ),
         ],
+      ),
+    );
+  }
+}
+class _TimeSensitiveSummaryRow extends StatelessWidget {
+  const _TimeSensitiveSummaryRow({
+    required this.dueCount,
+    required this.plannedCount,
+    this.onTap,
+  });
+
+  final int dueCount;
+  final int plannedCount;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (dueCount == 0 && plannedCount == 0) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    context.l10n.myDayTimeSensitiveSummary(
+                      dueCount,
+                      plannedCount,
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1421,10 +1520,12 @@ class _SubsectionHeader extends StatelessWidget {
 
 class _MiniGroupHeader extends StatelessWidget {
   const _MiniGroupHeader({
+    required this.icon,
     required this.title,
     required this.count,
   });
 
+  final IconData icon;
   final String title;
   final int count;
 
@@ -1434,15 +1535,31 @@ class _MiniGroupHeader extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 2),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 2),
       child: Row(
         children: [
+          Icon(icon, size: 16, color: cs.onSurfaceVariant),
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
-              '$title ($count)',
+              title,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: cs.onSurfaceVariant,
                 fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              '$count',
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: cs.onSurfaceVariant,
               ),
             ),
           ),
@@ -1460,34 +1577,55 @@ class _SuggestedHeader extends StatelessWidget {
     required this.onWhyThesePressed,
     required this.onOpenSuggestionSettings,
     required this.onPickAllCurated,
+    required this.isCollapsed,
+    required this.onToggleCollapsed,
   });
-
   final int count;
   final bool needsSetup;
   final VoidCallback onAddValues;
   final VoidCallback onWhyThesePressed;
   final VoidCallback onOpenSuggestionSettings;
   final VoidCallback onPickAllCurated;
-
+  final bool isCollapsed;
+  final VoidCallback onToggleCollapsed;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              Icon(Icons.eco_rounded, size: 16, color: theme.colorScheme.primary),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '${l10n.myDayWhatMattersSectionTitle} · $count',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
+                  l10n.myDayWhatMattersSectionTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                    0.7,
+                  ),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$count',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               if (!needsSetup)
                 TextButton(
                   onPressed: onWhyThesePressed,
@@ -1540,6 +1678,12 @@ class _SuggestedHeader extends StatelessWidget {
                     ),
                   ),
                 ),
+              IconButton(
+                onPressed: onToggleCollapsed,
+                icon: Icon(
+                  isCollapsed ? Icons.expand_more : Icons.expand_less,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -1549,12 +1693,16 @@ class _SuggestedHeader extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          const SizedBox(height: 8),
+          Container(
+            height: 1,
+            color: theme.colorScheme.outlineVariant.withOpacity(0.5),
+          ),
         ],
       ),
     );
   }
 }
-
 class _SuggestedSetupCard extends StatelessWidget {
   const _SuggestedSetupCard({required this.gateState});
 
@@ -1646,10 +1794,14 @@ class _SectionEmptyPanel extends StatelessWidget {
   const _SectionEmptyPanel({
     required this.title,
     required this.description,
+    this.actionLabel,
+    this.onAction,
   });
 
   final String title;
   final String description;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -1657,34 +1809,69 @@ class _SectionEmptyPanel extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: BoxDecoration(
           color: cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: cs.outlineVariant),
+          border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Text(
-              title,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
+            Icon(
+              Icons.inbox_outlined,
+              size: 18,
+              color: cs.onSurfaceVariant,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: cs.onSurfaceVariant,
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  minimumSize: const Size(0, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  actionLabel!,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
-            ),
+            ],
           ],
-        ),
-      ),
+      ],
     );
   }
 }
@@ -1757,7 +1944,9 @@ class _TaskTileColumn extends StatelessWidget {
           return TasklyRowSpec.task(
             key: 'myday-picker-${task.id}',
             data: updatedData,
-            preset: TasklyTaskRowPreset.picker(selected: isSelected),
+            preset: enableSelection
+                ? TasklyTaskRowPreset.pickerAction(selected: isSelected)
+                : TasklyTaskRowPreset.picker(selected: isSelected),
             markers: TasklyTaskRowMarkers(pinned: task.isPinned),
             actions: TasklyTaskRowActions(
               onTap: !enableSelection
@@ -1788,13 +1977,10 @@ class _TaskTileColumn extends StatelessWidget {
         }(),
     ];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: TasklyFeedRenderer.buildSection(
-        TasklySectionSpec.standardList(
-          id: 'myday-plan-picker',
-          rows: rows,
-        ),
+    return TasklyFeedRenderer.buildSection(
+      TasklySectionSpec.standardList(
+        id: 'myday-plan-picker',
+        rows: rows,
       ),
     );
   }
@@ -1908,12 +2094,12 @@ class _ShowMoreRow extends StatelessWidget {
         : context.l10n.labelWithTotal(labelCollapsed, totalCount);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: TextButton(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+      child: Center(
+        child: TextButton.icon(
           onPressed: onPressed,
-          child: Text(
+          icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more),
+          label: Text(
             label,
             style: theme.textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.w600,
@@ -1970,3 +2156,6 @@ class _EmptyPanel extends StatelessWidget {
     );
   }
 }
+
+
+

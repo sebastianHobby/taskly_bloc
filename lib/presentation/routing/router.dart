@@ -7,6 +7,7 @@ import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/presentation/routing/not_found_route_page.dart';
 import 'package:taskly_bloc/presentation/routing/route_codec.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_editor_route_page.dart';
+import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_history_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
@@ -19,7 +20,7 @@ import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_sc
 import 'package:taskly_domain/taskly_domain.dart'
     show ProjectScheduledScope, ValueScheduledScope;
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
-import 'package:taskly_bloc/presentation/screens/view/my_day_entry_gate.dart';
+import 'package:taskly_bloc/presentation/screens/view/my_day_page.dart';
 import 'package:taskly_bloc/presentation/features/attention/view/attention_inbox_page.dart';
 import 'package:taskly_bloc/presentation/features/attention/view/attention_rules_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
@@ -34,9 +35,7 @@ import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 /// - **Entity editors (NAV-01)**: `/<entityType>/new` and `/<entityType>/:id/edit`
 /// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
 ///
-/// Note: legacy entity detail routes like `/project/:id` and `/value/:id` are
-/// intentionally not supported (no redirects); the canonical entrypoints are the
-/// editor routes.
+/// Note: entity editor routes remain the canonical edit entrypoints.
 final router = GoRouter(
   initialLocation: Routing.screenPath('my_day'),
   observers: [
@@ -99,7 +98,7 @@ final router = GoRouter(
         GoRoute(
           path: Routing.screenPath('my_day'),
           builder: (_, __) {
-            return const MyDayEntryGate();
+            return const MyDayPage();
           },
         ),
         GoRoute(
@@ -118,9 +117,7 @@ final router = GoRouter(
           ),
           builder: (_, state) {
             final id = state.pathParameters['id']!;
-            return AnytimePage(
-              scope: AnytimeScope.project(projectId: id),
-            );
+            return ProjectDetailPage(projectId: id);
           },
         ),
         GoRoute(
@@ -137,6 +134,18 @@ final router = GoRouter(
               scope: AnytimeScope.value(valueId: id),
             );
           },
+        ),
+        GoRoute(
+          path: '/project/:id/detail',
+          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+            state,
+            paramName: 'id',
+            entityType: 'project',
+            operation: 'route_param_decode_project_detail',
+          ),
+          builder: (_, state) => ProjectDetailPage(
+            projectId: state.pathParameters['id']!,
+          ),
         ),
         GoRoute(
           path: Routing.screenPath('scheduled'),

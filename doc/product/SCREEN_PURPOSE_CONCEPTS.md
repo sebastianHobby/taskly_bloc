@@ -104,6 +104,12 @@ be visually consistent across lenses.
 - Provide a semantic label (e.g., “In Focus”) so the status is perceivable via
   screen readers.
 
+### Layout consistency
+
+**Feed edge padding**
+- Feed screens use 16dp horizontal padding on mobile. Apply this consistently
+  to feed rows, section headers, and empty-state rows.
+
 ## Notes / Non-goals
 
 - “Blocked” is not modeled yet. Anytime is defined as an actionable backlog in

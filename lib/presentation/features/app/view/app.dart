@@ -236,6 +236,8 @@ class _AuthenticatedApp extends StatelessWidget {
             create: (_) => InitialSyncGateBloc(
               coordinator: getIt<AuthenticatedAppServicesCoordinator>(),
               initialSyncService: getIt<InitialSyncService>(),
+              taskRepository: getIt<TaskRepositoryContract>(),
+              valueRepository: getIt<ValueRepositoryContract>(),
             )..add(const InitialSyncGateStarted()),
           ),
           BlocProvider<MyDayPrewarmCubit>(
@@ -278,7 +280,15 @@ class _AuthenticatedApp extends StatelessWidget {
                     seedColor: state.seedColor,
                   );
 
-                  if (gateState is! InitialSyncGateReady) {
+                  final shouldBlockOnSync = switch (gateState) {
+                    InitialSyncGateReady() => false,
+                    InitialSyncGateFailure() => true,
+                    InitialSyncGateInProgress(:final progress) =>
+                      !(progress?.hasSynced ?? false) &&
+                      progress?.lastSyncedAt == null,
+                  };
+
+                  if (shouldBlockOnSync) {
                     return MaterialApp(
                       scaffoldMessengerKey: App.scaffoldMessengerKey,
                       theme: commonTheme,

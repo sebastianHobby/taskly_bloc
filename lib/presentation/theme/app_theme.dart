@@ -481,11 +481,11 @@ class TasklyChromeTheme extends ThemeExtension<TasklyChromeTheme> {
     TextStyle base(TextStyle? s) => s ?? const TextStyle();
 
     return TasklyChromeTheme(
-      anytimeAppBarHeight: 56,
-      scheduledAppBarHeight: 56,
-      iconButtonMinSize: 40,
-      iconButtonPadding: const EdgeInsets.all(8),
-      iconButtonBackgroundAlpha: 0.0,
+      anytimeAppBarHeight: 60,
+      scheduledAppBarHeight: 60,
+      iconButtonMinSize: 44,
+      iconButtonPadding: const EdgeInsets.all(10),
+      iconButtonBackgroundAlpha: 0.08,
       anytimeHeaderPadding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
       valueRowHeight: 68,
       valueItemWidth: 72,
@@ -503,12 +503,12 @@ class TasklyChromeTheme extends ThemeExtension<TasklyChromeTheme> {
         fontWeight: FontWeight.w700,
       ),
       filterRowSpacing: 8,
-      filterPillPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      filterPillRadius: 10,
+      filterPillPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      filterPillRadius: 8,
       filterPillIconSize: 14,
       filterPillTextStyle: base(textTheme.labelSmall).copyWith(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
         letterSpacing: 0.2,
       ),
       monthStripHeight: 42,

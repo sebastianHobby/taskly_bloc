@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
-import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
@@ -17,10 +16,11 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/features/anytime/model/anytime_sort.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_models.dart';
 
@@ -69,6 +69,19 @@ class _AnytimeViewState extends State<_AnytimeView> {
   bool _isSearching = false;
 
   AnytimeScope? get scope => widget.scope;
+
+  @override
+  void initState() {
+    super.initState();
+    final dueWindowDays = context
+        .read<GlobalSettingsBloc>()
+        .state
+        .settings
+        .myDayDueWindowDays;
+    context.read<AnytimeFeedBloc>().add(
+          AnytimeFeedDueWindowDaysChanged(days: dueWindowDays),
+        );
+  }
 
   @override
   void dispose() {
@@ -138,14 +151,6 @@ class _AnytimeViewState extends State<_AnytimeView> {
     return MultiBlocListener(
       listeners: [
         BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
-          listenWhen: (prev, next) => prev.focusOnly != next.focusOnly,
-          listener: (context, state) {
-            context.read<AnytimeFeedBloc>().add(
-              AnytimeFeedFocusOnlyChanged(enabled: state.focusOnly),
-            );
-          },
-        ),
-        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
           listenWhen: (prev, next) =>
               prev.showStartLaterItems != next.showStartLaterItems,
           listener: (context, state) {
@@ -161,6 +166,53 @@ class _AnytimeViewState extends State<_AnytimeView> {
           listener: (context, state) {
             context.read<AnytimeFeedBloc>().add(
               AnytimeFeedSearchQueryChanged(query: state.searchQuery),
+            );
+          },
+        ),
+        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
+          listenWhen: (prev, next) =>
+              prev.filterDueSoon != next.filterDueSoon,
+          listener: (context, state) {
+            context.read<AnytimeFeedBloc>().add(
+              AnytimeFeedFilterDueSoonChanged(enabled: state.filterDueSoon),
+            );
+          },
+        ),
+        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
+          listenWhen: (prev, next) =>
+              prev.filterOverdue != next.filterOverdue,
+          listener: (context, state) {
+            context.read<AnytimeFeedBloc>().add(
+              AnytimeFeedFilterOverdueChanged(enabled: state.filterOverdue),
+            );
+          },
+        ),
+        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
+          listenWhen: (prev, next) =>
+              prev.filterPriority != next.filterPriority,
+          listener: (context, state) {
+            context.read<AnytimeFeedBloc>().add(
+              AnytimeFeedFilterPriorityChanged(enabled: state.filterPriority),
+            );
+          },
+        ),
+        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
+          listenWhen: (prev, next) => prev.sortOrder != next.sortOrder,
+          listener: (context, state) {
+            context.read<AnytimeFeedBloc>().add(
+              AnytimeFeedSortOrderChanged(order: state.sortOrder),
+            );
+          },
+        ),
+        BlocListener<GlobalSettingsBloc, GlobalSettingsState>(
+          listenWhen: (prev, next) =>
+              prev.settings.myDayDueWindowDays !=
+              next.settings.myDayDueWindowDays,
+          listener: (context, state) {
+            context.read<AnytimeFeedBloc>().add(
+              AnytimeFeedDueWindowDaysChanged(
+                days: state.settings.myDayDueWindowDays,
+              ),
             );
           },
         ),
@@ -235,10 +287,33 @@ class _AnytimeViewState extends State<_AnytimeView> {
                               );
                             },
                           )
-                        : const Text('Anytime'),
+                        : Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('Anytime'),
+                              const SizedBox(height: 2),
+                              Text(
+                                "Plan what's next",
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
                     actions: TasklyAppBarActions.withAttentionBell(
                       context,
                       actions: [
+                        if (!_isSearching)
+                          TextButton(
+                            onPressed: () => _showAnytimeRefineSheet(context),
+                            style: TextButton.styleFrom(
+                              foregroundColor: scheme.onSurfaceVariant,
+                              textStyle: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            child: const Text('Refine'),
+                          ),
                         if (!_isSearching)
                           IconButton(
                             tooltip: 'Search',
@@ -264,28 +339,6 @@ class _AnytimeViewState extends State<_AnytimeView> {
                                   const AnytimeCreateProjectRequested(),
                                 ),
                           ),
-                        BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
-                          buildWhen: (p, n) => p.focusOnly != n.focusOnly,
-                          builder: (context, state) {
-                            final enabled = state.focusOnly;
-                            return IconButton(
-                              tooltip: enabled
-                                  ? 'Focus only: on'
-                                  : 'Focus only: off',
-                              icon: Icon(
-                                enabled
-                                    ? Icons.filter_alt
-                                    : Icons.filter_alt_off,
-                              ),
-                              style: iconButtonStyle,
-                              onPressed: () {
-                                context.read<AnytimeScreenBloc>().add(
-                                  const AnytimeFocusOnlyToggled(),
-                                );
-                              },
-                            );
-                          },
-                        ),
                       ],
                     ),
                   ),
@@ -333,17 +386,22 @@ class _AnytimeViewState extends State<_AnytimeView> {
                                   screenState,
                                 ),
                               ),
-                            AnytimeFeedLoaded(:final rows) => TasklyFeedSpec.content(
-                              sections: [
+                            AnytimeFeedLoaded(:final rows) => () {
+                              final sections = <TasklySectionSpec>[];
+                              sections.add(
                                 TasklySectionSpec.standardList(
                                   id: 'anytime',
                                   rows: _buildStandardRows(context, rows),
                                 ),
-                              ],
-                            ),
+                              );
+                              return TasklyFeedSpec.content(sections: sections);
+                            }(),
                           };
 
-                          return TasklyFeedRenderer(spec: spec);
+                          return TasklyFeedRenderer(
+                            spec: spec,
+                            padding: AppSpacing.screenHorizontal,
+                          );
                         },
                       );
                     },
@@ -394,7 +452,7 @@ TasklyEmptyStateSpec _buildEmptySpec(
 
   return TasklyEmptyStateSpec(
     icon: Icons.inbox_outlined,
-    title: 'No backlog items yet',
+    title: 'No projects yet',
     description: 'Create a project to start planning.',
     actionLabel: 'Create project',
     onAction: () => context.read<AnytimeScreenBloc>().add(
@@ -411,16 +469,6 @@ List<TasklyRowSpec> _buildStandardRows(
 
   selection.updateVisibleEntities(
     [
-      ...rows.whereType<TaskRowUiModel>().map(
-        (r) => SelectionEntityMeta(
-          key: SelectionKey(entityType: EntityType.task, entityId: r.task.id),
-          displayName: r.task.name,
-          canDelete: true,
-          completed: r.task.completed,
-          pinned: r.task.isPinned,
-          canCompleteSeries: r.task.isRepeating && !r.task.seriesEnded,
-        ),
-      ),
       ...rows.whereType<ProjectRowUiModel>().map(
         (r) => SelectionEntityMeta(
           key: SelectionKey(
@@ -436,174 +484,42 @@ List<TasklyRowSpec> _buildStandardRows(
     ].toList(growable: false),
   );
 
-  return rows
-      .map<TasklyRowSpec>((row) {
-        return switch (row) {
-          ValueHeaderRowUiModel(
-            :final title,
-            :final valueId,
-            :final value,
-            :final activeCount,
-            :final isCollapsed
-          ) =>
-            TasklyRowSpec.valueHeader(
-              key: row.rowKey,
-              depth: row.depth,
-              title: title,
-              leadingChip: value?.toChipData(context),
-              trailingLabel: _activeCountLabel(activeCount),
-              isCollapsed: isCollapsed,
-              onToggleCollapsed: () => context.read<AnytimeScreenBloc>().add(
-                    AnytimeValueHeaderToggled(
-                      valueKey: valueId ?? '__none__',
-                    ),
-                  ),
-            ),
-          ProjectHeaderRowUiModel(:final projectRef, :final title) => () {
-            final expandable = row.isCollapsed != null;
-            final expanded = !(row.isCollapsed ?? true);
-            return TasklyRowSpec.project(
-              key: row.rowKey,
-              depth: row.depth,
-              data: TasklyProjectRowData(
-                id: projectRef.stableKey,
-                title: title,
-                completed: false,
-                pinned: false,
-                meta: const TasklyEntityMetaData(),
-                groupLeadingIcon: projectRef.isInbox
-                    ? Icons.inbox_outlined
-                    : Icons.folder_outlined,
-                groupTrailingLabel: row.trailingLabel,
-              ),
-              preset: TasklyProjectRowPreset.groupHeader(expanded: expanded),
-              actions: TasklyProjectRowActions(
-                onTap: () => context.read<AnytimeScreenBloc>().add(
-                  AnytimeProjectHeaderTapped(projectRef: projectRef),
-                ),
-                onToggleExpanded: expandable
-                    ? () => context.read<AnytimeScreenBloc>().add(
-                          AnytimeProjectHeaderTapped(projectRef: projectRef),
-                        )
-                    : null,
-              ),
-            );
-          }(),
-          TaskRowUiModel(:final task) => () {
-            final tileCapabilities = EntityTileCapabilitiesResolver.forTask(
-              task,
-            );
+  return rows.whereType<ProjectRowUiModel>().map<TasklyRowSpec>((row) {
+    final data = row.project == null
+        ? TasklyProjectRowData(
+            id: 'inbox',
+            title: 'Inbox',
+            completed: false,
+            pinned: false,
+            meta: const TasklyEntityMetaData(),
+            taskCount: row.taskCount,
+          )
+        : buildProjectRowData(
+            context,
+            project: row.project!,
+            taskCount: row.taskCount,
+            completedTaskCount: row.completedTaskCount,
+            dueSoonCount: row.dueSoonCount,
+          );
 
-            final key = SelectionKey(
-              entityType: EntityType.task,
-              entityId: task.id,
-            );
+    final preset = row.project == null
+        ? const TasklyProjectRowPreset.inbox()
+        : const TasklyProjectRowPreset.standard();
 
-            final data = buildTaskRowData(
-              context,
-              task: task,
-              tileCapabilities: tileCapabilities,
-            );
+    final actions = TasklyProjectRowActions(
+      onTap: row.project == null
+          ? null
+          : () => Routing.pushProjectAnytime(context, row.project!.id),
+    );
 
-            final openEditor = buildTaskOpenEditorHandler(
-              context,
-              task: task,
-            );
-
-            final isSelected = selection.isSelected(key);
-            final selectionMode = selection.isSelectionMode;
-
-            return TasklyRowSpec.task(
-              key: row.rowKey,
-              depth: row.depth,
-              data: data,
-              markers: TasklyTaskRowMarkers(pinned: task.isPinned),
-              preset: selectionMode
-                  ? TasklyTaskRowPreset.bulkSelection(selected: isSelected)
-                  : const TasklyTaskRowPreset.standard(),
-              actions: TasklyTaskRowActions(
-                onTap: () {
-                  if (selection.shouldInterceptTapAsSelection()) {
-                    selection.handleEntityTap(key);
-                    return;
-                  }
-                  openEditor();
-                },
-                onLongPress: () {
-                  selection.enterSelectionMode(initialSelection: key);
-                },
-                onToggleSelected: () =>
-                    selection.toggleSelection(key, extendRange: false),
-                onToggleCompletion: buildTaskToggleCompletionHandler(
-                  context,
-                  task: task,
-                  tileCapabilities: tileCapabilities,
-                ),
-              ),
-            );
-          }(),
-          ProjectRowUiModel(
-            :final project,
-            :final taskCount,
-            :final completedTaskCount
-          ) =>
-            () {
-              final data = project == null
-                  ? TasklyProjectRowData(
-                      id: 'inbox',
-                      title: 'Inbox',
-                      completed: false,
-                      pinned: false,
-                      meta: const TasklyEntityMetaData(),
-                      taskCount: taskCount,
-                      completedTaskCount: completedTaskCount,
-                    )
-                  : _stripProjectValueChip(
-                      buildProjectRowData(
-                        context,
-                        project: project,
-                        taskCount: taskCount,
-                        completedTaskCount: completedTaskCount,
-                      ),
-                    );
-
-              return TasklyRowSpec.project(
-                key: row.rowKey,
-                depth: row.depth,
-                data: data,
-                preset: const TasklyProjectRowPreset.standard(),
-                actions: TasklyProjectRowActions(
-                  onTap: project == null
-                      ? null
-                      : () => Routing.toProjectEdit(context, project.id),
-                ),
-              );
-            }(),
-        };
-      })
-      .toList(growable: false);
-}
-
-TasklyProjectRowData _stripProjectValueChip(TasklyProjectRowData data) {
-  return TasklyProjectRowData(
-    id: data.id,
-    title: data.title,
-    completed: data.completed,
-    pinned: data.pinned,
-    meta: data.meta,
-    taskCount: data.taskCount,
-    completedTaskCount: data.completedTaskCount,
-    leadingChip: null,
-    subtitle: data.subtitle,
-    deemphasized: data.deemphasized,
-    groupLeadingIcon: data.groupLeadingIcon,
-    groupTrailingLabel: data.groupTrailingLabel,
-  );
-}
-
-String _activeCountLabel(int count) {
-  if (count <= 0) return '0 Active';
-  return count == 1 ? '1 Active' : '$count Active';
+    return TasklyRowSpec.project(
+      key: row.rowKey,
+      depth: row.depth,
+      data: data,
+      preset: preset,
+      actions: actions,
+    );
+  }).toList(growable: false);
 }
 
 bool _sameSet(Set<String> a, Set<String> b) {
@@ -620,8 +536,8 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final chrome = TasklyChromeTheme.of(context);
     final valueRepository = getIt<ValueRepositoryContract>();
+    final screenState = context.watch<AnytimeScreenBloc>().state;
 
     final selectedValueId = switch (scope) {
       AnytimeValueScope(:final valueId) => valueId,
@@ -638,119 +554,87 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
             final sorted = values.toList(growable: false)
               ..sort(_compareValues);
 
-            final allChip = ValueChipData(
-              label: 'All',
-              icon: Icons.apps_rounded,
-              color: scheme.primary,
-              semanticLabel: 'All values',
-            );
+            final selectedValue = _findValueById(sorted, selectedValueId);
+            final hasValue = selectedValue != null;
+            final valueLabel = hasValue ? selectedValue.name : 'All';
 
-            return SizedBox(
-              height: chrome.valueRowHeight,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemBuilder: (context, index) {
-                  final isAll = index == 0;
-                  final data = isAll
-                      ? allChip
-                      : sorted[index - 1].toChipData(context);
-                  final isSelected = isAll
-                      ? selectedValueId == null
-                      : sorted[index - 1].id == selectedValueId;
+            final moreSelected =
+                screenState.filterPriority || screenState.showStartLaterItems;
 
-                  return _ValueIconButton(
-                    data: data,
-                    selected: isSelected,
-                    onTap: () async {
-                      if (isSelected) return;
-                      if (isAll) {
-                        await GoRouter.of(context).push('/anytime');
-                      } else {
-                        Routing.pushValueAnytime(
-                          context,
-                          sorted[index - 1].id,
-                        );
-                      }
-                    },
-                  );
-                },
-                separatorBuilder: (_, __) =>
-                    SizedBox(width: chrome.valueItemSpacing),
-                itemCount: sorted.length + 1,
-              ),
-            );
-          },
-        ),
-        SizedBox(height: chrome.filterRowSpacing),
-        BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
-          buildWhen: (p, n) => p.showStartLaterItems != n.showStartLaterItems,
-          builder: (context, state) {
-            final showStartLater = state.showStartLaterItems;
-
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _FilterPill(
-                    label: 'Filters',
-                    selected: false,
-                    onTap: () {},
-                    backgroundColor: scheme.surface,
-                    selectedColor: scheme.surfaceContainerHighest,
-                    textColor: scheme.onSurfaceVariant,
-                    selectedTextColor: scheme.onSurface,
-                    leadingIcon: Icons.tune_rounded,
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _FilterPill(
+                        label: 'Value: $valueLabel',
+                        selected: hasValue,
+                        onTap: () async {
+                          final next = await _showValueFilterSheet(
+                            context,
+                            sorted,
+                            selectedValueId,
+                          );
+                          if (!context.mounted || next == selectedValueId) {
+                            return;
+                          }
+                          if (next == null) {
+                            await GoRouter.of(context).push('/anytime');
+                          } else {
+                            Routing.pushValueAnytime(context, next);
+                          }
+                        },
+                        backgroundColor: scheme.surface,
+                        selectedColor: scheme.surfaceContainerHigh,
+                        textColor: scheme.onSurfaceVariant,
+                        selectedTextColor: scheme.onSurface,
+                        leadingIcon: Icons.expand_more_rounded,
+                      ),
+                      _FilterPill(
+                        label: 'Due Soon',
+                        selected: screenState.filterDueSoon,
+                        onTap: () => context.read<AnytimeScreenBloc>().add(
+                              AnytimeFilterDueSoonSet(
+                                !screenState.filterDueSoon,
+                              ),
+                            ),
+                        backgroundColor: scheme.surface,
+                        selectedColor: scheme.surfaceContainerHighest,
+                        textColor: scheme.onSurfaceVariant,
+                        selectedTextColor: scheme.onSurface,
+                      ),
+                      _FilterPill(
+                        label: 'Overdue',
+                        selected: screenState.filterOverdue,
+                        onTap: () => context.read<AnytimeScreenBloc>().add(
+                              AnytimeFilterOverdueSet(
+                                !screenState.filterOverdue,
+                              ),
+                            ),
+                        backgroundColor: scheme.surface,
+                        selectedColor: scheme.errorContainer,
+                        textColor: scheme.onSurfaceVariant,
+                        selectedTextColor: scheme.onErrorContainer,
+                      ),
+                      _FilterPill(
+                        label: 'More',
+                        selected: moreSelected,
+                        onTap: () => _showAnytimeRefineSheet(context),
+                        backgroundColor: scheme.surface,
+                        selectedColor: scheme.surfaceContainerHighest,
+                        textColor: scheme.onSurfaceVariant,
+                        selectedTextColor: scheme.onSurface,
+                      ),
+                    ],
                   ),
-                  _FilterPill(
-                    label: showStartLater ? 'Start later' : 'Start later',
-                    selected: showStartLater,
-                    onTap: () => context.read<AnytimeScreenBloc>().add(
-                          AnytimeShowStartLaterSet(!showStartLater),
-                        ),
-                    backgroundColor: scheme.surface,
-                    selectedColor: scheme.surfaceContainerHighest,
-                    textColor: scheme.onSurfaceVariant,
-                    selectedTextColor: scheme.onSurface,
-                    leadingIcon: Icons.schedule,
-                  ),
-                  _FilterPill(
-                    label: 'Due Soon',
-                    selected: false,
-                    onTap: () {},
-                    backgroundColor: scheme.surface,
-                    selectedColor: scheme.surfaceContainerHighest,
-                    textColor: scheme.onSurfaceVariant,
-                    selectedTextColor: scheme.onSurface,
-                  ),
-                  _FilterPill(
-                    label: 'Overdue',
-                    selected: false,
-                    onTap: () {},
-                    backgroundColor: scheme.surface,
-                    selectedColor: scheme.errorContainer,
-                    textColor: scheme.onSurfaceVariant,
-                    selectedTextColor: scheme.onErrorContainer,
-                  ),
-                  _FilterPill(
-                    label: 'P1 Priority',
-                    selected: false,
-                    onTap: () {},
-                    backgroundColor: scheme.surface,
-                    selectedColor: scheme.surfaceContainerHighest,
-                    textColor: scheme.onSurfaceVariant,
-                    selectedTextColor: scheme.onSurface,
-                  ),
-                  _FilterPill(
-                    label: 'Stalled',
-                    selected: false,
-                    onTap: () {},
-                    backgroundColor: scheme.surface,
-                    selectedColor: scheme.surfaceContainerHighest,
-                    textColor: scheme.onSurfaceVariant,
-                    selectedTextColor: scheme.onSurface,
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                _AnytimeSortRow(
+                  sortOrder: screenState.sortOrder,
+                ),
+              ],
             );
           },
         ),
@@ -759,76 +643,96 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
   }
 }
 
-class _ValueIconButton extends StatelessWidget {
-  const _ValueIconButton({
-    required this.data,
-    required this.selected,
-    required this.onTap,
-  });
+class _AnytimeSortRow extends StatelessWidget {
+  const _AnytimeSortRow({required this.sortOrder});
 
-  final ValueChipData data;
-  final bool selected;
-  final VoidCallback onTap;
+  final AnytimeSortOrder sortOrder;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final chrome = TasklyChromeTheme.of(context);
-    final isDark = scheme.brightness == Brightness.dark;
-    final fg = data.color.withValues(alpha: selected ? 1.0 : 0.7);
-    final bg = data.color.withValues(alpha: selected ? 0.24 : 0.12);
-    final labelColor = selected ? fg : scheme.onSurfaceVariant;
-    final borderColor = selected
-        ? data.color.withValues(alpha: 0.8)
-        : scheme.outlineVariant.withValues(alpha: 0.5);
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(chrome.valueIconRadius),
-      onTap: onTap,
-      child: SizedBox(
-        width: chrome.valueItemWidth,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: chrome.valueIconBoxSize,
-              height: chrome.valueIconBoxSize,
-              decoration: BoxDecoration(
-                color: isDark ? bg.withValues(alpha: 0.3) : bg,
-                borderRadius: BorderRadius.circular(chrome.valueIconRadius),
-                border: Border.all(color: borderColor, width: 1.5),
-                boxShadow: selected
-                    ? [
-                        BoxShadow(
-                          color: data.color.withValues(alpha: 0.25),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Icon(
-                data.icon,
-                color: fg,
-                size: chrome.valueIconSize,
-              ),
-            ),
-            SizedBox(height: chrome.valueLabelSpacing),
-            Text(
-              data.label,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: (selected
-                      ? chrome.valueLabelSelectedStyle
-                      : chrome.valueLabelStyle)
-                  .copyWith(color: labelColor),
-            ),
-          ],
+    return Row(
+      children: [
+        Text(
+          'Sort',
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
+        const SizedBox(width: 8),
+        DropdownButtonHideUnderline(
+          child: DropdownButton<AnytimeSortOrder>(
+            value: sortOrder,
+            borderRadius: BorderRadius.circular(chrome.filterPillRadius),
+            items: const [
+              DropdownMenuItem(
+                value: AnytimeSortOrder.dueSoonest,
+                child: Text('Due date: Soonest'),
+              ),
+              DropdownMenuItem(
+                value: AnytimeSortOrder.dueLatest,
+                child: Text('Due date: Latest'),
+              ),
+            ],
+            onChanged: (value) {
+              if (value == null) return;
+              context.read<AnytimeScreenBloc>().add(
+                    AnytimeSortOrderSet(value),
+                  );
+            },
+          ),
+        ),
+      ],
     );
   }
+}
+
+Future<void> _showAnytimeRefineSheet(BuildContext context) {
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) {
+      final scheme = Theme.of(context).colorScheme;
+      return BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
+        builder: (context, state) {
+          return ListView(
+            children: [
+              SwitchListTile(
+                value: state.filterPriority,
+                onChanged: (value) {
+                  context.read<AnytimeScreenBloc>().add(
+                        AnytimeFilterPrioritySet(value),
+                      );
+                },
+                title: const Text('Priority projects'),
+                subtitle: const Text('Show projects marked P1.'),
+              ),
+              SwitchListTile(
+                value: state.showStartLaterItems,
+                onChanged: (value) {
+                  context.read<AnytimeScreenBloc>().add(
+                        AnytimeShowStartLaterSet(value),
+                      );
+                },
+                title: const Text('Include start later'),
+                subtitle: const Text('Show projects with future start dates.'),
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: Icon(Icons.tune_rounded, color: scheme.primary),
+                title: const Text('Refine filters'),
+                subtitle: const Text('Adjust what appears in Anytime.'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
 }
 
 class _FilterPill extends StatelessWidget {
@@ -895,8 +799,8 @@ class _FilterPill extends StatelessWidget {
 }
 
 int _compareValues(Value a, Value b) {
-  final ap = a.priority ?? ValuePriority.medium;
-  final bp = b.priority ?? ValuePriority.medium;
+  final ap = a.priority;
+  final bp = b.priority;
   final byPriority = _priorityRank(ap).compareTo(_priorityRank(bp));
   if (byPriority != 0) return byPriority;
 
@@ -909,4 +813,53 @@ int _priorityRank(ValuePriority priority) {
     ValuePriority.medium => 1,
     ValuePriority.low => 2,
   };
+}
+
+Value? _findValueById(List<Value> values, String? id) {
+  if (id == null || id.isEmpty) return null;
+  for (final value in values) {
+    if (value.id == id) return value;
+  }
+  return null;
+}
+
+Future<String?> _showValueFilterSheet(
+  BuildContext context,
+  List<Value> values,
+  String? selectedValueId,
+) {
+  return showModalBottomSheet<String?>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) {
+      final scheme = Theme.of(context).colorScheme;
+      return ListView(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.apps_rounded),
+            title: const Text('All values'),
+            trailing: selectedValueId == null
+                ? Icon(Icons.check_rounded, color: scheme.primary)
+                : null,
+            onTap: () => Navigator.of(context).pop(null),
+          ),
+          const Divider(height: 1),
+          for (final value in values)
+            Builder(
+              builder: (context) {
+                final chip = value.toChipData(context);
+                return ListTile(
+                  leading: Icon(chip.icon, color: chip.color),
+                  title: Text(value.name),
+                  trailing: selectedValueId == value.id
+                      ? Icon(Icons.check_rounded, color: scheme.primary)
+                      : null,
+                  onTap: () => Navigator.of(context).pop(value.id),
+                );
+              },
+            ),
+        ],
+      );
+    },
+  );
 }

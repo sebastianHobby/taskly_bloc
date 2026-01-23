@@ -368,6 +368,10 @@ sealed class TasklyTaskRowPreset {
   const factory TasklyTaskRowPreset.picker({
     required bool selected,
   }) = TasklyTaskRowPresetPicker;
+
+  const factory TasklyTaskRowPreset.pickerAction({
+    required bool selected,
+  }) = TasklyTaskRowPresetPickerAction;
 }
 
 final class TasklyTaskRowPresetStandard extends TasklyTaskRowPreset {
@@ -386,11 +390,21 @@ final class TasklyTaskRowPresetPicker extends TasklyTaskRowPreset {
   final bool selected;
 }
 
+final class TasklyTaskRowPresetPickerAction extends TasklyTaskRowPreset {
+  const TasklyTaskRowPresetPickerAction({required this.selected});
+
+  final bool selected;
+}
+
 @immutable
 final class TasklyTaskRowMarkers {
-  const TasklyTaskRowMarkers({this.pinned = false});
+  const TasklyTaskRowMarkers({
+    this.pinned = false,
+    this.focused = false,
+  });
 
   final bool pinned;
+  final bool focused;
 }
 
 @immutable
@@ -612,6 +626,8 @@ final class TasklyValueDistributionEntry {
 
   final ValueChipData value;
   final int count;
+
+  String get stableId => value.label.toLowerCase();
 }
 
 @immutable
