@@ -110,7 +110,7 @@ Boundaries for `taskly_ui` are defined in:
 - [../INVARIANTS.md](../INVARIANTS.md) (`taskly_ui` boundary)
 - [TASKLY_UI_GOVERNANCE.md](TASKLY_UI_GOVERNANCE.md) (how to evolve shared UI)
 
-For entity tiles, the default approach is **intent, not config**:
+For entity rows, the default approach is **intent, not config**:
 
 - pass a `*TileIntent` to describe the screen/flow,
 - pass a `*TileActions` object and let callback presence opt into affordances.
@@ -121,13 +121,10 @@ Package hygiene (recommended):
 
 - App code should import one of the curated public entrypoints (and avoid
   `package:taskly_ui/src/...` deep imports):
-  - `package:taskly_ui/taskly_ui_entities.dart` (entity widgets + entity models)
-  - `package:taskly_ui/taskly_ui_sections.dart` (sections + overlays like dialogs)
-  - `package:taskly_ui/taskly_ui_models.dart` (UI-only models needed by entities/sections)
+  - `package:taskly_ui/taskly_ui_feed.dart` (feed schema + renderer)
+  - `package:taskly_ui/taskly_ui_sections.dart` (dialogs/overlays)
+  - `package:taskly_ui/taskly_ui_models.dart` (UI-only models)
   - `package:taskly_ui/taskly_ui_forms.dart` (template-like form chrome only)
-
-  The legacy wide entrypoint (`package:taskly_ui/taskly_ui.dart`) is not
-  intended for app consumption; prefer tiered entrypoints.
 - Keep `taskly_ui` implementation private under `packages/taskly_ui/lib/src/`.
 
 Taxonomy layout (recommended):

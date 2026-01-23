@@ -18,8 +18,7 @@ import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_ui/taskly_ui_entities.dart';
-import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_feed_bloc.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_screen_bloc.dart';
@@ -338,9 +337,9 @@ class _AnytimeViewState extends State<_AnytimeView> {
                     builder: (context, screenState) {
                       return BlocBuilder<AnytimeFeedBloc, AnytimeFeedState>(
                         builder: (context, state) {
-                          return switch (state) {
-                            AnytimeFeedLoading() => const FeedBody.loading(),
-                            AnytimeFeedError(:final message) => FeedBody.error(
+                          final spec = switch (state) {
+                            AnytimeFeedLoading() => const TasklyFeedSpec.loading(),
+                            AnytimeFeedError(:final message) => TasklyFeedSpec.error(
                               message: message,
                               retryLabel: context.l10n.retryButton,
                               onRetry: () =>
@@ -349,13 +348,24 @@ class _AnytimeViewState extends State<_AnytimeView> {
                                   ),
                             ),
                             AnytimeFeedLoaded(:final rows) when rows.isEmpty =>
-                              _buildEmptyBody(context, scope, screenState),
-                            AnytimeFeedLoaded(:final rows) => FeedBody.child(
-                              child: TasklyStandardTileListSection(
-                                rows: _buildStandardRows(context, rows),
+                              TasklyFeedSpec.empty(
+                                empty: _buildEmptySpec(
+                                  context,
+                                  scope,
+                                  screenState,
+                                ),
                               ),
+                            AnytimeFeedLoaded(:final rows) => TasklyFeedSpec.content(
+                              sections: [
+                                TasklySectionSpec.standardList(
+                                  id: 'anytime',
+                                  rows: _buildStandardRows(context, rows),
+                                ),
+                              ],
                             ),
                           };
+
+                          return TasklyFeedRenderer(spec: spec);
                         },
                       );
                     },
@@ -372,50 +382,45 @@ class _AnytimeViewState extends State<_AnytimeView> {
 
 void _noop() {}
 
-Widget _buildEmptyBody(
+TasklyEmptyStateSpec _buildEmptySpec(
   BuildContext context,
   AnytimeScope? scope,
   AnytimeScreenState screenState,
 ) {
   final query = screenState.searchQuery.trim();
   if (query.isNotEmpty) {
-    return FeedBody.empty(
-      child: EmptyStateWidget(
-        icon: Icons.search,
-        title: 'No matches',
-        description: 'Try a different keyword.',
-        actionLabel: 'Clear search',
-        onAction: () {
-          context.read<AnytimeScreenBloc>().add(
-            const AnytimeSearchQueryChanged(''),
-          );
-        },
-      ),
+    return TasklyEmptyStateSpec(
+      icon: Icons.search,
+      title: 'No matches',
+      description: 'Try a different keyword.',
+      actionLabel: 'Clear search',
+      onAction: () {
+        context.read<AnytimeScreenBloc>().add(
+          const AnytimeSearchQueryChanged(''),
+        );
+      },
     );
   }
 
   if (scope != null) {
-    return FeedBody.empty(
-      child: EmptyStateWidget(
-        icon: Icons.inbox_outlined,
-        title: 'Nothing in this scope yet',
-        description: "Try a different scope or show 'Start later' items.",
-        actionLabel: 'Create task',
-        onAction: () => context.read<AnytimeScreenBloc>().add(
-          const AnytimeCreateTaskRequested(),
-        ),
-      ),
-    );
-  }
-
-  return FeedBody.empty(
-    child: EmptyStateWidget.noTasks(
-      title: 'No backlog items yet',
-      description: 'Create a task to start planning.',
+    return TasklyEmptyStateSpec(
+      icon: Icons.inbox_outlined,
+      title: 'Nothing in this scope yet',
+      description: "Try a different scope or show 'Start later' items.",
       actionLabel: 'Create task',
       onAction: () => context.read<AnytimeScreenBloc>().add(
         const AnytimeCreateTaskRequested(),
       ),
+    );
+  }
+
+  return TasklyEmptyStateSpec(
+    icon: Icons.inbox_outlined,
+    title: 'No backlog items yet',
+    description: 'Create a task to start planning.',
+    actionLabel: 'Create task',
+    onAction: () => context.read<AnytimeScreenBloc>().add(
+      const AnytimeCreateTaskRequested(),
     ),
   );
 }
@@ -489,7 +494,7 @@ class _AnytimeScopeAndFiltersRow extends StatelessWidget {
   }
 }
 
-List<TasklyStandardTileListRowModel> _buildStandardRows(
+List<TasklyRowSpec> _buildStandardRows(
   BuildContext context,
   List<ListRowUiModel> rows,
 ) {
@@ -512,32 +517,43 @@ List<TasklyStandardTileListRowModel> _buildStandardRows(
   );
 
   return rows
-      .map<TasklyStandardTileListRowModel?>((row) {
+      .map<TasklyRowSpec>((row) {
         return switch (row) {
-          ValueHeaderRowUiModel(:final title) =>
-            TasklyStandardTileListHeaderRowModel(
+          ValueHeaderRowUiModel(:final title) => TasklyRowSpec.header(
+            key: row.rowKey,
+            depth: row.depth,
+            title: title,
+          ),
+          ProjectHeaderRowUiModel(:final projectRef, :final title) => () {
+            final expandable = row.isCollapsed != null;
+            final expanded = !(row.isCollapsed ?? true);
+            return TasklyRowSpec.project(
               key: row.rowKey,
               depth: row.depth,
-              title: title,
-            ),
-          ProjectHeaderRowUiModel(:final projectRef, :final title) =>
-            TasklyStandardTileListIconHeaderRowModel(
-              key: row.rowKey,
-              depth: row.depth,
-              title: title,
-              leadingIcon: projectRef.isInbox
-                  ? Icons.inbox_outlined
-                  : Icons.folder_outlined,
-              trailingLabel: row.trailingLabel,
-              onTap: () => context.read<AnytimeScreenBloc>().add(
-                AnytimeProjectHeaderTapped(projectRef: projectRef),
+              data: TasklyProjectRowData(
+                id: projectRef.stableKey,
+                title: title,
+                completed: false,
+                pinned: false,
+                meta: const TasklyEntityMetaData(),
+                groupLeadingIcon: projectRef.isInbox
+                    ? Icons.inbox_outlined
+                    : Icons.folder_outlined,
+                groupTrailingLabel: row.trailingLabel,
               ),
-              trailingIcon: projectRef.isInbox
-                  ? ((row.isCollapsed ?? false)
-                        ? Icons.expand_more
-                        : Icons.expand_less)
-                  : Icons.chevron_right,
-            ),
+              intent: TasklyProjectRowIntent.groupHeader(expanded: expanded),
+              actions: TasklyProjectRowActions(
+                onTap: () => context.read<AnytimeScreenBloc>().add(
+                  AnytimeProjectHeaderTapped(projectRef: projectRef),
+                ),
+                onToggleExpanded: expandable
+                    ? () => context.read<AnytimeScreenBloc>().add(
+                          AnytimeProjectHeaderTapped(projectRef: projectRef),
+                        )
+                    : null,
+              ),
+            );
+          }(),
           TaskRowUiModel(:final task) => () {
             final tileCapabilities = EntityTileCapabilitiesResolver.forTask(
               task,
@@ -548,32 +564,36 @@ List<TasklyStandardTileListRowModel> _buildStandardRows(
               entityId: task.id,
             );
 
-            final model = buildTaskListRowTileModel(
+            final data = buildTaskRowData(
               context,
               task: task,
               tileCapabilities: tileCapabilities,
               showProjectLabel: false,
             );
 
+            final openEditor = buildTaskOpenEditorHandler(
+              context,
+              task: task,
+            );
+
             final isSelected = selection.isSelected(key);
             final selectionMode = selection.isSelectionMode;
 
-            return TasklyStandardTileListTaskRowModel(
+            return TasklyRowSpec.task(
               key: row.rowKey,
               depth: row.depth,
-              entityId: task.id,
-              model: model,
-              markers: TaskTileMarkers(pinned: task.isPinned),
+              data: data,
+              markers: TasklyTaskRowMarkers(pinned: task.isPinned),
               intent: selectionMode
-                  ? TaskTileIntent.bulkSelection(selected: isSelected)
-                  : const TaskTileIntent.standardList(),
-              actions: TaskTileActions(
+                  ? TasklyTaskRowIntent.bulkSelection(selected: isSelected)
+                  : const TasklyTaskRowIntent.standard(),
+              actions: TasklyTaskRowActions(
                 onTap: () {
                   if (selection.shouldInterceptTapAsSelection()) {
                     selection.handleEntityTap(key);
                     return;
                   }
-                  model.onTap();
+                  openEditor();
                 },
                 onLongPress: () {
                   selection.enterSelectionMode(initialSelection: key);
@@ -585,13 +605,10 @@ List<TasklyStandardTileListRowModel> _buildStandardRows(
                   task: task,
                   tileCapabilities: tileCapabilities,
                 ),
-                onOverflowMenuRequestedAt: null,
               ),
             );
           }(),
-          _ => null,
         };
       })
-      .whereType<TasklyStandardTileListRowModel>()
       .toList(growable: false);
 }

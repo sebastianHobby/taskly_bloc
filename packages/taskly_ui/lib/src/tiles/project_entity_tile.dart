@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 import 'package:taskly_ui/src/models/value_chip_data.dart';
-import 'package:taskly_ui/src/tiles/entity_tile_intents.dart';
-import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
 
 /// Canonical Project tile aligned to Stitch mockups.
@@ -11,26 +10,22 @@ import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
 class ProjectEntityTile extends StatelessWidget {
   const ProjectEntityTile({
     required this.model,
-    this.intent = const ProjectTileIntent.standardList(),
-    this.actions = const ProjectTileActions(),
+    this.intent = const TasklyProjectRowIntent.standard(),
+    this.actions = const TasklyProjectRowActions(),
     this.leadingAccentColor,
-    this.compact = false,
     super.key,
   });
 
-  final ProjectTileModel model;
+  final TasklyProjectRowData model;
 
-  final ProjectTileIntent intent;
-  final ProjectTileActions actions;
+  final TasklyProjectRowIntent intent;
+  final TasklyProjectRowActions actions;
 
   /// Optional left-edge accent (used to subtly emphasize urgency).
   final Color? leadingAccentColor;
 
-  /// When true, uses a denser layout for list/agenda contexts.
-  final bool compact;
-
   bool? get _selected => switch (intent) {
-    ProjectTileIntentBulkSelection(:final selected) => selected,
+    TasklyProjectRowIntentBulkSelection(:final selected) => selected,
     _ => null,
   };
 
@@ -47,7 +42,7 @@ class ProjectEntityTile extends StatelessWidget {
     final scheme = theme.colorScheme;
     final tokens = TasklyEntityTileTheme.of(context);
 
-    final effectiveCompact = compact || MediaQuery.sizeOf(context).width < 420;
+    final effectiveCompact = MediaQuery.sizeOf(context).width < 420;
     final padding = effectiveCompact
         ? const EdgeInsets.all(16)
         : tokens.projectPadding;
@@ -64,7 +59,7 @@ class ProjectEntityTile extends StatelessWidget {
     final opacity = (baseOpacity * completedOpacity).clamp(0.0, 1.0);
 
     final onTap = switch (intent) {
-      ProjectTileIntentBulkSelection() =>
+      TasklyProjectRowIntentBulkSelection() =>
         actions.onToggleSelected ?? actions.onTap,
       _ => actions.onTap,
     };
@@ -158,16 +153,6 @@ class ProjectEntityTile extends StatelessWidget {
                       ],
                       const SizedBox(height: 12),
                       _PlanDueRow(meta: model.meta, tokens: tokens),
-                      if (model.taskCount == 0 && model.emptyTasksLabel != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: Text(
-                            model.emptyTasksLabel!,
-                            style: tokens.subtitle.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -289,7 +274,7 @@ class _ProgressRow extends StatelessWidget {
 class _PlanDueRow extends StatelessWidget {
   const _PlanDueRow({required this.meta, required this.tokens});
 
-  final EntityMetaLineModel meta;
+  final TasklyEntityMetaData meta;
   final TasklyEntityTileTheme tokens;
 
   @override

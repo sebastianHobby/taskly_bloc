@@ -6,7 +6,7 @@ import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
-import 'package:taskly_ui/taskly_ui_entities.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
 class ValuesListView extends StatelessWidget {
   const ValuesListView({
@@ -33,44 +33,52 @@ class ValuesListView extends StatelessWidget {
           .toList(growable: false),
     );
 
-    return ListView(
-      children: [
-        for (final value in values)
-          Builder(
-            builder: (context) {
-              final key = SelectionKey(
-                entityType: EntityType.value,
-                entityId: value.id,
-              );
+    final rows = [
+      for (final value in values)
+        () {
+          final key = SelectionKey(
+            entityType: EntityType.value,
+            entityId: value.id,
+          );
 
-              final selectionMode = selection.isSelectionMode;
-              final isSelected = selection.isSelected(key);
+          final selectionMode = selection.isSelectionMode;
+          final isSelected = selection.isSelected(key);
 
-              return ValueEntityTile(
-                model: value.toTileModel(context),
-                intent: selectionMode
-                    ? ValueTileIntent.bulkSelection(selected: isSelected)
-                    : const ValueTileIntent.standardList(),
-                actions: ValueTileActions(
-                  onTap: () async {
-                    if (selection.shouldInterceptTapAsSelection()) {
-                      selection.handleEntityTap(key);
-                      return;
-                    }
-                    isSheetOpen?.value = true;
-                    Routing.toEntity(context, EntityType.value, value.id);
-                    isSheetOpen?.value = false;
-                  },
-                  onLongPress: () {
-                    selection.enterSelectionMode(initialSelection: key);
-                  },
-                  onToggleSelected: () =>
-                      selection.toggleSelection(key, extendRange: false),
-                ),
-              );
-            },
+          return TasklyRowSpec.value(
+            key: 'value-${value.id}',
+            data: value.toRowData(context),
+            intent: selectionMode
+                ? TasklyValueRowIntent.bulkSelection(selected: isSelected)
+                : const TasklyValueRowIntent.standard(),
+            actions: TasklyValueRowActions(
+              onTap: () async {
+                if (selection.shouldInterceptTapAsSelection()) {
+                  selection.handleEntityTap(key);
+                  return;
+                }
+                isSheetOpen?.value = true;
+                Routing.toEntity(context, EntityType.value, value.id);
+                isSheetOpen?.value = false;
+              },
+              onLongPress: () {
+                selection.enterSelectionMode(initialSelection: key);
+              },
+              onToggleSelected: () =>
+                  selection.toggleSelection(key, extendRange: false),
+            ),
+          );
+        }(),
+    ];
+
+    return TasklyFeedRenderer(
+      spec: TasklyFeedSpec.content(
+        sections: [
+          TasklySectionSpec.standardList(
+            id: 'values',
+            rows: rows,
           ),
-      ],
+        ],
+      ),
     );
   }
 }

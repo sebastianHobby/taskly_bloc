@@ -1,7 +1,6 @@
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/taskly_domain.dart' show ScheduledOccurrence;
 
-/// Shared flat list row UI models for feed screens (Anytime/Scheduled/My Day).
+/// Shared flat list row UI models for feed screens (Anytime).
 ///
 /// The hierarchy is expressed via [depth] and by deterministic ordering of
 /// header rows before their children (DEC-072A).
@@ -63,53 +62,4 @@ final class TaskRowUiModel extends ListRowUiModel {
 }
 
 /// Scheduled-only: high-level bucket header (This Week/Next Week/Later).
-final class BucketHeaderRowUiModel extends ListRowUiModel {
-  const BucketHeaderRowUiModel({
-    required super.rowKey,
-    required super.depth,
-    required this.bucketKey,
-    required this.title,
-    required this.isCollapsed,
-  });
-
-  final String bucketKey;
-  final String title;
-
-  /// Whether the bucket's child rows are currently hidden.
-  final bool isCollapsed;
-}
-
-/// Scheduled-only: per-day header (e.g. "Mon, Jan 15").
-final class DateHeaderRowUiModel extends ListRowUiModel {
-  const DateHeaderRowUiModel({
-    required super.rowKey,
-    required super.depth,
-    required this.date,
-    required this.title,
-  });
-
-  final DateTime date;
-  final String title;
-}
-
-/// Scheduled-only: empty-day placeholder row.
-final class EmptyDayRowUiModel extends ListRowUiModel {
-  const EmptyDayRowUiModel({
-    required super.rowKey,
-    required super.depth,
-    required this.date,
-  });
-
-  final DateTime date;
-}
-
-/// Scheduled-only: a scheduled occurrence row (task or project).
-final class ScheduledEntityRowUiModel extends ListRowUiModel {
-  const ScheduledEntityRowUiModel({
-    required super.rowKey,
-    required super.depth,
-    required this.occurrence,
-  });
-
-  final ScheduledOccurrence occurrence;
-}
+// Scheduled feed row types were removed with the feed schema migration.

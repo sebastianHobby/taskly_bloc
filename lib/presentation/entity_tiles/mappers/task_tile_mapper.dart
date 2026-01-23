@@ -11,9 +11,9 @@ import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_ui/taskly_ui_entities.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
-TaskTileModel buildTaskListRowTileModel(
+TasklyTaskRowData buildTaskRowData(
   BuildContext context, {
   required Task task,
   required EntityTileCapabilities tileCapabilities,
@@ -22,7 +22,6 @@ TaskTileModel buildTaskListRowTileModel(
   bool showOnlyDeadlineDate = false,
   bool showDeadlineChipOnTitleLine = false,
   bool showPrimaryValueOnTitleLine = true,
-  bool showValuesInMetaLine = false,
   bool showSecondaryValues = false,
   String? overrideStartDateLabel,
   String? overrideDeadlineDateLabel,
@@ -80,11 +79,10 @@ TaskTileModel buildTaskListRowTileModel(
   final projectId = task.projectId?.trim();
   final isInbox = projectId == null || projectId.isEmpty;
 
-  final meta = EntityMetaLineModel(
+  final meta = TasklyEntityMetaData(
     projectName: !showProjectLabel
         ? null
         : (isInbox ? 'Inbox' : task.project?.name),
-    showValuesInMetaLine: showValuesInMetaLine,
     primaryValue: primaryValueData,
     secondaryValues: !showSecondaryValues
         ? const []
@@ -129,7 +127,24 @@ TaskTileModel buildTaskListRowTileModel(
         : 'Priority P${task.priority}',
   );
 
-  void onTap() {
+  return TasklyTaskRowData(
+    id: task.id,
+    title: task.name,
+    completed: isCompleted,
+    meta: meta,
+    leadingChip: primaryValueData,
+    titlePrimaryValue: showPrimaryValueOnTitleLine ? primaryValueData : null,
+    checkboxSemanticLabel: isCompleted
+        ? 'Mark "${task.name}" as incomplete'
+        : 'Mark "${task.name}" as complete',
+  );
+}
+
+VoidCallback buildTaskOpenEditorHandler(
+  BuildContext context, {
+  required Task task,
+}) {
+  return () {
     final dispatcher = context.read<TileIntentDispatcher>();
     unawaited(
       dispatcher.dispatch(
@@ -140,20 +155,7 @@ TaskTileModel buildTaskListRowTileModel(
         ),
       ),
     );
-  }
-
-  return TaskTileModel(
-    id: task.id,
-    title: task.name,
-    completed: isCompleted,
-    onTap: onTap,
-    meta: meta,
-    leadingChip: primaryValueData,
-    titlePrimaryValue: showPrimaryValueOnTitleLine ? primaryValueData : null,
-    checkboxSemanticLabel: isCompleted
-        ? 'Mark "${task.name}" as incomplete'
-        : 'Mark "${task.name}" as complete',
-  );
+  };
 }
 
 ValueChanged<bool?>? buildTaskToggleCompletionHandler(

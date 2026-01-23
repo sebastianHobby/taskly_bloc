@@ -1,4 +1,4 @@
-# Architecture Invariants (Normative)
+﻿# Architecture Invariants (Normative)
 
 > Audience: developers + architects
 >
@@ -11,7 +11,7 @@ This is the **single source of truth** for normative architecture and testing
 rules in this repo.
 
 All other documents under `doc/architecture/` are **descriptive guides** and
-must not introduce new “must/shall” rules.
+must not introduce new â€œmust/shallâ€ rules.
 
 ## 0) How to use this document
 
@@ -25,7 +25,7 @@ See the descriptive overview for the mental model:
 
 ## 0.1 Vocabulary and boundary ownership (strict)
 
-Taskly’s architecture stays maintainable when each layer owns a specific kind
+Tasklyâ€™s architecture stays maintainable when each layer owns a specific kind
 of logic.
 
 Normative definitions:
@@ -123,8 +123,8 @@ Guardrail:
 - Layering check: [tool/no_layering_violations.dart](../../tool/no_layering_violations.dart)
   - Escape hatch (use sparingly): `// ignore-layering-guardrail`
 
-Note: the current layering guardrail enforces `presentation ↛ data` and
-`domain/data ↛ presentation`. The `domain ↛ data` rule is still normative even
+Note: the current layering guardrail enforces `presentation â†› data` and
+`domain/data â†› presentation`. The `domain â†› data` rule is still normative even
 when it is not yet mechanically enforced.
 
 ### 1.2 `shared/` and `core/` placement
@@ -251,23 +251,20 @@ Normative rules:
 - `taskly_ui` must remain **pure UI**: no BLoCs/Cubits, no repositories/services,
   no use-cases, no DI, and no stream subscriptions.
 - `taskly_ui` must not perform **app routing** or import app routing
-  (`go_router`, `Routing`, etc.). “Navigation” here means pushing app routes
+  (`go_router`, `Routing`, etc.). â€œNavigationâ€ here means pushing app routes
   (for example, `GoRouter` or `Navigator` route pushes), not presenting
   UI-only overlays like dialogs or bottom sheets.
 - `taskly_ui` must not depend on **app intent/action infrastructure**:
   - forbidden: app-owned orchestration/dispatch types (for example
     `TileIntentDispatcher`), overflow action catalogs, app analytics/logging
-    dispatch, or any other “do something in the app” coordination layer.
+    dispatch, or any other â€œdo something in the appâ€ coordination layer.
 - Reusable UI must follow **data in / events out** APIs (props + callbacks).
 - App code must not deep-import `taskly_ui` internals (`package:taskly_ui/src/...`).
   Import only public entrypoints under `packages/taskly_ui/lib/`:
-  - `package:taskly_ui/taskly_ui_entities.dart`
+  - `package:taskly_ui/taskly_ui_feed.dart`
   - `package:taskly_ui/taskly_ui_sections.dart`
   - `package:taskly_ui/taskly_ui_models.dart`
   - `package:taskly_ui/taskly_ui_forms.dart`
-
-  The legacy wide entrypoint (`package:taskly_ui/taskly_ui.dart`) is not
-  intended for app consumption; prefer tiered entrypoints.
 
 Allowed exceptions (narrow):
 
@@ -302,32 +299,30 @@ See: [doc/architecture/README.md](README.md)
 
 See also: [guides/BLOC_GUIDELINES.md](guides/BLOC_GUIDELINES.md)
 
-### 2.1.2 Entity tiles are intent-driven (strict)
+### 2.1.2 Entity rows are intent-driven (strict)
 
-Taskly’s canonical Task/Project/Value “entity tiles” are shared UI and must be
+Tasklyâ€™s canonical Task/Project/Value â€œentity rowsâ€ are shared UI and must be
 consumed using the **intent, not config** pattern.
 
 Normative rules:
 
-- App code must consume entity tiles via the tiered public entrypoints:
-  - `package:taskly_ui/taskly_ui_entities.dart`
-  - `package:taskly_ui/taskly_ui_sections.dart`
-  - Do not import `package:taskly_ui/taskly_ui_catalog.dart` from app code.
-    The catalog is for demos/examples and may expose extra knobs.
+- App code must consume entity rows via the feed schema + renderer:
+  - `package:taskly_ui/taskly_ui_feed.dart`
+  - Entity tiles are **not** a public API; the renderer owns them.
 
-- Entity tiles must not be configured via one-off visual knobs.
-  - The app supplies a **rendering intent** (`*TileIntent`) to describe the
+- Entity rows must not be configured via one-off visual knobs.
+  - The app supplies a **rendering intent** (`*RowIntent`) to describe the
     screen/flow.
-  - The app supplies **actions** (`*TileActions`) and the tile derives
+  - The app supplies **actions** (`*RowActions`) and the renderer derives
     affordances from callback presence (for example overflow only when
     `onOverflowMenuRequestedAt` is provided).
-  - Semantic markers (for example “pinned”) must be passed via explicit
+  - Semantic markers (for example â€œpinnedâ€) must be passed via explicit
     markers/models, not via ad-hoc badge lists.
 
 - `taskly_ui` remains pure UI.
   - Intents and actions are UI-level types.
   - Any routing, writes, overflow menu orchestration, analytics, etc. remain in
-    the app’s presentation layer. `taskly_ui` only raises callbacks.
+    the appâ€™s presentation layer. `taskly_ui` only raises callbacks.
 
 ### 2.2 UI composition model (4-tier) (strict)
 
@@ -339,7 +334,7 @@ Normative rules:
 - All reusable UI must be expressed using the **4-tier model**:
   - **Primitives**: tiny, style-driven building blocks (buttons, chips,
     spacing, text styles). No domain meaning.
-  - **Entities**: UI for a single domain concept (for example, a “Task tile”
+  - **Entities**: UI for a single domain concept (for example, a â€œTask rowâ€
     visual), still **render-only** with callbacks.
   - **Sections**: composed blocks that group primitives/entities into a
     reusable chunk (empty/error sections, list headers, etc.). Must remain
@@ -355,7 +350,7 @@ Normative rules:
 
 #### 2.2.A Screen-only ownership rule (strict)
 
-To keep shared UI consistent and avoid “shadow design systems” in app code:
+To keep shared UI consistent and avoid â€œshadow design systemsâ€ in app code:
 
 - Screens/Templates must not introduce new **Primitives / Entities / Sections**
   in app code, even if they are used only once.
@@ -363,8 +358,8 @@ To keep shared UI consistent and avoid “shadow design systems” in app code:
   composition (spacing, ordering, small `Column`/`Row` helpers) as long as they
   do not introduce new visual tokens, reusable component APIs, or new semantics.
 - In particular, do not create screen-local widgets that represent:
-  - a reusable “section” block (headers + lists + empty/error states),
-  - a reusable “entity” presentation (for example, a Task/Project tile),
+  - a reusable â€œsectionâ€ block (headers + lists + empty/error states),
+  - a reusable â€œentityâ€ presentation (for example, a Task/Project tile),
   - a new primitive-style building block (chips, buttons, badges, etc.).
 - If a screen needs a new section/entity/primitive, it must be created in
   `packages/taskly_ui` and then composed from the screen.
@@ -387,6 +382,7 @@ Rationale:
   - `packages/taskly_ui/lib/src/primitives/`
   - `packages/taskly_ui/lib/src/entities/`
   - `packages/taskly_ui/lib/src/sections/`
+  - `packages/taskly_ui/lib/src/feed/` (feed schema + renderer)
   - (Reserved) `packages/taskly_ui/lib/src/templates/` for layout-only
     scaffolding that remains routing/state-free.
 
@@ -447,7 +443,7 @@ The following may proceed without explicit user approval:
 When changing or refactoring `taskly_ui` entities/sections:
 
 - Remove unused options, dead plumbing, and unused callback wiring.
-- Avoid “option creep”: do not add new configuration flags to cover one-off
+- Avoid â€œoption creepâ€: do not add new configuration flags to cover one-off
   screen needs; prefer creating a new, well-named variant model when required.
 
 ### 2.3 Entity views/tiles are side-effect free (strict)
@@ -559,7 +555,7 @@ Guardrails:
 These invariants are in addition to any layer-specific rules above (for
 example, presentation boundary rules also apply in widget tests).
 
-#### TG-001-A — Hermetic-by-default for unit/widget tests
+#### TG-001-A â€” Hermetic-by-default for unit/widget tests
 
 Tests tagged `unit` or `widget` must be hermetic. They must not:
 
@@ -571,12 +567,12 @@ Tests tagged `unit` or `widget` must be hermetic. They must not:
 If the behavior requires real persistence/network, it must be tested under an
 explicit tag such as `integration`, `repository`, or `pipeline`.
 
-#### TG-002-A — Mandatory safe wrappers for new tests
+#### TG-002-A â€” Mandatory safe wrappers for new tests
 
-New tests must use the repo’s safe wrappers instead of raw `test()` /
+New tests must use the repoâ€™s safe wrappers instead of raw `test()` /
 `testWidgets()` / `blocTest()`.
 
-#### TG-003-A — No leaked resources after a test
+#### TG-003-A â€” No leaked resources after a test
 
 Every resource created in a test must be cleaned up deterministically.
 
@@ -590,7 +586,7 @@ Examples (non-exhaustive):
 Cleanup must be registered immediately using `addTearDown(...)` (or test helper
 APIs built on top of it).
 
-#### TG-004-A — Presentation boundary holds in tests
+#### TG-004-A â€” Presentation boundary holds in tests
 
 Widget tests must not call repositories/services directly and must not
 subscribe to domain/data streams from widget code.
@@ -598,13 +594,13 @@ subscribe to domain/data streams from widget code.
 In widget tests, repositories are mocked/faked behind the BLoC and the widget
 renders BLoC state.
 
-#### TG-005-A — Tagging is directory-driven and enforceable
+#### TG-005-A â€” Tagging is directory-driven and enforceable
 
 Test type is determined by directory and must align with tags and presets.
 
 If a test does not fit the directory contract, move it or change its tag.
 
-#### TG-006-A — OperationContext propagation is verified for write flows
+#### TG-006-A â€” OperationContext propagation is verified for write flows
 
 Any test that validates a user-initiated write path must assert:
 
@@ -612,21 +608,21 @@ Any test that validates a user-initiated write path must assert:
   BLoC handler interpreting user intent), and
 - the same context (correlation id) is passed through domain/data write APIs.
 
-#### TG-007-A — No `src/` deep imports in tests across packages
+#### TG-007-A â€” No `src/` deep imports in tests across packages
 
 Tests outside a package must not import `package:<local_package>/src/...`.
 
 Tests may import only public APIs (`package:<pkg>/<pkg>.dart` or other `lib/`
 entrypoints).
 
-#### TG-008-A — Flakiness policy: quarantine over retries
+#### TG-008-A â€” Flakiness policy: quarantine over retries
 
 Flaky tests must be quarantined and kept out of default presets.
 
 - Use an explicit tag (`flaky`) and exclude it from `fast/quick`.
 - Do not enable global retries by default to mask nondeterminism.
 
-#### TG-009-A — Performance budgets are manually enforced per preset
+#### TG-009-A â€” Performance budgets are manually enforced per preset
 
 Tests that meaningfully slow the developer loop must be tagged `slow` and
 excluded from the fast presets.
@@ -660,7 +656,7 @@ project).
 
 Normative rules:
 
-- The canonical persisted representation for “no related entity” is **SQL
+- The canonical persisted representation for â€œno related entityâ€ is **SQL
   `NULL`**.
 - Do not store sentinel values such as empty strings (`''`) or whitespace for
   optional IDs.
@@ -683,7 +679,7 @@ Selecting which occurrence a user intent should target is a **domain concern**.
 
 Normative rules:
 
-- Presentation must not “guess” recurrence occurrence keys (dates) when
+- Presentation must not â€œguessâ€ recurrence occurrence keys (dates) when
   performing a write.
   - If a screen already has explicit occurrence data (for example, Scheduled
     agenda rows), it may pass those occurrence keys through.
@@ -714,8 +710,8 @@ Normative rules:
 
 - Occurrence-aware read orchestration must live in `taskly_domain`.
   - Use `OccurrenceReadService` for:
-    - “Anytime-style” next-occurrence preview decoration.
-    - “Scheduled-style” window expansion with two-phase filtering.
+    - â€œAnytime-styleâ€ next-occurrence preview decoration.
+    - â€œScheduled-styleâ€ window expansion with two-phase filtering.
 - Callers (presentation, analytics, other services) must not set
   `occurrenceExpansion` / `occurrencePreview` on `TaskQuery`/`ProjectQuery`.
   Those flags are legacy and are not an approved integration surface.
@@ -724,7 +720,7 @@ Normative rules:
   - If occurrence flags are present, repositories should fail fast (so we do
     not silently fork semantics across layers).
 - Scheduled/range reads that filter by date must apply the date semantics
-  against occurrence-aware dates via Domain’s two-phase approach:
+  against occurrence-aware dates via Domainâ€™s two-phase approach:
   - SQL candidate set (date predicates removed)
   - post-expansion filter evaluation on occurrence dates
 
@@ -740,7 +736,7 @@ Rationale:
 
 - If a write touches multiple tables, it must be **atomic** using a database
   transaction.
-- Never rely on “eventual consistency inside the local DB” for a single user
+- Never rely on â€œeventual consistency inside the local DBâ€ for a single user
   action.
 
 ## 5) Offline-first + PowerSync constraints
@@ -791,7 +787,7 @@ Guardrail:
 
 ## 6) Sync conflicts/anomalies policy
 
-Conflicts are treated as correctness bugs, not “merge inputs”.
+Conflicts are treated as correctness bugs, not â€œmerge inputsâ€.
 
 - The system must not silently overwrite on deterministic-ID conflicts.
 - **Release behavior**: log a SEVERE/ERROR event with enough context to debug
@@ -857,7 +853,7 @@ Normative rules:
 
 Rationale:
 
-- Enables correlated structured logging across UI → domain → data.
+- Enables correlated structured logging across UI â†’ domain â†’ data.
 - Makes failure mapping deterministic and debuggable without relying on ad-hoc
   log messages.
 
@@ -869,3 +865,6 @@ generate `OperationContext` with a UUID v4 correlation id.
 - Documents under `doc/architecture/` describe the **future-state** architecture.
 - Historical/archived notes (when present) are **non-normative** and must not
   be treated as required reading for new work.
+
+
+

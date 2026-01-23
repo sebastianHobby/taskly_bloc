@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:taskly_ui/src/tiles/entity_tile_intents.dart';
-import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
+import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 
 /// Canonical Value ("My Values") entity tile.
 ///
@@ -10,24 +9,20 @@ import 'package:taskly_ui/src/tiles/entity_tile_models.dart';
 class ValueEntityTile extends StatelessWidget {
   const ValueEntityTile({
     required this.model,
-    this.intent = const ValueTileIntent.standardList(),
-    this.actions = const ValueTileActions(),
+    this.intent = const TasklyValueRowIntent.standard(),
+    this.actions = const TasklyValueRowActions(),
     super.key,
   });
 
-  final ValueTileModel model;
+  final TasklyValueRowData model;
 
-  final ValueTileIntent intent;
-  final ValueTileActions actions;
+  final TasklyValueRowIntent intent;
+  final TasklyValueRowActions actions;
 
   @override
   Widget build(BuildContext context) {
     return switch (intent) {
-      ValueTileIntentMyValuesCardV1() => _MyValuesCardV1(
-        model: model,
-        actions: actions,
-      ),
-      ValueTileIntentBulkSelection(:final selected) => _StandardListRow(
+      TasklyValueRowIntentBulkSelection(:final selected) => _StandardListRow(
         model: model,
         actions: actions,
         bulkSelected: selected,
@@ -47,8 +42,8 @@ class _StandardListRow extends StatelessWidget {
     this.bulkSelected,
   });
 
-  final ValueTileModel model;
-  final ValueTileActions actions;
+  final TasklyValueRowData model;
+  final TasklyValueRowActions actions;
   final bool? bulkSelected;
 
   @override
@@ -115,95 +110,6 @@ class _StandardListRow extends StatelessWidget {
   }
 }
 
-class _MyValuesCardV1 extends StatelessWidget {
-  const _MyValuesCardV1({
-    required this.model,
-    required this.actions,
-  });
-
-  final ValueTileModel model;
-  final ValueTileActions actions;
-
-  bool get _hasStatsLines =>
-      model.firstLineLabel != null &&
-      model.firstLineValue != null &&
-      model.secondLineLabel != null &&
-      model.secondLineValue != null;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      elevation: 0,
-      color: scheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: scheme.outlineVariant.withOpacity(0.6)),
-      ),
-      child: InkWell(
-        onTap: actions.onTap,
-        onLongPress: actions.onLongPress,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _ValueIconAvatar(
-                icon: model.icon,
-                color: model.accentColor,
-                size: 44,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            model.title,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    if (_hasStatsLines) ...[
-                      _StatsRow(
-                        label: model.firstLineLabel!,
-                        value: model.firstLineValue!,
-                      ),
-                      const SizedBox(height: 6),
-                      _StatsRow(
-                        label: model.secondLineLabel!,
-                        value: model.secondLineValue!,
-                      ),
-                    ] else
-                      Text(
-                        model.loadingLabel ?? '',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ValueIconAvatar extends StatelessWidget {
   const _ValueIconAvatar({
     required this.icon,
@@ -229,44 +135,6 @@ class _ValueIconAvatar extends StatelessWidget {
         color: color,
         size: size * 0.52,
       ),
-    );
-  }
-}
-
-class _StatsRow extends StatelessWidget {
-  const _StatsRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: scheme.onSurface,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 }
