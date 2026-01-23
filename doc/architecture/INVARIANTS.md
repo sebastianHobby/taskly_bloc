@@ -299,10 +299,10 @@ See: [doc/architecture/README.md](README.md)
 
 See also: [guides/BLOC_GUIDELINES.md](guides/BLOC_GUIDELINES.md)
 
-### 2.1.2 Entity rows are intent-driven (strict)
+### 2.1.2 Entity rows are preset-driven (strict)
 
 Tasklyâ€™s canonical Task/Project/Value â€œentity rowsâ€ are shared UI and must be
-consumed using the **intent, not config** pattern.
+consumed using the **preset, not config** pattern.
 
 Normative rules:
 
@@ -311,16 +311,15 @@ Normative rules:
   - Entity tiles are **not** a public API; the renderer owns them.
 
 - Entity rows must not be configured via one-off visual knobs.
-  - The app supplies a **rendering intent** (`*RowIntent`) to describe the
-    screen/flow.
+  - The app supplies a **preset** (`*RowPreset`) that describes the supported
+    tile layout.
   - The app supplies **actions** (`*RowActions`) and the renderer derives
-    affordances from callback presence (for example overflow only when
-    `onOverflowMenuRequestedAt` is provided).
+    affordances from callback presence.
   - Semantic markers (for example â€œpinnedâ€) must be passed via explicit
     markers/models, not via ad-hoc badge lists.
 
 - `taskly_ui` remains pure UI.
-  - Intents and actions are UI-level types.
+  - Presets and actions are UI-level types.
   - Any routing, writes, overflow menu orchestration, analytics, etc. remain in
     the appâ€™s presentation layer. `taskly_ui` only raises callbacks.
 
@@ -468,6 +467,44 @@ Rationale:
 Guardrail:
 
 - Script: [tool/usm_tile_action_guardrail.dart](../../tool/usm_tile_action_guardrail.dart)
+
+## 2.4 UI theming and token usage (strict)
+
+UI must be fully theme-driven and consistent across screens.
+
+Normative rules:
+
+- All UI colors must come from Material `ThemeData.colorScheme` or a
+  `ThemeExtension`. Do not hardcode colors in widgets.
+- Theme creation must respect user-selected theme/seed colors. Do not override
+  `ColorScheme` with fixed palettes once a user choice is provided; only use
+  app defaults when no user selection exists.
+- All UI text sizes must come from `ThemeData.textTheme` or a `ThemeExtension`.
+  Do not set ad-hoc `fontSize` in widgets.
+- Spacing, radii, and elevations must come from theme tokens for shared or
+  reusable UI (`ThemeExtension` tokens or centralized app tokens such as
+  `AppSpacing` / `AppRadius`). Screen-local layout glue may use small constants
+  when it does not define a reusable pattern.
+- UI must respect user text scaling. Do not force `TextScaler.noScaling` or set
+  `textScaleFactor` to a fixed value.
+- Tap targets must meet platform accessibility guidance. Default to
+  `kMinInteractiveDimension` unless a design-approved compact token is defined
+  in theme extensions, and never go below 40dp.
+
+## 2.5 Entity tile presets and catalog (strict)
+
+Entity tiles must be rendered via **explicit presets**, not ad-hoc
+combinations of flags or custom layout tweaks.
+
+Normative rules:
+
+- Task/Project/Value tiles must be constructed using the preset variants
+  defined in `taskly_ui` (for example `TasklyTaskRowPreset.*`,
+  `TasklyProjectRowPreset.*`, `TasklyValueRowPreset.*`).
+- App code must not invent new tile styles through custom flags or screen-local
+  widget overrides.
+- Every preset must be represented in the shared catalog widget
+  (`TasklyTileCatalog`) so the full visual surface is auditable in one place.
 
 ## 3) State management standard
 

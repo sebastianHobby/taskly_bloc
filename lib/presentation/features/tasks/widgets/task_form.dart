@@ -227,13 +227,15 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.transparent,
+      barrierColor: theme.colorScheme.surface.withValues(alpha: 0),
       pageBuilder: (dialogContext, _, __) {
         return Stack(
           children: [
             GestureDetector(
               onTap: () => Navigator.of(dialogContext).maybePop(),
-              child: const ColoredBox(color: Colors.transparent),
+              child: ColoredBox(
+                color: theme.colorScheme.surface.withValues(alpha: 0),
+              ),
             ),
             CustomSingleChildLayout(
               delegate: _AnchoredDialogLayoutDelegate(

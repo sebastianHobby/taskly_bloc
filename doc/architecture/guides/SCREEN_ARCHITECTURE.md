@@ -110,12 +110,12 @@ Boundaries for `taskly_ui` are defined in:
 - [../INVARIANTS.md](../INVARIANTS.md) (`taskly_ui` boundary)
 - [TASKLY_UI_GOVERNANCE.md](TASKLY_UI_GOVERNANCE.md) (how to evolve shared UI)
 
-For entity rows, the default approach is **intent, not config**:
+For entity rows, the default approach is **preset, not config**:
 
 - pass a `*TileIntent` to describe the screen/flow,
 - pass a `*TileActions` object and let callback presence opt into affordances.
 
-See: [TASKLY_UI_INTENT_NOT_CONFIG.md](TASKLY_UI_INTENT_NOT_CONFIG.md)
+See: [TASKLY_UI_PRESET_NOT_CONFIG.md](TASKLY_UI_PRESET_NOT_CONFIG.md)
 
 Package hygiene (recommended):
 

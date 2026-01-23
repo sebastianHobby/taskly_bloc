@@ -41,10 +41,40 @@ final class AnytimeFeedSearchQueryChanged extends AnytimeFeedEvent {
   final String query;
 }
 
+final class AnytimeFeedFilterDueSoonChanged extends AnytimeFeedEvent {
+  const AnytimeFeedFilterDueSoonChanged({required this.enabled});
+
+  final bool enabled;
+}
+
+final class AnytimeFeedFilterOverdueChanged extends AnytimeFeedEvent {
+  const AnytimeFeedFilterOverdueChanged({required this.enabled});
+
+  final bool enabled;
+}
+
+final class AnytimeFeedFilterPriorityChanged extends AnytimeFeedEvent {
+  const AnytimeFeedFilterPriorityChanged({required this.enabled});
+
+  final bool enabled;
+}
+
+final class AnytimeFeedDueWindowDaysChanged extends AnytimeFeedEvent {
+  const AnytimeFeedDueWindowDaysChanged({required this.days});
+
+  final int days;
+}
+
 final class AnytimeFeedInboxCollapsedChanged extends AnytimeFeedEvent {
   const AnytimeFeedInboxCollapsedChanged({required this.collapsed});
 
   final bool collapsed;
+}
+
+final class AnytimeFeedValueCollapsedChanged extends AnytimeFeedEvent {
+  const AnytimeFeedValueCollapsedChanged({required this.collapsedValueIds});
+
+  final Set<String> collapsedValueIds;
 }
 
 sealed class AnytimeFeedState {
@@ -82,7 +112,12 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     on<AnytimeFeedFocusOnlyChanged>(_onFocusOnlyChanged);
     on<AnytimeFeedShowStartLaterItemsChanged>(_onShowStartLaterItemsChanged);
     on<AnytimeFeedSearchQueryChanged>(_onSearchQueryChanged);
+    on<AnytimeFeedFilterDueSoonChanged>(_onFilterDueSoonChanged);
+    on<AnytimeFeedFilterOverdueChanged>(_onFilterOverdueChanged);
+    on<AnytimeFeedFilterPriorityChanged>(_onFilterPriorityChanged);
+    on<AnytimeFeedDueWindowDaysChanged>(_onDueWindowDaysChanged);
     on<AnytimeFeedInboxCollapsedChanged>(_onInboxCollapsedChanged);
+    on<AnytimeFeedValueCollapsedChanged>(_onValueCollapsedChanged);
 
     add(const AnytimeFeedStarted());
   }
@@ -99,7 +134,12 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   bool _focusOnly = false;
   bool _showStartLaterItems = false;
   bool _inboxCollapsed = false;
+  Set<String> _collapsedValueIds = const <String>{};
   String _searchQuery = '';
+  bool _filterDueSoon = false;
+  bool _filterOverdue = false;
+  bool _filterPriority = false;
+  int _dueWindowDays = 7;
 
   Future<void> _onStarted(
     AnytimeFeedStarted event,
@@ -140,11 +180,51 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     _emitRows(emit);
   }
 
+  void _onFilterDueSoonChanged(
+    AnytimeFeedFilterDueSoonChanged event,
+    Emitter<AnytimeFeedState> emit,
+  ) {
+    _filterDueSoon = event.enabled;
+    _emitRows(emit);
+  }
+
+  void _onFilterOverdueChanged(
+    AnytimeFeedFilterOverdueChanged event,
+    Emitter<AnytimeFeedState> emit,
+  ) {
+    _filterOverdue = event.enabled;
+    _emitRows(emit);
+  }
+
+  void _onFilterPriorityChanged(
+    AnytimeFeedFilterPriorityChanged event,
+    Emitter<AnytimeFeedState> emit,
+  ) {
+    _filterPriority = event.enabled;
+    _emitRows(emit);
+  }
+
+  void _onDueWindowDaysChanged(
+    AnytimeFeedDueWindowDaysChanged event,
+    Emitter<AnytimeFeedState> emit,
+  ) {
+    _dueWindowDays = event.days;
+    _emitRows(emit);
+  }
+
   void _onInboxCollapsedChanged(
     AnytimeFeedInboxCollapsedChanged event,
     Emitter<AnytimeFeedState> emit,
   ) {
     _inboxCollapsed = event.collapsed;
+    _emitRows(emit);
+  }
+
+  void _onValueCollapsedChanged(
+    AnytimeFeedValueCollapsedChanged event,
+    Emitter<AnytimeFeedState> emit,
+  ) {
+    _collapsedValueIds = event.collapsedValueIds;
     _emitRows(emit);
   }
 
@@ -165,12 +245,9 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
   void _emitRows(Emitter<AnytimeFeedState> emit) {
     try {
-      final search = _searchQuery.toLowerCase();
-
       final tasks = _latestTasks
           .where((t) => !_focusOnly || _todaySelectedTaskIds.contains(t.id))
           .where((t) => _showStartLaterItems || !_isStartLater(t))
-          .where((t) => search.isEmpty || _matchesSearch(t, search))
           .toList(growable: false);
 
       final rows = _mapToRows(tasks);
@@ -192,230 +269,119 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     return false;
   }
 
-  bool _matchesSearch(Task task, String searchLower) {
-    final title = task.name.trim().toLowerCase();
-    if (title.contains(searchLower)) return true;
-
-    final projectName = task.project?.name.trim().toLowerCase();
-    if (projectName != null && projectName.contains(searchLower)) return true;
-
-    final valueName = task.effectivePrimaryValue?.name.trim().toLowerCase();
-    if (valueName != null && valueName.contains(searchLower)) return true;
-
-    return false;
-  }
-
   List<ListRowUiModel> _mapToRows(List<Task> tasks) {
     if (tasks.isEmpty) return const <ListRowUiModel>[];
 
-    final scopedValueId = switch (_scope) {
-      AnytimeValueScope(:final valueId) => valueId,
-      _ => null,
-    };
-    final scopedProjectId = switch (_scope) {
-      AnytimeProjectScope(:final projectId) => projectId,
-      _ => null,
-    };
+    final aggregates = _aggregateProjects(tasks);
+    final filtered = aggregates.where(_matchesFilters).toList(growable: false)
+      ..sort(_compareProjectGroups);
 
-    final rows = <ListRowUiModel>[];
-
-    final canShowGlobalInbox = scopedProjectId == null;
-
-    final inboxTasks = !canShowGlobalInbox
-        ? const <Task>[]
-        : tasks
-              .where((t) {
-                final pid = t.projectId;
-                return pid == null || pid.trim().isEmpty;
-              })
-              .toList(growable: false);
-
-    if (inboxTasks.isNotEmpty) {
-      rows.add(
-        ProjectHeaderRowUiModel(
-          rowKey: RowKey.v1(
-            screen: 'anytime',
-            rowType: 'group_header',
-            params: <String, String>{
-              'kind': 'project',
-              'project': 'inbox',
-              'scope': scopedValueId ?? 'all',
-            },
-          ),
-          depth: 0,
-          title: 'Inbox',
-          projectRef: const ProjectGroupingRef.inbox(),
-          trailingLabel: '${inboxTasks.length}',
-          isCollapsed: _inboxCollapsed,
-        ),
-      );
-
-      if (!_inboxCollapsed) {
-        final sortedInboxTasks = inboxTasks.toList(growable: false)
-          ..sort(_compareTasks);
-
-        for (final task in sortedInboxTasks) {
-          rows.add(
-            TaskRowUiModel(
-              rowKey: RowKey.v1(
-                screen: 'anytime',
-                rowType: 'task',
-                params: <String, String>{'id': task.id},
-              ),
-              depth: 1,
-              task: task,
-              showProjectLabel: false,
-            ),
-          );
-        }
-      }
-    }
-
-    final nonInboxTasks = canShowGlobalInbox
-        ? tasks
-              .where((t) {
-                final pid = t.projectId;
-                return pid != null && pid.trim().isNotEmpty;
-              })
-              .toList(growable: false)
-        : tasks;
-
-    if (nonInboxTasks.isEmpty) return rows;
-
-    final groups = <String, _ValueGroup>{};
-
-    for (final task in nonInboxTasks) {
-      final valueId = task.effectivePrimaryValueId;
-      final key = valueId ?? '__none__';
-
-      final group = groups.putIfAbsent(
-        key,
-        () => _ValueGroup(
-          valueId: valueId,
-          value: task.effectivePrimaryValue,
-        ),
-      );
-
-      group.addTask(task);
-    }
-
-    final sortedGroups = groups.values.toList(growable: false)
-      ..sort(_compareValueGroups);
-
-    for (final group in sortedGroups) {
-      final valueTitle = group.value?.name ?? 'No Value Assigned';
-
-      final includeValueHeader =
-          !(scopedValueId != null && group.valueId == scopedValueId);
-
-      final projectHeaderDepth = includeValueHeader ? 1 : 0;
-
-      if (includeValueHeader) {
-        rows.add(
-          ValueHeaderRowUiModel(
+    return filtered
+        .map(
+          (pg) => ProjectRowUiModel(
             rowKey: RowKey.v1(
               screen: 'anytime',
-              rowType: 'group_header',
+              rowType: 'project',
               params: <String, String>{
-                'kind': 'value',
-                'valueId': group.valueId ?? 'none',
+                'project': pg.projectRef.stableKey,
               },
             ),
             depth: 0,
-            title: valueTitle,
-            valueId: group.valueId,
-            priority: group.value?.priority,
-            isTappableToScope: false,
+            project: pg.project,
+            taskCount: pg.taskCount,
+            completedTaskCount: pg.completedTaskCount,
+            dueSoonCount: pg.dueSoonCount,
           ),
+        )
+        .toList(growable: false);
+  }
+
+  List<_ProjectAggregate> _aggregateProjects(List<Task> tasks) {
+    final groups = <String, _ProjectAggregate>{};
+
+    final today = DateTime(
+      _todayDayKeyUtc.year,
+      _todayDayKeyUtc.month,
+      _todayDayKeyUtc.day,
+      isUtc: _todayDayKeyUtc.isUtc,
+    );
+    final dueLimit = today.add(
+      Duration(days: _dueWindowDays.clamp(1, 30) - 1),
+    );
+
+    for (final task in tasks) {
+      final projectRef = ProjectGroupingRef.fromProjectId(task.projectId);
+      final key = projectRef.stableKey;
+
+      final group = groups.putIfAbsent(
+        key,
+        () => _ProjectAggregate(
+          projectRef: projectRef,
+          title: projectRef.isInbox ? 'Inbox' : (task.project?.name ?? 'Project'),
+        ),
+      );
+
+      group.project ??= task.project;
+      group.tasks.add(task);
+
+      final deadline = task.occurrence?.deadline ?? task.deadlineDate;
+      if (deadline != null) {
+        final deadlineDay = DateTime(
+          deadline.year,
+          deadline.month,
+          deadline.day,
+          isUtc: deadline.isUtc,
         );
-      }
-
-      final projectGroups = group.projectGroups.toList(growable: false)
-        ..sort(_compareProjectGroups);
-
-      for (final pg in projectGroups) {
-        final includeProjectHeader = !(switch (pg.projectRef) {
-          ProjectProjectGroupingRef(:final projectId) =>
-            scopedProjectId != null && projectId == scopedProjectId,
-          InboxProjectGroupingRef() => false,
-        });
-
-        final taskDepth = includeProjectHeader
-            ? projectHeaderDepth + 1
-            : projectHeaderDepth;
-
-        if (includeProjectHeader) {
-          rows.add(
-            ProjectHeaderRowUiModel(
-              rowKey: RowKey.v1(
-                screen: 'anytime',
-                rowType: 'group_header',
-                params: <String, String>{
-                  'kind': 'project',
-                  'valueId': group.valueId ?? 'none',
-                  'project': pg.projectRef.stableKey,
-                },
-              ),
-              depth: projectHeaderDepth,
-              title: pg.title,
-              projectRef: pg.projectRef,
-            ),
-          );
-        }
-
-        final sortedTasks = pg.tasks.toList(growable: false)
-          ..sort(_compareTasks);
-
-        for (final task in sortedTasks) {
-          rows.add(
-            TaskRowUiModel(
-              rowKey: RowKey.v1(
-                screen: 'anytime',
-                rowType: 'task',
-                params: <String, String>{'id': task.id},
-              ),
-              depth: taskDepth,
-              task: task,
-              showProjectLabel: false,
-            ),
-          );
+        if (deadlineDay.isBefore(today)) {
+          group.overdueCount += 1;
+        } else if (!deadlineDay.isAfter(dueLimit)) {
+          group.dueSoonCount += 1;
         }
       }
     }
 
-    return rows;
+    return groups.values.toList(growable: false);
   }
 
-  int _compareValueGroups(_ValueGroup a, _ValueGroup b) {
-    final aNone = a.valueId == null;
-    final bNone = b.valueId == null;
-    if (aNone != bNone) return aNone ? 1 : -1;
+  bool _matchesFilters(_ProjectAggregate aggregate) {
+    final search = _searchQuery.toLowerCase().trim();
+    if (search.isNotEmpty) {
+      final title = aggregate.title.toLowerCase();
+      final valueName =
+          aggregate.project?.primaryValue?.name.trim().toLowerCase();
+      final matchesTitle = title.contains(search);
+      final matchesValue =
+          valueName != null && valueName.contains(search);
+      if (!matchesTitle && !matchesValue) return false;
+    }
 
-    final ap = a.value?.priority ?? ValuePriority.medium;
-    final bp = b.value?.priority ?? ValuePriority.medium;
-    final byP = _priorityRank(ap).compareTo(_priorityRank(bp));
-    if (byP != 0) return byP;
+    if (_filterPriority) {
+      if (aggregate.project?.priority != 1) return false;
+    }
 
-    final an = (a.value?.name ?? '').toLowerCase();
-    final bn = (b.value?.name ?? '').toLowerCase();
-    final byN = an.compareTo(bn);
-    if (byN != 0) return byN;
+    if (_filterOverdue && aggregate.overdueCount <= 0) return false;
 
-    return (a.valueId ?? '').compareTo(b.valueId ?? '');
+    if (_filterDueSoon && aggregate.dueSoonCount <= 0) return false;
+
+    return true;
   }
 
-  int _priorityRank(ValuePriority p) {
-    return switch (p) {
-      ValuePriority.high => 0,
-      ValuePriority.medium => 1,
-      ValuePriority.low => 2,
-    };
-  }
-
-  int _compareProjectGroups(_ProjectGroup a, _ProjectGroup b) {
+  int _compareProjectGroups(_ProjectAggregate a, _ProjectAggregate b) {
     if (a.projectRef.isInbox != b.projectRef.isInbox) {
       return a.projectRef.isInbox ? -1 : 1;
     }
+
+    final aOverdue = a.overdueCount > 0;
+    final bOverdue = b.overdueCount > 0;
+    if (aOverdue != bOverdue) return aOverdue ? -1 : 1;
+
+    final aDueSoon = a.dueSoonCount > 0;
+    final bDueSoon = b.dueSoonCount > 0;
+    if (aDueSoon != bDueSoon) return aDueSoon ? -1 : 1;
+
+    final ap = a.project?.priority ?? 99;
+    final bp = b.project?.priority ?? 99;
+    if (ap != bp) return ap.compareTo(bp);
 
     final byName = a.title.toLowerCase().compareTo(b.title.toLowerCase());
     if (byName != 0) return byName;
@@ -424,66 +390,10 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       b.projectRef.projectId ?? '',
     );
   }
-
-  int _compareTasks(Task a, Task b) {
-    if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
-
-    final ad = a.occurrence?.deadline ?? a.deadlineDate;
-    final bd = b.occurrence?.deadline ?? b.deadlineDate;
-    if (ad == null && bd != null) return 1;
-    if (ad != null && bd == null) return -1;
-    if (ad != null && bd != null) {
-      final byDeadline = ad.compareTo(bd);
-      if (byDeadline != 0) return byDeadline;
-    }
-
-    final ap = a.priority;
-    final bp = b.priority;
-    if (ap == null && bp != null) return 1;
-    if (ap != null && bp == null) return -1;
-    if (ap != null && bp != null) {
-      final byPriority = ap.compareTo(bp);
-      if (byPriority != 0) return byPriority;
-    }
-
-    final an = a.name.trim().toLowerCase();
-    final bn = b.name.trim().toLowerCase();
-    final byName = an.compareTo(bn);
-    if (byName != 0) return byName;
-
-    return a.id.compareTo(b.id);
-  }
 }
 
-class _ValueGroup {
-  _ValueGroup({required this.valueId, required this.value});
-
-  final String? valueId;
-  final Value? value;
-
-  final Map<String, _ProjectGroup> _projectGroupsByKey =
-      <String, _ProjectGroup>{};
-
-  Iterable<_ProjectGroup> get projectGroups => _projectGroupsByKey.values;
-
-  void addTask(Task task) {
-    final projectRef = ProjectGroupingRef.fromProjectId(task.projectId);
-    final key = projectRef.stableKey;
-
-    final group = _projectGroupsByKey.putIfAbsent(
-      key,
-      () => _ProjectGroup(
-        projectRef: projectRef,
-        title: projectRef.isInbox ? 'Inbox' : (task.project?.name ?? 'Project'),
-      ),
-    );
-
-    group.tasks.add(task);
-  }
-}
-
-class _ProjectGroup {
-  _ProjectGroup({
+class _ProjectAggregate {
+  _ProjectAggregate({
     required this.projectRef,
     required this.title,
   });
@@ -491,5 +401,13 @@ class _ProjectGroup {
   final ProjectGroupingRef projectRef;
   final String title;
 
+  Project? project;
   final List<Task> tasks = <Task>[];
+  int dueSoonCount = 0;
+  int overdueCount = 0;
+
+  int get taskCount => project?.taskCount ?? tasks.length;
+
+  int get completedTaskCount =>
+      project?.completedTaskCount ?? tasks.where((t) => t.completed).length;
 }

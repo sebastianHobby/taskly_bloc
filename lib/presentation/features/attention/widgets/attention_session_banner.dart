@@ -25,7 +25,7 @@ class AttentionSessionBanner extends StatelessWidget {
       ),
       AttentionSessionBannerSeverity.warning => (
         Icons.warning_amber_outlined,
-        Colors.orange,
+        scheme.secondary,
       ),
     };
 
@@ -37,7 +37,7 @@ class AttentionSessionBanner extends StatelessWidget {
         AttentionSessionBannerSeverity.warning => 'Items need attention.',
       },
       child: Material(
-        color: Colors.transparent,
+        color: scheme.surface.withValues(alpha: 0),
         child: Container(
           constraints: const BoxConstraints(minHeight: 52),
           margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),

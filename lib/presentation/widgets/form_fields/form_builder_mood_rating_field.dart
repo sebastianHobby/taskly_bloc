@@ -58,7 +58,7 @@ class FormBuilderMoodRatingField
                                        mood,
                                        colorScheme,
                                      ).withValues(alpha: 0.2))
-                               : Colors.transparent,
+                               : colorScheme.surface.withValues(alpha: 0),
                            border: Border.all(
                              color: isSelected
                                  ? (widget.selectedBorderColor ??
@@ -120,11 +120,11 @@ class FormBuilderMoodRatingField
 
   static Color _getMoodColor(MoodRating mood, ColorScheme colorScheme) {
     return switch (mood) {
-      MoodRating.veryLow => Colors.red.shade700,
-      MoodRating.low => Colors.orange.shade700,
-      MoodRating.neutral => Colors.grey.shade600,
-      MoodRating.good => Colors.lightGreen.shade700,
-      MoodRating.excellent => Colors.green.shade700,
+      MoodRating.veryLow => colorScheme.error,
+      MoodRating.low => colorScheme.secondary,
+      MoodRating.neutral => colorScheme.onSurfaceVariant,
+      MoodRating.good => colorScheme.tertiary,
+      MoodRating.excellent => colorScheme.primary,
     };
   }
 }

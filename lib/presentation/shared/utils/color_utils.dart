@@ -11,11 +11,11 @@ class ColorUtils {
   ///
   /// Example:
   /// ```dart
-  /// ColorUtils.fromHex('#FF5733'); // Orange
-  /// ColorUtils.fromHex('FF5733');  // Same orange
-  /// ColorUtils.fromHex(null);      // Returns fallback
+  /// ColorUtils.fromHex('#FF5733', fallback: Colors.blue); // Orange
+  /// ColorUtils.fromHex('FF5733', fallback: Colors.blue);  // Same orange
+  /// ColorUtils.fromHex(null, fallback: Colors.blue);      // Returns fallback
   /// ```
-  static Color fromHex(String? hex, {Color fallback = Colors.grey}) {
+  static Color fromHex(String? hex, {required Color fallback}) {
     if (hex == null || hex.isEmpty) return fallback;
 
     final normalized = hex.replaceAll('#', '').toUpperCase();

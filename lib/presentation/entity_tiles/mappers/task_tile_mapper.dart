@@ -7,7 +7,6 @@ import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.da
 import 'package:taskly_bloc/presentation/shared/formatters/date_label_formatter.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
-import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
@@ -17,20 +16,10 @@ TasklyTaskRowData buildTaskRowData(
   BuildContext context, {
   required Task task,
   required EntityTileCapabilities tileCapabilities,
-  bool showProjectLabel = false,
-  bool showDates = true,
-  bool showOnlyDeadlineDate = false,
-  bool showDeadlineChipOnTitleLine = false,
-  bool showPrimaryValueOnTitleLine = true,
-  bool showSecondaryValues = false,
   String? overrideStartDateLabel,
   String? overrideDeadlineDateLabel,
   bool? overrideIsOverdue,
   bool? overrideIsDueToday,
-  bool? overrideIsDueSoon,
-  bool showPriorityMarkerOnRight = false,
-  bool showRepeatIcon = false,
-  bool showOverflowEllipsisWhenMetaHidden = false,
 }) {
   final isCompleted = task.occurrence?.isCompleted ?? task.completed;
 
@@ -63,37 +52,10 @@ TasklyTaskRowData buildTaskRowData(
       ? null
       : resolvedDeadlineDateLabel;
 
-  final hasExtraSecondaryValues = task.effectiveSecondaryValues.length > 1;
-
-  final shouldShowOverflowEllipsis =
-      showOverflowEllipsisWhenMetaHidden &&
-      (task.project != null ||
-          (resolvedStartDateLabel != null) ||
-          (resolvedDeadlineDateLabel != null) ||
-          task.isRepeating ||
-          task.priority != null ||
-          hasExtraSecondaryValues);
-
   final primaryValueData = task.effectivePrimaryValue?.toChipData(context);
 
-  final projectId = task.projectId?.trim();
-  final isInbox = projectId == null || projectId.isEmpty;
-
   final meta = TasklyEntityMetaData(
-    projectName: !showProjectLabel
-        ? null
-        : (isInbox ? 'Inbox' : task.project?.name),
     primaryValue: primaryValueData,
-    secondaryValues: !showSecondaryValues
-        ? const []
-        : task.effectiveSecondaryValues
-              .take(1)
-              .map((v) => v.toChipData(context))
-              .toList(growable: false),
-    showOverflowEllipsis: shouldShowOverflowEllipsis,
-    showDates: showDates,
-    showOnlyDeadlineDate: showOnlyDeadlineDate,
-    showDeadlineChipOnTitleLine: showDeadlineChipOnTitleLine,
     startDateLabel: resolvedStartDateLabel,
     deadlineDateLabel: effectiveResolvedDeadlineDateLabel,
     isOverdue:
@@ -110,21 +72,7 @@ TasklyTaskRowData buildTaskRowData(
           completed: isCompleted,
           today: today,
         ),
-    isDueSoon:
-        overrideIsDueSoon ??
-        _isDueSoon(
-          effectiveDeadlineDate,
-          completed: isCompleted,
-          today: today,
-        ),
-    hasRepeat: showRepeatIcon && task.isRepeating,
-    showBothDatesIfPresent: true,
-    showPriorityMarkerOnRight: showPriorityMarkerOnRight,
     priority: task.priority,
-    priorityColor: _priorityColor(task.priority),
-    priorityPillLabel: task.priority == null
-        ? null
-        : 'Priority P${task.priority}',
   );
 
   return TasklyTaskRowData(
@@ -133,7 +81,6 @@ TasklyTaskRowData buildTaskRowData(
     completed: isCompleted,
     meta: meta,
     leadingChip: primaryValueData,
-    titlePrimaryValue: showPrimaryValueOnTitleLine ? primaryValueData : null,
     checkboxSemanticLabel: isCompleted
         ? 'Mark "${task.name}" as incomplete'
         : 'Mark "${task.name}" as complete',
@@ -209,21 +156,3 @@ bool _isDueToday(
   return deadlineDay.isAtSameMomentAs(today);
 }
 
-bool _isDueSoon(
-  DateTime? deadline, {
-  required bool completed,
-  required DateTime today,
-}) {
-  if (deadline == null || completed) return false;
-  final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
-  final daysUntil = deadlineDay.difference(today).inDays;
-  return daysUntil > 0 && daysUntil <= 3;
-}
-
-Color? _priorityColor(int? p) {
-  return switch (p) {
-    1 => AppColors.rambutan80,
-    2 => AppColors.cempedak80,
-    _ => null,
-  };
-}

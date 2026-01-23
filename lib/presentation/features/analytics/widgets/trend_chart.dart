@@ -119,7 +119,7 @@ class TrendChart extends StatelessWidget {
                           FlSpot(0, data.average!),
                           FlSpot(data.points.length - 1, data.average!),
                         ],
-                        color: Colors.grey,
+                        color: theme.colorScheme.onSurfaceVariant,
                         barWidth: 1,
                         dotData: const FlDotData(show: false),
                         dashArray: [5, 5],

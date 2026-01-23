@@ -124,8 +124,11 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
     return Card(
       elevation: 0,
       margin: EdgeInsets.zero,
-      color: cs.surfaceContainerLow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: cs.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
+      ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
         child: Column(
@@ -363,7 +366,6 @@ class _BucketSection extends StatelessWidget {
         context,
         task: task,
         tileCapabilities: tileCapabilities,
-        showProjectLabel: false,
       );
 
       final openEditor = buildTaskOpenEditorHandler(context, task: task);
@@ -377,7 +379,6 @@ class _BucketSection extends StatelessWidget {
         title: data.title,
         completed: data.completed,
         meta: data.meta,
-        titlePrimaryValue: data.titlePrimaryValue,
         leadingChip: data.leadingChip,
         supportingText: subtitleForTask?.call(task),
         supportingTooltipText: null,
@@ -389,9 +390,9 @@ class _BucketSection extends StatelessWidget {
       return TasklyRowSpec.task(
         key: 'myday-accepted-${task.id}',
         data: updatedData,
-        intent: selectionMode
-            ? TasklyTaskRowIntent.bulkSelection(selected: isSelected)
-            : const TasklyTaskRowIntent.standard(),
+        preset: selectionMode
+            ? TasklyTaskRowPreset.bulkSelection(selected: isSelected)
+            : const TasklyTaskRowPreset.standard(),
         markers: TasklyTaskRowMarkers(pinned: task.isPinned),
         actions: TasklyTaskRowActions(
           onTap: () {

@@ -53,6 +53,24 @@ final class AnytimeShowStartLaterSet extends AnytimeScreenEvent {
   final bool enabled;
 }
 
+final class AnytimeFilterDueSoonSet extends AnytimeScreenEvent {
+  const AnytimeFilterDueSoonSet(this.enabled);
+
+  final bool enabled;
+}
+
+final class AnytimeFilterOverdueSet extends AnytimeScreenEvent {
+  const AnytimeFilterOverdueSet(this.enabled);
+
+  final bool enabled;
+}
+
+final class AnytimeFilterPrioritySet extends AnytimeScreenEvent {
+  const AnytimeFilterPrioritySet(this.enabled);
+
+  final bool enabled;
+}
+
 final class AnytimeSearchQueryChanged extends AnytimeScreenEvent {
   const AnytimeSearchQueryChanged(this.query);
 
@@ -79,6 +97,12 @@ final class AnytimeProjectHeaderTapped extends AnytimeScreenEvent {
   final ProjectGroupingRef projectRef;
 }
 
+final class AnytimeValueHeaderToggled extends AnytimeScreenEvent {
+  const AnytimeValueHeaderToggled({required this.valueKey});
+
+  final String valueKey;
+}
+
 final class AnytimeEffectHandled extends AnytimeScreenEvent {
   const AnytimeEffectHandled();
 }
@@ -88,7 +112,11 @@ sealed class AnytimeScreenState {
     required this.focusOnly,
     required this.showStartLaterItems,
     required this.inboxCollapsed,
+    required this.collapsedValueIds,
     required this.searchQuery,
+    required this.filterDueSoon,
+    required this.filterOverdue,
+    required this.filterPriority,
     this.effect,
   });
 
@@ -100,8 +128,14 @@ sealed class AnytimeScreenState {
   /// Whether the global Inbox section in Anytime is collapsed.
   final bool inboxCollapsed;
 
+  /// Collapsed value section keys in Anytime.
+  final Set<String> collapsedValueIds;
+
   /// Ephemeral search query for the current route/scope.
   final String searchQuery;
+  final bool filterDueSoon;
+  final bool filterOverdue;
+  final bool filterPriority;
 
   final AnytimeScreenEffect? effect;
 }
@@ -111,7 +145,11 @@ final class AnytimeScreenReady extends AnytimeScreenState {
     required super.focusOnly,
     required super.showStartLaterItems,
     required super.inboxCollapsed,
+    required super.collapsedValueIds,
     required super.searchQuery,
+    required super.filterDueSoon,
+    required super.filterOverdue,
+    required super.filterPriority,
     super.effect,
   });
 }
@@ -124,7 +162,11 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           focusOnly: false,
           showStartLaterItems: false,
           inboxCollapsed: false,
+          collapsedValueIds: <String>{},
           searchQuery: '',
+          filterDueSoon: false,
+          filterOverdue: false,
+          filterPriority: false,
         ),
       ) {
     on<AnytimeFocusOnlyToggled>((event, emit) {
@@ -133,7 +175,11 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           focusOnly: !state.focusOnly,
           showStartLaterItems: state.showStartLaterItems,
           inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
+          filterDueSoon: state.filterDueSoon,
+          filterOverdue: state.filterOverdue,
+          filterPriority: state.filterPriority,
         ),
       );
     });
@@ -143,7 +189,11 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           focusOnly: event.enabled,
           showStartLaterItems: state.showStartLaterItems,
           inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
+          filterDueSoon: state.filterDueSoon,
+          filterOverdue: state.filterOverdue,
+          filterPriority: state.filterPriority,
         ),
       );
     });
@@ -154,7 +204,11 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           focusOnly: state.focusOnly,
           showStartLaterItems: event.enabled,
           inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
+          filterDueSoon: state.filterDueSoon,
+          filterOverdue: state.filterOverdue,
+          filterPriority: state.filterPriority,
         ),
       );
     });
@@ -165,7 +219,56 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           focusOnly: state.focusOnly,
           showStartLaterItems: state.showStartLaterItems,
           inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: state.collapsedValueIds,
           searchQuery: event.query,
+          filterDueSoon: state.filterDueSoon,
+          filterOverdue: state.filterOverdue,
+          filterPriority: state.filterPriority,
+        ),
+      );
+    });
+
+    on<AnytimeFilterDueSoonSet>((event, emit) {
+      emit(
+        AnytimeScreenReady(
+          focusOnly: state.focusOnly,
+          showStartLaterItems: state.showStartLaterItems,
+          inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: state.collapsedValueIds,
+          searchQuery: state.searchQuery,
+          filterDueSoon: event.enabled,
+          filterOverdue: state.filterOverdue,
+          filterPriority: state.filterPriority,
+        ),
+      );
+    });
+
+    on<AnytimeFilterOverdueSet>((event, emit) {
+      emit(
+        AnytimeScreenReady(
+          focusOnly: state.focusOnly,
+          showStartLaterItems: state.showStartLaterItems,
+          inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: state.collapsedValueIds,
+          searchQuery: state.searchQuery,
+          filterDueSoon: state.filterDueSoon,
+          filterOverdue: event.enabled,
+          filterPriority: state.filterPriority,
+        ),
+      );
+    });
+
+    on<AnytimeFilterPrioritySet>((event, emit) {
+      emit(
+        AnytimeScreenReady(
+          focusOnly: state.focusOnly,
+          showStartLaterItems: state.showStartLaterItems,
+          inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: state.collapsedValueIds,
+          searchQuery: state.searchQuery,
+          filterDueSoon: state.filterDueSoon,
+          filterOverdue: state.filterOverdue,
+          filterPriority: event.enabled,
         ),
       );
     });
@@ -177,7 +280,11 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           focusOnly: state.focusOnly,
           showStartLaterItems: state.showStartLaterItems,
           inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
+          filterDueSoon: state.filterDueSoon,
+          filterOverdue: state.filterOverdue,
+          filterPriority: state.filterPriority,
           effect: AnytimeNavigateToTaskNew(
             defaultProjectId: defaultProjectId,
             defaultValueId: defaultValueId,
@@ -192,7 +299,11 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           focusOnly: state.focusOnly,
           showStartLaterItems: state.showStartLaterItems,
           inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
+          filterDueSoon: state.filterDueSoon,
+          filterOverdue: state.filterOverdue,
+          filterPriority: state.filterPriority,
           effect: AnytimeOpenProjectNew(
             openToValues: _scope is AnytimeValueScope,
           ),
@@ -208,7 +319,11 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           focusOnly: state.focusOnly,
           showStartLaterItems: state.showStartLaterItems,
           inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
+          filterDueSoon: state.filterDueSoon,
+          filterOverdue: state.filterOverdue,
+          filterPriority: state.filterPriority,
           effect: AnytimeNavigateToTaskEdit(taskId: id),
         ),
       );
@@ -222,7 +337,11 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
               focusOnly: state.focusOnly,
               showStartLaterItems: state.showStartLaterItems,
               inboxCollapsed: !state.inboxCollapsed,
+              collapsedValueIds: state.collapsedValueIds,
               searchQuery: state.searchQuery,
+              filterDueSoon: state.filterDueSoon,
+              filterOverdue: state.filterOverdue,
+              filterPriority: state.filterPriority,
             ),
           );
         case ProjectProjectGroupingRef(:final projectId):
@@ -233,11 +352,38 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
               focusOnly: state.focusOnly,
               showStartLaterItems: state.showStartLaterItems,
               inboxCollapsed: state.inboxCollapsed,
+              collapsedValueIds: state.collapsedValueIds,
               searchQuery: state.searchQuery,
+              filterDueSoon: state.filterDueSoon,
+              filterOverdue: state.filterOverdue,
+              filterPriority: state.filterPriority,
               effect: AnytimeNavigateToProjectAnytime(projectId: id),
             ),
           );
       }
+    });
+
+    on<AnytimeValueHeaderToggled>((event, emit) {
+      final key = event.valueKey.trim();
+      if (key.isEmpty) return;
+
+      final next = Set<String>.from(state.collapsedValueIds);
+      if (!next.add(key)) {
+        next.remove(key);
+      }
+
+      emit(
+        AnytimeScreenReady(
+          focusOnly: state.focusOnly,
+          showStartLaterItems: state.showStartLaterItems,
+          inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: next,
+          searchQuery: state.searchQuery,
+          filterDueSoon: state.filterDueSoon,
+          filterOverdue: state.filterOverdue,
+          filterPriority: state.filterPriority,
+        ),
+      );
     });
 
     on<AnytimeEffectHandled>((event, emit) {
@@ -247,7 +393,11 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           focusOnly: state.focusOnly,
           showStartLaterItems: state.showStartLaterItems,
           inboxCollapsed: state.inboxCollapsed,
+          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
+          filterDueSoon: state.filterDueSoon,
+          filterOverdue: state.filterOverdue,
+          filterPriority: state.filterPriority,
         ),
       );
     });

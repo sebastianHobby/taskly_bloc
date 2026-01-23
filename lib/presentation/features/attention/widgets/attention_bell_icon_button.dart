@@ -38,13 +38,18 @@ class AttentionBellIconButton extends StatelessWidget {
             theme.colorScheme.error.withValues(alpha: 0.35),
           ),
           AttentionBellSeverity.warning => (
-            Colors.orange,
-            Colors.orange.withValues(alpha: 0.28),
+            theme.colorScheme.secondary,
+            theme.colorScheme.secondary.withValues(alpha: 0.28),
           ),
           AttentionBellSeverity.none => (
             theme.colorScheme.primary,
-            Colors.transparent,
+            theme.colorScheme.surface.withValues(alpha: 0),
           ),
+        };
+        final badgeTextColor = switch (severity) {
+          AttentionBellSeverity.critical => theme.colorScheme.onError,
+          AttentionBellSeverity.warning => theme.colorScheme.onSecondary,
+          AttentionBellSeverity.none => theme.colorScheme.onPrimary,
         };
 
         final countText = total > 99 ? '99+' : '$total';
@@ -102,6 +107,7 @@ class AttentionBellIconButton extends StatelessWidget {
                         child: _BellBadge(
                           text: countText,
                           color: badgeColor,
+                          textColor: badgeTextColor,
                         ),
                       ),
                   ],
@@ -119,10 +125,12 @@ class _BellBadge extends StatelessWidget {
   const _BellBadge({
     required this.text,
     required this.color,
+    required this.textColor,
   });
 
   final String text;
   final Color color;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +149,7 @@ class _BellBadge extends StatelessWidget {
         text,
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Colors.white,
+          color: textColor,
           fontWeight: FontWeight.w700,
         ),
       ),

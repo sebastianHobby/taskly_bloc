@@ -133,6 +133,7 @@ class DistributionChart extends StatelessWidget {
     final theme = Theme.of(context);
     final entries = distribution.entries.toList();
     final total = entries.fold<num>(0, (sum, e) => sum + e.value);
+    final palette = _buildPalette(theme.colorScheme);
 
     return PieChart(
       PieChartData(
@@ -143,12 +144,11 @@ class DistributionChart extends StatelessWidget {
               (e) => PieChartSectionData(
                 value: e.value.value.toDouble(),
                 title: '${((e.value.value / total) * 100).toStringAsFixed(0)}%',
-                color: _getColor(e.key, theme),
+                color: palette[e.key % palette.length].color,
                 radius: 100,
-                titleStyle: const TextStyle(
-                  fontSize: 14,
+                titleStyle: theme.textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: palette[e.key % palette.length].onColor,
                 ),
               ),
             )
@@ -163,15 +163,27 @@ class DistributionChart extends StatelessWidget {
     return _buildBarChart(context); // Simplified implementation
   }
 
-  Color _getColor(int index, ThemeData theme) {
-    final colors = [
-      theme.colorScheme.primary,
-      theme.colorScheme.secondary,
-      theme.colorScheme.tertiary,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
+  List<_SliceColor> _buildPalette(ColorScheme scheme) {
+    return [
+      _SliceColor(color: scheme.primary, onColor: scheme.onPrimary),
+      _SliceColor(color: scheme.secondary, onColor: scheme.onSecondary),
+      _SliceColor(color: scheme.tertiary, onColor: scheme.onTertiary),
+      _SliceColor(color: scheme.error, onColor: scheme.onError),
+      _SliceColor(
+        color: scheme.primaryContainer,
+        onColor: scheme.onPrimaryContainer,
+      ),
+      _SliceColor(
+        color: scheme.secondaryContainer,
+        onColor: scheme.onSecondaryContainer,
+      ),
     ];
-    return colors[index % colors.length];
   }
+}
+
+class _SliceColor {
+  const _SliceColor({required this.color, required this.onColor});
+
+  final Color color;
+  final Color onColor;
 }

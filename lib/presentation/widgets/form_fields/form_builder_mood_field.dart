@@ -94,19 +94,21 @@ class _CompactMoodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       alignment: WrapAlignment.center,
       children: MoodRating.values.map((mood) {
         final isSelected = selected == mood;
+        final color = _getMoodColor(mood, scheme);
         return ChoiceChip(
           label: Text('${mood.emoji} ${mood.label}'),
           selected: isSelected,
           onSelected: enabled ? (_) => onSelected(mood) : null,
-          selectedColor: _getMoodColor(mood).withValues(alpha: 0.2),
+          selectedColor: color.withValues(alpha: 0.2),
           labelStyle: TextStyle(
-            color: isSelected ? _getMoodColor(mood) : null,
+            color: isSelected ? color : null,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         );
@@ -131,7 +133,7 @@ class _MoodOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = _getMoodColor(mood);
+    final color = _getMoodColor(mood, theme.colorScheme);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -144,7 +146,7 @@ class _MoodOption extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? color.withValues(alpha: 0.15)
-                : Colors.transparent,
+                : theme.colorScheme.surface.withValues(alpha: 0),
             border: Border.all(
               color: isSelected ? color : theme.dividerColor,
               width: isSelected ? 2.5 : 1.5,
@@ -179,12 +181,12 @@ class _MoodOption extends StatelessWidget {
   }
 }
 
-Color _getMoodColor(MoodRating mood) {
+Color _getMoodColor(MoodRating mood, ColorScheme colorScheme) {
   return switch (mood) {
-    MoodRating.veryLow => Colors.red.shade700,
-    MoodRating.low => Colors.orange.shade700,
-    MoodRating.neutral => Colors.grey.shade600,
-    MoodRating.good => Colors.lightGreen.shade700,
-    MoodRating.excellent => Colors.green.shade700,
+    MoodRating.veryLow => colorScheme.error,
+    MoodRating.low => colorScheme.secondary,
+    MoodRating.neutral => colorScheme.onSurfaceVariant,
+    MoodRating.good => colorScheme.tertiary,
+    MoodRating.excellent => colorScheme.primary,
   };
 }

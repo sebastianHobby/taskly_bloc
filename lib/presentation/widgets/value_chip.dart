@@ -29,7 +29,8 @@ class ValueChip extends StatelessWidget {
 
     final backgroundColor = switch (variant) {
       ValueChipVariant.solid => color.withValues(alpha: 0.18),
-      ValueChipVariant.outlined => Colors.transparent,
+      ValueChipVariant.outlined =>
+        theme.colorScheme.surface.withValues(alpha: 0),
     };
 
     final borderColor = switch (variant) {

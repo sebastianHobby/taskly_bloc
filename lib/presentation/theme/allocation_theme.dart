@@ -16,7 +16,7 @@ class AllocationTheme extends ThemeExtension<AllocationTheme> {
   factory AllocationTheme.dark(ColorScheme colorScheme) {
     return AllocationTheme(
       focusBlue: colorScheme.primary,
-      completionGreen: Colors.green.shade400,
+      completionGreen: colorScheme.tertiary,
       overdueRed: colorScheme.error,
       pinnedGradient: LinearGradient(
         colors: [
@@ -42,7 +42,7 @@ class AllocationTheme extends ThemeExtension<AllocationTheme> {
   factory AllocationTheme.light(ColorScheme colorScheme) {
     return AllocationTheme(
       focusBlue: colorScheme.primary,
-      completionGreen: Colors.green.shade600,
+      completionGreen: colorScheme.tertiary,
       overdueRed: colorScheme.error,
       pinnedGradient: LinearGradient(
         colors: [
