@@ -6,7 +6,6 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
-import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
@@ -163,7 +162,6 @@ class _RitualBody extends StatelessWidget {
               snoozed: snoozed,
               completedPicks: completedPicks,
               selected: selected,
-              curatedReasonCodesByTaskId: data.curatedReasonCodesByTaskId,
               gateState: gate,
               isResume: isResume,
               onAddValues: () => Routing.toScreenKey(context, 'values'),
@@ -331,7 +329,6 @@ class _RitualCard extends StatefulWidget {
     required this.snoozed,
     required this.completedPicks,
     required this.selected,
-    required this.curatedReasonCodesByTaskId,
     required this.gateState,
     required this.isResume,
     required this.onAddValues,
@@ -352,7 +349,6 @@ class _RitualCard extends StatefulWidget {
   final List<Task> snoozed;
   final List<Task> completedPicks;
   final Set<String> selected;
-  final Map<String, List<AllocationReasonCode>> curatedReasonCodesByTaskId;
   final MyDayGateLoaded? gateState;
   final bool isResume;
   final VoidCallback onAddValues;
@@ -452,78 +448,8 @@ class _RitualCardState extends State<_RitualCard> {
   late bool _dueExpanded;
   late bool _startsExpanded;
 
-  String _supportingTextForWhatMattersTask(BuildContext context, Task task) {
-    final l10n = context.l10n;
-    final primaryValueName = task.effectivePrimaryValue?.name.trim();
-    if (primaryValueName == null || primaryValueName.isEmpty) return '';
-
-    final reasonCodes =
-        widget.curatedReasonCodesByTaskId[task.id] ??
-        const <AllocationReasonCode>[];
-
-    final suffixes = <String>[];
-    if (reasonCodes.contains(AllocationReasonCode.urgency)) {
-      suffixes.add(l10n.myDayDueSoonLabel);
-    }
-    if (reasonCodes.contains(AllocationReasonCode.priority)) {
-      suffixes.add(l10n.priorityLabel);
-    }
-    if (reasonCodes.contains(AllocationReasonCode.neglectBalance)) {
-      suffixes.add(l10n.myDayWhyTheseSignalBalance);
-    }
-    if (reasonCodes.contains(AllocationReasonCode.crossValue)) {
-      suffixes.add(l10n.myDayWhyTheseSignalCrossValue);
-    }
-
-    final base = l10n.myDaySupportsValueLabel(primaryValueName);
-    if (suffixes.isEmpty) return base;
-    return '$base · ${suffixes.join('')}';
-  }
-
-  String _signalsSummaryForTasks(BuildContext context, List<Task> tasks) {
-    final l10n = context.l10n;
-    final union = <AllocationReasonCode>{
-      for (final task in tasks) ...?widget.curatedReasonCodesByTaskId[task.id],
-    };
-    if (union.isEmpty) return '';
-
-    final parts = <String>[];
-    if (union.contains(AllocationReasonCode.valueAlignment)) {
-      parts.add(l10n.myDayValueAlignedLabel);
-    }
-    if (union.contains(AllocationReasonCode.neglectBalance)) {
-      parts.add(l10n.myDayWhyTheseSignalBalance);
-    }
-    if (union.contains(AllocationReasonCode.crossValue)) {
-      parts.add(l10n.myDayWhyTheseSignalCrossValue);
-    }
-    if (union.contains(AllocationReasonCode.urgency)) {
-      parts.add(l10n.myDayDueSoonLabel);
-    }
-    if (union.contains(AllocationReasonCode.priority)) {
-      parts.add(l10n.priorityLabel);
-    }
-
-    return parts.join(', ');
-  }
-
-  Map<String, String> _buildReasonTextById(
-    List<Task> tasks, {
-    required String reasonLabel,
-  }) {
-    final l10n = context.l10n;
-    return <String, String>{
-      for (final task in tasks)
-        task.id: task.effectiveValues.isEmpty
-            ? reasonLabel
-            : '$reasonLabel${l10n.dotSeparator}${l10n.myDayValueAlignedLabel}',
-    };
-  }
-
   List<TasklyRowSpec> _buildPickerRows({
     required List<Task> tasks,
-    required Map<String, String> reasonTextByTaskId,
-    required Map<String, String> reasonTooltipTextByTaskId,
     required bool enableSnooze,
     required bool enableSelection,
     required String? selectionPillLabel,
@@ -550,9 +476,6 @@ class _RitualCardState extends State<_RitualCard> {
             tileCapabilities: tileCapabilities,
           );
 
-          final supportingText = reasonTextByTaskId[task.id];
-          final supportingTooltipText = reasonTooltipTextByTaskId[task.id];
-
           final updatedData = TasklyTaskRowData(
             id: data.id,
             title: data.title,
@@ -560,8 +483,6 @@ class _RitualCardState extends State<_RitualCard> {
             meta: data.meta,
             leadingChip: data.leadingChip,
             secondaryChips: data.secondaryChips,
-            supportingText: supportingText,
-            supportingTooltipText: supportingTooltipText,
             deemphasized: data.deemphasized,
             checkboxSemanticLabel: data.checkboxSemanticLabel,
             labels: labels,
@@ -631,8 +552,6 @@ class _RitualCardState extends State<_RitualCard> {
             meta: data.meta,
             leadingChip: data.leadingChip,
             secondaryChips: data.secondaryChips,
-            supportingText: data.supportingText,
-            supportingTooltipText: data.supportingTooltipText,
             deemphasized: data.deemphasized,
             checkboxSemanticLabel: data.checkboxSemanticLabel,
             labels: labels,
@@ -676,22 +595,21 @@ class _RitualCardState extends State<_RitualCard> {
       );
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextButton(
-          onPressed: () => _showWhyTheseWhatMattersSheet(context),
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          child: Text(l10n.myDayWhyTheseAction),
+    return TextButton(
+      onPressed: () => openSuggestionSettingsSheet(
+        context,
+        dueWindowDays: widget.dueWindowDays,
+        showAvailableToStart: widget.showAvailableToStart,
+      ),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.w600,
         ),
-      ],
+      ),
+      child: Text(l10n.myDayCustomizeSuggestionsAction),
     );
   }
 
@@ -794,7 +712,6 @@ class _RitualCardState extends State<_RitualCard> {
     required List<Task> due,
     required List<Task> planned,
     required List<Task> anytime,
-    required Map<String, String> reasonTextByTaskId,
   }) {
     final l10n = context.l10n;
     final rows = <TasklyRowSpec>[];
@@ -810,8 +727,6 @@ class _RitualCardState extends State<_RitualCard> {
       rows.addAll(
         _buildPickerRows(
           tasks: tasks,
-          reasonTextByTaskId: reasonTextByTaskId,
-          reasonTooltipTextByTaskId: const <String, String>{},
           enableSnooze: false,
           enableSelection: true,
           selectionPillLabel: l10n.myDayAddToMyDayAction,
@@ -826,94 +741,6 @@ class _RitualCardState extends State<_RitualCard> {
     addGroup('anytime', l10n.myDayAnytimeLabel, anytime);
 
     return rows;
-  }
-
-  Future<void> _showWhyTheseWhatMattersSheet(BuildContext context) {
-    final l10n = context.l10n;
-
-    final groups = <String, List<Task>>{};
-    final order = <String>[];
-    for (final task in widget.curated) {
-      final key =
-          task.effectivePrimaryValue?.name ?? l10n.groupingMissingValues;
-      if (!groups.containsKey(key)) {
-        groups[key] = <Task>[];
-        order.add(key);
-      }
-      groups[key]!.add(task);
-    }
-
-    return showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        final theme = Theme.of(sheetContext);
-        final cs = theme.colorScheme;
-
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.myDayWhyTheseTitle,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.myDayWhyTheseWhatMattersBody,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Flexible(
-                  child: ListView(
-                    shrinkWrap: true,
-                    children: [
-                      for (final key in order)
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            key,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          subtitle: Text(
-                            () {
-                              final tasks = groups[key]!;
-                              final countText = l10n
-                                  .myDayWhyTheseValueGroupCount(
-                                    tasks.length,
-                                  );
-                              final signals = _signalsSummaryForTasks(
-                                sheetContext,
-                                tasks,
-                              );
-                              return signals.isEmpty
-                                  ? countText
-                                  : '$countText • $signals';
-                            }(),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: cs.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -945,18 +772,6 @@ class _RitualCardState extends State<_RitualCard> {
     final valuesPlanned = sortTasksByStartDate(curatedSplit.planned);
     final valuesAnytime = curatedSplit.anytime;
 
-    final curatedReasonTextById = <String, String>{};
-    for (final task in [
-      ...valuesDue,
-      ...valuesPlanned,
-      ...valuesAnytime,
-    ]) {
-      final text = _supportingTextForWhatMattersTask(context, task);
-      if (text.isNotEmpty) {
-        curatedReasonTextById[task.id] = text;
-      }
-    }
-
     final dueVisible = _dueExpanded
         ? due
         : due.take(_waitingPreviewCountPerGroup).toList(growable: false);
@@ -969,7 +784,6 @@ class _RitualCardState extends State<_RitualCard> {
       due: valuesDue,
       planned: valuesPlanned,
       anytime: valuesAnytime,
-      reasonTextByTaskId: curatedReasonTextById,
     );
 
     final pinnedSorted = sortTasksByDeadlineThenStartThenName(
@@ -981,19 +795,8 @@ class _RitualCardState extends State<_RitualCard> {
       tasks: pinnedSorted,
     );
 
-    final dueReasonTextById = _buildReasonTextById(
-      dueVisible,
-      reasonLabel: l10n.myDayDueSoonLabel,
-    );
-    final startsReasonTextById = _buildReasonTextById(
-      startsVisible,
-      reasonLabel: l10n.myDayAvailableToStartLabel,
-    );
-
     final dueRows = _buildPickerRows(
       tasks: dueVisible,
-      reasonTextByTaskId: dueReasonTextById,
-      reasonTooltipTextByTaskId: const <String, String>{},
       enableSnooze: true,
       enableSelection: true,
       selectionPillLabel: l10n.myDayAddToMyDayAction,
@@ -1003,8 +806,6 @@ class _RitualCardState extends State<_RitualCard> {
 
     final startsRows = _buildPickerRows(
       tasks: startsVisible,
-      reasonTextByTaskId: startsReasonTextById,
-      reasonTooltipTextByTaskId: const <String, String>{},
       enableSnooze: true,
       enableSelection: true,
       selectionPillLabel: l10n.myDayAddToMyDayAction,
@@ -1014,8 +815,6 @@ class _RitualCardState extends State<_RitualCard> {
 
     final completedRows = _buildPickerRows(
       tasks: widget.completedPicks,
-      reasonTextByTaskId: const <String, String>{},
-      reasonTooltipTextByTaskId: const <String, String>{},
       enableSnooze: false,
       enableSelection: false,
       selectionPillLabel: null,
@@ -1075,6 +874,7 @@ class _RitualCardState extends State<_RitualCard> {
             icon: Icons.eco_rounded,
             count: curatedCount,
             showCount: false,
+            subtitle: l10n.myDayWhatMattersSubtitle,
             expanded: _valuesExpanded,
             onToggleExpanded: () =>
                 setState(() => _valuesExpanded = !_valuesExpanded),

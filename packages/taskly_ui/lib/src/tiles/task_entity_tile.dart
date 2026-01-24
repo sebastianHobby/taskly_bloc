@@ -90,10 +90,6 @@ class TaskEntityTile extends StatelessWidget {
         model.completed &&
         (model.labels?.completedStatusLabel?.trim().isNotEmpty ?? false);
 
-    final effectiveSupportingText = model.supportingText?.trim();
-    final hasSupportingText =
-        effectiveSupportingText != null && effectiveSupportingText.isNotEmpty;
-
     final baseOpacity = model.deemphasized ? 0.6 : 1.0;
     final completedOpacity = model.completed ? 0.75 : 1.0;
     final opacity = (baseOpacity * completedOpacity).clamp(0.0, 1.0);
@@ -219,16 +215,6 @@ class TaskEntityTile extends StatelessWidget {
                                 ],
                               ],
                             ),
-                            if (hasSupportingText) ...[
-                              const SizedBox(height: 4),
-                              _SupportingText(
-                                text: effectiveSupportingText,
-                                tooltipText: model.supportingTooltipText,
-                                tooltipSemanticLabel: model
-                                    .labels
-                                    ?.supportingTooltipSemanticLabel,
-                              ),
-                            ],
                             const SizedBox(height: 6),
                             _MetaRow(
                               model: model,
@@ -293,72 +279,6 @@ class TaskEntityTile extends StatelessWidget {
       key: Key('task-${model.id}'),
       opacity: opacity,
       child: tile,
-    );
-  }
-}
-
-class _SupportingText extends StatelessWidget {
-  const _SupportingText({
-    required this.text,
-    required this.tooltipText,
-    required this.tooltipSemanticLabel,
-  });
-
-  final String? text;
-  final String? tooltipText;
-  final String? tooltipSemanticLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final tokens = TasklyEntityTileTheme.of(context);
-
-    final effectiveText = text?.trim();
-    if (effectiveText == null || effectiveText.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final effectiveTooltipText = tooltipText?.trim();
-    final hasTooltip =
-        effectiveTooltipText != null && effectiveTooltipText.isNotEmpty;
-
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            effectiveText,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: tokens.subtitle.copyWith(color: scheme.onSurfaceVariant),
-          ),
-        ),
-        if (hasTooltip) ...[
-          const SizedBox(width: 6),
-          Semantics(
-            button: true,
-            label: tooltipSemanticLabel ?? 'More info',
-            child: Tooltip(
-              message: effectiveTooltipText,
-              triggerMode: TooltipTriggerMode.tap,
-              showDuration: const Duration(seconds: 10),
-              child: IconButton(
-                tooltip: tooltipSemanticLabel,
-                onPressed: () {},
-                icon: Icon(
-                  Icons.info_outline_rounded,
-                  size: 18,
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
-                ),
-                style: IconButton.styleFrom(
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  minimumSize: const Size(32, 32),
-                  padding: EdgeInsets.zero,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
     );
   }
 }

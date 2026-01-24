@@ -32,12 +32,11 @@ class MyDayRitualSectionsCard extends StatefulWidget {
     required this.startsCounts,
     required this.focusCounts,
     required this.showCompletionMessage,
-    this.focusReasons = const <String, String>{},
     super.key,
     this.onAddMissingDue,
     this.onAddMissingStarts,
     this.onAddOneMoreFocus,
-    this.onWhyThese,
+    this.onCustomizeSuggestions,
   });
 
   final List<Task> acceptedDue;
@@ -50,15 +49,10 @@ class MyDayRitualSectionsCard extends StatefulWidget {
 
   final bool showCompletionMessage;
 
-  /// Optional reason text for focus tasks, keyed by task id.
-  ///
-  /// When empty or when a task id is missing, no subtitle is shown.
-  final Map<String, String> focusReasons;
-
   final VoidCallback? onAddMissingDue;
   final VoidCallback? onAddMissingStarts;
   final VoidCallback? onAddOneMoreFocus;
-  final VoidCallback? onWhyThese;
+  final VoidCallback? onCustomizeSuggestions;
 
   @override
   State<MyDayRitualSectionsCard> createState() =>
@@ -184,8 +178,8 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
           count: widget.focusCounts.acceptedCount,
           subtitle: '',
           showCount: false,
-          actionLabel: l10n.myDayWhyTheseAction,
-          onAction: widget.onWhyThese,
+          actionLabel: l10n.myDayCustomizeSuggestionsAction,
+          onAction: widget.onCustomizeSuggestions,
         ),
         if (widget.acceptedFocus.isNotEmpty) ...[
           const SizedBox(height: 6),
@@ -205,11 +199,6 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
             emptyTitle: l10n.myDayRitualFocusEmptyTitle,
             emptySubtitle: l10n.myDayRitualFocusEmptySubtitle,
             previewCount: _previewCount,
-            subtitleForTask: (task) {
-              final reason = widget.focusReasons[task.id];
-              if (reason == null || reason.trim().isEmpty) return null;
-              return reason;
-            },
           ),
         ],
         const SizedBox(height: 12),
@@ -373,7 +362,6 @@ class _BucketSection extends StatelessWidget {
     this.showCountsLine = true,
     this.showEmpty = true,
     this.onTapOther,
-    this.subtitleForTask,
     this.useCompactHeader = false,
     this.compactLabel,
     this.headerIconColor,
@@ -396,11 +384,6 @@ class _BucketSection extends StatelessWidget {
   final bool useCompactHeader;
   final String? compactLabel;
   final Color? headerIconColor;
-
-  /// Optional per-task subtitle text.
-  ///
-  /// Returned string is rendered in the tile's subtitle slot.
-  final String? Function(Task task)? subtitleForTask;
 
   @override
   Widget build(BuildContext context) {
@@ -456,8 +439,6 @@ class _BucketSection extends StatelessWidget {
         meta: data.meta,
         leadingChip: data.leadingChip,
         secondaryChips: data.secondaryChips,
-        supportingText: subtitleForTask?.call(task),
-        supportingTooltipText: null,
         deemphasized: data.deemphasized,
         checkboxSemanticLabel: data.checkboxSemanticLabel,
         labels: labels,

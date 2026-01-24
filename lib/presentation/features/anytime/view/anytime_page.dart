@@ -301,17 +301,6 @@ class _AnytimeViewState extends State<_AnytimeView> {
                       context,
                       actions: [
                         if (!_isSearching)
-                          TextButton(
-                            onPressed: () => _showAnytimeRefineSheet(context),
-                            style: TextButton.styleFrom(
-                              foregroundColor: scheme.onSurfaceVariant,
-                              textStyle: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            child: const Text('Refine'),
-                          ),
-                        if (!_isSearching)
                           IconButton(
                             tooltip: 'Search',
                             icon: const Icon(Icons.search),

@@ -889,7 +889,7 @@
     "@snoozeSubtitle": {
         "description": "SubtÃ­tulo que explica el comportamiento de posponer"
     },
-    "myDayWhatMattersSectionTitle": "Alineado con valores",
+    "myDayWhatMattersSectionTitle": "Tareas sugeridas de hoy",
     "@myDayWhatMattersSectionTitle": {
         "description": "Section title for value-aligned suggestions in the My Day ritual (B1)."
     },
@@ -1097,9 +1097,13 @@
     "@myDayWhySuggestedSemanticLabel": {
         "description": "Accessibility label for the info tooltip button explaining why a task was suggested in the My Day ritual."
     },
-    "myDayWhatMattersSubtitle": "Sugerencias guiadas por tus valores para hoy.",
+    "myDayWhatMattersSubtitle": "Tareas guiadas por tus valores, balanceadas con lo urgente.",
     "@myDayWhatMattersSubtitle": {
         "description": "Subtitle for the What matters section in the My Day ritual."
+    },
+    "myDayCustomizeSuggestionsAction": "Personalizar sugerencias",
+    "@myDayCustomizeSuggestionsAction": {
+        "description": "Etiqueta de acción que abre la configuración de sugerencias en Mi día."
     },
     "myDayWhatsWaitingSubtitle": "Vencen pronto o estÃ¡n listas para empezar.",
     "@myDayWhatsWaitingSubtitle": {

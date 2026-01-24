@@ -50,7 +50,6 @@ class TasklyTileCatalog extends StatelessWidget {
             priority: 1,
             isDueToday: true,
           ),
-          supportingText: 'Kickoff with design team',
         ),
         preset: const TasklyTaskRowPreset.standard(),
         markers: const TasklyTaskRowMarkers(pinned: true),
@@ -82,7 +81,6 @@ class TasklyTileCatalog extends StatelessWidget {
           id: 't-pinned-1',
           title: 'Review daily highlights',
           meta: TasklyEntityMetaData(primaryValue: valueHealth),
-          supportingText: 'Pinned by you',
           labels: const TasklyTaskRowLabels(
             pinLabel: 'Pin',
             pinnedLabel: 'Pinned',
@@ -126,7 +124,6 @@ class TasklyTileCatalog extends StatelessWidget {
           id: 't-picker-1',
           title: 'Morning run',
           meta: TasklyEntityMetaData(primaryValue: valueHealth),
-          supportingText: 'Supports Health',
           labels: const TasklyTaskRowLabels(
             selectionPillLabel: 'Add',
             selectionPillSelectedLabel: 'Added',
@@ -142,7 +139,6 @@ class TasklyTileCatalog extends StatelessWidget {
           id: 't-picker-2',
           title: 'Prep client presentation',
           meta: TasklyEntityMetaData(primaryValue: valueCareer),
-          supportingText: 'Supports Career',
           labels: const TasklyTaskRowLabels(
             selectionPillLabel: 'Add',
             selectionPillSelectedLabel: 'Added',
@@ -162,7 +158,6 @@ class TasklyTileCatalog extends StatelessWidget {
           id: 't-picker-action-1',
           title: 'Evening walk',
           meta: TasklyEntityMetaData(primaryValue: valueHealth),
-          supportingText: 'Supports Health',
           labels: const TasklyTaskRowLabels(
             selectionPillLabel: 'Add',
             selectionPillSelectedLabel: 'Added',
@@ -178,7 +173,6 @@ class TasklyTileCatalog extends StatelessWidget {
           id: 't-picker-action-2',
           title: 'Review financial plan',
           meta: TasklyEntityMetaData(primaryValue: valueFinance),
-          supportingText: 'Supports Finance',
           labels: const TasklyTaskRowLabels(
             selectionPillLabel: 'Add',
             selectionPillSelectedLabel: 'Added',
@@ -372,7 +366,6 @@ TasklyTaskRowData _taskData({
   required String id,
   required String title,
   required TasklyEntityMetaData meta,
-  String? supportingText,
   TasklyTaskRowLabels? labels,
 }) {
   return TasklyTaskRowData(
@@ -381,8 +374,6 @@ TasklyTaskRowData _taskData({
     completed: false,
     meta: meta,
     leadingChip: meta.primaryValue,
-    supportingText: supportingText,
-    supportingTooltipText: null,
     deemphasized: false,
     checkboxSemanticLabel: 'Toggle completion',
     labels: labels,

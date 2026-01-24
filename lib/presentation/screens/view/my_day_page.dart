@@ -520,8 +520,6 @@ List<TasklyRowSpec> _buildRows(
           meta: data.meta,
           leadingChip: data.leadingChip,
           secondaryChips: data.secondaryChips,
-          supportingText: null,
-          supportingTooltipText: null,
           deemphasized: data.deemphasized,
           checkboxSemanticLabel: data.checkboxSemanticLabel,
           labels: labels,
