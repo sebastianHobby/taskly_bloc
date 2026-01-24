@@ -150,46 +150,10 @@ class _AnytimeViewState extends State<_AnytimeView> {
     return MultiBlocListener(
       listeners: [
         BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
-          listenWhen: (prev, next) =>
-              prev.showStartLaterItems != next.showStartLaterItems,
-          listener: (context, state) {
-            context.read<AnytimeFeedBloc>().add(
-              AnytimeFeedShowStartLaterItemsChanged(
-                enabled: state.showStartLaterItems,
-              ),
-            );
-          },
-        ),
-        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
           listenWhen: (prev, next) => prev.searchQuery != next.searchQuery,
           listener: (context, state) {
             context.read<AnytimeFeedBloc>().add(
               AnytimeFeedSearchQueryChanged(query: state.searchQuery),
-            );
-          },
-        ),
-        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
-          listenWhen: (prev, next) => prev.filterDueSoon != next.filterDueSoon,
-          listener: (context, state) {
-            context.read<AnytimeFeedBloc>().add(
-              AnytimeFeedFilterDueSoonChanged(enabled: state.filterDueSoon),
-            );
-          },
-        ),
-        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
-          listenWhen: (prev, next) => prev.filterOverdue != next.filterOverdue,
-          listener: (context, state) {
-            context.read<AnytimeFeedBloc>().add(
-              AnytimeFeedFilterOverdueChanged(enabled: state.filterOverdue),
-            );
-          },
-        ),
-        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
-          listenWhen: (prev, next) =>
-              prev.filterPriority != next.filterPriority,
-          listener: (context, state) {
-            context.read<AnytimeFeedBloc>().add(
-              AnytimeFeedFilterPriorityChanged(enabled: state.filterPriority),
             );
           },
         ),
@@ -348,9 +312,7 @@ class _AnytimeViewState extends State<_AnytimeView> {
                 ),
                 Expanded(
                   child: BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
-                    buildWhen: (p, n) =>
-                        p.searchQuery != n.searchQuery ||
-                        p.showStartLaterItems != n.showStartLaterItems,
+                    buildWhen: (p, n) => p.searchQuery != n.searchQuery,
                     builder: (context, screenState) {
                       return BlocBuilder<AnytimeFeedBloc, AnytimeFeedState>(
                         builder: (context, state) {
@@ -548,9 +510,6 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
             final hasValue = selectedValue != null;
             final valueLabel = hasValue ? selectedValue.name : 'All';
 
-            final moreSelected =
-                screenState.filterPriority || screenState.showStartLaterItems;
-
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -581,41 +540,6 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
                         textColor: scheme.onSurfaceVariant,
                         selectedTextColor: scheme.onSurface,
                         leadingIcon: Icons.expand_more_rounded,
-                      ),
-                      _FilterPill(
-                        label: 'Due Soon',
-                        selected: screenState.filterDueSoon,
-                        onTap: () => context.read<AnytimeScreenBloc>().add(
-                          AnytimeFilterDueSoonSet(
-                            !screenState.filterDueSoon,
-                          ),
-                        ),
-                        backgroundColor: scheme.surface,
-                        selectedColor: scheme.surfaceContainerHighest,
-                        textColor: scheme.onSurfaceVariant,
-                        selectedTextColor: scheme.onSurface,
-                      ),
-                      _FilterPill(
-                        label: 'Overdue',
-                        selected: screenState.filterOverdue,
-                        onTap: () => context.read<AnytimeScreenBloc>().add(
-                          AnytimeFilterOverdueSet(
-                            !screenState.filterOverdue,
-                          ),
-                        ),
-                        backgroundColor: scheme.surface,
-                        selectedColor: scheme.errorContainer,
-                        textColor: scheme.onSurfaceVariant,
-                        selectedTextColor: scheme.onErrorContainer,
-                      ),
-                      _FilterPill(
-                        label: 'More',
-                        selected: moreSelected,
-                        onTap: () => _showAnytimeRefineSheet(context),
-                        backgroundColor: scheme.surface,
-                        selectedColor: scheme.surfaceContainerHighest,
-                        textColor: scheme.onSurfaceVariant,
-                        selectedTextColor: scheme.onSurface,
                       ),
                     ],
                   ),
@@ -679,50 +603,6 @@ class _AnytimeSortRow extends StatelessWidget {
       ],
     );
   }
-}
-
-Future<void> _showAnytimeRefineSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    builder: (context) {
-      final scheme = Theme.of(context).colorScheme;
-      return BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
-        builder: (context, state) {
-          return ListView(
-            children: [
-              SwitchListTile(
-                value: state.filterPriority,
-                onChanged: (value) {
-                  context.read<AnytimeScreenBloc>().add(
-                    AnytimeFilterPrioritySet(value),
-                  );
-                },
-                title: const Text('Priority projects'),
-                subtitle: const Text('Show projects marked P1.'),
-              ),
-              SwitchListTile(
-                value: state.showStartLaterItems,
-                onChanged: (value) {
-                  context.read<AnytimeScreenBloc>().add(
-                    AnytimeShowStartLaterSet(value),
-                  );
-                },
-                title: const Text('Include start later'),
-                subtitle: const Text('Show projects with future start dates.'),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: Icon(Icons.tune_rounded, color: scheme.primary),
-                title: const Text('Refine filters'),
-                subtitle: const Text('Adjust what appears in Anytime.'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
 }
 
 class _FilterPill extends StatelessWidget {
