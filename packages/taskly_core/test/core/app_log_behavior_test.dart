@@ -85,6 +85,12 @@ void main() {
     late TasklyLog previousTalker;
     late _RecordingLog recorder;
 
+    setUpAll(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      resetLoggingForTest();
+      initializeLoggingForTest();
+    });
+
     setUp(() {
       previousTalker = talker;
       recorder = _RecordingLog();

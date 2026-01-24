@@ -28,13 +28,13 @@ final class TasklyMyDaySectionList {
 final class TasklyMyDaySectionConfig {
   const TasklyMyDaySectionConfig({
     required this.title,
-    required this.icon,
     required this.count,
     required this.expanded,
     required this.onToggleExpanded,
     required this.list,
     required this.emptyState,
     this.headerKey,
+    this.icon,
     this.showCount = true,
     this.subtitle,
     this.action,
@@ -43,7 +43,7 @@ final class TasklyMyDaySectionConfig {
 
   final Key? headerKey;
   final String title;
-  final IconData icon;
+  final IconData? icon;
   final int count;
   final bool expanded;
   final VoidCallback onToggleExpanded;
@@ -139,53 +139,76 @@ class TasklyMyDaySectionStack extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final pinned = this.pinned;
+    final pinnedConfig = pinned;
+    final showTimeSensitive =
+        timeSensitive.due.list.rows.isNotEmpty ||
+        timeSensitive.planned.list.rows.isNotEmpty ||
+        timeSensitive.due.showEmpty ||
+        timeSensitive.planned.showEmpty;
+    final showCompleted = completed.list.rows.isNotEmpty || completed.showEmpty;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (pinned != null &&
-            (pinned.list.rows.isNotEmpty || pinned.showEmpty)) ...[
-          _SectionHeader(
-            key: pinned.headerKey,
-            title: pinned.title,
-            icon: pinned.icon,
-            count: pinned.count,
-            showCount: pinned.showCount,
-            subtitle: pinned.subtitle,
-            action: pinned.action,
-            expanded: pinned.expanded,
-            onToggleExpanded: pinned.onToggleExpanded,
-          ),
-          if (pinned.expanded)
-            _SectionBody(
-              list: pinned.list,
-              emptyState: pinned.emptyState,
-              showEmpty: pinned.showEmpty,
-            ),
-          const SizedBox(height: 12),
-          Divider(color: cs.outlineVariant.withOpacity(0.5), height: 1),
-          const SizedBox(height: 12),
-        ],
-        _SectionHeader(
-          key: valuesAligned.headerKey,
-          title: valuesAligned.title,
-          icon: valuesAligned.icon,
-          count: valuesAligned.count,
-          showCount: valuesAligned.showCount,
-          subtitle: valuesAligned.subtitle,
-          action: valuesAligned.action,
-          expanded: valuesAligned.expanded,
-          onToggleExpanded: valuesAligned.onToggleExpanded,
-        ),
-        if (valuesAligned.expanded)
-          _SectionBody(
-            list: valuesAligned.list,
-            emptyState: valuesAligned.emptyState,
-            showEmpty: valuesAligned.showEmpty,
-          ),
+    final sections = <Widget>[];
+
+    void addDivider() {
+      sections.addAll([
         const SizedBox(height: 12),
         Divider(color: cs.outlineVariant.withOpacity(0.5), height: 1),
         const SizedBox(height: 12),
+      ]);
+    }
+
+    void addSection(List<Widget> widgets) {
+      if (sections.isNotEmpty) {
+        addDivider();
+      }
+      sections.addAll(widgets);
+    }
+
+    if (pinnedConfig != null &&
+        (pinnedConfig.list.rows.isNotEmpty || pinnedConfig.showEmpty)) {
+      addSection([
+        _SectionHeader(
+          key: pinnedConfig.headerKey,
+          title: pinnedConfig.title,
+          icon: pinnedConfig.icon,
+          count: pinnedConfig.count,
+          showCount: pinnedConfig.showCount,
+          subtitle: pinnedConfig.subtitle,
+          action: pinnedConfig.action,
+          expanded: pinnedConfig.expanded,
+          onToggleExpanded: pinnedConfig.onToggleExpanded,
+        ),
+        if (pinnedConfig.expanded)
+          _SectionBody(
+            list: pinnedConfig.list,
+            emptyState: pinnedConfig.emptyState,
+            showEmpty: pinnedConfig.showEmpty,
+          ),
+      ]);
+    }
+
+    addSection([
+      _SectionHeader(
+        key: valuesAligned.headerKey,
+        title: valuesAligned.title,
+        icon: valuesAligned.icon,
+        count: valuesAligned.count,
+        showCount: valuesAligned.showCount,
+        subtitle: valuesAligned.subtitle,
+        action: valuesAligned.action,
+        expanded: valuesAligned.expanded,
+        onToggleExpanded: valuesAligned.onToggleExpanded,
+      ),
+      if (valuesAligned.expanded)
+        _SectionBody(
+          list: valuesAligned.list,
+          emptyState: valuesAligned.emptyState,
+          showEmpty: valuesAligned.showEmpty,
+        ),
+    ]);
+
+    if (showTimeSensitive) {
+      addSection([
         _SectionHeader(
           key: timeSensitive.headerKey,
           title: timeSensitive.title,
@@ -224,9 +247,11 @@ class TasklyMyDaySectionStack extends StatelessWidget {
             countLine: timeSensitive.planned.countLine,
           ),
         ],
-        const SizedBox(height: 12),
-        Divider(color: cs.outlineVariant.withOpacity(0.5), height: 1),
-        const SizedBox(height: 12),
+      ]);
+    }
+
+    if (showCompleted) {
+      addSection([
         _SectionHeader(
           title: completed.title,
           icon: completed.icon,
@@ -242,7 +267,12 @@ class TasklyMyDaySectionStack extends StatelessWidget {
             emptyState: completed.emptyState,
             showEmpty: completed.showEmpty,
           ),
-      ],
+      ]);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: sections,
     );
   }
 }
@@ -261,7 +291,7 @@ class _SectionHeader extends StatelessWidget {
   });
 
   final String title;
-  final IconData icon;
+  final IconData? icon;
   final int count;
   final bool showCount;
   final bool expanded;
@@ -276,8 +306,10 @@ class _SectionHeader extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(icon, size: 16, color: cs.primary),
-        const SizedBox(width: 6),
+        if (icon != null) ...[
+          Icon(icon, size: 16, color: cs.primary),
+          const SizedBox(width: 6),
+        ],
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

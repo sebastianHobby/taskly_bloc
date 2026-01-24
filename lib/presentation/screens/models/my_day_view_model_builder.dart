@@ -30,7 +30,6 @@ final class MyDayViewModelBuilder {
 
   MyDayViewModel fromDailyPicks({
     required my_day.MyDayDayPicks dayPicks,
-    required DateTime dayKeyUtc,
     required List<Task> tasks,
     required List<Value> values,
   }) {
@@ -76,16 +75,18 @@ final class MyDayViewModelBuilder {
       my_day.MyDayPickBucket.focus,
     ).toList(growable: false);
 
-    final acceptedDueTasks = _resolveAcceptedTasks(acceptedDueIds, tasksById)
-        .where((task) => !pinnedIds.contains(task.id))
-        .toList(growable: false);
+    final acceptedDueTasks = _resolveAcceptedTasks(
+      acceptedDueIds,
+      tasksById,
+    ).where((task) => !pinnedIds.contains(task.id)).toList(growable: false);
     final acceptedStartsTasks = _resolveAcceptedTasks(
       acceptedStartsIds,
       tasksById,
     ).where((task) => !pinnedIds.contains(task.id)).toList(growable: false);
-    final acceptedFocusTasks = _resolveAcceptedTasks(acceptedFocusIds, tasksById)
-        .where((task) => !pinnedIds.contains(task.id))
-        .toList(growable: false);
+    final acceptedFocusTasks = _resolveAcceptedTasks(
+      acceptedFocusIds,
+      tasksById,
+    ).where((task) => !pinnedIds.contains(task.id)).toList(growable: false);
 
     final todaySelectedTaskIds = selectedIds.toSet();
 

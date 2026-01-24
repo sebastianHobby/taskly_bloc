@@ -2,7 +2,6 @@ import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
 
@@ -14,7 +13,6 @@ final class MyDayQueryService {
     required AllocationOrchestrator allocationOrchestrator,
     required TaskRepositoryContract taskRepository,
     required ValueRepositoryContract valueRepository,
-    required SettingsRepositoryContract settingsRepository,
     required MyDayRepositoryContract myDayRepository,
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
@@ -22,7 +20,6 @@ final class MyDayQueryService {
   }) : _allocationOrchestrator = allocationOrchestrator,
        _taskRepository = taskRepository,
        _valueRepository = valueRepository,
-       _settingsRepository = settingsRepository,
        _myDayRepository = myDayRepository,
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
@@ -31,7 +28,6 @@ final class MyDayQueryService {
   final AllocationOrchestrator _allocationOrchestrator;
   final TaskRepositoryContract _taskRepository;
   final ValueRepositoryContract _valueRepository;
-  final SettingsRepositoryContract _settingsRepository;
   final MyDayRepositoryContract _myDayRepository;
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
@@ -77,7 +73,6 @@ final class MyDayQueryService {
           values$,
           (tasks, values) => _viewModelBuilder.fromDailyPicks(
             dayPicks: dayPicks,
-            dayKeyUtc: dayKeyUtc,
             tasks: tasks,
             values: values,
           ),

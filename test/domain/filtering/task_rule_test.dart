@@ -162,17 +162,23 @@ void main() {
   group('BooleanRule', () {
     testSafe('applies based on boolean operator', () async {
       final completed = TestData.task(completed: true);
-      final isTrue = BooleanRule(
+      final trueRule = BooleanRule(
         field: BooleanRuleField.completed,
         operator: BooleanRuleOperator.isTrue,
       );
-      final isFalse = BooleanRule(
+      final falseRule = BooleanRule(
         field: BooleanRuleField.completed,
         operator: BooleanRuleOperator.isFalse,
       );
 
-      expect(isTrue.applies(completed, TestConstants.referenceDate), isTrue);
-      expect(isFalse.applies(completed, TestConstants.referenceDate), isFalse);
+      expect(
+        trueRule.applies(completed, TestConstants.referenceDate),
+        isTrue,
+      );
+      expect(
+        falseRule.applies(completed, TestConstants.referenceDate),
+        isFalse,
+      );
     });
   });
 

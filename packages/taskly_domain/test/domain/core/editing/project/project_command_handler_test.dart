@@ -17,7 +17,11 @@ void main() {
       final repo = _RecordingProjectRepository();
       final handler = ProjectCommandHandler(projectRepository: repo);
 
-      const cmd = CreateProjectCommand(name: '   ', completed: false);
+    const cmd = CreateProjectCommand(
+      name: '   ',
+      completed: false,
+      valueIds: ['v1'],
+    );
       final result = await handler.handleCreate(cmd);
 
       expect(result, isA<CommandValidationFailure>());
@@ -36,6 +40,7 @@ void main() {
       id: 'p1',
       name: 'Proj',
       completed: false,
+      valueIds: const ['v1'],
       startDate: DateTime.utc(2026, 1, 2),
       deadlineDate: DateTime.utc(2026, 1, 1),
     );
@@ -84,6 +89,7 @@ void main() {
       completed: false,
       description: List.filled(201, 'b').join(),
       repeatIcalRrule: List.filled(501, 'c').join(),
+      valueIds: const ['v1'],
     );
 
     final result = await handler.handleCreate(cmd);

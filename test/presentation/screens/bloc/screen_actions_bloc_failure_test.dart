@@ -135,5 +135,103 @@ void main() {
         isA<ScreenActionsIdleState>(),
       ],
     );
+
+    blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
+      'emits failure for project completion errors',
+      build: () {
+        when(
+          () => mockEntityActionService.completeProject(
+            any(),
+            occurrenceDate: any(named: 'occurrenceDate'),
+            originalOccurrenceDate: any(named: 'originalOccurrenceDate'),
+            context: any(named: 'context'),
+          ),
+        ).thenThrow(
+          const InputValidationFailure(message: 'bad project'),
+        );
+
+        return ScreenActionsBloc(
+          entityActionService: mockEntityActionService,
+          errorReporter: errorReporter,
+        );
+      },
+      act: (bloc) async {
+        final completer = Completer<void>();
+
+        bloc.add(
+          ScreenActionsProjectCompletionChanged(
+            projectId: 'project-1',
+            completed: true,
+            completer: completer,
+          ),
+        );
+
+        await expectLater(
+          completer.future,
+          throwsA(isA<InputValidationFailure>()),
+        );
+      },
+      expect: () => <dynamic>[
+        isA<ScreenActionsFailureState>()
+            .having(
+              (s) => s.failureKind,
+              'failureKind',
+              ScreenActionsFailureKind.completionFailed,
+            )
+            .having(
+              (s) => s.entityType,
+              'entityType',
+              EntityType.project,
+            )
+            .having((s) => s.entityId, 'entityId', 'project-1'),
+        isA<ScreenActionsIdleState>(),
+      ],
+    );
+
+    blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
+      'emits failure for move task errors',
+      build: () {
+        when(
+          () => mockEntityActionService.moveTask(
+            any(),
+            any(),
+            context: any(named: 'context'),
+          ),
+        ).thenThrow(
+          const UnknownFailure(message: 'move failed'),
+        );
+
+        return ScreenActionsBloc(
+          entityActionService: mockEntityActionService,
+          errorReporter: errorReporter,
+        );
+      },
+      act: (bloc) async {
+        final completer = Completer<void>();
+
+        bloc.add(
+          ScreenActionsMoveTaskToProject(
+            taskId: 'task-1',
+            targetProjectId: 'project-1',
+            completer: completer,
+          ),
+        );
+
+        await expectLater(
+          completer.future,
+          throwsA(isA<UnknownFailure>()),
+        );
+      },
+      expect: () => <dynamic>[
+        isA<ScreenActionsFailureState>()
+            .having(
+              (s) => s.failureKind,
+              'failureKind',
+              ScreenActionsFailureKind.moveFailed,
+            )
+            .having((s) => s.entityId, 'entityId', 'task-1'),
+        isA<ScreenActionsIdleState>(),
+      ],
+    );
   });
 }

@@ -33,8 +33,9 @@ void main() {
       taskRepo.pushTasks([task]);
 
       final preview = OccurrencePreview(
-        rangeStart: DateTime(2025, 1, 10),
-        rangeEnd: DateTime(2025, 1, 20),
+        asOfDayKey: DateTime(2025, 1, 10),
+        pastDays: 2,
+        futureDays: 10,
       );
 
       final tasks = await service

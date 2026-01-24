@@ -104,6 +104,15 @@ final class _RecordingLog implements TasklyLog {
 
 void main() {
   group('Env diagnostics', () {
+    setUpAll(() {
+      resetLoggingForTest();
+      initializeLoggingForTest();
+    });
+
+    tearDown(() {
+      Env.resetForTest();
+    });
+
     testSafe('logDiagnostics masks secrets and formats urls', () async {
       if (!kDebugMode) {
         // In non-debug configurations this is a no-op.
@@ -152,7 +161,12 @@ void main() {
       });
 
       Env.resetForTest();
-      Env.resetForTest();
+      Env.config = const EnvConfig(
+        name: 'diagnostics_test',
+        supabaseUrl: '',
+        supabasePublishableKey: '',
+        powersyncUrl: '',
+      );
 
       expect(Env.validateRequired, throwsA(isA<StateError>()));
 

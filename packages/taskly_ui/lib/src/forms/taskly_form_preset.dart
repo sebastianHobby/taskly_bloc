@@ -32,11 +32,11 @@ class TasklyFormChipPreset {
   final double minHeight;
 
   static const standard = TasklyFormChipPreset(
-    borderRadius: 8,
-    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    iconSize: 16,
-    clearIconSize: 14,
-    clearHitPadding: 4,
-    minHeight: 32,
+    borderRadius: 999,
+    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    iconSize: 18,
+    clearIconSize: 16,
+    clearHitPadding: 6,
+    minHeight: 36,
   );
 }

@@ -176,10 +176,6 @@ class AttentionEngine implements AttentionEngineContract {
     final predicate = rule.evaluatorParams['predicate'] as String?;
     if (predicate == null) return const <_EvaluatedItem>[];
 
-    final thresholdHours =
-        _readInt(rule.evaluatorParams, 'thresholdHours') ??
-        _readInt(rule.evaluatorParams, 'threshold_hours') ??
-        0;
     final thresholdDays =
         _readInt(rule.evaluatorParams, 'thresholdDays') ??
         _readInt(rule.evaluatorParams, 'threshold_days') ??
@@ -192,7 +188,6 @@ class AttentionEngine implements AttentionEngineContract {
       if (task.completed) continue;
 
       final matches = switch (predicate) {
-        'isOverdue' => _isTaskOverdue(task, thresholdHours: thresholdHours),
         'isStale' => _isTaskStale(task, thresholdDays: thresholdDays),
         _ => false,
       };
@@ -288,10 +283,6 @@ class AttentionEngine implements AttentionEngineContract {
           project,
           thresholdDays: _readInt(rule.evaluatorParams, 'thresholdDays') ?? 30,
         ),
-        'noAllocatableTasks' =>
-          (project.taskCount - project.completedTaskCount) <= 0,
-        'highValueNeglected' => _isProjectHighValueNeglected(project, now),
-        'noAllocatedRecently' => _isProjectNoAllocatedRecently(project, now),
         _ => false,
       };
 
@@ -457,10 +448,6 @@ class AttentionEngine implements AttentionEngineContract {
     final ruleFingerprint = _ruleFingerprint(rule, predicate: predicate);
 
     final relevantParts = switch (predicate) {
-      'isOverdue' => <String?>[
-        task.deadlineDate?.toIso8601String(),
-        task.completed.toString(),
-      ],
       'isStale' => <String?>[
         task.updatedAt.toIso8601String(),
         task.completed.toString(),
@@ -558,12 +545,6 @@ class AttentionEngine implements AttentionEngineContract {
   // Misc helpers
   // ==========================================================================
 
-  bool _isTaskOverdue(Task task, {required int thresholdHours}) {
-    if (task.deadlineDate == null) return false;
-    final threshold = _clock.nowUtc().subtract(Duration(hours: thresholdHours));
-    return task.deadlineDate!.isBefore(threshold);
-  }
-
   bool _isTaskStale(Task task, {required int thresholdDays}) {
     final threshold = _clock.nowUtc().subtract(Duration(days: thresholdDays));
     return task.updatedAt.isBefore(threshold);
@@ -571,21 +552,6 @@ class AttentionEngine implements AttentionEngineContract {
 
   bool _isProjectIdle(Project project, {required int thresholdDays}) {
     final threshold = _clock.nowUtc().subtract(Duration(days: thresholdDays));
-    return project.updatedAt.isBefore(threshold);
-  }
-
-  bool _isProjectHighValueNeglected(Project project, DateTime now) {
-    final isHighValue =
-        project.isPinned ||
-        (project.priority != null && project.priority! <= 2);
-    if (!isHighValue) return false;
-
-    final threshold = now.subtract(const Duration(days: 14));
-    return project.updatedAt.isBefore(threshold);
-  }
-
-  bool _isProjectNoAllocatedRecently(Project project, DateTime now) {
-    final threshold = now.subtract(const Duration(days: 30));
     return project.updatedAt.isBefore(threshold);
   }
 

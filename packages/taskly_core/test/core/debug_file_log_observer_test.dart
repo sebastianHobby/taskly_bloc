@@ -30,7 +30,7 @@ void main() {
       expect(await file.exists(), isTrue);
       final content = await file.readAsString();
       expect(content, contains('Oops'));
-      expect(content, contains('StateError'));
+      expect(content, contains('Bad state: boom'));
     });
 
     testSafe('writes exceptions to a log file', () async {
@@ -255,7 +255,7 @@ void main() {
         });
 
         final observer = DebugFileLogObserver(
-          dedupeWindow: const Duration(milliseconds: 1),
+          dedupeWindow: const Duration(milliseconds: 50),
           supportDirectoryProvider: () async => tempDir,
         );
         await observer.ensureInitializedForTest();
@@ -265,7 +265,7 @@ void main() {
         t.handle(StateError('boom'), StackTrace.empty, 'Oops');
 
         // Ensure we cross the dedupe window.
-        await Future<void>.delayed(const Duration(milliseconds: 5));
+        await Future<void>.delayed(const Duration(milliseconds: 75));
         t.handle(StateError('boom'), StackTrace.empty, 'Oops');
 
         final file = File(observer.logFilePath!);

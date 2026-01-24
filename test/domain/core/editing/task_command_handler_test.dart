@@ -52,7 +52,7 @@ void main() {
 
     testSafe('handleCreate trims name and calls repository', () async {
       final result = await handler.handleCreate(
-        const CreateTaskCommand(name: '  Task  '),
+        const CreateTaskCommand(name: '  Task  ', completed: false),
       );
 
       expect(result, isA<CommandSuccess>());
@@ -76,7 +76,7 @@ void main() {
 
     testSafe('handleUpdate returns validation failure for invalid name', () async {
       final result = await handler.handleUpdate(
-        const UpdateTaskCommand(id: 't1', name: ' '),
+        const UpdateTaskCommand(id: 't1', name: ' ', completed: false),
       );
 
       expect(result, isA<CommandValidationFailure>());
@@ -103,6 +103,7 @@ void main() {
       final result = await handler.handleCreate(
         CreateTaskCommand(
           name: 'Task',
+          completed: false,
           startDate: DateTime(2025, 1, 10),
           deadlineDate: DateTime(2025, 1, 9),
         ),

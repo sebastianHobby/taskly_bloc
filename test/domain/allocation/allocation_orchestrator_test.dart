@@ -57,8 +57,17 @@ void main() {
       final value = TestData.value(id: 'v1');
       valueRepository.pushValues([value]);
 
-      final pinnedTask = TestData.task(id: 't1', isPinned: true, values: [value]);
-      final regularTask = TestData.task(id: 't2', values: [value]);
+      final pinnedTask = TestData.task(
+        id: 't1',
+        isPinned: true,
+        values: [value],
+        overridePrimaryValueId: value.id,
+      );
+      final regularTask = TestData.task(
+        id: 't2',
+        values: [value],
+        overridePrimaryValueId: value.id,
+      );
       taskRepository.pushTasks([pinnedTask, regularTask]);
 
       final orchestrator = AllocationOrchestrator(
@@ -76,8 +85,12 @@ void main() {
 
       expect(result.allocatedTasks, isNotEmpty);
       expect(
-        result.allocatedTasks.any((t) => t.task.id == pinnedTask.id),
+        result.allocatedTasks.any((t) => t.task.id == regularTask.id),
         isTrue,
+      );
+      expect(
+        result.allocatedTasks.any((t) => t.task.id == pinnedTask.id),
+        isFalse,
       );
     });
 

@@ -5,7 +5,8 @@ import '../../helpers/test_imports.dart';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:taskly_data/testing.dart';
+import 'package:taskly_data/db.dart';
+import 'package:taskly_data/src/repositories/repository_helpers.dart';
 
 void main() {
   setUpAll(setUpAllTestEnvironment);

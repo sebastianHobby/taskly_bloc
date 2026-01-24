@@ -503,8 +503,7 @@ class _MyDaySectionsState extends State<_MyDaySections> {
               ? null
               : TasklyMyDaySectionConfig(
                   title: l10n.pinnedTasksSection,
-                  subtitle: l10n.myDayPinnedSectionSubtitle,
-                  icon: Icons.push_pin_rounded,
+                  icon: null,
                   count: widget.pinnedTasks.length,
                   showCount: false,
                   expanded: _pinnedExpanded,
