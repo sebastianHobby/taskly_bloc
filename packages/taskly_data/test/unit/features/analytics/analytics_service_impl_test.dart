@@ -16,9 +16,7 @@ void main() {
   group('AnalyticsServiceImpl', () {
     testSafe('mood distribution and summary use tracker events', () async {
       final journalRepo = _FakeJournalRepository(
-        definitions: [
-          _trackerDef(systemKey: 'mood', id: 'mood'),
-        ],
+        definitions: [_trackerDef(systemKey: 'mood', id: 'mood')],
         events: [
           _event(trackerId: 'mood', value: 3),
           _event(trackerId: 'mood', value: 5),
@@ -164,8 +162,14 @@ void main() {
       );
 
       final taskRepo = _FakeTaskRepository([
-        _TaskItem(task: task1, completedAt: now.subtract(const Duration(days: 2))),
-        _TaskItem(task: task2, completedAt: now.subtract(const Duration(days: 9))),
+        _TaskItem(
+          task: task1,
+          completedAt: now.subtract(const Duration(days: 2)),
+        ),
+        _TaskItem(
+          task: task2,
+          completedAt: now.subtract(const Duration(days: 9)),
+        ),
       ]);
 
       final dayKeyService = HomeDayKeyService(
@@ -216,10 +220,7 @@ TrackerDefinition _trackerDef({required String id, String? systemKey}) {
   );
 }
 
-TrackerEvent _event({
-  required String trackerId,
-  required Object value,
-}) {
+TrackerEvent _event({required String trackerId, required Object value}) {
   return TrackerEvent(
     id: 'e1',
     trackerId: trackerId,
@@ -235,12 +236,7 @@ TrackerEvent _event({
 }
 
 Value _value(String id, String name, DateTime now) {
-  return Value(
-    id: id,
-    name: name,
-    createdAt: now,
-    updatedAt: now,
-  );
+  return Value(id: id, name: name, createdAt: now, updatedAt: now);
 }
 
 class _TaskItem {
@@ -262,38 +258,44 @@ class _FakeTaskRepository implements TaskRepositoryContract {
   Future<List<Task>> getAll([TaskQuery? query]) async => _filterTasks(query);
 
   List<Task> _filterTasks(TaskQuery? query) {
-    final items = _items.where((item) {
-      final task = item.task;
-      final completedAt = item.completedAt;
-      if (query == null) return true;
-      for (final predicate in query.filter.shared) {
-        if (predicate is TaskBoolPredicate &&
-            predicate.field == TaskBoolField.completed) {
-          final expected = predicate.operator == BoolOperator.isTrue;
-          if (task.completed != expected) return false;
-        }
-        if (predicate is TaskDatePredicate &&
-            predicate.field == TaskDateField.completedAt) {
-          final date = completedAt;
-          switch (predicate.operator) {
-            case DateOperator.onOrAfter:
-              if (predicate.date != null && date.isBefore(predicate.date!)) {
-                return false;
+    final items = _items
+        .where((item) {
+          final task = item.task;
+          final completedAt = item.completedAt;
+          if (query == null) return true;
+          for (final predicate in query.filter.shared) {
+            if (predicate is TaskBoolPredicate &&
+                predicate.field == TaskBoolField.completed) {
+              final expected = predicate.operator == BoolOperator.isTrue;
+              if (task.completed != expected) return false;
+            }
+            if (predicate is TaskDatePredicate &&
+                predicate.field == TaskDateField.completedAt) {
+              final date = completedAt;
+              switch (predicate.operator) {
+                case DateOperator.onOrAfter:
+                  if (predicate.date != null &&
+                      date.isBefore(predicate.date!)) {
+                    return false;
+                  }
+                case DateOperator.between:
+                  if (predicate.startDate != null &&
+                      date.isBefore(predicate.startDate!)) {
+                    return false;
+                  }
+                  if (predicate.endDate != null &&
+                      date.isAfter(predicate.endDate!)) {
+                    return false;
+                  }
+                default:
+                  break;
               }
-            case DateOperator.between:
-              if (predicate.startDate != null && date.isBefore(predicate.startDate!)) {
-                return false;
-              }
-              if (predicate.endDate != null && date.isAfter(predicate.endDate!)) {
-                return false;
-              }
-            default:
-              break;
+            }
           }
-        }
-      }
-      return true;
-    }).map((item) => item.task).toList(growable: false);
+          return true;
+        })
+        .map((item) => item.task)
+        .toList(growable: false);
 
     return items;
   }
@@ -311,7 +313,10 @@ class _FakeTaskRepository implements TaskRepositoryContract {
   @override
   Future<List<Task>> getByIds(Iterable<String> ids) async {
     final byId = {for (final i in _items) i.task.id: i.task};
-    return [for (final id in ids) if (byId[id] != null) byId[id]!];
+    return [
+      for (final id in ids)
+        if (byId[id] != null) byId[id]!,
+    ];
   }
 
   @override
@@ -347,8 +352,7 @@ class _FakeTaskRepository implements TaskRepositoryContract {
     bool seriesEnded = false,
     List<String>? valueIds,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> update({
@@ -366,24 +370,27 @@ class _FakeTaskRepository implements TaskRepositoryContract {
     List<String>? valueIds,
     bool? isPinned,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> setPinned({
     required String id,
     required bool isPinned,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> setMyDaySnoozedUntil({
     required String id,
     required DateTime? untilUtc,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
+
+  @override
+  Future<Map<String, TaskSnoozeStats>> getSnoozeStats({
+    required DateTime sinceUtc,
+    required DateTime untilUtc,
+  }) async => const <String, TaskSnoozeStats>{};
 
   @override
   Future<void> delete(String id, {OperationContext? context}) async =>
@@ -393,23 +400,20 @@ class _FakeTaskRepository implements TaskRepositoryContract {
   Future<List<Task>> getOccurrences({
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<List<Task>> getOccurrencesForTask({
     required String taskId,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Stream<List<Task>> watchOccurrences({
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) =>
-      const Stream<List<Task>>.empty();
+  }) => const Stream<List<Task>>.empty();
 
   @override
   Future<void> completeOccurrence({
@@ -418,24 +422,21 @@ class _FakeTaskRepository implements TaskRepositoryContract {
     DateTime? originalOccurrenceDate,
     String? notes,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> uncompleteOccurrence({
     required String taskId,
     DateTime? occurrenceDate,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> skipOccurrence({
     required String taskId,
     required DateTime originalDate,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> rescheduleOccurrence({
@@ -443,8 +444,7 @@ class _FakeTaskRepository implements TaskRepositoryContract {
     required DateTime originalDate,
     required DateTime newDate,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 }
 
 class _FakeProjectRepository implements ProjectRepositoryContract {
@@ -461,16 +461,18 @@ class _FakeProjectRepository implements ProjectRepositoryContract {
 
   List<Project> _filter(ProjectQuery? query) {
     if (query == null) return _projects;
-    return _projects.where((project) {
-      for (final predicate in query.filter.shared) {
-        if (predicate is ProjectBoolPredicate &&
-            predicate.field == ProjectBoolField.completed) {
-          final expected = predicate.operator == BoolOperator.isTrue;
-          if (project.completed != expected) return false;
-        }
-      }
-      return true;
-    }).toList(growable: false);
+    return _projects
+        .where((project) {
+          for (final predicate in query.filter.shared) {
+            if (predicate is ProjectBoolPredicate &&
+                predicate.field == ProjectBoolField.completed) {
+              final expected = predicate.operator == BoolOperator.isTrue;
+              if (project.completed != expected) return false;
+            }
+          }
+          return true;
+        })
+        .toList(growable: false);
   }
 
   Project? _projectById(String id) {
@@ -503,8 +505,7 @@ class _FakeProjectRepository implements ProjectRepositoryContract {
     List<String>? valueIds,
     int? priority,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> update({
@@ -521,16 +522,14 @@ class _FakeProjectRepository implements ProjectRepositoryContract {
     int? priority,
     bool? isPinned,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> setPinned({
     required String id,
     required bool isPinned,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> delete(String id, {OperationContext? context}) async =>
@@ -548,23 +547,20 @@ class _FakeProjectRepository implements ProjectRepositoryContract {
   Future<List<Project>> getOccurrences({
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<List<Project>> getOccurrencesForProject({
     required String projectId,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Stream<List<Project>> watchOccurrences({
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) =>
-      const Stream<List<Project>>.empty();
+  }) => const Stream<List<Project>>.empty();
 
   @override
   Future<void> completeOccurrence({
@@ -573,24 +569,21 @@ class _FakeProjectRepository implements ProjectRepositoryContract {
     DateTime? originalOccurrenceDate,
     String? notes,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> uncompleteOccurrence({
     required String projectId,
     DateTime? occurrenceDate,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> skipOccurrence({
     required String projectId,
     required DateTime originalDate,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> rescheduleOccurrence({
@@ -599,8 +592,7 @@ class _FakeProjectRepository implements ProjectRepositoryContract {
     required DateTime newDate,
     DateTime? newDeadline,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 }
 
 class _FakeValueRepository implements ValueRepositoryContract {
@@ -638,8 +630,7 @@ class _FakeValueRepository implements ValueRepositoryContract {
     ValuePriority priority = ValuePriority.medium,
     String? iconName,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> update({
@@ -649,8 +640,7 @@ class _FakeValueRepository implements ValueRepositoryContract {
     ValuePriority? priority,
     String? iconName,
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> delete(String id, {OperationContext? context}) async =>
@@ -665,64 +655,55 @@ class _FakeAnalyticsRepository implements AnalyticsRepositoryContract {
     required String entityType,
     required DateRange range,
     String? entityId,
-  }) async =>
-      lastSnapshots;
+  }) async => lastSnapshots;
 
   @override
   Future<void> saveSnapshot(
     AnalyticsSnapshot snapshot, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> saveSnapshots(
     List<AnalyticsSnapshot> snapshots, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<List<CorrelationResult>> getCachedCorrelations({
     required String correlationType,
     required DateRange range,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> saveCorrelation(
     CorrelationResult correlation, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> saveCorrelations(
     List<CorrelationResult> correlations, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<List<AnalyticsInsight>> getRecentInsights({
     required DateRange range,
     int? limit,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> saveInsight(
     AnalyticsInsight insight, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> dismissInsight(
     String insightId, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 }
 
 class _FakeJournalRepository implements JournalRepositoryContract {
@@ -743,25 +724,25 @@ class _FakeJournalRepository implements JournalRepositoryContract {
     DateTime? anchorDate,
     String? trackerId,
   }) {
-    final filtered = events.where((event) {
-      if (trackerId != null && event.trackerId != trackerId) return false;
-      return true;
-    }).toList(growable: false);
+    final filtered = events
+        .where((event) {
+          if (trackerId != null && event.trackerId != trackerId) return false;
+          return true;
+        })
+        .toList(growable: false);
     return Stream.value(filtered);
   }
 
   @override
   Future<Map<DateTime, double>> getDailyMoodAverages({
     required DateRange range,
-  }) async =>
-      <DateTime, double>{};
+  }) async => <DateTime, double>{};
 
   @override
   Future<Map<DateTime, double>> getTrackerValues({
     required String trackerId,
     required DateRange range,
-  }) async =>
-      <DateTime, double>{};
+  }) async => <DateTime, double>{};
 
   @override
   Stream<List<JournalEntry>> watchJournalEntries({DateRange? range}) =>
@@ -770,8 +751,7 @@ class _FakeJournalRepository implements JournalRepositoryContract {
   @override
   Stream<List<JournalEntry>> watchJournalEntriesByQuery(
     JournalQuery journalQuery,
-  ) =>
-      const Stream<List<JournalEntry>>.empty();
+  ) => const Stream<List<JournalEntry>>.empty();
 
   @override
   Future<JournalEntry?> getJournalEntryById(String id) async => null;
@@ -783,29 +763,25 @@ class _FakeJournalRepository implements JournalRepositoryContract {
   @override
   Future<List<JournalEntry>> getJournalEntriesByDate({
     required DateTime date,
-  }) async =>
-      const <JournalEntry>[];
+  }) async => const <JournalEntry>[];
 
   @override
   Future<void> saveJournalEntry(
     JournalEntry entry, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<String> upsertJournalEntry(
     JournalEntry entry, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> deleteJournalEntry(
     String id, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Stream<List<TrackerGroup>> watchTrackerGroups() =>
@@ -818,69 +794,59 @@ class _FakeJournalRepository implements JournalRepositoryContract {
   @override
   Stream<List<TrackerDefinitionChoice>> watchTrackerDefinitionChoices({
     required String trackerId,
-  }) =>
-      const Stream<List<TrackerDefinitionChoice>>.empty();
+  }) => const Stream<List<TrackerDefinitionChoice>>.empty();
 
   @override
   Stream<List<TrackerStateDay>> watchTrackerStateDay({
     required DateRange range,
-  }) =>
-      const Stream<List<TrackerStateDay>>.empty();
+  }) => const Stream<List<TrackerStateDay>>.empty();
 
   @override
   Stream<List<TrackerStateEntry>> watchTrackerStateEntry({
     required DateRange range,
-  }) =>
-      const Stream<List<TrackerStateEntry>>.empty();
+  }) => const Stream<List<TrackerStateEntry>>.empty();
 
   @override
   Future<void> saveTrackerDefinition(
     TrackerDefinition definition, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> saveTrackerGroup(
     TrackerGroup group, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> deleteTrackerGroup(
     String groupId, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> saveTrackerPreference(
     TrackerPreference preference, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> saveTrackerDefinitionChoice(
     TrackerDefinitionChoice choice, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> appendTrackerEvent(
     TrackerEvent event, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 
   @override
   Future<void> deleteTrackerAndData(
     String trackerId, {
     OperationContext? context,
-  }) async =>
-      throw UnimplementedError();
+  }) async => throw UnimplementedError();
 }
 
 class _FakeSettingsRepository implements SettingsRepositoryContract {
@@ -916,8 +882,7 @@ class _FakeOccurrenceExpander implements OccurrenceStreamExpanderContract {
     required DateTime rangeStart,
     required DateTime rangeEnd,
     bool Function(Task p1)? postExpansionFilter,
-  }) =>
-      tasksStream;
+  }) => tasksStream;
 
   @override
   Stream<List<Project>> expandProjectOccurrences({
@@ -927,8 +892,7 @@ class _FakeOccurrenceExpander implements OccurrenceStreamExpanderContract {
     required DateTime rangeStart,
     required DateTime rangeEnd,
     bool Function(Project p1)? postExpansionFilter,
-  }) =>
-      projectsStream;
+  }) => projectsStream;
 
   @override
   List<Task> expandTaskOccurrencesSync({
@@ -938,8 +902,7 @@ class _FakeOccurrenceExpander implements OccurrenceStreamExpanderContract {
     required DateTime rangeStart,
     required DateTime rangeEnd,
     bool Function(Task p1)? postExpansionFilter,
-  }) =>
-      tasks;
+  }) => tasks;
 
   @override
   List<Project> expandProjectOccurrencesSync({
@@ -949,6 +912,5 @@ class _FakeOccurrenceExpander implements OccurrenceStreamExpanderContract {
     required DateTime rangeStart,
     required DateTime rangeEnd,
     bool Function(Project p1)? postExpansionFilter,
-  }) =>
-      projects;
+  }) => projects;
 }

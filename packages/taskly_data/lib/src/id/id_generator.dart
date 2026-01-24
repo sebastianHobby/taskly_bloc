@@ -64,6 +64,7 @@ class IdGenerator {
     'analytics_correlations',
     'analytics_insights',
     'attention_resolutions',
+    'task_snooze_events',
   };
 
   /// Check if a table uses deterministic v5 IDs.
@@ -107,6 +108,9 @@ class IdGenerator {
 
   /// Generate random ID for analytics insight.
   String analyticsInsightId() => _uuid.v4();
+
+  /// Generate random ID for a task snooze event.
+  String taskSnoozeEventId() => _uuid.v4();
 
   // ═══════════════════════════════════════════════════════════════════════════
   // V5 DETERMINISTIC IDs - Natural Key → Same ID

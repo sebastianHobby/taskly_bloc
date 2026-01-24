@@ -58,6 +58,7 @@ class SettingsScreen extends StatelessWidget {
                     context: context,
                     title: 'My Day',
                     children: [
+                      _MyDayDueSoonToggle(settings: settings),
                       _MyDayDueWindowSlider(settings: settings),
                       _MyDayShowAvailableToStartToggle(settings: settings),
                     ],
@@ -261,6 +262,28 @@ class _TextSizeSlider extends StatelessWidget {
   }
 }
 
+class _MyDayDueSoonToggle extends StatelessWidget {
+  const _MyDayDueSoonToggle({required this.settings});
+
+  final GlobalSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile.adaptive(
+      title: const Text('Due soon'),
+      subtitle: const Text(
+        'Include tasks with due dates in the due-soon window.',
+      ),
+      value: settings.myDayDueSoonEnabled,
+      onChanged: (enabled) {
+        context.read<GlobalSettingsBloc>().add(
+          GlobalSettingsEvent.myDayDueSoonEnabledChanged(enabled),
+        );
+      },
+    );
+  }
+}
+
 class _MyDayDueWindowSlider extends StatelessWidget {
   const _MyDayDueWindowSlider({required this.settings});
 
@@ -272,6 +295,10 @@ class _MyDayDueWindowSlider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final days = settings.myDayDueWindowDays.clamp(_min, _max);
+    final enabled = settings.myDayDueSoonEnabled;
+    final helperText = enabled
+        ? 'Include tasks due within the next $days days'
+        : 'Enable the "Due soon" toggle to include deadline-based tasks.';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -293,7 +320,7 @@ class _MyDayDueWindowSlider extends StatelessWidget {
             ],
           ),
           Text(
-            'Include tasks due within the next $days days',
+            helperText,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -304,11 +331,15 @@ class _MyDayDueWindowSlider extends StatelessWidget {
             max: _max.toDouble(),
             divisions: _max - _min,
             label: '$days days',
-            onChanged: (value) {
-              context.read<GlobalSettingsBloc>().add(
-                GlobalSettingsEvent.myDayDueWindowDaysChanged(value.round()),
-              );
-            },
+            onChanged: enabled
+                ? (value) {
+                    context.read<GlobalSettingsBloc>().add(
+                      GlobalSettingsEvent.myDayDueWindowDaysChanged(
+                        value.round(),
+                      ),
+                    );
+                  }
+                : null,
           ),
         ],
       ),
@@ -324,8 +355,8 @@ class _MyDayShowAvailableToStartToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SwitchListTile.adaptive(
-      title: const Text('Show “Available to start”'),
-      subtitle: const Text('Tasks with a start date of today or earlier'),
+      title: const Text('Show planned tasks'),
+      subtitle: const Text('Tasks with a planned date of today or earlier'),
       value: settings.myDayShowAvailableToStart,
       onChanged: (enabled) {
         context.read<GlobalSettingsBloc>().add(

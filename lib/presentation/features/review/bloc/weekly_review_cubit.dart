@@ -6,6 +6,7 @@ import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/settings.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
 class WeeklyReviewConfig {
   WeeklyReviewConfig({
@@ -139,14 +140,20 @@ class WeeklyReviewCubit extends Cubit<WeeklyReviewState> {
     required AnalyticsService analyticsService,
     required AttentionEngineContract attentionEngine,
     required ValueRepositoryContract valueRepository,
+    required TaskRepositoryContract taskRepository,
+    required NowService nowService,
   }) : _analyticsService = analyticsService,
        _attentionEngine = attentionEngine,
        _valueRepository = valueRepository,
+       _taskRepository = taskRepository,
+       _nowService = nowService,
        super(const WeeklyReviewState());
 
   final AnalyticsService _analyticsService;
   final AttentionEngineContract _attentionEngine;
   final ValueRepositoryContract _valueRepository;
+  final TaskRepositoryContract _taskRepository;
+  final NowService _nowService;
   StreamSubscription<List<AttentionItem>>? _maintenanceSub;
 
   Future<void> load(WeeklyReviewConfig config) async {
@@ -162,14 +169,16 @@ class WeeklyReviewCubit extends Cubit<WeeklyReviewState> {
 
       if (isClosed) return;
 
+      final initialSections = config.maintenanceEnabled
+          ? await _buildInitialMaintenanceSections(config)
+          : _emptyMaintenanceSections(config);
+
       emit(
         state.copyWith(
           status: WeeklyReviewStatus.ready,
           valuesSummary: summary,
           valueWins: wins,
-          maintenanceSections: config.maintenanceEnabled
-              ? const <WeeklyReviewMaintenanceSection>[]
-              : _emptyMaintenanceSections(config),
+          maintenanceSections: initialSections,
           errorMessage: null,
         ),
       );
@@ -347,17 +356,116 @@ class WeeklyReviewCubit extends Cubit<WeeklyReviewState> {
     }
 
     if (config.showFrequentSnoozed) {
-      sections.add(
-        const WeeklyReviewMaintenanceSection(
-          id: 'frequently-snoozed',
-          title: 'Frequently Snoozed',
-          emptyMessage: 'No items are stuck in a snooze loop.',
-          items: [],
+      sections.add(_buildFrequentSnoozedSection(state.maintenanceSections));
+    }
+
+    return sections;
+  }
+
+  Future<List<WeeklyReviewMaintenanceSection>> _buildInitialMaintenanceSections(
+    WeeklyReviewConfig config,
+  ) async {
+    if (!config.maintenanceEnabled) {
+      return _emptyMaintenanceSections(config);
+    }
+
+    final base = _buildMaintenanceSections(const [], config);
+    final snoozed = config.showFrequentSnoozed
+        ? await _buildFrequentSnoozedSectionAsync()
+        : null;
+
+    return base
+        .map(
+          (section) => section.id == 'frequently-snoozed' && snoozed != null
+              ? snoozed
+              : section,
+        )
+        .toList(growable: false);
+  }
+
+  WeeklyReviewMaintenanceSection _buildFrequentSnoozedSection(
+    List<WeeklyReviewMaintenanceSection> currentSections,
+  ) {
+    final existing = currentSections.firstWhere(
+      (section) => section.id == 'frequently-snoozed',
+      orElse: () => const WeeklyReviewMaintenanceSection(
+        id: 'frequently-snoozed',
+        title: 'Frequently Snoozed',
+        emptyMessage: 'No items are stuck in a snooze loop.',
+        items: [],
+      ),
+    );
+
+    return existing;
+  }
+
+  Future<WeeklyReviewMaintenanceSection>
+  _buildFrequentSnoozedSectionAsync() async {
+    final nowUtc = _nowService.nowUtc();
+    final sinceUtc = nowUtc.subtract(const Duration(days: 28));
+
+    final statsByTask = await _taskRepository.getSnoozeStats(
+      sinceUtc: sinceUtc,
+      untilUtc: nowUtc,
+    );
+
+    if (statsByTask.isEmpty) {
+      return const WeeklyReviewMaintenanceSection(
+        id: 'frequently-snoozed',
+        title: 'Frequently Snoozed',
+        emptyMessage: 'No items are stuck in a snooze loop.',
+        items: [],
+      );
+    }
+
+    final flaggedIds = statsByTask.entries
+        .where((entry) {
+          final stats = entry.value;
+          return stats.snoozeCount >= 3 ||
+              (stats.snoozeCount >= 2 && stats.totalSnoozeDays >= 28);
+        })
+        .map((entry) => entry.key)
+        .toList(growable: false);
+
+    if (flaggedIds.isEmpty) {
+      return const WeeklyReviewMaintenanceSection(
+        id: 'frequently-snoozed',
+        title: 'Frequently Snoozed',
+        emptyMessage: 'No items are stuck in a snooze loop.',
+        items: [],
+      );
+    }
+
+    final tasks = await _taskRepository.getByIds(flaggedIds);
+    final items = <WeeklyReviewMaintenanceItem>[];
+
+    for (final task in tasks) {
+      if (task.completed) continue;
+      final stats = statsByTask[task.id];
+      if (stats == null) continue;
+
+      final countLabel = stats.snoozeCount == 1
+          ? '1 snooze'
+          : '${stats.snoozeCount} snoozes';
+      final daysLabel = stats.totalSnoozeDays == 1
+          ? '1 day'
+          : '${stats.totalSnoozeDays} days';
+
+      items.add(
+        WeeklyReviewMaintenanceItem(
+          title: task.name,
+          description:
+              'Snoozed $countLabel in the last 28 days ($daysLabel total).',
         ),
       );
     }
 
-    return sections;
+    return WeeklyReviewMaintenanceSection(
+      id: 'frequently-snoozed',
+      title: 'Frequently Snoozed',
+      emptyMessage: 'No items are stuck in a snooze loop.',
+      items: items,
+    );
   }
 
   WeeklyReviewMaintenanceItem _mapDeadlineRiskItem(AttentionItem item) {

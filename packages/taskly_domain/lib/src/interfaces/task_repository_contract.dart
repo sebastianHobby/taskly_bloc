@@ -134,6 +134,14 @@ abstract class TaskRepositoryContract {
     OperationContext? context,
   });
 
+  /// Returns snooze statistics for tasks in the given UTC window.
+  ///
+  /// The returned map is keyed by task ID.
+  Future<Map<String, TaskSnoozeStats>> getSnoozeStats({
+    required DateTime sinceUtc,
+    required DateTime untilUtc,
+  });
+
   Future<void> delete(String id, {OperationContext? context});
 
   // =========================================================================

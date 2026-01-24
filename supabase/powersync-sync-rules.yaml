@@ -43,6 +43,9 @@ bucket_definitions:
       # Task Completion History
       - SELECT * FROM task_completion_history WHERE user_id = bucket.user_id
 
+      # Task Snooze Events
+      - SELECT * FROM task_snooze_events WHERE user_id = bucket.user_id
+
       # Project Completion History
       - SELECT * FROM project_completion_history WHERE user_id = bucket.user_id
 

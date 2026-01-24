@@ -1060,6 +1060,14 @@
             }
         }
     },
+    "myDayDueSoonToggleTitle": "Due soon",
+    "@myDayDueSoonToggleTitle": {
+        "description": "Title for the due-soon toggle in the suggestion settings sheet."
+    },
+    "myDayDueSoonToggleSubtitle": "Include tasks with due dates in the due-soon window.",
+    "@myDayDueSoonToggleSubtitle": {
+        "description": "Subtitle for the due-soon toggle describing what it does."
+    },
     "myDayDueSoonWindowHelp": "Shows tasks with due dates within the next {days} days.",
     "@myDayDueSoonWindowHelp": {
         "description": "Helper text describing the due-soon window slider in the My Day ritual suggestion settings.",
@@ -1070,13 +1078,13 @@
             }
         }
     },
-    "myDayShowAvailableToStartSettingTitle": "Show \"Available to start\"",
+    "myDayShowAvailableToStartSettingTitle": "Show planned tasks",
     "@myDayShowAvailableToStartSettingTitle": {
-        "description": "Title for the switch that toggles the available-to-start lane in the My Day ritual suggestion settings."
+        "description": "Title for the switch that toggles the planned tasks lane in the My Day ritual suggestion settings."
     },
-    "myDayShowAvailableToStartSettingSubtitle": "Tasks with a start date of today or earlier.",
+    "myDayShowAvailableToStartSettingSubtitle": "Tasks with a planned date of today or earlier.",
     "@myDayShowAvailableToStartSettingSubtitle": {
-        "description": "Subtitle for the switch that toggles the available-to-start lane in the My Day ritual suggestion settings."
+        "description": "Subtitle for the switch that toggles the planned tasks lane in the My Day ritual suggestion settings."
     },
     "myDayShowAllPicksLabel": "Show all picks",
     "@myDayShowAllPicksLabel": {
@@ -2081,13 +2089,26 @@
     "@myDayRitualSubtitle": {
         "description": "Subtitle shown at the top of the My Day ritual wizard when planning."
     },
-    "myDayUpdatePlanSubtitle": "Review today's picks. Add or remove anything.",
+    "myDayUpdatePlanSubtitle": "Pick what matters next—values-led focus plus what’s due soon.",
     "@myDayUpdatePlanSubtitle": {
         "description": "Subtitle shown at the top of the My Day ritual wizard when resuming and no completed picks exist."
     },
-    "myDayUpdatePlanSubtitleWithCompleted": "Review today's picks. Completed items are shown below.",
+    "myDayUpdatePlanSubtitleWithCompleted": "Pick what matters next—values-led focus plus what’s due soon. Completed items are shown below.",
     "@myDayUpdatePlanSubtitleWithCompleted": {
         "description": "Subtitle shown at the top of the My Day ritual wizard when resuming and some picks are completed."
+    },
+
+    "myDayMetadataValuesLedLabel": "Values-led",
+    "@myDayMetadataValuesLedLabel": {
+        "description": "Label shown in the Update Plan metadata strip to reference values-led guidance."
+    },
+    "myDayMetadataDueSoonOffLabel": "Due soon off",
+    "@myDayMetadataDueSoonOffLabel": {
+        "description": "Label displayed when the due-soon recommendations are disabled."
+    },
+    "myDayMetadataPlannedIncludedLabel": "Planned tasks included",
+    "@myDayMetadataPlannedIncludedLabel": {
+        "description": "Label shown when planned tasks (available to start) are included in the metadata strip."
     },
     "myDayClearMyDayLabel": "Clear My Day",
     "@myDayClearMyDayLabel": {

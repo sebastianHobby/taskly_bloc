@@ -51,6 +51,11 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
   const factory GlobalSettingsEvent.myDayDueWindowDaysChanged(int days) =
       GlobalSettingsMyDayDueWindowDaysChanged;
 
+  /// User toggled whether My Day should show due-soon picks.
+  const factory GlobalSettingsEvent.myDayDueSoonEnabledChanged(
+    bool enabled,
+  ) = GlobalSettingsMyDayDueSoonEnabledChanged;
+
   /// User toggled whether to show the "Available to start" lane.
   const factory GlobalSettingsEvent.myDayShowAvailableToStartChanged(
     bool enabled,
@@ -210,6 +215,10 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsMyDayDueWindowDaysChanged>(
       _onMyDayDueWindowDaysChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMyDayDueSoonEnabledChanged>(
+      _onMyDayDueSoonEnabledChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsMyDayShowAvailableToStartChanged>(
@@ -613,6 +622,20 @@ class GlobalSettingsBloc
         message: '[GlobalSettingsBloc] my day due window persist failed',
       );
     }
+  }
+
+  Future<void> _onMyDayDueSoonEnabledChanged(
+    GlobalSettingsMyDayDueSoonEnabledChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      myDayDueSoonEnabled: event.enabled,
+    );
+    await _persistSettings(
+      updated,
+      intent: 'settings_my_day_due_soon_enabled_changed',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
   }
 
   Future<void> _onMyDayShowAvailableToStartChanged(

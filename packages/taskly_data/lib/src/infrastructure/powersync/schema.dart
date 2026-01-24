@@ -131,6 +131,14 @@ const schema = Schema([
     Column.text('created_at'),
     Column.text('updated_at'),
   ], trackMetadata: true),
+  Table('task_snooze_events', [
+    Column.text('user_id'),
+    Column.text('task_id'),
+    Column.text('snoozed_at'),
+    Column.text('snoozed_until'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+  ], trackMetadata: true),
   Table('project_completion_history', [
     Column.text('project_id'),
     Column.text('occurrence_date'),

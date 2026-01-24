@@ -24,6 +24,14 @@ class _StreamTaskRepo extends Fake implements TaskRepositoryContract {
     lastWatchAllQuery = query;
     return _controller.stream;
   }
+
+  @override
+  Future<Map<String, TaskSnoozeStats>> getSnoozeStats({
+    required DateTime sinceUtc,
+    required DateTime untilUtc,
+  }) async {
+    return const <String, TaskSnoozeStats>{};
+  }
 }
 
 class _StreamProjectRepo extends Fake implements ProjectRepositoryContract {

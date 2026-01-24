@@ -52,7 +52,11 @@ void main() {
 
     testSafe('handleCreate trims name and calls repository', () async {
       final result = await handler.handleCreate(
-        const CreateTaskCommand(name: '  Task  ', completed: false),
+        const CreateTaskCommand(
+          name: '  Task  ',
+          completed: false,
+          valueIds: ['value-1'],
+        ),
       );
 
       expect(result, isA<CommandSuccess>());
@@ -68,7 +72,7 @@ void main() {
           repeatIcalRrule: null,
           repeatFromCompletion: false,
           seriesEnded: false,
-          valueIds: null,
+          valueIds: ['value-1'],
           context: null,
         ),
       ).called(1);

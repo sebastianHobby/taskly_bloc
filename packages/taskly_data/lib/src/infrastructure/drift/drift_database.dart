@@ -317,6 +317,31 @@ class TaskCompletionHistoryTable extends Table {
   ];
 }
 
+/// Tracks My Day snooze events for tasks.
+class TaskSnoozeEventsTable extends Table {
+  @override
+  String get tableName => 'task_snooze_events';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+  TextColumn get taskId => text()
+      .named('task_id')
+      .references(TaskTable, #id, onDelete: KeyAction.cascade)();
+  DateTimeColumn get snoozedAt => dateTime().named('snoozed_at')();
+  DateTimeColumn get snoozedUntil =>
+      dateTime().nullable().named('snoozed_until')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Tracks completion of project occurrences (both repeating and non-repeating)
 class ProjectCompletionHistoryTable extends Table {
   @override
@@ -440,6 +465,7 @@ class ProjectRecurrenceExceptionsTable extends Table {
     MyDayDaysTable,
     MyDayPicksTable,
     TaskCompletionHistoryTable,
+    TaskSnoozeEventsTable,
     ProjectCompletionHistoryTable,
     TaskRecurrenceExceptionsTable,
     ProjectRecurrenceExceptionsTable,
@@ -468,7 +494,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

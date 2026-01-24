@@ -2218,13 +2218,25 @@
     "@myDayRitualSubtitle": {
         "description": "SubtÃ­tulo mostrado en la parte superior del asistente del ritual de Mi dÃ­a al planificar."
     },
-    "myDayUpdatePlanSubtitle": "Revisa las selecciones de hoy. Agrega o quita lo que quieras.",
+    "myDayUpdatePlanSubtitle": "Pick what matters next—values-led focus plus what’s due soon.",
     "@myDayUpdatePlanSubtitle": {
         "description": "SubtÃ­tulo mostrado al reanudar el plan y no hay selecciones completadas."
     },
-    "myDayUpdatePlanSubtitleWithCompleted": "Revisa las selecciones de hoy. Las completadas se muestran abajo.",
+    "myDayUpdatePlanSubtitleWithCompleted": "Pick what matters next—values-led focus plus what’s due soon. Completed items are shown below.",
     "@myDayUpdatePlanSubtitleWithCompleted": {
         "description": "SubtÃ­tulo mostrado al reanudar el plan y hay selecciones completadas."
+    },
+    "myDayMetadataValuesLedLabel": "Values-led",
+    "@myDayMetadataValuesLedLabel": {
+        "description": "Etiqueta que describe que la lista respeta los valores principales."
+    },
+    "myDayMetadataDueSoonOffLabel": "Due soon off",
+    "@myDayMetadataDueSoonOffLabel": {
+        "description": "Etiqueta que indica que las sugerencias con fecha de vencimiento están desactivadas."
+    },
+    "myDayMetadataPlannedIncludedLabel": "Planned tasks included",
+    "@myDayMetadataPlannedIncludedLabel": {
+        "description": "Etiqueta que indica que las tareas planificadas están incluidas en el enfoque."
     },
     "myDayClearMyDayLabel": "Borrar Mi dÃ­a",
     "@myDayClearMyDayLabel": {

@@ -39,6 +39,7 @@ class ScheduledPage extends StatelessWidget {
           create: (_) => ScheduledTimelineBloc(
             occurrencesService: getIt(),
             sessionDayKeyService: getIt(),
+            nowService: getIt(),
             scope: scope,
           ),
         ),
