@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:taskly_ui/src/models/value_chip_data.dart';
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 import 'package:taskly_ui/src/primitives/meta_badges.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
@@ -406,7 +405,8 @@ class _MetaRow extends StatelessWidget {
       runSpacing: 4,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        if (hasValue) ValueChip(data: valueChip!),
+        if (valueChip case final value?)
+          ValueChip(data: value),
         if (hasFocus) const _FocusPill(),
         if (hasPriority) PriorityPill(priority: meta.priority!),
         if (hasPlan)

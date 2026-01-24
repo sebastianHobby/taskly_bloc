@@ -74,6 +74,20 @@ Official coverage metric in this repo:
 2) `dart run tool/coverage_filter.dart`
 3) `dart run tool/coverage_summary.dart`
 
+Convenience script (runs root + package tests, merges coverage, and generates
+HTML if `genhtml` is available):
+
+```bash
+tool/Run-Coverage.ps1
+```
+
+The script defaults to `-CoveragePackage taskly` to avoid Windows shell
+escaping issues. Override if you need a stricter regex:
+
+```bash
+tool/Run-Coverage.ps1 -CoveragePackage "^(taskly_bloc|taskly_core|taskly_data|taskly_domain|taskly_ui)$"
+```
+
 ### Fast Tests Only
 ```bash
 flutter test -x integration -x slow -x repository -x flaky -x pipeline -x diagnosis

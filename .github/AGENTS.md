@@ -1,4 +1,4 @@
-# Taskly — Copilot Instructions
+﻿# Taskly â€” Copilot Instructions
 
 You are an expert in Flutter and Dart development.
 
@@ -35,6 +35,9 @@ If a change would violate an invariant:
 - Add a documented exception under doc/architecture/exceptions/ before
   implementing.
 
+- When you identify dead code that is not used or you makes changes which replace/depreacte existing code
+always offer to delete / tidy up the unused legacy code (confirming it's not used first)
+
 ## Taskly implementation guardrails (strict)
 
 - Follow the layering rules and boundaries in doc/architecture/INVARIANTS.md.
@@ -66,12 +69,16 @@ When asked to design UI/UX:
 
 ### Analyzer and tests
 
-- Always run flutter analyze (command line) before working on failing tests.
-- Do not try to “fix tests to make them pass” while flutter analyze reports
+- Always run `dart analyze` (command line) after all changes are completed and
+  ensure it is green before reporting done.
+- Do not try to “fix tests to make them pass” while the analyzer reports
   problems.
+- If `dart analyze` fails to start due to sandbox restrictions (e.g. “windows
+  sandbox: spawn setup refresh”), rerun it with escalated permissions.
 - When implementing changes, do not run tests unless the user explicitly asks
   or it is required to unblock progress.
 
 ### Code generation
 
 - If build_runner output is needed after changes, run build_runner.
+

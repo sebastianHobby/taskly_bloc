@@ -185,6 +185,11 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
           subtitle: l10n.myDayWhatMattersSubtitle,
           actionLabel: l10n.myDayWhyTheseAction,
           onAction: widget.onWhyThese,
+          trailing: Icon(
+            Icons.expand_less,
+            size: 18,
+            color: cs.onSurfaceVariant.withOpacity(0.6),
+          ),
         ),
         const SizedBox(height: 6),
         _BucketSection(
@@ -215,6 +220,11 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
           title: l10n.myDayWhatsWaitingSectionTitle,
           count: widget.dueCounts.otherCount + widget.startsCounts.otherCount,
           subtitle: l10n.myDayWhatsWaitingSubtitle,
+          trailing: Icon(
+            Icons.expand_less,
+            size: 18,
+            color: cs.onSurfaceVariant.withOpacity(0.6),
+          ),
         ),
         const SizedBox(height: 8),
         _TimeSensitiveSummaryRow(
@@ -231,6 +241,8 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
           expanded: _dueExpanded,
           onToggleExpanded: () =>
               setState(() => _dueExpanded = !_dueExpanded),
+          useCompactHeader: true,
+          headerIconColor: cs.error,
           onTapOther: widget.onAddMissingDue,
           otherLabel: l10n.myDayRitualNotInTodayLabel,
           emptyTitle: widget.dueCounts.otherCount == 0
@@ -251,6 +263,9 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
             expanded: _startsExpanded,
             onToggleExpanded: () =>
                 setState(() => _startsExpanded = !_startsExpanded),
+            useCompactHeader: true,
+            compactLabel: l10n.myDayPlannedSectionTitle,
+            headerIconColor: cs.secondary,
             onTapOther: widget.onAddMissingStarts,
             otherLabel: l10n.myDayRitualNotInTodayLabel,
             emptyTitle: widget.startsCounts.otherCount == 0
@@ -275,6 +290,7 @@ class _SectionHeader extends StatelessWidget {
     required this.subtitle,
     this.actionLabel,
     this.onAction,
+    this.trailing,
   });
 
   final IconData icon;
@@ -283,6 +299,7 @@ class _SectionHeader extends StatelessWidget {
   final String subtitle;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -308,7 +325,7 @@ class _SectionHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
+                  style: theme.textTheme.labelSmall?.copyWith(
                     color: cs.onSurfaceVariant.withOpacity(0.85),
                     fontWeight: FontWeight.w500,
                   ),
@@ -316,11 +333,11 @@ class _SectionHeader extends StatelessWidget {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
+                  horizontal: 6,
+                  vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withOpacity(0.7),
+                  color: cs.surfaceContainerHighest.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -349,6 +366,10 @@ class _SectionHeader extends StatelessWidget {
                   child: Text(actionLabel!),
                 ),
               ],
+              if (trailing != null) ...[
+                const SizedBox(width: 6),
+                trailing!,
+              ],
             ],
           ),
         ],
@@ -372,6 +393,9 @@ class _BucketSection extends StatelessWidget {
     this.showFocusBadge = false,
     this.onTapOther,
     this.subtitleForTask,
+    this.useCompactHeader = false,
+    this.compactLabel,
+    this.headerIconColor,
   });
 
   final IconData icon;
@@ -386,6 +410,9 @@ class _BucketSection extends StatelessWidget {
   final String emptySubtitle;
   final int previewCount;
   final bool showFocusBadge;
+  final bool useCompactHeader;
+  final String? compactLabel;
+  final Color? headerIconColor;
 
   /// Optional per-task subtitle text.
   ///
@@ -495,15 +522,28 @@ class _BucketSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: cs.onSurfaceVariant),
+              Icon(
+                icon,
+                size: 16,
+                color: headerIconColor ?? cs.onSurfaceVariant,
+              ),
               const SizedBox(width: 6),
               Expanded(
-                child: Text(
-                  '$title${context.l10n.dotSeparator}$universeCount',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                child: useCompactHeader
+                    ? Text(
+                        '${(compactLabel ?? title).toUpperCase()} ($universeCount)',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurfaceVariant,
+                          letterSpacing: 0.8,
+                        ),
+                      )
+                    : Text(
+                        '$title${context.l10n.dotSeparator}$universeCount',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
               ),
             ],
           ),
@@ -575,6 +615,14 @@ class _BucketSection extends StatelessWidget {
                     icon: Icon(
                       expanded ? Icons.expand_less : Icons.expand_more,
                     ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     label: Text(
                       expanded
                           ? context.l10n.myDayRitualShowFewer
@@ -623,22 +671,15 @@ class _TimeSensitiveSummaryRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  context.l10n.myDayTimeSensitiveSummary(
-                    dueCount,
-                    plannedCount,
-                  ),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-            ],
+          child: Text(
+            context.l10n.myDayTimeSensitiveSummary(
+              dueCount,
+              plannedCount,
+            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),
