@@ -111,6 +111,7 @@ final class MyDayRitualReady extends MyDayRitualState {
     required this.showAvailableToStart,
     required this.planned,
     required this.curated,
+    required this.pinnedTasks,
     required this.snoozed,
     required this.completedPicks,
     required this.curatedReasons,
@@ -127,6 +128,7 @@ final class MyDayRitualReady extends MyDayRitualState {
   final bool showAvailableToStart;
   final List<Task> planned;
   final List<Task> curated;
+  final List<Task> pinnedTasks;
   final List<Task> snoozed;
   final List<Task> completedPicks;
   final Map<String, String> curatedReasons;
@@ -143,6 +145,7 @@ final class MyDayRitualReady extends MyDayRitualState {
     bool? showAvailableToStart,
     List<Task>? planned,
     List<Task>? curated,
+    List<Task>? pinnedTasks,
     List<Task>? snoozed,
     List<Task>? completedPicks,
     Map<String, String>? curatedReasons,
@@ -159,6 +162,7 @@ final class MyDayRitualReady extends MyDayRitualState {
       showAvailableToStart: showAvailableToStart ?? this.showAvailableToStart,
       planned: planned ?? this.planned,
       curated: curated ?? this.curated,
+      pinnedTasks: pinnedTasks ?? this.pinnedTasks,
       snoozed: snoozed ?? this.snoozed,
       completedPicks: completedPicks ?? this.completedPicks,
       curatedReasons: curatedReasons ?? this.curatedReasons,
@@ -401,8 +405,16 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         .where((t) => !snoozedIds.contains(t.id))
         .toList(growable: false);
 
+    final pinnedTasks =
+        activeTasks.where((t) => t.isPinned).toList(growable: false);
+    final pinnedIds = pinnedTasks.map((t) => t.id).toSet();
+
+    final unpinnedTasks = activeTasks
+        .where((t) => !pinnedIds.contains(t.id))
+        .toList(growable: false);
+
     final composition = _composer.compose(
-      tasks: activeTasks,
+      tasks: unpinnedTasks,
       dayKeyUtc: _dayKeyUtc,
       dueWindowDays: _globalSettings.myDayDueWindowDays,
       dayPicks: _dayPicks,
@@ -427,6 +439,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         showAvailableToStart: _globalSettings.myDayShowAvailableToStart,
         planned: planned,
         curated: curated,
+        pinnedTasks: pinnedTasks,
         snoozed: snoozed,
         completedPicks: _completedPicks,
         curatedReasons: composition.curatedReasonLineByTaskId,

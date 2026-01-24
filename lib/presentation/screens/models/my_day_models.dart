@@ -13,17 +13,12 @@ final class MyDayViewModel {
     required this.tasks,
     required this.summary,
     required this.mix,
+    required this.pinnedTasks,
     required this.acceptedDue,
     required this.acceptedStarts,
     required this.acceptedFocus,
-    required this.dueAcceptedTotalCount,
-    required this.startsAcceptedTotalCount,
-    required this.focusAcceptedTotalCount,
+    required this.completedPicks,
     required this.selectedTotalCount,
-    required this.missingDueCount,
-    required this.missingStartsCount,
-    required this.missingDueTasks,
-    required this.missingStartsTasks,
     required this.todaySelectedTaskIds,
   });
 
@@ -31,19 +26,14 @@ final class MyDayViewModel {
   final MyDaySummary summary;
   final MyDayMixVm mix;
 
+  final List<Task> pinnedTasks;
   final List<Task> acceptedDue;
   final List<Task> acceptedStarts;
   final List<Task> acceptedFocus;
+  final List<Task> completedPicks;
 
-  final int dueAcceptedTotalCount;
-  final int startsAcceptedTotalCount;
-  final int focusAcceptedTotalCount;
   final int selectedTotalCount;
 
-  final int missingDueCount;
-  final int missingStartsCount;
-  final List<Task> missingDueTasks;
-  final List<Task> missingStartsTasks;
   final Set<String> todaySelectedTaskIds;
 }
 

@@ -1,6 +1,7 @@
 import 'package:taskly_domain/src/core/editing/command_result.dart';
-import 'package:taskly_domain/src/core/editing/validation_error.dart';
 import 'package:taskly_domain/src/core/editing/project/project_commands.dart';
+import 'package:taskly_domain/src/core/editing/validation_error.dart';
+import 'package:taskly_domain/src/core/editing/validators/project_validators.dart';
 import 'package:taskly_domain/src/forms/field_key.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
@@ -65,66 +66,29 @@ final class ProjectCommandHandler {
     final startDate = (command as dynamic).startDate as DateTime?;
     final deadlineDate = (command as dynamic).deadlineDate as DateTime?;
     final repeat = (command as dynamic).repeatIcalRrule as String?;
+    final valueIds = (command as dynamic).valueIds as List<String>;
 
-    final trimmedName = name.trim();
     final fieldErrors = <FieldKey, List<ValidationError>>{};
-
-    if (trimmedName.isEmpty) {
-      fieldErrors[ProjectFieldKeys.name] = const <ValidationError>[
-        ValidationError(
-          code: 'required',
-          messageKey: 'projectFormTitleRequired',
-        ),
-      ];
-    } else if (trimmedName.length > 120) {
-      fieldErrors[ProjectFieldKeys.name] = const <ValidationError>[
-        ValidationError(
-          code: 'max_length',
-          messageKey: 'projectFormTitleTooLong',
-        ),
-      ];
-    }
-
+    fieldErrors[ProjectFieldKeys.name] = ProjectValidators.name(name);
     final description = (command as dynamic).description as String?;
-    if (description != null && description.length > 200) {
-      fieldErrors[ProjectFieldKeys.description] = const <ValidationError>[
-        ValidationError(
-          code: 'max_length',
-          messageKey: 'projectFormDescriptionTooLong',
-        ),
-      ];
+    final descriptionErrors = ProjectValidators.description(description);
+    if (descriptionErrors.isNotEmpty) {
+      fieldErrors[ProjectFieldKeys.description] = descriptionErrors;
     }
-
-    if (repeat != null && repeat.length > 500) {
-      fieldErrors[ProjectFieldKeys.repeatIcalRrule] = const <ValidationError>[
-        ValidationError(
-          code: 'max_length',
-          messageKey: 'projectFormRepeatRuleTooLong',
-        ),
-      ];
+    final repeatErrors = ProjectValidators.repeatRule(repeat);
+    if (repeatErrors.isNotEmpty) {
+      fieldErrors[ProjectFieldKeys.repeatIcalRrule] = repeatErrors;
     }
-
-    if (startDate != null && deadlineDate != null) {
-      final startDay = DateTime(startDate.year, startDate.month, startDate.day);
-      final deadlineDay = DateTime(
-        deadlineDate.year,
-        deadlineDate.month,
-        deadlineDate.day,
-      );
-
-      if (deadlineDay.isBefore(startDay)) {
-        const errors = <ValidationError>[
-          ValidationError(
-            code: 'deadline_before_start',
-            messageKey: 'projectFormDeadlineAfterStartError',
-          ),
-        ];
-        fieldErrors[ProjectFieldKeys.startDate] = errors;
-        fieldErrors[ProjectFieldKeys.deadlineDate] = errors;
-      }
+    final valueErrors = ProjectValidators.valueIds(valueIds);
+    if (valueErrors.isNotEmpty) {
+      fieldErrors[ProjectFieldKeys.valueIds] = valueErrors;
     }
+    fieldErrors.addAll(ProjectValidators.dateOrder(startDate, deadlineDate));
 
-    if (fieldErrors.isEmpty) return null;
-    return ValidationFailure(fieldErrors: fieldErrors);
+    final pruned = Map<FieldKey, List<ValidationError>>.fromEntries(
+      fieldErrors.entries.where((entry) => entry.value.isNotEmpty),
+    );
+    if (pruned.isEmpty) return null;
+    return ValidationFailure(fieldErrors: pruned);
   }
 }

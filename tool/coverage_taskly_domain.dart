@@ -6,16 +6,24 @@ import 'dart:io';
 /// Runs `flutter test --coverage` for `packages/taskly_domain`, filters LCOV using
 /// repo tooling, prints a focused summary, and fails if coverage is below 80%.
 ///
+/// By default, this script fails fast if tests fail.
+///
+/// If you want a coverage summary even when some tests fail (useful while
+/// iterating), pass `--ignore-test-failures`. The script will continue *only if*
+/// `coverage/lcov.info` exists.
+///
 /// Usage:
 ///   dart run tool/coverage_taskly_domain.dart
 ///
 /// Optional args:
 ///   --min=80.0
 ///   --package=taskly_domain
+///   --ignore-test-failures
 Future<void> main(List<String> args) async {
   var packageName = 'taskly_domain';
   var minCoverage = 80.0;
   var skipTests = false;
+  var ignoreTestFailures = false;
 
   for (final arg in args) {
     if (arg.startsWith('--package=')) {
@@ -24,6 +32,8 @@ Future<void> main(List<String> args) async {
       minCoverage = double.parse(arg.substring('--min='.length));
     } else if (arg == '--skip-tests') {
       skipTests = true;
+    } else if (arg == '--ignore-test-failures') {
+      ignoreTestFailures = true;
     }
   }
 
@@ -53,6 +63,12 @@ Future<void> main(List<String> args) async {
 
   print('Running coverage for $packageName...');
 
+  var testsFailed = false;
+  final rawLcov = File(
+    '${packageDir.path}${Platform.pathSeparator}coverage'
+    '${Platform.pathSeparator}lcov.info',
+  );
+
   if (!skipTests) {
     final testsOk = await _run(
       'flutter',
@@ -60,9 +76,21 @@ Future<void> main(List<String> args) async {
       workingDirectory: packageDir.path,
     );
     if (!testsOk) {
-      stderr.writeln('Error: flutter test failed.');
-      exitCode = 1;
-      return;
+      testsFailed = true;
+      stderr.writeln('Warning: flutter test failed.');
+      if (!rawLcov.existsSync()) {
+        stderr.writeln(
+          'Error: ${rawLcov.path} was not produced, cannot compute coverage.',
+        );
+        exitCode = 1;
+        return;
+      }
+      if (!ignoreTestFailures) {
+        stderr.writeln(
+          'Note: continuing to compute coverage because LCOV exists. '
+          'Pass --ignore-test-failures to avoid failing the script on test failures.',
+        );
+      }
     }
   }
 
@@ -110,6 +138,12 @@ Future<void> main(List<String> args) async {
       'is below ${minCoverage.toStringAsFixed(2)}%.',
     );
     exitCode = 2;
+    return;
+  }
+
+  if (testsFailed && !ignoreTestFailures) {
+    stderr.writeln('FAIL: tests failed (coverage met threshold).');
+    exitCode = 1;
   }
 }
 

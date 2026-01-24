@@ -13,10 +13,7 @@ import 'package:taskly_data/src/repositories/repository_exceptions.dart';
 import 'package:taskly_data/src/repositories/repository_helpers.dart';
 
 class _OccurrenceRangeKey {
-  const _OccurrenceRangeKey({
-    required this.rangeStart,
-    required this.rangeEnd,
-  });
+  const _OccurrenceRangeKey({required this.rangeStart, required this.rangeEnd});
 
   final DateTime rangeStart;
   final DateTime rangeEnd;
@@ -145,38 +142,38 @@ class TaskRepository implements TaskRepositoryContract {
     );
 
     final joined =
-        (driftDb.select(driftDb.taskTable)..where((t) => t.id.equals(id))).join(
-          [
-            drift_pkg.leftOuterJoin(
-              driftDb.projectTable,
-              driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
+        (driftDb.select(
+          driftDb.taskTable,
+        )..where((t) => t.id.equals(id))).join([
+          drift_pkg.leftOuterJoin(
+            driftDb.projectTable,
+            driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
+          ),
+          drift_pkg.leftOuterJoin(
+            projectPrimaryValueTable,
+            driftDb.projectTable.primaryValueId.equalsExp(
+              projectPrimaryValueTable.id,
             ),
-            drift_pkg.leftOuterJoin(
-              projectPrimaryValueTable,
-              driftDb.projectTable.primaryValueId.equalsExp(
-                projectPrimaryValueTable.id,
-              ),
+          ),
+          drift_pkg.leftOuterJoin(
+            projectSecondaryValueTable,
+            driftDb.projectTable.secondaryValueId.equalsExp(
+              projectSecondaryValueTable.id,
             ),
-            drift_pkg.leftOuterJoin(
-              projectSecondaryValueTable,
-              driftDb.projectTable.secondaryValueId.equalsExp(
-                projectSecondaryValueTable.id,
-              ),
+          ),
+          drift_pkg.leftOuterJoin(
+            overridePrimaryValueTable,
+            driftDb.taskTable.overridePrimaryValueId.equalsExp(
+              overridePrimaryValueTable.id,
             ),
-            drift_pkg.leftOuterJoin(
-              overridePrimaryValueTable,
-              driftDb.taskTable.overridePrimaryValueId.equalsExp(
-                overridePrimaryValueTable.id,
-              ),
+          ),
+          drift_pkg.leftOuterJoin(
+            overrideSecondaryValueTable,
+            driftDb.taskTable.overrideSecondaryValueId.equalsExp(
+              overrideSecondaryValueTable.id,
             ),
-            drift_pkg.leftOuterJoin(
-              overrideSecondaryValueTable,
-              driftDb.taskTable.overrideSecondaryValueId.equalsExp(
-                overrideSecondaryValueTable.id,
-              ),
-            ),
-          ],
-        );
+          ),
+        ]);
 
     final rows = await joined.get();
     return TaskAggregation.fromRows(
@@ -210,38 +207,36 @@ class TaskRepository implements TaskRepositoryContract {
     final joined =
         (driftDb.select(
           driftDb.taskTable,
-        )..where((t) => t.id.isIn(idsList))).join(
-          [
-            drift_pkg.leftOuterJoin(
-              driftDb.projectTable,
-              driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
+        )..where((t) => t.id.isIn(idsList))).join([
+          drift_pkg.leftOuterJoin(
+            driftDb.projectTable,
+            driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
+          ),
+          drift_pkg.leftOuterJoin(
+            projectPrimaryValueTable,
+            driftDb.projectTable.primaryValueId.equalsExp(
+              projectPrimaryValueTable.id,
             ),
-            drift_pkg.leftOuterJoin(
-              projectPrimaryValueTable,
-              driftDb.projectTable.primaryValueId.equalsExp(
-                projectPrimaryValueTable.id,
-              ),
+          ),
+          drift_pkg.leftOuterJoin(
+            projectSecondaryValueTable,
+            driftDb.projectTable.secondaryValueId.equalsExp(
+              projectSecondaryValueTable.id,
             ),
-            drift_pkg.leftOuterJoin(
-              projectSecondaryValueTable,
-              driftDb.projectTable.secondaryValueId.equalsExp(
-                projectSecondaryValueTable.id,
-              ),
+          ),
+          drift_pkg.leftOuterJoin(
+            overridePrimaryValueTable,
+            driftDb.taskTable.overridePrimaryValueId.equalsExp(
+              overridePrimaryValueTable.id,
             ),
-            drift_pkg.leftOuterJoin(
-              overridePrimaryValueTable,
-              driftDb.taskTable.overridePrimaryValueId.equalsExp(
-                overridePrimaryValueTable.id,
-              ),
+          ),
+          drift_pkg.leftOuterJoin(
+            overrideSecondaryValueTable,
+            driftDb.taskTable.overrideSecondaryValueId.equalsExp(
+              overrideSecondaryValueTable.id,
             ),
-            drift_pkg.leftOuterJoin(
-              overrideSecondaryValueTable,
-              driftDb.taskTable.overrideSecondaryValueId.equalsExp(
-                overrideSecondaryValueTable.id,
-              ),
-            ),
-          ],
-        );
+          ),
+        ]);
 
     final rows = await joined.get();
     final tasks = TaskAggregation.fromRows(
@@ -343,38 +338,36 @@ class TaskRepository implements TaskRepositoryContract {
     final joined =
         (driftDb.select(
           driftDb.taskTable,
-        )..where((t) => t.id.isIn(idsList))).join(
-          [
-            drift_pkg.leftOuterJoin(
-              driftDb.projectTable,
-              driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
+        )..where((t) => t.id.isIn(idsList))).join([
+          drift_pkg.leftOuterJoin(
+            driftDb.projectTable,
+            driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
+          ),
+          drift_pkg.leftOuterJoin(
+            projectPrimaryValueTable,
+            driftDb.projectTable.primaryValueId.equalsExp(
+              projectPrimaryValueTable.id,
             ),
-            drift_pkg.leftOuterJoin(
-              projectPrimaryValueTable,
-              driftDb.projectTable.primaryValueId.equalsExp(
-                projectPrimaryValueTable.id,
-              ),
+          ),
+          drift_pkg.leftOuterJoin(
+            projectSecondaryValueTable,
+            driftDb.projectTable.secondaryValueId.equalsExp(
+              projectSecondaryValueTable.id,
             ),
-            drift_pkg.leftOuterJoin(
-              projectSecondaryValueTable,
-              driftDb.projectTable.secondaryValueId.equalsExp(
-                projectSecondaryValueTable.id,
-              ),
+          ),
+          drift_pkg.leftOuterJoin(
+            overridePrimaryValueTable,
+            driftDb.taskTable.overridePrimaryValueId.equalsExp(
+              overridePrimaryValueTable.id,
             ),
-            drift_pkg.leftOuterJoin(
-              overridePrimaryValueTable,
-              driftDb.taskTable.overridePrimaryValueId.equalsExp(
-                overridePrimaryValueTable.id,
-              ),
+          ),
+          drift_pkg.leftOuterJoin(
+            overrideSecondaryValueTable,
+            driftDb.taskTable.overrideSecondaryValueId.equalsExp(
+              overrideSecondaryValueTable.id,
             ),
-            drift_pkg.leftOuterJoin(
-              overrideSecondaryValueTable,
-              driftDb.taskTable.overrideSecondaryValueId.equalsExp(
-                overrideSecondaryValueTable.id,
-              ),
-            ),
-          ],
-        );
+          ),
+        ]);
 
     return joined.watch().map((rows) {
       final tasks = TaskAggregation.fromRows(
@@ -527,6 +520,8 @@ class TaskRepository implements TaskRepositoryContract {
         final normalizedStartDate = dateOnlyOrNull(startDate);
         final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
+        final nextPinned = !completed && (isPinned ?? existing.isPinned);
+
         List<String>? normalizedValueIds;
         if (valueIds != null) {
           normalizedValueIds = valueIds
@@ -570,9 +565,7 @@ class TaskRepository implements TaskRepositoryContract {
                   myDaySnoozedUntilUtc: drift_pkg.Value(
                     existing.myDaySnoozedUntilUtc,
                   ),
-                  isPinned: isPinned == null
-                      ? drift_pkg.Value(existing.isPinned)
-                      : drift_pkg.Value(isPinned),
+                  isPinned: drift_pkg.Value(nextPinned),
                   repeatIcalRrule: repeatIcalRrule == null
                       ? const drift_pkg.Value<String>.absent()
                       : drift_pkg.Value(repeatIcalRrule),
@@ -611,9 +604,7 @@ class TaskRepository implements TaskRepositoryContract {
   }) async {
     await FailureGuard.run(
       () async {
-        talker.debug(
-          '[TaskRepository] setPinned: id=$id, isPinned=$isPinned',
-        );
+        talker.debug('[TaskRepository] setPinned: id=$id, isPinned=$isPinned');
         final psMetadata = encodeCrudMetadata(context);
         await (driftDb.update(
           driftDb.taskTable,

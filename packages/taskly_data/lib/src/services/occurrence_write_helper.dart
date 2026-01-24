@@ -151,6 +151,7 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
         )..where((t) => t.id.equals(taskId))).write(
           TaskTableCompanion(
             completed: const Value(true),
+            isPinned: const Value(false),
             updatedAt: Value(now),
           ),
         );
@@ -271,9 +272,7 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     await _runGuarded('removeTaskException', context, () async {
       await (driftDb.delete(driftDb.taskRecurrenceExceptionsTable)
             ..where((t) => t.taskId.equals(taskId))
-            ..where(
-              (t) => t.originalDate.equals(_normalizeDate(originalDate)),
-            ))
+            ..where((t) => t.originalDate.equals(_normalizeDate(originalDate))))
           .go();
     });
   }
@@ -310,6 +309,15 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
             ..where((t) => t.taskId.equals(taskId))
             ..where((t) => t.originalDate.isBiggerOrEqualValue(today)))
           .go();
+
+      await (driftDb.update(
+        driftDb.taskTable,
+      )..where((t) => t.id.equals(taskId))).write(
+        TaskTableCompanion(
+          isPinned: const Value(false),
+          updatedAt: Value(_clock.nowLocal()),
+        ),
+      );
     });
   }
 
@@ -410,6 +418,7 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
         )..where((p) => p.id.equals(projectId))).write(
           ProjectTableCompanion(
             completed: const Value(true),
+            isPinned: const Value(false),
             updatedAt: Value(now),
           ),
         );
@@ -530,9 +539,7 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     await _runGuarded('removeProjectException', context, () async {
       await (driftDb.delete(driftDb.projectRecurrenceExceptionsTable)
             ..where((p) => p.projectId.equals(projectId))
-            ..where(
-              (p) => p.originalDate.equals(_normalizeDate(originalDate)),
-            ))
+            ..where((p) => p.originalDate.equals(_normalizeDate(originalDate))))
           .go();
     });
   }
@@ -569,6 +576,15 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
             ..where((p) => p.projectId.equals(projectId))
             ..where((p) => p.originalDate.isBiggerOrEqualValue(today)))
           .go();
+
+      await (driftDb.update(
+        driftDb.projectTable,
+      )..where((p) => p.id.equals(projectId))).write(
+        ProjectTableCompanion(
+          isPinned: const Value(false),
+          updatedAt: Value(_clock.nowLocal()),
+        ),
+      );
     });
   }
 

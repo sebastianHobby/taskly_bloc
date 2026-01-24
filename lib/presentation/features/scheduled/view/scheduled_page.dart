@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -116,11 +116,10 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     required DateTime today,
     required DateTime activeMonth,
   }) async {
-    final picked = await showDatePicker(
+    final picked = await _showMonthPickerSheet(
       context: context,
-      initialDate: activeMonth,
-      firstDate: today,
-      lastDate: DateTime(today.year + 3, today.month, today.day),
+      today: today,
+      activeMonth: activeMonth,
     );
 
     if (picked == null) return;
@@ -129,6 +128,26 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     context.read<ScheduledTimelineBloc>().add(
       ScheduledTimelineMonthJumpRequested(
         month: DateTime(picked.year, picked.month, 1),
+      ),
+    );
+  }
+
+  Future<DateTime?> _showMonthPickerSheet({
+    required BuildContext context,
+    required DateTime today,
+    required DateTime activeMonth,
+  }) {
+    final minMonth = DateTime(today.year, today.month, 1);
+    final maxMonth = DateTime(today.year + 3, today.month, 1);
+    return showModalBottomSheet<DateTime>(
+      context: context,
+      isScrollControlled: false,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (context) => _MonthPickerSheet(
+        initialMonth: activeMonth,
+        minMonth: minMonth,
+        maxMonth: maxMonth,
       ),
     );
   }
@@ -246,7 +265,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
               appBar: AppBar(
                 centerTitle: true,
                 title: const Text('Schedule'),
-                toolbarHeight: TasklyChromeTheme.of(context).scheduledAppBarHeight,
+                toolbarHeight: TasklyChromeTheme.of(
+                  context,
+                ).scheduledAppBarHeight,
                 leading: _CircleIconButton(
                   icon: Icons.arrow_back,
                   onPressed: () => Navigator.of(context).maybePop(),
@@ -255,8 +276,8 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   context,
                   actions: [
                     _CircleIconButton(
-                      icon: Icons.search,
-                      onPressed: () {},
+                      icon: Icons.calendar_month_rounded,
+                      onPressed: null,
                     ),
                   ],
                 ),
@@ -269,7 +290,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
               appBar: AppBar(
                 centerTitle: true,
                 title: const Text('Schedule'),
-                toolbarHeight: TasklyChromeTheme.of(context).scheduledAppBarHeight,
+                toolbarHeight: TasklyChromeTheme.of(
+                  context,
+                ).scheduledAppBarHeight,
                 leading: _CircleIconButton(
                   icon: Icons.arrow_back,
                   onPressed: () => Navigator.of(context).maybePop(),
@@ -278,8 +301,8 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   context,
                   actions: [
                     _CircleIconButton(
-                      icon: Icons.search,
-                      onPressed: () {},
+                      icon: Icons.calendar_month_rounded,
+                      onPressed: null,
                     ),
                   ],
                 ),
@@ -420,26 +443,21 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
             )
             .whereType<TasklyRowSpec>()
             .toList(growable: false);
+        final overdueCountLabel = overdueRows.isEmpty
+            ? '0 tasks'
+            : (overdueRows.length == 1
+                  ? '1 task'
+                  : '${overdueRows.length} tasks');
 
         return Scaffold(
           appBar: selectionState.isSelectionMode
               ? SelectionAppBar(baseTitle: 'Schedule', onExit: () {})
               : AppBar(
                   centerTitle: true,
-                  title: _ScheduledMonthHeader(
-                    activeMonth: state.activeMonth,
-                    today: today,
-                    onMonthSelected: (month) =>
-                        context.read<ScheduledTimelineBloc>().add(
-                              ScheduledTimelineMonthJumpRequested(month: month),
-                            ),
-                    onPickMonthRequested: () => _pickMonthAndJump(
-                      today: today,
-                      activeMonth: state.activeMonth,
-                    ),
-                  ),
-                  toolbarHeight:
-                      TasklyChromeTheme.of(context).scheduledAppBarHeight,
+                  title: const Text('Schedule'),
+                  toolbarHeight: TasklyChromeTheme.of(
+                    context,
+                  ).scheduledAppBarHeight,
                   leading: _CircleIconButton(
                     icon: Icons.arrow_back,
                     onPressed: () => Navigator.of(context).maybePop(),
@@ -447,24 +465,19 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   actions: TasklyAppBarActions.withAttentionBell(
                     context,
                     actions: [
-                      TextButton.icon(
-                        onPressed: () => context
-                            .read<ScheduledTimelineBloc>()
-                            .add(const ScheduledTimelineJumpToTodayRequested()),
-                        icon: const Icon(Icons.today_rounded),
-                        label: const Text('Today'),
-                        style: TextButton.styleFrom(
-                          foregroundColor:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
-                          textStyle: Theme.of(context)
-                              .textTheme
-                              .labelLarge
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                      ),
                       _CircleIconButton(
-                        icon: Icons.search,
-                        onPressed: () {},
+                        icon: Icons.calendar_month_rounded,
+                        onPressed: () async {
+                          final picked = await _showMonthPickerSheet(
+                            context: context,
+                            today: today,
+                            activeMonth: state.activeMonth,
+                          );
+                          if (picked == null || !context.mounted) return;
+                          context.read<ScheduledTimelineBloc>().add(
+                            ScheduledTimelineMonthJumpRequested(month: picked),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -483,6 +496,21 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 ),
           body: Column(
             children: [
+              _ScheduledStickyHeader(
+                activeMonth: state.activeMonth,
+                today: today,
+                onMonthSelected: (month) =>
+                    context.read<ScheduledTimelineBloc>().add(
+                      ScheduledTimelineMonthJumpRequested(month: month),
+                    ),
+                onPickMonthRequested: () => _pickMonthAndJump(
+                  today: today,
+                  activeMonth: state.activeMonth,
+                ),
+                onTodayRequested: () => context
+                    .read<ScheduledTimelineBloc>()
+                    .add(const ScheduledTimelineJumpToTodayRequested()),
+              ),
               if (showScopeHeader)
                 ScheduledScopeHeader(
                   scope: widget.scope,
@@ -500,7 +528,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                         TasklySectionSpec.scheduledOverdue(
                           id: 'scheduled-overdue',
                           title: 'Overdue',
-                          countLabel: overdueRows.length.toString(),
+                          countLabel: overdueCountLabel,
                           isCollapsed: state.overdueCollapsed,
                           onToggleCollapsed: () =>
                               context.read<ScheduledTimelineBloc>().add(
@@ -568,7 +596,12 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                         .whereType<TasklyRowSpec>()
                         .toList(growable: false);
 
-                    final header = DateFormat('EEEE, MMM d').format(day);
+                    final locale = Localizations.localeOf(
+                      context,
+                    ).toLanguageTag();
+                    final header = dayIndex == 0
+                        ? 'Today, ${DateFormat('MMM d', locale).format(day)}'
+                        : DateFormat('EEEE, MMM d', locale).format(day);
                     final count = rows.length;
                     final countLabel = count == 0
                         ? null
@@ -576,8 +609,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
 
                     return Padding(
                       padding: EdgeInsets.only(
-                        bottom: TasklyChromeTheme.of(context)
-                            .scheduledDaySectionSpacing,
+                        bottom: TasklyChromeTheme.of(
+                          context,
+                        ).scheduledDaySectionSpacing,
                       ),
                       child: TasklyFeedRenderer.buildSection(
                         TasklySectionSpec.scheduledDay(
@@ -638,16 +672,16 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
       final openEditor = buildTaskOpenEditorHandler(context, task: task);
 
       return TasklyRowSpec.task(
-        key: 'scheduled-task-${task.id}-${occurrence.localDay.toIso8601String()}',
+        key:
+            'scheduled-task-${task.id}-${occurrence.localDay.toIso8601String()}',
         data: data,
         markers: TasklyTaskRowMarkers(pinned: task.isPinned),
         preset: selectionState.isSelectionMode
             ? TasklyTaskRowPreset.bulkSelection(selected: isSelected)
             : const TasklyTaskRowPreset.standard(),
-        emphasis:
-            data.meta.isOverdue
-                ? TasklyRowEmphasis.overdue
-                : TasklyRowEmphasis.none,
+        emphasis: data.meta.isOverdue
+            ? TasklyRowEmphasis.overdue
+            : TasklyRowEmphasis.none,
         actions: TasklyTaskRowActions(
           onTap: () {
             if (selection.shouldInterceptTapAsSelection()) {
@@ -688,18 +722,17 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         preset: selectionState.isSelectionMode
             ? TasklyProjectRowPreset.bulkSelection(selected: isSelected)
             : const TasklyProjectRowPreset.standard(),
-        emphasis:
-            data.meta.isOverdue
-                ? TasklyRowEmphasis.overdue
-                : TasklyRowEmphasis.none,
+        emphasis: data.meta.isOverdue
+            ? TasklyRowEmphasis.overdue
+            : TasklyRowEmphasis.none,
         actions: TasklyProjectRowActions(
-            onTap: () {
-              if (selection.shouldInterceptTapAsSelection()) {
-                selection.handleEntityTap(key);
-                return;
-              }
-              Routing.pushProjectAnytime(context, project.id);
-            },
+          onTap: () {
+            if (selection.shouldInterceptTapAsSelection()) {
+              selection.handleEntityTap(key);
+              return;
+            }
+            Routing.pushProjectAnytime(context, project.id);
+          },
           onToggleSelected: selectionState.isSelectionMode
               ? () => selection.handleEntityTap(key)
               : null,
@@ -735,81 +768,44 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
   static bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
-
 }
 
 class _ScheduledMonthHeader extends StatelessWidget {
   const _ScheduledMonthHeader({
-    required this.activeMonth,
-    required this.today,
-    required this.onMonthSelected,
-    required this.onPickMonthRequested,
+    required this.label,
+    required this.onPressed,
   });
 
-  final DateTime activeMonth;
-  final DateTime today;
-  final ValueChanged<DateTime> onMonthSelected;
-  final VoidCallback onPickMonthRequested;
+  final String label;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final locale = Localizations.localeOf(context);
-    final active = DateTime(activeMonth.year, activeMonth.month, 1);
-    final start = DateTime(today.year, today.month, 1);
-    final months = _buildMonthOptions(start);
+    final textTheme = Theme.of(context).textTheme;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'Schedule',
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: scheme.outlineVariant.withValues(alpha: 0.7),
           ),
         ),
-        DropdownButtonHideUnderline(
-          child: DropdownButton<DateTime?>(
-            value: active,
-            icon: const Icon(Icons.expand_more_rounded),
-            borderRadius: BorderRadius.circular(12),
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: scheme.onSurface,
-              fontWeight: FontWeight.w600,
-            ),
-            items: [
-              for (final month in months)
-                DropdownMenuItem<DateTime?>(
-                  value: month,
-                  child: Text(
-                    DateFormat.yMMM(locale.toLanguageTag()).format(month),
-                  ),
-                ),
-              const DropdownMenuItem<DateTime?>(
-                value: null,
-                child: Text('Pick a month...'),
-              ),
-            ],
-            onChanged: (value) {
-              if (value == null) {
-                onPickMonthRequested();
-                return;
-              }
-              onMonthSelected(value);
-            },
+        child: Text(
+          label,
+          style: textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: scheme.onSurface,
           ),
         ),
-      ],
+      ),
     );
   }
-}
-
-List<DateTime> _buildMonthOptions(DateTime startMonth) {
-  final start = DateTime(startMonth.year, startMonth.month, 1);
-  return List<DateTime>.generate(
-    37,
-    (index) => DateTime(start.year, start.month + index, 1),
-  );
 }
 
 class _CircleIconButton extends StatelessWidget {
@@ -819,7 +815,7 @@ class _CircleIconButton extends StatelessWidget {
   });
 
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -836,6 +832,259 @@ class _CircleIconButton extends StatelessWidget {
         shape: const CircleBorder(),
         minimumSize: Size.square(chrome.iconButtonMinSize),
         padding: chrome.iconButtonPadding,
+      ),
+    );
+  }
+}
+
+class _MonthPickerSheet extends StatefulWidget {
+  const _MonthPickerSheet({
+    required this.initialMonth,
+    required this.minMonth,
+    required this.maxMonth,
+  });
+
+  final DateTime initialMonth;
+  final DateTime minMonth;
+  final DateTime maxMonth;
+
+  @override
+  State<_MonthPickerSheet> createState() => _MonthPickerSheetState();
+}
+
+class _MonthPickerSheetState extends State<_MonthPickerSheet> {
+  late int _year;
+
+  @override
+  void initState() {
+    super.initState();
+    _year = widget.initialMonth.year;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+
+    final minYear = widget.minMonth.year;
+    final maxYear = widget.maxMonth.year;
+    final canGoPrev = _year > minYear;
+    final canGoNext = _year < maxYear;
+
+    final months = List<int>.generate(12, (index) => index + 1);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Choose month',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.chevron_left_rounded),
+                onPressed: canGoPrev ? () => setState(() => _year -= 1) : null,
+                tooltip: 'Previous year',
+              ),
+              Text(
+                _year.toString(),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right_rounded),
+                onPressed: canGoNext ? () => setState(() => _year += 1) : null,
+                tooltip: 'Next year',
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          GridView.count(
+            crossAxisCount: 3,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 2.3,
+            children: [
+              for (final month in months)
+                _MonthTile(
+                  label: DateFormat.MMM(locale).format(
+                    DateTime(_year, month, 1),
+                  ),
+                  isSelected:
+                      _year == widget.initialMonth.year &&
+                      month == widget.initialMonth.month,
+                  isDisabled: _isOutOfRange(_year, month),
+                  onTap: () {
+                    if (_isOutOfRange(_year, month)) return;
+                    Navigator.of(context).pop(DateTime(_year, month, 1));
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap a month to jump',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _isOutOfRange(int year, int month) {
+    final candidate = DateTime(year, month, 1);
+    if (candidate.isBefore(widget.minMonth)) return true;
+    if (candidate.isAfter(widget.maxMonth)) return true;
+    return false;
+  }
+}
+
+class _MonthTile extends StatelessWidget {
+  const _MonthTile({
+    required this.label,
+    required this.isSelected,
+    required this.isDisabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final bool isDisabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final background = isSelected
+        ? scheme.primaryContainer
+        : scheme.surfaceContainerLow;
+    final foreground = isSelected
+        ? scheme.onPrimaryContainer
+        : scheme.onSurface;
+    final borderColor = isSelected ? scheme.primary : scheme.outlineVariant;
+
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: isDisabled ? null : onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: isDisabled
+                  ? scheme.onSurfaceVariant.withValues(alpha: 0.5)
+                  : foreground,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScheduledStickyHeader extends StatelessWidget {
+  const _ScheduledStickyHeader({
+    required this.activeMonth,
+    required this.today,
+    required this.onMonthSelected,
+    required this.onPickMonthRequested,
+    required this.onTodayRequested,
+  });
+
+  final DateTime activeMonth;
+  final DateTime today;
+  final ValueChanged<DateTime> onMonthSelected;
+  final VoidCallback onPickMonthRequested;
+  final VoidCallback onTodayRequested;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final minMonth = DateTime(today.year, today.month, 1);
+    final maxMonth = DateTime(today.year + 3, today.month, 1);
+    final active = DateTime(activeMonth.year, activeMonth.month, 1);
+    final prevMonth = DateTime(active.year, active.month - 1, 1);
+    final nextMonth = DateTime(active.year, active.month + 1, 1);
+    final canGoPrev = !prevMonth.isBefore(minMonth);
+    final canGoNext = !nextMonth.isAfter(maxMonth);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.6),
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: AppSpacing.screenHorizontal.add(
+          const EdgeInsets.symmetric(vertical: 8),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left_rounded),
+                    onPressed: canGoPrev
+                        ? () => onMonthSelected(prevMonth)
+                        : null,
+                    style: IconButton.styleFrom(
+                      foregroundColor: scheme.onSurfaceVariant,
+                    ),
+                    tooltip: 'Previous month',
+                  ),
+                  _ScheduledMonthHeader(
+                    label: DateFormat.yMMMM(locale).format(active),
+                    onPressed: onPickMonthRequested,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right_rounded),
+                    onPressed: canGoNext
+                        ? () => onMonthSelected(nextMonth)
+                        : null,
+                    style: IconButton.styleFrom(
+                      foregroundColor: scheme.onSurfaceVariant,
+                    ),
+                    tooltip: 'Next month',
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              onPressed: onTodayRequested,
+              icon: const Icon(Icons.today_rounded),
+              style: IconButton.styleFrom(
+                foregroundColor: scheme.onSurfaceVariant,
+              ),
+              tooltip: 'Jump to today',
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -90,7 +90,6 @@ class TasklyFeedRenderer extends StatelessWidget {
         ),
       TasklyScheduledDaySectionSpec(
         :final title,
-        :final isToday,
         :final countLabel,
         :final rows,
         :final emptyLabel,
@@ -98,7 +97,6 @@ class TasklyFeedRenderer extends StatelessWidget {
       ) =>
         _ScheduledDaySection(
           title: title,
-          isToday: isToday,
           countLabel: countLabel,
           rows: rows,
           emptyLabel: emptyLabel,
@@ -132,6 +130,7 @@ class TasklyFeedRenderer extends StatelessWidget {
     final rowIndent = feedTheme?.rowIndent ?? 10;
     final child = switch (row) {
       TasklyHeaderRowSpec() => _HeaderRow(row: row),
+      TasklySubheaderRowSpec() => _SubheaderRow(row: row),
       TasklyDividerRowSpec() => _DividerRow(),
       TasklyInlineActionRowSpec() => _InlineActionRow(row: row),
       TasklyValueHeaderRowSpec() => _ValueHeaderRow(row: row),
@@ -142,6 +141,7 @@ class TasklyFeedRenderer extends StatelessWidget {
 
     final key = switch (row) {
       TasklyHeaderRowSpec(:final key) => key,
+      TasklySubheaderRowSpec(:final key) => key,
       TasklyDividerRowSpec(:final key) => key,
       TasklyInlineActionRowSpec(:final key) => key,
       TasklyValueHeaderRowSpec(:final key) => key,
@@ -152,6 +152,7 @@ class TasklyFeedRenderer extends StatelessWidget {
 
     final depth = switch (row) {
       TasklyHeaderRowSpec(:final depth) => depth,
+      TasklySubheaderRowSpec(:final depth) => depth,
       TasklyDividerRowSpec(:final depth) => depth,
       TasklyInlineActionRowSpec(:final depth) => depth,
       TasklyValueHeaderRowSpec(:final depth) => depth,
@@ -262,6 +263,7 @@ List<Widget> _buildValueGroups(
 double _spacingAfter(TasklyRowSpec row, TasklyFeedTheme feedTheme) {
   return switch (row) {
     TasklyHeaderRowSpec() => 0,
+    TasklySubheaderRowSpec() => 0,
     TasklyDividerRowSpec() => 0,
     TasklyInlineActionRowSpec() => feedTheme.entityRowSpacing,
     TasklyValueHeaderRowSpec() => feedTheme.entityRowSpacing,
@@ -337,6 +339,43 @@ class _HeaderRow extends StatelessWidget {
               onTap: row.onTap,
               child: content,
             ),
+    );
+  }
+}
+
+class _SubheaderRow extends StatelessWidget {
+  const _SubheaderRow({required this.row});
+
+  final TasklySubheaderRowSpec row;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final titleStyle = theme.textTheme.labelSmall?.copyWith(
+      color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+      fontWeight: FontWeight.w600,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            row.title,
+            style: titleStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 6),
+          Container(
+            height: 1,
+            color: scheme.outlineVariant.withValues(alpha: 0.45),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -688,7 +727,6 @@ class _ValueRow extends StatelessWidget {
 class _ScheduledDaySection extends StatelessWidget {
   const _ScheduledDaySection({
     required this.title,
-    required this.isToday,
     required this.countLabel,
     required this.rows,
     required this.emptyLabel,
@@ -696,7 +734,6 @@ class _ScheduledDaySection extends StatelessWidget {
   });
 
   final String title;
-  final bool isToday;
   final String? countLabel;
   final List<TasklyRowSpec> rows;
   final String? emptyLabel;
@@ -723,9 +760,9 @@ class _ScheduledDaySection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: Row(
@@ -733,17 +770,13 @@ class _ScheduledDaySection extends StatelessWidget {
                       Flexible(
                         child: Text(
                           title,
-                        style: feedTheme.scheduledDayTitle.copyWith(
-                          color: scheme.onSurface,
-                        ),
+                          style: feedTheme.scheduledDayTitle.copyWith(
+                            color: scheme.onSurface,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      if (isToday) ...[
-                        const SizedBox(width: 10),
-                        _TodayPill(),
-                      ],
                     ],
                   ),
                 ),
@@ -751,46 +784,24 @@ class _ScheduledDaySection extends StatelessWidget {
                   Text(
                     effectiveCount,
                     style: feedTheme.scheduledDayCount.copyWith(
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
                     ),
                   ),
               ],
             ),
           ),
-          Container(
+          Divider(
             height: 1,
-            margin: const EdgeInsets.only(bottom: 12),
-            color: scheme.outlineVariant.withValues(alpha: 0.55),
+            thickness: 1,
+            color: scheme.outlineVariant.withValues(alpha: 0.6),
           ),
+          const SizedBox(height: 10),
           _RowList(
             rows: rows,
             emptyLabel: emptyLabel ?? 'No tasks',
             onAddRequested: onAddRequested,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _TodayPill extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: scheme.primaryContainer,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        'TODAY',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w900,
-          color: scheme.onPrimaryContainer,
-          letterSpacing: 1,
-        ),
       ),
     );
   }
@@ -895,8 +906,9 @@ class _ScheduledOverdueSection extends StatelessWidget {
           InkWell(
             onTap: onToggleCollapsed,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 6, 4, 10),
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: Text(
@@ -910,10 +922,10 @@ class _ScheduledOverdueSection extends StatelessWidget {
                   Text(
                     countLabel,
                     style: feedTheme.scheduledOverdueCount.copyWith(
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   Icon(
                     isCollapsed
                         ? Icons.expand_more_rounded

@@ -1,4 +1,3 @@
-import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 
@@ -24,7 +23,6 @@ class FormBuilderColorPicker extends StatelessWidget {
   const FormBuilderColorPicker({
     required this.name,
     this.title = 'Color',
-    this.moreColorsLabel = 'More colors',
     this.showLabel = true,
     this.compact = false,
     this.validator,
@@ -33,7 +31,6 @@ class FormBuilderColorPicker extends StatelessWidget {
 
   final String name;
   final String title;
-  final String moreColorsLabel;
   final bool showLabel;
   final bool compact;
   final FormFieldValidator<Color>? validator;
@@ -53,7 +50,6 @@ class FormBuilderColorPicker extends StatelessWidget {
           final picked = await _ValueColorPickerSheet.show(
             context,
             title: title,
-            moreColorsLabel: moreColorsLabel,
             current: value,
           );
 
@@ -132,18 +128,15 @@ class FormBuilderColorPicker extends StatelessWidget {
 class _ValueColorPickerSheet extends StatelessWidget {
   const _ValueColorPickerSheet({
     required this.title,
-    required this.moreColorsLabel,
     required this.current,
   });
 
   final String title;
-  final String moreColorsLabel;
   final Color current;
 
   static Future<Color?> show(
     BuildContext context, {
     required String title,
-    required String moreColorsLabel,
     required Color current,
   }) {
     return showModalBottomSheet<Color>(
@@ -153,7 +146,6 @@ class _ValueColorPickerSheet extends StatelessWidget {
       showDragHandle: true,
       builder: (context) => _ValueColorPickerSheet(
         title: title,
-        moreColorsLabel: moreColorsLabel,
         current: current,
       ),
     );
@@ -238,20 +230,8 @@ class _ValueColorPickerSheet extends StatelessWidget {
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
               ),
-              itemCount: _valueColorPalette.length + 1,
+              itemCount: _valueColorPalette.length,
               itemBuilder: (context, index) {
-                if (index == _valueColorPalette.length) {
-                  return _MoreColorsTile(
-                    label: moreColorsLabel,
-                    onTap: () async {
-                      final advanced = await _pickAdvanced(context, current);
-                      if (advanced != null && context.mounted) {
-                        Navigator.of(context).pop(advanced);
-                      }
-                    },
-                  );
-                }
-
                 final color = _valueColorPalette[index];
                 final selected = color.value == current.value;
 
@@ -270,52 +250,6 @@ class _ValueColorPickerSheet extends StatelessWidget {
 
   static String _hexLabel(Color color) {
     return '#${color.value.toRadixString(16).toUpperCase().padLeft(8, '0')}';
-  }
-
-  static Future<Color?> _pickAdvanced(
-    BuildContext context,
-    Color current,
-  ) async {
-    Color tmp = current;
-
-    final picked = await showDialog<Color>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(MaterialLocalizations.of(context).dialogLabel),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            color: current,
-            onColorChanged: (c) => tmp = c,
-            borderRadius: 12,
-            pickersEnabled: const {
-              ColorPickerType.primary: true,
-              ColorPickerType.accent: true,
-              ColorPickerType.both: false,
-              ColorPickerType.bw: false,
-              ColorPickerType.custom: false,
-              ColorPickerType.wheel: true,
-            },
-            copyPasteBehavior: const ColorPickerCopyPasteBehavior(
-              copyButton: true,
-              pasteButton: true,
-              longPressMenu: true,
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(tmp),
-            child: Text(MaterialLocalizations.of(context).okButtonLabel),
-          ),
-        ],
-      ),
-    );
-
-    return picked;
   }
 }
 
@@ -363,54 +297,6 @@ class _ColorDotTile extends StatelessWidget {
                 ],
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MoreColorsTile extends StatelessWidget {
-  const _MoreColorsTile({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Material(
-      color: cs.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: cs.outlineVariant),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.palette_outlined, color: cs.onSurfaceVariant),
-              const SizedBox(height: 6),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
       ),

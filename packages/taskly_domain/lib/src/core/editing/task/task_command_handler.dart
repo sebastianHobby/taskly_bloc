@@ -1,6 +1,7 @@
 import 'package:taskly_domain/src/core/editing/command_result.dart';
-import 'package:taskly_domain/src/core/editing/validation_error.dart';
 import 'package:taskly_domain/src/core/editing/task/task_commands.dart';
+import 'package:taskly_domain/src/core/editing/validation_error.dart';
+import 'package:taskly_domain/src/core/editing/validators/task_validators.dart';
 import 'package:taskly_domain/src/forms/field_key.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
@@ -69,58 +70,22 @@ final class TaskCommandHandler {
     final deadlineDate = (command as dynamic).deadlineDate as DateTime?;
     final repeat = (command as dynamic).repeatIcalRrule as String?;
 
-    final trimmedName = name.trim();
     final fieldErrors = <FieldKey, List<ValidationError>>{};
-
-    if (trimmedName.isEmpty) {
-      fieldErrors[TaskFieldKeys.name] = const <ValidationError>[
-        ValidationError(code: 'required', messageKey: 'taskFormNameRequired'),
-      ];
-    } else if (trimmedName.length > 120) {
-      fieldErrors[TaskFieldKeys.name] = const <ValidationError>[
-        ValidationError(code: 'max_length', messageKey: 'taskFormNameTooLong'),
-      ];
+    fieldErrors[TaskFieldKeys.name] = TaskValidators.name(name);
+    final descriptionErrors = TaskValidators.description(description);
+    if (descriptionErrors.isNotEmpty) {
+      fieldErrors[TaskFieldKeys.description] = descriptionErrors;
     }
-
-    if (description != null && description.length > 200) {
-      fieldErrors[TaskFieldKeys.description] = const <ValidationError>[
-        ValidationError(
-          code: 'max_length',
-          messageKey: 'taskFormDescriptionTooLong',
-        ),
-      ];
+    final repeatErrors = TaskValidators.repeatRule(repeat);
+    if (repeatErrors.isNotEmpty) {
+      fieldErrors[TaskFieldKeys.repeatIcalRrule] = repeatErrors;
     }
+    fieldErrors.addAll(TaskValidators.dateOrder(startDate, deadlineDate));
 
-    if (repeat != null && repeat.length > 500) {
-      fieldErrors[TaskFieldKeys.repeatIcalRrule] = const <ValidationError>[
-        ValidationError(
-          code: 'max_length',
-          messageKey: 'taskFormRepeatRuleTooLong',
-        ),
-      ];
-    }
-
-    if (startDate != null && deadlineDate != null) {
-      final startDay = DateTime(startDate.year, startDate.month, startDate.day);
-      final deadlineDay = DateTime(
-        deadlineDate.year,
-        deadlineDate.month,
-        deadlineDate.day,
-      );
-
-      if (deadlineDay.isBefore(startDay)) {
-        const errors = <ValidationError>[
-          ValidationError(
-            code: 'deadline_before_start',
-            messageKey: 'taskFormDeadlineAfterStartError',
-          ),
-        ];
-        fieldErrors[TaskFieldKeys.startDate] = errors;
-        fieldErrors[TaskFieldKeys.deadlineDate] = errors;
-      }
-    }
-
-    if (fieldErrors.isEmpty) return null;
-    return ValidationFailure(fieldErrors: fieldErrors);
+    final pruned = Map<FieldKey, List<ValidationError>>.fromEntries(
+      fieldErrors.entries.where((entry) => entry.value.isNotEmpty),
+    );
+    if (pruned.isEmpty) return null;
+    return ValidationFailure(fieldErrors: pruned);
   }
 }

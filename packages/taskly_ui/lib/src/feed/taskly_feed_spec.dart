@@ -192,6 +192,12 @@ sealed class TasklyRowSpec {
     int depth,
   }) = TasklyHeaderRowSpec;
 
+  const factory TasklyRowSpec.subheader({
+    required String key,
+    required String title,
+    int depth,
+  }) = TasklySubheaderRowSpec;
+
   const factory TasklyRowSpec.divider({
     required String key,
     int depth,
@@ -258,6 +264,18 @@ final class TasklyHeaderRowSpec extends TasklyRowSpec {
   final String? trailingLabel;
   final IconData? trailingIcon;
   final VoidCallback? onTap;
+  final int depth;
+}
+
+final class TasklySubheaderRowSpec extends TasklyRowSpec {
+  const TasklySubheaderRowSpec({
+    required this.key,
+    required this.title,
+    this.depth = 0,
+  });
+
+  final String key;
+  final String title;
   final int depth;
 }
 
@@ -372,6 +390,9 @@ sealed class TasklyTaskRowPreset {
   const factory TasklyTaskRowPreset.pickerAction({
     required bool selected,
   }) = TasklyTaskRowPresetPickerAction;
+
+  const factory TasklyTaskRowPreset.pinnedToggle() =
+      TasklyTaskRowPresetPinnedToggle;
 }
 
 final class TasklyTaskRowPresetStandard extends TasklyTaskRowPreset {
@@ -396,6 +417,10 @@ final class TasklyTaskRowPresetPickerAction extends TasklyTaskRowPreset {
   final bool selected;
 }
 
+final class TasklyTaskRowPresetPinnedToggle extends TasklyTaskRowPreset {
+  const TasklyTaskRowPresetPinnedToggle();
+}
+
 @immutable
 final class TasklyTaskRowMarkers {
   const TasklyTaskRowMarkers({
@@ -413,6 +438,7 @@ final class TasklyTaskRowActions {
     this.onTap,
     this.onToggleCompletion,
     this.onToggleSelected,
+    this.onTogglePinned,
     this.onSnoozeRequested,
     this.onLongPress,
   });
@@ -420,6 +446,7 @@ final class TasklyTaskRowActions {
   final VoidCallback? onTap;
   final ValueChanged<bool?>? onToggleCompletion;
   final VoidCallback? onToggleSelected;
+  final ValueChanged<bool>? onTogglePinned;
   final VoidCallback? onSnoozeRequested;
   final VoidCallback? onLongPress;
 }
@@ -542,6 +569,7 @@ final class TasklyTaskRowData {
     required this.completed,
     required this.meta,
     this.leadingChip,
+    this.secondaryChips = const <ValueChipData>[],
     this.supportingText,
     this.supportingTooltipText,
     this.deemphasized = false,
@@ -554,6 +582,7 @@ final class TasklyTaskRowData {
   final bool completed;
   final TasklyEntityMetaData meta;
   final ValueChipData? leadingChip;
+  final List<ValueChipData> secondaryChips;
   final String? supportingText;
   final String? supportingTooltipText;
   final bool deemphasized;
@@ -570,6 +599,8 @@ final class TasklyTaskRowLabels {
     this.snoozeTooltip,
     this.selectionPillLabel,
     this.selectionPillSelectedLabel,
+    this.pinLabel,
+    this.pinnedLabel,
     this.bulkSelectTooltip,
     this.bulkDeselectTooltip,
   });
@@ -580,6 +611,8 @@ final class TasklyTaskRowLabels {
   final String? snoozeTooltip;
   final String? selectionPillLabel;
   final String? selectionPillSelectedLabel;
+  final String? pinLabel;
+  final String? pinnedLabel;
   final String? bulkSelectTooltip;
   final String? bulkDeselectTooltip;
 }

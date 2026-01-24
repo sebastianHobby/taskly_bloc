@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/shared/utils/date_display_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
-import 'package:taskly_bloc/presentation/widgets/form_date_chip.dart';
+import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
 import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/rrule_form_recurrence_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
@@ -577,19 +577,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                             ),
                           ),
                         ),
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(
-                            errorText: l10n.taskFormNameRequired,
-                          ),
-                          FormBuilderValidators.minLength(
-                            1,
-                            errorText: l10n.taskFormNameEmpty,
-                          ),
-                          FormBuilderValidators.maxLength(
-                            120,
-                            errorText: l10n.taskFormNameTooLong,
-                          ),
-                        ]),
+                        validator: toFormBuilderValidator<String>(
+                          TaskValidators.name,
+                          context,
+                        ),
                       ),
                     ),
                   ],
@@ -619,10 +610,9 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                   ),
                   contentPadding: denseFieldPadding,
                 ),
-                validator: FormBuilderValidators.maxLength(
-                  200,
-                  errorText: l10n.taskFormDescriptionTooLong,
-                  checkNullOrEmpty: false,
+                validator: toFormBuilderValidator<String>(
+                  TaskValidators.description,
+                  context,
                 ),
               ),
 
@@ -632,10 +622,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
               // Due Date, Priority, Repeat
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
+              child: TasklyFormRowGroup(
+                children: [
                     FormBuilderField<List<String>>(
                       name: TaskFieldKeys.valueIds.id,
                       builder: (field) {
@@ -707,22 +695,57 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                               setState(() {});
                             }
 
+                            TasklyFormValueChipModel toModel(Value value) {
+                              final iconData =
+                                  getIconDataFromName(value.iconName) ??
+                                  Icons.star;
+                              final color =
+                                  ColorUtils.fromHexWithThemeFallback(
+                                context,
+                                value.color,
+                              );
+                              return TasklyFormValueChipModel(
+                                label: value.name,
+                                color: color,
+                                icon: iconData,
+                                semanticLabel: value.name,
+                              );
+                            }
+
+                            final theme = Theme.of(context);
+
                             return KeyedSubtree(
                               key: _valuesKey,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                              child: TasklyFormRowGroup(
+                                spacing: 8,
+                                runSpacing: 8,
                                 children: [
-                                  _PrimaryValueChip(
-                                    value: effectivePrimary,
+                                  TasklyFormValueChip(
+                                    model: effectivePrimary != null
+                                        ? toModel(effectivePrimary)
+                                        : TasklyFormValueChipModel(
+                                            label: context
+                                                .l10n
+                                                .valuesAlignedToTitle,
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                            icon: Icons.favorite_outline,
+                                            semanticLabel: context
+                                                .l10n
+                                                .valuesAlignedToTitle,
+                                          ),
                                     onTap: open,
+                                    isPrimary: true,
+                                    preset: TasklyFormPreset.standard.chip,
                                   ),
-                                  if (effectiveSecondary != null) ...[
-                                    const SizedBox(width: 8),
-                                    _SecondaryValueChip(
-                                      value: effectiveSecondary,
+                                  if (effectiveSecondary != null)
+                                    TasklyFormValueChip(
+                                      model: toModel(effectiveSecondary),
                                       onTap: open,
+                                      isPrimary: false,
+                                      preset: TasklyFormPreset.standard.chip,
                                     ),
-                                  ],
                                 ],
                               ),
                             );
@@ -742,8 +765,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           return KeyedSubtree(
                             key: _projectKey,
                             child: Builder(
-                              builder: (chipContext) => _ProjectChip(
-                                project: selectedProject,
+                              builder: (chipContext) => TasklyFormProjectChip(
+                                label: selectedProject?.name ??
+                                    context.l10n.addProjectAction,
+                                hasValue: selectedProject != null,
                                 onTap: () async {
                                   final result = await _showProjectPicker(
                                     anchorContext: chipContext,
@@ -773,6 +798,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                                         setState(() {});
                                       }
                                     : null,
+                                preset: TasklyFormPreset.standard.chip,
                               ),
                             ),
                           );
@@ -782,10 +808,16 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                     FormBuilderField<DateTime?>(
                       name: TaskFieldKeys.startDate.id,
                       builder: (field) {
+                        final hasValue = field.value != null;
+                        final valueLabel = hasValue
+                            ? DateDisplayUtils.formatMonthDayYear(field.value!)
+                            : null;
                         return Builder(
-                          builder: (chipContext) => FormDateChip.startDate(
+                          builder: (chipContext) => TasklyFormDateChip(
+                            icon: Icons.calendar_today_rounded,
                             label: context.l10n.dateChipAddPlannedDay,
-                            date: field.value,
+                            valueLabel: valueLabel,
+                            hasValue: hasValue,
                             onTap: () async {
                               final decision = await _pickDate(
                                 anchorContext: chipContext,
@@ -798,13 +830,14 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                               markDirty();
                               setState(() {});
                             },
-                            onClear: field.value != null
+                            onClear: hasValue
                                 ? () {
                                     field.didChange(null);
                                     markDirty();
                                     setState(() {});
                                   }
                                 : null,
+                            preset: TasklyFormPreset.standard.chip,
                           ),
                         );
                       },
@@ -813,10 +846,21 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                     FormBuilderField<DateTime?>(
                       name: TaskFieldKeys.deadlineDate.id,
                       builder: (field) {
+                        final hasValue = field.value != null;
+                        final valueLabel = hasValue
+                            ? DateDisplayUtils.formatMonthDayYear(field.value!)
+                            : null;
+                        final isOverdue = DateDisplayUtils.isOverdue(
+                          field.value,
+                        );
                         return Builder(
-                          builder: (chipContext) => FormDateChip.deadline(
+                          builder: (chipContext) => TasklyFormDateChip(
+                            icon: Icons.flag_rounded,
                             label: context.l10n.dateChipAddDueDate,
-                            date: field.value,
+                            valueLabel: valueLabel,
+                            hasValue: hasValue,
+                            isDeadline: true,
+                            isOverdue: isOverdue,
                             onTap: () async {
                               final decision = await _pickDate(
                                 anchorContext: chipContext,
@@ -829,13 +873,14 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                               markDirty();
                               setState(() {});
                             },
-                            onClear: field.value != null
+                            onClear: hasValue
                                 ? () {
                                     field.didChange(null);
                                     markDirty();
                                     setState(() {});
                                   }
                                 : null,
+                            preset: TasklyFormPreset.standard.chip,
                           ),
                         );
                       },
@@ -845,8 +890,11 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                       name: TaskFieldKeys.priority.id,
                       builder: (field) {
                         return Builder(
-                          builder: (chipContext) => _PriorityChip(
-                            priority: field.value,
+                          builder: (chipContext) => TasklyFormPriorityChip(
+                            label: field.value == null
+                                ? l10n.priorityLabel
+                                : 'P${field.value}',
+                            hasValue: field.value != null,
                             onTap: () async {
                               final decision = await _pickPriority(
                                 anchorContext: chipContext,
@@ -865,6 +913,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                                     setState(() {});
                                   }
                                 : null,
+                            preset: TasklyFormPreset.standard.chip,
                           ),
                         );
                       },
@@ -1088,29 +1137,28 @@ class _TaskDatePickerPanelState extends State<_TaskDatePickerPanel> {
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _QuickPickChip(
+          TasklyFormQuickPickChips(
+            preset: TasklyFormPreset.standard,
+            items: [
+              TasklyFormQuickPickItem(
                 label: l10n.dateToday,
                 onTap: () => Navigator.of(context).pop(
                   _NullableDateDecision.set(today),
                 ),
               ),
-              _QuickPickChip(
+              TasklyFormQuickPickItem(
                 label: l10n.dateTomorrow,
                 onTap: () => Navigator.of(context).pop(
                   _NullableDateDecision.set(tomorrow),
                 ),
               ),
-              _QuickPickChip(
+              TasklyFormQuickPickItem(
                 label: l10n.dateNextWeek,
                 onTap: () => Navigator.of(context).pop(
                   _NullableDateDecision.set(nextWeek),
                 ),
               ),
-              _QuickPickChip(
+              TasklyFormQuickPickItem(
                 label: l10n.sortFieldNoneLabel,
                 emphasized: true,
                 onTap: () => Navigator.of(context).pop(
@@ -1148,45 +1196,6 @@ class _TaskDatePickerPanelState extends State<_TaskDatePickerPanel> {
             child: Text(l10n.cancelLabel),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _QuickPickChip extends StatelessWidget {
-  const _QuickPickChip({
-    required this.label,
-    required this.onTap,
-    this.emphasized = false,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-  final bool emphasized;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final background = emphasized
-        ? scheme.surfaceContainerHigh
-        : scheme.surfaceContainerLow;
-
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontWeight: emphasized ? FontWeight.w700 : null,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -1251,308 +1260,7 @@ class _PriorityPickerPanel extends StatelessWidget {
   }
 }
 
-class _PriorityChip extends StatelessWidget {
-  const _PriorityChip({
-    required this.priority,
-    required this.onTap,
-    this.onClear,
-  });
-
-  final int? priority;
-  final VoidCallback onTap;
-  final VoidCallback? onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final l10n = context.l10n;
-    final label = priority == null ? l10n.priorityLabel : 'P$priority';
-
-    return Material(
-      color: scheme.surfaceContainerHigh,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 10,
-            right: onClear != null && priority != null ? 4 : 10,
-            top: 6,
-            bottom: 6,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                priority == null ? Icons.flag_outlined : Icons.flag_rounded,
-                size: 16,
-                color: scheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  fontWeight: priority != null ? FontWeight.w600 : null,
-                ),
-              ),
-              if (onClear != null && priority != null)
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 32,
-                    minHeight: 32,
-                  ),
-                  icon: Icon(
-                    Icons.close_rounded,
-                    size: 16,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                  tooltip: l10n.clearLabel,
-                  onPressed: onClear,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PrimaryValueChip extends StatelessWidget {
-  const _PrimaryValueChip({required this.value, required this.onTap});
-
-  final Value? value;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    if (value == null) {
-      return Material(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.favorite_outline,
-                  size: 16,
-                  color: scheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  context.l10n.valuesAlignedToTitle,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    final valueColor = ColorUtils.fromHexWithThemeFallback(
-      context,
-      value!.color,
-    );
-    final bg = valueColor.withValues(alpha: 0.18);
-    final fg = valueColor.withValues(alpha: 0.95);
-
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _SmallValueIcon(value: value!),
-              const SizedBox(width: 6),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 180),
-                child: Text(
-                  value!.name,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: fg,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SecondaryValueChip extends StatelessWidget {
-  const _SecondaryValueChip({required this.value, required this.onTap});
-
-  final Value value;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final valueColor = ColorUtils.fromHexWithThemeFallback(
-      context,
-      value.color,
-    );
-
-    return Material(
-      color: scheme.surface,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _SmallValueIcon(value: value),
-              const SizedBox(width: 6),
-              Icon(
-                Icons.circle_outlined,
-                size: 10,
-                color: valueColor.withValues(alpha: 0.75),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SmallValueIcon extends StatelessWidget {
-  const _SmallValueIcon({required this.value});
-
-  final Value value;
-
-  @override
-  Widget build(BuildContext context) {
-    final iconData = getIconDataFromName(value.iconName) ?? Icons.star;
-    final valueColor = ColorUtils.fromHexWithThemeFallback(
-      context,
-      value.color,
-    );
-    final color = valueColor.withValues(alpha: 0.95);
-
-    return Container(
-      width: 18,
-      height: 18,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: color.withValues(alpha: 0.8), width: 1.25),
-      ),
-      child: Center(
-        child: Icon(
-          iconData,
-          size: 12,
-          color: color,
-          semanticLabel: value.name,
-        ),
-      ),
-    );
-  }
-}
-
 /// A chip widget for displaying and selecting projects.
-class _ProjectChip extends StatelessWidget {
-  const _ProjectChip({
-    required this.project,
-    required this.onTap,
-    this.onClear,
-  });
-
-  final Project? project;
-  final VoidCallback onTap;
-  final VoidCallback? onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final hasProject = project != null;
-
-    final chipColor = hasProject
-        ? colorScheme.secondaryContainer
-        : colorScheme.surfaceContainerHigh;
-
-    final contentColor = hasProject
-        ? colorScheme.onSecondaryContainer
-        : colorScheme.onSurfaceVariant;
-
-    return Material(
-      color: chipColor,
-      borderRadius: BorderRadius.circular(8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: 10,
-            right: onClear != null && hasProject ? 4 : 10,
-            top: 6,
-            bottom: 6,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.folder_rounded,
-                size: 16,
-                color: contentColor,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                hasProject ? project!.name : context.l10n.addProjectAction,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: contentColor,
-                  fontWeight: hasProject ? FontWeight.w500 : FontWeight.normal,
-                ),
-              ),
-              if (onClear != null && hasProject) ...[
-                const SizedBox(width: 2),
-                InkWell(
-                  onTap: onClear,
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 14,
-                      color: contentColor,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 /// Dialog for selecting a project.
 sealed class _ProjectPickerResult {
   const _ProjectPickerResult();

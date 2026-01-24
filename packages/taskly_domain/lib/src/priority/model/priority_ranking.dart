@@ -26,6 +26,7 @@ enum RankedEntityType {
 /// User's explicit priority ranking for values, projects, contexts, or goals
 @freezed
 abstract class PriorityRanking with _$PriorityRanking {
+  @JsonSerializable(explicitToJson: true)
   const factory PriorityRanking({
     required String id,
     required String userId,

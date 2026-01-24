@@ -13,6 +13,7 @@ class ValueChip extends StatelessWidget {
     this.onTap,
     this.variant = ValueChipVariant.solid,
     this.iconOnly = false,
+    this.maxLabelWidth = 140,
     super.key,
   });
 
@@ -31,6 +32,9 @@ class ValueChip extends StatelessWidget {
   /// tiles compact while still showing value identity.
   final bool iconOnly;
 
+  /// Maximum width for the label when rendered.
+  final double maxLabelWidth;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -39,21 +43,11 @@ class ValueChip extends StatelessWidget {
     final iconData = data.icon;
 
     // Visual language (UX-001/UX-002):
-    // - Primary (solid): icon + name, subtle tint fill.
+    // - Primary (solid): glass outline with crisp color identity.
     // - Secondary (outlined): icon-only, no fill.
-    final backgroundColor = switch (variant) {
-      ValueChipVariant.solid => color.withValues(alpha: 0.1),
-      ValueChipVariant.outlined => scheme.surface.withValues(alpha: 0),
-    };
-
-    final borderColor = switch (variant) {
-      ValueChipVariant.solid => color.withValues(alpha: 0.18),
-      ValueChipVariant.outlined => color.withValues(
-        alpha: iconOnly ? 0.45 : 0.55,
-      ),
-    };
-
-    final textColor = color;
+    final backgroundColor = scheme.surfaceContainerLow;
+    final borderColor = scheme.outline;
+    final textColor = scheme.onSurface;
 
     final chip = Container(
       decoration: BoxDecoration(
@@ -69,16 +63,14 @@ class ValueChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(iconData, size: 14, color: color),
+          Icon(iconData, size: 14, color: color.withValues(alpha: 0.8)),
           if (!iconOnly) ...[
             const SizedBox(width: 6),
             Flexible(
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 1),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 140,
-                  ),
+                  constraints: BoxConstraints(maxWidth: maxLabelWidth),
                   child: Text(
                     data.label,
                     style: theme.textTheme.labelSmall?.copyWith(

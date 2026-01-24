@@ -182,36 +182,37 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
           icon: Icons.eco_rounded,
           title: l10n.myDayWhatMattersSectionTitle,
           count: widget.focusCounts.acceptedCount,
-          subtitle: l10n.myDayWhatMattersSubtitle,
+          subtitle: '',
+          showCount: false,
           actionLabel: l10n.myDayWhyTheseAction,
           onAction: widget.onWhyThese,
-          trailing: Icon(
-            Icons.expand_less,
-            size: 18,
-            color: cs.onSurfaceVariant.withOpacity(0.6),
+        ),
+        if (widget.acceptedFocus.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          _BucketSection(
+            icon: Icons.wb_sunny_outlined,
+            title: l10n.myDayRitualTodaysFocusTitle,
+            acceptedTasks: widget.acceptedFocus,
+            counts: widget.focusCounts,
+            expanded: _focusExpanded,
+            showHeader: false,
+            showCountsLine: false,
+            showEmpty: false,
+            showFocusBadge: true,
+            onToggleExpanded: () =>
+                setState(() => _focusExpanded = !_focusExpanded),
+            onTapOther: null,
+            otherLabel: l10n.myDayRitualNotInTodayLabel,
+            emptyTitle: l10n.myDayRitualFocusEmptyTitle,
+            emptySubtitle: l10n.myDayRitualFocusEmptySubtitle,
+            previewCount: _previewCount,
+            subtitleForTask: (task) {
+              final reason = widget.focusReasons[task.id];
+              if (reason == null || reason.trim().isEmpty) return null;
+              return reason;
+            },
           ),
-        ),
-        const SizedBox(height: 6),
-        _BucketSection(
-          icon: Icons.wb_sunny_outlined,
-          title: l10n.myDayRitualTodaysFocusTitle,
-          acceptedTasks: widget.acceptedFocus,
-          counts: widget.focusCounts,
-          expanded: _focusExpanded,
-          showFocusBadge: true,
-          onToggleExpanded: () =>
-              setState(() => _focusExpanded = !_focusExpanded),
-          onTapOther: null,
-          otherLabel: l10n.myDayRitualNotInTodayLabel,
-          emptyTitle: l10n.myDayRitualFocusEmptyTitle,
-          emptySubtitle: l10n.myDayRitualFocusEmptySubtitle,
-          previewCount: _previewCount,
-          subtitleForTask: (task) {
-            final reason = widget.focusReasons[task.id];
-            if (reason == null || reason.trim().isEmpty) return null;
-            return reason;
-          },
-        ),
+        ],
         const SizedBox(height: 12),
         Divider(color: cs.outlineVariant.withOpacity(0.5), height: 1),
         const SizedBox(height: 12),
@@ -219,18 +220,8 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
           icon: Icons.access_time_rounded,
           title: l10n.myDayWhatsWaitingSectionTitle,
           count: widget.dueCounts.otherCount + widget.startsCounts.otherCount,
-          subtitle: l10n.myDayWhatsWaitingSubtitle,
-          trailing: Icon(
-            Icons.expand_less,
-            size: 18,
-            color: cs.onSurfaceVariant.withOpacity(0.6),
-          ),
-        ),
-        const SizedBox(height: 8),
-        _TimeSensitiveSummaryRow(
-          dueCount: widget.dueCounts.otherCount,
-          plannedCount: widget.startsCounts.otherCount,
-          onTap: widget.onAddMissingDue ?? widget.onAddMissingStarts,
+          subtitle: '',
+          showCount: false,
         ),
         const SizedBox(height: 6),
         _BucketSection(
@@ -239,8 +230,7 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
           acceptedTasks: widget.acceptedDue,
           counts: widget.dueCounts,
           expanded: _dueExpanded,
-          onToggleExpanded: () =>
-              setState(() => _dueExpanded = !_dueExpanded),
+          onToggleExpanded: () => setState(() => _dueExpanded = !_dueExpanded),
           useCompactHeader: true,
           headerIconColor: cs.error,
           onTapOther: widget.onAddMissingDue,
@@ -252,6 +242,7 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
               ? l10n.myDayRitualDueEmptySubtitle
               : l10n.myDayRitualReviewAvailableAboveSubtitle,
           previewCount: _previewCount,
+          showCountsLine: false,
         ),
         if (!hideStartsSection) ...[
           const SizedBox(height: 10),
@@ -275,6 +266,7 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
                 ? l10n.myDayRitualStartsEmptySubtitle
                 : l10n.myDayRitualReviewAvailableAboveSubtitle,
             previewCount: _previewCount,
+            showCountsLine: false,
           ),
         ],
       ],
@@ -288,90 +280,78 @@ class _SectionHeader extends StatelessWidget {
     required this.title,
     required this.count,
     required this.subtitle,
+    this.showCount = true,
     this.actionLabel,
     this.onAction,
-    this.trailing,
   });
 
   final IconData icon;
   final String title;
   final int count;
   final String subtitle;
+  final bool showCount;
   final String? actionLabel;
   final VoidCallback? onAction;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final separator = context.l10n.dotSeparator;
+    final combinedTitle = subtitle.trim().isEmpty
+        ? title
+        : '$title$separator$subtitle';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 6, 0, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
+          Icon(icon, size: 16, color: cs.primary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              combinedTitle,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(icon, size: 16, color: cs.primary),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  subtitle,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: cs.onSurfaceVariant.withOpacity(0.85),
-                    fontWeight: FontWeight.w500,
-                  ),
+          if (showCount)
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: cs.surfaceContainerHighest.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '$count',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: cs.onSurfaceVariant,
                 ),
               ),
-              Container(
+            ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 6,
                   vertical: 2,
                 ),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  '$count',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: cs.onSurfaceVariant,
-                  ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                textStyle: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              if (actionLabel != null && onAction != null) ...[
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: onAction,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    textStyle: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  child: Text(actionLabel!),
-                ),
-              ],
-              if (trailing != null) ...[
-                const SizedBox(width: 6),
-                trailing!,
-              ],
-            ],
-          ),
+              child: Text(actionLabel!),
+            ),
+          ],
         ],
       ),
     );
@@ -390,6 +370,9 @@ class _BucketSection extends StatelessWidget {
     required this.emptySubtitle,
     required this.previewCount,
     required this.otherLabel,
+    this.showHeader = true,
+    this.showCountsLine = true,
+    this.showEmpty = true,
     this.showFocusBadge = false,
     this.onTapOther,
     this.subtitleForTask,
@@ -409,6 +392,9 @@ class _BucketSection extends StatelessWidget {
   final String emptyTitle;
   final String emptySubtitle;
   final int previewCount;
+  final bool showHeader;
+  final bool showCountsLine;
+  final bool showEmpty;
   final bool showFocusBadge;
   final bool useCompactHeader;
   final String? compactLabel;
@@ -472,6 +458,7 @@ class _BucketSection extends StatelessWidget {
         completed: data.completed,
         meta: data.meta,
         leadingChip: data.leadingChip,
+        secondaryChips: data.secondaryChips,
         supportingText: subtitleForTask?.call(task),
         supportingTooltipText: null,
         deemphasized: data.deemphasized,
@@ -515,50 +502,56 @@ class _BucketSection extends StatelessWidget {
 
     final rows = visible.map(buildRow).toList(growable: false);
 
+    if (!showEmpty && acceptedTasks.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 10, 0, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: headerIconColor ?? cs.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: useCompactHeader
-                    ? Text(
-                        '${(compactLabel ?? title).toUpperCase()} ($universeCount)',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: cs.onSurfaceVariant,
-                          letterSpacing: 0.8,
+          if (showHeader) ...[
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
+                  color: headerIconColor ?? cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: useCompactHeader
+                      ? Text(
+                          '${(compactLabel ?? title).toUpperCase()} ($universeCount)',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: cs.onSurfaceVariant,
+                            letterSpacing: 0.8,
+                          ),
+                        )
+                      : Text(
+                          '$title${context.l10n.dotSeparator}$universeCount',
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      )
-                    : Text(
-                        '$title${context.l10n.dotSeparator}$universeCount',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          if (!suppressCountsLine) ...[
-            _CountsLine(
-              acceptedCount: counts.acceptedCount,
-              otherCount: counts.otherCount,
-              otherLabel: otherLabel,
-              showOtherAsLink: showOtherLink,
-              onTapOther: onTapOther,
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-          ] else
-            const SizedBox(height: 10),
+            const SizedBox(height: 2),
+            if (showCountsLine && !suppressCountsLine) ...[
+              _CountsLine(
+                acceptedCount: counts.acceptedCount,
+                otherCount: counts.otherCount,
+                otherLabel: otherLabel,
+                showOtherAsLink: showOtherLink,
+                onTapOther: onTapOther,
+              ),
+              const SizedBox(height: 10),
+            ] else
+              const SizedBox(height: 10),
+          ],
           if (acceptedTasks.isEmpty)
             Material(
               type: MaterialType.transparency,
@@ -644,49 +637,6 @@ class _BucketSection extends StatelessWidget {
   }
 }
 
-class _TimeSensitiveSummaryRow extends StatelessWidget {
-  const _TimeSensitiveSummaryRow({
-    required this.dueCount,
-    required this.plannedCount,
-    this.onTap,
-  });
-
-  final int dueCount;
-  final int plannedCount;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    if (dueCount == 0 && plannedCount == 0) {
-      return const SizedBox.shrink();
-    }
-
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Text(
-            context.l10n.myDayTimeSensitiveSummary(
-              dueCount,
-              plannedCount,
-            ),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: cs.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _CountsLine extends StatelessWidget {
   const _CountsLine({
     required this.acceptedCount,
@@ -758,5 +708,3 @@ class _CountsLine extends StatelessWidget {
     );
   }
 }
-
-

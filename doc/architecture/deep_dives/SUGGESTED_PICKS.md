@@ -57,7 +57,8 @@ Ritual flow (Presentation)
 
 Notes:
 
-- Pinned tasks/projects are handled in the orchestrator (not the engine).
+- Allocation excludes pinned tasks; pinned items are surfaced by My Day
+  presentation composition (not the allocator).
 - Allocation executes synchronously; any async inputs are pre-fetched in the
   orchestrator and passed into `AllocationParameters`.
 - Suggested picks are **not persisted** as an allocation snapshot.

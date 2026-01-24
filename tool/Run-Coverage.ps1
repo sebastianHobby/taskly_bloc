@@ -1,5 +1,6 @@
 param(
-    [string]$CoveragePackage = 'taskly'
+    [string]$CoveragePackage = 'taskly',
+    [switch]$NoPub
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,7 +37,11 @@ try {
     New-Item -ItemType Directory -Force -Path $coverageDir | Out-Null
 
     # Keep the default regex simple to avoid Windows cmd pipe parsing.
-    flutter test --coverage --coverage-package="$CoveragePackage"
+    $flutterArgs = @('test', '--coverage', "--coverage-package=$CoveragePackage")
+    if ($NoPub) {
+        $flutterArgs += '--no-pub'
+    }
+    flutter @flutterArgs
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     $rootCoverage = Join-Path $coverageDir 'lcov_root.info'
@@ -59,7 +64,7 @@ try {
         foreach ($pkg in $packageDirs) {
             Push-Location $pkg.FullName
             try {
-                flutter test --coverage --coverage-package="$CoveragePackage"
+                flutter @flutterArgs
                 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
                 $pkgLcov = Join-Path $pkg.FullName 'coverage\lcov.info'

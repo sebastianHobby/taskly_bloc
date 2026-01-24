@@ -33,6 +33,26 @@ sealed class ProjectGroupingRef {
     InboxProjectGroupingRef() => 'inbox',
     ProjectProjectGroupingRef(:final projectId) => projectId,
   };
+
+  @override
+  bool operator ==(Object other) => switch ((this, other)) {
+    (InboxProjectGroupingRef(), InboxProjectGroupingRef()) => true,
+    (
+      ProjectProjectGroupingRef(:final projectId),
+      ProjectProjectGroupingRef(projectId: final otherProjectId),
+    ) =>
+      projectId == otherProjectId,
+    _ => false,
+  };
+
+  @override
+  int get hashCode => switch (this) {
+    InboxProjectGroupingRef() => Object.hash(ProjectGroupingRef, 'inbox'),
+    ProjectProjectGroupingRef(:final projectId) => Object.hash(
+      ProjectGroupingRef,
+      projectId,
+    ),
+  };
 }
 
 final class InboxProjectGroupingRef extends ProjectGroupingRef {

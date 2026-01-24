@@ -53,6 +53,9 @@ TasklyTaskRowData buildTaskRowData(
       : resolvedDeadlineDateLabel;
 
   final primaryValueData = task.effectivePrimaryValue?.toChipData(context);
+  final secondaryValueData = task.effectiveSecondaryValues
+      .map((value) => value.toChipData(context))
+      .toList(growable: false);
 
   final meta = TasklyEntityMetaData(
     primaryValue: primaryValueData,
@@ -81,6 +84,7 @@ TasklyTaskRowData buildTaskRowData(
     completed: isCompleted,
     meta: meta,
     leadingChip: primaryValueData,
+    secondaryChips: secondaryValueData,
     checkboxSemanticLabel: isCompleted
         ? 'Mark "${task.name}" as incomplete'
         : 'Mark "${task.name}" as complete',
@@ -136,6 +140,28 @@ ValueChanged<bool?>? buildTaskToggleCompletionHandler(
   };
 }
 
+ValueChanged<bool>? buildTaskTogglePinnedHandler(
+  BuildContext context, {
+  required Task task,
+  required EntityTileCapabilities tileCapabilities,
+}) {
+  if (!tileCapabilities.canTogglePinned) return null;
+
+  return (isPinned) {
+    final dispatcher = context.read<TileIntentDispatcher>();
+    unawaited(
+      dispatcher.dispatch(
+        context,
+        TileIntentSetPinned(
+          entityType: EntityType.task,
+          entityId: task.id,
+          isPinned: isPinned,
+        ),
+      ),
+    );
+  };
+}
+
 bool _isOverdue(
   DateTime? deadline, {
   required bool completed,
@@ -155,5 +181,3 @@ bool _isDueToday(
   final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
   return deadlineDay.isAtSameMomentAs(today);
 }
-
-

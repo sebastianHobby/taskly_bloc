@@ -288,6 +288,9 @@ Normative rules:
   services, or form submission logic.
 - **Domain rules** may expose validators as **pure functions** when needed, but
   presentation owns wiring and error messaging.
+- **Form validation must use domain validator helpers** (e.g. `*Validators`)
+  for all field validation. UI validators should be thin adapters that map
+  domain errors to localized strings; do not re-encode business rules in UI.
 
 Rationale:
 

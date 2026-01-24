@@ -7,3 +7,4 @@ library;
 
 export 'src/sections/confirmation_dialog.dart';
 export 'src/sections/icon_picker_dialog.dart';
+export 'src/sections/my_day_section_stack.dart';
