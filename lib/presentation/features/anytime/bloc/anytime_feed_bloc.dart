@@ -22,35 +22,10 @@ final class AnytimeFeedRetryRequested extends AnytimeFeedEvent {
   const AnytimeFeedRetryRequested();
 }
 
-final class AnytimeFeedShowStartLaterItemsChanged extends AnytimeFeedEvent {
-  const AnytimeFeedShowStartLaterItemsChanged({required this.enabled});
-
-  /// When true, items with a future planned day (start date) are included.
-  final bool enabled;
-}
-
 final class AnytimeFeedSearchQueryChanged extends AnytimeFeedEvent {
   const AnytimeFeedSearchQueryChanged({required this.query});
 
   final String query;
-}
-
-final class AnytimeFeedFilterDueSoonChanged extends AnytimeFeedEvent {
-  const AnytimeFeedFilterDueSoonChanged({required this.enabled});
-
-  final bool enabled;
-}
-
-final class AnytimeFeedFilterOverdueChanged extends AnytimeFeedEvent {
-  const AnytimeFeedFilterOverdueChanged({required this.enabled});
-
-  final bool enabled;
-}
-
-final class AnytimeFeedFilterPriorityChanged extends AnytimeFeedEvent {
-  const AnytimeFeedFilterPriorityChanged({required this.enabled});
-
-  final bool enabled;
 }
 
 final class AnytimeFeedSortOrderChanged extends AnytimeFeedEvent {
@@ -109,11 +84,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       _onRetryRequested,
       transformer: restartable(),
     );
-    on<AnytimeFeedShowStartLaterItemsChanged>(_onShowStartLaterItemsChanged);
     on<AnytimeFeedSearchQueryChanged>(_onSearchQueryChanged);
-    on<AnytimeFeedFilterDueSoonChanged>(_onFilterDueSoonChanged);
-    on<AnytimeFeedFilterOverdueChanged>(_onFilterOverdueChanged);
-    on<AnytimeFeedFilterPriorityChanged>(_onFilterPriorityChanged);
     on<AnytimeFeedSortOrderChanged>(_onSortOrderChanged);
     on<AnytimeFeedDueWindowDaysChanged>(_onDueWindowDaysChanged);
     on<AnytimeFeedInboxCollapsedChanged>(_onInboxCollapsedChanged);
@@ -130,11 +101,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     0,
     isUtc: true,
   );
-  bool _showStartLaterItems = false;
   String _searchQuery = '';
-  bool _filterDueSoon = false;
-  bool _filterOverdue = false;
-  bool _filterPriority = false;
   AnytimeSortOrder _sortOrder = AnytimeSortOrder.dueSoonest;
   int _dueWindowDays = 7;
 
@@ -153,43 +120,11 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     await _bind(emit);
   }
 
-  void _onShowStartLaterItemsChanged(
-    AnytimeFeedShowStartLaterItemsChanged event,
-    Emitter<AnytimeFeedState> emit,
-  ) {
-    _showStartLaterItems = event.enabled;
-    _emitRows(emit);
-  }
-
   void _onSearchQueryChanged(
     AnytimeFeedSearchQueryChanged event,
     Emitter<AnytimeFeedState> emit,
   ) {
     _searchQuery = event.query.trim();
-    _emitRows(emit);
-  }
-
-  void _onFilterDueSoonChanged(
-    AnytimeFeedFilterDueSoonChanged event,
-    Emitter<AnytimeFeedState> emit,
-  ) {
-    _filterDueSoon = event.enabled;
-    _emitRows(emit);
-  }
-
-  void _onFilterOverdueChanged(
-    AnytimeFeedFilterOverdueChanged event,
-    Emitter<AnytimeFeedState> emit,
-  ) {
-    _filterOverdue = event.enabled;
-    _emitRows(emit);
-  }
-
-  void _onFilterPriorityChanged(
-    AnytimeFeedFilterPriorityChanged event,
-    Emitter<AnytimeFeedState> emit,
-  ) {
-    _filterPriority = event.enabled;
     _emitRows(emit);
   }
 
@@ -411,15 +346,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       if (project?.primaryValue?.id != valueId) return false;
     }
 
-    if (_filterPriority) {
-      if (project?.priority != 1) return false;
-    }
-
-    if (_filterOverdue && aggregate.overdueCount <= 0) return false;
-
-    if (_filterDueSoon && aggregate.dueSoonCount <= 0) return false;
-
-    if (!_showStartLaterItems && !aggregate.hasAvailableTask) return false;
+    if (!aggregate.hasAvailableTask) return false;
 
     return true;
   }
@@ -427,7 +354,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   bool _noFiltersActive() {
     if (_searchQuery.trim().isNotEmpty) return false;
     if (_scope is AnytimeValueScope) return false;
-    if (_filterPriority || _filterOverdue || _filterDueSoon) return false;
     return true;
   }
 

@@ -727,7 +727,7 @@ class _RitualCardState extends State<_RitualCard> {
       rows.addAll(
         _buildPickerRows(
           tasks: tasks,
-          enableSnooze: false,
+          enableSnooze: true,
           enableSelection: true,
           selectionPillLabel: l10n.myDayAddToMyDayAction,
           selectionPillSelectedLabel: l10n.myDayAddedLabel,
