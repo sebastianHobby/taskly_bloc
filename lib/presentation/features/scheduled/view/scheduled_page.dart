@@ -112,42 +112,27 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     );
   }
 
-  Future<void> _pickMonthAndJump({
+  Future<void> _pickDateAndJump({
     required DateTime today,
-    required DateTime activeMonth,
+    required DateTime initialDay,
   }) async {
-    final picked = await _showMonthPickerSheet(
+    final lastDate = DateTime(today.year + 3, today.month, today.day);
+    final safeInitial = initialDay.isBefore(today)
+        ? today
+        : DateTime(initialDay.year, initialDay.month, initialDay.day);
+    final picked = await showDatePicker(
       context: context,
-      today: today,
-      activeMonth: activeMonth,
+      initialDate: safeInitial,
+      firstDate: today,
+      lastDate: lastDate,
+      helpText: 'Jump to date',
     );
 
-    if (picked == null) return;
-    if (!mounted) return;
+    if (picked == null || !mounted) return;
 
     context.read<ScheduledTimelineBloc>().add(
-      ScheduledTimelineMonthJumpRequested(
-        month: DateTime(picked.year, picked.month, 1),
-      ),
-    );
-  }
-
-  Future<DateTime?> _showMonthPickerSheet({
-    required BuildContext context,
-    required DateTime today,
-    required DateTime activeMonth,
-  }) {
-    final minMonth = DateTime(today.year, today.month, 1);
-    final maxMonth = DateTime(today.year + 3, today.month, 1);
-    return showModalBottomSheet<DateTime>(
-      context: context,
-      isScrollControlled: false,
-      useSafeArea: true,
-      showDragHandle: true,
-      builder: (context) => _MonthPickerSheet(
-        initialMonth: activeMonth,
-        minMonth: minMonth,
-        maxMonth: maxMonth,
+      ScheduledTimelineDayJumpRequested(
+        day: DateTime(picked.year, picked.month, picked.day),
       ),
     );
   }
@@ -468,14 +453,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                       _CircleIconButton(
                         icon: Icons.calendar_month_rounded,
                         onPressed: () async {
-                          final picked = await _showMonthPickerSheet(
-                            context: context,
+                          await _pickDateAndJump(
                             today: today,
-                            activeMonth: state.activeMonth,
-                          );
-                          if (picked == null || !context.mounted) return;
-                          context.read<ScheduledTimelineBloc>().add(
-                            ScheduledTimelineMonthJumpRequested(month: picked),
+                            initialDay: _lastVisibleDay ?? today,
                           );
                         },
                       ),
@@ -496,21 +476,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 ),
           body: Column(
             children: [
-              _ScheduledStickyHeader(
-                activeMonth: state.activeMonth,
-                today: today,
-                onMonthSelected: (month) =>
-                    context.read<ScheduledTimelineBloc>().add(
-                      ScheduledTimelineMonthJumpRequested(month: month),
-                    ),
-                onPickMonthRequested: () => _pickMonthAndJump(
-                  today: today,
-                  activeMonth: state.activeMonth,
-                ),
-                onTodayRequested: () => context
-                    .read<ScheduledTimelineBloc>()
-                    .add(const ScheduledTimelineJumpToTodayRequested()),
-              ),
               if (showScopeHeader)
                 ScheduledScopeHeader(
                   scope: widget.scope,
@@ -621,7 +586,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                           isToday: dayIndex == 0,
                           countLabel: countLabel,
                           rows: rows,
-                          emptyLabel: 'No tasks',
+                          emptyLabel: null,
                           onAddRequested: null,
                         ),
                       ),
@@ -770,44 +735,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
   }
 }
 
-class _ScheduledMonthHeader extends StatelessWidget {
-  const _ScheduledMonthHeader({
-    required this.label,
-    required this.onPressed,
-  });
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(999),
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: scheme.outlineVariant.withValues(alpha: 0.7),
-          ),
-        ),
-        child: Text(
-          label,
-          style: textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: scheme.onSurface,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _CircleIconButton extends StatelessWidget {
   const _CircleIconButton({
     required this.icon,
@@ -832,259 +759,6 @@ class _CircleIconButton extends StatelessWidget {
         shape: const CircleBorder(),
         minimumSize: Size.square(chrome.iconButtonMinSize),
         padding: chrome.iconButtonPadding,
-      ),
-    );
-  }
-}
-
-class _MonthPickerSheet extends StatefulWidget {
-  const _MonthPickerSheet({
-    required this.initialMonth,
-    required this.minMonth,
-    required this.maxMonth,
-  });
-
-  final DateTime initialMonth;
-  final DateTime minMonth;
-  final DateTime maxMonth;
-
-  @override
-  State<_MonthPickerSheet> createState() => _MonthPickerSheetState();
-}
-
-class _MonthPickerSheetState extends State<_MonthPickerSheet> {
-  late int _year;
-
-  @override
-  void initState() {
-    super.initState();
-    _year = widget.initialMonth.year;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final locale = Localizations.localeOf(context).toLanguageTag();
-
-    final minYear = widget.minMonth.year;
-    final maxYear = widget.maxMonth.year;
-    final canGoPrev = _year > minYear;
-    final canGoNext = _year < maxYear;
-
-    final months = List<int>.generate(12, (index) => index + 1);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Text(
-                'Choose month',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.chevron_left_rounded),
-                onPressed: canGoPrev ? () => setState(() => _year -= 1) : null,
-                tooltip: 'Previous year',
-              ),
-              Text(
-                _year.toString(),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right_rounded),
-                onPressed: canGoNext ? () => setState(() => _year += 1) : null,
-                tooltip: 'Next year',
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 3,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 2.3,
-            children: [
-              for (final month in months)
-                _MonthTile(
-                  label: DateFormat.MMM(locale).format(
-                    DateTime(_year, month, 1),
-                  ),
-                  isSelected:
-                      _year == widget.initialMonth.year &&
-                      month == widget.initialMonth.month,
-                  isDisabled: _isOutOfRange(_year, month),
-                  onTap: () {
-                    if (_isOutOfRange(_year, month)) return;
-                    Navigator.of(context).pop(DateTime(_year, month, 1));
-                  },
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap a month to jump',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  bool _isOutOfRange(int year, int month) {
-    final candidate = DateTime(year, month, 1);
-    if (candidate.isBefore(widget.minMonth)) return true;
-    if (candidate.isAfter(widget.maxMonth)) return true;
-    return false;
-  }
-}
-
-class _MonthTile extends StatelessWidget {
-  const _MonthTile({
-    required this.label,
-    required this.isSelected,
-    required this.isDisabled,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final bool isDisabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final background = isSelected
-        ? scheme.primaryContainer
-        : scheme.surfaceContainerLow;
-    final foreground = isSelected
-        ? scheme.onPrimaryContainer
-        : scheme.onSurface;
-    final borderColor = isSelected ? scheme.primary : scheme.outlineVariant;
-
-    return Material(
-      color: background,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: isDisabled ? null : onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: isDisabled
-                  ? scheme.onSurfaceVariant.withValues(alpha: 0.5)
-                  : foreground,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ScheduledStickyHeader extends StatelessWidget {
-  const _ScheduledStickyHeader({
-    required this.activeMonth,
-    required this.today,
-    required this.onMonthSelected,
-    required this.onPickMonthRequested,
-    required this.onTodayRequested,
-  });
-
-  final DateTime activeMonth;
-  final DateTime today;
-  final ValueChanged<DateTime> onMonthSelected;
-  final VoidCallback onPickMonthRequested;
-  final VoidCallback onTodayRequested;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    final minMonth = DateTime(today.year, today.month, 1);
-    final maxMonth = DateTime(today.year + 3, today.month, 1);
-    final active = DateTime(activeMonth.year, activeMonth.month, 1);
-    final prevMonth = DateTime(active.year, active.month - 1, 1);
-    final nextMonth = DateTime(active.year, active.month + 1, 1);
-    final canGoPrev = !prevMonth.isBefore(minMonth);
-    final canGoNext = !nextMonth.isAfter(maxMonth);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: scheme.outlineVariant.withValues(alpha: 0.6),
-          ),
-        ),
-      ),
-      child: Padding(
-        padding: AppSpacing.screenHorizontal.add(
-          const EdgeInsets.symmetric(vertical: 8),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left_rounded),
-                    onPressed: canGoPrev
-                        ? () => onMonthSelected(prevMonth)
-                        : null,
-                    style: IconButton.styleFrom(
-                      foregroundColor: scheme.onSurfaceVariant,
-                    ),
-                    tooltip: 'Previous month',
-                  ),
-                  _ScheduledMonthHeader(
-                    label: DateFormat.yMMMM(locale).format(active),
-                    onPressed: onPickMonthRequested,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right_rounded),
-                    onPressed: canGoNext
-                        ? () => onMonthSelected(nextMonth)
-                        : null,
-                    style: IconButton.styleFrom(
-                      foregroundColor: scheme.onSurfaceVariant,
-                    ),
-                    tooltip: 'Next month',
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              onPressed: onTodayRequested,
-              icon: const Icon(Icons.today_rounded),
-              style: IconButton.styleFrom(
-                foregroundColor: scheme.onSurfaceVariant,
-              ),
-              tooltip: 'Jump to today',
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -12,6 +12,7 @@ import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_bloc/presentation/screens/widgets/my_day_suggestion_settings_sheet.dart';
 
 enum MyDayRitualWizardInitialSection { suggested, due, starts }
 
@@ -62,15 +63,31 @@ class MyDayRitualWizardPage extends StatelessWidget {
                   body: Center(child: CircularProgressIndicator()),
                 ),
                 MyDayRitualReady() => Scaffold(
-                  appBar: allowClose
-                      ? AppBar(
-                          leading: IconButton(
+                  appBar: AppBar(
+                    leading: allowClose
+                        ? IconButton(
                             icon: const Icon(Icons.close),
                             onPressed: () => _handleClose(context),
-                          ),
-                          title: Text(context.l10n.myDayUpdatePlanTitle),
-                        )
-                      : null,
+                          )
+                        : null,
+                    title: Text(
+                      allowClose
+                          ? context.l10n.myDayUpdatePlanTitle
+                          : context.l10n.myDayRitualTitle,
+                    ),
+                    actions: [
+                      IconButton(
+                        tooltip: context.l10n.myDaySuggestionSettingsTitle,
+                        icon: const Icon(Icons.settings_outlined),
+                        onPressed: () => openSuggestionSettingsSheet(
+                          context,
+                          dueWindowDays: ritualState.dueWindowDays,
+                          showAvailableToStart:
+                              ritualState.showAvailableToStart,
+                        ),
+                      ),
+                    ],
+                  ),
                   body: SafeArea(
                     bottom: false,
                     child: _RitualBody(
@@ -674,27 +691,6 @@ class _RitualCardState extends State<_RitualCard> {
           ),
           child: Text(l10n.myDayWhyTheseAction),
         ),
-        PopupMenuButton<_SuggestedMenuAction>(
-          tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
-          onSelected: (action) {
-            switch (action) {
-              case _SuggestedMenuAction.suggestionSettings:
-                _openSuggestionSettingsSheet(
-                  context,
-                  dueWindowDays: widget.dueWindowDays,
-                  showAvailableToStart: widget.showAvailableToStart,
-                );
-            }
-          },
-          itemBuilder: (context) {
-            return <PopupMenuEntry<_SuggestedMenuAction>>[
-              PopupMenuItem(
-                value: _SuggestedMenuAction.suggestionSettings,
-                child: Text(l10n.myDaySuggestionSettingsTitle),
-              ),
-            ];
-          },
-        ),
       ],
     );
   }
@@ -914,96 +910,6 @@ class _RitualCardState extends State<_RitualCard> {
                 ),
               ],
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _openSuggestionSettingsSheet(
-    BuildContext context, {
-    required int dueWindowDays,
-    required bool showAvailableToStart,
-  }) {
-    var dueDays = dueWindowDays.clamp(1, 30);
-    var showStarts = showAvailableToStart;
-
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        final theme = Theme.of(sheetContext);
-        final cs = theme.colorScheme;
-
-        return SafeArea(
-          child: StatefulBuilder(
-            builder: (context, setState) {
-              final l10n = context.l10n;
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.myDaySuggestionSettingsTitle,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.myDaySuggestionSettingsBody,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant,
-                        height: 1.3,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    Text(
-                      l10n.myDayDueSoonWindowLabel(dueDays),
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Slider(
-                      value: dueDays.toDouble(),
-                      min: 1,
-                      max: 30,
-                      divisions: 29,
-                      label: '$dueDays',
-                      onChanged: (value) {
-                        final next = value.round().clamp(1, 30);
-                        setState(() => dueDays = next);
-                        widget.onDueWindowDaysChanged(next);
-                      },
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.myDayDueSoonWindowHelp(dueDays),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    SwitchListTile.adaptive(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.myDayShowAvailableToStartSettingTitle),
-                      subtitle: Text(
-                        l10n.myDayShowAvailableToStartSettingSubtitle,
-                      ),
-                      value: showStarts,
-                      onChanged: (value) {
-                        setState(() => showStarts = value);
-                        widget.onShowAvailableToStartChanged(value);
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
           ),
         );
       },
@@ -1429,8 +1335,6 @@ class _SnoozedTaskRow extends StatelessWidget {
     );
   }
 }
-
-enum _SuggestedMenuAction { suggestionSettings }
 
 class _SubsectionHeader extends StatelessWidget {
   const _SubsectionHeader({

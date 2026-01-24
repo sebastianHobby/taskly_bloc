@@ -4,10 +4,11 @@ library;
 import '../../helpers/test_imports.dart';
 import '../../helpers/test_db.dart';
 
+import 'package:drift/drift.dart' as drift;
+import 'package:taskly_data/db.dart';
 import 'package:taskly_data/id.dart';
-import 'package:taskly_data/src/repositories/repository_exceptions.dart';
 import 'package:taskly_data/src/repositories/value_repository.dart';
-import 'package:taskly_domain/taskly_domain.dart';
+import 'package:taskly_domain/taskly_domain.dart' hide Value;
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
@@ -34,7 +35,7 @@ void main() {
 
       expect(
         () => repo.create(name: 'Bad', color: 'ZZZZZZ'),
-        throwsA(isA<RepositoryValidationException>()),
+        throwsA(isA<InputValidationFailure>()),
       );
 
       final rows = await db.select(db.valueTable).get();
@@ -52,7 +53,7 @@ void main() {
           name: 'Missing',
           color: '#123456',
         ),
-        throwsA(isA<RepositoryNotFoundException>()),
+        throwsA(isA<NotFoundFailure>()),
       );
     });
 
@@ -91,7 +92,7 @@ void main() {
           id: 'v-low',
           name: 'B',
           color: '#000000',
-          priority: const Value(ValuePriority.low),
+          priority: const drift.Value(ValuePriority.low),
         ),
       );
       await db.into(db.valueTable).insert(
@@ -99,7 +100,7 @@ void main() {
           id: 'v-high',
           name: 'C',
           color: '#000000',
-          priority: const Value(ValuePriority.high),
+          priority: const drift.Value(ValuePriority.high),
         ),
       );
       await db.into(db.valueTable).insert(
@@ -107,7 +108,7 @@ void main() {
           id: 'v-med',
           name: 'A',
           color: '#000000',
-          priority: const Value(ValuePriority.medium),
+          priority: const drift.Value(ValuePriority.medium),
         ),
       );
 

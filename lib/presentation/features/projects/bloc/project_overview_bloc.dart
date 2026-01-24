@@ -62,6 +62,9 @@ class ProjectOverviewBloc
   final ProjectRepositoryContract _projectRepository;
   final OccurrenceReadService _occurrenceReadService;
   final SessionDayKeyService _sessionDayKeyService;
+  final String _inboxProjectKey = ProjectGroupingRef.inbox().stableKey;
+
+  bool get _isInbox => _projectId == _inboxProjectKey;
 
   Future<void> _onStarted(
     ProjectOverviewStarted event,
@@ -91,11 +94,19 @@ class ProjectOverviewBloc
 
   Stream<_OverviewSnapshot> _watchOverview() {
     final dayKey$ = _sessionDayKeyService.todayDayKeyUtc;
-    final project$ = _projectRepository.watchById(_projectId);
+    final project$ = _isInbox
+        ? dayKey$.map(_buildInboxProject)
+        : _projectRepository.watchById(_projectId);
 
     final tasks$ = dayKey$.switchMap((dayKey) {
       final preview = OccurrencePolicy.anytimePreview(asOfDayKey: dayKey);
-      final query = TaskQuery.byProject(_projectId);
+      final query = _isInbox
+          ? TaskQuery.all().withAdditionalPredicates(
+              const [
+                TaskProjectPredicate(operator: ProjectOperator.isNull),
+              ],
+            )
+          : TaskQuery.byProject(_projectId);
       return _occurrenceReadService.watchTasksWithOccurrencePreview(
         query: query,
         preview: preview,
@@ -111,6 +122,16 @@ class ProjectOverviewBloc
         project: project,
         tasks: tasks,
       ),
+    );
+  }
+
+  Project _buildInboxProject(DateTime todayDayKeyUtc) {
+    return Project(
+      id: _inboxProjectKey,
+      createdAt: todayDayKeyUtc,
+      updatedAt: todayDayKeyUtc,
+      name: 'Inbox',
+      completed: false,
     );
   }
 }

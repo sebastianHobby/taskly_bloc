@@ -22,6 +22,8 @@ String validationErrorMessage(BuildContext context, ValidationError error) {
       return l10n.taskFormRepeatRuleTooLong;
     case 'taskFormDeadlineAfterStartError':
       return l10n.taskFormDeadlineAfterStartError;
+    case 'taskFormValuesRequired':
+      return l10n.taskFormValuesRequired;
 
     // Project
     case 'projectFormTitleRequired':

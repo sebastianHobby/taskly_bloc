@@ -56,7 +56,6 @@ abstract final class Routing {
     'someday',
     'journal',
     'values',
-    'review_inbox',
     'settings',
   };
 
@@ -84,7 +83,7 @@ abstract final class Routing {
 
   /// Navigate to screen by key with query parameters.
   ///
-  /// Use this for deep links like `review_inbox?bucket=critical`.
+  /// Use this for deep links with query parameters.
   static void toScreenKeyWithQuery(
     BuildContext context,
     String screenKey, {
@@ -119,6 +118,11 @@ abstract final class Routing {
   /// Navigate to project detail (pushes onto nav stack).
   static void toProject(BuildContext context, Project project) =>
       GoRouter.of(context).push('/project/${project.id}/detail');
+
+  /// Navigate to Inbox project detail (pushes onto nav stack).
+  static void pushInboxProjectDetail(BuildContext context) => GoRouter.of(
+    context,
+  ).push('/project/${ProjectGroupingRef.inbox().stableKey}/detail');
 
   /// Navigate to value detail (pushes onto nav stack).
   static void toValue(BuildContext context, Value value) =>

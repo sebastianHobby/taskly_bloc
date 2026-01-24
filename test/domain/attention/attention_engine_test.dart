@@ -13,15 +13,15 @@ import 'package:taskly_domain/time.dart';
 
 class FakeAttentionRepository implements AttentionRepositoryContract {
   FakeAttentionRepository({List<AttentionRule>? rules})
-      : _rules = BehaviorSubject<List<AttentionRule>>.seeded(
-          rules ?? const [],
-        );
+    : _rules = BehaviorSubject<List<AttentionRule>>.seeded(
+        rules ?? const [],
+      );
 
   final BehaviorSubject<List<AttentionRule>> _rules;
   final Map<String, BehaviorSubject<List<AttentionResolution>>> _resolutions =
       {};
   final Map<String, BehaviorSubject<List<AttentionRuleRuntimeState>>>
-      _runtimeStates = {};
+  _runtimeStates = {};
 
   void setRules(List<AttentionRule> rules) {
     _rules.add(rules);
@@ -58,8 +58,7 @@ class FakeAttentionRepository implements AttentionRepositoryContract {
   ) => _runtimeStates
       .putIfAbsent(
         ruleId,
-        () =>
-            BehaviorSubject<List<AttentionRuleRuntimeState>>.seeded(const []),
+        () => BehaviorSubject<List<AttentionRuleRuntimeState>>.seeded(const []),
       )
       .stream;
 
@@ -68,8 +67,7 @@ class FakeAttentionRepository implements AttentionRepositoryContract {
       _resolutions
           .putIfAbsent(
             ruleId,
-            () =>
-                BehaviorSubject<List<AttentionResolution>>.seeded(const []),
+            () => BehaviorSubject<List<AttentionResolution>>.seeded(const []),
           )
           .stream;
 
@@ -86,8 +84,8 @@ class FakeAttentionRepository implements AttentionRepositoryContract {
   Stream<List<AttentionRule>> watchRulesByBuckets(
     List<AttentionBucket> buckets,
   ) => _rules.stream.map(
-        (rules) => rules.where((r) => buckets.contains(r.bucket)).toList(),
-      );
+    (rules) => rules.where((r) => buckets.contains(r.bucket)).toList(),
+  );
 
   @override
   Future<AttentionRule?> getRuleById(String id) async {
@@ -182,8 +180,8 @@ void main() {
         bucket: AttentionBucket.action,
         evaluator: 'task_predicate_v1',
         evaluatorParams: const {
-          'predicate': 'isOverdue',
-          'thresholdHours': 0,
+          'predicate': 'isStale',
+          'thresholdDays': 0,
         },
         severity: AttentionSeverity.warning,
         displayConfig: const {},
@@ -204,6 +202,7 @@ void main() {
         TestData.task(
           id: 't1',
           deadlineDate: now.subtract(const Duration(days: 1)),
+          updatedAt: now.subtract(const Duration(days: 1)),
         ),
       ]);
 
@@ -228,8 +227,8 @@ void main() {
         bucket: AttentionBucket.action,
         evaluator: 'task_predicate_v1',
         evaluatorParams: const {
-          'predicate': 'isOverdue',
-          'thresholdHours': 0,
+          'predicate': 'isStale',
+          'thresholdDays': 0,
         },
         severity: AttentionSeverity.warning,
         displayConfig: const {},
@@ -265,6 +264,7 @@ void main() {
         TestData.task(
           id: 't1',
           deadlineDate: now.subtract(const Duration(days: 1)),
+          updatedAt: now.subtract(const Duration(days: 1)),
         ),
       ]);
 

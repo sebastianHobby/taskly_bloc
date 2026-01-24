@@ -80,48 +80,6 @@ abstract class SystemAttentionRules {
   );
 
   // ==========================================================================
-  // REVIEW RULES (2 rules)
-  // ==========================================================================
-
-  /// Values alignment review
-  static const reviewValuesAlignment = AttentionRuleTemplate(
-    ruleKey: 'review_values_alignment',
-    bucket: AttentionBucket.review,
-    evaluator: 'review_session_due_v1',
-    evaluatorParams: {
-      'reviewType': 'values_alignment',
-      'frequencyDays': 90,
-    },
-    severity: AttentionSeverity.info, // Reviews always info
-    displayConfig: {
-      'title': 'Values Alignment',
-      'description': 'Reflect on your value priorities',
-      'icon': 'star',
-    },
-    resolutionActions: ['reviewed', 'snoozed'],
-    sortOrder: 100,
-  );
-
-  /// Balance review
-  static const reviewBalance = AttentionRuleTemplate(
-    ruleKey: 'review_balance',
-    bucket: AttentionBucket.review,
-    evaluator: 'review_session_due_v1',
-    evaluatorParams: {
-      'reviewType': 'balance',
-      'frequencyDays': 30,
-    },
-    severity: AttentionSeverity.info,
-    displayConfig: {
-      'title': 'Life Balance',
-      'description': 'Review your life balance',
-      'icon': 'balance',
-    },
-    resolutionActions: ['reviewed', 'snoozed'],
-    sortOrder: 130,
-  );
-
-  // ==========================================================================
   // HELPERS
   // ==========================================================================
 
@@ -131,9 +89,6 @@ abstract class SystemAttentionRules {
     problemTaskStale,
     problemProjectIdle,
     problemProjectDeadlineRisk,
-    // Reviews (2)
-    reviewValuesAlignment,
-    reviewBalance,
   ];
 
   /// Get template by rule key

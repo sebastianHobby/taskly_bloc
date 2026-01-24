@@ -4,12 +4,11 @@ library;
 import '../../../helpers/test_imports.dart';
 import '../../../helpers/test_db.dart';
 
-import 'dart:convert';
-
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:taskly_data/db.dart';
 import 'package:taskly_data/id.dart';
 import 'package:taskly_data/src/features/analytics/repositories/analytics_repository_impl.dart';
-import 'package:taskly_domain/taskly_domain.dart';
+import 'package:taskly_domain/taskly_domain.dart' hide Value;
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
@@ -115,9 +114,9 @@ void main() {
 
       await db.into(db.taskTable).insert(
         TaskTableCompanion.insert(
-          id: const Value('task-1'),
+          id: const drift.Value('task-1'),
           name: 'Task One',
-          completed: const Value(false),
+          completed: const drift.Value(false),
         ),
       );
 
@@ -129,23 +128,23 @@ void main() {
         isSignificant: true,
       );
       await db.into(db.analyticsCorrelations).insert(
-        AnalyticsCorrelationsCompanion.insert(
-          id: 'c1',
-          correlationType: 'task_project',
-          sourceType: 'task',
-          sourceId: 'task-1',
-          targetType: 'project',
-          targetId: 'project-1',
-          periodStart: DateTime.utc(2025, 1, 1),
-          periodEnd: DateTime.utc(2025, 1, 2),
-          coefficient: 0.6,
-          sampleSize: 5,
-          strength: CorrelationStrength.strongPositive.name,
-          insight: 'ok',
-          valueWithSource: 1,
-          valueWithoutSource: 0,
-          computedAt: DateTime.utc(2025, 1, 2),
-          statisticalSignificance: Value(jsonEncode(significance.toJson())),
+        AnalyticsCorrelationsCompanion(
+          id: const drift.Value('c1'),
+          correlationType: const drift.Value('task_project'),
+          sourceType: const drift.Value('task'),
+          sourceId: const drift.Value('task-1'),
+          targetType: const drift.Value('project'),
+          targetId: const drift.Value('project-1'),
+          periodStart: drift.Value(DateTime.utc(2025, 1, 1)),
+          periodEnd: drift.Value(DateTime.utc(2025, 1, 2)),
+          coefficient: const drift.Value(0.6),
+          sampleSize: const drift.Value(5),
+          strength: drift.Value(CorrelationStrength.strongPositive.name),
+          insight: const drift.Value('ok'),
+          valueWithSource: const drift.Value(1.0),
+          valueWithoutSource: const drift.Value(0.0),
+          computedAt: drift.Value(DateTime.utc(2025, 1, 2)),
+          statisticalSignificance: drift.Value(significance.toJson()),
         ),
       );
 

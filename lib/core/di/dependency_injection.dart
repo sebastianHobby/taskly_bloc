@@ -17,10 +17,6 @@ import 'package:taskly_domain/attention.dart'
     show AttentionEngine;
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
-import 'package:taskly_bloc/presentation/features/attention/bloc/attention_inbox_bloc.dart';
-import 'package:taskly_bloc/presentation/features/attention/bloc/attention_rules_cubit.dart';
-import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
-import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_session_cubit.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
@@ -219,26 +215,6 @@ Future<void> setupDependencies() async {
       ),
     )
     // Presentation BLoCs/Cubits
-    ..registerFactory<AttentionInboxBloc>(
-      () => AttentionInboxBloc(
-        engine: getIt<attention_engine_v2.AttentionEngineContract>(),
-        resolutionService: getIt<AttentionResolutionService>(),
-        nowService: getIt<NowService>(),
-      ),
-    )
-    ..registerLazySingleton<AttentionBellCubit>(
-      () => AttentionBellCubit(
-        engine: getIt<attention_engine_v2.AttentionEngineContract>(),
-      ),
-    )
-    ..registerLazySingleton<AttentionBannerSessionCubit>(
-      AttentionBannerSessionCubit.new,
-    )
-    ..registerFactory<AttentionRulesCubit>(
-      () => AttentionRulesCubit(
-        repository: getIt<attention_repo_v2.AttentionRepositoryContract>(),
-      ),
-    )
     ..registerFactory<JournalTodayBloc>(
       () => JournalTodayBloc(
         repository: getIt<JournalRepositoryContract>(),

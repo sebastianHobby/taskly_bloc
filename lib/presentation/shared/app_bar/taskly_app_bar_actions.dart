@@ -1,17 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/presentation/features/attention/widgets/attention_bell_icon_button.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
 
 /// Centralized app-bar action conventions for Taskly screens.
 abstract final class TasklyAppBarActions {
-  static const Set<String> _bellExcludedScreenKeys = {
-    // Avoid navigating to the current screen.
-    'review_inbox',
-    // Avoid adding attention affordances inside Settings.
-    'settings',
-  };
-
   /// Returns [actions] plus the global Attention bell when appropriate.
   ///
   /// The bell is shown for 1-segment screen routes (e.g. `/journal`) and is
@@ -21,13 +12,7 @@ abstract final class TasklyAppBarActions {
     required List<Widget> actions,
   }) {
     if (!_shouldShowBellForCurrentLocation(context)) return actions;
-
-    return <Widget>[
-      ...actions,
-      AttentionBellIconButton(
-        onPressed: () => Routing.toScreenKey(context, 'review_inbox'),
-      ),
-    ];
+    return actions;
   }
 
   static bool _shouldShowBellForCurrentLocation(BuildContext context) {
@@ -36,7 +21,6 @@ abstract final class TasklyAppBarActions {
 
     if (segments.length != 1) return false;
 
-    final screenKey = Routing.parseScreenKey(segments.single);
-    return !_bellExcludedScreenKeys.contains(screenKey);
+    return true;
   }
 }

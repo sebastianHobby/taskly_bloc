@@ -34,16 +34,11 @@ final class ScheduledTimelineVisibleDayChanged extends ScheduledTimelineEvent {
   final DateTime day;
 }
 
-final class ScheduledTimelineMonthJumpRequested extends ScheduledTimelineEvent {
-  const ScheduledTimelineMonthJumpRequested({required this.month});
+final class ScheduledTimelineDayJumpRequested extends ScheduledTimelineEvent {
+  const ScheduledTimelineDayJumpRequested({required this.day});
 
-  /// Any day within the desired month (local).
-  final DateTime month;
-}
-
-final class ScheduledTimelineJumpToTodayRequested
-    extends ScheduledTimelineEvent {
-  const ScheduledTimelineJumpToTodayRequested();
+  /// Local date-only semantics.
+  final DateTime day;
 }
 
 final class ScheduledTimelineOverdueCollapsedToggled
@@ -123,8 +118,7 @@ final class ScheduledTimelineBloc
     on<_ScheduledTimelineOccurrencesUpdated>(_onOccurrencesUpdated);
     on<_ScheduledTimelineWatchFailed>(_onWatchFailed);
     on<ScheduledTimelineVisibleDayChanged>(_onVisibleDayChanged);
-    on<ScheduledTimelineMonthJumpRequested>(_onMonthJumpRequested);
-    on<ScheduledTimelineJumpToTodayRequested>(_onJumpToTodayRequested);
+    on<ScheduledTimelineDayJumpRequested>(_onDayJumpRequested);
     on<ScheduledTimelineOverdueCollapsedToggled>(_onOverdueCollapsedToggled);
     on<ScheduledTimelineScrollEffectHandled>(_onScrollEffectHandled);
 
@@ -287,18 +281,16 @@ final class ScheduledTimelineBloc
     _emitLoaded(emit);
   }
 
-  Future<void> _onMonthJumpRequested(
-    ScheduledTimelineMonthJumpRequested event,
+  Future<void> _onDayJumpRequested(
+    ScheduledTimelineDayJumpRequested event,
     Emitter<ScheduledTimelineState> emit,
   ) async {
     final today = _latestTodayLocal;
     if (today == null) return;
 
-    final requestedMonth = DateTime(event.month.year, event.month.month, 1);
-    final currentMonth = DateTime(today.year, today.month, 1);
-    final targetMonth = requestedMonth.isBefore(currentMonth)
-        ? currentMonth
-        : requestedMonth;
+    final requestedDay = _toLocalDay(event.day);
+    final targetDay = requestedDay.isBefore(today) ? today : requestedDay;
+    final targetMonth = DateTime(targetDay.year, targetDay.month, 1);
 
     final window = _rangeWindow.valueOrNull;
     if (window != null) {
@@ -309,38 +301,7 @@ final class ScheduledTimelineBloc
     }
 
     _activeMonth = targetMonth;
-    // We do not render days before today, so for the current month we anchor to
-    // today instead of the month start.
-    _scrollTargetDay =
-        (targetMonth.year == currentMonth.year &&
-            targetMonth.month == currentMonth.month)
-        ? today
-        : targetMonth;
-    _scrollToDaySignal++;
-
-    _emitLoaded(emit);
-  }
-
-  Future<void> _onJumpToTodayRequested(
-    ScheduledTimelineJumpToTodayRequested event,
-    Emitter<ScheduledTimelineState> emit,
-  ) async {
-    final today = _latestTodayLocal;
-    if (today == null) return;
-
-    final window = _rangeWindow.valueOrNull;
-    if (window != null) {
-      final desired = _ensureWindowCoversMonth(
-        window,
-        DateTime(today.year, today.month, 1),
-      );
-      if (desired != window) {
-        _rangeWindow.add(desired);
-      }
-    }
-
-    _activeMonth = DateTime(today.year, today.month, 1);
-    _scrollTargetDay = today;
+    _scrollTargetDay = targetDay;
     _scrollToDaySignal++;
 
     _emitLoaded(emit);

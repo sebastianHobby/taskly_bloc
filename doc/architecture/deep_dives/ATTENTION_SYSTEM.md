@@ -7,11 +7,9 @@
 ## 1) Executive Summary
 
 Taskly’s **attention system** is a rule-based mechanism that detects items that
-need user attention (e.g., overdue tasks, idle projects, periodic reviews) and
-surfaces them as **`AttentionItem`** view-models in multiple places:
-
-- **Feature screens** (as dedicated panels/sections within explicit screens)
-- **Settings** page for enabling/disabling rules (`Attention Rules`)
+need user attention (e.g., stale tasks, idle projects, deadline risk) and
+surfaces them as **`AttentionItem`** view-models inside the **Weekly Review**
+maintenance flow.
 
 The core idea:
 
@@ -67,11 +65,10 @@ Key files:
 Attention is consumed by presentation-layer BLoCs, which subscribe to
 `AttentionEngine.watch(query)` and expose widget-ready state.
 
-### Presentation (widgets + settings)
-- Settings page:
-  - [lib/presentation/features/attention/view/attention_rules_settings_page.dart](../../lib/presentation/features/attention/view/attention_rules_settings_page.dart)
-- Shared widgets used by the support sections:
-  - [lib/presentation/screens/templates/renderers/attention_support_section_widgets.dart](../../lib/presentation/screens/templates/renderers/attention_support_section_widgets.dart)
+### Presentation (review flow)
+- Weekly review modal + BLoC:
+  - [lib/presentation/features/review/view/weekly_review_modal.dart](../../lib/presentation/features/review/view/weekly_review_modal.dart)
+  - [lib/presentation/features/review/bloc/weekly_review_cubit.dart](../../lib/presentation/features/review/bloc/weekly_review_cubit.dart)
 
 ---
 
@@ -321,25 +318,16 @@ Important nuance in the current repo state:
 
 ## 5) Integration Points (How Attention Surfaces in UI)
 
-### 5.1 Feature screens
+### 5.1 Weekly review maintenance
 
-Screens surface attention by subscribing from BLoCs:
+The weekly review flow subscribes to the attention engine and maps matching
+items into maintenance sections (deadline risk, stale items, etc.) inside the
+modal review experience.
 
-- Issues/Problems surface: `AttentionEngine.watch(AttentionQuery(domains: {'issues'}))`
-- Reviews/check-ins surface: `AttentionEngine.watch(AttentionQuery(domains: {'reviews'}))`
-- Allocation alerts surface: `AttentionEngine.watch(AttentionQuery(domains: {'allocation'}))`
+### 5.2 Settings
 
-### 5.2 Settings: toggling attention rules
-
-- The attention settings feature uses a BLoC to load all rules once
-  and lets users toggle `active`.
-  - [lib/presentation/features/attention/view/attention_rules_settings_page.dart](../../lib/presentation/features/attention/view/attention_rules_settings_page.dart)
-
-### 5.3 Attention widgets
-
-- Rendering is currently "display-only" tiles:
-  - `AttentionItemTile` + `SeverityIcon`
-  - [lib/presentation/screens/templates/renderers/attention_support_section_widgets.dart](../../lib/presentation/screens/templates/renderers/attention_support_section_widgets.dart)
+Weekly review settings live under the general Settings screen. Users can toggle
+maintenance checks on/off without managing individual attention rules directly.
 
 ### 5.4 Temporal Triggers Integration (In-App Only)
 

@@ -43,6 +43,18 @@ final class TaskValidators {
     return const [];
   }
 
+  static List<ValidationError> valueIds(List<String>? valueIds) {
+    final ids = valueIds ?? const <String>[];
+    final hasValue = ids.any((id) => id.trim().isNotEmpty);
+    if (hasValue) return const [];
+    return const [
+      ValidationError(
+        code: 'required',
+        messageKey: 'taskFormValuesRequired',
+      ),
+    ];
+  }
+
   static Map<FieldKey, List<ValidationError>> dateOrder(
     DateTime? startDate,
     DateTime? deadlineDate,

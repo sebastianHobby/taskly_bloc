@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
+import 'package:taskly_ui/src/models/value_chip_data.dart';
 import 'package:taskly_ui/src/primitives/meta_badges.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
 import 'package:taskly_ui/src/primitives/value_chip_widget.dart';
@@ -178,6 +179,18 @@ class TaskEntityTile extends StatelessWidget {
                                     ),
                                   ),
                                 ),
+                                if (markers.pinned) ...[
+                                  const SizedBox(width: 6),
+                                  _PinnedTrailingIcon(
+                                    label: model.labels?.pinnedSemanticLabel,
+                                    tooltip: model.labels?.pinnedLabel,
+                                    onPressed: _isPinnedTogglePreset
+                                        ? () => actions.onTogglePinned?.call(
+                                            false,
+                                          )
+                                        : null,
+                                  ),
+                                ],
                                 if (_isBulkSelectionPreset) ...[
                                   const SizedBox(width: 6),
                                   IconButton(
@@ -219,22 +232,11 @@ class TaskEntityTile extends StatelessWidget {
                             const SizedBox(height: 6),
                             _MetaRow(
                               model: model,
-                              markers: markers,
                               tokens: tokens,
                             ),
                           ],
                         ),
                       ),
-                      if (markers.pinned) ...[
-                        const SizedBox(width: 8),
-                        _PinnedTrailingIcon(
-                          label: model.labels?.pinnedSemanticLabel,
-                          tooltip: model.labels?.pinnedLabel,
-                          onPressed: _isPinnedTogglePreset
-                              ? () => actions.onTogglePinned?.call(false)
-                              : null,
-                        ),
-                      ],
                       if (_isPickerLikePreset) ...[
                         const SizedBox(width: 8),
                         if (_isPickerActionPreset)
@@ -364,12 +366,10 @@ class _SupportingText extends StatelessWidget {
 class _MetaRow extends StatelessWidget {
   const _MetaRow({
     required this.model,
-    required this.markers,
     required this.tokens,
   });
 
   final TasklyTaskRowData model;
-  final TasklyTaskRowMarkers markers;
   final TasklyEntityTileTheme tokens;
 
   @override
@@ -379,18 +379,16 @@ class _MetaRow extends StatelessWidget {
 
     final valueChip = model.leadingChip;
     final secondaryChips = model.secondaryChips;
-    final hasValue = valueChip != null;
-    final hasFocus = markers.focused;
+    final hasValue = valueChip != null || secondaryChips.isNotEmpty;
+    final plan = meta.startDateLabel?.trim() ?? '';
+    final due = meta.deadlineDateLabel?.trim() ?? '';
 
-    final plan = meta.startDateLabel?.trim();
-    final due = meta.deadlineDateLabel?.trim();
-
-    final hasPlan = plan != null && plan.isNotEmpty;
-    final hasDue = due != null && due.isNotEmpty;
+    final hasPlan = plan.isNotEmpty;
+    final hasDue = due.isNotEmpty;
     final hasPriority = meta.priority != null;
     final hasMeta = hasPriority || hasPlan || hasDue;
 
-    if (!hasValue && !hasFocus && !hasMeta) {
+    if (!hasValue && !hasMeta) {
       return const SizedBox.shrink();
     }
 
@@ -404,46 +402,119 @@ class _MetaRow extends StatelessWidget {
     final dueValueStyle = tokens.metaValue.copyWith(color: dueColor);
 
     const chipMaxWidth = 110.0;
-    final leftMeta = Wrap(
-      spacing: 8,
-      runSpacing: 4,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        if (valueChip case final value?)
-          ValueChip(
-            data: value,
-            maxLabelWidth: chipMaxWidth,
-          ),
-        for (final chip in secondaryChips)
-          ValueChip(
-            data: chip,
-            maxLabelWidth: chipMaxWidth,
-          ),
-        if (hasFocus) const _FocusPill(),
-        if (hasPriority) PriorityPill(priority: meta.priority!),
-      ],
-    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 8.0;
+        var showPriority = hasPriority;
+        var showPlan = hasPlan;
 
-    if (!hasPlan && !hasDue) {
-      return leftMeta;
-    }
+        double rightWidth = _rightMetaWidth(
+          context,
+          showPlan: showPlan,
+          showDue: hasDue,
+          planLabel: plan,
+          dueLabel: due,
+          planStyle: valueStyle,
+          dueStyle: dueValueStyle,
+        );
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(child: leftMeta),
-        const SizedBox(width: 8),
-        Row(
+        double maxLeftWidth = _leftMaxWidth(
+          constraints.maxWidth,
+          rightWidth,
+          spacing,
+        );
+
+        final minPrimaryWidth = valueChip == null
+            ? 0.0
+            : _chipWidth(
+                context,
+                valueChip,
+                chipMaxWidth,
+                iconOnly: false,
+              );
+        double minLeftWidth(bool includePriority) {
+          if (minPrimaryWidth == 0) {
+            return 0;
+          }
+
+          final widths = <double>[minPrimaryWidth];
+          if (includePriority) {
+            widths.add(_priorityPillWidth(context, meta.priority));
+          }
+
+          return widths.reduce((a, b) => a + b) + spacing * (widths.length - 1);
+        }
+
+        if (showPriority && minLeftWidth(true) > maxLeftWidth) {
+          showPriority = false;
+        }
+
+        if (showPlan && minLeftWidth(showPriority) > maxLeftWidth) {
+          showPlan = false;
+          rightWidth = _rightMetaWidth(
+            context,
+            showPlan: showPlan,
+            showDue: hasDue,
+            planLabel: plan,
+            dueLabel: due,
+            planStyle: valueStyle,
+            dueStyle: dueValueStyle,
+          );
+          maxLeftWidth = _leftMaxWidth(
+            constraints.maxWidth,
+            rightWidth,
+            spacing,
+          );
+          if (showPriority && minLeftWidth(true) > maxLeftWidth) {
+            showPriority = false;
+          }
+        }
+
+        final valueChips = _resolveValueChips(
+          context,
+          maxWidth: maxLeftWidth,
+          leadingChip: valueChip,
+          secondaryChips: secondaryChips,
+          showPriority: showPriority,
+          priority: meta.priority,
+          maxLabelWidth: chipMaxWidth,
+        );
+
+        final items = <Widget>[
+          for (final chip in valueChips)
+            ValueChip(
+              data: chip.data,
+              iconOnly: chip.iconOnly,
+              maxLabelWidth: chipMaxWidth,
+            ),
+          if (showPriority) PriorityPill(priority: meta.priority!),
+        ];
+
+        final leftMeta = Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (hasPlan) ...[
+            for (var i = 0; i < items.length; i++) ...[
+              items[i],
+              if (i != items.length - 1) const SizedBox(width: spacing),
+            ],
+          ],
+        );
+
+        if (!showPlan && !hasDue) {
+          return leftMeta;
+        }
+
+        final rightMeta = Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showPlan) ...[
               MetaIconLabel(
                 icon: Icons.calendar_today_rounded,
                 label: plan,
                 color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
                 textStyle: valueStyle,
               ),
-              if (hasDue) const SizedBox(width: 8),
+              if (hasDue) const SizedBox(width: spacing),
             ],
             if (hasDue)
               MetaIconLabel(
@@ -453,10 +524,228 @@ class _MetaRow extends StatelessWidget {
                 textStyle: dueValueStyle,
               ),
           ],
-        ),
-      ],
+        );
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(child: leftMeta),
+            const SizedBox(width: spacing),
+            rightMeta,
+          ],
+        );
+      },
     );
   }
+
+  List<_ChipRender> _resolveValueChips(
+    BuildContext context, {
+    required double maxWidth,
+    required ValueChipData? leadingChip,
+    required List<ValueChipData> secondaryChips,
+    required bool showPriority,
+    required int? priority,
+    required double maxLabelWidth,
+  }) {
+    final chips = <ValueChipData>[...secondaryChips];
+    if (leadingChip != null) {
+      chips.insert(0, leadingChip);
+    }
+
+    if (chips.isEmpty) {
+      return const <_ChipRender>[];
+    }
+
+    final fixedWidths = <double>[
+      if (showPriority) _priorityPillWidth(context, priority),
+    ];
+
+    const spacing = 8.0;
+
+    double totalWidthFor(List<_ChipRender> renders) {
+      final chipWidths = [
+        for (final render in renders)
+          _chipWidth(
+            context,
+            render.data,
+            maxLabelWidth,
+            iconOnly: render.iconOnly,
+          ),
+      ];
+      final allWidths = <double>[
+        ...chipWidths,
+        ...fixedWidths,
+      ];
+
+      if (allWidths.isEmpty) {
+        return 0;
+      }
+
+      return allWidths.reduce((a, b) => a + b) +
+          spacing * (allWidths.length - 1);
+    }
+
+    final fullRenders = <_ChipRender>[
+      for (final chip in chips) _ChipRender(data: chip),
+    ];
+
+    if (totalWidthFor(fullRenders) <= maxWidth) {
+      return fullRenders;
+    }
+
+    final primary = leadingChip;
+    final secondary = leadingChip == null ? chips : chips.skip(1).toList();
+
+    final iconOnlyRenders = <_ChipRender>[
+      if (primary != null) _ChipRender(data: primary),
+      for (final chip in secondary)
+        _ChipRender(
+          data: chip,
+          iconOnly: true,
+        ),
+    ];
+
+    if (totalWidthFor(iconOnlyRenders) <= maxWidth) {
+      return iconOnlyRenders;
+    }
+
+    for (var visibleCount = secondary.length; visibleCount >= 0; visibleCount--) {
+      final renders = <_ChipRender>[
+        if (primary != null) _ChipRender(data: primary),
+        for (final chip in secondary.take(visibleCount))
+          _ChipRender(
+            data: chip,
+            iconOnly: true,
+          ),
+      ];
+
+      if (totalWidthFor(renders) <= maxWidth) {
+        return renders;
+      }
+    }
+
+    return primary == null
+        ? const <_ChipRender>[]
+        : <_ChipRender>[_ChipRender(data: primary)];
+  }
+
+  double _chipWidth(
+    BuildContext context,
+    ValueChipData chip,
+    double maxLabelWidth, {
+    required bool iconOnly,
+  }) {
+    final theme = Theme.of(context);
+    final textStyle = theme.textTheme.labelSmall?.copyWith(
+      fontWeight: FontWeight.w600,
+      fontSize: 11,
+      height: 1.1,
+      letterSpacing: 0.2,
+    );
+    const iconSize = 14.0;
+    const gap = 6.0;
+    const padding = 8.0;
+    const iconOnlyPadding = 6.0;
+    const border = 2.0;
+
+    if (iconOnly) {
+      return iconOnlyPadding * 2 + iconSize + border;
+    }
+
+    final painter = TextPainter(
+      text: TextSpan(text: chip.label, style: textStyle),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+    )..layout();
+
+    final textWidth = painter.width.clamp(0, maxLabelWidth);
+
+    return padding * 2 + iconSize + gap + textWidth + border;
+  }
+
+  double _priorityPillWidth(BuildContext context, int? priority) {
+    if (priority == null) {
+      return 0;
+    }
+
+    final theme = Theme.of(context);
+    final textStyle = theme.textTheme.labelSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+    );
+    final painter = TextPainter(
+      text: TextSpan(text: 'P$priority', style: textStyle),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+    )..layout();
+
+    const padding = 6.0;
+
+    return padding * 2 + painter.width;
+  }
+
+  double _rightMetaWidth(
+    BuildContext context, {
+    required bool showPlan,
+    required bool showDue,
+    required String planLabel,
+    required String dueLabel,
+    required TextStyle planStyle,
+    required TextStyle dueStyle,
+  }) {
+    if (!showPlan && !showDue) {
+      return 0;
+    }
+
+    const spacing = 8.0;
+    final widths = <double>[
+      if (showPlan)
+        _metaIconLabelWidth(
+          context,
+          label: planLabel,
+          textStyle: planStyle,
+        ),
+      if (showDue)
+        _metaIconLabelWidth(
+          context,
+          label: dueLabel,
+          textStyle: dueStyle,
+        ),
+    ];
+
+    return widths.reduce((a, b) => a + b) + spacing * (widths.length - 1);
+  }
+
+  double _metaIconLabelWidth(
+    BuildContext context, {
+    required String label,
+    required TextStyle textStyle,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: label, style: textStyle),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+    )..layout();
+
+    const iconSize = 14.0;
+    const gap = 6.0;
+
+    return iconSize + gap + painter.width;
+  }
+
+  double _leftMaxWidth(double total, double rightWidth, double spacing) {
+    final remaining = total - rightWidth - (rightWidth == 0 ? 0 : spacing);
+    return remaining < 0 ? 0 : remaining;
+  }
+}
+
+class _ChipRender {
+  const _ChipRender({
+    required this.data,
+    this.iconOnly = false,
+  });
+
+  final ValueChipData data;
+  final bool iconOnly;
 }
 
 class _CompletionControl extends StatelessWidget {
@@ -550,45 +839,6 @@ class _PinnedTrailingIcon extends StatelessWidget {
     return Semantics(
       label: label ?? 'Pinned',
       child: child,
-    );
-  }
-}
-
-class _FocusPill extends StatelessWidget {
-  const _FocusPill();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.7),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.gps_fixed_rounded,
-            size: 12,
-            color: scheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            'FOCUS',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: scheme.onSurfaceVariant,
-              letterSpacing: 0.4,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

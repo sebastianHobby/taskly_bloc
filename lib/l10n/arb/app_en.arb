@@ -34,6 +34,14 @@
     "valuesProjectHasNoValues": "This project has no values.",
     "valuesOptionalFooter": "Values are optional for tasks.",
     "valuesPrimaryTooltip": "Make primary",
+    "valuesSelectPrimaryTitle": "Select primary value",
+    "valuesSelectSecondaryTitle": "Select secondary value",
+    "valuesPrimaryLabel": "Primary value",
+    "valuesSecondaryLabel": "Secondary value",
+    "valuesPrimaryShortLabel": "Primary",
+    "valuesSecondaryShortLabel": "Secondary",
+    "valuesSecondaryClearAction": "Clear secondary",
+    "valuesMaxTwoHelper": "Choose up to two values.",
     "@valuesAlignedToTitle": {
         "description": "Label/title indicating tasks/projects are aligned to values."
     },
@@ -78,6 +86,34 @@
     },
     "@valuesPrimaryTooltip": {
         "description": "Tooltip for the action to mark a value as primary."
+    },
+    "@valuesSelectPrimaryTitle": {
+        "description": "Title for the primary value picker."
+    },
+    "@valuesSelectSecondaryTitle": {
+        "description": "Title for the secondary value picker."
+    },
+    "@valuesPrimaryLabel": {
+        "description": "Label for the primary value slot."
+    },
+    "@valuesSecondaryLabel": {
+        "description": "Label for the secondary value slot."
+    },
+    "@valuesPrimaryShortLabel": {
+        "description": "Short label for the primary value tag."
+    },
+    "@valuesSecondaryShortLabel": {
+        "description": "Short label for the secondary value tag."
+    },
+    "@valuesSecondaryClearAction": {
+        "description": "Action label to clear the secondary value."
+    },
+    "@valuesMaxTwoHelper": {
+        "description": "Helper text indicating the max number of values."
+    },
+    "taskFormValuesRequired": "Select a primary value.",
+    "@taskFormValuesRequired": {
+        "description": "Validation error shown when a task requires a primary value."
     },
     "projectFormValuesRequired": "Select at least one value.",
     "@projectFormValuesRequired": {
@@ -663,6 +699,14 @@
     "@taskFormEditTitle": {
         "description": "Title for the task form in edit mode"
     },
+    "projectFormNewTitle": "New Project",
+    "@projectFormNewTitle": {
+        "description": "Title for the project form in create mode"
+    },
+    "projectFormEditTitle": "Edit Project",
+    "@projectFormEditTitle": {
+        "description": "Title for the project form in edit mode"
+    },
     "projectLabel": "Project",
     "@projectLabel": {
         "description": "Section label for selecting a project"
@@ -869,11 +913,11 @@
             },
             "availablePart": {
                 "type": "String",
-                "example": " â€¢ 3 available to start"
+                "example": " · 3 available to start"
             }
         }
     },
-    "myDayAvailableToStartCountPart": " â€¢ {count} available to start",
+    "myDayAvailableToStartCountPart": " · {count} available to start",
     "@myDayAvailableToStartCountPart": {
         "description": "Suffix part appended to the heads-up summary when the 'available to start' lane is enabled.",
         "placeholders": {
@@ -925,9 +969,9 @@
             }
         }
     },
-    "myDayWhyTheseWhatsWaitingBody": "Time sensitive helps you avoid surprises. Youâ€™ll see tasks due soon (within the next {days} days) and tasks that are available to start.",
+    "myDayWhyTheseWhatsWaitingBody": "Time sensitive helps you avoid surprises. You'll see tasks due soon (within the next {days} days) and tasks that are available to start.",
     "@myDayWhyTheseWhatsWaitingBody": {
-        "description": "Body text for the 'Why these?' sheet for the Whatâ€™s waiting section.",
+        "description": "Body text for the 'Why these?' sheet for the What's waiting section.",
         "placeholders": {
             "days": {
                 "type": "int",
@@ -973,7 +1017,7 @@
     },
     "myDayWhatsWaitingSubtitle": "Due soon or ready to start.",
     "@myDayWhatsWaitingSubtitle": {
-        "description": "Subtitle for the Whatâ€™s waiting section in the My Day ritual."
+        "description": "Subtitle for the What's waiting section in the My Day ritual."
     },
     "myDayValueAlignedLabel": "Value-aligned",
     "@myDayValueAlignedLabel": {
@@ -995,11 +1039,11 @@
     "@myDaySuggestionSettingsTitle": {
         "description": "Title for the My Day ritual suggestion settings sheet."
     },
-    "myDaySuggestionSettingsBody": "Tune what shows up in â€œTime sensitiveâ€.",
+    "myDaySuggestionSettingsBody": "Tune what shows up in \"Time sensitive\".",
     "@myDaySuggestionSettingsBody": {
         "description": "Body text for the suggestion settings sheet in the My Day ritual."
     },
-    "myDayDueSoonWindowLabel": "Due soon window Â· {days} days",
+    "myDayDueSoonWindowLabel": "Due soon window · {days} days",
     "@myDayDueSoonWindowLabel": {
         "description": "Label for the due-soon window slider in the My Day ritual suggestion settings.",
         "placeholders": {
@@ -1031,7 +1075,7 @@
     "@myDayShowAllPicksLabel": {
         "description": "Collapsed label for expanding the full list of suggested picks in the My Day ritual."
     },
-    "myDaySuggestedAnotherBatchPrompt": "Suggested complete â€” generate another batch?",
+    "myDaySuggestedAnotherBatchPrompt": "Suggested complete - generate another batch?",
     "@myDaySuggestedAnotherBatchPrompt": {
         "description": "Prompt shown when all suggested picks are chosen in the My Day ritual."
     },
@@ -1039,7 +1083,7 @@
     "@myDaySnoozedSectionTitle": {
         "description": "Section title for snoozed tasks in the My Day ritual."
     },
-    "myDaySnoozedCollapsedTitle": "Snoozed Â· {count}",
+    "myDaySnoozedCollapsedTitle": "Snoozed · {count}",
     "@myDaySnoozedCollapsedTitle": {
         "description": "Collapsed header for the snoozed tasks section in the My Day ritual.",
         "placeholders": {
@@ -1075,15 +1119,15 @@
     "@myDayUnsnoozeAction": {
         "description": "Menu label to unsnooze (show again) a task in the My Day ritual."
     },
-    "myDayChangeSnoozeAction": "Changeâ€¦",
+    "myDayChangeSnoozeAction": "Change...",
     "@myDayChangeSnoozeAction": {
         "description": "Menu label to change the snooze-until date in the My Day ritual."
     },
     "myDayMyDaySnoozeSheetTitle": "Hide from My Day",
     "@myDayMyDaySnoozeSheetTitle": {
-        "description": "Title for the My Day snooze-until sheet (hide from My Day untilâ€¦)."
+        "description": "Title for the My Day snooze-until sheet (hide from My Day until...)."
     },
-    "myDayMyDaySnoozeSheetSubtitle": "Hide this task from My Day untilâ€¦",
+    "myDayMyDaySnoozeSheetSubtitle": "Hide this task from My Day until...",
     "@myDayMyDaySnoozeSheetSubtitle": {
         "description": "Subtitle for the My Day snooze-until sheet (does not change schedule dates)."
     },
@@ -1091,11 +1135,11 @@
     "@pinnedSemanticLabel": {
         "description": "Semantics label for a pinned marker icon (screen reader)."
     },
-    "pickDateButton": "Pick dateâ€¦",
+    "pickDateButton": "Pick date...",
     "@pickDateButton": {
         "description": "Button/row label that opens a date picker"
     },
-    "focusModeHelperLine": "Mode: {mode} Â· {tagline}",
+    "focusModeHelperLine": "Mode: {mode} · {tagline}",
     "@focusModeHelperLine": {
         "description": "Helper line describing the active focus mode.",
         "placeholders": {
@@ -1109,7 +1153,7 @@
             }
         }
     },
-    "showMoreCountLabel": "Show {count} more Â· {label} ({total})",
+    "showMoreCountLabel": "Show {count} more · {label} ({total})",
     "@showMoreCountLabel": {
         "description": "Label for expanding a list to show more items.",
         "placeholders": {
@@ -1712,7 +1756,7 @@
     "@startLabel": {
         "description": "Label for the start button that pins a task to Focus"
     },
-    "projectNextTaskPrefix": "â†’ Next:",
+    "projectNextTaskPrefix": "-> Next:",
     "@projectNextTaskPrefix": {
         "description": "Prefix shown before the next task name in project list"
     },
@@ -1767,7 +1811,7 @@
     "@gapLabel": {
         "description": "Label for gap percentage in value stats"
     },
-    "valueActivityCounts": "{taskCount} tasks Â· {projectCount} projects",
+    "valueActivityCounts": "{taskCount} tasks · {projectCount} projects",
     "@valueActivityCounts": {
         "description": "Activity counts for a value showing tasks and projects",
         "placeholders": {
@@ -1862,7 +1906,7 @@
     "@valuesGatewayTitle": {
         "description": "Title for values setup gateway"
     },
-    "valuesGatewayDescription": "Focus uses your personal values to recommend which tasks deserve your attention today.\n\nDefine what's important to youâ€”like Health, Family, Careerâ€”and Focus will help you spend time on what truly matters.",
+    "valuesGatewayDescription": "Focus uses your personal values to recommend which tasks deserve your attention today.\n\nDefine what's important to you-like Health, Family, Career-and Focus will help you spend time on what truly matters.",
     "@valuesGatewayDescription": {
         "description": "Description for values setup gateway"
     },
@@ -1934,7 +1978,7 @@
     "@focusSetupValuesCtaTitle": {
         "description": "Title text in the values CTA step of Focus Setup."
     },
-    "focusSetupValuesCtaBody": "Add at least one value (Health, Family, Craft, Learningâ€¦) so values-first modes can make smart tradeoffs.",
+    "focusSetupValuesCtaBody": "Add at least one value (Health, Family, Craft, Learning...) so values-first modes can make smart tradeoffs.",
     "@focusSetupValuesCtaBody": {
         "description": "Body text in the values CTA step of Focus Setup."
     },
@@ -1976,7 +2020,7 @@
     "@myDayPlanCardTitle": {
         "description": "Title shown in the My Day plan card when nothing is selected yet."
     },
-    "myDayPlanCardTitleWithPicked": "Plan for today Â· {count}",
+    "myDayPlanCardTitleWithPicked": "Plan for today · {count}",
     "@myDayPlanCardTitleWithPicked": {
         "description": "Title shown in the My Day plan card when items have been selected.",
         "placeholders": {
@@ -1994,11 +2038,11 @@
     "@myDayPreparingTitle": {
         "description": "Title shown while My Day is preparing/loading."
     },
-    "myDayPreparingSubtitle": "Loading your suggestions and todayâ€™s contextâ€¦",
+    "myDayPreparingSubtitle": "Loading your suggestions and today's context...",
     "@myDayPreparingSubtitle": {
         "description": "Subtitle shown while My Day is preparing/loading."
     },
-    "myDayAddedToFocusSnackbar": "Added to Todayâ€™s Focus.",
+    "myDayAddedToFocusSnackbar": "Added to Today's Focus.",
     "@myDayAddedToFocusSnackbar": {
         "description": "Snack bar message shown after adding a task to today's Focus bucket from My Day."
     },
@@ -2030,11 +2074,11 @@
     "@myDayRitualSubtitle": {
         "description": "Subtitle shown at the top of the My Day ritual wizard when planning."
     },
-    "myDayUpdatePlanSubtitle": "Review todayâ€™s picks. Add or remove anything.",
+    "myDayUpdatePlanSubtitle": "Review today's picks. Add or remove anything.",
     "@myDayUpdatePlanSubtitle": {
         "description": "Subtitle shown at the top of the My Day ritual wizard when resuming and no completed picks exist."
     },
-    "myDayUpdatePlanSubtitleWithCompleted": "Review todayâ€™s picks. Completed items are shown below.",
+    "myDayUpdatePlanSubtitleWithCompleted": "Review today's picks. Completed items are shown below.",
     "@myDayUpdatePlanSubtitleWithCompleted": {
         "description": "Subtitle shown at the top of the My Day ritual wizard when resuming and some picks are completed."
     },
@@ -2042,7 +2086,7 @@
     "@myDayClearMyDayLabel": {
         "description": "Bottom bar button label when clearing today's plan (resume flow with zero picks)."
     },
-    "myDayUpdateMyDayLabel": "Update My Day Â· {count}",
+    "myDayUpdateMyDayLabel": "Update My Day · {count}",
     "@myDayUpdateMyDayLabel": {
         "description": "Bottom bar button label when updating today's plan (resume flow).",
         "placeholders": {
@@ -2056,7 +2100,7 @@
     "@myDaySelectItemsToContinueLabel": {
         "description": "Bottom bar label when planning My Day but nothing is selected yet."
     },
-    "myDayContinueToMyDayLabel": "Continue to My Day Â· {count}",
+    "myDayContinueToMyDayLabel": "Continue to My Day · {count}",
     "@myDayContinueToMyDayLabel": {
         "description": "Bottom bar label when planning My Day with some selected items.",
         "placeholders": {
@@ -2066,7 +2110,7 @@
             }
         }
     },
-    "myDayClearPlanDialogTitle": "Clear todayâ€™s plan?",
+    "myDayClearPlanDialogTitle": "Clear today's plan?",
     "@myDayClearPlanDialogTitle": {
         "description": "Title for the confirmation dialog shown when clearing today's plan."
     },
@@ -2136,7 +2180,7 @@
     "@myDayTimePlanSheetTitle": {
         "description": "Title for the bottom sheet opened from the time/plan banner in the My Day ritual."
     },
-    "myDayTimePlanBannerSubtitle": "{dueCount} time-critical â€¢ {plannedCount} planned",
+    "myDayTimePlanBannerSubtitle": "{dueCount} time-critical · {plannedCount} planned",
     "@myDayTimePlanBannerSubtitle": {
         "description": "Subtitle shown in the time/plan banner and sheet, summarizing counts.",
         "placeholders": {
@@ -2182,7 +2226,7 @@
     "@myDayNothingPlannedYetBody": {
         "description": "Empty-state body shown when there are no due or available tasks in the My Day ritual."
     },
-    "myDayYoureCaughtUpBody": "Youâ€™re caught up.",
+    "myDayYoureCaughtUpBody": "You're caught up.",
     "@myDayYoureCaughtUpBody": {
         "description": "Empty-state body shown when there are no overdue/due tasks in the My Day ritual."
     },
@@ -2202,7 +2246,7 @@
     "@myDaySuggestedCompleteTitle": {
         "description": "Empty-state title shown when all suggested picks have been completed for today."
     },
-    "myDaySuggestedCompleteBody": "Youâ€™ve completed your suggested picks for today. Generate a new batch for more suggestions.",
+    "myDaySuggestedCompleteBody": "You've completed your suggested picks for today. Generate a new batch for more suggestions.",
     "@myDaySuggestedCompleteBody": {
         "description": "Empty-state body shown when all suggested picks have been completed for today."
     },
@@ -2234,7 +2278,7 @@
     "@myDayAddFirstValueLabel": {
         "description": "Label for the values setup requirement row in the My Day suggestions setup card."
     },
-    "myDaySuggestedForYouTitle": "Suggested for you Â· {count}",
+    "myDaySuggestedForYouTitle": "Suggested for you · {count}",
     "@myDaySuggestedForYouTitle": {
         "description": "Section header title for suggested picks in the My Day ritual.",
         "placeholders": {
@@ -2248,7 +2292,7 @@
     "@myDayRitualStartsTodayTitle": {
         "description": "Section title for tasks that start today in the My Day ritual."
     },
-    "myDayRitualTodaysFocusTitle": "Todayâ€™s Focus",
+    "myDayRitualTodaysFocusTitle": "Today's Focus",
     "@myDayRitualTodaysFocusTitle": {
         "description": "Section title for today's Focus bucket in the My Day ritual."
     },
@@ -2256,7 +2300,7 @@
     "@myDayRitualNotInTodayLabel": {
         "description": "Label suffix used to indicate items that are not in today's plan."
     },
-    "myDayRitualCaughtUpTitle": "Youâ€™re caught up.",
+    "myDayRitualCaughtUpTitle": "You're caught up.",
     "@myDayRitualCaughtUpTitle": {
         "description": "Empty state title indicating there are no overdue or due items in the plan."
     },
@@ -2268,7 +2312,7 @@
     "@myDayRitualNothingAddedHereYetTitle": {
         "description": "Empty state title shown when nothing has been accepted into a section yet."
     },
-    "myDayRitualReviewAvailableAboveSubtitle": "Review whatâ€™s available above if you want to add any.",
+    "myDayRitualReviewAvailableAboveSubtitle": "Review what's available above if you want to add any.",
     "@myDayRitualReviewAvailableAboveSubtitle": {
         "description": "Empty state subtitle prompting the user to review available items and add them."
     },
@@ -2344,7 +2388,7 @@
             }
         }
     },
-    "dotSeparator": " Â· ",
+    "dotSeparator": " · ",
     "@dotSeparator": {
         "description": "Separator used between two short inline labels."
     },
@@ -2545,6 +2589,13 @@
         }
     }
 }
+
+
+
+
+
+
+
 
 
 

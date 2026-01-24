@@ -56,6 +56,66 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
     bool enabled,
   ) = GlobalSettingsMyDayShowAvailableToStartChanged;
 
+  /// User toggled weekly review scheduling.
+  const factory GlobalSettingsEvent.weeklyReviewEnabledChanged(bool enabled) =
+      GlobalSettingsWeeklyReviewEnabledChanged;
+
+  /// User changed weekly review day of week.
+  const factory GlobalSettingsEvent.weeklyReviewDayOfWeekChanged(
+    int dayOfWeek,
+  ) = GlobalSettingsWeeklyReviewDayOfWeekChanged;
+
+  /// User changed weekly review time.
+  const factory GlobalSettingsEvent.weeklyReviewTimeMinutesChanged(
+    int minutes,
+  ) = GlobalSettingsWeeklyReviewTimeMinutesChanged;
+
+  /// User changed weekly review cadence.
+  const factory GlobalSettingsEvent.weeklyReviewCadenceWeeksChanged(
+    int cadenceWeeks,
+  ) = GlobalSettingsWeeklyReviewCadenceWeeksChanged;
+
+  /// User toggled values summary in weekly review.
+  const factory GlobalSettingsEvent.valuesSummaryEnabledChanged(bool enabled) =
+      GlobalSettingsValuesSummaryEnabledChanged;
+
+  /// User changed values summary lookback window.
+  const factory GlobalSettingsEvent.valuesSummaryWindowWeeksChanged(
+    int weeks,
+  ) = GlobalSettingsValuesSummaryWindowWeeksChanged;
+
+  /// User changed values summary wins count.
+  const factory GlobalSettingsEvent.valuesSummaryWinsCountChanged(
+    int count,
+  ) = GlobalSettingsValuesSummaryWinsCountChanged;
+
+  /// User toggled weekly review maintenance.
+  const factory GlobalSettingsEvent.maintenanceEnabledChanged(bool enabled) =
+      GlobalSettingsMaintenanceEnabledChanged;
+
+  /// User toggled deadline risk maintenance.
+  const factory GlobalSettingsEvent.maintenanceDeadlineRiskChanged(
+    bool enabled,
+  ) = GlobalSettingsMaintenanceDeadlineRiskChanged;
+
+  /// User toggled due soon maintenance.
+  const factory GlobalSettingsEvent.maintenanceDueSoonChanged(bool enabled) =
+      GlobalSettingsMaintenanceDueSoonChanged;
+
+  /// User toggled stale items maintenance.
+  const factory GlobalSettingsEvent.maintenanceStaleChanged(bool enabled) =
+      GlobalSettingsMaintenanceStaleChanged;
+
+  /// User toggled frequent snoozed maintenance.
+  const factory GlobalSettingsEvent.maintenanceFrequentSnoozedChanged(
+    bool enabled,
+  ) = GlobalSettingsMaintenanceFrequentSnoozedChanged;
+
+  /// User completed weekly review.
+  const factory GlobalSettingsEvent.weeklyReviewCompleted(
+    DateTime completedAt,
+  ) = GlobalSettingsWeeklyReviewCompleted;
+
   /// User completed onboarding.
   const factory GlobalSettingsEvent.onboardingCompleted() =
       GlobalSettingsOnboardingCompleted;
@@ -154,6 +214,58 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsMyDayShowAvailableToStartChanged>(
       _onMyDayShowAvailableToStartChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsWeeklyReviewEnabledChanged>(
+      _onWeeklyReviewEnabledChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsWeeklyReviewDayOfWeekChanged>(
+      _onWeeklyReviewDayOfWeekChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsWeeklyReviewTimeMinutesChanged>(
+      _onWeeklyReviewTimeMinutesChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsWeeklyReviewCadenceWeeksChanged>(
+      _onWeeklyReviewCadenceWeeksChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsValuesSummaryEnabledChanged>(
+      _onValuesSummaryEnabledChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsValuesSummaryWindowWeeksChanged>(
+      _onValuesSummaryWindowWeeksChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsValuesSummaryWinsCountChanged>(
+      _onValuesSummaryWinsCountChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMaintenanceEnabledChanged>(
+      _onMaintenanceEnabledChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMaintenanceDeadlineRiskChanged>(
+      _onMaintenanceDeadlineRiskChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMaintenanceDueSoonChanged>(
+      _onMaintenanceDueSoonChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMaintenanceStaleChanged>(
+      _onMaintenanceStaleChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMaintenanceFrequentSnoozedChanged>(
+      _onMaintenanceFrequentSnoozedChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsWeeklyReviewCompleted>(
+      _onWeeklyReviewCompleted,
       transformer: sequential(),
     );
     on<GlobalSettingsOnboardingCompleted>(
@@ -533,6 +645,210 @@ class GlobalSettingsBloc
         context: context,
         message:
             '[GlobalSettingsBloc] my day show available-to-start persist failed',
+      );
+    }
+  }
+
+  Future<void> _onWeeklyReviewEnabledChanged(
+    GlobalSettingsWeeklyReviewEnabledChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(weeklyReviewEnabled: event.enabled);
+    await _persistSettings(
+      updated,
+      intent: 'settings_weekly_review_enabled_changed',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+  }
+
+  Future<void> _onWeeklyReviewDayOfWeekChanged(
+    GlobalSettingsWeeklyReviewDayOfWeekChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final clampedDay = event.dayOfWeek.clamp(1, 7);
+    final updated = state.settings.copyWith(weeklyReviewDayOfWeek: clampedDay);
+    await _persistSettings(
+      updated,
+      intent: 'settings_weekly_review_day_changed',
+      extraFields: <String, Object?>{'dayOfWeek': clampedDay},
+    );
+  }
+
+  Future<void> _onWeeklyReviewTimeMinutesChanged(
+    GlobalSettingsWeeklyReviewTimeMinutesChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final clamped = event.minutes.clamp(0, 1439);
+    final updated = state.settings.copyWith(weeklyReviewTimeMinutes: clamped);
+    await _persistSettings(
+      updated,
+      intent: 'settings_weekly_review_time_changed',
+      extraFields: <String, Object?>{'minutes': clamped},
+    );
+  }
+
+  Future<void> _onWeeklyReviewCadenceWeeksChanged(
+    GlobalSettingsWeeklyReviewCadenceWeeksChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final clamped = event.cadenceWeeks.clamp(1, 12);
+    final updated = state.settings.copyWith(
+      weeklyReviewCadenceWeeks: clamped,
+    );
+    await _persistSettings(
+      updated,
+      intent: 'settings_weekly_review_cadence_changed',
+      extraFields: <String, Object?>{'weeks': clamped},
+    );
+  }
+
+  Future<void> _onValuesSummaryEnabledChanged(
+    GlobalSettingsValuesSummaryEnabledChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      valuesSummaryEnabled: event.enabled,
+    );
+    await _persistSettings(
+      updated,
+      intent: 'settings_values_summary_enabled_changed',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+  }
+
+  Future<void> _onValuesSummaryWindowWeeksChanged(
+    GlobalSettingsValuesSummaryWindowWeeksChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final clamped = event.weeks.clamp(1, 12);
+    final updated = state.settings.copyWith(valuesSummaryWindowWeeks: clamped);
+    await _persistSettings(
+      updated,
+      intent: 'settings_values_summary_window_changed',
+      extraFields: <String, Object?>{'weeks': clamped},
+    );
+  }
+
+  Future<void> _onValuesSummaryWinsCountChanged(
+    GlobalSettingsValuesSummaryWinsCountChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final clamped = event.count.clamp(1, 5);
+    final updated = state.settings.copyWith(valuesSummaryWinsCount: clamped);
+    await _persistSettings(
+      updated,
+      intent: 'settings_values_summary_wins_changed',
+      extraFields: <String, Object?>{'count': clamped},
+    );
+  }
+
+  Future<void> _onMaintenanceEnabledChanged(
+    GlobalSettingsMaintenanceEnabledChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(maintenanceEnabled: event.enabled);
+    await _persistSettings(
+      updated,
+      intent: 'settings_maintenance_enabled_changed',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+  }
+
+  Future<void> _onMaintenanceDeadlineRiskChanged(
+    GlobalSettingsMaintenanceDeadlineRiskChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      maintenanceDeadlineRiskEnabled: event.enabled,
+    );
+    await _persistSettings(
+      updated,
+      intent: 'settings_maintenance_deadline_risk_changed',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+  }
+
+  Future<void> _onMaintenanceDueSoonChanged(
+    GlobalSettingsMaintenanceDueSoonChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      maintenanceDueSoonEnabled: event.enabled,
+    );
+    await _persistSettings(
+      updated,
+      intent: 'settings_maintenance_due_soon_changed',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+  }
+
+  Future<void> _onMaintenanceStaleChanged(
+    GlobalSettingsMaintenanceStaleChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      maintenanceStaleEnabled: event.enabled,
+    );
+    await _persistSettings(
+      updated,
+      intent: 'settings_maintenance_stale_changed',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+  }
+
+  Future<void> _onMaintenanceFrequentSnoozedChanged(
+    GlobalSettingsMaintenanceFrequentSnoozedChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      maintenanceFrequentSnoozedEnabled: event.enabled,
+    );
+    await _persistSettings(
+      updated,
+      intent: 'settings_maintenance_frequent_snoozed_changed',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+  }
+
+  Future<void> _onWeeklyReviewCompleted(
+    GlobalSettingsWeeklyReviewCompleted event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      weeklyReviewLastCompletedAt: event.completedAt.toUtc(),
+    );
+    await _persistSettings(
+      updated,
+      intent: 'settings_weekly_review_completed',
+      extraFields: <String, Object?>{
+        'completedAt': event.completedAt.toUtc().toIso8601String(),
+      },
+    );
+  }
+
+  Future<void> _persistSettings(
+    GlobalSettings updated, {
+    required String intent,
+    required Map<String, Object?> extraFields,
+  }) async {
+    final context = _newContext(
+      intent: intent,
+      operation: 'settings.save.global',
+      extraFields: extraFields,
+    );
+    try {
+      await _settingsRepository.save(
+        SettingsKey.global,
+        updated,
+        context: context,
+      );
+    } catch (e, st) {
+      talker.error('[settings.global] Persist FAILED', e, st);
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[GlobalSettingsBloc] settings persist failed',
       );
     }
   }

@@ -35,6 +35,14 @@
     "valuesProjectHasNoValues": "Este proyecto no tiene valores.",
     "valuesOptionalFooter": "Los valores son opcionales para las tareas.",
     "valuesPrimaryTooltip": "Marcar como principal",
+    "valuesSelectPrimaryTitle": "Selecciona valor principal",
+    "valuesSelectSecondaryTitle": "Selecciona valor secundario",
+    "valuesPrimaryLabel": "Valor principal",
+    "valuesSecondaryLabel": "Valor secundario",
+    "valuesPrimaryShortLabel": "Principal",
+    "valuesSecondaryShortLabel": "Secundario",
+    "valuesSecondaryClearAction": "Quitar secundario",
+    "valuesMaxTwoHelper": "Elige hasta dos valores.",
     "@valuesAlignedToTitle": {
         "description": "TÃ­tulo/etiqueta que indica alineaciÃ³n con valores."
     },
@@ -79,6 +87,34 @@
     },
     "@valuesPrimaryTooltip": {
         "description": "Tooltip para la acciÃ³n de marcar un valor como principal."
+    },
+    "@valuesSelectPrimaryTitle": {
+        "description": "Title for the primary value picker."
+    },
+    "@valuesSelectSecondaryTitle": {
+        "description": "Title for the secondary value picker."
+    },
+    "@valuesPrimaryLabel": {
+        "description": "Label for the primary value slot."
+    },
+    "@valuesSecondaryLabel": {
+        "description": "Label for the secondary value slot."
+    },
+    "@valuesPrimaryShortLabel": {
+        "description": "Short label for the primary value tag."
+    },
+    "@valuesSecondaryShortLabel": {
+        "description": "Short label for the secondary value tag."
+    },
+    "@valuesSecondaryClearAction": {
+        "description": "Action label to clear the secondary value."
+    },
+    "@valuesMaxTwoHelper": {
+        "description": "Helper text indicating the max number of values."
+    },
+    "taskFormValuesRequired": "Selecciona un valor principal.",
+    "@taskFormValuesRequired": {
+        "description": "Validation error shown when a task requires a primary value."
     },
     "projectFormValuesRequired": "Selecciona al menos un valor.",
     "@projectFormValuesRequired": {
@@ -747,6 +783,14 @@
     "taskFormEditTitle": "Editar tarea",
     "@taskFormEditTitle": {
         "description": "Título del formulario de tarea en modo edición"
+    },
+    "projectFormNewTitle": "Nuevo proyecto",
+    "@projectFormNewTitle": {
+        "description": "Título del formulario de proyecto en modo crear"
+    },
+    "projectFormEditTitle": "Editar proyecto",
+    "@projectFormEditTitle": {
+        "description": "Título del formulario de proyecto en modo edición"
     },
     "projectLabel": "Proyecto",
     "@projectLabel": {
