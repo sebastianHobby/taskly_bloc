@@ -8,6 +8,7 @@ import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_ui/taskly_ui_forms.dart';
 
 /// A user-friendly widget for configuring recurring dates using RRULE format.
 ///
@@ -206,18 +207,13 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
 
-    return Container(
-      padding: const EdgeInsets.all(24),
+    return TasklyFormSheet(
+      title: l10n.recurrenceTitle,
+      preset: TasklyFormPreset.standard,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            l10n.recurrenceTitle,
-            style: theme.textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 24),
-
           // Frequency selector
           SegmentedButton<RecurrenceFrequency>(
             segments: const [
@@ -554,19 +550,11 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
           const SizedBox(height: 24),
 
           // Action buttons
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(l10n.cancelLabel),
-              ),
-              const SizedBox(width: 8),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(_currentResult()),
-                child: Text(l10n.doneLabel),
-              ),
-            ],
+          TasklyFormActionRow(
+            cancelLabel: l10n.cancelLabel,
+            confirmLabel: l10n.doneLabel,
+            onCancel: () => Navigator.of(context).pop(),
+            onConfirm: () => Navigator.of(context).pop(_currentResult()),
           ),
         ],
       ),

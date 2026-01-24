@@ -38,15 +38,19 @@ final class MyDayRitualComposer {
     required Set<String> selectedTaskIds,
     required AllocationResult? allocation,
   }) {
-    final planned = _buildPlanned(tasks, dayKeyUtc, dueWindowDays);
-    final plannedIds = planned.map((t) => t.id).toSet();
-
     final curated = _buildCurated(
       tasks: tasks,
       dayPicks: dayPicks,
       allocation: allocation,
-      plannedIds: plannedIds,
       selectedTaskIds: selectedTaskIds,
+    );
+    final curatedIds = curated.map((t) => t.id).toSet();
+
+    final planned = _buildPlanned(
+      tasks,
+      dayKeyUtc,
+      dueWindowDays,
+      excludeIds: {...selectedTaskIds, ...curatedIds},
     );
 
     final details = _buildCuratedReasonDetails(
@@ -67,13 +71,15 @@ final class MyDayRitualComposer {
   List<Task> _buildPlanned(
     List<Task> tasks,
     DateTime dayKeyUtc,
-    int dueWindowDays,
-  ) {
+    int dueWindowDays, {
+    required Set<String> excludeIds,
+  }) {
     final today = dateOnly(dayKeyUtc);
     final dueSoonLimit = today.add(Duration(days: dueWindowDays - 1));
 
     bool isPlanned(Task task) {
       if (_isCompleted(task)) return false;
+      if (excludeIds.contains(task.id)) return false;
       final start = dateOnlyOrNull(task.occurrence?.date ?? task.startDate);
       final deadline = dateOnlyOrNull(
         task.occurrence?.deadline ?? task.deadlineDate,
@@ -90,7 +96,6 @@ final class MyDayRitualComposer {
     required List<Task> tasks,
     required my_day.MyDayDayPicks dayPicks,
     required AllocationResult? allocation,
-    required Set<String> plannedIds,
     required Set<String> selectedTaskIds,
   }) {
     final curated = <Task>[];
@@ -102,7 +107,6 @@ final class MyDayRitualComposer {
     for (final pick in dayPicks.picks) {
       final taskId = pick.taskId;
       if (!selectedTaskIds.contains(taskId)) continue;
-      if (plannedIds.contains(taskId)) continue;
       final task = tasksById[taskId];
       if (task == null) continue;
       if (_isCompleted(task)) continue;
@@ -113,7 +117,6 @@ final class MyDayRitualComposer {
 
     for (final entry in allocation.allocatedTasks) {
       final task = entry.task;
-      if (plannedIds.contains(task.id)) continue;
       if (curated.any((t) => t.id == task.id)) continue;
       if (_isCompleted(task)) continue;
       curated.add(task);

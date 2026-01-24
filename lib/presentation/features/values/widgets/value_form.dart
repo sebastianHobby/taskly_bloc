@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
+import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_color_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 import 'package:taskly_domain/core.dart';
@@ -44,7 +44,7 @@ class ValueForm extends StatefulWidget {
   final VoidCallback? onClose;
 
   static const _defaultColorHex = '#000000';
-  static const maxNameLength = 50;
+  static const int maxNameLength = ValueValidators.maxNameLength;
 
   @override
   State<ValueForm> createState() => _ValueFormState();
@@ -63,7 +63,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
 
     final isCreating = widget.initialData == null;
 
-    final createDraft = widget.initialData == null
+    final ValueDraft? createDraft = widget.initialData == null
         ? (widget.initialDraft ?? ValueDraft.empty())
         : null;
 
@@ -153,21 +153,10 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                     ),
                     contentPadding: denseFieldPadding,
                   ),
-                  validator: FormBuilderValidators.compose([
-                    FormBuilderValidators.required(
-                      errorText: l10n.valueFormNameRequired,
-                    ),
-                    FormBuilderValidators.minLength(
-                      1,
-                      errorText: l10n.valueFormNameEmpty,
-                    ),
-                    FormBuilderValidators.maxLength(
-                      ValueForm.maxNameLength,
-                      errorText: l10n.valueFormNameTooLong(
-                        ValueForm.maxNameLength,
-                      ),
-                    ),
-                  ]),
+                  validator: toFormBuilderValidator<String>(
+                    ValueValidators.name,
+                    context,
+                  ),
                 ),
               ),
               SizedBox(height: sectionGap),
@@ -185,9 +174,13 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                 child: FormBuilderColorPicker(
                   name: ValueFieldKeys.colour.id,
                   title: l10n.valueFormColorLabel,
-                  moreColorsLabel: l10n.valueFormColorMoreColors,
                   compact: true,
-                  validator: FormBuilderValidators.required<Color>(),
+                  validator: toFormBuilderValidator<Color>(
+                    (value) => ValueValidators.color(
+                      value == null ? null : ColorUtils.toHex(value),
+                    ),
+                    context,
+                  ),
                 ),
               ),
             ],
@@ -225,8 +218,8 @@ class _LiveValuePreviewCard extends StatelessWidget {
 
     final onColor =
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-            ? cs.surface
-            : cs.onSurface;
+        ? cs.surface
+        : cs.onSurface;
 
     final cardPadding = isCompact
         ? const EdgeInsets.all(14)

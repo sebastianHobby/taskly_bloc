@@ -1,6 +1,7 @@
 import 'package:taskly_domain/src/core/editing/command_result.dart';
-import 'package:taskly_domain/src/core/editing/validation_error.dart';
 import 'package:taskly_domain/src/core/editing/value/value_commands.dart';
+import 'package:taskly_domain/src/core/editing/validation_error.dart';
+import 'package:taskly_domain/src/core/editing/validators/value_validators.dart';
 import 'package:taskly_domain/src/forms/field_key.dart';
 import 'package:taskly_domain/src/interfaces/value_repository_contract.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
@@ -49,35 +50,24 @@ final class ValueCommandHandler {
   }
 
   ValidationFailure? _validate(String name, String color, String? iconName) {
-    final trimmedName = name.trim();
     final fieldErrors = <FieldKey, List<ValidationError>>{};
 
-    if (trimmedName.isEmpty) {
-      fieldErrors[ValueFieldKeys.name] = const <ValidationError>[
-        ValidationError(code: 'required', messageKey: 'Name is required'),
-      ];
-    } else if (trimmedName.length > 120) {
-      fieldErrors[ValueFieldKeys.name] = const <ValidationError>[
-        ValidationError(
-          code: 'max_length',
-          messageKey: 'Name must be 120 characters or fewer',
-        ),
-      ];
+    fieldErrors[ValueFieldKeys.name] = ValueValidators.name(name);
+
+    final colorErrors = ValueValidators.color(color);
+    if (colorErrors.isNotEmpty) {
+      fieldErrors[ValueFieldKeys.colour] = colorErrors;
     }
 
-    if (color.trim().isEmpty) {
-      fieldErrors[ValueFieldKeys.colour] = const <ValidationError>[
-        ValidationError(code: 'required', messageKey: 'Color is required'),
-      ];
+    final iconErrors = ValueValidators.iconName(iconName);
+    if (iconErrors.isNotEmpty) {
+      fieldErrors[ValueFieldKeys.iconName] = iconErrors;
     }
 
-    if (iconName != null && iconName.trim().isEmpty) {
-      fieldErrors[ValueFieldKeys.iconName] = const <ValidationError>[
-        ValidationError(code: 'required', messageKey: 'Emoji is required'),
-      ];
-    }
-
-    if (fieldErrors.isEmpty) return null;
-    return ValidationFailure(fieldErrors: fieldErrors);
+    final pruned = Map<FieldKey, List<ValidationError>>.fromEntries(
+      fieldErrors.entries.where((entry) => entry.value.isNotEmpty),
+    );
+    if (pruned.isEmpty) return null;
+    return ValidationFailure(fieldErrors: pruned);
   }
 }

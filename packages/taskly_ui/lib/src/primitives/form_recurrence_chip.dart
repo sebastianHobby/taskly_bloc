@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/forms/taskly_form_preset.dart';
+
 /// A chip widget for displaying and editing recurrence rules.
 ///
 /// This is a render-only widget. Any RRULE parsing and localization must be
-/// handled by the app and passed in as [label]/[emptyLabel].
-class FormRecurrenceChip extends StatelessWidget {
-  const FormRecurrenceChip({
+/// handled by the app and passed in as [valueLabel]/[emptyLabel].
+class TasklyFormRecurrenceChip extends StatelessWidget {
+  const TasklyFormRecurrenceChip({
     required this.onTap,
     required this.emptyLabel,
+    required this.preset,
     this.hasValue = false,
-    this.label,
+    this.valueLabel,
+    this.isLoading = false,
     this.onClear,
     super.key,
   });
 
   final bool hasValue;
-  final String? label;
+  final String? valueLabel;
+  final bool isLoading;
 
   /// Label shown when there is no recurrence rule.
   ///
@@ -25,38 +30,53 @@ class FormRecurrenceChip extends StatelessWidget {
 
   final VoidCallback onTap;
   final VoidCallback? onClear;
+  final TasklyFormChipPreset preset;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final resolvedLabel = (hasValue && label != null && label!.isNotEmpty)
-        ? label!
-        : emptyLabel;
+    final resolvedHasValue = hasValue && (valueLabel?.isNotEmpty ?? false);
+    final canClear = resolvedHasValue && onClear != null;
+    final resolvedLabel = resolvedHasValue ? valueLabel! : emptyLabel;
+
+    final labelWidget = isLoading && resolvedHasValue
+        ? const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : Text(resolvedLabel);
 
     return InputChip(
       avatar: Icon(
         Icons.repeat,
-        size: 18,
-        color: hasValue ? colorScheme.primary : colorScheme.onSurfaceVariant,
+        size: preset.iconSize + 2,
+        color: resolvedHasValue
+            ? colorScheme.primary
+            : colorScheme.onSurfaceVariant,
       ),
-      label: Text(resolvedLabel),
-      deleteIcon: hasValue && onClear != null
+      label: labelWidget,
+      deleteIcon: canClear
           ? Icon(
               Icons.close,
-              size: 18,
+              size: preset.iconSize + 2,
               color: colorScheme.onSurfaceVariant,
             )
           : null,
-      onDeleted: hasValue && onClear != null ? onClear : null,
+      onDeleted: canClear ? onClear : null,
       onPressed: onTap,
+      labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(preset.borderRadius),
+      ),
       side: BorderSide(
-        color: hasValue
+        color: resolvedHasValue
             ? colorScheme.primary.withValues(alpha: 0.5)
             : colorScheme.outlineVariant,
       ),
-      backgroundColor: hasValue
+      backgroundColor: resolvedHasValue
           ? colorScheme.primaryContainer.withValues(alpha: 0.3)
           : colorScheme.surface,
     );

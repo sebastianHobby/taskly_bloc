@@ -34,6 +34,17 @@ String validationErrorMessage(BuildContext context, ValidationError error) {
       return l10n.projectFormRepeatRuleTooLong;
     case 'projectFormDeadlineAfterStartError':
       return l10n.projectFormDeadlineAfterStartError;
+    case 'projectFormValuesRequired':
+      return l10n.projectFormValuesRequired;
+
+    // Value
+    case 'valueFormNameRequired':
+      return l10n.valueFormNameRequired;
+    case 'valueFormNameTooLong':
+      final max = error.args['max'] as int? ?? 30;
+      return l10n.valueFormNameTooLong(max);
+    case 'validationRequired':
+      return l10n.validationRequired;
 
     default:
       return error.messageKey;

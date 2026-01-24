@@ -164,20 +164,19 @@ class ProjectRepository implements ProjectRepositoryContract {
       return completedById;
     });
 
-    return Rx.combineLatest2(
-      totalStream,
-      completedStream,
-      (Map<String, int> totalById, Map<String, int> completedById) {
-        final result = <String, _ProjectTaskCounts>{};
-        for (final id in ids) {
-          result[id] = _ProjectTaskCounts(
-            taskCount: totalById[id] ?? 0,
-            completedTaskCount: completedById[id] ?? 0,
-          );
-        }
-        return result;
-      },
-    );
+    return Rx.combineLatest2(totalStream, completedStream, (
+      Map<String, int> totalById,
+      Map<String, int> completedById,
+    ) {
+      final result = <String, _ProjectTaskCounts>{};
+      for (final id in ids) {
+        result[id] = _ProjectTaskCounts(
+          taskCount: totalById[id] ?? 0,
+          completedTaskCount: completedById[id] ?? 0,
+        );
+      }
+      return result;
+    });
   }
 
   Future<ProjectTableData?> _getProjectById(String id) async {
@@ -329,9 +328,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     $ValueTableTable primaryValueTable,
     $ValueTableTable secondaryValueTable,
   })
-  _projectWithRelatedJoin({
-    QueryFilter<ProjectPredicate>? filter,
-  }) {
+  _projectWithRelatedJoin({QueryFilter<ProjectPredicate>? filter}) {
     final query = driftDb.select(driftDb.projectTable)
       ..orderBy([(p) => drift_pkg.OrderingTerm(expression: p.name)]);
 
@@ -463,9 +460,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     return driftDb.delete(driftDb.projectTable).delete(deleteCompanion);
   }
 
-  Future<int> _createProject(
-    ProjectTableCompanion createCompanion,
-  ) {
+  Future<int> _createProject(ProjectTableCompanion createCompanion) {
     return driftDb.into(driftDb.projectTable).insert(createCompanion);
   }
 
@@ -618,6 +613,8 @@ class ProjectRepository implements ProjectRepositoryContract {
         final normalizedStartDate = dateOnlyOrNull(startDate);
         final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
+        final nextPinned = !completed && (isPinned ?? existing.isPinned);
+
         final psMetadata = encodeCrudMetadata(context);
 
         await driftDb.transaction(() async {
@@ -636,9 +633,7 @@ class ProjectRepository implements ProjectRepositoryContract {
                   ? const drift_pkg.Value<bool>.absent()
                   : drift_pkg.Value(repeatFromCompletion),
               priority: drift_pkg.Value(priority),
-              isPinned: isPinned == null
-                  ? drift_pkg.Value(existing.isPinned)
-                  : drift_pkg.Value(isPinned),
+              isPinned: drift_pkg.Value(nextPinned),
               seriesEnded: seriesEnded == null
                   ? const drift_pkg.Value<bool>.absent()
                   : drift_pkg.Value(seriesEnded),
@@ -698,10 +693,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Future<void> delete(
-    String id, {
-    OperationContext? context,
-  }) async {
+  Future<void> delete(String id, {OperationContext? context}) async {
     return FailureGuard.run(
       () async {
         talker.debug('[ProjectRepository] delete: id=$id');
@@ -735,9 +727,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   /// Converts [ProjectCompletionHistoryTableData] to [CompletionHistoryData].
-  CompletionHistoryData _toCompletionData(
-    ProjectCompletionHistoryTableData c,
-  ) {
+  CompletionHistoryData _toCompletionData(ProjectCompletionHistoryTableData c) {
     return CompletionHistoryData(
       id: c.id,
       entityId: c.projectId,

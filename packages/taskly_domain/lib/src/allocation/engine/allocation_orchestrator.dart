@@ -181,39 +181,7 @@ class AllocationOrchestrator {
       );
     }
 
-    // Identify pinned projects.
-    final pinnedProjectIds = projects
-        .where((p) => p.isPinned)
-        .map((p) => p.id)
-        .toSet();
-
-    // Partition tasks into pinned vs regular.
-    // A task is pinned if it is explicitly pinned OR its project is pinned.
-    final pinnedTasks = tasks
-        .where(
-          (t) =>
-              t.isPinned ||
-              (t.projectId != null && pinnedProjectIds.contains(t.projectId)),
-        )
-        .toList();
-
-    final regularTasks = tasks
-        .where(
-          (t) =>
-              !t.isPinned &&
-              (t.projectId == null || !pinnedProjectIds.contains(t.projectId)),
-        )
-        .toList();
-
-    final pinnedAllocatedTasks = pinnedTasks
-        .map(
-          (t) => AllocatedTask(
-            task: t,
-            qualifyingValueId: 'pinned',
-            allocationScore: 0,
-          ),
-        )
-        .toList();
+    final regularTasks = tasks.where((t) => !t.isPinned).toList();
 
     final allocatedRegularTasks = await allocateRegularTasks(
       regularTasks,
@@ -222,11 +190,6 @@ class AllocationOrchestrator {
       todayDayKeyUtc: todayDayKeyUtc,
       maxTasksOverride: maxTasksOverride,
     );
-
-    final allAllocatedTasks = [
-      ...pinnedAllocatedTasks,
-      ...allocatedRegularTasks.allocatedTasks,
-    ];
 
     // Best-effort logging: urgent valueless tasks are a key signal for UX.
     final urgencyDetector = UrgencyDetector.fromConfig(allocationConfig);
@@ -242,7 +205,7 @@ class AllocationOrchestrator {
     }
 
     return AllocationResult(
-      allocatedTasks: allAllocatedTasks,
+      allocatedTasks: allocatedRegularTasks.allocatedTasks,
       reasoning: allocatedRegularTasks.reasoning,
       excludedTasks: allocatedRegularTasks.excludedTasks,
       activeFocusMode: allocationConfig.focusMode,

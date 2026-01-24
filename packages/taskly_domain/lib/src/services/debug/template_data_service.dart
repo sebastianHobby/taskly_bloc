@@ -218,7 +218,7 @@ class TemplateDataService {
     const seeds = <_TemplateValueSeed>[
       _TemplateValueSeed(
         name: 'Life Admin',
-        color: '#455A64',
+        color: '#64748B',
         priority: ValuePriority.high,
         iconName: 'checklist',
       ),
@@ -230,13 +230,13 @@ class TemplateDataService {
       ),
       _TemplateValueSeed(
         name: 'Relationships',
-        color: '#E91E63',
+        color: '#E11D48',
         priority: ValuePriority.medium,
         iconName: 'group',
       ),
       _TemplateValueSeed(
         name: 'Health & Energy',
-        color: '#43A047',
+        color: '#10B981',
         priority: ValuePriority.high,
         iconName: 'health',
       ),

@@ -806,6 +806,86 @@
     "@myDayWhatsWaitingSectionTitle": {
         "description": "Section title for scheduled/review tasks in the My Day ritual (B1)."
     },
+    "myDayTimeSensitiveOutsideValuesSubtitle": "Time-sensitive outside today's value suggestions",
+    "@myDayTimeSensitiveOutsideValuesSubtitle": {
+        "description": "Subtitle clarifying the Time sensitive section excludes value suggestions."
+    },
+    "myDayAnytimeLabel": "Anytime",
+    "@myDayAnytimeLabel": {
+        "description": "Label for the Anytime subsection within Values aligned."
+    },
+    "myDayValuesDueEmptyTitle": "No value-aligned due-soon tasks",
+    "@myDayValuesDueEmptyTitle": {
+        "description": "Empty state title for the Values aligned due-soon subsection."
+    },
+    "myDayValuesDueEmptyBody": "Nothing value-aligned is due soon.",
+    "@myDayValuesDueEmptyBody": {
+        "description": "Empty state body for the Values aligned due-soon subsection."
+    },
+    "myDayValuesPlannedEmptyTitle": "No value-aligned planned tasks",
+    "@myDayValuesPlannedEmptyTitle": {
+        "description": "Empty state title for the Values aligned planned subsection."
+    },
+    "myDayValuesPlannedEmptyBody": "No value picks are ready to start today.",
+    "@myDayValuesPlannedEmptyBody": {
+        "description": "Empty state body for the Values aligned planned subsection."
+    },
+    "myDayValuesAnytimeEmptyTitle": "No value-aligned anytime tasks",
+    "@myDayValuesAnytimeEmptyTitle": {
+        "description": "Empty state title for the Values aligned anytime subsection."
+    },
+    "myDayValuesAnytimeEmptyBody": "Nothing suggested outside due or planned.",
+    "@myDayValuesAnytimeEmptyBody": {
+        "description": "Empty state body for the Values aligned anytime subsection."
+    },
+    "myDayExecuteValuesEmptyTitle": "Values aligned is empty",
+    "@myDayExecuteValuesEmptyTitle": {
+        "description": "Empty state title for Values aligned in My Day (execute mode)."
+    },
+    "myDayExecuteValuesEmptyBody": "Nothing selected yet. Open Plan to add today's picks.",
+    "@myDayExecuteValuesEmptyBody": {
+        "description": "Empty state body for Values aligned in My Day (execute mode)."
+    },
+    "myDayPlanValuesEmptyTitle": "Values are quiet today",
+    "@myDayPlanValuesEmptyTitle": {
+        "description": "Empty state title for Values aligned in Plan My Day."
+    },
+    "myDayPlanValuesEmptyBody": "No tasks match your values right now.",
+    "@myDayPlanValuesEmptyBody": {
+        "description": "Empty state body for Values aligned in Plan My Day."
+    },
+    "myDayExecuteDueEmptyTitle": "No due-soon picks in My Day",
+    "@myDayExecuteDueEmptyTitle": {
+        "description": "Empty state title for Due soon in My Day (execute mode)."
+    },
+    "myDayExecuteDueEmptyBody": "You have due items available. Add them in Plan.",
+    "@myDayExecuteDueEmptyBody": {
+        "description": "Empty state body for Due soon in My Day (execute mode)."
+    },
+    "myDayPlanDueEmptyTitle": "All caught up on due soon",
+    "@myDayPlanDueEmptyTitle": {
+        "description": "Empty state title for Due soon in Plan My Day."
+    },
+    "myDayPlanDueEmptyBody": "Nothing urgent in the next few days.",
+    "@myDayPlanDueEmptyBody": {
+        "description": "Empty state body for Due soon in Plan My Day."
+    },
+    "myDayExecutePlannedEmptyTitle": "No planned picks in My Day",
+    "@myDayExecutePlannedEmptyTitle": {
+        "description": "Empty state title for Planned in My Day (execute mode)."
+    },
+    "myDayExecutePlannedEmptyBody": "You have planned tasks available. Add them in Plan.",
+    "@myDayExecutePlannedEmptyBody": {
+        "description": "Empty state body for Planned in My Day (execute mode)."
+    },
+    "myDayPlanPlannedEmptyTitle": "No planned starts today",
+    "@myDayPlanPlannedEmptyTitle": {
+        "description": "Empty state title for Planned in Plan My Day."
+    },
+    "myDayPlanPlannedEmptyBody": "Schedule tasks to surface them here.",
+    "@myDayPlanPlannedEmptyBody": {
+        "description": "Empty state body for Planned in Plan My Day."
+    },
     "myDayHeadsUpBannerTitle": "A quick heads-up",
     "@myDayHeadsUpBannerTitle": {
         "description": "Title for the My Day ritual heads-up banner (Banner 1)."
@@ -1309,6 +1389,10 @@
     "pinnedTasksSection": "Pinned Tasks",
     "@pinnedTasksSection": {
         "description": "Section title for pinned tasks"
+    },
+    "myDayPinnedSectionSubtitle": "Pinned by you. Stays here until unpinned or completed. Tap the pin to toggle.",
+    "@myDayPinnedSectionSubtitle": {
+        "description": "Subtitle for the pinned tasks section in My Day and Plan My Day."
     },
     "unpinTask": "Unpin task",
     "@unpinTask": {
@@ -2058,6 +2142,10 @@
     "myDayCompletedSectionTitle": "Completed",
     "@myDayCompletedSectionTitle": {
         "description": "Section header title for completed picks in the My Day ritual."
+    },
+    "myDayCompletedSectionEmptyBody": "Completed picks will appear here.",
+    "@myDayCompletedSectionEmptyBody": {
+        "description": "Empty state body for the completed picks section."
     },
     "myDayShowCompletedLabel": "Show completed",
     "@myDayShowCompletedLabel": {

@@ -92,3 +92,10 @@ To keep shared UI consistent across screens:
 
 All task/project/value tile presets must be represented in the shared catalog
 widget (`TasklyTileCatalog`) so the complete surface is visible in one place.
+
+### 5.4 Form primitives (recommended)
+
+Form UI primitives and presets live in `taskly_ui_forms.dart` so form visuals
+stay consistent across features. Form state, validation, and domain-specific
+labeling remain in the app; `taskly_ui` widgets are render-only and take
+data-in/events-out inputs.

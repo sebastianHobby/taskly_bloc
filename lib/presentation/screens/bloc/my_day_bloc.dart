@@ -27,23 +27,19 @@ final class MyDayLoaded extends MyDayState {
     required this.summary,
     required this.mix,
     required this.tasks,
+    required this.pinnedTasks,
     required this.acceptedDue,
     required this.acceptedStarts,
     required this.acceptedFocus,
-    required this.dueAcceptedTotalCount,
-    required this.startsAcceptedTotalCount,
-    required this.focusAcceptedTotalCount,
+    required this.completedPicks,
     required this.selectedTotalCount,
-    required this.missingDueCount,
-    required this.missingStartsCount,
-    required this.missingDueTasks,
-    required this.missingStartsTasks,
     required this.todaySelectedTaskIds,
   });
 
   final MyDaySummary summary;
   final MyDayMixVm mix;
   final List<Task> tasks;
+  final List<Task> pinnedTasks;
 
   /// Tasks accepted from the ritual "Overdue & due" section.
   final List<Task> acceptedDue;
@@ -54,20 +50,10 @@ final class MyDayLoaded extends MyDayState {
   /// Tasks accepted from the ritual "Suggestions" section.
   final List<Task> acceptedFocus;
 
-  /// Total counts as persisted by the ritual (includes already-completed
-  /// accepted tasks).
-  final int dueAcceptedTotalCount;
-  final int startsAcceptedTotalCount;
-  final int focusAcceptedTotalCount;
+  /// Tasks selected for today that are already completed.
+  final List<Task> completedPicks;
+
   final int selectedTotalCount;
-
-  /// Count of bucket candidates that were not selected during the ritual.
-  final int missingDueCount;
-  final int missingStartsCount;
-
-  /// Tasks (from frozen ritual candidates) that were not selected.
-  final List<Task> missingDueTasks;
-  final List<Task> missingStartsTasks;
 
   /// Full set of task ids selected for today (from ritual persistence).
   final Set<String> todaySelectedTaskIds;
@@ -106,17 +92,12 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         summary: vm.summary,
         mix: vm.mix,
         tasks: vm.tasks,
+        pinnedTasks: vm.pinnedTasks,
         acceptedDue: vm.acceptedDue,
         acceptedStarts: vm.acceptedStarts,
         acceptedFocus: vm.acceptedFocus,
-        dueAcceptedTotalCount: vm.dueAcceptedTotalCount,
-        startsAcceptedTotalCount: vm.startsAcceptedTotalCount,
-        focusAcceptedTotalCount: vm.focusAcceptedTotalCount,
+        completedPicks: vm.completedPicks,
         selectedTotalCount: vm.selectedTotalCount,
-        missingDueCount: vm.missingDueCount,
-        missingStartsCount: vm.missingStartsCount,
-        missingDueTasks: vm.missingDueTasks,
-        missingStartsTasks: vm.missingStartsTasks,
         todaySelectedTaskIds: vm.todaySelectedTaskIds,
       ),
     );

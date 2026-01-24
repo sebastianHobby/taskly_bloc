@@ -36,7 +36,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-standard',
-        title: 'Task · Standard',
+        title: 'Task Â· Standard',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-standard-1',
@@ -73,8 +73,28 @@ class TasklyTileCatalog extends StatelessWidget {
         actions: _taskActions,
       ),
       TasklyRowSpec.header(
+        key: 'catalog-tasks-pinned',
+        title: 'Task · Pinned toggle',
+      ),
+      TasklyRowSpec.task(
+        key: 'catalog-task-pinned-toggle',
+        data: _taskData(
+          id: 't-pinned-1',
+          title: 'Review daily highlights',
+          meta: TasklyEntityMetaData(primaryValue: valueHealth),
+          supportingText: 'Pinned by you',
+          labels: const TasklyTaskRowLabels(
+            pinLabel: 'Pin',
+            pinnedLabel: 'Pinned',
+          ),
+        ),
+        preset: const TasklyTaskRowPreset.pinnedToggle(),
+        markers: const TasklyTaskRowMarkers(pinned: true),
+        actions: _taskActionsWithPin,
+      ),
+      TasklyRowSpec.header(
         key: 'catalog-tasks-bulk',
-        title: 'Task · Bulk selection',
+        title: 'Task Â· Bulk selection',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-bulk-selected',
@@ -98,7 +118,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-picker',
-        title: 'Task · Picker',
+        title: 'Task Â· Picker',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-picker-selected',
@@ -134,7 +154,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-picker-action',
-        title: 'Task Â· Picker action',
+        title: 'Task Ã‚Â· Picker action',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-picker-action-selected',
@@ -175,7 +195,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-projects-standard',
-        title: 'Project · Standard',
+        title: 'Project Â· Standard',
       ),
       TasklyRowSpec.project(
         key: 'catalog-project-standard-1',
@@ -233,7 +253,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-projects-bulk',
-        title: 'Project · Bulk selection',
+        title: 'Project Â· Bulk selection',
       ),
       TasklyRowSpec.project(
         key: 'catalog-project-bulk-selected',
@@ -257,7 +277,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-projects-group',
-        title: 'Project · Group header',
+        title: 'Project Â· Group header',
       ),
       TasklyRowSpec.project(
         key: 'catalog-project-group-expanded',
@@ -294,7 +314,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-values-standard',
-        title: 'Value · Standard',
+        title: 'Value Â· Standard',
       ),
       TasklyRowSpec.value(
         key: 'catalog-value-standard',
@@ -309,7 +329,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-values-bulk',
-        title: 'Value · Bulk selection',
+        title: 'Value Â· Bulk selection',
       ),
       TasklyRowSpec.value(
         key: 'catalog-value-bulk-selected',
@@ -398,6 +418,12 @@ final TasklyTaskRowActions _taskActions = TasklyTaskRowActions(
   onLongPress: _noop,
 );
 
+final TasklyTaskRowActions _taskActionsWithPin = TasklyTaskRowActions(
+  onTap: _noop,
+  onToggleCompletion: (_) {},
+  onTogglePinned: (_) {},
+  onLongPress: _noop,
+);
 final TasklyTaskRowActions _taskActionsWithSnooze = TasklyTaskRowActions(
   onTap: _noop,
   onToggleCompletion: (_) {},

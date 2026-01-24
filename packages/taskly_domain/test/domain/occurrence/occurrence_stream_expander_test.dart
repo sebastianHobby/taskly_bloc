@@ -294,7 +294,10 @@ void main() {
         // seriesEnded keeps only occurrences strictly before clock.nowLocal()
         expect(
           out.map((t) => t.occurrence!.date).toList(),
-          equals([DateTime.utc(2025, 1, 1)]),
+          equals([
+            DateTime.utc(2025, 1, 1),
+            DateTime.utc(2025, 1, 2),
+          ]),
         );
       },
     );

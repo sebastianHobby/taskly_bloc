@@ -57,7 +57,7 @@ _Args _parseArgs(List<String> args) {
 void main(List<String> args) {
   final parsed = _parseArgs(args);
 
-  final files = <_FileCoverage>{};
+  final files = <String, _FileCoverage>{};
   final missingInputs = <String>[];
 
   for (final input in parsed.inputs) {
@@ -70,19 +70,21 @@ void main(List<String> args) {
     String? currentFile;
     for (final line in file.readAsLinesSync()) {
       if (line.startsWith('SF:')) {
-        currentFile = line.substring(3);
-        files.putIfAbsent(currentFile, () => _FileCoverage(currentFile));
+        final filePath = line.substring(3);
+        currentFile = filePath;
+        files.putIfAbsent(filePath, () => _FileCoverage(filePath));
         continue;
       }
 
       if (line.startsWith('DA:')) {
         final payload = line.substring(3);
         final parts = payload.split(',');
-        if (parts.length >= 2 && currentFile != null) {
+        final filePath = currentFile;
+        if (parts.length >= 2 && filePath != null) {
           final lineNo = int.tryParse(parts[0]);
           final count = int.tryParse(parts[1]);
           if (lineNo != null && count != null) {
-            files[currentFile]!.addHit(lineNo, count);
+            files[filePath]!.addHit(lineNo, count);
           }
         }
         continue;

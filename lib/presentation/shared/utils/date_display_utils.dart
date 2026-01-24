@@ -57,4 +57,24 @@ class DateDisplayUtils {
     final localizations = MaterialLocalizations.of(context);
     return localizations.formatShortDate(date);
   }
+
+  /// Formats a date as "Dec 23, 2025".
+  static String formatMonthDayYear(DateTime date) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final month = months[date.month - 1];
+    return '$month ${date.day}, ${date.year}';
+  }
 }
