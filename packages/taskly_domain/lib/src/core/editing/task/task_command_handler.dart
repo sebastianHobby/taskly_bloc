@@ -69,6 +69,7 @@ final class TaskCommandHandler {
     final startDate = (command as dynamic).startDate as DateTime?;
     final deadlineDate = (command as dynamic).deadlineDate as DateTime?;
     final repeat = (command as dynamic).repeatIcalRrule as String?;
+    final valueIds = (command as dynamic).valueIds as List<String>?;
 
     final fieldErrors = <FieldKey, List<ValidationError>>{};
     fieldErrors[TaskFieldKeys.name] = TaskValidators.name(name);
@@ -79,6 +80,10 @@ final class TaskCommandHandler {
     final repeatErrors = TaskValidators.repeatRule(repeat);
     if (repeatErrors.isNotEmpty) {
       fieldErrors[TaskFieldKeys.repeatIcalRrule] = repeatErrors;
+    }
+    final valueErrors = TaskValidators.valueIds(valueIds);
+    if (valueErrors.isNotEmpty) {
+      fieldErrors[TaskFieldKeys.valueIds] = valueErrors;
     }
     fieldErrors.addAll(TaskValidators.dateOrder(startDate, deadlineDate));
 

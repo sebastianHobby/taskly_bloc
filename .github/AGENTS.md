@@ -75,8 +75,7 @@ When asked to design UI/UX:
   problems.
 - If `dart analyze` fails to start due to sandbox restrictions (e.g. “windows
   sandbox: spawn setup refresh”), rerun it with escalated permissions.
-- When implementing changes, do not run tests unless the user explicitly asks
-  or it is required to unblock progress.
+- When implementing changes, always keep tests up to date adding new tests as needed and running relevant tests after any significant change.
 
 ### Code generation
 

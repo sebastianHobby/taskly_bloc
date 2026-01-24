@@ -113,6 +113,7 @@ class _ProjectDetailBody extends StatelessWidget {
     final settings = context.select(
       (GlobalSettingsBloc bloc) => bloc.state.settings,
     );
+    final isInbox = project.id == ProjectGroupingRef.inbox().stableKey;
     final dueSoonCount = _countDueSoon(
       tasks,
       todayDayKeyUtc,
@@ -137,7 +138,9 @@ class _ProjectDetailBody extends StatelessWidget {
     final headerRow = TasklyRowSpec.project(
       key: 'project-detail-header',
       data: headerData,
-      preset: const TasklyProjectRowPreset.standard(),
+      preset: isInbox
+          ? const TasklyProjectRowPreset.inbox()
+          : const TasklyProjectRowPreset.standard(),
       actions: const TasklyProjectRowActions(),
     );
 

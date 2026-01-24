@@ -36,7 +36,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'someday',
       'journal',
       'values',
-      'review_inbox',
       'settings',
     ];
 
@@ -46,7 +45,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'someday': 'Anytime',
       'journal': 'Journal',
       'values': 'Values',
-      'review_inbox': 'Attention',
       'settings': 'Settings',
     };
 
@@ -56,7 +54,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'someday': 2,
       'journal': 3,
       'values': 5,
-      'review_inbox': 9,
       'settings': 100,
     };
 

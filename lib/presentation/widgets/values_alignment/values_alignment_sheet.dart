@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
+import 'package:taskly_domain/core.dart';
 
-enum ValuesAlignmentMode {
-  inherit,
-  override,
+enum ValuesAlignmentTarget {
+  primary,
+  secondary,
 }
 
 Future<List<String>?> showValuesAlignmentSheetForTask(
   BuildContext context, {
   required List<Value> availableValues,
   required List<String> explicitValueIds,
-  required Project? selectedProject,
+  required ValuesAlignmentTarget target,
 }) {
   return showModalBottomSheet<List<String>>(
     context: context,
@@ -21,7 +23,7 @@ Future<List<String>?> showValuesAlignmentSheetForTask(
     builder: (context) => ValuesAlignmentSheet.task(
       availableValues: availableValues,
       explicitValueIds: explicitValueIds,
-      selectedProject: selectedProject,
+      target: target,
     ),
   );
 }
@@ -30,6 +32,7 @@ Future<List<String>?> showValuesAlignmentSheetForProject(
   BuildContext context, {
   required List<Value> availableValues,
   required List<String> valueIds,
+  required ValuesAlignmentTarget target,
 }) {
   return showModalBottomSheet<List<String>>(
     context: context,
@@ -39,6 +42,7 @@ Future<List<String>?> showValuesAlignmentSheetForProject(
     builder: (context) => ValuesAlignmentSheet.project(
       availableValues: availableValues,
       valueIds: valueIds,
+      target: target,
     ),
   );
 }
@@ -47,9 +51,8 @@ class ValuesAlignmentSheet extends StatefulWidget {
   const ValuesAlignmentSheet._({
     required this.availableValues,
     required this.requireSelection,
-    required this.allowInherit,
-    required this.selectedProject,
-    required this.initialExplicitValueIds,
+    required this.initialValueIds,
+    required this.target,
     required this.title,
     super.key,
   });
@@ -57,15 +60,14 @@ class ValuesAlignmentSheet extends StatefulWidget {
   factory ValuesAlignmentSheet.task({
     required List<Value> availableValues,
     required List<String> explicitValueIds,
-    required Project? selectedProject,
+    required ValuesAlignmentTarget target,
   }) {
     return ValuesAlignmentSheet._(
       key: const ValueKey('values_alignment_sheet_task'),
       availableValues: availableValues,
-      requireSelection: false,
-      allowInherit: selectedProject != null,
-      selectedProject: selectedProject,
-      initialExplicitValueIds: explicitValueIds,
+      requireSelection: true,
+      initialValueIds: explicitValueIds,
+      target: target,
       title: null,
     );
   }
@@ -73,23 +75,22 @@ class ValuesAlignmentSheet extends StatefulWidget {
   factory ValuesAlignmentSheet.project({
     required List<Value> availableValues,
     required List<String> valueIds,
+    required ValuesAlignmentTarget target,
   }) {
     return ValuesAlignmentSheet._(
       key: const ValueKey('values_alignment_sheet_project'),
       availableValues: availableValues,
       requireSelection: true,
-      allowInherit: false,
-      selectedProject: null,
-      initialExplicitValueIds: valueIds,
+      initialValueIds: valueIds,
+      target: target,
       title: null,
     );
   }
 
   final List<Value> availableValues;
   final bool requireSelection;
-  final bool allowInherit;
-  final Project? selectedProject;
-  final List<String> initialExplicitValueIds;
+  final List<String> initialValueIds;
+  final ValuesAlignmentTarget target;
 
   /// Optional title override.
   final String? title;
@@ -99,59 +100,62 @@ class ValuesAlignmentSheet extends StatefulWidget {
 }
 
 class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
-  late ValuesAlignmentMode _mode;
-  late List<String> _explicitValueIds;
+  late List<String> _selectedValueIds;
 
   @override
   void initState() {
     super.initState();
-    _explicitValueIds = List<String>.of(widget.initialExplicitValueIds);
-
-    if (widget.allowInherit && _explicitValueIds.isEmpty) {
-      _mode = ValuesAlignmentMode.inherit;
-    } else {
-      _mode = ValuesAlignmentMode.override;
+    _selectedValueIds = List<String>.of(widget.initialValueIds);
+    if (_selectedValueIds.length > 2) {
+      _selectedValueIds = _selectedValueIds.take(2).toList(growable: false);
     }
   }
 
-  void _toggleSelected(String valueId, bool selected) {
-    setState(() {
-      if (selected) {
-        if (_explicitValueIds.contains(valueId)) return;
-        _explicitValueIds.add(valueId);
-      } else {
-        _explicitValueIds.remove(valueId);
-      }
+  String? get _primaryId =>
+      _selectedValueIds.isNotEmpty ? _selectedValueIds.first : null;
 
-      // Ensure a stable primary ordering: first item is primary.
-      // If primary was removed, the new first becomes primary.
-    });
-  }
+  String? get _secondaryId =>
+      _selectedValueIds.length > 1 ? _selectedValueIds[1] : null;
 
   void _setPrimary(String valueId) {
     setState(() {
-      if (!_explicitValueIds.contains(valueId)) {
-        _explicitValueIds.insert(0, valueId);
-      } else {
-        _explicitValueIds.remove(valueId);
-        _explicitValueIds.insert(0, valueId);
+      final primary = _primaryId;
+      final secondary = _secondaryId;
+      if (primary == valueId) return;
+      if (secondary == valueId) {
+        _selectedValueIds = <String>[valueId];
+        if (primary != null) {
+          _selectedValueIds.add(primary);
+        }
+        return;
+      }
+      _selectedValueIds = <String>[valueId];
+      if (secondary != null) {
+        _selectedValueIds.add(secondary);
       }
     });
   }
 
-  void _setMode(ValuesAlignmentMode mode) {
-    if (!widget.allowInherit) return;
-
+  void _setSecondary(String valueId) {
     setState(() {
-      if (_mode == mode) return;
-      _mode = mode;
-
-      if (_mode == ValuesAlignmentMode.inherit) {
-        _explicitValueIds = <String>[];
-      } else {
-        // Switching to override should start blank (do not prefill project).
-        _explicitValueIds = <String>[];
+      final primary = _primaryId;
+      if (primary == null) {
+        _selectedValueIds = <String>[valueId];
+        return;
       }
+      if (primary == valueId) return;
+      if (_secondaryId == valueId) {
+        _selectedValueIds = <String>[primary];
+        return;
+      }
+      _selectedValueIds = <String>[primary, valueId];
+    });
+  }
+
+  void _clearSecondary() {
+    setState(() {
+      final primary = _primaryId;
+      _selectedValueIds = primary == null ? <String>[] : <String>[primary];
     });
   }
 
@@ -160,16 +164,15 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
 
-    final isTask = widget.allowInherit;
-    final title = widget.title ?? l10n.valuesTitle;
+    final title =
+        widget.title ??
+        (widget.target == ValuesAlignmentTarget.primary
+            ? l10n.valuesSelectPrimaryTitle
+            : l10n.valuesSelectSecondaryTitle);
 
-    final inheritedValues = widget.selectedProject?.values ?? const <Value>[];
-    final showInherited = isTask && _mode == ValuesAlignmentMode.inherit;
-    final canSave =
-        !widget.requireSelection ||
-        (showInherited
-            ? inheritedValues.isNotEmpty
-            : _explicitValueIds.isNotEmpty);
+    final canSave = !widget.requireSelection || _selectedValueIds.isNotEmpty;
+
+    final hasSecondary = _secondaryId != null;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -184,89 +187,37 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
         children: [
           Text(title, style: theme.textTheme.titleLarge),
           const SizedBox(height: 8),
-
-          if (isTask && widget.allowInherit) ...[
-            SegmentedButton<ValuesAlignmentMode>(
-              segments: <ButtonSegment<ValuesAlignmentMode>>[
-                ButtonSegment(
-                  value: ValuesAlignmentMode.inherit,
-                  label: Text(l10n.valuesInheritLabel),
-                ),
-                ButtonSegment(
-                  value: ValuesAlignmentMode.override,
-                  label: Text(l10n.valuesOverrideLabel),
-                ),
-              ],
-              selected: <ValuesAlignmentMode>{_mode},
-              onSelectionChanged: (selection) {
-                final next = selection.first;
-                _setMode(next);
-              },
+          Text(l10n.valuesMaxTwoHelper, style: theme.textTheme.bodySmall),
+          if (widget.target == ValuesAlignmentTarget.secondary && hasSecondary)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: _clearSecondary,
+                child: Text(l10n.valuesSecondaryClearAction),
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              _mode == ValuesAlignmentMode.inherit
-                  ? l10n.valuesInheritHelp
-                  : l10n.valuesOverrideHelp,
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 12),
-          ] else ...[
-            Text(l10n.valuesProjectHelp, style: theme.textTheme.bodySmall),
-            const SizedBox(height: 12),
-          ],
+          const SizedBox(height: 8),
 
           Flexible(
             child: ListView(
               shrinkWrap: true,
               children: [
-                if (showInherited) ...[
-                  if (widget.selectedProject == null)
-                    ListTile(
-                      title: Text(l10n.valuesNoProjectSelected),
-                      leading: const Icon(Icons.info_outline),
-                    )
-                  else ...[
-                    ListTile(
-                      title: Text(widget.selectedProject!.name),
-                      subtitle: Text(l10n.valuesInheritedFromProject),
-                      leading: const Icon(Icons.folder_outlined),
-                    ),
-                    for (final v in inheritedValues)
-                      ListTile(
-                        title: Text(v.name),
-                        leading: Icon(
-                          v.id == widget.selectedProject!.primaryValueId
-                              ? Icons.star
-                              : Icons.label_outline,
-                        ),
-                      ),
-                    if (inheritedValues.isEmpty)
-                      ListTile(
-                        title: Text(l10n.valuesProjectHasNoValues),
-                        leading: const Icon(Icons.info_outline),
-                      ),
-                  ],
-                ] else ...[
+                if (widget.availableValues.isEmpty)
+                  ListTile(
+                    title: Text(l10n.noValuesFound),
+                    leading: const Icon(Icons.info_outline),
+                  )
+                else
                   for (final v in widget.availableValues)
                     _SelectableValueTile(
                       value: v,
-                      selected: _explicitValueIds.contains(v.id),
-                      isPrimary:
-                          _explicitValueIds.isNotEmpty &&
-                          _explicitValueIds.first == v.id,
-                      onChanged: (selected) => _toggleSelected(v.id, selected),
-                      onMakePrimary: () => _setPrimary(v.id),
+                      target: widget.target,
+                      selectedPrimaryId: _primaryId,
+                      selectedSecondaryId: _secondaryId,
+                      onSelectPrimary: _setPrimary,
+                      onSelectSecondary: _setSecondary,
+                      onClearSecondary: _clearSecondary,
                     ),
-                  if (!widget.requireSelection)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        l10n.valuesOptionalFooter,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                ],
               ],
             ),
           ),
@@ -283,10 +234,7 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
               FilledButton(
                 onPressed: canSave
                     ? () {
-                        final result = showInherited
-                            ? <String>[]
-                            : _explicitValueIds;
-                        Navigator.of(context).pop(result);
+                        Navigator.of(context).pop(_selectedValueIds);
                       }
                     : null,
                 child: Text(l10n.doneLabel),
@@ -302,36 +250,156 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
 class _SelectableValueTile extends StatelessWidget {
   const _SelectableValueTile({
     required this.value,
-    required this.selected,
-    required this.isPrimary,
-    required this.onChanged,
-    required this.onMakePrimary,
+    required this.target,
+    required this.selectedPrimaryId,
+    required this.selectedSecondaryId,
+    required this.onSelectPrimary,
+    required this.onSelectSecondary,
+    required this.onClearSecondary,
   });
 
   final Value value;
-  final bool selected;
-  final bool isPrimary;
-  final ValueChanged<bool> onChanged;
-  final VoidCallback onMakePrimary;
+  final ValuesAlignmentTarget target;
+  final String? selectedPrimaryId;
+  final String? selectedSecondaryId;
+  final ValueChanged<String> onSelectPrimary;
+  final ValueChanged<String> onSelectSecondary;
+  final VoidCallback onClearSecondary;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    final isPrimary = value.id == selectedPrimaryId;
+    final isSecondary = value.id == selectedSecondaryId;
+    final isDisabled = target == ValuesAlignmentTarget.secondary && isPrimary;
+    final iconData = getIconDataFromName(value.iconName) ?? Icons.star;
+    final color = ColorUtils.fromHexWithThemeFallback(context, value.color);
+    final selectionLabel = isPrimary
+        ? l10n.valuesPrimaryShortLabel
+        : isSecondary
+        ? l10n.valuesSecondaryShortLabel
+        : null;
+
+    VoidCallback? onTap;
+    if (!isDisabled) {
+      onTap = () {
+        if (target == ValuesAlignmentTarget.secondary && isSecondary) {
+          onClearSecondary();
+          return;
+        }
+        if (target == ValuesAlignmentTarget.primary) {
+          onSelectPrimary(value.id);
+        } else {
+          onSelectSecondary(value.id);
+        }
+      };
+    }
 
     return ListTile(
-      onTap: () => onChanged(!selected),
-      leading: Checkbox(
-        value: selected,
-        onChanged: (v) => onChanged(v ?? false),
+      onTap: onTap,
+      enabled: !isDisabled,
+      selected: isPrimary || isSecondary,
+      selectedTileColor: color.withValues(alpha: 0.12),
+      leading: _ValueIconBadge(
+        icon: iconData,
+        color: color,
+        disabled: isDisabled,
       ),
       title: Text(value.name),
-      trailing: selected
-          ? IconButton(
-              icon: Icon(isPrimary ? Icons.star : Icons.star_border),
-              tooltip: l10n.valuesPrimaryTooltip,
-              onPressed: onMakePrimary,
+      trailing: selectionLabel == null
+          ? null
+          : _ValueSelectionTag(
+              label: selectionLabel,
+              color: color,
+              disabled: isDisabled,
+            ),
+      subtitle: isDisabled
+          ? Text(
+              l10n.valuesPrimaryShortLabel,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             )
           : null,
+    );
+  }
+}
+
+class _ValueIconBadge extends StatelessWidget {
+  const _ValueIconBadge({
+    required this.icon,
+    required this.color,
+    required this.disabled,
+  });
+
+  final IconData icon;
+  final Color color;
+  final bool disabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final foreground = disabled ? scheme.onSurfaceVariant : color;
+    final background = disabled
+        ? scheme.surfaceContainerLow
+        : color.withValues(alpha: 0.16);
+
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: background,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: foreground.withValues(alpha: 0.5),
+          width: 1.2,
+        ),
+      ),
+      child: Icon(
+        icon,
+        color: foreground,
+        size: 18,
+      ),
+    );
+  }
+}
+
+class _ValueSelectionTag extends StatelessWidget {
+  const _ValueSelectionTag({
+    required this.label,
+    required this.color,
+    required this.disabled,
+  });
+
+  final String label;
+  final Color color;
+  final bool disabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fg = disabled ? scheme.onSurfaceVariant : color;
+    final bg = disabled
+        ? scheme.surfaceContainerLow
+        : color.withValues(alpha: 0.16);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: fg.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: fg,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }

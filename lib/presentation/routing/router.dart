@@ -19,10 +19,9 @@ import 'package:taskly_bloc/presentation/features/anytime/view/anytime_page.dart
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_domain/taskly_domain.dart'
     show ProjectScheduledScope, ValueScheduledScope;
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_page.dart';
-import 'package:taskly_bloc/presentation/features/attention/view/attention_inbox_page.dart';
-import 'package:taskly_bloc/presentation/features/attention/view/attention_rules_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/presentation/features/trackers/view/trackers_page.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
@@ -134,6 +133,12 @@ final router = GoRouter(
               scope: AnytimeScope.value(valueId: id),
             );
           },
+        ),
+        GoRoute(
+          path: '/project/inbox/detail',
+          builder: (_, __) => ProjectDetailPage(
+            projectId: ProjectGroupingRef.inbox().stableKey,
+          ),
         ),
         GoRoute(
           path: '/project/:id/detail',
@@ -290,10 +295,6 @@ final router = GoRouter(
           builder: (_, __) => const ValuesPage(),
         ),
         GoRoute(
-          path: Routing.screenPath('review_inbox'),
-          builder: (_, __) => const AttentionInboxPage(),
-        ),
-        GoRoute(
           path: Routing.screenPath('settings'),
           builder: (_, __) => const SettingsScreen(),
         ),
@@ -308,10 +309,6 @@ final router = GoRouter(
         GoRoute(
           path: Routing.screenPath('trackers'),
           builder: (_, __) => const TrackersPage(),
-        ),
-        GoRoute(
-          path: Routing.screenPath('attention_rules'),
-          builder: (_, __) => const AttentionRulesSettingsPage(),
         ),
         GoRoute(
           path: '/debug/tiles',

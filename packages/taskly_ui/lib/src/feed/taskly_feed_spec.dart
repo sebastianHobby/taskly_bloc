@@ -425,11 +425,9 @@ final class TasklyTaskRowPresetPinnedToggle extends TasklyTaskRowPreset {
 final class TasklyTaskRowMarkers {
   const TasklyTaskRowMarkers({
     this.pinned = false,
-    this.focused = false,
   });
 
   final bool pinned;
-  final bool focused;
 }
 
 @immutable

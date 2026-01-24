@@ -47,10 +47,6 @@ class NavigationIconResolver {
         icon: Icons.list_alt_outlined,
         selectedIcon: Icons.list_alt,
       ),
-      'review_inbox' || 'review-inbox' => (
-        icon: Icons.notifications_outlined,
-        selectedIcon: Icons.notifications,
-      ),
       // Legacy screen key (map to my_day icon)
       'next_actions' || 'next-actions' => (
         icon: Icons.wb_sunny_outlined,

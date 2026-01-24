@@ -552,7 +552,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
   Future<Map<String, int>> getRecentCompletionsByValue({
     required int days,
   }) async {
-    final cutoff = DateTime.now().subtract(Duration(days: days));
+    final cutoff = _clock.nowLocal().subtract(Duration(days: days));
 
     // Query completed tasks since cutoff using TaskQuery
     final query = TaskQuery(
@@ -598,7 +598,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required int weeks,
   }) async {
     final trends = <String, List<double>>{};
-    final now = DateTime.now();
+    final now = _clock.nowLocal();
 
     // Initialize trends map for all values
     final values = await _valueRepo.getAll();

@@ -78,8 +78,8 @@ class _AnytimeViewState extends State<_AnytimeView> {
         .settings
         .myDayDueWindowDays;
     context.read<AnytimeFeedBloc>().add(
-          AnytimeFeedDueWindowDaysChanged(days: dueWindowDays),
-        );
+      AnytimeFeedDueWindowDaysChanged(days: dueWindowDays),
+    );
   }
 
   @override
@@ -169,8 +169,7 @@ class _AnytimeViewState extends State<_AnytimeView> {
           },
         ),
         BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
-          listenWhen: (prev, next) =>
-              prev.filterDueSoon != next.filterDueSoon,
+          listenWhen: (prev, next) => prev.filterDueSoon != next.filterDueSoon,
           listener: (context, state) {
             context.read<AnytimeFeedBloc>().add(
               AnytimeFeedFilterDueSoonChanged(enabled: state.filterDueSoon),
@@ -178,8 +177,7 @@ class _AnytimeViewState extends State<_AnytimeView> {
           },
         ),
         BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
-          listenWhen: (prev, next) =>
-              prev.filterOverdue != next.filterOverdue,
+          listenWhen: (prev, next) => prev.filterOverdue != next.filterOverdue,
           listener: (context, state) {
             context.read<AnytimeFeedBloc>().add(
               AnytimeFeedFilterOverdueChanged(enabled: state.filterOverdue),
@@ -368,15 +366,17 @@ class _AnytimeViewState extends State<_AnytimeView> {
                       return BlocBuilder<AnytimeFeedBloc, AnytimeFeedState>(
                         builder: (context, state) {
                           final spec = switch (state) {
-                            AnytimeFeedLoading() => const TasklyFeedSpec.loading(),
-                            AnytimeFeedError(:final message) => TasklyFeedSpec.error(
-                              message: message,
-                              retryLabel: context.l10n.retryButton,
-                              onRetry: () =>
-                                  context.read<AnytimeFeedBloc>().add(
-                                    const AnytimeFeedRetryRequested(),
-                                  ),
-                            ),
+                            AnytimeFeedLoading() =>
+                              const TasklyFeedSpec.loading(),
+                            AnytimeFeedError(:final message) =>
+                              TasklyFeedSpec.error(
+                                message: message,
+                                retryLabel: context.l10n.retryButton,
+                                onRetry: () =>
+                                    context.read<AnytimeFeedBloc>().add(
+                                      const AnytimeFeedRetryRequested(),
+                                    ),
+                              ),
                             AnytimeFeedLoaded(:final rows) when rows.isEmpty =>
                               TasklyFeedSpec.empty(
                                 empty: _buildEmptySpec(
@@ -483,42 +483,45 @@ List<TasklyRowSpec> _buildStandardRows(
     ].toList(growable: false),
   );
 
-  return rows.whereType<ProjectRowUiModel>().map<TasklyRowSpec>((row) {
-    final data = row.project == null
-        ? TasklyProjectRowData(
-            id: 'inbox',
-            title: 'Inbox',
-            completed: false,
-            pinned: false,
-            meta: const TasklyEntityMetaData(),
-            taskCount: row.taskCount,
-          )
-        : buildProjectRowData(
-            context,
-            project: row.project!,
-            taskCount: row.taskCount,
-            completedTaskCount: row.completedTaskCount,
-            dueSoonCount: row.dueSoonCount,
-          );
+  return rows
+      .whereType<ProjectRowUiModel>()
+      .map<TasklyRowSpec>((row) {
+        final data = row.project == null
+            ? TasklyProjectRowData(
+                id: 'inbox',
+                title: 'Inbox',
+                completed: false,
+                pinned: false,
+                meta: const TasklyEntityMetaData(),
+                taskCount: row.taskCount,
+              )
+            : buildProjectRowData(
+                context,
+                project: row.project!,
+                taskCount: row.taskCount,
+                completedTaskCount: row.completedTaskCount,
+                dueSoonCount: row.dueSoonCount,
+              );
 
-    final preset = row.project == null
-        ? const TasklyProjectRowPreset.inbox()
-        : const TasklyProjectRowPreset.standard();
+        final preset = row.project == null
+            ? const TasklyProjectRowPreset.inbox()
+            : const TasklyProjectRowPreset.standard();
 
-    final actions = TasklyProjectRowActions(
-      onTap: row.project == null
-          ? null
-          : () => Routing.pushProjectAnytime(context, row.project!.id),
-    );
+        final actions = TasklyProjectRowActions(
+          onTap: row.project == null
+              ? () => Routing.pushInboxProjectDetail(context)
+              : () => Routing.pushProjectAnytime(context, row.project!.id),
+        );
 
-    return TasklyRowSpec.project(
-      key: row.rowKey,
-      depth: row.depth,
-      data: data,
-      preset: preset,
-      actions: actions,
-    );
-  }).toList(growable: false);
+        return TasklyRowSpec.project(
+          key: row.rowKey,
+          depth: row.depth,
+          data: data,
+          preset: preset,
+          actions: actions,
+        );
+      })
+      .toList(growable: false);
 }
 
 bool _sameSet(Set<String> a, Set<String> b) {
@@ -550,8 +553,7 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
           stream: valueRepository.watchAll(),
           builder: (context, snapshot) {
             final values = snapshot.data ?? const <Value>[];
-            final sorted = values.toList(growable: false)
-              ..sort(_compareValues);
+            final sorted = values.toList(growable: false)..sort(_compareValues);
 
             final selectedValue = _findValueById(sorted, selectedValueId);
             final hasValue = selectedValue != null;
@@ -595,10 +597,10 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
                         label: 'Due Soon',
                         selected: screenState.filterDueSoon,
                         onTap: () => context.read<AnytimeScreenBloc>().add(
-                              AnytimeFilterDueSoonSet(
-                                !screenState.filterDueSoon,
-                              ),
-                            ),
+                          AnytimeFilterDueSoonSet(
+                            !screenState.filterDueSoon,
+                          ),
+                        ),
                         backgroundColor: scheme.surface,
                         selectedColor: scheme.surfaceContainerHighest,
                         textColor: scheme.onSurfaceVariant,
@@ -608,10 +610,10 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
                         label: 'Overdue',
                         selected: screenState.filterOverdue,
                         onTap: () => context.read<AnytimeScreenBloc>().add(
-                              AnytimeFilterOverdueSet(
-                                !screenState.filterOverdue,
-                              ),
-                            ),
+                          AnytimeFilterOverdueSet(
+                            !screenState.filterOverdue,
+                          ),
+                        ),
                         backgroundColor: scheme.surface,
                         selectedColor: scheme.errorContainer,
                         textColor: scheme.onSurfaceVariant,
@@ -680,8 +682,8 @@ class _AnytimeSortRow extends StatelessWidget {
             onChanged: (value) {
               if (value == null) return;
               context.read<AnytimeScreenBloc>().add(
-                    AnytimeSortOrderSet(value),
-                  );
+                AnytimeSortOrderSet(value),
+              );
             },
           ),
         ),
@@ -704,8 +706,8 @@ Future<void> _showAnytimeRefineSheet(BuildContext context) {
                 value: state.filterPriority,
                 onChanged: (value) {
                   context.read<AnytimeScreenBloc>().add(
-                        AnytimeFilterPrioritySet(value),
-                      );
+                    AnytimeFilterPrioritySet(value),
+                  );
                 },
                 title: const Text('Priority projects'),
                 subtitle: const Text('Show projects marked P1.'),
@@ -714,8 +716,8 @@ Future<void> _showAnytimeRefineSheet(BuildContext context) {
                 value: state.showStartLaterItems,
                 onChanged: (value) {
                   context.read<AnytimeScreenBloc>().add(
-                        AnytimeShowStartLaterSet(value),
-                      );
+                    AnytimeShowStartLaterSet(value),
+                  );
                 },
                 title: const Text('Include start later'),
                 subtitle: const Text('Show projects with future start dates.'),

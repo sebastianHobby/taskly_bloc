@@ -6,9 +6,11 @@ import '../../helpers/test_db.dart';
 
 import 'dart:convert';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:matcher/matcher.dart' as matcher;
+import 'package:taskly_data/db.dart';
 import 'package:taskly_data/src/repositories/settings_repository.dart';
-import 'package:taskly_domain/taskly_domain.dart';
+import 'package:taskly_domain/taskly_domain.dart' hide Value;
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
@@ -48,36 +50,32 @@ void main() {
       final repo = SettingsRepository(driftDb: db);
 
       const prefs = SortPreferences(
-        criteria: [
-          SortCriterion(field: SortField.createdDate),
-        ],
+        criteria: [SortCriterion(field: SortField.createdDate)],
       );
 
       await repo.save(SettingsKey.pageSort(PageKey.tasksInbox), prefs);
-      final loaded = await repo.load(
-        SettingsKey.pageSort(PageKey.tasksInbox),
-      );
+      final loaded = await repo.load(SettingsKey.pageSort(PageKey.tasksInbox));
 
       expect(loaded, equals(prefs));
 
       await repo.save(SettingsKey.pageSort(PageKey.tasksInbox), null);
-      final cleared = await repo.load(
-        SettingsKey.pageSort(PageKey.tasksInbox),
-      );
-      expect(cleared, isNull);
+      final cleared = await repo.load(SettingsKey.pageSort(PageKey.tasksInbox));
+      expect(cleared, matcher.isNull);
     });
 
     testSafe('invalid JSON triggers repair and defaults', () async {
       final db = createAutoClosingDb();
       final repo = SettingsRepository(driftDb: db);
 
-      await db.into(db.userProfileTable).insert(
-        UserProfileTableCompanion.insert(
-          settingsOverrides: const Value('not-json'),
-          createdAt: Value(DateTime.utc(2024, 1, 1)),
-          updatedAt: Value(DateTime.utc(2024, 1, 1)),
-        ),
-      );
+      await db
+          .into(db.userProfileTable)
+          .insert(
+            UserProfileTableCompanion.insert(
+              settingsOverrides: const drift.Value('not-json'),
+              createdAt: drift.Value(DateTime.utc(2024, 1, 1)),
+              updatedAt: drift.Value(DateTime.utc(2024, 1, 1)),
+            ),
+          );
 
       final loaded = await repo.load(SettingsKey.global);
       expect(loaded, equals(const GlobalSettings()));
@@ -85,7 +83,8 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       final row = await db.select(db.userProfileTable).getSingle();
-      final overrides = jsonDecode(row.settingsOverrides!) as Map<String, dynamic>;
+      final overrides =
+          jsonDecode(row.settingsOverrides!) as Map<String, dynamic>;
       expect(overrides.containsKey('_repairs'), isTrue);
     });
   });

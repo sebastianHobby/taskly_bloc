@@ -5,6 +5,7 @@ import '../../helpers/test_imports.dart';
 
 import 'dart:async';
 
+import 'package:matcher/matcher.dart' as matcher;
 import 'package:taskly_data/src/repositories/query_stream_cache.dart';
 
 void main() {
@@ -35,7 +36,7 @@ void main() {
       cache.getOrCreate(2, () => Stream<int>.value(2));
 
       // Touch 1 so 2 becomes least-recent.
-      expect(cache.get(1), isNotNull);
+      expect(cache.get(1), matcher.isNotNull);
 
       cache.getOrCreate(3, () => Stream<int>.value(3));
 

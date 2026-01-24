@@ -49,10 +49,6 @@ class AttentionEngine implements AttentionEngineContract {
       entityTypes: {AttentionEntityType.project},
       evaluate: _evaluateProjectPredicateV1,
     ),
-    'review_session_due_v1': _EvaluatorSpec(
-      entityTypes: {AttentionEntityType.reviewSession},
-      evaluate: _evaluateReviewSessionDueV1,
-    ),
   };
 
   @override
@@ -303,56 +299,6 @@ class AttentionEngine implements AttentionEngineContract {
     }
 
     return items;
-  }
-
-  Future<List<_EvaluatedItem>> _evaluateReviewSessionDueV1(
-    AttentionRule rule,
-    _EvalInputs inputs,
-  ) async {
-    final frequencyDays = _readInt(rule.evaluatorParams, 'frequencyDays') ?? 7;
-
-    // Reviews use rule key as entity id.
-    final entityId = rule.ruleKey;
-    // Use the most recent *reviewed* resolution to compute due-ness.
-    // Snoozes should only suppress visibility temporarily; they shouldn't
-    // reset the review cadence.
-    final resolutions = await _attentionRepository
-        .watchResolutionsForRule(rule.id)
-        .first;
-
-    AttentionResolution? lastReviewed;
-    for (final r in resolutions) {
-      if (r.entityId != entityId) continue;
-      if (r.resolutionAction == AttentionResolutionAction.reviewed) {
-        lastReviewed = r;
-        break;
-      }
-    }
-
-    final now = inputs.now;
-    final overdueDays = lastReviewed == null
-        ? 1000000
-        : now.difference(lastReviewed.resolvedAt).inDays - frequencyDays;
-
-    if (overdueDays < 0) return const <_EvaluatedItem>[];
-
-    final stateHash = _computeReviewSessionStateHash(
-      rule: rule,
-      frequencyDays: frequencyDays,
-      overdueDays: overdueDays,
-    );
-
-    return <_EvaluatedItem>[
-      _EvaluatedItem(
-        item: _createReviewItem(
-          rule,
-          detectedAt: now,
-          frequencyDays: frequencyDays,
-          overdueDays: overdueDays,
-        ),
-        stateHash: stateHash,
-      ),
-    ];
   }
 
   // ==========================================================================
@@ -733,57 +679,6 @@ class AttentionEngine implements AttentionEngineContract {
         ...?additionalMetadata,
       },
     );
-  }
-
-  AttentionItem _createReviewItem(
-    AttentionRule rule, {
-    required DateTime detectedAt,
-    required int frequencyDays,
-    required int overdueDays,
-  }) {
-    final displayConfig = rule.displayConfig;
-    final entityId = rule.ruleKey;
-    return AttentionItem(
-      id: _uuid.v4(),
-      ruleId: rule.id,
-      ruleKey: rule.ruleKey,
-      bucket: rule.bucket,
-      entityId: entityId,
-      entityType: AttentionEntityType.reviewSession,
-      severity: rule.severity,
-      title: displayConfig['title'] as String? ?? 'Review Due',
-      description: displayConfig['description'] as String? ?? 'Time for review',
-      availableActions: _parseResolutionActions(rule.resolutionActions),
-      detectedAt: detectedAt,
-      sortKey: _computeSortKey(
-        rule: rule,
-        entityType: AttentionEntityType.reviewSession,
-        entityId: entityId,
-        extra: overdueDays.toString().padLeft(8, '0'),
-      ),
-      metadata: {
-        'frequency_days': frequencyDays,
-        'overdue_days': overdueDays,
-        'review_type': rule.evaluatorParams['reviewType'],
-      },
-    );
-  }
-
-  String _computeReviewSessionStateHash({
-    required AttentionRule rule,
-    required int frequencyDays,
-    required int overdueDays,
-  }) {
-    final ruleFingerprint = _ruleFingerprint(
-      rule,
-      predicate: 'review_session_due_v1',
-    );
-    return _stableFingerprint([
-      'entity=reviewSession',
-      'rule=$ruleFingerprint',
-      'frequencyDays=$frequencyDays',
-      'overdueDays=$overdueDays',
-    ]);
   }
 
   List<AttentionResolutionAction> _parseResolutionActions(

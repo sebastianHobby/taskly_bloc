@@ -79,11 +79,54 @@ List<Task> sortTasksByDeadlineThenStartThenName(
   return entries.map((entry) => entry.task).toList(growable: false);
 }
 
+List<Task> sortTasksByDeadlineThenStartThenPriorityThenName(
+  List<Task> tasks, {
+  required DateTime today,
+}) {
+  final effectiveToday = dateOnly(today);
+  final entries = <_PrioritySortEntry>[];
+  for (var i = 0; i < tasks.length; i += 1) {
+    final task = tasks[i];
+    final deadline = dateOnlyOrNull(
+      task.occurrence?.deadline ?? task.deadlineDate,
+    );
+    final start = dateOnlyOrNull(task.occurrence?.date ?? task.startDate);
+    final bucket = _deadlineBucket(deadline, effectiveToday);
+    entries.add(
+      _PrioritySortEntry(task, i, deadline, start, bucket),
+    );
+  }
+
+  entries.sort((a, b) {
+    if (a.deadlineBucket != b.deadlineBucket) {
+      return a.deadlineBucket.compareTo(b.deadlineBucket);
+    }
+    final deadlineCompare = _compareDates(a.deadline, b.deadline);
+    if (deadlineCompare != 0) return deadlineCompare;
+    final startCompare = _compareDates(a.start, b.start);
+    if (startCompare != 0) return startCompare;
+    final priorityCompare = _priorityRank(
+      a.priority,
+    ).compareTo(_priorityRank(b.priority));
+    if (priorityCompare != 0) return priorityCompare;
+    final nameCompare = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    if (nameCompare != 0) return nameCompare;
+    return a.index.compareTo(b.index);
+  });
+
+  return entries.map((entry) => entry.task).toList(growable: false);
+}
+
 int _compareDates(DateTime? a, DateTime? b) {
   if (a == null && b == null) return 0;
   if (a == null) return 1;
   if (b == null) return -1;
   return a.compareTo(b);
+}
+
+int _priorityRank(int? priority) {
+  if (priority == null) return 99;
+  return priority.clamp(1, 99);
 }
 
 int _deadlineBucket(DateTime? deadline, DateTime today) {
@@ -117,5 +160,24 @@ class _PinnedSortEntry {
   final DateTime? start;
   final int deadlineBucket;
 
+  String get name => task.name;
+}
+
+class _PrioritySortEntry {
+  _PrioritySortEntry(
+    this.task,
+    this.index,
+    this.deadline,
+    this.start,
+    this.deadlineBucket,
+  );
+
+  final Task task;
+  final int index;
+  final DateTime? deadline;
+  final DateTime? start;
+  final int deadlineBucket;
+
+  int? get priority => task.priority;
   String get name => task.name;
 }

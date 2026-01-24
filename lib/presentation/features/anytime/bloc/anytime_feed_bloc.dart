@@ -259,9 +259,8 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   }
 
   List<ListRowUiModel> _mapToRows(List<Task> tasks) {
-    if (tasks.isEmpty) return const <ListRowUiModel>[];
-
     final aggregates = _aggregateProjects(tasks);
+    if (aggregates.isEmpty) return const <ListRowUiModel>[];
     final filtered = aggregates.where(_matchesFilters).toList(growable: false)
       ..sort(_compareProjectGroups);
 
@@ -305,7 +304,9 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
         key,
         () => _ProjectAggregate(
           projectRef: projectRef,
-          title: projectRef.isInbox ? 'Inbox' : (task.project?.name ?? 'Project'),
+          title: projectRef.isInbox
+              ? 'Inbox'
+              : (task.project?.name ?? 'Project'),
         ),
       );
 
@@ -333,6 +334,14 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       } else {
         group.hasAvailableTask = true;
       }
+    }
+
+    if (_scope == null &&
+        !groups.containsKey(ProjectGroupingRef.inbox().stableKey)) {
+      groups[ProjectGroupingRef.inbox().stableKey] = _ProjectAggregate(
+        projectRef: const ProjectGroupingRef.inbox(),
+        title: 'Inbox',
+      );
     }
 
     final aggregates = groups.values.toList(growable: false);
@@ -388,11 +397,11 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     final search = _searchQuery.toLowerCase().trim();
     if (search.isNotEmpty) {
       final title = aggregate.title.toLowerCase();
-      final valueName =
-          aggregate.project?.primaryValue?.name.trim().toLowerCase();
+      final valueName = aggregate.project?.primaryValue?.name
+          .trim()
+          .toLowerCase();
       final matchesTitle = title.contains(search);
-      final matchesValue =
-          valueName != null && valueName.contains(search);
+      final matchesValue = valueName != null && valueName.contains(search);
       if (!matchesTitle && !matchesValue) return false;
     }
 
@@ -477,8 +486,7 @@ class _ProjectAggregate {
         deadlineUtc.isBefore(earliestDeadlineUtc!)) {
       earliestDeadlineUtc = deadlineUtc;
     }
-    if (latestDeadlineUtc == null ||
-        deadlineUtc.isAfter(latestDeadlineUtc!)) {
+    if (latestDeadlineUtc == null || deadlineUtc.isAfter(latestDeadlineUtc!)) {
       latestDeadlineUtc = deadlineUtc;
     }
   }

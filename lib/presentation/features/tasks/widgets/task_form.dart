@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/date_display_utils.dart';
@@ -104,31 +104,38 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     }
   }
 
-  void _scheduleRecurrenceLabelUpdate(String? rrule) {
+  void _updateRecurrenceLabel(String? rrule) {
     final normalized = (rrule ?? '').trim();
     if (normalized == _lastRecurrenceRrule) return;
     _lastRecurrenceRrule = normalized;
 
     if (normalized.isEmpty) {
-      setState(() {
-        _recurrenceLabel = null;
-      });
+      if (_recurrenceLabel == null) return;
+      setState(() => _recurrenceLabel = null);
       return;
     }
 
+    if (_recurrenceLabel != null) {
+      setState(() => _recurrenceLabel = null);
+    }
+
+    final requestRrule = normalized;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      final label = await resolveRruleLabel(context, normalized);
-      if (!mounted) return;
-      setState(() {
-        _recurrenceLabel = label;
-      });
+      final label = await resolveRruleLabel(context, requestRrule);
+      if (!mounted || _lastRecurrenceRrule != requestRrule) return;
+      setState(() => _recurrenceLabel = label);
     });
   }
 
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _updateRecurrenceLabel(widget.initialData?.repeatIcalRrule);
+    });
 
     // Auto-open is a one-shot affordance for deep-links (e.g., from "+N").
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -200,23 +207,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
           (valueIdsFieldState?.value as List<String>?) ?? const <String>[],
         );
 
-        final projectId =
-            (widget
-                        .formKey
-                        .currentState
-                        ?.fields[TaskFieldKeys.projectId.id]
-                        ?.value
-                    as String?)
-                ?.trim() ??
-            '';
-        final selectedProject = widget.availableProjects
-            .where((p) => p.id == projectId)
-            .firstOrNull;
-
         final result = await _showValuesAlignmentPicker(
           anchorContext: anchorContext,
           explicitValueIds: explicitValueIds,
-          selectedProject: selectedProject,
+          target: ValuesAlignmentTarget.primary,
         );
         if (!context.mounted || result == null) return;
 
@@ -226,6 +220,15 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
         setState(() {});
       }
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant TaskForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialData?.repeatIcalRrule !=
+        widget.initialData?.repeatIcalRrule) {
+      _updateRecurrenceLabel(widget.initialData?.repeatIcalRrule);
+    }
   }
 
   bool _isCompact(BuildContext context) =>
@@ -323,14 +326,14 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
   Future<List<String>?> _showValuesAlignmentPicker({
     required BuildContext anchorContext,
     required List<String> explicitValueIds,
-    required Project? selectedProject,
+    required ValuesAlignmentTarget target,
   }) {
     if (_isCompact(context)) {
       return showValuesAlignmentSheetForTask(
         context,
         availableValues: widget.availableValues,
         explicitValueIds: explicitValueIds,
-        selectedProject: selectedProject,
+        target: target,
       );
     }
 
@@ -344,7 +347,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
         child: ValuesAlignmentSheet.task(
           availableValues: widget.availableValues,
           explicitValueIds: explicitValueIds,
-          selectedProject: selectedProject,
+          target: target,
         ),
       ),
     );
@@ -546,6 +549,14 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
           onChanged: () {
             markDirty();
             setState(() {});
+            final rrule =
+                widget
+                        .formKey
+                        .currentState
+                        ?.fields[TaskFieldKeys.repeatIcalRrule.id]
+                        ?.value
+                    as String?;
+            _updateRecurrenceLabel(rrule);
             final values = widget.formKey.currentState?.value;
             if (values != null) {
               widget.onChanged?.call(values);
@@ -590,14 +601,15 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                       ),
                       textCapitalization: TextCapitalization.sentences,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: '',
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ).copyWith(
-                        hintText: l10n.taskFormNameHint,
-                      ),
+                      decoration:
+                          const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: '',
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ).copyWith(
+                            hintText: l10n.taskFormNameHint,
+                          ),
                       validator: toFormBuilderValidator<String>(
                         TaskValidators.name,
                         context,
@@ -619,67 +631,32 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
               const SizedBox(height: 8),
               FormBuilderField<List<String>>(
                 name: TaskFieldKeys.valueIds.id,
+                validator: toFormBuilderValidator<List<String>>(
+                  TaskValidators.valueIds,
+                  context,
+                ),
                 builder: (field) {
                   final explicitValueIds = List<String>.of(
                     field.value ?? const <String>[],
                   );
+                  final explicitIds = explicitValueIds
+                      .take(2)
+                      .toList(growable: false);
 
-                  final projectId =
-                      (widget
-                                  .formKey
-                                  .currentState
-                                  ?.fields[TaskFieldKeys.projectId.id]
-                                  ?.value
-                              as String?)
-                          ?.trim();
-                  final selectedProject = widget.availableProjects
-                      .where((p) => p.id == projectId)
-                      .firstOrNull;
-
-                  final hasExplicit = explicitValueIds.isNotEmpty;
-
-                  final explicitIds =
-                      explicitValueIds.take(2).toList(growable: false);
-
-                  final inheritedValues =
-                      selectedProject?.values.cast<Value?>() ??
-                      const <Value?>[];
-
-                  Value? effectivePrimary;
-                  Value? effectiveSecondary;
-
-                  if (hasExplicit) {
-                    effectivePrimary = explicitIds.isEmpty
-                        ? null
-                        : availableValuesById[explicitIds.first];
-                    effectiveSecondary = explicitIds.length < 2
-                        ? null
-                        : availableValuesById[explicitIds[1]];
-                  } else if (selectedProject != null) {
-                    final primaryId = selectedProject.primaryValueId;
-                    effectivePrimary = primaryId == null
-                        ? null
-                        : inheritedValues.firstWhere(
-                            (v) => v?.id == primaryId,
-                            orElse: () => null,
-                          );
-
-                    effectiveSecondary = inheritedValues.firstWhere(
-                      (v) =>
-                          v != null &&
-                          (effectivePrimary == null ||
-                              v.id != effectivePrimary.id),
-                      orElse: () => null,
-                    );
-                  }
+                  final primary = explicitIds.isEmpty
+                      ? null
+                      : availableValuesById[explicitIds.first];
+                  final secondary = explicitIds.length < 2
+                      ? null
+                      : availableValuesById[explicitIds[1]];
 
                   return Builder(
                     builder: (chipContext) {
-                      Future<void> open() async {
+                      Future<void> open(ValuesAlignmentTarget target) async {
                         final result = await _showValuesAlignmentPicker(
                           anchorContext: chipContext,
                           explicitValueIds: explicitValueIds,
-                          selectedProject: selectedProject,
+                          target: target,
                         );
                         if (!mounted || result == null) return;
                         field.didChange(result);
@@ -703,6 +680,13 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                       }
 
                       final theme = Theme.of(context);
+                      final secondaryEnabled = primary != null;
+                      final secondaryPlaceholder = TasklyFormValueChipModel(
+                        label: context.l10n.valuesSecondaryLabel,
+                        color: theme.colorScheme.onSurfaceVariant,
+                        icon: Icons.label_outline,
+                        semanticLabel: context.l10n.valuesSecondaryLabel,
+                      );
 
                       return KeyedSubtree(
                         key: _valuesKey,
@@ -711,32 +695,60 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           runSpacing: 8,
                           children: [
                             TasklyFormValueChip(
-                              model: effectivePrimary != null
-                                  ? toModel(effectivePrimary)
+                              model: primary != null
+                                  ? toModel(primary)
                                   : TasklyFormValueChipModel(
-                                      label: context.l10n.valuesAlignedToTitle,
+                                      label: context.l10n.valuesPrimaryLabel,
                                       color: theme.colorScheme.onSurfaceVariant,
-                                      icon: Icons.favorite_outline,
+                                      icon: Icons.star_border,
                                       semanticLabel:
-                                          context.l10n.valuesAlignedToTitle,
+                                          context.l10n.valuesPrimaryLabel,
                                     ),
-                              onTap: open,
-                              isSelected: effectivePrimary != null,
+                              onTap: () => open(ValuesAlignmentTarget.primary),
+                              isSelected: primary != null,
                               isPrimary: true,
                               preset: TasklyFormPreset.standard.chip,
                             ),
-                            if (effectiveSecondary != null)
-                              TasklyFormValueChip(
-                                model: toModel(effectiveSecondary),
-                                onTap: open,
-                                isSelected: true,
-                                isPrimary: false,
-                                preset: TasklyFormPreset.standard.chip,
+                            Opacity(
+                              opacity: secondaryEnabled ? 1 : 0.55,
+                              child: AbsorbPointer(
+                                absorbing: !secondaryEnabled,
+                                child: TasklyFormValueChip(
+                                  model: secondary != null
+                                      ? toModel(secondary)
+                                      : secondaryPlaceholder,
+                                  onTap: () =>
+                                      open(ValuesAlignmentTarget.secondary),
+                                  isSelected: secondary != null,
+                                  isPrimary: false,
+                                  preset: TasklyFormPreset.standard.chip,
+                                ),
                               ),
+                            ),
                           ],
                         ),
                       );
                     },
+                  );
+                },
+              ),
+              Builder(
+                builder: (context) {
+                  final errorText = widget
+                      .formKey
+                      .currentState
+                      ?.fields[TaskFieldKeys.valueIds.id]
+                      ?.errorText;
+                  if (errorText == null) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      errorText,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -757,7 +769,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                       key: _projectKey,
                       child: Builder(
                         builder: (chipContext) => TasklyFormProjectRow(
-                          label: selectedProject?.name ??
+                          label:
+                              selectedProject?.name ??
                               context.l10n.addProjectAction,
                           hasValue: selectedProject != null,
                           onTap: () async {
@@ -809,16 +822,15 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           as DateTime?);
                   final recurrenceRrule =
                       (widget
-                                  .formKey
-                                  .currentState
-                                  ?.fields[TaskFieldKeys.repeatIcalRrule.id]
-                                  ?.value
-                              as String?) ??
+                              .formKey
+                              .currentState
+                              ?.fields[TaskFieldKeys.repeatIcalRrule.id]
+                              ?.value
+                          as String?) ??
                       (initialValues[TaskFieldKeys.repeatIcalRrule.id]
                           as String?) ??
                       '';
                   final hasRecurrence = recurrenceRrule.trim().isNotEmpty;
-                  _scheduleRecurrenceLabelUpdate(recurrenceRrule);
 
                   final plannedLabel = startDate == null
                       ? null
@@ -870,8 +882,9 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                         placeholderLabel: l10n.dateChipAddDueDate,
                         valueLabel: dueLabel,
                         hasValue: dueLabel != null,
-                        valueColor:
-                            isOverdue ? colorScheme.error : colorScheme.primary,
+                        valueColor: isOverdue
+                            ? colorScheme.error
+                            : colorScheme.primary,
                         onTap: () async {
                           final decision = await _pickDate(
                             anchorContext: context,
@@ -909,13 +922,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                             (hasRecurrence ? l10n.loadingTitle : null),
                         hasValue: hasRecurrence,
                         onTap: () async {
-                          final repeatFromCompletionField =
-                              widget
-                                  .formKey
-                                  .currentState
-                                  ?.fields[TaskFieldKeys
-                                  .repeatFromCompletion
-                                  .id];
+                          final repeatFromCompletionField = widget
+                              .formKey
+                              .currentState
+                              ?.fields[TaskFieldKeys.repeatFromCompletion.id];
                           final seriesEndedField = widget
                               .formKey
                               .currentState
@@ -941,6 +951,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                             result.repeatFromCompletion,
                           );
                           seriesEndedField?.didChange(result.seriesEnded);
+                          _updateRecurrenceLabel(result.rrule);
                           markDirty();
                           setState(() {});
                         },
@@ -963,6 +974,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                                     .currentState
                                     ?.fields[TaskFieldKeys.seriesEnded.id]
                                     ?.didChange(false);
+                                _updateRecurrenceLabel('');
                                 markDirty();
                                 setState(() {});
                               }
@@ -1442,5 +1454,3 @@ class _ProjectPickerDialogState extends State<_ProjectPickerDialog> {
     );
   }
 }
-
-

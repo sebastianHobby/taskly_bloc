@@ -198,7 +198,6 @@ class _MyDayRitualSectionsCardState extends State<MyDayRitualSectionsCard> {
             showHeader: false,
             showCountsLine: false,
             showEmpty: false,
-            showFocusBadge: true,
             onToggleExpanded: () =>
                 setState(() => _focusExpanded = !_focusExpanded),
             onTapOther: null,
@@ -373,7 +372,6 @@ class _BucketSection extends StatelessWidget {
     this.showHeader = true,
     this.showCountsLine = true,
     this.showEmpty = true,
-    this.showFocusBadge = false,
     this.onTapOther,
     this.subtitleForTask,
     this.useCompactHeader = false,
@@ -395,7 +393,6 @@ class _BucketSection extends StatelessWidget {
   final bool showHeader;
   final bool showCountsLine;
   final bool showEmpty;
-  final bool showFocusBadge;
   final bool useCompactHeader;
   final String? compactLabel;
   final Color? headerIconColor;
@@ -474,7 +471,6 @@ class _BucketSection extends StatelessWidget {
             : const TasklyTaskRowPreset.standard(),
         markers: TasklyTaskRowMarkers(
           pinned: task.isPinned,
-          focused: showFocusBadge,
         ),
         actions: TasklyTaskRowActions(
           onTap: () {

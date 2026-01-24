@@ -22,13 +22,37 @@ abstract class GlobalSettings with _$GlobalSettings {
 
     /// My Day ritual: include tasks due within this many days.
     ///
-    /// Clamped to 1–30 days.
+    /// Clamped to 1-30 days.
     @Default(GlobalSettings.defaultMyDayDueWindowDays) int myDayDueWindowDays,
 
     /// My Day ritual: show the "Available to start" lane.
     ///
     /// When disabled, we still keep due-soon items visible.
     @Default(true) bool myDayShowAvailableToStart,
+
+    /// Weekly review scheduling.
+    @Default(true) bool weeklyReviewEnabled,
+    @Default(GlobalSettings.defaultWeeklyReviewDayOfWeek)
+    int weeklyReviewDayOfWeek,
+    @Default(GlobalSettings.defaultWeeklyReviewTimeMinutes)
+    int weeklyReviewTimeMinutes,
+    @Default(GlobalSettings.defaultWeeklyReviewCadenceWeeks)
+    int weeklyReviewCadenceWeeks,
+    DateTime? weeklyReviewLastCompletedAt,
+
+    /// Values summary in weekly review.
+    @Default(true) bool valuesSummaryEnabled,
+    @Default(GlobalSettings.defaultValuesSummaryWeeks)
+    int valuesSummaryWindowWeeks,
+    @Default(GlobalSettings.defaultValuesSummaryWinsCount)
+    int valuesSummaryWinsCount,
+
+    /// Maintenance checks in weekly review.
+    @Default(true) bool maintenanceEnabled,
+    @Default(true) bool maintenanceDeadlineRiskEnabled,
+    @Default(true) bool maintenanceDueSoonEnabled,
+    @Default(true) bool maintenanceStaleEnabled,
+    @Default(true) bool maintenanceFrequentSnoozedEnabled,
     @Default(1.0) double textScaleFactor,
     @Default(false) bool onboardingCompleted,
   }) = _GlobalSettings;
@@ -39,7 +63,25 @@ abstract class GlobalSettings with _$GlobalSettings {
         defaultMyDayDueWindowDays;
 
     final rawMyDayShowAvailableToStart =
-      json['myDayShowAvailableToStart'] as bool?;
+        json['myDayShowAvailableToStart'] as bool?;
+    final rawWeeklyReviewDay =
+        (json['weeklyReviewDayOfWeek'] as num?)?.toInt() ??
+        defaultWeeklyReviewDayOfWeek;
+    final rawWeeklyReviewTimeMinutes =
+        (json['weeklyReviewTimeMinutes'] as num?)?.toInt() ??
+        defaultWeeklyReviewTimeMinutes;
+    final rawWeeklyReviewCadenceWeeks =
+        (json['weeklyReviewCadenceWeeks'] as num?)?.toInt() ??
+        defaultWeeklyReviewCadenceWeeks;
+    final rawWeeklyReviewCompleted =
+        json['weeklyReviewLastCompletedAt'] as String?;
+
+    final rawValuesWindowWeeks =
+        (json['valuesSummaryWindowWeeks'] as num?)?.toInt() ??
+        defaultValuesSummaryWeeks;
+    final rawValuesWinsCount =
+        (json['valuesSummaryWinsCount'] as num?)?.toInt() ??
+        defaultValuesSummaryWinsCount;
 
     return GlobalSettings(
       themeMode: AppThemeMode.fromName(json['themeMode'] as String?),
@@ -53,6 +95,24 @@ abstract class GlobalSettings with _$GlobalSettings {
           defaultHomeTimeZoneOffsetMinutes,
       myDayDueWindowDays: rawMyDayDueWindowDays.clamp(1, 30),
       myDayShowAvailableToStart: rawMyDayShowAvailableToStart ?? true,
+      weeklyReviewEnabled: json['weeklyReviewEnabled'] as bool? ?? true,
+      weeklyReviewDayOfWeek: rawWeeklyReviewDay.clamp(1, 7),
+      weeklyReviewTimeMinutes: rawWeeklyReviewTimeMinutes.clamp(0, 1439),
+      weeklyReviewCadenceWeeks: rawWeeklyReviewCadenceWeeks.clamp(1, 12),
+      weeklyReviewLastCompletedAt: rawWeeklyReviewCompleted == null
+          ? null
+          : DateTime.tryParse(rawWeeklyReviewCompleted),
+      valuesSummaryEnabled: json['valuesSummaryEnabled'] as bool? ?? true,
+      valuesSummaryWindowWeeks: rawValuesWindowWeeks.clamp(1, 12),
+      valuesSummaryWinsCount: rawValuesWinsCount.clamp(1, 5),
+      maintenanceEnabled: json['maintenanceEnabled'] as bool? ?? true,
+      maintenanceDeadlineRiskEnabled:
+          json['maintenanceDeadlineRiskEnabled'] as bool? ?? true,
+      maintenanceDueSoonEnabled:
+          json['maintenanceDueSoonEnabled'] as bool? ?? true,
+      maintenanceStaleEnabled: json['maintenanceStaleEnabled'] as bool? ?? true,
+      maintenanceFrequentSnoozedEnabled:
+          json['maintenanceFrequentSnoozedEnabled'] as bool? ?? true,
       textScaleFactor: (json['textScaleFactor'] as num?)?.toDouble() ?? 1.0,
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
     );
@@ -68,6 +128,21 @@ abstract class GlobalSettings with _$GlobalSettings {
 
   /// Default My Day due window (days).
   static const int defaultMyDayDueWindowDays = 7;
+
+  /// Default weekly review day (Monday).
+  static const int defaultWeeklyReviewDayOfWeek = DateTime.monday;
+
+  /// Default weekly review time (9:00 AM).
+  static const int defaultWeeklyReviewTimeMinutes = 9 * 60;
+
+  /// Default weekly review cadence (weeks).
+  static const int defaultWeeklyReviewCadenceWeeks = 1;
+
+  /// Default values summary window (weeks).
+  static const int defaultValuesSummaryWeeks = 4;
+
+  /// Default value wins count.
+  static const int defaultValuesSummaryWinsCount = 3;
 
   /// Parses `#RRGGBB`, `RRGGBB`, `#RGB`, or `RGB` into an ARGB int.
   ///
@@ -109,6 +184,21 @@ extension GlobalSettingsJson on GlobalSettings {
     'homeTimeZoneOffsetMinutes': homeTimeZoneOffsetMinutes,
     'myDayDueWindowDays': myDayDueWindowDays.clamp(1, 30),
     'myDayShowAvailableToStart': myDayShowAvailableToStart,
+    'weeklyReviewEnabled': weeklyReviewEnabled,
+    'weeklyReviewDayOfWeek': weeklyReviewDayOfWeek.clamp(1, 7),
+    'weeklyReviewTimeMinutes': weeklyReviewTimeMinutes.clamp(0, 1439),
+    'weeklyReviewCadenceWeeks': weeklyReviewCadenceWeeks.clamp(1, 12),
+    'weeklyReviewLastCompletedAt': weeklyReviewLastCompletedAt
+        ?.toUtc()
+        .toIso8601String(),
+    'valuesSummaryEnabled': valuesSummaryEnabled,
+    'valuesSummaryWindowWeeks': valuesSummaryWindowWeeks.clamp(1, 12),
+    'valuesSummaryWinsCount': valuesSummaryWinsCount.clamp(1, 5),
+    'maintenanceEnabled': maintenanceEnabled,
+    'maintenanceDeadlineRiskEnabled': maintenanceDeadlineRiskEnabled,
+    'maintenanceDueSoonEnabled': maintenanceDueSoonEnabled,
+    'maintenanceStaleEnabled': maintenanceStaleEnabled,
+    'maintenanceFrequentSnoozedEnabled': maintenanceFrequentSnoozedEnabled,
     'textScaleFactor': textScaleFactor,
     'onboardingCompleted': onboardingCompleted,
   };
