@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 class AppLoadingContent extends StatelessWidget {
   const AppLoadingContent({
-    super.key,
     required this.title,
     required this.subtitle,
     this.icon,
     this.progressLabel,
     this.progressValue,
+    super.key,
   });
 
   final String title;
@@ -68,13 +68,13 @@ class AppLoadingContent extends StatelessWidget {
 
 class AppLoadingScreen extends StatelessWidget {
   const AppLoadingScreen({
-    super.key,
     required this.title,
     required this.subtitle,
     this.icon,
     this.progressLabel,
     this.progressValue,
     this.appBarTitle,
+    super.key,
   });
 
   final String title;

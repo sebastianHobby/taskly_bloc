@@ -126,7 +126,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   final AnytimeScope? _scope;
 
   List<Task> _latestTasks = const <Task>[];
-  Set<String> _todaySelectedTaskIds = const <String>{};
   DateTime _todayDayKeyUtc = DateTime.fromMillisecondsSinceEpoch(
     0,
     isUtc: true,
@@ -230,7 +229,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       onData: (snapshot) {
         _todayDayKeyUtc = snapshot.todayDayKeyUtc;
         _latestTasks = snapshot.tasks;
-        _todaySelectedTaskIds = snapshot.todaySelectedTaskIds;
         _emitRows(emit);
       },
       onError: (error, stackTrace) {
@@ -439,7 +437,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     }
 
     if (aHasDate && bHasDate) {
-      final compare = aDate!.compareTo(bDate!);
+      final compare = aDate.compareTo(bDate);
       if (compare != 0) {
         return _sortOrder == AnytimeSortOrder.dueSoonest ? compare : -compare;
       }

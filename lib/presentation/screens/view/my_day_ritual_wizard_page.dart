@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
@@ -468,7 +468,7 @@ class _RitualCardState extends State<_RitualCard> {
 
     final base = l10n.myDaySupportsValueLabel(primaryValueName);
     if (suffixes.isEmpty) return base;
-    return '$base · ${suffixes.join('')}';
+    return '$base Â· ${suffixes.join('')}';
   }
 
   String _signalsSummaryForTasks(BuildContext context, List<Task> tasks) {
@@ -496,6 +496,62 @@ class _RitualCardState extends State<_RitualCard> {
     }
 
     return parts.join(', ');
+  }
+
+  Widget _buildWaitingGroup({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required List<Task> tasks,
+    required bool isExpanded,
+    required VoidCallback onToggleExpanded,
+    required String reasonLabel,
+  }) {
+    final l10n = context.l10n;
+    final visible = isExpanded
+        ? tasks
+        : tasks.take(_waitingPreviewCountPerGroup).toList(growable: false);
+    final hasMore = tasks.length > _waitingPreviewCountPerGroup;
+
+    final reasonTextById = <String, String>{
+      for (final task in visible)
+        task.id: task.effectiveValues.isEmpty
+            ? reasonLabel
+            : '$reasonLabel${l10n.dotSeparator}${l10n.myDayValueAlignedLabel}',
+    };
+
+    return Column(
+      children: [
+        _MiniGroupHeader(
+          icon: icon,
+          title: title,
+          count: tasks.length,
+        ),
+        _TaskTileColumn(
+          dayKeyUtc: widget.dayKeyUtc,
+          tasks: visible,
+          selected: widget.selected,
+          reasonTextByTaskId: reasonTextById,
+          reasonTooltipTextByTaskId: const <String, String>{},
+          enableSnooze: true,
+          enableSelection: true,
+          selectionPillLabel: l10n.myDayAddToMyDayAction,
+          selectionPillSelectedLabel: l10n.myDayAddedLabel,
+          snoozeTooltip: l10n.myDaySnoozeAction,
+        ),
+        if (hasMore)
+          _ShowMoreRow(
+            isExpanded: isExpanded,
+            remainingCount: tasks.length - visible.length,
+            totalCount: tasks.length,
+            labelExpanded: l10n.myDayShowFewerLabel,
+            labelCollapsed: l10n.myDayShowMoreCountLabel(
+              tasks.length - visible.length,
+            ),
+            onPressed: onToggleExpanded,
+          ),
+      ],
+    );
   }
 
   Future<void> _showWhyTheseWhatMattersSheet(BuildContext context) {
@@ -568,7 +624,7 @@ class _RitualCardState extends State<_RitualCard> {
                               );
                               return signals.isEmpty
                                   ? countText
-                                  : '$countText • $signals';
+                                  : '$countText â€¢ $signals';
                             }(),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: cs.onSurfaceVariant,
@@ -839,7 +895,7 @@ class _RitualCardState extends State<_RitualCard> {
                       onPressed: () =>
                           setState(() => _completedExpanded = true),
                       child: Text(
-                        '${context.l10n.myDayShowCompletedLabel} · $completedCount',
+                        '${context.l10n.myDayShowCompletedLabel} Â· $completedCount',
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -1106,121 +1162,32 @@ class _RitualCardState extends State<_RitualCard> {
                       Column(
                         children: [
                           if (due.isNotEmpty)
-                            () {
-                            final dueVisible = _dueExpanded
-                                ? due
-                                : due
-                                      .take(_waitingPreviewCountPerGroup)
-                                      .toList(growable: false);
-                            final dueHasMore =
-                                due.length > _waitingPreviewCountPerGroup;
-
-                            final reasonTextById = <String, String>{
-                              for (final task in dueVisible)
-                                task.id: task.effectiveValues.isEmpty
-                                    ? l10n.myDayDueSoonLabel
-                                    : '${l10n.myDayDueSoonLabel} • ${l10n.myDayValueAlignedLabel}',
-                            };
-
-                            return Column(
-                              children: [
-                                _MiniGroupHeader(
-                                  icon: Icons.warning_rounded,
-                                  title: l10n.myDayDueSoonLabel,
-                                  count: due.length,
-                                ),
-                                _TaskTileColumn(
-                                  dayKeyUtc: widget.dayKeyUtc,
-                                  tasks: dueVisible,
-                                  selected: widget.selected,
-                                  reasonTextByTaskId: reasonTextById,
-                                  reasonTooltipTextByTaskId:
-                                      const <String, String>{},
-                                  enableSnooze: true,
-                                  enableSelection: true,
-                                  selectionPillLabel:
-                                      l10n.myDayAddToMyDayAction,
-                                  selectionPillSelectedLabel:
-                                      l10n.myDayAddedLabel,
-                                  snoozeTooltip: l10n.myDaySnoozeAction,
-                                ),
-                                if (dueHasMore)
-                                  _ShowMoreRow(
-                                    isExpanded: _dueExpanded,
-                                    remainingCount:
-                                        due.length - dueVisible.length,
-                                    totalCount: due.length,
-                                    labelExpanded: l10n.myDayShowFewerLabel,
-                                    labelCollapsed: l10n
-                                        .myDayShowMoreCountLabel(
-                                          due.length - dueVisible.length,
-                                        ),
-                                    onPressed: () => setState(
-                                      () => _dueExpanded = !_dueExpanded,
-                                    ),
-                                  ),
-                              ],
-                            );
-                          }(),
-                        if (starts.isNotEmpty)
-                          () {
-                            final startsVisible = _startsExpanded
-                                ? starts
-                                : starts
-                                      .take(_waitingPreviewCountPerGroup)
-                                      .toList(growable: false);
-                            final startsHasMore =
-                                starts.length > _waitingPreviewCountPerGroup;
-
-                            final reasonTextById = <String, String>{
-                              for (final task in startsVisible)
-                                task.id: task.effectiveValues.isEmpty
-                                    ? l10n.myDayAvailableToStartLabel
-                                    : '${l10n.myDayAvailableToStartLabel} • ${l10n.myDayValueAlignedLabel}',
-                            };
-
-                            return Column(
-                              children: [
-                                _MiniGroupHeader(
-                                  icon: Icons.event_note_rounded,
-                                  title: l10n.myDayAvailableToStartLabel,
-                                  count: starts.length,
-                                ),
-                                _TaskTileColumn(
-                                  dayKeyUtc: widget.dayKeyUtc,
-                                  tasks: startsVisible,
-                                  selected: widget.selected,
-                                  reasonTextByTaskId: reasonTextById,
-                                  reasonTooltipTextByTaskId:
-                                      const <String, String>{},
-                                  enableSnooze: true,
-                                  enableSelection: true,
-                                  selectionPillLabel:
-                                      l10n.myDayAddToMyDayAction,
-                                  selectionPillSelectedLabel:
-                                      l10n.myDayAddedLabel,
-                                  snoozeTooltip: l10n.myDaySnoozeAction,
-                                ),
-                                if (startsHasMore)
-                                  _ShowMoreRow(
-                                    isExpanded: _startsExpanded,
-                                    remainingCount:
-                                        starts.length - startsVisible.length,
-                                    totalCount: starts.length,
-                                    labelExpanded: l10n.myDayShowFewerLabel,
-                                    labelCollapsed: l10n
-                                        .myDayShowMoreCountLabel(
-                                          starts.length - startsVisible.length,
-                                        ),
-                                    onPressed: () => setState(
-                                      () => _startsExpanded = !_startsExpanded,
-                                    ),
-                                  ),
-                              ],
-                            );
-                          }(),
-                      ],
-                    ),
+                            _buildWaitingGroup(
+                              context: context,
+                              icon: Icons.warning_rounded,
+                              title: l10n.myDayDueSoonLabel,
+                              tasks: due,
+                              isExpanded: _dueExpanded,
+                              onToggleExpanded: () => setState(
+                                () => _dueExpanded = !_dueExpanded,
+                              ),
+                              reasonLabel: l10n.myDayDueSoonLabel,
+                            ),
+                          if (starts.isNotEmpty)
+                            _buildWaitingGroup(
+                              context: context,
+                              icon: Icons.event_note_rounded,
+                              title: l10n.myDayAvailableToStartLabel,
+                              tasks: starts,
+                              isExpanded: _startsExpanded,
+                              onToggleExpanded: () => setState(
+                                () => _startsExpanded = !_startsExpanded,
+                              ),
+                              reasonLabel: l10n.myDayAvailableToStartLabel,
+                            ),
+                        ],
+                      ),
+                  ],
                 ],
               ),
             ),
@@ -1287,9 +1254,7 @@ class _RitualCardState extends State<_RitualCard> {
                 ),
               ],
             ],
-          ],
-        ),
-      ),
+      ],
     );
   }
 
@@ -1419,9 +1384,9 @@ class _SubsectionHeader extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withOpacity(0.7),
+                  color: cs.surfaceContainerHighest.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -1434,22 +1399,24 @@ class _SubsectionHeader extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               if (action != null) action!,
-              if (onToggleCollapsed != null) ...[
-                const SizedBox(width: 4),
-                IconButton(
-                  onPressed: onToggleCollapsed,
-                  icon: Icon(
-                    isCollapsed ? Icons.expand_more : Icons.expand_less,
-                  ),
-                ),
-              ],
+              ...?(onToggleCollapsed == null
+                  ? null
+                  : [
+                      const SizedBox(width: 4),
+                      IconButton(
+                        onPressed: onToggleCollapsed,
+                        icon: Icon(
+                          isCollapsed ? Icons.expand_more : Icons.expand_less,
+                        ),
+                      ),
+                    ]),
             ],
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 4),
             Text(
               subtitle!,
-              style: theme.textTheme.bodySmall?.copyWith(
+              style: theme.textTheme.labelSmall?.copyWith(
                 color: cs.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
@@ -1489,27 +1456,21 @@ class _TimeSensitiveSummaryRow extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Material(
         type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    context.l10n.myDayTimeSensitiveSummary(
-                      dueCount,
-                      plannedCount,
-                    ),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Text(
+                context.l10n.myDayTimeSensitiveSummary(
+                  dueCount,
+                  plannedCount,
                 ),
-                Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-              ],
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ),
@@ -1550,9 +1511,9 @@ class _MiniGroupHeader extends StatelessWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withOpacity(0.7),
+              color: cs.surfaceContainerHighest.withOpacity(0.6),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
@@ -1610,10 +1571,10 @@ class _SuggestedHeader extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerHighest.withOpacity(
-                    0.7,
+                    0.6,
                   ),
                   borderRadius: BorderRadius.circular(999),
                 ),
@@ -1689,7 +1650,7 @@ class _SuggestedHeader extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             l10n.myDayWhatMattersSubtitle,
-            style: theme.textTheme.bodySmall?.copyWith(
+            style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
@@ -1794,14 +1755,10 @@ class _SectionEmptyPanel extends StatelessWidget {
   const _SectionEmptyPanel({
     required this.title,
     required this.description,
-    this.actionLabel,
-    this.onAction,
   });
 
   final String title;
   final String description;
-  final String? actionLabel;
-  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -1850,28 +1807,9 @@ class _SectionEmptyPanel extends StatelessWidget {
                 ],
               ),
             ),
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: onAction,
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 6,
-                  ),
-                  minimumSize: const Size(0, 32),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  actionLabel!,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
           ],
-      ],
+        ),
+      ),
     );
   }
 }
@@ -2099,6 +2037,11 @@ class _ShowMoreRow extends StatelessWidget {
         child: TextButton.icon(
           onPressed: onPressed,
           icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
           label: Text(
             label,
             style: theme.textTheme.labelLarge?.copyWith(

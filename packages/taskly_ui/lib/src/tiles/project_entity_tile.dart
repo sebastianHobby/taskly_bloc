@@ -36,9 +36,9 @@ class ProjectEntityTile extends StatelessWidget {
   double? get _progress {
     final total = model.taskCount;
     final done = model.completedTaskCount;
-    if (total == null || total <= 0) return 0.0;
+    if (total == null || total <= 0) return 0;
     final safeDone = (done ?? 0).clamp(0, total);
-    return (safeDone / total).clamp(0.0, 1.0);
+    return (safeDone / total).clamp(0, 1);
   }
 
   @override
@@ -63,7 +63,7 @@ class ProjectEntityTile extends StatelessWidget {
 
     final baseOpacity = model.deemphasized ? 0.6 : 1.0;
     final completedOpacity = model.completed ? 0.75 : 1.0;
-    final opacity = (baseOpacity * completedOpacity).clamp(0.0, 1.0);
+    final opacity = (baseOpacity * completedOpacity).clamp(0, 1).toDouble();
 
     final onTap = switch (preset) {
       TasklyProjectRowPresetBulkSelection() =>
