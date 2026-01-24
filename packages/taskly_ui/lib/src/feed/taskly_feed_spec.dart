@@ -568,8 +568,6 @@ final class TasklyTaskRowData {
     required this.meta,
     this.leadingChip,
     this.secondaryChips = const <ValueChipData>[],
-    this.supportingText,
-    this.supportingTooltipText,
     this.deemphasized = false,
     this.checkboxSemanticLabel,
     this.labels,
@@ -581,8 +579,6 @@ final class TasklyTaskRowData {
   final TasklyEntityMetaData meta;
   final ValueChipData? leadingChip;
   final List<ValueChipData> secondaryChips;
-  final String? supportingText;
-  final String? supportingTooltipText;
   final bool deemphasized;
   final String? checkboxSemanticLabel;
   final TasklyTaskRowLabels? labels;
@@ -593,7 +589,6 @@ final class TasklyTaskRowLabels {
   const TasklyTaskRowLabels({
     this.completedStatusLabel,
     this.pinnedSemanticLabel,
-    this.supportingTooltipSemanticLabel,
     this.snoozeTooltip,
     this.selectionPillLabel,
     this.selectionPillSelectedLabel,
@@ -605,7 +600,6 @@ final class TasklyTaskRowLabels {
 
   final String? completedStatusLabel;
   final String? pinnedSemanticLabel;
-  final String? supportingTooltipSemanticLabel;
   final String? snoozeTooltip;
   final String? selectionPillLabel;
   final String? selectionPillSelectedLabel;

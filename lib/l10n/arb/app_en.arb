@@ -803,7 +803,7 @@
     "@snoozeSubtitle": {
         "description": "Subtitle explaining snooze behavior"
     },
-    "myDayWhatMattersSectionTitle": "Values aligned",
+    "myDayWhatMattersSectionTitle": "Today's suggested tasks",
     "@myDayWhatMattersSectionTitle": {
         "description": "Section title for value-aligned suggestions in the My Day ritual (B1)."
     },
@@ -1011,7 +1011,14 @@
     "@myDayWhySuggestedSemanticLabel": {
         "description": "Accessibility label for the info tooltip button explaining why a task was suggested in the My Day ritual."
     },
-    "myDayWhatMattersSubtitle": "Value-led picks for today.",
+    "myDayWhatMattersSubtitle": "Values-led tasks, balanced with what's due soon.",
+    "@myDayWhatMattersSubtitle": {
+        "description": "Subtitle explaining how today's suggestions are generated."
+    },
+    "myDayCustomizeSuggestionsAction": "Customize suggestions",
+    "@myDayCustomizeSuggestionsAction": {
+        "description": "Action label that opens suggestion settings for My Day."
+    },
     "@myDayWhatMattersSubtitle": {
         "description": "Subtitle for the What matters section in the My Day ritual."
     },
