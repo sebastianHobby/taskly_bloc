@@ -177,6 +177,14 @@ class _InMemoryTaskRepo extends Fake implements TaskRepositoryContract {
   Future<void> delete(String id, {OperationContext? context}) async {
     _tasks.removeWhere((task) => task.id == id);
   }
+
+  @override
+  Future<Map<String, TaskSnoozeStats>> getSnoozeStats({
+    required DateTime sinceUtc,
+    required DateTime untilUtc,
+  }) async {
+    return const <String, TaskSnoozeStats>{};
+  }
 }
 
 class _FixedClock implements Clock {

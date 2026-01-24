@@ -144,6 +144,7 @@ class _MyDayPageState extends State<MyDayPage> {
                                 : () => openSuggestionSettingsSheet(
                                     context,
                                     dueWindowDays: ritualReady.dueWindowDays,
+                                    dueSoonEnabled: ritualReady.showDueSoon,
                                     showAvailableToStart:
                                         ritualReady.showAvailableToStart,
                                   ),

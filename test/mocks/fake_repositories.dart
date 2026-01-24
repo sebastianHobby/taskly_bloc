@@ -171,6 +171,14 @@ class FakeTaskRepository implements TaskRepositoryContract {
   }
 
   @override
+  Future<Map<String, TaskSnoozeStats>> getSnoozeStats({
+    required DateTime sinceUtc,
+    required DateTime untilUtc,
+  }) async {
+    return const <String, TaskSnoozeStats>{};
+  }
+
+  @override
   Future<void> create({
     required String name,
     String? description,

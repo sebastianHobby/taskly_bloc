@@ -34,6 +34,7 @@ final class MyDayRitualComposer {
     required List<Task> tasks,
     required DateTime dayKeyUtc,
     required int dueWindowDays,
+    required bool includeDueSoon,
     required my_day.MyDayDayPicks dayPicks,
     required Set<String> selectedTaskIds,
     required AllocationResult? allocation,
@@ -50,6 +51,7 @@ final class MyDayRitualComposer {
       tasks,
       dayKeyUtc,
       dueWindowDays,
+      includeDueSoon: includeDueSoon,
       excludeIds: {...selectedTaskIds, ...curatedIds},
     );
 
@@ -72,6 +74,7 @@ final class MyDayRitualComposer {
     List<Task> tasks,
     DateTime dayKeyUtc,
     int dueWindowDays, {
+    required bool includeDueSoon,
     required Set<String> excludeIds,
   }) {
     final today = dateOnly(dayKeyUtc);
@@ -85,7 +88,9 @@ final class MyDayRitualComposer {
         task.occurrence?.deadline ?? task.deadlineDate,
       );
       final startEligible = start != null && !start.isAfter(today);
-      final dueSoon = deadline != null && !deadline.isAfter(dueSoonLimit);
+      final dueSoon = includeDueSoon &&
+          deadline != null &&
+          !deadline.isAfter(dueSoonLimit);
       return startEligible || dueSoon;
     }
 

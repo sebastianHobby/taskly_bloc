@@ -6,10 +6,12 @@ import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
 void openSuggestionSettingsSheet(
   BuildContext context, {
   required int dueWindowDays,
+  required bool dueSoonEnabled,
   required bool showAvailableToStart,
 }) {
   var dueDays = dueWindowDays.clamp(1, 30);
   var showStarts = showAvailableToStart;
+  var dueSoon = dueSoonEnabled;
   final bloc = context.read<MyDayRitualBloc>();
 
   showModalBottomSheet<void>(
@@ -44,29 +46,53 @@ void openSuggestionSettingsSheet(
                     ),
                   ),
                   const SizedBox(height: 16),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.myDayDueSoonToggleTitle),
+                    subtitle: Text(
+                      l10n.myDayDueSoonToggleSubtitle,
+                    ),
+                    value: dueSoon,
+                    onChanged: (value) {
+                      setState(() => dueSoon = value);
+                      bloc.add(MyDayRitualDueSoonEnabledChanged(value));
+                    },
+                  ),
+                  const SizedBox(height: 16),
                   Text(
                     l10n.myDayDueSoonWindowLabel(dueDays),
                     style: theme.textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  Slider(
-                    value: dueDays.toDouble(),
-                    min: 1,
-                    max: 30,
-                    divisions: 29,
-                    label: '$dueDays',
-                    onChanged: (value) {
-                      final next = value.round().clamp(1, 30);
-                      setState(() => dueDays = next);
-                      bloc.add(MyDayRitualDueWindowDaysChanged(next));
-                    },
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.myDayDueSoonWindowHelp(dueDays),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
+                  Opacity(
+                    opacity: dueSoon ? 1 : 0.5,
+                    child: IgnorePointer(
+                      ignoring: !dueSoon,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Slider(
+                            value: dueDays.toDouble(),
+                            min: 1,
+                            max: 30,
+                            divisions: 29,
+                            label: '$dueDays',
+                            onChanged: (value) {
+                              final next = value.round().clamp(1, 30);
+                              setState(() => dueDays = next);
+                              bloc.add(MyDayRitualDueWindowDaysChanged(next));
+                            },
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            l10n.myDayDueSoonWindowHelp(dueDays),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),

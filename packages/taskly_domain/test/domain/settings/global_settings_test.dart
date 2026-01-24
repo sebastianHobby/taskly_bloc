@@ -20,6 +20,7 @@ void main() {
 
       expect(settings.themeMode, AppThemeMode.dark);
       expect(settings.myDayDueWindowDays, 30);
+      expect(settings.myDayDueSoonEnabled, isTrue);
       expect(settings.myDayShowAvailableToStart, isFalse);
       expect(settings.textScaleFactor, 1.25);
       expect(settings.onboardingCompleted, isTrue);
@@ -50,6 +51,7 @@ void main() {
       localeCode: 'en',
       homeTimeZoneOffsetMinutes: -60,
       myDayDueWindowDays: 0, // should clamp on write
+      myDayDueSoonEnabled: false,
       myDayShowAvailableToStart: true,
       textScaleFactor: 0.9,
       onboardingCompleted: true,
@@ -63,6 +65,7 @@ void main() {
     expect(decoded.localeCode, 'en');
     expect(decoded.homeTimeZoneOffsetMinutes, -60);
     expect(decoded.myDayDueWindowDays, 1);
+    expect(decoded.myDayDueSoonEnabled, isFalse);
     expect(decoded.myDayShowAvailableToStart, isTrue);
     expect(decoded.textScaleFactor, 0.9);
     expect(decoded.onboardingCompleted, isTrue);

@@ -81,6 +81,7 @@ class MyDayRitualWizardPage extends StatelessWidget {
                         onPressed: () => openSuggestionSettingsSheet(
                           context,
                           dueWindowDays: ritualState.dueWindowDays,
+                          dueSoonEnabled: ritualState.showDueSoon,
                           showAvailableToStart:
                               ritualState.showAvailableToStart,
                         ),
@@ -157,6 +158,7 @@ class _RitualBody extends StatelessWidget {
               planned: planned,
               dueWindowDays: data.dueWindowDays,
               showAvailableToStart: data.showAvailableToStart,
+              showDueSoon: data.showDueSoon,
               curated: curated,
               pinnedTasks: pinnedTasks,
               snoozed: snoozed,
@@ -324,6 +326,7 @@ class _RitualCard extends StatefulWidget {
     required this.planned,
     required this.dueWindowDays,
     required this.showAvailableToStart,
+    required this.showDueSoon,
     required this.curated,
     required this.pinnedTasks,
     required this.snoozed,
@@ -344,6 +347,7 @@ class _RitualCard extends StatefulWidget {
   final List<Task> planned;
   final int dueWindowDays;
   final bool showAvailableToStart;
+  final bool showDueSoon;
   final List<Task> curated;
   final List<Task> pinnedTasks;
   final List<Task> snoozed;
@@ -409,6 +413,81 @@ class _RitualCardState extends State<_RitualCard> {
         alignment: 0.08,
       );
     });
+  }
+
+  Widget _buildMetadataStrip(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final labelStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    final emphasisStyle = labelStyle?.copyWith(fontWeight: FontWeight.w600) ??
+        theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600);
+    final dueSoonLabel = widget.showDueSoon
+        ? l10n.myDayDueSoonWindowLabel(widget.dueWindowDays)
+        : l10n.myDayMetadataDueSoonOffLabel;
+
+    final metadataItems = <Widget>[
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.eco_rounded,
+            size: 16,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            l10n.myDayMetadataValuesLedLabel,
+            style: emphasisStyle,
+          ),
+        ],
+      ),
+      Text(dueSoonLabel, style: labelStyle),
+    ];
+
+    if (widget.showAvailableToStart) {
+      metadataItems.add(
+        Text(
+          l10n.myDayMetadataPlannedIncludedLabel,
+          style: labelStyle,
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: metadataItems,
+            ),
+          ),
+          TextButton(
+            onPressed: () => openSuggestionSettingsSheet(
+              context,
+              dueWindowDays: widget.dueWindowDays,
+              dueSoonEnabled: widget.showDueSoon,
+              showAvailableToStart: widget.showAvailableToStart,
+            ),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              textStyle: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            child: Text(l10n.myDayCustomizeSuggestionsAction),
+          ),
+        ],
+      ),
+    );
   }
 
   ({List<Task> due, List<Task> starts}) _computePlannedSections() {
@@ -599,6 +678,7 @@ class _RitualCardState extends State<_RitualCard> {
       onPressed: () => openSuggestionSettingsSheet(
         context,
         dueWindowDays: widget.dueWindowDays,
+        dueSoonEnabled: widget.showDueSoon,
         showAvailableToStart: widget.showAvailableToStart,
       ),
       style: TextButton.styleFrom(
@@ -847,6 +927,7 @@ class _RitualCardState extends State<_RitualCard> {
 
     return Column(
       children: [
+        _buildMetadataStrip(context),
         TasklyMyDaySectionStack(
           pinned: pinnedRows.isEmpty
               ? null

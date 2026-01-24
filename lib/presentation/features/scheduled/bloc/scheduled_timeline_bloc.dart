@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_domain/services.dart';
 
@@ -110,10 +111,12 @@ final class ScheduledTimelineBloc
   ScheduledTimelineBloc({
     required ScheduledOccurrencesService occurrencesService,
     required SessionDayKeyService sessionDayKeyService,
+    required NowService nowService,
     this.scope = const GlobalScheduledScope(),
   }) : _occurrencesService = occurrencesService,
-       _sessionDayKeyService = sessionDayKeyService,
-       super(const ScheduledTimelineLoading()) {
+        _sessionDayKeyService = sessionDayKeyService,
+        _nowService = nowService,
+        super(const ScheduledTimelineLoading()) {
     on<ScheduledTimelineStarted>(_onStarted);
     on<_ScheduledTimelineOccurrencesUpdated>(_onOccurrencesUpdated);
     on<_ScheduledTimelineWatchFailed>(_onWatchFailed);
@@ -127,6 +130,7 @@ final class ScheduledTimelineBloc
 
   final ScheduledOccurrencesService _occurrencesService;
   final SessionDayKeyService _sessionDayKeyService;
+  final NowService _nowService;
   final ScheduledScope scope;
 
   final BehaviorSubject<_RangeWindow> _rangeWindow =
@@ -162,7 +166,7 @@ final class ScheduledTimelineBloc
       _sessionDayKeyService.start();
 
       final todayUtc = _sessionDayKeyService.todayDayKeyUtc.valueOrNull;
-      final fallbackNow = DateTime.now();
+      final fallbackNow = _nowService.nowLocal();
       final effectiveTodayUtc =
           todayUtc ??
           DateTime.utc(

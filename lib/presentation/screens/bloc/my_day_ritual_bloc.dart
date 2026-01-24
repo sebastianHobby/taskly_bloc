@@ -52,6 +52,12 @@ final class MyDayRitualDueWindowDaysChanged extends MyDayRitualEvent {
   final int days;
 }
 
+final class MyDayRitualDueSoonEnabledChanged extends MyDayRitualEvent {
+  const MyDayRitualDueSoonEnabledChanged(this.enabled);
+
+  final bool enabled;
+}
+
 final class MyDayRitualShowAvailableToStartChanged extends MyDayRitualEvent {
   const MyDayRitualShowAvailableToStartChanged(this.enabled);
 
@@ -109,6 +115,7 @@ final class MyDayRitualReady extends MyDayRitualState {
     required this.needsRitual,
     required this.dueWindowDays,
     required this.showAvailableToStart,
+    required this.showDueSoon,
     required this.planned,
     required this.curated,
     required this.pinnedTasks,
@@ -126,6 +133,7 @@ final class MyDayRitualReady extends MyDayRitualState {
   final bool needsRitual;
   final int dueWindowDays;
   final bool showAvailableToStart;
+  final bool showDueSoon;
   final List<Task> planned;
   final List<Task> curated;
   final List<Task> pinnedTasks;
@@ -143,6 +151,7 @@ final class MyDayRitualReady extends MyDayRitualState {
     bool? needsRitual,
     int? dueWindowDays,
     bool? showAvailableToStart,
+    bool? showDueSoon,
     List<Task>? planned,
     List<Task>? curated,
     List<Task>? pinnedTasks,
@@ -160,6 +169,7 @@ final class MyDayRitualReady extends MyDayRitualState {
       needsRitual: needsRitual ?? this.needsRitual,
       dueWindowDays: dueWindowDays ?? this.dueWindowDays,
       showAvailableToStart: showAvailableToStart ?? this.showAvailableToStart,
+      showDueSoon: showDueSoon ?? this.showDueSoon,
       planned: planned ?? this.planned,
       curated: curated ?? this.curated,
       pinnedTasks: pinnedTasks ?? this.pinnedTasks,
@@ -203,6 +213,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     on<MyDayRitualAcceptAllStarts>(_onAcceptAllStarts);
     on<MyDayRitualAcceptAllCurated>(_onAcceptAllCurated);
     on<MyDayRitualDueWindowDaysChanged>(_onDueWindowDaysChanged);
+    on<MyDayRitualDueSoonEnabledChanged>(_onDueSoonEnabledChanged);
     on<MyDayRitualShowAvailableToStartChanged>(
       _onShowAvailableToStartChanged,
     );
@@ -301,6 +312,18 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
     if (clamped == _globalSettings.myDayDueWindowDays) return;
 
     final updated = _globalSettings.copyWith(myDayDueWindowDays: clamped);
+    await _settingsRepository.save(SettingsKey.global, updated);
+  }
+
+  Future<void> _onDueSoonEnabledChanged(
+    MyDayRitualDueSoonEnabledChanged event,
+    Emitter<MyDayRitualState> emit,
+  ) async {
+    if (event.enabled == _globalSettings.myDayDueSoonEnabled) return;
+
+    final updated = _globalSettings.copyWith(
+      myDayDueSoonEnabled: event.enabled,
+    );
     await _settingsRepository.save(SettingsKey.global, updated);
   }
 
@@ -417,6 +440,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
       tasks: unpinnedTasks,
       dayKeyUtc: _dayKeyUtc,
       dueWindowDays: _globalSettings.myDayDueWindowDays,
+      includeDueSoon: _globalSettings.myDayDueSoonEnabled,
       dayPicks: _dayPicks,
       selectedTaskIds: _selectedTaskIds,
       allocation: _allocationResult,
@@ -437,6 +461,7 @@ class MyDayRitualBloc extends Bloc<MyDayRitualEvent, MyDayRitualState> {
         needsRitual: needsRitual,
         dueWindowDays: _globalSettings.myDayDueWindowDays,
         showAvailableToStart: _globalSettings.myDayShowAvailableToStart,
+        showDueSoon: _globalSettings.myDayDueSoonEnabled,
         planned: planned,
         curated: curated,
         pinnedTasks: pinnedTasks,

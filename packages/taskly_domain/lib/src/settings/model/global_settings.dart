@@ -25,9 +25,15 @@ abstract class GlobalSettings with _$GlobalSettings {
     /// Clamped to 1-30 days.
     @Default(GlobalSettings.defaultMyDayDueWindowDays) int myDayDueWindowDays,
 
+    /// My Day ritual: control whether due-soon picks are part of the ritual.
+    ///
+    /// When disabled the ritual will only surface start-date tasks.
+    @Default(true) bool myDayDueSoonEnabled,
+
     /// My Day ritual: show the "Available to start" lane.
     ///
-    /// When disabled, we still keep due-soon items visible.
+    /// When disabled, we still keep due-soon items visible if the due-soon toggle
+    /// is enabled.
     @Default(true) bool myDayShowAvailableToStart,
 
     /// Weekly review scheduling.
@@ -62,6 +68,8 @@ abstract class GlobalSettings with _$GlobalSettings {
         (json['myDayDueWindowDays'] as num?)?.toInt() ??
         defaultMyDayDueWindowDays;
 
+    final rawMyDayDueSoonEnabled =
+        json['myDayDueSoonEnabled'] as bool?;
     final rawMyDayShowAvailableToStart =
         json['myDayShowAvailableToStart'] as bool?;
     final rawWeeklyReviewDay =
@@ -94,6 +102,7 @@ abstract class GlobalSettings with _$GlobalSettings {
           (json['homeTimeZoneOffsetMinutes'] as num?)?.toInt() ??
           defaultHomeTimeZoneOffsetMinutes,
       myDayDueWindowDays: rawMyDayDueWindowDays.clamp(1, 30),
+      myDayDueSoonEnabled: rawMyDayDueSoonEnabled ?? true,
       myDayShowAvailableToStart: rawMyDayShowAvailableToStart ?? true,
       weeklyReviewEnabled: json['weeklyReviewEnabled'] as bool? ?? true,
       weeklyReviewDayOfWeek: rawWeeklyReviewDay.clamp(1, 7),
@@ -183,6 +192,7 @@ extension GlobalSettingsJson on GlobalSettings {
     'locale': localeCode,
     'homeTimeZoneOffsetMinutes': homeTimeZoneOffsetMinutes,
     'myDayDueWindowDays': myDayDueWindowDays.clamp(1, 30),
+    'myDayDueSoonEnabled': myDayDueSoonEnabled,
     'myDayShowAvailableToStart': myDayShowAvailableToStart,
     'weeklyReviewEnabled': weeklyReviewEnabled,
     'weeklyReviewDayOfWeek': weeklyReviewDayOfWeek.clamp(1, 7),

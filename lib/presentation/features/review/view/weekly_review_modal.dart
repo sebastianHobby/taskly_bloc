@@ -30,6 +30,8 @@ Future<void> showWeeklyReviewModal(
             analyticsService: getIt<AnalyticsService>(),
             attentionEngine: getIt<AttentionEngineContract>(),
             valueRepository: getIt<ValueRepositoryContract>(),
+            taskRepository: getIt<TaskRepositoryContract>(),
+            nowService: getIt<NowService>(),
           )..load(config),
           child: _WeeklyReviewModal(config: config),
         ),

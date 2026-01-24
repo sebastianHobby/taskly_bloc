@@ -638,23 +638,86 @@ class TaskRepository implements TaskRepositoryContract {
 
         final normalized = untilUtc?.toUtc();
         final psMetadata = encodeCrudMetadata(context);
+        final now = DateTime.now();
 
-        await (driftDb.update(
-          driftDb.taskTable,
-        )..where((t) => t.id.equals(id))).write(
-          TaskTableCompanion(
-            myDaySnoozedUntilUtc: drift_pkg.Value(normalized),
-            psMetadata: psMetadata == null
-                ? const drift_pkg.Value<String?>.absent()
-                : drift_pkg.Value(psMetadata),
-            updatedAt: drift_pkg.Value(DateTime.now()),
-          ),
-        );
+        await driftDb.transaction(() async {
+          await (driftDb.update(
+            driftDb.taskTable,
+          )..where((t) => t.id.equals(id))).write(
+            TaskTableCompanion(
+              myDaySnoozedUntilUtc: drift_pkg.Value(normalized),
+              psMetadata: psMetadata == null
+                  ? const drift_pkg.Value<String?>.absent()
+                  : drift_pkg.Value(psMetadata),
+              updatedAt: drift_pkg.Value(now),
+            ),
+          );
+
+          if (normalized != null) {
+            await driftDb
+                .into(driftDb.taskSnoozeEventsTable)
+                .insert(
+                  TaskSnoozeEventsTableCompanion(
+                    id: drift_pkg.Value(idGenerator.taskSnoozeEventId()),
+                    taskId: drift_pkg.Value(id),
+                    snoozedAt: drift_pkg.Value(now),
+                    snoozedUntil: drift_pkg.Value(normalized),
+                    createdAt: drift_pkg.Value(now),
+                    updatedAt: drift_pkg.Value(now),
+                    psMetadata: psMetadata == null
+                        ? const drift_pkg.Value<String?>.absent()
+                        : drift_pkg.Value(psMetadata),
+                  ),
+                  mode: drift_pkg.InsertMode.insert,
+                );
+          }
+        });
       },
       area: 'data.task',
       opName: 'setMyDaySnoozedUntil',
       context: context,
     );
+  }
+
+  @override
+  Future<Map<String, TaskSnoozeStats>> getSnoozeStats({
+    required DateTime sinceUtc,
+    required DateTime untilUtc,
+  }) async {
+    final rows =
+        await (driftDb.select(driftDb.taskSnoozeEventsTable)..where(
+              (row) =>
+                  row.snoozedAt.isBiggerOrEqualValue(sinceUtc) &
+                  row.snoozedAt.isSmallerOrEqualValue(untilUtc),
+            ))
+            .get();
+
+    final stats = <String, TaskSnoozeStats>{};
+    for (final row in rows) {
+      final taskId = row.taskId;
+      final current =
+          stats[taskId] ??
+          const TaskSnoozeStats(snoozeCount: 0, totalSnoozeDays: 0);
+
+      final start = row.snoozedAt;
+      final end = row.snoozedUntil ?? row.snoozedAt;
+      final effectiveStart = start.isBefore(sinceUtc) ? sinceUtc : start;
+      final effectiveEnd = end.isAfter(untilUtc) ? untilUtc : end;
+      final duration = effectiveEnd.difference(effectiveStart);
+      final snoozeDays = _ceilDays(duration);
+
+      stats[taskId] = TaskSnoozeStats(
+        snoozeCount: current.snoozeCount + 1,
+        totalSnoozeDays: current.totalSnoozeDays + snoozeDays,
+      );
+    }
+
+    return stats;
+  }
+
+  int _ceilDays(Duration duration) {
+    if (duration.inMinutes <= 0) return 0;
+    return (duration.inMinutes + 1439) ~/ 1440;
   }
 
   @override
