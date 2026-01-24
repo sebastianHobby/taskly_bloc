@@ -58,12 +58,6 @@ class TaskEntityTile extends StatelessWidget {
 
     final effectiveCompact = MediaQuery.sizeOf(context).width < 420;
 
-    final pinnedPrefix = markers.pinned
-        ? _PinnedGlyph(label: model.labels?.pinnedSemanticLabel)
-        : null;
-
-    final Widget? titlePrefix = pinnedPrefix;
-
     final completionEnabled =
         !_isSelectionPreset && actions.onToggleCompletion != null;
 
@@ -94,16 +88,6 @@ class TaskEntityTile extends StatelessWidget {
         actions.onToggleSelected == null &&
         model.completed &&
         (model.labels?.completedStatusLabel?.trim().isNotEmpty ?? false);
-
-    final showPinnedToggle =
-        _isPinnedTogglePreset && actions.onTogglePinned != null;
-
-    final pinLabel = model.labels?.pinLabel?.trim().isNotEmpty ?? false
-        ? model.labels!.pinLabel!.trim()
-        : 'Pin';
-    final pinnedLabel = model.labels?.pinnedLabel?.trim().isNotEmpty ?? false
-        ? model.labels!.pinnedLabel!.trim()
-        : 'Pinned';
 
     final effectiveSupportingText = model.supportingText?.trim();
     final hasSupportingText =
@@ -179,13 +163,6 @@ class TaskEntityTile extends StatelessWidget {
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (titlePrefix != null) ...[
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 1),
-                                    child: titlePrefix,
-                                  ),
-                                  const SizedBox(width: 6),
-                                ],
                                 Expanded(
                                   child: Text(
                                     model.title,
@@ -248,6 +225,16 @@ class TaskEntityTile extends StatelessWidget {
                           ],
                         ),
                       ),
+                      if (markers.pinned) ...[
+                        const SizedBox(width: 8),
+                        _PinnedTrailingIcon(
+                          label: model.labels?.pinnedSemanticLabel,
+                          tooltip: model.labels?.pinnedLabel,
+                          onPressed: _isPinnedTogglePreset
+                              ? () => actions.onTogglePinned?.call(false)
+                              : null,
+                        ),
+                      ],
                       if (_isPickerLikePreset) ...[
                         const SizedBox(width: 8),
                         if (_isPickerActionPreset)
@@ -289,15 +276,6 @@ class TaskEntityTile extends StatelessWidget {
                             ),
                           ),
                         ],
-                      ] else if (showPinnedToggle) ...[
-                        const SizedBox(width: 8),
-                        _PinnedToggleChip(
-                          pinned: markers.pinned,
-                          label: markers.pinned ? pinnedLabel : pinLabel,
-                          onPressed: () => actions.onTogglePinned?.call(
-                            !markers.pinned,
-                          ),
-                        ),
                       ],
                     ],
                   ),
@@ -535,28 +513,43 @@ class _CompletionControl extends StatelessWidget {
   }
 }
 
-class _PinnedGlyph extends StatelessWidget {
-  const _PinnedGlyph({required this.label});
+class _PinnedTrailingIcon extends StatelessWidget {
+  const _PinnedTrailingIcon({
+    required this.label,
+    this.tooltip,
+    this.onPressed,
+  });
 
   final String? label;
+  final String? tooltip;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
+    final icon = Icon(
+      Icons.push_pin_rounded,
+      size: 18,
+      color: scheme.primary,
+    );
+
+    final child = onPressed == null
+        ? icon
+        : IconButton(
+            onPressed: onPressed,
+            tooltip: tooltip ?? label ?? 'Pinned',
+            icon: icon,
+            style: IconButton.styleFrom(
+              minimumSize: const Size(36, 36),
+              padding: const EdgeInsets.all(6),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          );
+
     return Semantics(
       label: label ?? 'Pinned',
-      child: SizedBox(
-        width: 18,
-        child: Align(
-          alignment: Alignment.topCenter,
-          child: Icon(
-            Icons.push_pin_rounded,
-            size: 16,
-            color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
-          ),
-        ),
-      ),
+      child: child,
     );
   }
 }
@@ -701,55 +694,6 @@ class _PickerStatusPill extends StatelessWidget {
           fontWeight: FontWeight.w800,
           color: scheme.onSurfaceVariant,
           letterSpacing: 0.2,
-        ),
-      ),
-    );
-  }
-}
-
-class _PinnedToggleChip extends StatelessWidget {
-  const _PinnedToggleChip({
-    required this.label,
-    required this.pinned,
-    required this.onPressed,
-  });
-
-  final String label;
-  final bool pinned;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    final fg = pinned ? scheme.primary : scheme.onSurfaceVariant;
-    final bg = pinned
-        ? scheme.primaryContainer.withValues(alpha: 0.75)
-        : scheme.surfaceContainerHighest.withValues(alpha: 0.7);
-
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: const Icon(Icons.push_pin_rounded, size: 16),
-      label: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: fg,
-        backgroundColor: bg,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        minimumSize: const Size(0, 32),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        textStyle: theme.textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w700,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-        ),
-        side: BorderSide(
-          color: scheme.outlineVariant.withValues(alpha: 0.6),
         ),
       ),
     );

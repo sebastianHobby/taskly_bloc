@@ -146,7 +146,7 @@ bool _isExcluded(String filePath) {
 bool _isInPackage(String filePath, String packageName) {
   final normalized = filePath.replaceAll(r'\', '/');
   if (packageName == 'taskly_bloc') {
-    return normalized.contains('/lib/');
+    return normalized.startsWith('lib/');
   }
 
   return normalized.contains('/packages/$packageName/lib/');

@@ -14,27 +14,8 @@ abstract class SystemAttentionRules {
   SystemAttentionRules._();
 
   // ==========================================================================
-  // PROBLEM DETECTION RULES (3 rules)
+  // PROBLEM DETECTION RULES (2 rules)
   // ==========================================================================
-
-  /// Detects overdue tasks (past deadline)
-  static const problemTaskOverdue = AttentionRuleTemplate(
-    ruleKey: 'problem_task_overdue',
-    bucket: AttentionBucket.action,
-    evaluator: 'task_predicate_v1',
-    evaluatorParams: {
-      'predicate': 'isOverdue',
-      'thresholdHours': 0,
-    },
-    severity: AttentionSeverity.warning,
-    displayConfig: {
-      'title': 'Overdue Tasks',
-      'description': 'Tasks past their deadline',
-      'icon': 'warning',
-    },
-    resolutionActions: ['reviewed', 'snoozed', 'dismissed'],
-    sortOrder: 10,
-  );
 
   /// Detects stale tasks (no activity for 30+ days)
   static const problemTaskStale = AttentionRuleTemplate(
@@ -99,7 +80,7 @@ abstract class SystemAttentionRules {
   );
 
   // ==========================================================================
-  // REVIEW RULES (3 rules)
+  // REVIEW RULES (2 rules)
   // ==========================================================================
 
   /// Values alignment review
@@ -140,101 +121,19 @@ abstract class SystemAttentionRules {
     sortOrder: 130,
   );
 
-  // ========================================================================
-  // REVIEW RULES (PROJECT HEALTH - coaching)
-  // ========================================================================
-
-  /// High-value project neglected (allocation-based).
-  static const reviewProjectHighValueNeglected = AttentionRuleTemplate(
-    ruleKey: 'review_project_high_value_neglected',
-    bucket: AttentionBucket.action,
-    evaluator: 'project_predicate_v1',
-    evaluatorParams: {
-      'predicate': 'highValueNeglected',
-    },
-    severity: AttentionSeverity.info,
-    displayConfig: {
-      'title': 'High-value project neglected',
-      'description': 'Consider taking a small step on {project_name}.',
-      'icon': 'star',
-    },
-    resolutionActions: ['reviewed', 'snoozed', 'dismissed'],
-    sortOrder: 200,
-  );
-
-  /// Project has not been allocated recently (portfolio hygiene).
-  static const reviewProjectNoAllocatedRecently = AttentionRuleTemplate(
-    ruleKey: 'review_project_no_allocated_recently',
-    bucket: AttentionBucket.action,
-    evaluator: 'project_predicate_v1',
-    evaluatorParams: {
-      'predicate': 'noAllocatedRecently',
-    },
-    severity: AttentionSeverity.info,
-    displayConfig: {
-      'title': 'Project not allocated recently',
-      'description': 'Do you still intend to move {project_name} forward?',
-      'icon': 'history',
-    },
-    resolutionActions: ['reviewed', 'snoozed', 'dismissed'],
-    sortOrder: 210,
-  );
-
-  /// Project has no allocatable tasks for > 1 day (time gated).
-  static const reviewProjectNoAllocatableTasks = AttentionRuleTemplate(
-    ruleKey: 'review_project_no_allocatable_tasks',
-    bucket: AttentionBucket.action,
-    evaluator: 'project_predicate_v1',
-    evaluatorParams: {
-      'predicate': 'noAllocatableTasks',
-    },
-    severity: AttentionSeverity.info,
-    displayConfig: {
-      'title': 'No next action',
-      'description': 'Add a next action for {project_name}.',
-      'icon': 'check_circle',
-    },
-    resolutionActions: ['reviewed', 'snoozed', 'dismissed'],
-    sortOrder: 220,
-  );
-
-  /// Pinned tasks review
-  static const reviewPinnedTasks = AttentionRuleTemplate(
-    ruleKey: 'review_pinned_tasks',
-    bucket: AttentionBucket.review,
-    evaluator: 'review_session_due_v1',
-    evaluatorParams: {
-      'reviewType': 'pinned_tasks',
-      'frequencyDays': 7,
-    },
-    severity: AttentionSeverity.info,
-    displayConfig: {
-      'title': 'Pinned Tasks',
-      'description': 'Review your pinned/important tasks',
-      'icon': 'push_pin',
-    },
-    resolutionActions: ['reviewed', 'snoozed'],
-    sortOrder: 140,
-  );
-
   // ==========================================================================
   // HELPERS
   // ==========================================================================
 
   /// All system rule templates
   static List<AttentionRuleTemplate> get all => [
-    // Problem detection (3)
-    problemTaskOverdue,
+    // Problem detection (2)
     problemTaskStale,
     problemProjectIdle,
     problemProjectDeadlineRisk,
-    // Reviews (3 + 3 project health)
+    // Reviews (2)
     reviewValuesAlignment,
     reviewBalance,
-    reviewPinnedTasks,
-    reviewProjectHighValueNeglected,
-    reviewProjectNoAllocatedRecently,
-    reviewProjectNoAllocatableTasks,
   ];
 
   /// Get template by rule key

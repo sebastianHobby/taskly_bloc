@@ -21,6 +21,7 @@ class TasklyFormValueChip extends StatelessWidget {
   const TasklyFormValueChip({
     required this.model,
     required this.onTap,
+    required this.isSelected,
     required this.preset,
     this.isPrimary = false,
     super.key,
@@ -28,6 +29,7 @@ class TasklyFormValueChip extends StatelessWidget {
 
   final TasklyFormValueChipModel model;
   final VoidCallback onTap;
+  final bool isSelected;
   final TasklyFormChipPreset preset;
   final bool isPrimary;
 
@@ -36,17 +38,24 @@ class TasklyFormValueChip extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final color = model.color.withValues(alpha: 0.95);
 
-    final bg = isPrimary
-        ? model.color.withValues(alpha: 0.18)
+    final bg = isSelected
+        ? model.color.withValues(alpha: 0.16)
         : scheme.surface;
-    final borderColor = model.color.withValues(alpha: 0.8);
+    final borderColor =
+        isSelected ? model.color.withValues(alpha: 0.6) : scheme.outlineVariant;
+    final labelColor = isSelected ? color : scheme.onSurfaceVariant;
+    final iconColor = isSelected ? color : scheme.onSurfaceVariant;
 
     return Material(
       color: bg,
-      borderRadius: BorderRadius.circular(preset.borderRadius),
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: borderColor,
+        ),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(preset.borderRadius),
+        customBorder: const StadiumBorder(),
         child: Padding(
           padding: preset.padding,
           child: Row(
@@ -54,29 +63,32 @@ class TasklyFormValueChip extends StatelessWidget {
             children: [
               _ValueIcon(
                 icon: model.icon,
-                color: color,
+                color: iconColor,
                 borderColor: borderColor,
                 size: preset.iconSize + 2,
               ),
               const SizedBox(width: 6),
-              if (isPrimary)
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 180),
-                  child: Text(
-                    model.label,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: color,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                )
-              else
-                Icon(
-                  Icons.circle_outlined,
-                  size: 10,
-                  color: model.color.withValues(alpha: 0.75),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 180),
+                child: Text(
+                  model.label,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: labelColor,
+                        fontWeight: isSelected
+                            ? (isPrimary ? FontWeight.w700 : FontWeight.w600)
+                            : null,
+                      ),
                 ),
+              ),
+              if (isSelected) ...[
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.check,
+                  size: preset.iconSize,
+                  color: labelColor,
+                ),
+              ],
             ],
           ),
         ),

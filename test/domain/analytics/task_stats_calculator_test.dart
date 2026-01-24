@@ -49,6 +49,7 @@ void main() {
       );
       final overdueTask = TestData.task(
         deadlineDate: now.subtract(const Duration(days: 1)),
+        updatedAt: now,
       );
 
       final calculator = TaskStatsCalculator();

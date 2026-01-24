@@ -121,6 +121,7 @@ void main() {
       );
       final completedOccurrence = TestData.occurrenceData(
         date: DateTime(2025, 1, 14),
+        completionId: 'c1',
         completedAt: DateTime(2025, 1, 14, 8),
       );
       final expandedTask = baseTask.copyWith(occurrence: completedOccurrence);

@@ -5,7 +5,7 @@ import '../../helpers/test_imports.dart';
 
 import 'dart:async';
 
-import 'package:taskly_data/testing.dart';
+import 'package:taskly_data/src/repositories/query_stream_cache.dart';
 
 void main() {
   setUpAll(setUpAllTestEnvironment);

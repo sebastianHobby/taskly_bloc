@@ -32,6 +32,7 @@ analyzer:
     - lib/l10n/gen/*
     - "**/*.g.dart"
     - test/**
+    - packages/**/test/**
 linter:
   rules:
     public_member_api_docs: false

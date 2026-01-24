@@ -2,7 +2,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'package:taskly_domain/src/allocation/model/allocation_exception_rule.dart';
 import 'package:taskly_domain/src/allocation/model/focus_mode.dart';
-import 'package:taskly_domain/src/settings/model/project_health_review_settings.dart';
 
 part 'allocation_config.freezed.dart';
 part 'allocation_config.g.dart';
@@ -50,8 +49,6 @@ abstract class AllocationConfig with _$AllocationConfig {
     @Default(FocusMode.sustainable) FocusMode focusMode,
     @Default(StrategySettings()) StrategySettings strategySettings,
     @Default(DisplaySettings()) DisplaySettings displaySettings,
-    @Default(ProjectHealthReviewSettings())
-    ProjectHealthReviewSettings projectHealthReviewSettings,
     @Default([]) List<AllocationExceptionRule> exceptionRules,
   }) = _AllocationConfig;
 

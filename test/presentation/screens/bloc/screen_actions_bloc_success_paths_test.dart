@@ -189,6 +189,93 @@ void main() {
     );
 
     blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
+      'completes task occurrence when completed=true',
+      build: () {
+        when(
+          () => mockEntityActionService.completeTask(
+            any(),
+            occurrenceDate: any(named: 'occurrenceDate'),
+            originalOccurrenceDate: any(named: 'originalOccurrenceDate'),
+            context: any(named: 'context'),
+          ),
+        ).thenAnswer((_) async {});
+
+        return ScreenActionsBloc(
+          entityActionService: mockEntityActionService,
+          errorReporter: errorReporter,
+        );
+      },
+      act: (bloc) {
+        bloc.add(
+          const ScreenActionsTaskCompletionChanged(
+            taskId: 'task-1',
+            completed: true,
+          ),
+        );
+      },
+      expect: () => const <dynamic>[],
+      verify: (bloc) {
+        final captured =
+            verify(
+                  () => mockEntityActionService.completeTask(
+                    'task-1',
+                    occurrenceDate: any(named: 'occurrenceDate'),
+                    originalOccurrenceDate: any(
+                      named: 'originalOccurrenceDate',
+                    ),
+                    context: captureAny(named: 'context'),
+                  ),
+                ).captured.single
+                as OperationContext?;
+
+        expect(captured, isNotNull);
+        expect(captured!.operation, 'complete_occurrence');
+        expect(captured.intent, 'task_completion_changed');
+      },
+    );
+
+    blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
+      'uncompletes task occurrence when completed=false',
+      build: () {
+        when(
+          () => mockEntityActionService.uncompleteTask(
+            any(),
+            occurrenceDate: any(named: 'occurrenceDate'),
+            context: any(named: 'context'),
+          ),
+        ).thenAnswer((_) async {});
+
+        return ScreenActionsBloc(
+          entityActionService: mockEntityActionService,
+          errorReporter: errorReporter,
+        );
+      },
+      act: (bloc) {
+        bloc.add(
+          const ScreenActionsTaskCompletionChanged(
+            taskId: 'task-1',
+            completed: false,
+          ),
+        );
+      },
+      expect: () => const <dynamic>[],
+      verify: (bloc) {
+        final captured =
+            verify(
+                  () => mockEntityActionService.uncompleteTask(
+                    'task-1',
+                    occurrenceDate: any(named: 'occurrenceDate'),
+                    context: captureAny(named: 'context'),
+                  ),
+                ).captured.single
+                as OperationContext?;
+
+        expect(captured, isNotNull);
+        expect(captured!.operation, 'uncomplete_occurrence');
+      },
+    );
+
+    blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
       'unpins task when pinned=false',
       build: () {
         when(
@@ -225,6 +312,85 @@ void main() {
         expect(captured, isNotNull);
         expect(captured!.operation, 'unpin');
         expect(captured.extraFields['pinned'], false);
+      },
+    );
+
+    blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
+      'pins project when pinned=true',
+      build: () {
+        when(
+          () => mockEntityActionService.pinProject(
+            any(),
+            context: any(named: 'context'),
+          ),
+        ).thenAnswer((_) async {});
+
+        return ScreenActionsBloc(
+          entityActionService: mockEntityActionService,
+          errorReporter: errorReporter,
+        );
+      },
+      act: (bloc) {
+        bloc.add(
+          const ScreenActionsProjectPinnedChanged(
+            projectId: 'project-1',
+            pinned: true,
+          ),
+        );
+      },
+      expect: () => const <dynamic>[],
+      verify: (bloc) {
+        final captured =
+            verify(
+                  () => mockEntityActionService.pinProject(
+                    'project-1',
+                    context: captureAny(named: 'context'),
+                  ),
+                ).captured.single
+                as OperationContext?;
+
+        expect(captured, isNotNull);
+        expect(captured!.operation, 'pin');
+        expect(captured.intent, 'project_pinned_changed');
+      },
+    );
+
+    blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
+      'unpins project when pinned=false',
+      build: () {
+        when(
+          () => mockEntityActionService.unpinProject(
+            any(),
+            context: any(named: 'context'),
+          ),
+        ).thenAnswer((_) async {});
+
+        return ScreenActionsBloc(
+          entityActionService: mockEntityActionService,
+          errorReporter: errorReporter,
+        );
+      },
+      act: (bloc) {
+        bloc.add(
+          const ScreenActionsProjectPinnedChanged(
+            projectId: 'project-1',
+            pinned: false,
+          ),
+        );
+      },
+      expect: () => const <dynamic>[],
+      verify: (bloc) {
+        final captured =
+            verify(
+                  () => mockEntityActionService.unpinProject(
+                    'project-1',
+                    context: captureAny(named: 'context'),
+                  ),
+                ).captured.single
+                as OperationContext?;
+
+        expect(captured, isNotNull);
+        expect(captured!.operation, 'unpin');
       },
     );
 
@@ -313,6 +479,47 @@ void main() {
     );
 
     blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
+      'moves task with a target project id',
+      build: () {
+        when(
+          () => mockEntityActionService.moveTask(
+            'task-1',
+            'project-1',
+            context: any(named: 'context'),
+          ),
+        ).thenAnswer((_) async {});
+
+        return ScreenActionsBloc(
+          entityActionService: mockEntityActionService,
+          errorReporter: errorReporter,
+        );
+      },
+      act: (bloc) {
+        bloc.add(
+          const ScreenActionsMoveTaskToProject(
+            taskId: 'task-1',
+            targetProjectId: 'project-1',
+          ),
+        );
+      },
+      expect: () => const <dynamic>[],
+      verify: (bloc) {
+        final captured =
+            verify(
+                  () => mockEntityActionService.moveTask(
+                    'task-1',
+                    'project-1',
+                    context: captureAny(named: 'context'),
+                  ),
+                ).captured.single
+                as OperationContext?;
+
+        expect(captured, isNotNull);
+        expect(captured!.extraFields['targetProjectId'], 'project-1');
+      },
+    );
+
+    blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
       'completes task series',
       build: () {
         when(
@@ -343,6 +550,41 @@ void main() {
 
         expect(captured, isNotNull);
         expect(captured!.intent, 'task_complete_series');
+        expect(captured.operation, 'complete_series');
+      },
+    );
+
+    blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
+      'completes project series',
+      build: () {
+        when(
+          () => mockEntityActionService.completeProjectSeries(
+            any(),
+            context: any(named: 'context'),
+          ),
+        ).thenAnswer((_) async {});
+
+        return ScreenActionsBloc(
+          entityActionService: mockEntityActionService,
+          errorReporter: errorReporter,
+        );
+      },
+      act: (bloc) {
+        bloc.add(const ScreenActionsProjectSeriesCompleted(projectId: 'p-1'));
+      },
+      expect: () => const <dynamic>[],
+      verify: (bloc) {
+        final captured =
+            verify(
+                  () => mockEntityActionService.completeProjectSeries(
+                    'p-1',
+                    context: captureAny(named: 'context'),
+                  ),
+                ).captured.single
+                as OperationContext?;
+
+        expect(captured, isNotNull);
+        expect(captured!.intent, 'project_complete_series');
         expect(captured.operation, 'complete_series');
       },
     );

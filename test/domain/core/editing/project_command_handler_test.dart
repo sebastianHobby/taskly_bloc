@@ -50,7 +50,11 @@ void main() {
 
     testSafe('handleCreate trims name and calls repository', () async {
       final result = await handler.handleCreate(
-        const CreateProjectCommand(name: '  Project  '),
+        const CreateProjectCommand(
+          name: '  Project  ',
+          completed: false,
+          valueIds: ['v1'],
+        ),
       );
 
       expect(result, isA<CommandSuccess>());
@@ -65,7 +69,7 @@ void main() {
           repeatIcalRrule: null,
           repeatFromCompletion: false,
           seriesEnded: false,
-          valueIds: null,
+          valueIds: ['v1'],
           context: null,
         ),
       ).called(1);
@@ -73,7 +77,12 @@ void main() {
 
     testSafe('handleUpdate returns validation failure for invalid name', () async {
       final result = await handler.handleUpdate(
-        const UpdateProjectCommand(id: 'p1', name: ' '),
+        const UpdateProjectCommand(
+          id: 'p1',
+          name: ' ',
+          completed: false,
+          valueIds: ['v1'],
+        ),
       );
 
       expect(result, isA<CommandValidationFailure>());
@@ -99,6 +108,8 @@ void main() {
       final result = await handler.handleCreate(
         CreateProjectCommand(
           name: 'Project',
+          completed: false,
+          valueIds: ['v1'],
           startDate: DateTime(2025, 1, 10),
           deadlineDate: DateTime(2025, 1, 9),
         ),

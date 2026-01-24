@@ -1147,8 +1147,7 @@ class _RitualCardState extends State<_RitualCard> {
               ? null
               : TasklyMyDaySectionConfig(
                   title: l10n.pinnedTasksSection,
-                  subtitle: l10n.myDayPinnedSectionSubtitle,
-                  icon: Icons.push_pin_rounded,
+                  icon: null,
                   count: pinnedSorted.length,
                   showCount: false,
                   expanded: _pinnedExpanded,

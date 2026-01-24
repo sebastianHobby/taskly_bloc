@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 // import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_tag_picker.dart'; // Removed
 import 'package:taskly_bloc/presentation/shared/utils/date_display_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
+import 'package:taskly_bloc/presentation/shared/utils/rrule_label_utils.dart';
 import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
 import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
-import 'package:taskly_bloc/presentation/widgets/rrule_form_recurrence_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
@@ -14,7 +14,8 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+
 
 /// A modern form for creating or editing projects.
 ///
@@ -36,31 +37,37 @@ class ProjectForm extends StatefulWidget {
     this.onClose,
     this.trailingActions = const <Widget>[],
     super.key,
-  });
+  });
+
 
   final GlobalKey<FormBuilderState> formKey;
   final VoidCallback onSubmit;
   final String submitTooltip;
   final Project? initialData;
   final ValueChanged<Map<String, dynamic>>? onChanged;
-  final List<Value> availableValues;
+  final List<Value> availableValues;
+
 
   /// When true, scrolls to the values section and opens the values alignment
   /// sheet on first build.
   final bool openToValues;
-  final VoidCallback? onDelete;
+  final VoidCallback? onDelete;
+
 
   /// Called when the user toggles pinned state from the header.
   ///
   /// Only shown when editing (initialData != null).
-  final ValueChanged<bool>? onTogglePinned;
+  final ValueChanged<bool>? onTogglePinned;
+
 
   /// Called when the user wants to close the form.
   /// If null, no close button is shown.
-  final VoidCallback? onClose;
+  final VoidCallback? onClose;
+
 
   /// Optional action widgets to render in the header row (right side).
-  final List<Widget> trailingActions;
+  final List<Widget> trailingActions;
+
 
   @override
   State<ProjectForm> createState() => _ProjectFormState();
@@ -69,24 +76,47 @@ class ProjectForm extends StatefulWidget {
 
 class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
   @override
-  VoidCallback? get onClose => widget.onClose;
+  VoidCallback? get onClose => widget.onClose;
+
 
   final _scrollController = ScrollController();
   final GlobalKey<State<StatefulWidget>> _valuesKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _plannedKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _dueKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _priorityKey = GlobalKey();
-  final GlobalKey<State<StatefulWidget>> _recurrenceKey = GlobalKey();
-  bool _didAutoOpen = false;
+  bool _didAutoOpen = false;
+  String? _recurrenceLabel;
+  String? _lastRecurrenceRrule;
+
+  void _scheduleRecurrenceLabelUpdate(String? rrule) {
+    final normalized = (rrule ?? '').trim();
+    if (normalized == _lastRecurrenceRrule) return;
+    _lastRecurrenceRrule = normalized;
+
+    if (normalized.isEmpty) {
+      setState(() {
+        _recurrenceLabel = null;
+      });
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final label = await resolveRruleLabel(context, normalized);
+      if (!mounted) return;
+      setState(() {
+        _recurrenceLabel = label;
+      });
+    });
+  }
 
   @override
   void initState() {
-    super.initState();
+    super.initState();
+
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || _didAutoOpen) return;
       if (!widget.openToValues) return;
-      _didAutoOpen = true;
+      _didAutoOpen = true;
+
 
       final ctx = _valuesKey.currentContext;
       if (ctx != null) {
@@ -97,39 +127,46 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
         );
         if (!ctx.mounted) return;
       }
-      if (!mounted) return;
+      if (!mounted) return;
+
 
       final current = widget
           .formKey
           .currentState
           ?.fields[ProjectFieldKeys.valueIds.id]
           ?.value;
-      final valueIds = List<String>.of(current as List<String>? ?? const []);
+      final valueIds = List<String>.of(current as List<String>? ?? const []);
+
 
       final anchorContext = _valuesKey.currentContext;
-      if (anchorContext == null || !mounted) return;
+      if (anchorContext == null || !mounted) return;
+
 
       final result = await _showValuesAlignmentPicker(
         anchorContext: anchorContext,
         valueIds: valueIds,
       );
-      if (!mounted || result == null) return;
+      if (!mounted || result == null) return;
+
 
       widget.formKey.currentState?.fields[ProjectFieldKeys.valueIds.id]
           ?.didChange(result);
       markDirty();
       setState(() {});
     });
-  }
+  }
+
 
   bool _isCompact(BuildContext context) =>
-      MediaQuery.sizeOf(context).width < 600;
+      MediaQuery.sizeOf(context).width < 600;
+
 
   Rect _anchorRect(BuildContext anchorContext) {
     final box = anchorContext.findRenderObject()! as RenderBox;
     final topLeft = box.localToGlobal(Offset.zero);
     return topLeft & box.size;
-  }
+  }
+
 
   Future<T?> _showAnchoredDialog<T>(
     BuildContext context, {
@@ -139,7 +176,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
     double maxHeight = 520,
   }) {
     final anchor = _anchorRect(anchorContext);
-    final theme = Theme.of(context);
+    final theme = Theme.of(context);
+
 
     return showGeneralDialog<T>(
       context: context,
@@ -181,7 +219,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
         );
       },
     );
-  }
+  }
+
 
   Future<List<String>?> _showValuesAlignmentPicker({
     required BuildContext anchorContext,
@@ -193,7 +232,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
         availableValues: widget.availableValues,
         valueIds: valueIds,
       );
-    }
+    }
+
 
     return _showAnchoredDialog<List<String>>(
       context,
@@ -208,7 +248,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
         ),
       ),
     );
-  }
+  }
+
 
   Future<_NullableDateDecision?> _pickDate({
     required BuildContext anchorContext,
@@ -226,7 +267,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
           initialDate: initialDate,
         ),
       );
-    }
+    }
+
 
     return _showAnchoredDialog<_NullableDateDecision>(
       context,
@@ -238,29 +280,9 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
         initialDate: initialDate,
       ),
     );
-  }
+  }
 
-  Future<_NullableIntDecision?> _pickPriority({
-    required BuildContext anchorContext,
-    required int? current,
-  }) {
-    if (_isCompact(context)) {
-      return showModalBottomSheet<_NullableIntDecision>(
-        context: context,
-        useSafeArea: true,
-        showDragHandle: true,
-        builder: (sheetContext) => _PriorityPickerPanel(current: current),
-      );
-    }
 
-    return _showAnchoredDialog<_NullableIntDecision>(
-      context,
-      anchorContext: anchorContext,
-      maxWidth: 320,
-      maxHeight: 420,
-      builder: (dialogContext) => _PriorityPickerPanel(current: current),
-    );
-  }
 
   Future<RecurrencePickerResult?> _pickRecurrence({
     required BuildContext anchorContext,
@@ -272,7 +294,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       initialRRule: initialRrule,
       initialRepeatFromCompletion: initialRepeatFromCompletion,
       initialSeriesEnded: initialSeriesEnded,
-    );
+    );
+
 
     if (_isCompact(context)) {
       return showModalBottomSheet<RecurrencePickerResult>(
@@ -282,7 +305,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
         isScrollControlled: true,
         builder: (sheetContext) => picker,
       );
-    }
+    }
+
 
     return _showAnchoredDialog<RecurrencePickerResult>(
       context,
@@ -291,7 +315,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       maxHeight: 640,
       builder: (dialogContext) => picker,
     );
-  }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -299,11 +324,13 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isCompact = _isCompact(context);
-    final isCreating = widget.initialData == null;
+    final isCreating = widget.initialData == null;
+
 
     final availableValuesById = <String, Value>{
       for (final v in widget.availableValues) v.id: v,
-    };
+    };
+
 
     final initialValues = <String, dynamic>{
       ProjectFieldKeys.name.id: widget.initialData?.name.trim() ?? '',
@@ -321,34 +348,17 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       ProjectFieldKeys.repeatFromCompletion.id:
           widget.initialData?.repeatFromCompletion ?? false,
       ProjectFieldKeys.seriesEnded.id: widget.initialData?.seriesEnded ?? false,
-    };
+    };
 
-    final effectiveStartDate =
-        (widget
-                .formKey
-                .currentState
-                ?.fields[ProjectFieldKeys.startDate.id]
-                ?.value
-            as DateTime?) ??
-        (initialValues[ProjectFieldKeys.startDate.id] as DateTime?);
-    final effectiveDeadlineDate =
-        (widget
-                .formKey
-                .currentState
-                ?.fields[ProjectFieldKeys.deadlineDate.id]
-                ?.value
-            as DateTime?) ??
-        (initialValues[ProjectFieldKeys.deadlineDate.id] as DateTime?);
-    final showScheduleHelper =
-        effectiveStartDate == null && effectiveDeadlineDate == null;
 
     final submitEnabled =
-        isDirty && (widget.formKey.currentState?.isValid ?? false);
+        isDirty && (widget.formKey.currentState?.isValid ?? false);
 
     final denseFieldPadding = EdgeInsets.symmetric(
       horizontal: isCompact ? 12 : 16,
       vertical: isCompact ? 10 : 12,
-    );
+    );
+
 
     return FormShell(
       onSubmit: widget.onSubmit,
@@ -430,7 +440,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                   ProjectValidators.name,
                   context,
                 ),
-              ),
+              ),
+
 
               // Project Description
               FormBuilderTextField(
@@ -459,9 +470,11 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                   ProjectValidators.description,
                   context,
                 ),
-              ),
+              ),
 
-              SizedBox(height: isCompact ? 6 : 8),
+
+              SizedBox(height: isCompact ? 6 : 8),
+
 
               // Completed
               Padding(
@@ -481,7 +494,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                     );
                   },
                 ),
-              ),
+              ),
+
 
               // Meta chips row (values-first): Values, Planned Day, Due Date,
               // Priority, Repeat
@@ -490,6 +504,8 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    TasklyFormSectionLabel(text: l10n.valuesAlignedToTitle),
+                    const SizedBox(height: 8),
                     TasklyFormRowGroup(
                       children: [
                         FormBuilderField<List<String>>(
@@ -512,7 +528,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                                 : availableValuesById[effectiveIds.first];
                             final secondary = effectiveIds.length < 2
                                 ? null
-                                : availableValuesById[effectiveIds[1]];
+                                : availableValuesById[effectiveIds[1]];
 
                             return Builder(
                               builder: (chipContext) {
@@ -526,7 +542,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                                   field.didChange(result);
                                   markDirty();
                                   setState(() {});
-                                }
+                                }
 
                                 TasklyFormValueChipModel toModel(Value value) {
                                   final iconData =
@@ -550,7 +566,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                                 return KeyedSubtree(
                                   key: _valuesKey,
                                   child: TasklyFormRowGroup(
-                                    spacing: 8,
+                                    spacing: 12,
                                     runSpacing: 8,
                                     children: [
                                       TasklyFormValueChip(
@@ -570,6 +586,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                                                     .valuesAlignedToTitle,
                                               ),
                                         onTap: open,
+                                        isSelected: primary != null,
                                         isPrimary: true,
                                         preset: TasklyFormPreset.standard.chip,
                                       ),
@@ -577,6 +594,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                                         TasklyFormValueChip(
                                           model: toModel(secondary),
                                           onTap: open,
+                                          isSelected: true,
                                           isPrimary: false,
                                           preset:
                                               TasklyFormPreset.standard.chip,
@@ -587,231 +605,6 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                               },
                             );
                           },
-                        ),
-
-                        FormBuilderField<DateTime?>(
-                          name: ProjectFieldKeys.startDate.id,
-                          builder: (field) {
-                            final hasValue = field.value != null;
-                            final valueLabel = hasValue
-                                ? DateDisplayUtils.formatMonthDayYear(
-                                    field.value!,
-                                  )
-                                : null;
-                            return KeyedSubtree(
-                              key: _plannedKey,
-                              child: Builder(
-                                builder: (chipContext) => TasklyFormDateChip(
-                                  icon: Icons.calendar_today_rounded,
-                                  label: l10n.dateChipAddPlannedDay,
-                                  valueLabel: valueLabel,
-                                  hasValue: hasValue,
-                                  onTap: () async {
-                                    final decision = await _pickDate(
-                                      anchorContext: chipContext,
-                                      title: l10n.dateChipAddPlannedDay,
-                                      initialDate: field.value,
-                                    );
-                                    if (!mounted || decision == null) {
-                                      return;
-                                    }
-                                    if (decision.keep) return;
-                                    field.didChange(decision.date);
-                                    markDirty();
-                                    setState(() {});
-                                  },
-                                  onClear: hasValue
-                                      ? () {
-                                          field.didChange(null);
-                                          markDirty();
-                                          setState(() {});
-                                        }
-                                      : null,
-                                  preset: TasklyFormPreset.standard.chip,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-
-                        FormBuilderField<DateTime?>(
-                          name: ProjectFieldKeys.deadlineDate.id,
-                          builder: (field) {
-                            final hasValue = field.value != null;
-                            final valueLabel = hasValue
-                                ? DateDisplayUtils.formatMonthDayYear(
-                                    field.value!,
-                                  )
-                                : null;
-                            final isOverdue = DateDisplayUtils.isOverdue(
-                              field.value,
-                            );
-                            return KeyedSubtree(
-                              key: _dueKey,
-                              child: Builder(
-                                builder: (chipContext) => TasklyFormDateChip(
-                                  icon: Icons.flag_rounded,
-                                  label: l10n.dateChipAddDueDate,
-                                  valueLabel: valueLabel,
-                                  hasValue: hasValue,
-                                  isDeadline: true,
-                                  isOverdue: isOverdue,
-                                  onTap: () async {
-                                    final decision = await _pickDate(
-                                      anchorContext: chipContext,
-                                      title: l10n.dateChipAddDueDate,
-                                      initialDate: field.value,
-                                    );
-                                    if (!mounted || decision == null) {
-                                      return;
-                                    }
-                                    if (decision.keep) return;
-                                    field.didChange(decision.date);
-                                    markDirty();
-                                    setState(() {});
-                                  },
-                                  onClear: hasValue
-                                      ? () {
-                                          field.didChange(null);
-                                          markDirty();
-                                          setState(() {});
-                                        }
-                                      : null,
-                                  preset: TasklyFormPreset.standard.chip,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-
-                        FormBuilderField<int?>(
-                          name: ProjectFieldKeys.priority.id,
-                          builder: (field) {
-                            return KeyedSubtree(
-                              key: _priorityKey,
-                              child: Builder(
-                                builder: (chipContext) => TasklyFormPriorityChip(
-                                  label: field.value == null
-                                      ? l10n.priorityLabel
-                                      : 'P${field.value}',
-                                  hasValue: field.value != null,
-                                  onTap: () async {
-                                    final decision = await _pickPriority(
-                                      anchorContext: chipContext,
-                                      current: field.value,
-                                    );
-                                    if (!mounted || decision == null) return;
-                                    if (decision.keep) return;
-                                    field.didChange(decision.value);
-                                    markDirty();
-                                    setState(() {});
-                                  },
-                                  onClear: field.value != null
-                                      ? () {
-                                          field.didChange(null);
-                                          markDirty();
-                                          setState(() {});
-                                        }
-                                      : null,
-                                  preset: TasklyFormPreset.standard.chip,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-
-                        FormBuilderField<String?>(
-                          name: ProjectFieldKeys.repeatIcalRrule.id,
-                          builder: (field) {
-                            final rrule = field.value?.isEmpty ?? true
-                                ? null
-                                : field.value;
-
-                            return KeyedSubtree(
-                              key: _recurrenceKey,
-                              child: Builder(
-                                builder: (chipContext) =>
-                                    RruleFormRecurrenceChip(
-                                      rrule: rrule,
-                                      emptyLabel: l10n.recurrenceRepeatTitle,
-                                      onTap: () async {
-                                        final repeatFromCompletionField =
-                                            widget
-                                                .formKey
-                                                .currentState
-                                                ?.fields[ProjectFieldKeys
-                                                .repeatFromCompletion
-                                                .id];
-                                        final seriesEndedField =
-                                            widget
-                                                .formKey
-                                                .currentState
-                                                ?.fields[ProjectFieldKeys
-                                                .seriesEnded
-                                                .id];
-
-                                        final result = await _pickRecurrence(
-                                          anchorContext: chipContext,
-                                          initialRrule:
-                                              field.value?.isEmpty ?? true
-                                              ? null
-                                              : field.value,
-                                          initialRepeatFromCompletion:
-                                              (repeatFromCompletionField?.value
-                                                  as bool?) ??
-                                              false,
-                                          initialSeriesEnded:
-                                              (seriesEndedField?.value
-                                                  as bool?) ??
-                                              false,
-                                        );
-                                        if (!mounted || result == null) return;
-
-                                        field.didChange(result.rrule);
-                                        repeatFromCompletionField?.didChange(
-                                          result.repeatFromCompletion,
-                                        );
-                                        seriesEndedField?.didChange(
-                                          result.seriesEnded,
-                                        );
-                                        markDirty();
-                                        setState(() {});
-                                      },
-                                      onClear: field.value?.isNotEmpty ?? false
-                                          ? () {
-                                              field.didChange(null);
-                                              widget
-                                                  .formKey
-                                                  .currentState
-                                                  ?.fields[ProjectFieldKeys
-                                                      .repeatFromCompletion
-                                                      .id]
-                                                  ?.didChange(false);
-                                              widget
-                                                  .formKey
-                                                  .currentState
-                                                  ?.fields[ProjectFieldKeys
-                                                      .seriesEnded
-                                                      .id]
-                                                  ?.didChange(false);
-                                              markDirty();
-                                              setState(() {});
-                                            }
-                                          : null,
-                                    ),
-                              ),
-                            );
-                          },
-                        ),
-
-                        // Hidden recurrence flags fields (set by the picker)
-                        FormBuilderField<bool>(
-                          name: ProjectFieldKeys.repeatFromCompletion.id,
-                          builder: (_) => const SizedBox.shrink(),
-                        ),
-                        FormBuilderField<bool>(
-                          name: ProjectFieldKeys.seriesEnded.id,
-                          builder: (_) => const SizedBox.shrink(),
                         ),
                       ],
                     ),
@@ -835,45 +628,300 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                         );
                       },
                     ),
+                    const SizedBox(height: 12),
+                    Builder(
+                      builder: (context) {
+                        final startDate =
+                            (widget
+                                    .formKey
+                                    .currentState
+                                    ?.fields[ProjectFieldKeys.startDate.id]
+                                    ?.value
+                                as DateTime?) ??
+                            (initialValues[ProjectFieldKeys.startDate.id]
+                                as DateTime?);
+                        final deadlineDate =
+                            (widget
+                                    .formKey
+                                    .currentState
+                                    ?.fields[ProjectFieldKeys.deadlineDate.id]
+                                    ?.value
+                                as DateTime?) ??
+                            (initialValues[ProjectFieldKeys.deadlineDate.id]
+                                as DateTime?);
+                        final recurrenceRrule =
+                            (widget
+                                        .formKey
+                                        .currentState
+                                        ?.fields[ProjectFieldKeys
+                                            .repeatIcalRrule
+                                            .id]
+                                        ?.value
+                                    as String?) ??
+                            (initialValues[ProjectFieldKeys.repeatIcalRrule.id]
+                                as String?) ??
+                            '';
+                        final hasRecurrence = recurrenceRrule.trim().isNotEmpty;
+                        _scheduleRecurrenceLabelUpdate(recurrenceRrule);
+
+                        final plannedLabel = startDate == null
+                            ? null
+                            : DateDisplayUtils.formatMonthDayYear(startDate);
+                        final dueLabel = deadlineDate == null
+                            ? null
+                            : DateDisplayUtils.formatMonthDayYear(deadlineDate);
+                        final isOverdue = DateDisplayUtils.isOverdue(deadlineDate);
+
+                        return TasklyFormDateCard(
+                          rows: [
+                            TasklyFormDateRow(
+                              icon: Icons.calendar_today_rounded,
+                              label: l10n.plannedLabel,
+                              placeholderLabel: l10n.dateChipAddPlannedDay,
+                              valueLabel: plannedLabel,
+                              hasValue: plannedLabel != null,
+                              onTap: () async {
+                                final decision = await _pickDate(
+                                  anchorContext: context,
+                                  title: l10n.dateChipAddPlannedDay,
+                                  initialDate: startDate,
+                                );
+                                if (!mounted || decision == null) {
+                                  return;
+                                }
+                                if (decision.keep) return;
+                                widget
+                                    .formKey
+                                    .currentState
+                                    ?.fields[ProjectFieldKeys.startDate.id]
+                                    ?.didChange(decision.date);
+                                markDirty();
+                                setState(() {});
+                              },
+                              onClear: plannedLabel != null
+                                  ? () {
+                                      widget
+                                          .formKey
+                                          .currentState
+                                          ?.fields[ProjectFieldKeys
+                                              .startDate
+                                              .id]
+                                          ?.didChange(null);
+                                      markDirty();
+                                      setState(() {});
+                                    }
+                                  : null,
+                            ),
+                            TasklyFormDateRow(
+                              icon: Icons.flag_rounded,
+                              label: l10n.dueLabel,
+                              placeholderLabel: l10n.dateChipAddDueDate,
+                              valueLabel: dueLabel,
+                              hasValue: dueLabel != null,
+                              valueColor: isOverdue
+                                  ? colorScheme.error
+                                  : colorScheme.primary,
+                              onTap: () async {
+                                final decision = await _pickDate(
+                                  anchorContext: context,
+                                  title: l10n.dateChipAddDueDate,
+                                  initialDate: deadlineDate,
+                                );
+                                if (!mounted || decision == null) {
+                                  return;
+                                }
+                                if (decision.keep) return;
+                                widget
+                                    .formKey
+                                    .currentState
+                                    ?.fields[ProjectFieldKeys.deadlineDate.id]
+                                    ?.didChange(decision.date);
+                                markDirty();
+                                setState(() {});
+                              },
+                              onClear: dueLabel != null
+                                  ? () {
+                                      widget
+                                          .formKey
+                                          .currentState
+                                          ?.fields[ProjectFieldKeys
+                                              .deadlineDate
+                                              .id]
+                                          ?.didChange(null);
+                                      markDirty();
+                                      setState(() {});
+                                    }
+                                  : null,
+                            ),
+                            TasklyFormDateRow(
+                              icon: Icons.repeat,
+                              label: l10n.recurrenceRepeatTitle,
+                              placeholderLabel: l10n.repeatAddLabel,
+                              valueLabel: _recurrenceLabel ??
+                                  (hasRecurrence ? l10n.loadingTitle : null),
+                              hasValue: hasRecurrence,
+                              onTap: () async {
+                                final repeatFromCompletionField =
+                                    widget
+                                        .formKey
+                                        .currentState
+                                        ?.fields[ProjectFieldKeys
+                                            .repeatFromCompletion
+                                            .id];
+                                final seriesEndedField =
+                                    widget
+                                        .formKey
+                                        .currentState
+                                        ?.fields[ProjectFieldKeys
+                                            .seriesEnded
+                                            .id];
+
+                                final result = await _pickRecurrence(
+                                  anchorContext: context,
+                                  initialRrule: recurrenceRrule,
+                                  initialRepeatFromCompletion:
+                                      (repeatFromCompletionField?.value
+                                          as bool?) ??
+                                      false,
+                                  initialSeriesEnded:
+                                      (seriesEndedField?.value as bool?) ??
+                                      false,
+                                );
+                                if (!mounted || result == null) return;
+
+                                widget
+                                    .formKey
+                                    .currentState
+                                    ?.fields[ProjectFieldKeys
+                                        .repeatIcalRrule
+                                        .id]
+                                    ?.didChange(result.rrule);
+                                repeatFromCompletionField?.didChange(
+                                  result.repeatFromCompletion,
+                                );
+                                seriesEndedField?.didChange(
+                                  result.seriesEnded,
+                                );
+                                markDirty();
+                                setState(() {});
+                              },
+                              onClear: hasRecurrence
+                                  ? () {
+                                      widget
+                                          .formKey
+                                          .currentState
+                                          ?.fields[ProjectFieldKeys
+                                              .repeatIcalRrule
+                                              .id]
+                                          ?.didChange(null);
+                                      widget
+                                          .formKey
+                                          .currentState
+                                          ?.fields[ProjectFieldKeys
+                                              .repeatFromCompletion
+                                              .id]
+                                          ?.didChange(false);
+                                      widget
+                                          .formKey
+                                          .currentState
+                                          ?.fields[ProjectFieldKeys
+                                              .seriesEnded
+                                              .id]
+                                          ?.didChange(false);
+                                      markDirty();
+                                      setState(() {});
+                                    }
+                                  : null,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TasklyFormSectionLabel(text: l10n.priorityLabel),
+                    const SizedBox(height: 8),
+                    FormBuilderField<int?>(
+                      name: ProjectFieldKeys.priority.id,
+                      builder: (field) {
+                        return TasklyFormPrioritySegmented(
+                          segments: [
+                            TasklyFormPrioritySegment(
+                              label: 'P1',
+                              value: 1,
+                              selectedColor: colorScheme.error,
+                            ),
+                            TasklyFormPrioritySegment(
+                              label: 'P2',
+                              value: 2,
+                              selectedColor: colorScheme.tertiary,
+                            ),
+                            TasklyFormPrioritySegment(
+                              label: 'P3',
+                              value: 3,
+                              selectedColor: colorScheme.primary,
+                            ),
+                            TasklyFormPrioritySegment(
+                              label: 'P4',
+                              value: 4,
+                              selectedColor: colorScheme.onSurfaceVariant,
+                            ),
+                          ],
+                          value: field.value,
+                          onChanged: (value) {
+                            field.didChange(value);
+                            markDirty();
+                            setState(() {});
+                          },
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    FormBuilderField<DateTime?>(
+                      name: ProjectFieldKeys.startDate.id,
+                      builder: (_) => const SizedBox.shrink(),
+                    ),
+                    FormBuilderField<DateTime?>(
+                      name: ProjectFieldKeys.deadlineDate.id,
+                      builder: (_) => const SizedBox.shrink(),
+                    ),
+                    FormBuilderField<String?>(
+                      name: ProjectFieldKeys.repeatIcalRrule.id,
+                      builder: (_) => const SizedBox.shrink(),
+                    ),
+
+                    // Hidden recurrence flags fields (set by the picker)
+                    FormBuilderField<bool>(
+                      name: ProjectFieldKeys.repeatFromCompletion.id,
+                      builder: (_) => const SizedBox.shrink(),
+                    ),
+                    FormBuilderField<bool>(
+                      name: ProjectFieldKeys.seriesEnded.id,
+                      builder: (_) => const SizedBox.shrink(),
+                    ),
                   ],
                 ),
-              ),
-
-              if (showScheduleHelper)
-                Padding(
-                  padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
-                  child: Text(
-                    l10n.scheduleHelperText,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
+              ),
             ],
           ),
         ),
       ),
     );
   }
-}
+}
+
 
 final class _NullableDateDecision {
-  const _NullableDateDecision.keep() : keep = true, date = null;
+  const _NullableDateDecision.keep() : keep = true, date = null;
 
-  const _NullableDateDecision.set(this.date) : keep = false;
+
+  const _NullableDateDecision.set(this.date) : keep = false;
+
 
   final bool keep;
   final DateTime? date;
-}
+}
 
-final class _NullableIntDecision {
-  const _NullableIntDecision.keep() : keep = true, value = null;
 
-  const _NullableIntDecision.set(this.value) : keep = false;
-
-  final bool keep;
-  final int? value;
-}
 
 class _AnchoredDialogLayoutDelegate extends SingleChildLayoutDelegate {
   _AnchoredDialogLayoutDelegate({
@@ -881,12 +929,14 @@ class _AnchoredDialogLayoutDelegate extends SingleChildLayoutDelegate {
     required this.margin,
     required this.maxWidth,
     required this.maxHeight,
-  });
+  });
+
 
   final Rect anchor;
   final EdgeInsets margin;
   final double maxWidth;
-  final double maxHeight;
+  final double maxHeight;
+
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
@@ -902,31 +952,37 @@ class _AnchoredDialogLayoutDelegate extends SingleChildLayoutDelegate {
       maxWidth: maxW,
       maxHeight: maxH,
     );
-  }
+  }
+
 
   @override
   Offset getPositionForChild(Size size, Size childSize) {
     final availableBelow = size.height - anchor.bottom - margin.bottom;
-    final availableAbove = anchor.top - margin.top;
+    final availableAbove = anchor.top - margin.top;
+
 
     final showBelow =
-        availableBelow >= childSize.height || availableBelow >= availableAbove;
+        availableBelow >= childSize.height || availableBelow >= availableAbove;
+
 
     final y = showBelow
         ? (anchor.bottom + 6).clamp(margin.top, size.height - margin.bottom)
         : (anchor.top - childSize.height - 6).clamp(
             margin.top,
             size.height - margin.bottom,
-          );
+          );
+
 
     final desiredX = anchor.left;
     final x = desiredX.clamp(
       margin.left,
       size.width - margin.right - childSize.width,
-    );
+    );
+
 
     return Offset(x, y);
-  }
+  }
+
 
   @override
   bool shouldRelayout(covariant _AnchoredDialogLayoutDelegate oldDelegate) {
@@ -935,31 +991,37 @@ class _AnchoredDialogLayoutDelegate extends SingleChildLayoutDelegate {
         maxWidth != oldDelegate.maxWidth ||
         maxHeight != oldDelegate.maxHeight;
   }
-}
+}
+
 
 class _ProjectDatePickerPanel extends StatefulWidget {
   const _ProjectDatePickerPanel({
     required this.title,
     required this.initialDate,
-  });
+  });
+
 
   final String title;
-  final DateTime? initialDate;
+  final DateTime? initialDate;
+
 
   @override
   State<_ProjectDatePickerPanel> createState() =>
       _ProjectDatePickerPanelState();
-}
+}
+
 
 class _ProjectDatePickerPanelState extends State<_ProjectDatePickerPanel> {
-  late DateTime _selected;
+  late DateTime _selected;
+
 
   @override
   void initState() {
     super.initState();
     final now = getIt<NowService>().nowLocal();
     _selected = widget.initialDate ?? now;
-  }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -968,7 +1030,8 @@ class _ProjectDatePickerPanelState extends State<_ProjectDatePickerPanel> {
     final now = getIt<NowService>().nowLocal();
     final today = dateOnly(now);
     final tomorrow = today.add(const Duration(days: 1));
-    final nextWeek = today.add(const Duration(days: 7));
+    final nextWeek = today.add(const Duration(days: 7));
+
 
     return Padding(
       padding: const EdgeInsets.all(12),
@@ -1043,66 +1106,11 @@ class _ProjectDatePickerPanelState extends State<_ProjectDatePickerPanel> {
       ),
     );
   }
-}
+}
 
-class _PriorityPickerPanel extends StatelessWidget {
-  const _PriorityPickerPanel({required this.current});
 
-  final int? current;
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final scheme = Theme.of(context).colorScheme;
 
-    Widget item({
-      required String label,
-      required int? value,
-      required bool emphasized,
-    }) {
-      final selected = current == value;
-      return ListTile(
-        title: Text(label),
-        leading: Icon(
-          emphasized ? Icons.flag_rounded : Icons.flag_outlined,
-          color: emphasized
-              ? scheme.primary
-              : scheme.onSurfaceVariant.withValues(alpha: 0.8),
-        ),
-        trailing: selected ? const Icon(Icons.check) : null,
-        onTap: () => Navigator.of(context).pop(
-          _NullableIntDecision.set(selected ? null : value),
-        ),
-      );
-    }
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              l10n.priorityLabel,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-          ),
-        ),
-        item(label: 'P1', value: 1, emphasized: true),
-        item(label: 'P2', value: 2, emphasized: true),
-        item(label: 'P3', value: 3, emphasized: false),
-        item(label: 'P4', value: 4, emphasized: false),
-        const Divider(height: 1),
-        ListTile(
-          title: Text(l10n.cancelLabel),
-          onTap: () =>
-              Navigator.of(context).pop(const _NullableIntDecision.keep()),
-        ),
-      ],
-    );
-  }
-}
 
 
 

@@ -18,91 +18,23 @@
     "recurrenceTitle": "Repetir",
     "recurrenceRepeatFromCompletionLabel": "Repetir desde la finalizaciÃ³n",
     "recurrenceSeriesEndedLabel": "Finalizar serie",
-    "scheduleHelperText": "Planificado = intenciÃ³n suave â€¢ Entrega = debe terminarse antes de",
-    "taskFormScheduleHelperText": "Planificado = intenciÃ³n suave â€¢ Entrega = debe terminarse antes de",
-    "valuesAlignedToTitle": "Alineado con",
-    "valuesNoneSelected": "Sin valores",
-    "valuesNoneInherited": "Sin valores del proyecto",
-    "valuesExplicitSelectionLabel": "SelecciÃ³n explÃ­cita",
-    "valuesAlignmentHelperText": "Apoya la planificaciÃ³n centrada en valores.",
+
+    
+    "valuesAlignedToTitle": "Alineación de valores",
+    "valuesNoneSelected": "No hay valores seleccionados.",
+    "valuesNoneInherited": "No hay valores heredados.",
+    "valuesExplicitSelectionLabel": "Valores seleccionados",
+    "valuesAlignmentHelperText": "Elige valores que esta tarea respalda.",
     "valuesInheritLabel": "Heredar",
     "valuesOverrideLabel": "Anular",
-    "valuesInheritHelp": "Usa los valores del proyecto a menos que anules.",
-    "valuesOverrideHelp": "Elige valores para esta tarea. Se ignorarÃ¡n los del proyecto.",
+    "valuesInheritHelp": "Usa los valores del proyecto seleccionado.",
+    "valuesOverrideHelp": "Elige valores para esta tarea. Se ignorarán los del proyecto.",
     "valuesProjectHelp": "Elige al menos un valor. El primero es el principal.",
     "valuesNoProjectSelected": "No hay proyecto seleccionado.",
     "valuesInheritedFromProject": "Heredado del proyecto",
     "valuesProjectHasNoValues": "Este proyecto no tiene valores.",
     "valuesOptionalFooter": "Los valores son opcionales para las tareas.",
-    "valuesPrimaryTooltip": "Hacer principal",
-    "projectFormValuesRequired": "Selecciona al menos un valor.",
-    "@@locale": "es",
-    "@pinAction": {
-        "description": "Etiqueta de acciÃ³n para fijar un elemento (tarea/proyecto/etc.)."
-    },
-    "@unpinAction": {
-        "description": "Etiqueta de acciÃ³n para desfijar un elemento (tarea/proyecto/etc.)."
-    },
-    "@selectedCountLabel": {
-        "description": "Etiqueta que muestra cuÃ¡ntos elementos estÃ¡n seleccionados actualmente.",
-        "placeholders": {
-            "count": {
-                "type": "int",
-                "example": "3"
-            }
-        }
-    },
-    "@pinToMyDayAction": {
-        "description": "Etiqueta de acciÃ³n masiva para fijar elementos seleccionados en Mi dÃ­a."
-    },
-    "@unpinFromMyDayAction": {
-        "description": "Etiqueta de acciÃ³n masiva para desfijar elementos seleccionados de Mi dÃ­a."
-    },
-    "@moveToProjectAction": {
-        "description": "Etiqueta de acciÃ³n masiva para mover elementos seleccionados a un proyecto."
-    },
-    "@completeSeriesAction": {
-        "description": "Etiqueta de acciÃ³n masiva para completar una serie de tareas."
-    },
-    "@selectValuesHint": {
-        "description": "Texto de ayuda para seleccionar valores en editores/seleccionadores."
-    },
-    "@projectCompletedLabel": {
-        "description": "Etiqueta mostrada para indicar que un proyecto estÃ¡ completado."
-    },
-    "@selectProjectTitle": {
-        "description": "TÃ­tulo de la pantalla/diÃ¡logo para seleccionar un proyecto."
-    },
-    "@projectPickerNoProjectInbox": {
-        "description": "OpciÃ³n del selector de proyectos que significa sin proyecto (Bandeja de entrada)."
-    },
-    "@projectPickerRecentTitle": {
-        "description": "TÃ­tulo/encabezado para proyectos recientes en el selector de proyectos."
-    },
-    "@projectPickerSearchHint": {
-        "description": "Texto de ayuda del campo de bÃºsqueda en el selector de proyectos."
-    },
-    "@projectPickerNoMatchingProjects": {
-        "description": "Estado vacÃ­o mostrado cuando la bÃºsqueda de proyectos no tiene coincidencias."
-    },
-    "@doneLabel": {
-        "description": "Etiqueta genÃ©rica de acciÃ³n para finalizar/confirmar."
-    },
-    "@recurrenceTitle": {
-        "description": "TÃ­tulo para la configuraciÃ³n de repeticiÃ³n/recurrencia."
-    },
-    "@recurrenceRepeatFromCompletionLabel": {
-        "description": "Etiqueta para la opciÃ³n de recurrencia 'repetir desde la finalizaciÃ³n'."
-    },
-    "@recurrenceSeriesEndedLabel": {
-        "description": "Etiqueta para finalizar una serie de repeticiÃ³n."
-    },
-    "@scheduleHelperText": {
-        "description": "Texto de ayuda que explica la diferencia entre planificado y entrega."
-    },
-    "@taskFormScheduleHelperText": {
-        "description": "Texto de ayuda en el formulario de tarea que explica planificado vs entrega."
-    },
+    "valuesPrimaryTooltip": "Marcar como principal",
     "@valuesAlignedToTitle": {
         "description": "TÃ­tulo/etiqueta que indica alineaciÃ³n con valores."
     },
@@ -148,6 +80,7 @@
     "@valuesPrimaryTooltip": {
         "description": "Tooltip para la acciÃ³n de marcar un valor como principal."
     },
+    "projectFormValuesRequired": "Selecciona al menos un valor.",
     "@projectFormValuesRequired": {
         "description": "Error de validaciÃ³n cuando se requiere al menos un valor."
     },
@@ -799,24 +732,53 @@
     "@addProjectAction": {
         "description": "Texto del botÃ³n de acciÃ³n para aÃ±adir un proyecto"
     },
-    "taskFormNameHint": "Nombre de la tarea",
+    "taskFormNameHint": "¿Qué hay que hacer?",
     "@taskFormNameHint": {
         "description": "Texto de sugerencia para el campo de nombre de tarea"
     },
-    "taskFormDescriptionHint": "DescripciÃ³n",
-    "@taskFormDescriptionHint": {
-        "description": "Texto de sugerencia para el campo de descripciÃ³n de tarea"
+    "taskFormNotesHint": "Añadir notas...",
+    "@taskFormNotesHint": {
+        "description": "Texto de sugerencia para el campo de notas de tarea"
     },
+    "taskFormNewTitle": "Nueva tarea",
+    "@taskFormNewTitle": {
+        "description": "Título del formulario de tarea en modo crear"
+    },
+    "taskFormEditTitle": "Editar tarea",
+    "@taskFormEditTitle": {
+        "description": "Título del formulario de tarea en modo edición"
+    },
+    "projectLabel": "Proyecto",
+    "@projectLabel": {
+        "description": "Etiqueta de sección para seleccionar un proyecto"
+    },
+    "plannedLabel": "Planificado",
+    "@plannedLabel": {
+        "description": "Etiqueta para filas de fecha planificada"
+    },
+    "dueLabel": "Entrega",
+    "@dueLabel": {
+        "description": "Etiqueta para filas de fecha de entrega"
+    },
+    "repeatAddLabel": "Añadir repetición",
+    "@repeatAddLabel": {
+        "description": "Etiqueta de marcador para añadir repetición"
+    },
+    "moreOptionsLabel": "Más opciones",
+    "@moreOptionsLabel": {
+        "description": "Etiqueta de tooltip para menús de más opciones"
+    },
+
     "taskFormStartDateHint": "DÃ­a planificado",
     "@taskFormStartDateHint": {
         "description": "Texto de sugerencia para el campo de fecha de inicio de tarea"
     },
     "taskFormDeadlineDateHint": "Fecha de entrega",
-    "dateChipAddPlannedDay": "AÃ±adir dÃ­a planificado",
+    "dateChipAddPlannedDay": "Añadir planificado",
     "@dateChipAddPlannedDay": {
         "description": "Etiqueta mostrada en los chips de fecha cuando no se ha establecido el dÃ­a planificado"
     },
-    "dateChipAddDueDate": "AÃ±adir fecha de entrega",
+    "dateChipAddDueDate": "Añadir fecha límite",
     "@dateChipAddDueDate": {
         "description": "Etiqueta mostrada en los chips de fecha cuando no se ha establecido la fecha de entrega"
     },
@@ -2588,4 +2550,13 @@
     "editValue": "Editar valor",
     "valueNotFound": "No se encontrÃ³ el valor."
 }
+
+
+
+
+
+
+
+
+
 

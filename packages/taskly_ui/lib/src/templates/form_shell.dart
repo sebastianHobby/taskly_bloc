@@ -36,6 +36,8 @@ class FormShell extends StatelessWidget {
     required this.closeTooltip,
     this.onClose,
     this.onDelete,
+    this.headerTitle,
+    this.centerHeaderTitle = false,
     this.leadingActions = const <Widget>[],
     this.trailingActions = const <Widget>[],
     this.scrollController,
@@ -97,6 +99,12 @@ class FormShell extends StatelessWidget {
 
   /// Called when the delete button is tapped. If null, no delete button shown.
   final VoidCallback? onDelete;
+
+  /// Optional title widget to render in the header row.
+  final Widget? headerTitle;
+
+  /// When true, keeps [headerTitle] centered regardless of action widths.
+  final bool centerHeaderTitle;
 
   /// Additional action widgets to render on the left side of the header row.
   ///
@@ -170,6 +178,34 @@ class FormShell extends StatelessWidget {
             tooltip: closeTooltip,
           ),
     ];
+    final headerRow = Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        ...resolvedLeadingActions,
+        const Spacer(),
+        ...resolvedTrailingActions,
+      ],
+    );
+    final headerContent =
+        headerTitle == null
+            ? headerRow
+            : centerHeaderTitle
+            ? Stack(
+                alignment: Alignment.center,
+                children: [
+                  headerRow,
+                  Center(child: headerTitle),
+                ],
+              )
+            : Row(
+                children: [
+                  ...resolvedLeadingActions,
+                  const SizedBox(width: 12),
+                  headerTitle!,
+                  const Spacer(),
+                  ...resolvedTrailingActions,
+                ],
+              );
 
     return Container(
       decoration: BoxDecoration(
@@ -193,14 +229,7 @@ class FormShell extends StatelessWidget {
           // Action buttons row
           Container(
             padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ...resolvedLeadingActions,
-                const Spacer(),
-                ...resolvedTrailingActions,
-              ],
-            ),
+            child: headerContent,
           ),
 
           // Scrollable content

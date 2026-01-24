@@ -1,9 +1,15 @@
 import '../helpers/test_imports.dart';
 
 import 'package:taskly_core/env.dart';
+import 'package:taskly_core/logging.dart';
 
 void main() {
   group('Env', () {
+    setUpAll(() {
+      resetLoggingForTest();
+      initializeLoggingForTest();
+    });
+
     testSafe('uses configured values', () async {
       Env.resetForTest();
       Env.config = const EnvConfig(

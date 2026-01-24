@@ -270,7 +270,6 @@ Future<void> setupDependencies() async {
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
-        settingsRepository: getIt<SettingsRepositoryContract>(),
         myDayRepository: getIt<MyDayRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),

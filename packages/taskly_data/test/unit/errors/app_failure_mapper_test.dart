@@ -55,7 +55,7 @@ void main() {
     });
 
     testSafe('maps SqliteException-like errors to StorageFailure', () async {
-      final error = _FakeSqliteException('disk I/O error');
+      final error = SqliteException('disk I/O error');
 
       final failure = AppFailureMapper.fromException(error);
 
@@ -86,8 +86,8 @@ void main() {
   });
 }
 
-class _FakeSqliteException {
-  _FakeSqliteException(this.message);
+class SqliteException {
+  SqliteException(this.message);
 
   final String message;
 

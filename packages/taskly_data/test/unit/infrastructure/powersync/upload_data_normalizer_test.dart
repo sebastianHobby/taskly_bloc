@@ -5,7 +5,7 @@ import '../../../helpers/test_imports.dart';
 
 import 'dart:convert';
 
-import 'package:taskly_data/testing.dart';
+import 'package:taskly_data/src/infrastructure/powersync/upload_data_normalizer.dart';
 
 void main() {
   setUpAll(setUpAllTestEnvironment);

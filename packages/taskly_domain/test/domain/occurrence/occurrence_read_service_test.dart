@@ -5,12 +5,14 @@ import '../../helpers/test_imports.dart';
 
 import 'dart:async';
 
-import 'package:flutter_test/fake.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/src/interfaces/occurrence_stream_expander_contract.dart';
+import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_domain/time.dart';
 
 class _CapturingTaskRepo extends Fake implements TaskRepositoryContract {

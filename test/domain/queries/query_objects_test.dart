@@ -2,6 +2,7 @@
 library;
 
 import '../../helpers/test_imports.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/queries.dart';
 
 void main() {
@@ -34,8 +35,9 @@ void main() {
         rangeEnd: DateTime(2025, 1, 2),
       );
       final preview = OccurrencePreview(
-        rangeStart: DateTime(2025, 1, 1),
-        rangeEnd: DateTime(2025, 1, 2),
+        asOfDayKey: DateTime(2025, 1, 1),
+        pastDays: 1,
+        futureDays: 1,
       );
 
       final withExpansion = base.withOccurrenceExpansion(expansion);
@@ -85,8 +87,9 @@ void main() {
         rangeEnd: DateTime(2025, 1, 2),
       );
       final preview = OccurrencePreview(
-        rangeStart: DateTime(2025, 1, 1),
-        rangeEnd: DateTime(2025, 1, 2),
+        asOfDayKey: DateTime(2025, 1, 1),
+        pastDays: 1,
+        futureDays: 1,
       );
 
       final withPreview = base.withOccurrencePreview(preview);
