@@ -65,6 +65,11 @@ uploadJsonExpectationsByTable = {
     // Supabase: jsonb/text[] (PostgREST expects a JSON array)
     'reason_codes': UploadJsonExpectation.list,
   },
+  'routines': {
+    // Supabase: int[] (PostgREST expects a JSON array)
+    'schedule_days': UploadJsonExpectation.list,
+    'preferred_weeks': UploadJsonExpectation.list,
+  },
 };
 
 String _previewForLog(Object? value, {int maxChars = 200}) {

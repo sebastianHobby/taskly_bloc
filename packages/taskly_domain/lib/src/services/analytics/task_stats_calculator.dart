@@ -1,8 +1,9 @@
-import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/analytics/model/date_range.dart';
 import 'package:taskly_domain/src/analytics/model/entity_type.dart';
 import 'package:taskly_domain/src/analytics/model/stat_result.dart';
 import 'package:taskly_domain/src/analytics/model/task_stat_type.dart';
+import 'package:taskly_domain/src/core/model/task.dart';
+import 'package:taskly_domain/src/services/values/effective_values.dart';
 
 /// Default number of days after which a task is considered stale.
 const int kDefaultStaleThresholdDays = 14;
@@ -245,7 +246,7 @@ class TaskStatsCalculator {
       return switch (entityType) {
         EntityType.task => t.id == entityId,
         EntityType.project => t.projectId == entityId,
-        EntityType.value => t.values.any((v) => v.id == entityId),
+        EntityType.value => t.effectiveValues.any((v) => v.id == entityId),
       };
     }).toList();
 

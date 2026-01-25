@@ -57,6 +57,46 @@ class TaskRepository implements TaskRepositoryContract {
   final Map<_OccurrenceRangeKey, ValueStream<List<Task>>>
   _occurrenceStreamCache = {};
 
+  Future<String?> _getProjectPrimaryValueId(String projectId) async {
+    final row = await (driftDb.select(
+      driftDb.projectTable,
+    )..where((p) => p.id.equals(projectId))).getSingleOrNull();
+    return row?.primaryValueId;
+  }
+
+  bool _hasNonEmptyValueIds(List<String>? valueIds) {
+    return (valueIds ?? const <String>[]).any((id) => id.trim().isNotEmpty);
+  }
+
+  String _taskValueValidationMessage(List<TaskValueIssue> issues) {
+    if (issues.isEmpty) {
+      return 'Invalid task values.';
+    }
+
+    const priorityOrder = [
+      TaskValueIssue.projectRequired,
+      TaskValueIssue.projectPrimaryRequired,
+      TaskValueIssue.matchesProjectPrimary,
+      TaskValueIssue.maxOverrides,
+      TaskValueIssue.duplicate,
+    ];
+
+    final issue =
+        priorityOrder.firstWhere(issues.contains, orElse: () => issues.first);
+
+    return switch (issue) {
+      TaskValueIssue.projectRequired =>
+        'Tasks must belong to a project before assigning values.',
+      TaskValueIssue.projectPrimaryRequired =>
+        'Project must have a primary value before assigning task values.',
+      TaskValueIssue.matchesProjectPrimary =>
+        'Task values cannot match the project primary value.',
+      TaskValueIssue.maxOverrides =>
+        'Tasks may have at most two override values (primary + optional secondary).',
+      TaskValueIssue.duplicate => 'Task values must be unique.',
+    };
+  }
+
   /// Watch tasks with optional filtering, sorting, and occurrence expansion.
   ///
   /// If [query] is null, returns all tasks with related entities.
@@ -131,9 +171,6 @@ class TaskRepository implements TaskRepositoryContract {
     final projectPrimaryValueTable = driftDb.valueTable.createAlias(
       'project_primary_value',
     );
-    final projectSecondaryValueTable = driftDb.valueTable.createAlias(
-      'project_secondary_value',
-    );
     final overridePrimaryValueTable = driftDb.valueTable.createAlias(
       'task_override_primary_value',
     );
@@ -156,12 +193,6 @@ class TaskRepository implements TaskRepositoryContract {
             ),
           ),
           drift_pkg.leftOuterJoin(
-            projectSecondaryValueTable,
-            driftDb.projectTable.secondaryValueId.equalsExp(
-              projectSecondaryValueTable.id,
-            ),
-          ),
-          drift_pkg.leftOuterJoin(
             overridePrimaryValueTable,
             driftDb.taskTable.overridePrimaryValueId.equalsExp(
               overridePrimaryValueTable.id,
@@ -180,7 +211,6 @@ class TaskRepository implements TaskRepositoryContract {
       rows: rows,
       driftDb: driftDb,
       projectPrimaryValueTable: projectPrimaryValueTable,
-      projectSecondaryValueTable: projectSecondaryValueTable,
       overridePrimaryValueTable: overridePrimaryValueTable,
       overrideSecondaryValueTable: overrideSecondaryValueTable,
     ).toSingleTask();
@@ -193,9 +223,6 @@ class TaskRepository implements TaskRepositoryContract {
 
     final projectPrimaryValueTable = driftDb.valueTable.createAlias(
       'project_primary_value',
-    );
-    final projectSecondaryValueTable = driftDb.valueTable.createAlias(
-      'project_secondary_value',
     );
     final overridePrimaryValueTable = driftDb.valueTable.createAlias(
       'task_override_primary_value',
@@ -219,12 +246,6 @@ class TaskRepository implements TaskRepositoryContract {
             ),
           ),
           drift_pkg.leftOuterJoin(
-            projectSecondaryValueTable,
-            driftDb.projectTable.secondaryValueId.equalsExp(
-              projectSecondaryValueTable.id,
-            ),
-          ),
-          drift_pkg.leftOuterJoin(
             overridePrimaryValueTable,
             driftDb.taskTable.overridePrimaryValueId.equalsExp(
               overridePrimaryValueTable.id,
@@ -243,7 +264,6 @@ class TaskRepository implements TaskRepositoryContract {
       rows: rows,
       driftDb: driftDb,
       projectPrimaryValueTable: projectPrimaryValueTable,
-      projectSecondaryValueTable: projectSecondaryValueTable,
       overridePrimaryValueTable: overridePrimaryValueTable,
       overrideSecondaryValueTable: overrideSecondaryValueTable,
     ).toTasks();
@@ -260,9 +280,6 @@ class TaskRepository implements TaskRepositoryContract {
   Stream<Task?> watchById(String taskId) {
     final projectPrimaryValueTable = driftDb.valueTable.createAlias(
       'project_primary_value',
-    );
-    final projectSecondaryValueTable = driftDb.valueTable.createAlias(
-      'project_secondary_value',
     );
     final overridePrimaryValueTable = driftDb.valueTable.createAlias(
       'task_override_primary_value',
@@ -286,12 +303,6 @@ class TaskRepository implements TaskRepositoryContract {
             ),
           ),
           drift_pkg.leftOuterJoin(
-            projectSecondaryValueTable,
-            driftDb.projectTable.secondaryValueId.equalsExp(
-              projectSecondaryValueTable.id,
-            ),
-          ),
-          drift_pkg.leftOuterJoin(
             overridePrimaryValueTable,
             driftDb.taskTable.overridePrimaryValueId.equalsExp(
               overridePrimaryValueTable.id,
@@ -310,7 +321,6 @@ class TaskRepository implements TaskRepositoryContract {
         rows: rows,
         driftDb: driftDb,
         projectPrimaryValueTable: projectPrimaryValueTable,
-        projectSecondaryValueTable: projectSecondaryValueTable,
         overridePrimaryValueTable: overridePrimaryValueTable,
         overrideSecondaryValueTable: overrideSecondaryValueTable,
       ).toSingleTask();
@@ -324,9 +334,6 @@ class TaskRepository implements TaskRepositoryContract {
 
     final projectPrimaryValueTable = driftDb.valueTable.createAlias(
       'project_primary_value',
-    );
-    final projectSecondaryValueTable = driftDb.valueTable.createAlias(
-      'project_secondary_value',
     );
     final overridePrimaryValueTable = driftDb.valueTable.createAlias(
       'task_override_primary_value',
@@ -350,12 +357,6 @@ class TaskRepository implements TaskRepositoryContract {
             ),
           ),
           drift_pkg.leftOuterJoin(
-            projectSecondaryValueTable,
-            driftDb.projectTable.secondaryValueId.equalsExp(
-              projectSecondaryValueTable.id,
-            ),
-          ),
-          drift_pkg.leftOuterJoin(
             overridePrimaryValueTable,
             driftDb.taskTable.overridePrimaryValueId.equalsExp(
               overridePrimaryValueTable.id,
@@ -374,7 +375,6 @@ class TaskRepository implements TaskRepositoryContract {
         rows: rows,
         driftDb: driftDb,
         projectPrimaryValueTable: projectPrimaryValueTable,
-        projectSecondaryValueTable: projectSecondaryValueTable,
         overridePrimaryValueTable: overridePrimaryValueTable,
         overrideSecondaryValueTable: overrideSecondaryValueTable,
       ).toTasks();
@@ -417,27 +417,26 @@ class TaskRepository implements TaskRepositoryContract {
         final normalizedStartDate = dateOnlyOrNull(startDate);
         final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
-        final normalizedValueIds = (valueIds ?? const <String>[])
-            .map((v) => v.trim())
-            .where((v) => v.isNotEmpty)
-            .toList();
-        if (normalizedValueIds.length > 2) {
+        final projectPrimaryValueId =
+            normalizedProjectId == null || !_hasNonEmptyValueIds(valueIds)
+                ? null
+                : await _getProjectPrimaryValueId(normalizedProjectId);
+        final valueValidation = TaskValuePolicy.validate(
+          valueIds: valueIds,
+          projectId: normalizedProjectId,
+          projectPrimaryValueId: projectPrimaryValueId,
+        );
+        if (!valueValidation.isValid) {
           throw RepositoryValidationException(
-            'Tasks may have at most two override values (primary + optional secondary).',
+            _taskValueValidationMessage(valueValidation.issues),
           );
         }
-        if (normalizedValueIds.length == 2 &&
-            normalizedValueIds[0] == normalizedValueIds[1]) {
-          throw RepositoryValidationException(
-            'Secondary value must be different from primary value.',
-          );
-        }
-        final overridePrimaryValueId = normalizedValueIds.isEmpty
-            ? null
-            : normalizedValueIds.first;
-        final overrideSecondaryValueId = normalizedValueIds.length > 1
-            ? normalizedValueIds[1]
-            : null;
+
+        final normalizedValueIds = valueValidation.normalizedIds;
+        final overridePrimaryValueId =
+            normalizedValueIds.isEmpty ? null : normalizedValueIds.first;
+        final overrideSecondaryValueId =
+            normalizedValueIds.length > 1 ? normalizedValueIds[1] : null;
 
         final psMetadata = encodeCrudMetadata(context);
 
@@ -524,28 +523,30 @@ class TaskRepository implements TaskRepositoryContract {
 
         List<String>? normalizedValueIds;
         if (valueIds != null) {
-          normalizedValueIds = valueIds
-              .map((v) => v.trim())
-              .where((v) => v.isNotEmpty)
-              .toList();
-          if (normalizedValueIds.length > 2) {
+          final projectPrimaryValueId =
+              normalizedProjectId == null || !_hasNonEmptyValueIds(valueIds)
+                  ? null
+                  : await _getProjectPrimaryValueId(normalizedProjectId);
+          final valueValidation = TaskValuePolicy.validate(
+            valueIds: valueIds,
+            projectId: normalizedProjectId,
+            projectPrimaryValueId: projectPrimaryValueId,
+          );
+          if (!valueValidation.isValid) {
             throw RepositoryValidationException(
-              'Tasks may have at most two override values (primary + optional secondary).',
+              _taskValueValidationMessage(valueValidation.issues),
             );
           }
-          if (normalizedValueIds.length == 2 &&
-              normalizedValueIds[0] == normalizedValueIds[1]) {
-            throw RepositoryValidationException(
-              'Secondary value must be different from primary value.',
-            );
-          }
+          normalizedValueIds = valueValidation.normalizedIds;
         }
+
         final overridePrimaryValueId = normalizedValueIds == null
             ? null
             : (normalizedValueIds.isEmpty ? null : normalizedValueIds.first);
         final overrideSecondaryValueId = normalizedValueIds == null
             ? null
             : (normalizedValueIds.length > 1 ? normalizedValueIds[1] : null);
+        final clearOverrides = normalizedProjectId == null;
 
         final psMetadata = encodeCrudMetadata(context);
 
@@ -575,12 +576,18 @@ class TaskRepository implements TaskRepositoryContract {
                   seriesEnded: seriesEnded == null
                       ? drift_pkg.Value(existing.seriesEnded)
                       : drift_pkg.Value(seriesEnded),
-                  overridePrimaryValueId: normalizedValueIds == null
-                      ? const drift_pkg.Value<String?>.absent()
-                      : drift_pkg.Value(overridePrimaryValueId),
-                  overrideSecondaryValueId: normalizedValueIds == null
-                      ? const drift_pkg.Value<String?>.absent()
-                      : drift_pkg.Value(overrideSecondaryValueId),
+                  overridePrimaryValueId:
+                      normalizedValueIds == null && !clearOverrides
+                          ? const drift_pkg.Value<String?>.absent()
+                          : drift_pkg.Value(
+                            clearOverrides ? null : overridePrimaryValueId,
+                          ),
+                  overrideSecondaryValueId:
+                      normalizedValueIds == null && !clearOverrides
+                          ? const drift_pkg.Value<String?>.absent()
+                          : drift_pkg.Value(
+                            clearOverrides ? null : overrideSecondaryValueId,
+                          ),
                   psMetadata: psMetadata == null
                       ? const drift_pkg.Value<String?>.absent()
                       : drift_pkg.Value(psMetadata),
@@ -1045,9 +1052,6 @@ class TaskRepository implements TaskRepositoryContract {
     final projectPrimaryValueTable = driftDb.valueTable.createAlias(
       'project_primary_value',
     );
-    final projectSecondaryValueTable = driftDb.valueTable.createAlias(
-      'project_secondary_value',
-    );
     final overridePrimaryValueTable = driftDb.valueTable.createAlias(
       'task_override_primary_value',
     );
@@ -1065,12 +1069,6 @@ class TaskRepository implements TaskRepositoryContract {
         projectPrimaryValueTable,
         driftDb.projectTable.primaryValueId.equalsExp(
           projectPrimaryValueTable.id,
-        ),
-      ),
-      drift_pkg.leftOuterJoin(
-        projectSecondaryValueTable,
-        driftDb.projectTable.secondaryValueId.equalsExp(
-          projectSecondaryValueTable.id,
         ),
       ),
       drift_pkg.leftOuterJoin(
@@ -1093,7 +1091,6 @@ class TaskRepository implements TaskRepositoryContract {
         rows: rows,
         driftDb: driftDb,
         projectPrimaryValueTable: projectPrimaryValueTable,
-        projectSecondaryValueTable: projectSecondaryValueTable,
         overridePrimaryValueTable: overridePrimaryValueTable,
         overrideSecondaryValueTable: overrideSecondaryValueTable,
       ).toTasks();

@@ -28,18 +28,6 @@ final class AnytimeFeedSearchQueryChanged extends AnytimeFeedEvent {
   final String query;
 }
 
-final class AnytimeFeedSortOrderChanged extends AnytimeFeedEvent {
-  const AnytimeFeedSortOrderChanged({required this.order});
-
-  final AnytimeSortOrder order;
-}
-
-final class AnytimeFeedDueWindowDaysChanged extends AnytimeFeedEvent {
-  const AnytimeFeedDueWindowDaysChanged({required this.days});
-
-  final int days;
-}
-
 final class AnytimeFeedInboxCollapsedChanged extends AnytimeFeedEvent {
   const AnytimeFeedInboxCollapsedChanged({required this.collapsed});
 
@@ -85,8 +73,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       transformer: restartable(),
     );
     on<AnytimeFeedSearchQueryChanged>(_onSearchQueryChanged);
-    on<AnytimeFeedSortOrderChanged>(_onSortOrderChanged);
-    on<AnytimeFeedDueWindowDaysChanged>(_onDueWindowDaysChanged);
     on<AnytimeFeedInboxCollapsedChanged>(_onInboxCollapsedChanged);
     on<AnytimeFeedValueCollapsedChanged>(_onValueCollapsedChanged);
 
@@ -96,14 +82,11 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   final AnytimeSessionQueryService _queryService;
   final AnytimeScope? _scope;
 
-  List<Task> _latestTasks = const <Task>[];
-  DateTime _todayDayKeyUtc = DateTime.fromMillisecondsSinceEpoch(
-    0,
-    isUtc: true,
-  );
+  List<Project> _latestProjects = const <Project>[];
+  int? _inboxTaskCount;
+  List<Value> _latestValues = const <Value>[];
   String _searchQuery = '';
-  AnytimeSortOrder _sortOrder = AnytimeSortOrder.dueSoonest;
-  int _dueWindowDays = 7;
+  final AnytimeSortOrder _sortOrder = AnytimeSortOrder.dueSoonest;
 
   Future<void> _onStarted(
     AnytimeFeedStarted event,
@@ -128,22 +111,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     _emitRows(emit);
   }
 
-  void _onSortOrderChanged(
-    AnytimeFeedSortOrderChanged event,
-    Emitter<AnytimeFeedState> emit,
-  ) {
-    _sortOrder = event.order;
-    _emitRows(emit);
-  }
-
-  void _onDueWindowDaysChanged(
-    AnytimeFeedDueWindowDaysChanged event,
-    Emitter<AnytimeFeedState> emit,
-  ) {
-    _dueWindowDays = event.days;
-    _emitRows(emit);
-  }
-
   void _onInboxCollapsedChanged(
     AnytimeFeedInboxCollapsedChanged event,
     Emitter<AnytimeFeedState> emit,
@@ -159,11 +126,12 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   }
 
   Future<void> _bind(Emitter<AnytimeFeedState> emit) async {
-    await emit.onEach<AnytimeBaseSnapshot>(
-      _queryService.watchBase(scope: _scope),
+    await emit.onEach<AnytimeProjectsSnapshot>(
+      _queryService.watchProjects(scope: _scope),
       onData: (snapshot) {
-        _todayDayKeyUtc = snapshot.todayDayKeyUtc;
-        _latestTasks = snapshot.tasks;
+        _latestProjects = snapshot.projects;
+        _inboxTaskCount = snapshot.inboxTaskCount;
+        _latestValues = snapshot.values;
         _emitRows(emit);
       },
       onError: (error, stackTrace) {
@@ -174,151 +142,172 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
   void _emitRows(Emitter<AnytimeFeedState> emit) {
     try {
-      final rows = _mapToRows(_latestTasks);
+      final rows = _mapToRows(_latestProjects, _inboxTaskCount, _latestValues);
       emit(AnytimeFeedLoaded(rows: rows));
     } catch (e) {
       emit(AnytimeFeedError(message: e.toString()));
     }
   }
 
-  bool _isStartLater(Task task) {
-    final taskStart = task.occurrence?.date ?? task.startDate;
-    if (taskStart != null && taskStart.isAfter(_todayDayKeyUtc)) return true;
-
-    final projectStart = task.project?.startDate;
-    if (projectStart != null && projectStart.isAfter(_todayDayKeyUtc)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  List<ListRowUiModel> _mapToRows(List<Task> tasks) {
-    final aggregates = _aggregateProjects(tasks);
-    if (aggregates.isEmpty) return const <ListRowUiModel>[];
+  List<ListRowUiModel> _mapToRows(
+    List<Project> projects,
+    int? inboxTaskCount,
+    List<Value> values,
+  ) {
+    final aggregates = _aggregateProjects(projects, inboxTaskCount);
     final filtered = aggregates.where(_matchesFilters).toList(growable: false)
       ..sort(_compareProjectGroups);
 
-    return filtered
-        .map(
-          (pg) => ProjectRowUiModel(
+    final inboxRows = <_ProjectAggregate>[];
+    final valueGroups = <String, _ValueGroup>{};
+
+    void ensureGroup(String key, Value? value) {
+      valueGroups.putIfAbsent(
+        key,
+        () => _ValueGroup(valueId: value?.id, value: value),
+      );
+    }
+
+    for (final value in values) {
+      ensureGroup(_valueGroupKey(value.id), value);
+    }
+
+    for (final aggregate in filtered) {
+      if (aggregate.projectRef.isInbox) {
+        inboxRows.add(aggregate);
+        continue;
+      }
+
+      final value = aggregate.project?.primaryValue;
+      final key = _valueGroupKey(value?.id);
+      ensureGroup(key, value);
+      valueGroups[key]!.projects.add(aggregate);
+    }
+
+    final scope = _scope;
+    final showEmptyValues = scope == null;
+    final groupsToShow =
+        valueGroups.values
+            .where((group) {
+              if (showEmptyValues) return true;
+              if (group.projects.isNotEmpty) return true;
+              if (scope is AnytimeValueScope) {
+                return group.valueId == scope.valueId;
+              }
+              if (scope is AnytimeProjectScope) {
+                return false;
+              }
+              return false;
+            })
+            .toList(growable: false)
+          ..sort(_compareValueGroups);
+
+    final rows = <ListRowUiModel>[];
+
+    for (final aggregate in inboxRows) {
+      rows.add(
+        ProjectRowUiModel(
+          rowKey: RowKey.v1(
+            screen: 'anytime',
+            rowType: 'project',
+            params: <String, String>{
+              'project': aggregate.projectRef.stableKey,
+            },
+          ),
+          depth: 0,
+          project: aggregate.project,
+          taskCount: aggregate.taskCount,
+          completedTaskCount: aggregate.completedTaskCount,
+          dueSoonCount: aggregate.dueSoonCount,
+        ),
+      );
+    }
+
+    for (final group in groupsToShow) {
+      final valueKey = _valueGroupKey(group.valueId);
+      rows.add(
+        ValueHeaderRowUiModel(
+          rowKey: RowKey.v1(
+            screen: 'anytime',
+            rowType: 'value',
+            params: <String, String>{
+              'value': valueKey,
+            },
+          ),
+          depth: 0,
+          title: group.value?.name ?? '',
+          valueId: group.valueId,
+          priority: group.value?.priority,
+          value: group.value,
+          activeCount: group.projects.length,
+          isCollapsed: false,
+          valueKey: valueKey,
+        ),
+      );
+
+      for (final aggregate in group.projects) {
+        rows.add(
+          ProjectRowUiModel(
             rowKey: RowKey.v1(
               screen: 'anytime',
               rowType: 'project',
               params: <String, String>{
-                'project': pg.projectRef.stableKey,
+                'project': aggregate.projectRef.stableKey,
               },
             ),
-            depth: 0,
-            project: pg.project,
-            taskCount: pg.taskCount,
-            completedTaskCount: pg.completedTaskCount,
-            dueSoonCount: pg.dueSoonCount,
+            depth: 1,
+            project: aggregate.project,
+            taskCount: aggregate.taskCount,
+            completedTaskCount: aggregate.completedTaskCount,
+            dueSoonCount: aggregate.dueSoonCount,
           ),
-        )
-        .toList(growable: false);
+        );
+      }
+    }
+
+    return rows;
   }
 
-  List<_ProjectAggregate> _aggregateProjects(List<Task> tasks) {
-    final groups = <String, _ProjectAggregate>{};
+  List<_ProjectAggregate> _aggregateProjects(
+    List<Project> projects,
+    int? inboxTaskCount,
+  ) {
+    final aggregates = projects
+        .map(
+          (project) {
+            final aggregate = _ProjectAggregate(
+              projectRef: ProjectGroupingRef.fromProjectId(project.id),
+              title: project.name,
+              project: project,
+              taskCount: project.taskCount,
+              completedTaskCount: project.completedTaskCount,
+              dueSoonCount: 0,
+            );
 
-    final today = DateTime.utc(
-      _todayDayKeyUtc.year,
-      _todayDayKeyUtc.month,
-      _todayDayKeyUtc.day,
-    );
-    final dueLimit = today.add(
-      Duration(days: _dueWindowDays.clamp(1, 30) - 1),
-    );
+            final deadline = project.deadlineDate;
+            if (deadline != null) {
+              aggregate.trackDeadline(
+                DateTime.utc(deadline.year, deadline.month, deadline.day),
+              );
+            }
 
-    for (final task in tasks) {
-      final projectRef = ProjectGroupingRef.fromProjectId(task.projectId);
-      final key = projectRef.stableKey;
+            return aggregate;
+          },
+        )
+        .toList(growable: true);
 
-      final group = groups.putIfAbsent(
-        key,
-        () => _ProjectAggregate(
-          projectRef: projectRef,
-          title: projectRef.isInbox
-              ? 'Inbox'
-              : (task.project?.name ?? 'Project'),
+    if (_scope == null) {
+      aggregates.insert(
+        0,
+        _ProjectAggregate(
+          projectRef: const ProjectGroupingRef.inbox(),
+          title: 'Inbox',
+          project: null,
+          taskCount: inboxTaskCount ?? 0,
+          completedTaskCount: 0,
+          dueSoonCount: 0,
         ),
       );
-
-      group.project ??= task.project;
-      group.tasks.add(task);
-
-      final deadline = task.occurrence?.deadline ?? task.deadlineDate;
-      if (deadline != null) {
-        final deadlineDay = DateTime.utc(
-          deadline.year,
-          deadline.month,
-          deadline.day,
-        );
-        group.trackDeadline(deadlineDay);
-        if (deadlineDay.isBefore(today)) {
-          group.taskOverdueCount += 1;
-        } else if (!deadlineDay.isAfter(dueLimit)) {
-          group.taskDueSoonCount += 1;
-        }
-      }
-
-      final isStartLater = _isStartLater(task);
-      if (isStartLater) {
-        group.hasStartLaterTask = true;
-      } else {
-        group.hasAvailableTask = true;
-      }
-    }
-
-    if (_scope == null &&
-        !groups.containsKey(ProjectGroupingRef.inbox().stableKey)) {
-      groups[ProjectGroupingRef.inbox().stableKey] = _ProjectAggregate(
-        projectRef: const ProjectGroupingRef.inbox(),
-        title: 'Inbox',
-      );
-    }
-
-    final aggregates = groups.values.toList(growable: false);
-    for (final group in aggregates) {
-      final project = group.project;
-      if (project == null) {
-        group.overdueCount = group.taskOverdueCount;
-        group.dueSoonCount = group.taskDueSoonCount;
-        continue;
-      }
-
-      final deadline = project.deadlineDate;
-      if (deadline != null) {
-        final deadlineDay = DateTime.utc(
-          deadline.year,
-          deadline.month,
-          deadline.day,
-        );
-        group.trackDeadline(deadlineDay);
-      }
-
-      if (deadline == null || project.completed) {
-        group.overdueCount = 0;
-        group.dueSoonCount = 0;
-        continue;
-      }
-
-      final deadlineDay = DateTime.utc(
-        deadline.year,
-        deadline.month,
-        deadline.day,
-      );
-      if (deadlineDay.isBefore(today)) {
-        group.overdueCount = 1;
-        group.dueSoonCount = 0;
-      } else if (!deadlineDay.isAfter(dueLimit)) {
-        group.dueSoonCount = 1;
-        group.overdueCount = 0;
-      } else {
-        group.overdueCount = 0;
-        group.dueSoonCount = 0;
-      }
     }
 
     return aggregates;
@@ -339,14 +328,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       final matchesValue = valueName != null && valueName.contains(search);
       if (!matchesTitle && !matchesValue) return false;
     }
-
-    final project = aggregate.project;
-
-    if (_scope case AnytimeValueScope(:final valueId)) {
-      if (project?.primaryValue?.id != valueId) return false;
-    }
-
-    if (!aggregate.hasAvailableTask) return false;
 
     return true;
   }
@@ -391,19 +372,18 @@ class _ProjectAggregate {
   _ProjectAggregate({
     required this.projectRef,
     required this.title,
+    required this.project,
+    required this.taskCount,
+    required this.completedTaskCount,
+    required this.dueSoonCount,
   });
 
   final ProjectGroupingRef projectRef;
   final String title;
-
-  Project? project;
-  final List<Task> tasks = <Task>[];
-  int dueSoonCount = 0;
-  int overdueCount = 0;
-  int taskDueSoonCount = 0;
-  int taskOverdueCount = 0;
-  bool hasStartLaterTask = false;
-  bool hasAvailableTask = false;
+  final Project? project;
+  final int taskCount;
+  final int completedTaskCount;
+  final int dueSoonCount;
   DateTime? earliestDeadlineUtc;
   DateTime? latestDeadlineUtc;
 
@@ -423,9 +403,38 @@ class _ProjectAggregate {
       AnytimeSortOrder.dueLatest => latestDeadlineUtc ?? earliestDeadlineUtc,
     };
   }
+}
 
-  int get taskCount => project?.taskCount ?? tasks.length;
+class _ValueGroup {
+  _ValueGroup({
+    required this.valueId,
+    required this.value,
+  });
 
-  int get completedTaskCount =>
-      project?.completedTaskCount ?? tasks.where((t) => t.completed).length;
+  final String? valueId;
+  final Value? value;
+  final List<_ProjectAggregate> projects = <_ProjectAggregate>[];
+}
+
+String _valueGroupKey(String? valueId) {
+  final trimmed = valueId?.trim();
+  if (trimmed == null || trimmed.isEmpty) return '_anytime_value_none';
+  return trimmed;
+}
+
+int _compareValueGroups(_ValueGroup a, _ValueGroup b) {
+  final rankA = _valuePriorityRank(a.value?.priority ?? ValuePriority.medium);
+  final rankB = _valuePriorityRank(b.value?.priority ?? ValuePriority.medium);
+  if (rankA != rankB) return rankA.compareTo(rankB);
+  final aName = (a.value?.name ?? '').toLowerCase();
+  final bName = (b.value?.name ?? '').toLowerCase();
+  return aName.compareTo(bName);
+}
+
+int _valuePriorityRank(ValuePriority priority) {
+  return switch (priority) {
+    ValuePriority.high => 0,
+    ValuePriority.medium => 1,
+    ValuePriority.low => 2,
+  };
 }

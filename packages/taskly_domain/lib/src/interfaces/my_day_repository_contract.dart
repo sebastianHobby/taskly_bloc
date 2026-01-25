@@ -26,4 +26,10 @@ abstract class MyDayRepositoryContract {
     required MyDayPickBucket bucket,
     required OperationContext context,
   });
+
+  /// Drops persisted picks and ritual metadata for a specific day.
+  Future<void> clearDay({
+    required DateTime dayKeyUtc,
+    OperationContext? context,
+  });
 }

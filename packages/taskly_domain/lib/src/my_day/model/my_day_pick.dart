@@ -6,17 +6,21 @@ import 'package:meta/meta.dart';
 enum MyDayPickBucket {
   /// A normal planned pick (selected in the ritual but not classified as due or
   /// starts, and not a curated suggestion).
+  /// Todo confirm if all these buckets are still used.
   planned,
-
   due,
   starts,
   focus,
+  routine,
 }
+
+enum MyDayPickTargetType { task, routine }
 
 @immutable
 final class MyDayPick {
   const MyDayPick({
-    required this.taskId,
+    required this.targetType,
+    required this.targetId,
     required this.bucket,
     required this.sortIndex,
     required this.pickedAtUtc,
@@ -25,7 +29,30 @@ final class MyDayPick {
     this.reasonCodes = const <String>[],
   });
 
-  final String taskId;
+  const MyDayPick.task({
+    required String taskId,
+    required this.bucket,
+    required this.sortIndex,
+    required this.pickedAtUtc,
+    this.suggestionRank,
+    this.qualifyingValueId,
+    this.reasonCodes = const <String>[],
+  }) : targetType = MyDayPickTargetType.task,
+       targetId = taskId;
+
+  const MyDayPick.routine({
+    required String routineId,
+    required this.bucket,
+    required this.sortIndex,
+    required this.pickedAtUtc,
+    this.qualifyingValueId,
+  }) : targetType = MyDayPickTargetType.routine,
+       targetId = routineId,
+       suggestionRank = null,
+       reasonCodes = const <String>[];
+
+  final MyDayPickTargetType targetType;
+  final String targetId;
   final MyDayPickBucket bucket;
 
   /// Global stable ordering for the day.
@@ -41,4 +68,10 @@ final class MyDayPick {
 
   /// Optional reason codes (typically allocation reason codes).
   final List<String> reasonCodes;
+
+  String? get taskId =>
+      targetType == MyDayPickTargetType.task ? targetId : null;
+
+  String? get routineId =>
+      targetType == MyDayPickTargetType.routine ? targetId : null;
 }

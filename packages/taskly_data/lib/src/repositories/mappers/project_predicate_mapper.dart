@@ -211,19 +211,14 @@ class ProjectPredicateMapper with QueryBuilderMixin {
 
     Expression<bool> matchAny() {
       if (normalizedValueIds.isEmpty) return const Constant(false);
-      return p.primaryValueId.isIn(normalizedValueIds) |
-          p.secondaryValueId.isIn(normalizedValueIds);
+      return p.primaryValueId.isIn(normalizedValueIds);
     }
 
     Expression<bool> matchAll() {
       return switch (normalizedValueIds.length) {
         0 => const Constant(false),
         1 => matchAny(),
-        2 =>
-          (p.primaryValueId.equals(normalizedValueIds[0]) &
-                  p.secondaryValueId.equals(normalizedValueIds[1])) |
-              (p.primaryValueId.equals(normalizedValueIds[1]) &
-                  p.secondaryValueId.equals(normalizedValueIds[0])),
+        2 => const Constant(false),
         _ => const Constant(false),
       };
     }
@@ -231,10 +226,8 @@ class ProjectPredicateMapper with QueryBuilderMixin {
     return switch (predicate.operator) {
       ValueOperator.hasAny => matchAny(),
       ValueOperator.hasAll => matchAll(),
-      ValueOperator.isNull =>
-        p.primaryValueId.isNull() & p.secondaryValueId.isNull(),
-      ValueOperator.isNotNull =>
-        p.primaryValueId.isNotNull() | p.secondaryValueId.isNotNull(),
+      ValueOperator.isNull => p.primaryValueId.isNull(),
+      ValueOperator.isNotNull => p.primaryValueId.isNotNull(),
     };
   }
 }

@@ -21,6 +21,7 @@ final class ValueHeaderRowUiModel extends ListRowUiModel {
     required this.value,
     required this.activeCount,
     required this.isCollapsed,
+    required this.valueKey,
     this.isTappableToScope = false,
   });
 
@@ -33,6 +34,7 @@ final class ValueHeaderRowUiModel extends ListRowUiModel {
 
   /// Whether the UI should treat this header as tappable to scope navigation.
   final bool isTappableToScope;
+  final String valueKey;
 }
 
 final class ProjectHeaderRowUiModel extends ListRowUiModel {

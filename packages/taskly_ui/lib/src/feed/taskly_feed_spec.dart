@@ -217,6 +217,7 @@ sealed class TasklyRowSpec {
     required String? trailingLabel,
     required bool isCollapsed,
     required VoidCallback onToggleCollapsed,
+    String? priorityLabel,
     int depth,
   }) = TasklyValueHeaderRowSpec;
 
@@ -224,8 +225,7 @@ sealed class TasklyRowSpec {
     required String key,
     required TasklyTaskRowData data,
     required TasklyTaskRowActions actions,
-    TasklyTaskRowPreset preset,
-    TasklyTaskRowMarkers markers,
+    TasklyTaskRowStyle style,
     TasklyRowEmphasis emphasis,
     int depth,
   }) = TasklyTaskRowSpec;
@@ -308,6 +308,7 @@ final class TasklyValueHeaderRowSpec extends TasklyRowSpec {
     required this.trailingLabel,
     required this.isCollapsed,
     required this.onToggleCollapsed,
+    this.priorityLabel,
     this.depth = 0,
   });
 
@@ -315,6 +316,7 @@ final class TasklyValueHeaderRowSpec extends TasklyRowSpec {
   final String title;
   final ValueChipData? leadingChip;
   final String? trailingLabel;
+  final String? priorityLabel;
   final bool isCollapsed;
   final VoidCallback onToggleCollapsed;
   final int depth;
@@ -325,8 +327,7 @@ final class TasklyTaskRowSpec extends TasklyRowSpec {
     required this.key,
     required this.data,
     required this.actions,
-    this.preset = const TasklyTaskRowPreset.standard(),
-    this.markers = const TasklyTaskRowMarkers(),
+    this.style = const TasklyTaskRowStyle.standard(),
     this.emphasis = TasklyRowEmphasis.none,
     this.depth = 0,
   });
@@ -334,8 +335,7 @@ final class TasklyTaskRowSpec extends TasklyRowSpec {
   final String key;
   final TasklyTaskRowData data;
   final TasklyTaskRowActions actions;
-  final TasklyTaskRowPreset preset;
-  final TasklyTaskRowMarkers markers;
+  final TasklyTaskRowStyle style;
   final TasklyRowEmphasis emphasis;
   final int depth;
 }
@@ -374,60 +374,61 @@ final class TasklyValueRowSpec extends TasklyRowSpec {
 
 enum TasklyRowEmphasis { none, overdue }
 
-sealed class TasklyTaskRowPreset {
-  const TasklyTaskRowPreset();
+sealed class TasklyTaskRowStyle {
+  const TasklyTaskRowStyle();
 
-  const factory TasklyTaskRowPreset.standard() = TasklyTaskRowPresetStandard;
+  const factory TasklyTaskRowStyle.standard() = TasklyTaskRowStyleStandard;
 
-  const factory TasklyTaskRowPreset.bulkSelection({
+  const factory TasklyTaskRowStyle.bulkSelection({
     required bool selected,
-  }) = TasklyTaskRowPresetBulkSelection;
+  }) = TasklyTaskRowStyleBulkSelection;
 
-  const factory TasklyTaskRowPreset.picker({
+  const factory TasklyTaskRowStyle.picker({
     required bool selected,
-  }) = TasklyTaskRowPresetPicker;
+  }) = TasklyTaskRowStylePicker;
 
-  const factory TasklyTaskRowPreset.pickerAction({
+  const factory TasklyTaskRowStyle.pickerAction({
     required bool selected,
-  }) = TasklyTaskRowPresetPickerAction;
+  }) = TasklyTaskRowStylePickerAction;
 
-  const factory TasklyTaskRowPreset.pinnedToggle() =
-      TasklyTaskRowPresetPinnedToggle;
+  const factory TasklyTaskRowStyle.planPick({
+    required bool selected,
+  }) = TasklyTaskRowStylePlanPick;
+
+  const factory TasklyTaskRowStyle.pinnedToggle() =
+      TasklyTaskRowStylePinnedToggle;
 }
 
-final class TasklyTaskRowPresetStandard extends TasklyTaskRowPreset {
-  const TasklyTaskRowPresetStandard();
+final class TasklyTaskRowStyleStandard extends TasklyTaskRowStyle {
+  const TasklyTaskRowStyleStandard();
 }
 
-final class TasklyTaskRowPresetBulkSelection extends TasklyTaskRowPreset {
-  const TasklyTaskRowPresetBulkSelection({required this.selected});
+final class TasklyTaskRowStyleBulkSelection extends TasklyTaskRowStyle {
+  const TasklyTaskRowStyleBulkSelection({required this.selected});
 
   final bool selected;
 }
 
-final class TasklyTaskRowPresetPicker extends TasklyTaskRowPreset {
-  const TasklyTaskRowPresetPicker({required this.selected});
+final class TasklyTaskRowStylePicker extends TasklyTaskRowStyle {
+  const TasklyTaskRowStylePicker({required this.selected});
 
   final bool selected;
 }
 
-final class TasklyTaskRowPresetPickerAction extends TasklyTaskRowPreset {
-  const TasklyTaskRowPresetPickerAction({required this.selected});
+final class TasklyTaskRowStylePickerAction extends TasklyTaskRowStyle {
+  const TasklyTaskRowStylePickerAction({required this.selected});
 
   final bool selected;
 }
 
-final class TasklyTaskRowPresetPinnedToggle extends TasklyTaskRowPreset {
-  const TasklyTaskRowPresetPinnedToggle();
+final class TasklyTaskRowStylePlanPick extends TasklyTaskRowStyle {
+  const TasklyTaskRowStylePlanPick({required this.selected});
+
+  final bool selected;
 }
 
-@immutable
-final class TasklyTaskRowMarkers {
-  const TasklyTaskRowMarkers({
-    this.pinned = false,
-  });
-
-  final bool pinned;
+final class TasklyTaskRowStylePinnedToggle extends TasklyTaskRowStyle {
+  const TasklyTaskRowStylePinnedToggle();
 }
 
 @immutable
@@ -571,6 +572,8 @@ final class TasklyTaskRowData {
     this.deemphasized = false,
     this.checkboxSemanticLabel,
     this.labels,
+    this.pinned = false,
+    this.primaryValueIconOnly = false,
   });
 
   final String id;
@@ -582,6 +585,8 @@ final class TasklyTaskRowData {
   final bool deemphasized;
   final String? checkboxSemanticLabel;
   final TasklyTaskRowLabels? labels;
+  final bool pinned;
+  final bool primaryValueIconOnly;
 }
 
 @immutable

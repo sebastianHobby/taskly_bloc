@@ -93,41 +93,55 @@ class TaskPredicateMapper with QueryBuilderMixin {
       };
     }
 
-    Expression<bool> matchInheritedAny() {
+    Expression<bool> matchProjectAny() {
       if (normalizedValueIds.isEmpty) return const Constant(false);
       final p = driftDb.projectTable;
-      return t.overridePrimaryValueId.isNull() &
-          existsQuery(
-            driftDb.selectOnly(p)
-              ..addColumns([p.id])
-              ..where(p.id.equalsExp(t.projectId))
-              ..where(
-                p.primaryValueId.isIn(normalizedValueIds) |
-                    p.secondaryValueId.isIn(normalizedValueIds),
-              ),
-          );
+      return existsQuery(
+        driftDb.selectOnly(p)
+          ..addColumns([p.id])
+          ..where(p.id.equalsExp(t.projectId))
+          ..where(p.primaryValueId.isIn(normalizedValueIds)),
+      );
     }
 
-    Expression<bool> matchInheritedAll() {
-      final p = driftDb.projectTable;
+    Expression<bool> matchProjectAll() {
       return switch (normalizedValueIds.length) {
         0 => const Constant(false),
-        1 => matchInheritedAny(),
-        2 =>
-          t.overridePrimaryValueId.isNull() &
-              existsQuery(
-                driftDb.selectOnly(p)
-                  ..addColumns([p.id])
-                  ..where(p.id.equalsExp(t.projectId))
-                  ..where(
-                    (p.primaryValueId.equals(normalizedValueIds[0]) &
-                            p.secondaryValueId.equals(normalizedValueIds[1])) |
-                        (p.primaryValueId.equals(normalizedValueIds[1]) &
-                            p.secondaryValueId.equals(normalizedValueIds[0])),
-                  ),
-              ),
+        1 => matchProjectAny(),
+        2 => const Constant(false),
         _ => const Constant(false),
       };
+    }
+
+    Expression<bool> matchUnionAll() {
+      if (normalizedValueIds.length != 2) {
+        return matchOverrideAll() | matchProjectAll();
+      }
+
+      final a = normalizedValueIds[0];
+      final b = normalizedValueIds[1];
+      Expression<bool> overrideHas(String id) =>
+          t.overridePrimaryValueId.equals(id) |
+          t.overrideSecondaryValueId.equals(id);
+      Expression<bool> projectHas(String id) {
+        final p = driftDb.projectTable;
+        return existsQuery(
+          driftDb.selectOnly(p)
+            ..addColumns([p.id])
+            ..where(p.id.equalsExp(t.projectId))
+            ..where(p.primaryValueId.equals(id)),
+        );
+      }
+
+      final overrideHasA = overrideHas(a);
+      final overrideHasB = overrideHas(b);
+      final projectHasA = projectHas(a);
+      final projectHasB = projectHas(b);
+
+      return (overrideHasA & overrideHasB) |
+          (projectHasA & projectHasB) |
+          (overrideHasA & projectHasB) |
+          (overrideHasB & projectHasA);
     }
 
     Expression<bool> matchEffectiveIsNull() {
@@ -138,9 +152,7 @@ class TaskPredicateMapper with QueryBuilderMixin {
             driftDb.selectOnly(p)
               ..addColumns([p.id])
               ..where(p.id.equalsExp(t.projectId))
-              ..where(
-                p.primaryValueId.isNotNull() | p.secondaryValueId.isNotNull(),
-              ),
+              ..where(p.primaryValueId.isNotNull()),
           );
     }
 
@@ -153,10 +165,7 @@ class TaskPredicateMapper with QueryBuilderMixin {
                 driftDb.selectOnly(p)
                   ..addColumns([p.id])
                   ..where(p.id.equalsExp(t.projectId))
-                  ..where(
-                    p.primaryValueId.isNotNull() |
-                        p.secondaryValueId.isNotNull(),
-                  ),
+                  ..where(p.primaryValueId.isNotNull()),
               ));
     }
 
@@ -173,8 +182,8 @@ class TaskPredicateMapper with QueryBuilderMixin {
     if (!predicate.includeInherited) return directMatch;
 
     return switch (predicate.operator) {
-      ValueOperator.hasAny => directMatch | matchInheritedAny(),
-      ValueOperator.hasAll => directMatch | matchInheritedAll(),
+      ValueOperator.hasAny => directMatch | matchProjectAny(),
+      ValueOperator.hasAll => matchUnionAll(),
       ValueOperator.isNull => matchEffectiveIsNull(),
       ValueOperator.isNotNull => matchEffectiveIsNotNull(),
     };

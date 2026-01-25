@@ -5,18 +5,15 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 ///
 /// Keep this list stable to help users build a consistent mental model.
 const List<Color> _valueColorPalette = <Color>[
-  Color(0xFF4F46E5), // Indigo
-  Color(0xFF0EA5E9), // Sky
-  Color(0xFF14B8A6), // Teal
-  Color(0xFF10B981), // Emerald
-  Color(0xFFF59E0B), // Amber
-  Color(0xFFEF4444), // Red
-  Color(0xFFE11D48), // Rose
-  Color(0xFF8B5CF6), // Violet
-  Color(0xFF64748B), // Slate
-  Color(0xFF22C55E), // Green
-  Color(0xFF1E88E5), // Blue
-  Color(0xFFFB8C00), // Orange
+  Color(0xFF4F46E5), // Calm Indigo (crisp productivity)
+  Color(0xFF3B82F6), // Soft Blue
+  Color(0xFF14B8A6), // Mist Teal
+  Color(0xFF34D399), // Sage
+  Color(0xFF4ADE80), // Fern
+  Color(0xFFFBBF24), // Warm Amber
+  Color(0xFFFB7185), // Soft Coral
+  Color(0xFFA78BFA), // Lavender
+  Color(0xFF94A3B8), // Slate
 ];
 
 class FormBuilderColorPicker extends StatelessWidget {

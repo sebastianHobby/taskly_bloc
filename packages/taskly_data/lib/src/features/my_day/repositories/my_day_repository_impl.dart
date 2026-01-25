@@ -238,4 +238,23 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
           );
     });
   }
+
+  @override
+  Future<void> clearDay({
+    required DateTime dayKeyUtc,
+    OperationContext? context,
+  }) async {
+    final dayUtc = dateOnly(dayKeyUtc);
+    final dayId = _ids.myDayDayId(dayUtc: dayUtc);
+
+    await _db.transaction(() async {
+      await (_db.delete(
+        _db.myDayPicksTable,
+      )..where((t) => t.dayId.equals(dayId))).go();
+
+      await (_db.delete(
+        _db.myDayDaysTable,
+      )..where((t) => t.id.equals(dayId))).go();
+    });
+  }
 }

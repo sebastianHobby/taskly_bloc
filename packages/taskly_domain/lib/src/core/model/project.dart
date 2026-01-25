@@ -26,9 +26,9 @@ class Project {
     this.repeatIcalRrule,
     this.repeatFromCompletion = false,
     this.seriesEnded = false,
+    this.lastProgressAt,
     this.values = const <Value>[],
     this.primaryValueId,
-    this.secondaryValueId,
     this.occurrence,
   });
 
@@ -58,6 +58,9 @@ class Project {
   /// Whether this project is pinned to the top of lists
   final bool isPinned;
 
+  /// Last time a task in this project was completed (UTC).
+  final DateTime? lastProgressAt;
+
   final String? repeatIcalRrule;
 
   /// When true, recurrence is anchored to last completion date instead of
@@ -74,12 +77,6 @@ class Project {
   /// Only one value can be primary per project. The primary value is used for
   /// grouping in My Day view and determines the main color/category.
   final String? primaryValueId;
-
-  /// The ID of the secondary value for this project.
-  ///
-  /// Secondary implies primary. When set, this represents the optional
-  /// second value slot used for categorization.
-  final String? secondaryValueId;
 
   /// Occurrence-specific data. Only populated when this Project instance
   /// represents an expanded occurrence from `getOccurrences`/`watchOccurrences`.
@@ -101,24 +98,6 @@ class Project {
     );
   }
 
-  /// Returns the secondary value if set and exists in the values list.
-  Value? get secondaryValue {
-    if (secondaryValueId == null) return null;
-    return values.cast<Value?>().firstWhere(
-      (v) => v?.id == secondaryValueId,
-      orElse: () => null,
-    );
-  }
-
-  /// Returns all secondary (non-primary) values.
-  List<Value> get secondaryValues {
-    if (secondaryValueId != null) {
-      return values.where((v) => v.id == secondaryValueId).toList();
-    }
-    if (primaryValueId == null) return values;
-    return values.where((v) => v.id != primaryValueId).toList();
-  }
-
   /// Creates a copy of this Project with the given fields replaced.
   Project copyWith({
     String? id,
@@ -136,9 +115,9 @@ class Project {
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     bool? seriesEnded,
+    DateTime? lastProgressAt,
     List<Value>? values,
     String? primaryValueId,
-    String? secondaryValueId,
     OccurrenceData? occurrence,
   }) {
     return Project(
@@ -157,9 +136,9 @@ class Project {
       repeatIcalRrule: repeatIcalRrule ?? this.repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion ?? this.repeatFromCompletion,
       seriesEnded: seriesEnded ?? this.seriesEnded,
+      lastProgressAt: lastProgressAt ?? this.lastProgressAt,
       values: values ?? this.values,
       primaryValueId: primaryValueId ?? this.primaryValueId,
-      secondaryValueId: secondaryValueId ?? this.secondaryValueId,
       occurrence: occurrence ?? this.occurrence,
     );
   }
@@ -183,9 +162,9 @@ class Project {
         other.repeatIcalRrule == repeatIcalRrule &&
         other.repeatFromCompletion == repeatFromCompletion &&
         other.seriesEnded == seriesEnded &&
+        other.lastProgressAt == lastProgressAt &&
         listEquals(other.values, values) &&
         other.primaryValueId == primaryValueId &&
-        other.secondaryValueId == secondaryValueId &&
         other.occurrence == occurrence;
   }
 
@@ -206,9 +185,9 @@ class Project {
     repeatIcalRrule,
     repeatFromCompletion,
     seriesEnded,
+    lastProgressAt,
     Object.hashAll(values),
     primaryValueId,
-    secondaryValueId,
     occurrence,
   );
 
@@ -216,9 +195,8 @@ class Project {
   String toString() {
     return 'Project(id: $id, name: $name, completed: $completed, '
         'taskCount: $taskCount, completedTaskCount: $completedTaskCount, '
-        'isPinned: $isPinned, '
+        'isPinned: $isPinned, lastProgressAt: $lastProgressAt, '
         'values: ${values.length} values, primaryValueId: $primaryValueId, '
-        'secondaryValueId: $secondaryValueId, '
         'isOccurrence: $isOccurrenceInstance)';
   }
 }

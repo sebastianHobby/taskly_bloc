@@ -3,18 +3,20 @@ import 'package:taskly_domain/src/core/model/value.dart';
 
 /// Helpers for computing a task's effective values.
 ///
-/// Effective values follow this precedence:
-/// - Task values (explicit override) if present
-/// - Else project values (inherit) if present
-/// - Else empty
+/// Effective values follow this behavior:
+/// - Project primary value is always the primary when present.
+/// - Task override values are treated as optional secondary tags.
+/// - Tasks without a project have no effective values.
 extension TaskEffectiveValuesX on Task {
-  bool get isOverridingValues => overridePrimaryValueId != null;
+  /// True when the task has explicit tag values.
+  bool get isOverridingValues =>
+      overridePrimaryValueId != null || overrideSecondaryValueId != null;
 
   /// The values that should be treated as active for this task.
   List<Value> get effectiveValues {
     final primaryId = effectivePrimaryValueId;
-    final secondaryId = effectiveSecondaryValueId;
-    if (primaryId == null && secondaryId == null) {
+    final secondaryIds = _effectiveSecondaryValueIds;
+    if (primaryId == null && secondaryIds.isEmpty) {
       return const <Value>[];
     }
 
@@ -28,42 +30,35 @@ extension TaskEffectiveValuesX on Task {
     final primary = primaryId == null ? null : candidates[primaryId];
     if (primary != null) result.add(primary);
 
-    final secondary = (secondaryId == null || secondaryId == primaryId)
-        ? null
-        : candidates[secondaryId];
-    if (secondary != null) result.add(secondary);
+    for (final secondaryId in secondaryIds) {
+      if (secondaryId == primaryId) continue;
+      final secondary = candidates[secondaryId];
+      if (secondary != null) result.add(secondary);
+    }
 
     return result;
   }
 
   /// True when this task is inheriting values from its project.
   ///
-  /// This is the case when the task has no explicit values but its project
-  /// has values.
+  /// This is the case when the project provides any value slot.
   bool get isInheritingValues {
-    if (isOverridingValues) return false;
-    return (project?.primaryValueId != null) ||
-        (project?.secondaryValueId != null);
+    return project?.primaryValueId != null;
   }
 
   /// The primary value id to treat as effective for this task.
   ///
-  /// Primary value inheritance follows the same override rules as values:
-  /// - If the task is overriding, primary is task-only (no project fallback).
-  /// - Otherwise primary is inherited from the project.
+  /// Primary value is always inherited from the project.
   String? get effectivePrimaryValueId {
-    if (overridePrimaryValueId != null) return overridePrimaryValueId;
     return project?.primaryValueId;
   }
 
   /// The secondary value id to treat as effective for this task.
   ///
-  /// Secondary inheritance follows the same override rule:
-  /// - If overriding primary, no secondary is inherited.
-  /// - Otherwise secondary is inherited from the project.
+  /// Returns the first effective secondary value id, if any.
   String? get effectiveSecondaryValueId {
-    if (overridePrimaryValueId != null) return overrideSecondaryValueId;
-    return project?.secondaryValueId;
+    final ids = _effectiveSecondaryValueIds;
+    return ids.isEmpty ? null : ids.first;
   }
 
   /// The primary value that should be displayed/used for this task.
@@ -78,15 +73,28 @@ extension TaskEffectiveValuesX on Task {
 
   /// The secondary values that should be displayed/used for this task.
   List<Value> get effectiveSecondaryValues {
-    final secondaryId = effectiveSecondaryValueId;
-    if (secondaryId == null) return const <Value>[];
-    final secondary = effectiveValues.cast<Value?>().firstWhere(
-      (v) => v?.id == secondaryId,
-      orElse: () => null,
-    );
-    return secondary == null ? const <Value>[] : <Value>[secondary];
+    if (_effectiveSecondaryValueIds.isEmpty) return const <Value>[];
+    return effectiveValues.skip(1).toList(growable: false);
   }
 
   /// True when this task has no effective values.
   bool get isEffectivelyValueless => effectiveValues.isEmpty;
+
+  List<String> get _effectiveSecondaryValueIds {
+    final primaryId = effectivePrimaryValueId;
+    if (primaryId == null) return const <String>[];
+
+    final ids = <String>[];
+    void addId(String? id) {
+      final normalized = id?.trim();
+      if (normalized == null || normalized.isEmpty) return;
+      if (normalized == primaryId || ids.contains(normalized)) return;
+      ids.add(normalized);
+    }
+
+    addId(overridePrimaryValueId);
+    addId(overrideSecondaryValueId);
+
+    return ids;
+  }
 }

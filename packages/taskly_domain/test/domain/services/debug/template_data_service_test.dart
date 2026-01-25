@@ -6,6 +6,7 @@ import '../../../helpers/test_imports.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/my_day.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
@@ -95,9 +96,6 @@ class _InMemoryProjectRepo extends Fake implements ProjectRepositoryContract {
         seriesEnded: seriesEnded,
         priority: priority,
         primaryValueId: valueIds?.isNotEmpty == true ? valueIds!.first : null,
-        secondaryValueId: valueIds != null && valueIds.length > 1
-            ? valueIds[1]
-            : null,
       ),
     );
   }
@@ -199,6 +197,48 @@ class _FixedClock implements Clock {
   DateTime nowUtc() => _nowUtc;
 }
 
+class _RecordingMyDayRepository implements MyDayRepositoryContract {
+  final List<DateTime> clearedDays = [];
+
+  @override
+  Future<void> clearDay({
+    required DateTime dayKeyUtc,
+    OperationContext? context,
+  }) async {
+    clearedDays.add(dayKeyUtc);
+  }
+
+  @override
+  Stream<MyDayDayPicks> watchDay(DateTime dayKeyUtc) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<MyDayDayPicks> loadDay(DateTime dayKeyUtc) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> setDayPicks({
+    required DateTime dayKeyUtc,
+    required DateTime ritualCompletedAtUtc,
+    required List<MyDayPick> picks,
+    required OperationContext context,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> appendPick({
+    required DateTime dayKeyUtc,
+    required String taskId,
+    required MyDayPickBucket bucket,
+    required OperationContext context,
+  }) {
+    throw UnimplementedError();
+  }
+}
+
 void main() {
   testSafe(
     'resetAndSeed wipes existing data and seeds template entries',
@@ -236,11 +276,14 @@ void main() {
         ],
       );
 
+      final myDayRepo = _RecordingMyDayRepository();
+      final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
       final service = TemplateDataService(
         taskRepository: taskRepo,
         projectRepository: projectRepo,
         valueRepository: valueRepo,
-        clock: _FixedClock(DateTime.utc(2026, 1, 1, 12)),
+        myDayRepository: myDayRepo,
+        clock: clock,
       );
 
       await service.resetAndSeed();
@@ -260,9 +303,13 @@ void main() {
           'Learning & Curiosity',
         ]),
       );
-      expect(projects, hasLength(5));
-      expect(tasks, hasLength(20));
+      expect(projects, hasLength(6));
+      expect(tasks, hasLength(31));
       expect(tasks.where((t) => t.isPinned), hasLength(1));
+      expect(
+        myDayRepo.clearedDays,
+        contains(dateOnly(clock.nowUtc())),
+      );
     },
   );
 }

@@ -24,6 +24,16 @@ String validationErrorMessage(BuildContext context, ValidationError error) {
       return l10n.taskFormDeadlineAfterStartError;
     case 'taskFormValuesRequired':
       return l10n.taskFormValuesRequired;
+    case 'taskFormValuesRequireProject':
+      return l10n.taskFormValuesRequireProject;
+    case 'taskFormValuesRequireProjectPrimary':
+      return l10n.taskFormValuesRequireProjectPrimary;
+    case 'taskFormValuesMaxTwo':
+      return l10n.taskFormValuesMaxTwo;
+    case 'taskFormValuesMustBeUnique':
+      return l10n.taskFormValuesMustBeUnique;
+    case 'taskFormValuesCannotMatchProjectPrimary':
+      return l10n.taskFormValuesCannotMatchProjectPrimary;
 
     // Project
     case 'projectFormTitleRequired':
@@ -38,6 +48,8 @@ String validationErrorMessage(BuildContext context, ValidationError error) {
       return l10n.projectFormDeadlineAfterStartError;
     case 'projectFormValuesRequired':
       return l10n.projectFormValuesRequired;
+    case 'projectFormSingleValueOnly':
+      return l10n.projectFormSingleValueOnly;
 
     // Value
     case 'valueFormNameRequired':

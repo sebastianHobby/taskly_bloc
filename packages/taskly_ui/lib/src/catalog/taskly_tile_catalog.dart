@@ -50,9 +50,29 @@ class TasklyTileCatalog extends StatelessWidget {
             priority: 1,
             isDueToday: true,
           ),
+          pinned: true,
         ),
-        preset: const TasklyTaskRowPreset.standard(),
-        markers: const TasklyTaskRowMarkers(pinned: true),
+        style: const TasklyTaskRowStyle.standard(),
+        actions: _taskActions,
+      ),
+      TasklyRowSpec.header(
+        key: 'catalog-tasks-primary-icon-only',
+        title: 'Task · Primary icon-only',
+      ),
+      TasklyRowSpec.task(
+        key: 'catalog-task-primary-icon-only',
+        data: _taskData(
+          id: 't-standard-1b',
+          title: 'Align team values',
+          meta: TasklyEntityMetaData(
+            primaryValue: valueHealth,
+            startDateLabel: 'Sep 18',
+            deadlineDateLabel: 'Sep 22',
+            priority: 3,
+          ),
+          primaryValueIconOnly: true,
+        ),
+        style: const TasklyTaskRowStyle.standard(),
         actions: _taskActions,
       ),
       TasklyRowSpec.task(
@@ -67,7 +87,7 @@ class TasklyTileCatalog extends StatelessWidget {
             isOverdue: true,
           ),
         ),
-        preset: const TasklyTaskRowPreset.standard(),
+        style: const TasklyTaskRowStyle.standard(),
         emphasis: TasklyRowEmphasis.overdue,
         actions: _taskActions,
       ),
@@ -85,9 +105,9 @@ class TasklyTileCatalog extends StatelessWidget {
             pinLabel: 'Pin',
             pinnedLabel: 'Pinned',
           ),
+          pinned: true,
         ),
-        preset: const TasklyTaskRowPreset.pinnedToggle(),
-        markers: const TasklyTaskRowMarkers(pinned: true),
+        style: const TasklyTaskRowStyle.pinnedToggle(),
         actions: _taskActionsWithPin,
       ),
       TasklyRowSpec.header(
@@ -101,7 +121,7 @@ class TasklyTileCatalog extends StatelessWidget {
           title: 'Review hiring pipeline',
           meta: TasklyEntityMetaData(primaryValue: valueCareer),
         ),
-        preset: const TasklyTaskRowPreset.bulkSelection(selected: true),
+        style: const TasklyTaskRowStyle.bulkSelection(selected: true),
         actions: _taskActions,
       ),
       TasklyRowSpec.task(
@@ -111,7 +131,7 @@ class TasklyTileCatalog extends StatelessWidget {
           title: 'Refactor analytics pipeline',
           meta: TasklyEntityMetaData(primaryValue: valueCareer),
         ),
-        preset: const TasklyTaskRowPreset.bulkSelection(selected: false),
+        style: const TasklyTaskRowStyle.bulkSelection(selected: false),
         actions: _taskActions,
       ),
       TasklyRowSpec.header(
@@ -130,7 +150,7 @@ class TasklyTileCatalog extends StatelessWidget {
             snoozeTooltip: 'Snooze',
           ),
         ),
-        preset: const TasklyTaskRowPreset.picker(selected: true),
+        style: const TasklyTaskRowStyle.picker(selected: true),
         actions: _taskActionsWithSnooze,
       ),
       TasklyRowSpec.task(
@@ -145,7 +165,7 @@ class TasklyTileCatalog extends StatelessWidget {
             snoozeTooltip: 'Snooze',
           ),
         ),
-        preset: const TasklyTaskRowPreset.picker(selected: false),
+        style: const TasklyTaskRowStyle.picker(selected: false),
         actions: _taskActionsWithSnooze,
       ),
       TasklyRowSpec.header(
@@ -164,7 +184,7 @@ class TasklyTileCatalog extends StatelessWidget {
             snoozeTooltip: 'Snooze',
           ),
         ),
-        preset: const TasklyTaskRowPreset.pickerAction(selected: true),
+        style: const TasklyTaskRowStyle.pickerAction(selected: true),
         actions: _taskActionsWithSnooze,
       ),
       TasklyRowSpec.task(
@@ -179,7 +199,41 @@ class TasklyTileCatalog extends StatelessWidget {
             snoozeTooltip: 'Snooze',
           ),
         ),
-        preset: const TasklyTaskRowPreset.pickerAction(selected: false),
+        style: const TasklyTaskRowStyle.pickerAction(selected: false),
+        actions: _taskActionsWithSnooze,
+      ),
+      TasklyRowSpec.header(
+        key: 'catalog-tasks-plan-pick',
+        title: 'Task · Plan pick',
+      ),
+      TasklyRowSpec.task(
+        key: 'catalog-task-plan-pick-selected',
+        data: _taskData(
+          id: 't-plan-pick-1',
+          title: 'Plan daily focus',
+          meta: TasklyEntityMetaData(primaryValue: valueHealth, priority: 2),
+          labels: const TasklyTaskRowLabels(
+            selectionPillLabel: 'Add',
+            selectionPillSelectedLabel: 'Added',
+            snoozeTooltip: 'Snooze',
+          ),
+        ),
+        style: const TasklyTaskRowStyle.planPick(selected: true),
+        actions: _taskActionsWithSnooze,
+      ),
+      TasklyRowSpec.task(
+        key: 'catalog-task-plan-pick-unselected',
+        data: _taskData(
+          id: 't-plan-pick-2',
+          title: 'Reset weekly priorities',
+          meta: TasklyEntityMetaData(primaryValue: valueCareer, priority: 1),
+          labels: const TasklyTaskRowLabels(
+            selectionPillLabel: 'Add',
+            selectionPillSelectedLabel: 'Added',
+            snoozeTooltip: 'Snooze',
+          ),
+        ),
+        style: const TasklyTaskRowStyle.planPick(selected: false),
         actions: _taskActionsWithSnooze,
       ),
       TasklyRowSpec.header(
@@ -367,6 +421,8 @@ TasklyTaskRowData _taskData({
   required String title,
   required TasklyEntityMetaData meta,
   TasklyTaskRowLabels? labels,
+  bool pinned = false,
+  bool primaryValueIconOnly = false,
 }) {
   return TasklyTaskRowData(
     id: id,
@@ -377,6 +433,8 @@ TasklyTaskRowData _taskData({
     deemphasized: false,
     checkboxSemanticLabel: 'Toggle completion',
     labels: labels,
+    pinned: pinned,
+    primaryValueIconOnly: primaryValueIconOnly,
   );
 }
 

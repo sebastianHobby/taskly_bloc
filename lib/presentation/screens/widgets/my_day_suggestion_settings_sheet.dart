@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 
 void openSuggestionSettingsSheet(
   BuildContext context, {
@@ -12,7 +12,7 @@ void openSuggestionSettingsSheet(
   var dueDays = dueWindowDays.clamp(1, 30);
   var showStarts = showAvailableToStart;
   var dueSoon = dueSoonEnabled;
-  final bloc = context.read<MyDayRitualBloc>();
+  final bloc = context.read<PlanMyDayBloc>();
 
   showModalBottomSheet<void>(
     context: context,
@@ -55,7 +55,7 @@ void openSuggestionSettingsSheet(
                     value: dueSoon,
                     onChanged: (value) {
                       setState(() => dueSoon = value);
-                      bloc.add(MyDayRitualDueSoonEnabledChanged(value));
+                      bloc.add(PlanMyDayDueSoonEnabledChanged(value));
                     },
                   ),
                   const SizedBox(height: 16),
@@ -81,7 +81,7 @@ void openSuggestionSettingsSheet(
                             onChanged: (value) {
                               final next = value.round().clamp(1, 30);
                               setState(() => dueDays = next);
-                              bloc.add(MyDayRitualDueWindowDaysChanged(next));
+                              bloc.add(PlanMyDayDueWindowDaysChanged(next));
                             },
                           ),
                           const SizedBox(height: 4),
@@ -105,7 +105,7 @@ void openSuggestionSettingsSheet(
                     value: showStarts,
                     onChanged: (value) {
                       setState(() => showStarts = value);
-                      bloc.add(MyDayRitualShowAvailableToStartChanged(value));
+                      bloc.add(PlanMyDayShowAvailableToStartChanged(value));
                     },
                   ),
                 ],

@@ -20,7 +20,6 @@ class ProjectAggregation {
     required Iterable<drift_pkg.TypedResult> rows,
     required AppDatabase driftDb,
     required $ValueTableTable primaryValueTable,
-    required $ValueTableTable secondaryValueTable,
   }) {
     final Map<String, ProjectTableData> projectsById = {};
     final Map<String, Map<String, ValueTableData>> valuesByProject = {};
@@ -36,13 +35,6 @@ class ProjectAggregation {
         valuesByProject
             .putIfAbsent(id, () => <String, ValueTableData>{})
             .putIfAbsent(primary.id, () => primary);
-      }
-
-      final secondary = row.readTableOrNull(secondaryValueTable);
-      if (secondary != null) {
-        valuesByProject
-            .putIfAbsent(id, () => <String, ValueTableData>{})
-            .putIfAbsent(secondary.id, () => secondary);
       }
     }
 
@@ -91,7 +83,6 @@ class TaskAggregation {
     required Iterable<drift_pkg.TypedResult> rows,
     required AppDatabase driftDb,
     required $ValueTableTable projectPrimaryValueTable,
-    required $ValueTableTable projectSecondaryValueTable,
     required $ValueTableTable overridePrimaryValueTable,
     required $ValueTableTable overrideSecondaryValueTable,
   }) {
@@ -135,15 +126,6 @@ class TaskAggregation {
           valuesByProject
               .putIfAbsent(projectId, () => <String, ValueTableData>{})
               .putIfAbsent(projectPrimary.id, () => projectPrimary);
-        }
-
-        final projectSecondary = row.readTableOrNull(
-          projectSecondaryValueTable,
-        );
-        if (projectSecondary != null) {
-          valuesByProject
-              .putIfAbsent(projectId, () => <String, ValueTableData>{})
-              .putIfAbsent(projectSecondary.id, () => projectSecondary);
         }
       }
     }

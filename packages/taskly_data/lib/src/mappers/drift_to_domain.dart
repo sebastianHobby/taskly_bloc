@@ -34,11 +34,11 @@ Project projectFromTable(
     repeatIcalRrule: t.repeatIcalRrule,
     repeatFromCompletion: t.repeatFromCompletion,
     seriesEnded: t.seriesEnded,
+    lastProgressAt: t.lastProgressAt,
     priority: t.priority,
     isPinned: t.isPinned,
     values: values ?? const <Value>[],
     primaryValueId: t.primaryValueId,
-    secondaryValueId: t.secondaryValueId,
   );
 }
 

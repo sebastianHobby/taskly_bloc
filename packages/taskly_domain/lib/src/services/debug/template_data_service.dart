@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:taskly_domain/my_day.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/value_repository_contract.dart';
@@ -7,6 +8,7 @@ import 'package:taskly_domain/src/queries/project_query.dart';
 import 'package:taskly_domain/src/queries/task_query.dart';
 import 'package:taskly_domain/src/time/clock.dart';
 import 'package:taskly_domain/src/time/date_only.dart';
+import 'package:taskly_domain/telemetry.dart';
 
 @immutable
 class _TemplateValueSeed {
@@ -178,15 +180,18 @@ class TemplateDataService {
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
+    required MyDayRepositoryContract myDayRepository,
     Clock clock = systemClock,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
+       _myDayRepository = myDayRepository,
        _clock = clock;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
+  final MyDayRepositoryContract _myDayRepository;
   final Clock _clock;
 
   /// Deletes all user Tasks/Projects/Values and recreates template demo data.
@@ -197,8 +202,9 @@ class TemplateDataService {
       throw StateError('TemplateDataService is debug-only.');
     }
 
+    final today = dateOnly(_clock.nowUtc());
+
     // 1) Wipe existing entity data.
-    // Delete tasks first to avoid FK/join constraints.
     final tasks = await _taskRepository.getAll(TaskQuery.all());
     for (final task in tasks) {
       await _taskRepository.delete(task.id);
@@ -214,35 +220,37 @@ class TemplateDataService {
       await _valueRepository.delete(value.id);
     }
 
+    await _clearDayPicks(today);
+
     // 2) Create Values.
     const seeds = <_TemplateValueSeed>[
       _TemplateValueSeed(
         name: 'Life Admin',
-        color: '#64748B',
+        color: '#94A3B8',
         priority: ValuePriority.high,
         iconName: 'checklist',
       ),
       _TemplateValueSeed(
         name: 'Home & Comfort',
-        color: '#FB8C00',
+        color: '#34D399',
         priority: ValuePriority.medium,
         iconName: 'home',
       ),
       _TemplateValueSeed(
         name: 'Relationships',
-        color: '#E11D48',
+        color: '#FB7185',
         priority: ValuePriority.medium,
         iconName: 'group',
       ),
       _TemplateValueSeed(
         name: 'Health & Energy',
-        color: '#10B981',
+        color: '#14B8A6',
         priority: ValuePriority.high,
         iconName: 'health',
       ),
       _TemplateValueSeed(
         name: 'Learning & Curiosity',
-        color: '#1E88E5',
+        color: '#A78BFA',
         priority: ValuePriority.low,
         iconName: 'lightbulb',
       ),
@@ -263,8 +271,6 @@ class TemplateDataService {
 
     final valueIdByName = await _loadValueIdByName();
 
-    // 4) Create Projects (linked to values via valueIds; first value is primary).
-    final today = dateOnly(_clock.nowUtc());
     DateTime day(int offset) => today.add(Duration(days: offset));
 
     await _projectRepository.create(
@@ -273,7 +279,7 @@ class TemplateDataService {
       priority: 1,
       startDate: day(-14),
       deadlineDate: day(21),
-      valueIds: [valueIdByName['Life Admin']!, valueIdByName['Relationships']!],
+      valueIds: [valueIdByName['Life Admin']!],
     );
     await _projectRepository.create(
       name: 'Home chores',
@@ -281,10 +287,7 @@ class TemplateDataService {
       priority: 2,
       startDate: day(-30),
       deadlineDate: day(60),
-      valueIds: [
-        valueIdByName['Home & Comfort']!,
-        valueIdByName['Life Admin']!,
-      ],
+      valueIds: [valueIdByName['Home & Comfort']!],
     );
     await _projectRepository.create(
       name: 'Organise birthday for Sam',
@@ -292,10 +295,7 @@ class TemplateDataService {
       priority: 2,
       startDate: day(-10),
       deadlineDate: day(10),
-      valueIds: [
-        valueIdByName['Relationships']!,
-        valueIdByName['Home & Comfort']!,
-      ],
+      valueIds: [valueIdByName['Relationships']!],
     );
     await _projectRepository.create(
       name: 'Exercise Routines',
@@ -303,10 +303,7 @@ class TemplateDataService {
       priority: 2,
       startDate: day(-21),
       deadlineDate: day(90),
-      valueIds: [
-        valueIdByName['Health & Energy']!,
-        valueIdByName['Learning & Curiosity']!,
-      ],
+      valueIds: [valueIdByName['Health & Energy']!],
     );
     await _projectRepository.create(
       name: 'Learn capital city names',
@@ -314,183 +311,133 @@ class TemplateDataService {
       priority: 3,
       startDate: day(-5),
       deadlineDate: day(45),
-      valueIds: [
-        valueIdByName['Learning & Curiosity']!,
-        valueIdByName['Health & Energy']!,
-      ],
+      valueIds: [valueIdByName['Learning & Curiosity']!],
+    );
+    await _projectRepository.create(
+      name: 'Weekly Review Prep',
+      description: 'Sample data so the weekly review flow has things to show',
+      priority: 1,
+      startDate: day(-3),
+      deadlineDate: day(7),
+      valueIds: [valueIdByName['Learning & Curiosity']!],
     );
 
     final projectIdByName = await _loadProjectIdByName();
 
-    // 4) Create Tasks.
-    // Most tasks inherit their effective values from their project.
-    // Only a few tasks explicitly override project values to demo that behavior.
-
     final pinnedTaskNames = <String>[];
+    final completedTaskNames = <String>[];
 
-    // --- Get a passport (2 scheduled, 2 someday)
-    await _taskRepository.create(
-      name: 'Book passport photo',
-      projectId: projectIdByName['Get a passport'],
-      priority: 2,
-      startDate: day(-1),
-      deadlineDate: day(2),
-    );
-    pinnedTaskNames.add('Book passport photo');
+    for (final seed in _templateTaskSeeds) {
+      final projectId = projectIdByName[seed.projectName];
+      if (projectId == null) continue;
 
-    await _taskRepository.create(
-      name: 'Submit application',
-      projectId: projectIdByName['Get a passport'],
-      priority: 1,
-      startDate: day(9),
-      deadlineDate: day(12),
-    );
-    pinnedTaskNames.add('Submit application');
+      await _taskRepository.create(
+        name: seed.name,
+        projectId: projectId,
+        priority: seed.priority,
+        startDate: seed.startOffset == null ? null : day(seed.startOffset!),
+        deadlineDate: seed.deadlineOffset == null
+            ? null
+            : day(seed.deadlineOffset!),
+        valueIds: _valueIdsFor(seed.valueNames, valueIdByName),
+        repeatIcalRrule: seed.repeatIcalRrule,
+      );
 
-    await _taskRepository.create(
-      name: 'Check renewal requirements',
-      projectId: projectIdByName['Get a passport'],
-      priority: 3,
-    );
+      if (seed.pin) pinnedTaskNames.add(seed.name);
+      if (seed.complete) completedTaskNames.add(seed.name);
+    }
 
-    await _taskRepository.create(
-      name: 'Make a documents checklist',
-      projectId: projectIdByName['Get a passport'],
-      priority: 4,
-    );
-
-    // --- Home chores
-    await _taskRepository.create(
-      name: 'Laundry + bedding',
-      projectId: projectIdByName['Home chores'],
-      priority: 3,
-      startDate: day(-7),
-      deadlineDate: day(-1),
-      // Explicit override (not inherited from project).
-      valueIds: [valueIdByName['Health & Energy']!],
-    );
-    pinnedTaskNames.add('Laundry + bedding');
-
-    await _taskRepository.create(
-      name: 'Deep clean kitchen',
-      projectId: projectIdByName['Home chores'],
-      priority: 2,
-      startDate: day(14),
-      deadlineDate: day(16),
-    );
-    pinnedTaskNames.add('Deep clean kitchen');
-
-    await _taskRepository.create(
-      name: 'Declutter "misc" drawer',
-      projectId: projectIdByName['Home chores'],
-      priority: 4,
-    );
-
-    await _taskRepository.create(
-      name: 'Organize cleaning supplies',
-      projectId: projectIdByName['Home chores'],
-      priority: 3,
-    );
-
-    // --- Organise birthday for Sam
-    await _taskRepository.create(
-      name: 'Book dinner reservation',
-      projectId: projectIdByName['Organise birthday for Sam'],
-      priority: 2,
-      startDate: day(2),
-      deadlineDate: day(5),
-    );
-    pinnedTaskNames.add('Book dinner reservation');
-
-    await _taskRepository.create(
-      name: 'Buy birthday gift for Sam',
-      projectId: projectIdByName['Organise birthday for Sam'],
-      priority: 1,
-      startDate: day(-5),
-      deadlineDate: day(3),
-      // Explicit override (not inherited from project).
-      valueIds: [valueIdByName['Life Admin']!],
-    );
-    pinnedTaskNames.add('Buy birthday gift for Sam');
-
-    await _taskRepository.create(
-      name: 'Draft invite message',
-      projectId: projectIdByName['Organise birthday for Sam'],
-      priority: 3,
-    );
-
-    await _taskRepository.create(
-      name: 'Ideas list: gift + activities',
-      projectId: projectIdByName['Organise birthday for Sam'],
-      priority: 4,
-    );
-
-    // --- Exercise Routines
-    await _taskRepository.create(
-      name: 'Plan workouts for next week',
-      projectId: projectIdByName['Exercise Routines'],
-      priority: 2,
-      startDate: day(1),
-      deadlineDate: day(4),
-    );
-    pinnedTaskNames.add('Plan workouts for next week');
-
-    await _taskRepository.create(
-      name: 'Buy resistance bands',
-      projectId: projectIdByName['Exercise Routines'],
-      priority: 3,
-      startDate: day(20),
-      deadlineDate: day(25),
-      // Explicit override (not inherited from project).
-      valueIds: [valueIdByName['Home & Comfort']!],
-    );
-    pinnedTaskNames.add('Buy resistance bands');
-
-    await _taskRepository.create(
-      name: 'Create a warm-up checklist',
-      projectId: projectIdByName['Exercise Routines'],
-      priority: 4,
-    );
-
-    await _taskRepository.create(
-      name: 'Research a beginner mobility routine',
-      projectId: projectIdByName['Exercise Routines'],
-      priority: 3,
-    );
-
-    // --- Learn capital city names
-    await _taskRepository.create(
-      name: 'Europe capitals: set 1 (15)',
-      projectId: projectIdByName['Learn capital city names'],
-      priority: 3,
-      startDate: day(4),
-      deadlineDate: day(6),
-    );
-    pinnedTaskNames.add('Europe capitals: set 1 (15)');
-
-    await _taskRepository.create(
-      name: 'Africa capitals: set 1 (12)',
-      projectId: projectIdByName['Learn capital city names'],
-      priority: 3,
-      startDate: day(35),
-      deadlineDate: day(40),
-    );
-    pinnedTaskNames.add('Africa capitals: set 1 (12)');
-
-    await _taskRepository.create(
-      name: 'Make flashcards format (template)',
-      projectId: projectIdByName['Learn capital city names'],
-      priority: 4,
-    );
-
-    await _taskRepository.create(
-      name: 'List "hard ones" to revisit',
-      projectId: projectIdByName['Learn capital city names'],
-      priority: 4,
-    );
-
-    // 5) Pin only one task total to keep the demo focused.
+    await _completeTasksByName(completedTaskNames);
     await _pinTasksByName(pinnedTaskNames.take(1).toList());
+    await _snoozeTaskRepeatedly(
+      'Laundry + bedding',
+      days: const <int>[2, 10, 18],
+    );
+  }
+
+  List<String>? _valueIdsFor(
+    List<String>? names,
+    Map<String, String> valueIdByName,
+  ) {
+    if (names == null) return null;
+    final ids = <String>[];
+    for (final name in names) {
+      final id = valueIdByName[name];
+      if (id != null) {
+        ids.add(id);
+      }
+    }
+    return ids.isEmpty ? null : ids;
+  }
+
+  Future<void> _completeTasksByName(List<String> names) async {
+    if (names.isEmpty) return;
+    final tasks = await _taskRepository.getAll(TaskQuery.all());
+    final idByName = <String, String>{for (final t in tasks) t.name: t.id};
+
+    for (final name in names) {
+      final id = idByName[name];
+      if (id == null) continue;
+      await _taskRepository.completeOccurrence(
+        taskId: id,
+        context: _templateContext(
+          intent: 'complete_task',
+          entityType: 'task',
+          entityId: id,
+        ),
+      );
+    }
+  }
+
+  Future<void> _snoozeTaskRepeatedly(
+    String name, {
+    required List<int> days,
+  }) async {
+    if (days.isEmpty) return;
+    final tasks = await _taskRepository.getAll(TaskQuery.all());
+    final idByName = <String, String>{for (final t in tasks) t.name: t.id};
+    final id = idByName[name];
+    if (id == null) return;
+
+    for (final offset in days) {
+      final until = _clock.nowUtc().add(Duration(days: offset));
+      await _taskRepository.setMyDaySnoozedUntil(
+        id: id,
+        untilUtc: until,
+        context: _templateContext(
+          intent: 'snooze_task',
+          entityType: 'task',
+          entityId: id,
+        ),
+      );
+    }
+  }
+
+  Future<void> _clearDayPicks(DateTime dayKeyUtc) async {
+    await _myDayRepository.clearDay(
+      dayKeyUtc: dayKeyUtc,
+      context: _templateContext(
+        intent: 'clear_day',
+        entityType: 'my_day_day',
+        entityId: encodeDateOnly(dayKeyUtc),
+      ),
+    );
+  }
+
+  OperationContext _templateContext({
+    required String intent,
+    String? entityType,
+    String? entityId,
+  }) {
+    final correlationId = '$intent-${_clock.nowUtc().microsecondsSinceEpoch}';
+    return OperationContext(
+      correlationId: correlationId,
+      feature: 'settings',
+      intent: 'template.$intent',
+      operation: 'settings.template.$intent',
+      entityType: entityType,
+      entityId: entityId,
+    );
   }
 
   Future<Map<String, String>> _loadValueIdByName() async {
@@ -513,4 +460,321 @@ class TemplateDataService {
       await _taskRepository.setPinned(id: id, isPinned: true);
     }
   }
+}
+
+const _templateTaskSeeds = <_TemplateTaskSeed>[
+  _TemplateTaskSeed(
+    name: 'Book passport photo',
+    projectName: 'Get a passport',
+    startOffset: -1,
+    deadlineOffset: 2,
+    priority: 2,
+    pin: true,
+  ),
+  _TemplateTaskSeed(
+    name: 'Check photo size requirements',
+    projectName: 'Get a passport',
+    deadlineOffset: 1,
+  ),
+  _TemplateTaskSeed(
+    name: 'Confirm appointment location',
+    projectName: 'Get a passport',
+    startOffset: 3,
+    priority: 2,
+  ),
+  _TemplateTaskSeed(
+    name: 'Submit application',
+    projectName: 'Get a passport',
+    startOffset: 9,
+    deadlineOffset: 12,
+    priority: 1,
+    complete: true,
+  ),
+  _TemplateTaskSeed(
+    name: 'Check renewal requirements',
+    projectName: 'Get a passport',
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Make a documents checklist',
+    projectName: 'Get a passport',
+    startOffset: -2,
+    priority: 4,
+  ),
+  _TemplateTaskSeed(
+    name: 'Translate supporting documents',
+    projectName: 'Get a passport',
+    deadlineOffset: 5,
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Track application status',
+    projectName: 'Get a passport',
+  ),
+  _TemplateTaskSeed(
+    name: 'Laundry + bedding',
+    projectName: 'Home chores',
+    startOffset: -7,
+    deadlineOffset: -1,
+    priority: 3,
+    valueNames: ['Health & Energy'],
+    pin: true,
+  ),
+  _TemplateTaskSeed(
+    name: 'Deep clean kitchen',
+    projectName: 'Home chores',
+    startOffset: 14,
+    deadlineOffset: 16,
+    priority: 2,
+    complete: true,
+    pin: true,
+  ),
+  _TemplateTaskSeed(
+    name: 'Declutter miscellaneous drawer',
+    projectName: 'Home chores',
+    priority: 4,
+  ),
+  _TemplateTaskSeed(
+    name: 'Organize cleaning supplies',
+    projectName: 'Home chores',
+    startOffset: -2,
+    priority: 3,
+    valueNames: ['Home & Comfort', 'Health & Energy'],
+  ),
+  _TemplateTaskSeed(
+    name: 'Prep seasonal cleaning plan',
+    projectName: 'Home chores',
+    deadlineOffset: 7,
+    priority: 2,
+  ),
+  _TemplateTaskSeed(
+    name: 'Inventory cleaning supplies',
+    projectName: 'Home chores',
+    startOffset: -4,
+  ),
+  _TemplateTaskSeed(
+    name: 'Replace air filters',
+    projectName: 'Home chores',
+    deadlineOffset: -3,
+    priority: 2,
+  ),
+  _TemplateTaskSeed(
+    name: 'Schedule pest control check',
+    projectName: 'Home chores',
+    startOffset: 30,
+    deadlineOffset: 45,
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Book dinner reservation',
+    projectName: 'Organise birthday for Sam',
+    startOffset: 2,
+    deadlineOffset: 5,
+    priority: 2,
+    complete: true,
+    pin: true,
+  ),
+  _TemplateTaskSeed(
+    name: 'Buy birthday gift for Sam',
+    projectName: 'Organise birthday for Sam',
+    startOffset: -5,
+    deadlineOffset: 3,
+    priority: 1,
+    valueNames: ['Life Admin'],
+  ),
+  _TemplateTaskSeed(
+    name: 'Draft invite message',
+    projectName: 'Organise birthday for Sam',
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Ideas list: gift + activities',
+    projectName: 'Organise birthday for Sam',
+    priority: 4,
+  ),
+  _TemplateTaskSeed(
+    name: 'Confirm entertainment plan',
+    projectName: 'Organise birthday for Sam',
+    deadlineOffset: 6,
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Finalize guest list',
+    projectName: 'Organise birthday for Sam',
+    startOffset: -1,
+  ),
+  _TemplateTaskSeed(
+    name: 'Order birthday cake',
+    projectName: 'Organise birthday for Sam',
+    deadlineOffset: 4,
+    priority: 2,
+    valueNames: ['Relationships', 'Life Admin'],
+  ),
+  _TemplateTaskSeed(
+    name: 'Plan workouts for next week',
+    projectName: 'Exercise Routines',
+    startOffset: 1,
+    deadlineOffset: 4,
+    priority: 2,
+    repeatIcalRrule: 'FREQ=WEEKLY;BYDAY=MO',
+    complete: true,
+    pin: true,
+  ),
+  _TemplateTaskSeed(
+    name: 'Buy resistance bands',
+    projectName: 'Exercise Routines',
+    startOffset: 20,
+    deadlineOffset: 25,
+    priority: 3,
+    valueNames: ['Home & Comfort'],
+  ),
+  _TemplateTaskSeed(
+    name: 'Create a warm-up checklist',
+    projectName: 'Exercise Routines',
+    priority: 4,
+    valueNames: ['Health & Energy'],
+  ),
+  _TemplateTaskSeed(
+    name: 'Research a beginner mobility routine',
+    projectName: 'Exercise Routines',
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Log progress snapshot',
+    projectName: 'Exercise Routines',
+    deadlineOffset: 2,
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Morning mobility check-in',
+    projectName: 'Exercise Routines',
+    startOffset: 0,
+    repeatIcalRrule: 'FREQ=DAILY',
+  ),
+  _TemplateTaskSeed(
+    name: 'Strength session (biweekly)',
+    projectName: 'Exercise Routines',
+    startOffset: 5,
+    repeatIcalRrule: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=FR',
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Set training reminder',
+    projectName: 'Exercise Routines',
+    deadlineOffset: 1,
+  ),
+  _TemplateTaskSeed(
+    name: 'Europe capitals: set 1 (15)',
+    projectName: 'Learn capital city names',
+    startOffset: 4,
+    deadlineOffset: 6,
+    priority: 3,
+    pin: true,
+  ),
+  _TemplateTaskSeed(
+    name: 'Africa capitals: set 1 (12)',
+    projectName: 'Learn capital city names',
+    startOffset: 35,
+    deadlineOffset: 40,
+    priority: 3,
+    pin: true,
+  ),
+  _TemplateTaskSeed(
+    name: 'Make flashcards format (template)',
+    projectName: 'Learn capital city names',
+    priority: 4,
+  ),
+  _TemplateTaskSeed(
+    name: 'List "hard ones" to revisit',
+    projectName: 'Learn capital city names',
+    priority: 4,
+  ),
+  _TemplateTaskSeed(
+    name: 'Schedule review quiz',
+    projectName: 'Learn capital city names',
+    deadlineOffset: 12,
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Capitals quiz reminder',
+    projectName: 'Learn capital city names',
+    deadlineOffset: 1,
+  ),
+  _TemplateTaskSeed(
+    name: 'Quick review: Europe set 1',
+    projectName: 'Learn capital city names',
+    startOffset: 8,
+    priority: 2,
+  ),
+  _TemplateTaskSeed(
+    name: 'Create quiz scoring sheet',
+    projectName: 'Learn capital city names',
+  ),
+  _TemplateTaskSeed(
+    name: "Review last week's highlights",
+    projectName: 'Weekly Review Prep',
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Collect community wins',
+    projectName: 'Weekly Review Prep',
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: "Draft next week's focus",
+    projectName: 'Weekly Review Prep',
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Summarize lessons learned',
+    projectName: 'Weekly Review Prep',
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Update weekly metrics dashboard',
+    projectName: 'Weekly Review Prep',
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Plan reflection prompts',
+    projectName: 'Weekly Review Prep',
+    priority: 3,
+  ),
+  _TemplateTaskSeed(
+    name: 'Review task backlogs',
+    projectName: 'Weekly Review Prep',
+    startOffset: -6,
+    priority: 2,
+  ),
+  _TemplateTaskSeed(
+    name: 'Identify deadline risks',
+    projectName: 'Weekly Review Prep',
+    deadlineOffset: 2,
+    priority: 2,
+  ),
+];
+
+@immutable
+final class _TemplateTaskSeed {
+  const _TemplateTaskSeed({
+    required this.name,
+    required this.projectName,
+    this.startOffset,
+    this.deadlineOffset,
+    this.priority,
+    this.valueNames,
+    this.pin = false,
+    this.complete = false,
+    this.repeatIcalRrule,
+  });
+
+  final String name;
+  final String projectName;
+  final int? startOffset;
+  final int? deadlineOffset;
+  final int? priority;
+  final List<String>? valueNames;
+  final bool pin;
+  final bool complete;
+  final String? repeatIcalRrule;
 }

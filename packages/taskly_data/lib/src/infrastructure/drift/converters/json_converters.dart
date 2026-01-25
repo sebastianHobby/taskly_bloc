@@ -131,3 +131,29 @@ class JsonStringListConverter extends TypeConverter<List<String>, String> {
     return jsonEncode(value);
   }
 }
+
+/// Converter for JSON text that must be an int list.
+///
+/// Stored format: a JSON array string (e.g. `[1,2,3]`).
+class JsonIntListConverter extends TypeConverter<List<int>, String> {
+  const JsonIntListConverter();
+
+  @override
+  List<int> fromSql(String fromDb) {
+    final decoded = _decodePossiblyDoubleEncodedJson(fromDb);
+    if (decoded is List) {
+      return decoded
+          .whereType<num>()
+          .map((e) => e.toInt())
+          .toList(growable: false);
+    }
+    throw ArgumentError(
+      'Expected JSON array after decoding String, got ${decoded.runtimeType}',
+    );
+  }
+
+  @override
+  String toSql(List<int> value) {
+    return jsonEncode(value);
+  }
+}

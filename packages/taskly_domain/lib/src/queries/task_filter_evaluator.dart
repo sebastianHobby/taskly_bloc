@@ -3,6 +3,7 @@ import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/queries/operators/operators.dart';
 import 'package:taskly_domain/src/queries/query_filter.dart';
 import 'package:taskly_domain/src/queries/task_predicate.dart';
+import 'package:taskly_domain/src/services/values/effective_values.dart';
 
 /// Evaluates task filters (shared AND + one-level OR groups).
 class TaskFilterEvaluator {
@@ -60,13 +61,12 @@ class TaskFilterEvaluator {
   }
 
   bool _evalValue(Task task, TaskValuePredicate p) {
-    final ids = <String>{...task.values.map((v) => v.id)};
-
-    // If a task has explicit values, it is treated as overriding project values.
-    // In that case, inherited values should not be considered.
-    if (p.includeInherited && ids.isEmpty && task.project != null) {
-      ids.addAll(task.project!.values.map((v) => v.id));
-    }
+    final ids = <String>{
+      if (p.includeInherited)
+        ...task.effectiveValues.map((v) => v.id)
+      else
+        ...task.values.map((v) => v.id),
+    };
 
     return ValueComparison.evaluate(
       entityValueIds: ids,

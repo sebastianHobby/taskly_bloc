@@ -27,12 +27,27 @@ void main() {
         idGenerator: IdGenerator.withUserId('user-1'),
       );
 
-      await repo.create(name: 'Task', projectId: '  ', valueIds: ['v1']);
+      await repo.create(name: 'Task', projectId: '  ');
 
       final row = await db.select(db.taskTable).getSingle();
       expect(row.projectId, matcher.isNull);
-      expect(row.overridePrimaryValueId, equals('v1'));
+      expect(row.overridePrimaryValueId, matcher.isNull);
       expect(row.overrideSecondaryValueId, matcher.isNull);
+    });
+
+    testSafe('create rejects values when projectId is missing', () async {
+      final db = createAutoClosingDb();
+      final repo = TaskRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      expect(
+        () => repo.create(name: 'Task', projectId: '  ', valueIds: ['v1']),
+        throwsA(isA<InputValidationFailure>()),
+      );
     });
 
     testSafe('create rejects duplicate override values', () async {

@@ -90,8 +90,8 @@ void main() {
         updatedAt: now,
         name: 'Task 1',
         completed: false,
-        values: [v1],
-        overridePrimaryValueId: 'v1',
+        project: p1,
+        projectId: 'p1',
       );
       final t2 = Task(
         id: 't2',
@@ -148,8 +148,16 @@ void main() {
         updatedAt: now,
         name: 'Task 1',
         completed: true,
-        values: [v1],
-        overridePrimaryValueId: 'v1',
+        project: Project(
+          id: 'p1',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Project 1',
+          completed: false,
+          values: [v1],
+          primaryValueId: 'v1',
+        ),
+        projectId: 'p1',
       );
       final task2 = Task(
         id: 't2',
@@ -157,8 +165,16 @@ void main() {
         updatedAt: now,
         name: 'Task 2',
         completed: true,
-        values: [v2],
-        overridePrimaryValueId: 'v2',
+        project: Project(
+          id: 'p2',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Project 2',
+          completed: false,
+          values: [v2],
+          primaryValueId: 'v2',
+        ),
+        projectId: 'p2',
       );
 
       final taskRepo = _FakeTaskRepository([

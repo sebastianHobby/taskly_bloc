@@ -39,11 +39,13 @@ final class TasklyMyDaySectionConfig {
     this.subtitle,
     this.action,
     this.showEmpty = true,
+    this.iconBadge = false,
   });
 
   final Key? headerKey;
   final String title;
   final IconData? icon;
+  final bool iconBadge;
   final int count;
   final bool expanded;
   final VoidCallback onToggleExpanded;
@@ -124,15 +126,15 @@ final class TasklyMyDayCountLine {
 class TasklyMyDaySectionStack extends StatelessWidget {
   const TasklyMyDaySectionStack({
     required this.valuesAligned,
-    required this.timeSensitive,
     required this.completed,
     this.pinned,
+    this.timeSensitive,
     super.key,
   });
 
   final TasklyMyDaySectionConfig? pinned;
   final TasklyMyDaySectionConfig valuesAligned;
-  final TasklyMyDayTimeSensitiveConfig timeSensitive;
+  final TasklyMyDayTimeSensitiveConfig? timeSensitive;
   final TasklyMyDaySectionConfig completed;
 
   @override
@@ -140,11 +142,13 @@ class TasklyMyDaySectionStack extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final pinned = this.pinned;
     final pinnedConfig = pinned;
+    final timeSensitive = this.timeSensitive;
     final showTimeSensitive =
-        timeSensitive.due.list.rows.isNotEmpty ||
-        timeSensitive.planned.list.rows.isNotEmpty ||
-        timeSensitive.due.showEmpty ||
-        timeSensitive.planned.showEmpty;
+        timeSensitive != null &&
+        (timeSensitive.due.list.rows.isNotEmpty ||
+            timeSensitive.planned.list.rows.isNotEmpty ||
+            timeSensitive.due.showEmpty ||
+            timeSensitive.planned.showEmpty);
     final showCompleted = completed.list.rows.isNotEmpty || completed.showEmpty;
 
     final sections = <Widget>[];
@@ -152,7 +156,7 @@ class TasklyMyDaySectionStack extends StatelessWidget {
     void addDivider() {
       sections.addAll([
         const SizedBox(height: 12),
-        Divider(color: cs.outlineVariant.withOpacity(0.5), height: 1),
+        Divider(color: cs.outlineVariant.withOpacity(0.35), height: 1),
         const SizedBox(height: 12),
       ]);
     }
@@ -175,6 +179,7 @@ class TasklyMyDaySectionStack extends StatelessWidget {
           showCount: pinnedConfig.showCount,
           subtitle: pinnedConfig.subtitle,
           action: pinnedConfig.action,
+          iconBadge: pinnedConfig.iconBadge,
           expanded: pinnedConfig.expanded,
           onToggleExpanded: pinnedConfig.onToggleExpanded,
         ),
@@ -196,6 +201,7 @@ class TasklyMyDaySectionStack extends StatelessWidget {
         showCount: valuesAligned.showCount,
         subtitle: valuesAligned.subtitle,
         action: valuesAligned.action,
+        iconBadge: valuesAligned.iconBadge,
         expanded: valuesAligned.expanded,
         onToggleExpanded: valuesAligned.onToggleExpanded,
       ),
@@ -216,6 +222,7 @@ class TasklyMyDaySectionStack extends StatelessWidget {
           count: timeSensitive.due.count + timeSensitive.planned.count,
           showCount: timeSensitive.showCount,
           subtitle: timeSensitive.subtitle,
+          iconBadge: false,
           expanded: timeSensitive.expanded,
           onToggleExpanded: timeSensitive.onToggleExpanded,
         ),
@@ -258,6 +265,7 @@ class TasklyMyDaySectionStack extends StatelessWidget {
           count: completed.count,
           showCount: completed.showCount,
           action: completed.action,
+          iconBadge: completed.iconBadge,
           expanded: completed.expanded,
           onToggleExpanded: completed.onToggleExpanded,
         ),
@@ -285,6 +293,7 @@ class _SectionHeader extends StatelessWidget {
     required this.showCount,
     required this.expanded,
     required this.onToggleExpanded,
+    required this.iconBadge,
     this.subtitle,
     this.action,
     super.key,
@@ -292,6 +301,7 @@ class _SectionHeader extends StatelessWidget {
 
   final String title;
   final IconData? icon;
+  final bool iconBadge;
   final int count;
   final bool showCount;
   final bool expanded;
@@ -303,59 +313,86 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final hasSubtitle = subtitle != null && subtitle!.trim().isNotEmpty;
+    final actionOnSubtitle = hasSubtitle && action != null;
+    const subtitleIndent = 22.0;
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (icon != null) ...[
-          Icon(icon, size: 16, color: cs.primary),
-          const SizedBox(width: 6),
-        ],
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
+        Row(
+          children: [
+            if (icon != null) ...[
+              if (iconBadge)
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: cs.primaryContainer.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Icon(icon, size: 16, color: cs.primary),
+                )
+              else
+                Icon(icon, size: 16, color: cs.primary),
+              const SizedBox(width: 8),
+            ],
+            Expanded(
+              child: Text(
                 title,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  subtitle!,
-                  style: theme.textTheme.bodySmall?.copyWith(
+            ),
+            if (showCount)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '$count',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
                     color: cs.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-            ],
-          ),
-        ),
-        if (showCount)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              '$count',
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: cs.onSurfaceVariant,
               ),
+            if (!actionOnSubtitle && action != null) ...[
+              const SizedBox(width: 8),
+              action!,
+            ],
+            IconButton(
+              onPressed: onToggleExpanded,
+              icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
+            ),
+          ],
+        ),
+        if (hasSubtitle) ...[
+          const SizedBox(height: 2),
+          Padding(
+            padding: EdgeInsets.only(left: icon == null ? 0 : subtitleIndent),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    subtitle!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (actionOnSubtitle) ...[
+                  const SizedBox(width: 8),
+                  action!,
+                ],
+              ],
             ),
           ),
-        if (action != null) ...[
-          const SizedBox(width: 8),
-          action!,
         ],
-        IconButton(
-          onPressed: onToggleExpanded,
-          icon: Icon(expanded ? Icons.expand_less : Icons.expand_more),
-        ),
       ],
     );
   }

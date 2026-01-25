@@ -19,7 +19,6 @@ void main() {
   Project project({
     required String id,
     String? primaryValueId,
-    String? secondaryValueId,
     List<Value> values = const <Value>[],
   }) {
     return Project(
@@ -30,7 +29,6 @@ void main() {
       completed: false,
       values: values,
       primaryValueId: primaryValueId,
-      secondaryValueId: secondaryValueId,
     );
   }
 
@@ -69,13 +67,11 @@ void main() {
     'Effective values inherit from project when task is not overriding',
     () async {
       final v1 = value('v1');
-      final v2 = value('v2');
 
       final p = project(
         id: 'p1',
         primaryValueId: 'v1',
-        secondaryValueId: 'v2',
-        values: [v1, v2],
+        values: [v1],
       );
 
       final t = task(id: 't1', project: p);
@@ -83,15 +79,15 @@ void main() {
       expect(t.isOverridingValues, isFalse);
       expect(t.isInheritingValues, isTrue);
       expect(t.effectivePrimaryValueId, 'v1');
-      expect(t.effectiveSecondaryValueId, 'v2');
-      expect(t.effectiveValues.map((v) => v.id).toList(), ['v1', 'v2']);
+      expect(t.effectiveSecondaryValueId, isNull);
+      expect(t.effectiveValues.map((v) => v.id).toList(), ['v1']);
       expect(t.effectivePrimaryValue?.id, 'v1');
-      expect(t.effectiveSecondaryValues.map((v) => v.id).toList(), ['v2']);
+      expect(t.effectiveSecondaryValues, isEmpty);
     },
   );
 
   testSafe(
-    'Effective values use task overrides and do not inherit secondary',
+    'Effective values include task tags without replacing project primary',
     () async {
       final v1 = value('v1');
       final v2 = value('v2');
@@ -99,33 +95,55 @@ void main() {
       final p = project(
         id: 'p1',
         primaryValueId: 'v1',
-        secondaryValueId: 'v2',
         values: [v1, v2],
       );
 
       final t = task(
         id: 't1',
         project: p,
-        overridePrimaryValueId: 'v1',
+        overridePrimaryValueId: 'v2',
         overrideSecondaryValueId: null,
       );
 
       expect(t.isOverridingValues, isTrue);
-      expect(t.isInheritingValues, isFalse);
+      expect(t.isInheritingValues, isTrue);
       expect(t.effectivePrimaryValueId, 'v1');
-      expect(t.effectiveSecondaryValueId, isNull);
-      expect(t.effectiveValues.map((v) => v.id).toList(), ['v1']);
-      expect(t.effectiveSecondaryValues, isEmpty);
+      expect(t.effectiveSecondaryValueId, 'v2');
+      expect(t.effectiveValues.map((v) => v.id).toList(), ['v1', 'v2']);
+      expect(t.effectiveSecondaryValues.map((v) => v.id).toList(), ['v2']);
     },
   );
+
+  testSafe('Task tags are ignored without a project', () async {
+    final v1 = value('v1');
+    final t = task(
+      id: 't1',
+      values: [v1],
+      overridePrimaryValueId: 'v1',
+      overrideSecondaryValueId: null,
+    );
+
+    expect(t.isOverridingValues, isTrue);
+    expect(t.isInheritingValues, isFalse);
+    expect(t.effectivePrimaryValueId, isNull);
+    expect(t.effectiveSecondaryValueId, isNull);
+    expect(t.effectiveValues, isEmpty);
+  });
 
   testSafe(
     'Effective values dedupe secondary when it equals primary',
     () async {
       final v1 = value('v1');
 
+      final p = project(
+        id: 'p1',
+        primaryValueId: 'v1',
+        values: [v1],
+      );
+
       final t = task(
         id: 't1',
+        project: p,
         values: [v1],
         overridePrimaryValueId: 'v1',
         overrideSecondaryValueId: 'v1',

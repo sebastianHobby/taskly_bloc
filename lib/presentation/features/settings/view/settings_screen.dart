@@ -13,6 +13,7 @@ import 'package:taskly_bloc/presentation/features/settings/widgets/accent_palett
 import 'package:taskly_bloc/presentation/features/review/view/weekly_review_modal.dart';
 import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
 
@@ -87,14 +88,16 @@ class SettingsScreen extends StatelessWidget {
                       const SizedBox.shrink(),
                     ],
                   ),
-                  _buildSection(
-                    context: context,
-                    title: 'Developer',
-                    children: [
-                      _buildViewLogsItem(context),
-                      if (kDebugMode) const _GenerateTemplateDataItem(),
-                    ],
-                  ),
+                  if (kDebugMode)
+                    _buildSection(
+                      context: context,
+                      title: 'Developer',
+                      children: [
+                        _buildViewLogsItem(context),
+                        _buildTileCatalogItem(context),
+                        const _GenerateTemplateDataItem(),
+                      ],
+                    ),
                   _buildSection(
                     context: context,
                     title: 'Account',
@@ -146,6 +149,22 @@ class SettingsScreen extends StatelessWidget {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) => TalkerScreen(talker: talkerRaw),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTileCatalogItem(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.dashboard_outlined),
+      title: const Text('Tile Catalog'),
+      subtitle: const Text('Preview all task, project, and value tiles'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const TasklyTileCatalogPage(),
           ),
         );
       },
@@ -884,7 +903,9 @@ class _GenerateTemplateDataItem extends StatelessWidget {
           color: Theme.of(context).colorScheme.error,
         ),
         title: const Text('Generate Template Data'),
-        subtitle: const Text('Deletes user data and seeds a demo set'),
+        subtitle: const Text(
+          'Deletes user data and seeds a demo set (single-value projects)',
+        ),
         trailing: Icon(
           Icons.warning_amber,
           color: Theme.of(context).colorScheme.error,
@@ -901,8 +922,9 @@ class _GenerateTemplateDataItem extends StatelessWidget {
         title: const Text('Generate Template Data'),
         content: const Text(
           'This will delete all Tasks, Projects, and Values for the current '
-          'account and then generate a sample dataset.\n\n'
-          'It will also clear any saved My Day ritual selections.\n\n'
+          'account and then generate a sample dataset with single-value '
+          'projects and optional task values.\n\n'
+          'It will also clear any saved My Day plan selections.\n\n'
           'This is intended for debug/demo use only.',
         ),
         actions: [

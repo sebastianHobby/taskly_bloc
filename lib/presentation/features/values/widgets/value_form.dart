@@ -78,6 +78,8 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
       ),
       ValueFieldKeys.iconName.id:
           widget.initialData?.iconName ?? createDraft?.iconName,
+      ValueFieldKeys.priority.id:
+          widget.initialData?.priority ?? createDraft?.priority,
     };
 
     final submitEnabled =
@@ -181,6 +183,63 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                     ),
                     context,
                   ),
+                ),
+              ),
+              SizedBox(height: sectionGap),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TasklyFormSectionLabel(text: l10n.priorityLabel),
+                    const SizedBox(height: 8),
+                    FormBuilderField<ValuePriority?>(
+                      name: ValueFieldKeys.priority.id,
+                      builder: (field) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TasklyFormPrioritySegmented(
+                              segments: [
+                                TasklyFormPrioritySegment(
+                                  label: l10n.valuePriorityLowLabel,
+                                  value: ValuePriority.low.index,
+                                  selectedColor: scheme.onSurfaceVariant,
+                                ),
+                                TasklyFormPrioritySegment(
+                                  label: l10n.valuePriorityMediumLabel,
+                                  value: ValuePriority.medium.index,
+                                  selectedColor: scheme.primary,
+                                ),
+                                TasklyFormPrioritySegment(
+                                  label: l10n.valuePriorityHighLabel,
+                                  value: ValuePriority.high.index,
+                                  selectedColor: scheme.secondary,
+                                ),
+                              ],
+                              value: field.value?.index,
+                              onChanged: (value) {
+                                final priority = value == null
+                                    ? null
+                                    : ValuePriority.values[value];
+                                field.didChange(priority);
+                                markDirty();
+                                setState(() {});
+                              },
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              l10n.valuePriorityHelper,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: scheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
             ],

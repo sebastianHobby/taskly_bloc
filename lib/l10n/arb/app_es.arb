@@ -43,6 +43,30 @@
     "valuesSecondaryShortLabel": "Secundario",
     "valuesSecondaryClearAction": "Quitar secundario",
     "valuesMaxTwoHelper": "Elige hasta dos valores.",
+    "taskTagsOptionalTitle": "Etiquetas de tarea (opcional)",
+    "taskTagsRequireProject": "Elige un proyecto para heredar su valor.",
+    "taskTagsProjectNeedsValue": "Este proyecto no tiene un valor principal todav\u00eda.",
+    "taskTagsProjectValueUnknown": "El valor heredado a\u00fan no est\u00e1 disponible.",
+    "taskTagsInheritedValue": "Valor heredado: {valueName}",
+    "taskTagPrimaryLabel": "Etiqueta 1",
+    "taskTagSecondaryLabel": "Etiqueta 2",
+    "taskTagsSelectPrimaryTitle": "Selecciona la etiqueta 1",
+    "taskTagsSelectSecondaryTitle": "Selecciona la etiqueta 2",
+    "taskTagsMaxTwoHelper": "A\u00f1ade hasta dos etiquetas.",
+    "projectValueTitle": "Valor del proyecto",
+    "projectValueHelper": "Elige un valor para guiar este proyecto.",
+    "projectFormSingleValueOnly": "Elige un solo valor.",
+    "taskProjectValueTitle": "Valor",
+    "taskProjectValueLockedLabel": "Bloqueado",
+    "taskProjectValueNotSet": "Valor no establecido.",
+    "taskProjectValueRow": "Valor: {valueName}",
+    "taskAdditionalValuesTitle": "Valores adicionales (opcional)",
+    "taskAdditionalValuesHelper": "A\u00f1ade hasta dos valores adicionales.",
+    "taskAdditionalValuesDisabled": "Establece un valor del proyecto para a\u00f1adir valores adicionales.",
+    "taskAdditionalValuePrimaryLabel": "Valor 1",
+    "taskAdditionalValueSecondaryLabel": "Valor 2",
+    "taskAdditionalValueSelectPrimaryTitle": "Selecciona el valor 1",
+    "taskAdditionalValueSelectSecondaryTitle": "Selecciona el valor 2",
     "@valuesAlignedToTitle": {
         "description": "TÃ­tulo/etiqueta que indica alineaciÃ³n con valores."
     },
@@ -112,9 +136,107 @@
     "@valuesMaxTwoHelper": {
         "description": "Helper text indicating the max number of values."
     },
+    "@taskTagsOptionalTitle": {
+        "description": "T\u00edtulo de secci\u00f3n para etiquetas opcionales de tareas."
+    },
+    "@taskTagsRequireProject": {
+        "description": "Texto de ayuda cuando no se selecciona un proyecto para etiquetas."
+    },
+    "@taskTagsProjectNeedsValue": {
+        "description": "Texto de ayuda cuando el proyecto seleccionado no tiene valor principal."
+    },
+    "@taskTagsProjectValueUnknown": {
+        "description": "Texto de ayuda cuando el nombre del valor heredado no est\u00e1 disponible."
+    },
+    "@taskTagsInheritedValue": {
+        "description": "Texto de ayuda que muestra el valor heredado del proyecto.",
+        "placeholders": {
+            "valueName": {}
+        }
+    },
+    "@taskTagPrimaryLabel": {
+        "description": "Etiqueta para la primera etiqueta de tarea."
+    },
+    "@taskTagSecondaryLabel": {
+        "description": "Etiqueta para la segunda etiqueta de tarea."
+    },
+    "@taskTagsSelectPrimaryTitle": {
+        "description": "T\u00edtulo para seleccionar la primera etiqueta de tarea."
+    },
+    "@taskTagsSelectSecondaryTitle": {
+        "description": "T\u00edtulo para seleccionar la segunda etiqueta de tarea."
+    },
+    "@taskTagsMaxTwoHelper": {
+        "description": "Texto de ayuda que indica el m\u00e1ximo de etiquetas de tarea."
+    },
+    "@projectValueTitle": {
+        "description": "T\u00edtulo de secci\u00f3n para seleccionar el valor del proyecto."
+    },
+    "@projectValueHelper": {
+        "description": "Texto de ayuda para la selecci\u00f3n del valor del proyecto."
+    },
+    "@projectFormSingleValueOnly": {
+        "description": "Error de validaci\u00f3n cuando se selecciona m\u00e1s de un valor en el proyecto."
+    },
+    "@taskProjectValueTitle": {
+        "description": "T\u00edtulo de secci\u00f3n para el valor bloqueado del proyecto en la tarea."
+    },
+    "@taskProjectValueLockedLabel": {
+        "description": "Etiqueta mostrada junto al valor bloqueado del proyecto."
+    },
+    "@taskProjectValueNotSet": {
+        "description": "Texto mostrado cuando el proyecto no tiene valor."
+    },
+    "@taskProjectValueRow": {
+        "description": "Etiqueta que muestra el valor del proyecto en el selector.",
+        "placeholders": {
+            "valueName": {}
+        }
+    },
+    "@taskAdditionalValuesTitle": {
+        "description": "T\u00edtulo de secci\u00f3n para valores adicionales opcionales."
+    },
+    "@taskAdditionalValuesHelper": {
+        "description": "Texto de ayuda para valores adicionales opcionales."
+    },
+    "@taskAdditionalValuesDisabled": {
+        "description": "Texto de ayuda cuando los valores adicionales est\u00e1n deshabilitados."
+    },
+    "@taskAdditionalValuePrimaryLabel": {
+        "description": "Etiqueta para el primer valor adicional de la tarea."
+    },
+    "@taskAdditionalValueSecondaryLabel": {
+        "description": "Etiqueta para el segundo valor adicional de la tarea."
+    },
+    "@taskAdditionalValueSelectPrimaryTitle": {
+        "description": "T\u00edtulo para seleccionar el primer valor adicional."
+    },
+    "@taskAdditionalValueSelectSecondaryTitle": {
+        "description": "T\u00edtulo para seleccionar el segundo valor adicional."
+    },
     "taskFormValuesRequired": "Selecciona un valor principal.",
     "@taskFormValuesRequired": {
         "description": "Validation error shown when a task requires a primary value."
+    },
+    "taskFormValuesRequireProject": "Elige un proyecto antes de a\u00f1adir etiquetas.",
+    "@taskFormValuesRequireProject": {
+        "description": "Error de validaci\u00f3n cuando las etiquetas de tarea se eligen sin proyecto."
+    },
+    "taskFormValuesRequireProjectPrimary": "Establece un valor del proyecto antes de a\u00f1adir etiquetas.",
+    "@taskFormValuesRequireProjectPrimary": {
+        "description": "Validation error shown when a task has tags but the project has no primary value."
+    },
+    "taskFormValuesMaxTwo": "Elige hasta dos etiquetas.",
+    "@taskFormValuesMaxTwo": {
+        "description": "Validation error shown when more than two task tags are selected."
+    },
+    "taskFormValuesMustBeUnique": "Las etiquetas deben ser \u00fanicas.",
+    "@taskFormValuesMustBeUnique": {
+        "description": "Validation error shown when task tags are duplicated."
+    },
+    "taskFormValuesCannotMatchProjectPrimary": "Las etiquetas no pueden coincidir con el valor del proyecto.",
+    "@taskFormValuesCannotMatchProjectPrimary": {
+        "description": "Validation error shown when a task tag matches the project primary value."
     },
     "projectFormValuesRequired": "Selecciona al menos un valor.",
     "@projectFormValuesRequired": {
@@ -431,6 +553,14 @@
     "valuePriorityHighLabel": "Alta",
     "@valuePriorityHighLabel": {
         "description": "Etiqueta para prioridad alta del valor"
+    },
+    "valueMissingLabel": "Sin valor",
+    "@valueMissingLabel": {
+        "description": "Etiqueta mostrada cuando una entidad no tiene un valor asociado."
+    },
+    "valuePriorityHelper": "Esto ayuda a Taskly a sugerir un enfoque equilibrado, dando más espacio a tus valores principales.",
+    "@valuePriorityHelper": {
+        "description": "Texto de ayuda que se muestra debajo del selector de prioridad en el formulario de valores."
     },
     "createLabelTooltip": "Crear etiqueta",
     "@createLabelTooltip": {
@@ -873,6 +1003,14 @@
     "@dateNextWeek": {
         "description": "Etiqueta de fecha relativa para la prÃ³xima semana"
     },
+    "dateThisWeekend": "Este fin de semana",
+    "@dateThisWeekend": {
+        "description": "Etiqueta de fecha relativa para el fin de semana"
+    },
+    "dateNextMonday": "Proximo lunes",
+    "@dateNextMonday": {
+        "description": "Etiqueta de fecha relativa para el proximo lunes"
+    },
     "dateYesterday": "Ayer",
     "@dateYesterday": {
         "description": "Etiqueta de fecha relativa para ayer"
@@ -889,17 +1027,47 @@
     "@snoozeSubtitle": {
         "description": "SubtÃ­tulo que explica el comportamiento de posponer"
     },
-    "myDayWhatMattersSectionTitle": "Tareas sugeridas de hoy",
+    "myDayWhatMattersSectionTitle": "Sugerencias basadas en valores",
     "@myDayWhatMattersSectionTitle": {
         "description": "Section title for value-aligned suggestions in the My Day ritual (B1)."
     },
-    "myDayWhatsWaitingSectionTitle": "Sensible al tiempo",
+    "myDayWhatsWaitingSectionTitle": "Lo que est\u00e1 esperando",
     "@myDayWhatsWaitingSectionTitle": {
         "description": "Section title for scheduled/review tasks in the My Day ritual (B1)."
     },
     "myDayTimeSensitiveOutsideValuesSubtitle": "Sensible al tiempo fuera de las sugerencias de valores de hoy",
     "@myDayTimeSensitiveOutsideValuesSubtitle": {
         "description": "Subtitle clarifying the Time sensitive section excludes value suggestions."
+    },
+    "myDayTimeSensitiveBannerBoth": "{dueCount} pr\u00f3ximas a vencer \u2022 {plannedCount} planificadas fuera de tus sugerencias",
+    "@myDayTimeSensitiveBannerBoth": {
+        "description": "Banner title showing due soon and planned counts outside value suggestions.",
+        "placeholders": {
+            "dueCount": {},
+            "plannedCount": {}
+        }
+    },
+    "myDayTimeSensitiveBannerDueOnly": "{dueCount} pr\u00f3ximas a vencer fuera de tus sugerencias",
+    "@myDayTimeSensitiveBannerDueOnly": {
+        "description": "Banner title showing due soon count outside value suggestions.",
+        "placeholders": {
+            "dueCount": {}
+        }
+    },
+    "myDayTimeSensitiveBannerPlannedOnly": "{plannedCount} planificadas fuera de tus sugerencias",
+    "@myDayTimeSensitiveBannerPlannedOnly": {
+        "description": "Banner title showing planned count outside value suggestions.",
+        "placeholders": {
+            "plannedCount": {}
+        }
+    },
+    "myDayTimeSensitiveBannerHelper": "Estas no entraron en tu lista de valores.",
+    "@myDayTimeSensitiveBannerHelper": {
+        "description": "Helper line under the time-sensitive banner."
+    },
+    "myDayTimeSensitiveSheetSubtitle": "Tareas pr\u00f3ximas a vencer y planificadas que no est\u00e1n en tu lista de valores.",
+    "@myDayTimeSensitiveSheetSubtitle": {
+        "description": "Subtitle for the time-sensitive bottom sheet."
     },
     "myDayAnytimeLabel": "En cualquier momento",
     "@myDayAnytimeLabel": {
@@ -1097,7 +1265,7 @@
     "@myDayWhySuggestedSemanticLabel": {
         "description": "Accessibility label for the info tooltip button explaining why a task was suggested in the My Day ritual."
     },
-    "myDayWhatMattersSubtitle": "Tareas guiadas por tus valores, balanceadas con lo urgente.",
+    "myDayWhatMattersSubtitle": "Ordenadas por valores y luego por urgencia.",
     "@myDayWhatMattersSubtitle": {
         "description": "Subtitle for the What matters section in the My Day ritual."
     },
@@ -2156,7 +2324,7 @@
         }
     },
     "myDayTitle": "Mi dÃ­a",
-    "myDayUpdatePlanTitle": "Actualizar plan",
+    "myDayUpdatePlanTitle": "Planificar mi d\u00eda",
     "@myDayUpdatePlanTitle": {
         "description": "TÃ­tulo/etiqueta usada para actualizar el plan de hoy en Mi dÃ­a."
     },
@@ -2194,28 +2362,28 @@
     "@myDayAddedToTodaySnackbar": {
         "description": "Mensaje mostrado tras aÃ±adir una tarea a hoy desde Mi dÃ­a."
     },
-    "myDayRitualAllSetTitle": "Todo listo para hoy.",
-    "@myDayRitualAllSetTitle": {
+    "myDayPlanAllSetTitle": "Todo listo para hoy.",
+    "@myDayPlanAllSetTitle": {
         "description": "TÃ­tulo mostrado cuando el usuario completÃ³ todo lo planificado para hoy en el ritual de Mi dÃ­a."
     },
-    "myDayRitualAllSetSubtitle": "Has completado todo lo que planificaste hoy.",
-    "@myDayRitualAllSetSubtitle": {
+    "myDayPlanAllSetSubtitle": "Has completado todo lo que planificaste hoy.",
+    "@myDayPlanAllSetSubtitle": {
         "description": "SubtÃ­tulo mostrado cuando el usuario completÃ³ todo lo planificado para hoy en el ritual de Mi dÃ­a."
     },
-    "myDayRitualAddOneMoreFocus": "AÃ±adir un foco mÃ¡s",
-    "@myDayRitualAddOneMoreFocus": {
+    "myDayPlanAddOneMoreFocus": "AÃ±adir un foco mÃ¡s",
+    "@myDayPlanAddOneMoreFocus": {
         "description": "Etiqueta del botÃ³n para aÃ±adir un elemento mÃ¡s de foco durante el ritual de Mi dÃ­a."
     },
-    "myDayRitualOverdueDueTitle": "Vencidas y por vencer",
-    "@myDayRitualOverdueDueTitle": {
+    "myDayPlanOverdueDueTitle": "Vencidas y por vencer",
+    "@myDayPlanOverdueDueTitle": {
         "description": "TÃ­tulo de secciÃ³n para tareas vencidas y por vencer en el ritual de Mi dÃ­a."
     },
-    "myDayRitualTitle": "Elige lo que importa",
-    "@myDayRitualTitle": {
+    "myDayPlanTitle": "Planificar mi d\u00eda",
+    "@myDayPlanTitle": {
         "description": "TÃ­tulo mostrado en la parte superior del asistente del ritual de Mi dÃ­a al planificar."
     },
-    "myDayRitualSubtitle": "Mi dÃ­a te ayuda a mantenerte en camino.",
-    "@myDayRitualSubtitle": {
+    "myDayPlanSubtitle": "Elige lo que importa y luego revisa lo que est\u00e1 esperando.",
+    "@myDayPlanSubtitle": {
         "description": "SubtÃ­tulo mostrado en la parte superior del asistente del ritual de Mi dÃ­a al planificar."
     },
     "myDayUpdatePlanSubtitle": "Pick what matters next—values-led focus plus what’s due soon.",
@@ -2444,56 +2612,56 @@
             }
         }
     },
-    "myDayRitualStartsTodayTitle": "Empiezan hoy",
-    "@myDayRitualStartsTodayTitle": {
+    "myDayPlanStartsTodayTitle": "Empiezan hoy",
+    "@myDayPlanStartsTodayTitle": {
         "description": "TÃ­tulo de secciÃ³n para tareas que empiezan hoy en el ritual de Mi dÃ­a."
     },
-    "myDayRitualTodaysFocusTitle": "Focus de hoy",
-    "@myDayRitualTodaysFocusTitle": {
+    "myDayPlanTodaysFocusTitle": "Focus de hoy",
+    "@myDayPlanTodaysFocusTitle": {
         "description": "TÃ­tulo de secciÃ³n para el bloque Focus de hoy en el ritual de Mi dÃ­a."
     },
-    "myDayRitualNotInTodayLabel": "fuera del plan de hoy",
-    "@myDayRitualNotInTodayLabel": {
+    "myDayPlanNotInTodayLabel": "fuera del plan de hoy",
+    "@myDayPlanNotInTodayLabel": {
         "description": "Sufijo para indicar elementos que no estÃ¡n en el plan de hoy."
     },
-    "myDayRitualCaughtUpTitle": "EstÃ¡s al dÃ­a.",
-    "@myDayRitualCaughtUpTitle": {
+    "myDayPlanCaughtUpTitle": "EstÃ¡s al dÃ­a.",
+    "@myDayPlanCaughtUpTitle": {
         "description": "TÃ­tulo del estado vacÃ­o que indica que no hay elementos vencidos o por vencer en el plan."
     },
-    "myDayRitualDueEmptySubtitle": "No hay elementos vencidos ni por vencer en tu plan.",
-    "@myDayRitualDueEmptySubtitle": {
+    "myDayPlanDueEmptySubtitle": "No hay elementos vencidos ni por vencer en tu plan.",
+    "@myDayPlanDueEmptySubtitle": {
         "description": "SubtÃ­tulo del estado vacÃ­o para la secciÃ³n de vencidas y por vencer cuando no hay elementos."
     },
-    "myDayRitualNothingAddedHereYetTitle": "AÃºn no se ha aÃ±adido nada aquÃ­.",
-    "@myDayRitualNothingAddedHereYetTitle": {
+    "myDayPlanNothingAddedHereYetTitle": "AÃºn no se ha aÃ±adido nada aquÃ­.",
+    "@myDayPlanNothingAddedHereYetTitle": {
         "description": "TÃ­tulo del estado vacÃ­o cuando todavÃ­a no se aceptÃ³ nada en una secciÃ³n."
     },
-    "myDayRitualReviewAvailableAboveSubtitle": "Revisa lo disponible arriba si quieres aÃ±adir algo.",
-    "@myDayRitualReviewAvailableAboveSubtitle": {
+    "myDayPlanReviewAvailableAboveSubtitle": "Revisa lo disponible arriba si quieres aÃ±adir algo.",
+    "@myDayPlanReviewAvailableAboveSubtitle": {
         "description": "SubtÃ­tulo del estado vacÃ­o que invita a revisar lo disponible y aÃ±adirlo."
     },
-    "myDayRitualStartsEmptyTitle": "No hay tareas programadas para empezar hoy.",
-    "@myDayRitualStartsEmptyTitle": {
+    "myDayPlanStartsEmptyTitle": "No hay tareas programadas para empezar hoy.",
+    "@myDayPlanStartsEmptyTitle": {
         "description": "TÃ­tulo del estado vacÃ­o para la secciÃ³n de empieza hoy cuando no hay tareas."
     },
-    "myDayRitualStartsEmptySubtitle": "Esta secciÃ³n aparecerÃ¡ cuando haya tareas disponibles.",
-    "@myDayRitualStartsEmptySubtitle": {
+    "myDayPlanStartsEmptySubtitle": "Esta secciÃ³n aparecerÃ¡ cuando haya tareas disponibles.",
+    "@myDayPlanStartsEmptySubtitle": {
         "description": "SubtÃ­tulo del estado vacÃ­o que explica cuÃ¡ndo aparecerÃ¡ la secciÃ³n de empieza hoy."
     },
-    "myDayRitualFocusEmptyTitle": "No se aceptÃ³ nada aquÃ­.",
-    "@myDayRitualFocusEmptyTitle": {
+    "myDayPlanFocusEmptyTitle": "No se aceptÃ³ nada aquÃ­.",
+    "@myDayPlanFocusEmptyTitle": {
         "description": "TÃ­tulo del estado vacÃ­o para la secciÃ³n Focus de hoy cuando no se aceptÃ³ nada."
     },
-    "myDayRitualFocusEmptySubtitle": "No hay elementos de Focus aceptados para hoy.",
-    "@myDayRitualFocusEmptySubtitle": {
+    "myDayPlanFocusEmptySubtitle": "No hay elementos de Focus aceptados para hoy.",
+    "@myDayPlanFocusEmptySubtitle": {
         "description": "SubtÃ­tulo del estado vacÃ­o para la secciÃ³n Focus de hoy cuando no se aceptÃ³ nada."
     },
-    "myDayRitualNothingAddedYetTitle": "AÃºn no se ha aÃ±adido nada.",
-    "@myDayRitualNothingAddedYetTitle": {
+    "myDayPlanNothingAddedYetTitle": "AÃºn no se ha aÃ±adido nada.",
+    "@myDayPlanNothingAddedYetTitle": {
         "description": "TÃ­tulo del estado vacÃ­o usado cuando una secciÃ³n tiene cero aceptadas pero sÃ­ elementos disponibles para aÃ±adir."
     },
-    "myDayRitualOtherNotInTodayHint": "{count, plural, one{1 tarea} other{{count} tareas}} fuera del plan de hoy. Toca para revisar y aÃ±adir.",
-    "@myDayRitualOtherNotInTodayHint": {
+    "myDayPlanOtherNotInTodayHint": "{count, plural, one{1 tarea} other{{count} tareas}} fuera del plan de hoy. Toca para revisar y aÃ±adir.",
+    "@myDayPlanOtherNotInTodayHint": {
         "description": "Pista mostrada cuando hay elementos que aÃºn no se aÃ±adieron al plan de hoy.",
         "placeholders": {
             "count": {
@@ -2516,12 +2684,12 @@
             }
         }
     },
-    "myDayRitualShowFewer": "Mostrar menos",
-    "@myDayRitualShowFewer": {
+    "myDayPlanShowFewer": "Mostrar menos",
+    "@myDayPlanShowFewer": {
         "description": "Etiqueta del botÃ³n para contraer una lista expandida en la secciÃ³n del ritual de Mi dÃ­a."
     },
-    "myDayRitualShowMore": "Mostrar {count} mÃ¡s ({total})",
-    "@myDayRitualShowMore": {
+    "myDayPlanShowMore": "Mostrar {count} mÃ¡s ({total})",
+    "@myDayPlanShowMore": {
         "description": "Etiqueta del botÃ³n para expandir una lista en la secciÃ³n del ritual de Mi dÃ­a.",
         "placeholders": {
             "count": {
@@ -2534,8 +2702,8 @@
             }
         }
     },
-    "myDayRitualAcceptedCount": "{count, plural, one{1 aceptada} other{{count} aceptadas}}",
-    "@myDayRitualAcceptedCount": {
+    "myDayPlanAcceptedCount": "{count, plural, one{1 aceptada} other{{count} aceptadas}}",
+    "@myDayPlanAcceptedCount": {
         "description": "Etiqueta del recuento de aceptadas usada en los encabezados de secciÃ³n.",
         "placeholders": {
             "count": {
@@ -2610,6 +2778,14 @@
     "editValue": "Editar valor",
     "valueNotFound": "No se encontrÃ³ el valor."
 }
+
+
+
+
+
+
+
+
 
 
 

@@ -65,6 +65,11 @@ class IdGenerator {
     'analytics_insights',
     'attention_resolutions',
     'task_snooze_events',
+    'project_next_actions',
+    'project_anchor_state',
+    'routines',
+    'routine_completions',
+    'routine_skips',
   };
 
   /// Check if a table uses deterministic v5 IDs.
