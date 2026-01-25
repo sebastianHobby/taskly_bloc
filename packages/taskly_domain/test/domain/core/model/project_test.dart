@@ -17,7 +17,6 @@ void main() {
 
   Project project({
     String? primaryValueId,
-    String? secondaryValueId,
     List<Value> values = const <Value>[],
     String? repeatIcalRrule,
     OccurrenceData? occurrence,
@@ -30,7 +29,6 @@ void main() {
       completed: false,
       values: values,
       primaryValueId: primaryValueId,
-      secondaryValueId: secondaryValueId,
       repeatIcalRrule: repeatIcalRrule,
       occurrence: occurrence,
     );
@@ -55,34 +53,15 @@ void main() {
     expect(withOcc.isOccurrenceInstance, isTrue);
   });
 
-  testSafe('Project.primaryValue/secondaryValue resolve by id', () async {
+  testSafe('Project.primaryValue resolves by id', () async {
     final v1 = value('v1');
-    final v2 = value('v2');
 
     final p = project(
-      values: [v1, v2],
+      values: [v1],
       primaryValueId: 'v1',
-      secondaryValueId: 'v2',
     );
 
     expect(p.primaryValue, v1);
-    expect(p.secondaryValue, v2);
-  });
-
-  testSafe('Project.secondaryValues excludes primary when no secondary slot', () async {
-    final v1 = value('v1');
-    final v2 = value('v2');
-
-    final p = project(values: [v1, v2], primaryValueId: 'v1');
-    expect(p.secondaryValues, [v2]);
-  });
-
-  testSafe('Project.secondaryValues returns all when no primary', () async {
-    final v1 = value('v1');
-    final v2 = value('v2');
-
-    final p = project(values: [v1, v2]);
-    expect(p.secondaryValues, [v1, v2]);
   });
 
   testSafe('Project.copyWith overrides only provided fields', () async {

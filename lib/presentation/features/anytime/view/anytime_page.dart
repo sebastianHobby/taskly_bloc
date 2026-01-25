@@ -16,8 +16,6 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
-import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
-import 'package:taskly_bloc/presentation/features/anytime/model/anytime_sort.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -72,14 +70,6 @@ class _AnytimeViewState extends State<_AnytimeView> {
   @override
   void initState() {
     super.initState();
-    final dueWindowDays = context
-        .read<GlobalSettingsBloc>()
-        .state
-        .settings
-        .myDayDueWindowDays;
-    context.read<AnytimeFeedBloc>().add(
-      AnytimeFeedDueWindowDaysChanged(days: dueWindowDays),
-    );
   }
 
   @override
@@ -154,26 +144,6 @@ class _AnytimeViewState extends State<_AnytimeView> {
           listener: (context, state) {
             context.read<AnytimeFeedBloc>().add(
               AnytimeFeedSearchQueryChanged(query: state.searchQuery),
-            );
-          },
-        ),
-        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
-          listenWhen: (prev, next) => prev.sortOrder != next.sortOrder,
-          listener: (context, state) {
-            context.read<AnytimeFeedBloc>().add(
-              AnytimeFeedSortOrderChanged(order: state.sortOrder),
-            );
-          },
-        ),
-        BlocListener<GlobalSettingsBloc, GlobalSettingsState>(
-          listenWhen: (prev, next) =>
-              prev.settings.myDayDueWindowDays !=
-              next.settings.myDayDueWindowDays,
-          listener: (context, state) {
-            context.read<AnytimeFeedBloc>().add(
-              AnytimeFeedDueWindowDaysChanged(
-                days: state.settings.myDayDueWindowDays,
-              ),
             );
           },
         ),
@@ -341,7 +311,11 @@ class _AnytimeViewState extends State<_AnytimeView> {
                               sections.add(
                                 TasklySectionSpec.standardList(
                                   id: 'anytime',
-                                  rows: _buildStandardRows(context, rows),
+                                  rows: _buildStandardRows(
+                                    context,
+                                    rows,
+                                    screenState.collapsedValueIds,
+                                  ),
                                 ),
                               );
                               return TasklyFeedSpec.content(sections: sections);
@@ -411,15 +385,40 @@ TasklyEmptyStateSpec _buildEmptySpec(
   );
 }
 
+ValueChipData _missingValueChip(BuildContext context) {
+  final scheme = Theme.of(context).colorScheme;
+  final l10n = context.l10n;
+
+  return ValueChipData(
+    label: l10n.valueMissingLabel,
+    color: scheme.primary,
+    icon: Icons.star_border,
+    semanticLabel: l10n.valueMissingLabel,
+  );
+}
+
+String? _valuePriorityLabel(BuildContext context, ValuePriority? priority) {
+  return switch (priority) {
+    ValuePriority.high => context.l10n.valuePriorityHighLabel,
+    ValuePriority.medium => context.l10n.valuePriorityMediumLabel,
+    ValuePriority.low => context.l10n.valuePriorityLowLabel,
+    null => null,
+  };
+}
+
 List<TasklyRowSpec> _buildStandardRows(
   BuildContext context,
   List<ListRowUiModel> rows,
+  Set<String> collapsedValueIds,
 ) {
   final selection = context.read<SelectionCubit>();
 
+  final projectRowCache = rows.whereType<ProjectRowUiModel>().toList(
+    growable: false,
+  );
   selection.updateVisibleEntities(
     [
-      ...rows.whereType<ProjectRowUiModel>().map(
+      ...projectRowCache.map(
         (r) => SelectionEntityMeta(
           key: SelectionKey(
             entityType: EntityType.project,
@@ -434,45 +433,81 @@ List<TasklyRowSpec> _buildStandardRows(
     ].toList(growable: false),
   );
 
-  return rows
-      .whereType<ProjectRowUiModel>()
-      .map<TasklyRowSpec>((row) {
-        final data = row.project == null
-            ? TasklyProjectRowData(
-                id: 'inbox',
-                title: 'Inbox',
-                completed: false,
-                pinned: false,
-                meta: const TasklyEntityMetaData(),
-                taskCount: row.taskCount,
-              )
-            : buildProjectRowData(
-                context,
-                project: row.project!,
-                taskCount: row.taskCount,
-                completedTaskCount: row.completedTaskCount,
-                dueSoonCount: row.dueSoonCount,
-              );
+  final specs = <TasklyRowSpec>[];
 
-        final preset = row.project == null
-            ? const TasklyProjectRowPreset.inbox()
-            : const TasklyProjectRowPreset.standard();
+  for (final row in rows) {
+    if (row is ValueHeaderRowUiModel) {
+      final chip = row.value?.toChipData(context) ?? _missingValueChip(context);
+      final valueName = row.value?.name.trim();
+      final title = (valueName?.isNotEmpty ?? false)
+          ? valueName!
+          : row.title.isNotEmpty
+          ? row.title
+          : context.l10n.valueMissingLabel;
+      final priorityLabel = _valuePriorityLabel(context, row.priority);
+      final countLabel = row.activeCount > 0 ? '${row.activeCount}' : null;
+      final isCollapsed = collapsedValueIds.contains(row.valueKey);
 
-        final actions = TasklyProjectRowActions(
-          onTap: row.project == null
-              ? () => Routing.pushInboxProjectDetail(context)
-              : () => Routing.pushProjectAnytime(context, row.project!.id),
-        );
-
-        return TasklyRowSpec.project(
+      specs.add(
+        TasklyRowSpec.valueHeader(
           key: row.rowKey,
           depth: row.depth,
-          data: data,
-          preset: preset,
-          actions: actions,
-        );
-      })
-      .toList(growable: false);
+          title: title,
+          leadingChip: chip,
+          trailingLabel: countLabel,
+          priorityLabel: priorityLabel,
+          isCollapsed: isCollapsed,
+          onToggleCollapsed: () {
+            context.read<AnytimeScreenBloc>().add(
+              AnytimeValueHeaderToggled(valueKey: row.valueKey),
+            );
+          },
+        ),
+      );
+      continue;
+    }
+
+    if (row is! ProjectRowUiModel) continue;
+
+    final data = row.project == null
+        ? TasklyProjectRowData(
+            id: 'inbox',
+            title: 'Inbox',
+            completed: false,
+            pinned: false,
+            meta: const TasklyEntityMetaData(),
+            taskCount: row.taskCount,
+          )
+        : buildProjectRowData(
+            context,
+            project: row.project!,
+            taskCount: row.taskCount,
+            completedTaskCount: row.completedTaskCount,
+            dueSoonCount: row.dueSoonCount,
+          );
+
+    final preset = row.project == null
+        ? const TasklyProjectRowPreset.inbox()
+        : const TasklyProjectRowPreset.standard();
+
+    final actions = TasklyProjectRowActions(
+      onTap: row.project == null
+          ? () => Routing.pushInboxProjectDetail(context)
+          : () => Routing.pushProjectAnytime(context, row.project!.id),
+    );
+
+    specs.add(
+      TasklyRowSpec.project(
+        key: row.rowKey,
+        depth: row.depth + 1,
+        data: data,
+        preset: preset,
+        actions: actions,
+      ),
+    );
+  }
+
+  return specs;
 }
 
 bool _sameSet(Set<String> a, Set<String> b) {
@@ -490,7 +525,6 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final valueRepository = getIt<ValueRepositoryContract>();
-    final screenState = context.watch<AnytimeScreenBloc>().state;
 
     final selectedValueId = switch (scope) {
       AnytimeValueScope(:final valueId) => valueId,
@@ -545,60 +579,9 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                _AnytimeSortRow(
-                  sortOrder: screenState.sortOrder,
-                ),
               ],
             );
           },
-        ),
-      ],
-    );
-  }
-}
-
-class _AnytimeSortRow extends StatelessWidget {
-  const _AnytimeSortRow({required this.sortOrder});
-
-  final AnytimeSortOrder sortOrder;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final chrome = TasklyChromeTheme.of(context);
-
-    return Row(
-      children: [
-        Text(
-          'Sort',
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(width: 8),
-        DropdownButtonHideUnderline(
-          child: DropdownButton<AnytimeSortOrder>(
-            value: sortOrder,
-            borderRadius: BorderRadius.circular(chrome.filterPillRadius),
-            items: const [
-              DropdownMenuItem(
-                value: AnytimeSortOrder.dueSoonest,
-                child: Text('Due date: Soonest'),
-              ),
-              DropdownMenuItem(
-                value: AnytimeSortOrder.dueLatest,
-                child: Text('Due date: Latest'),
-              ),
-            ],
-            onChanged: (value) {
-              if (value == null) return;
-              context.read<AnytimeScreenBloc>().add(
-                AnytimeSortOrderSet(value),
-              );
-            },
-          ),
         ),
       ],
     );

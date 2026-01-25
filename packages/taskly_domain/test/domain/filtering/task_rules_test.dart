@@ -22,7 +22,10 @@ void main() {
     DateTime? deadlineDate,
     bool completed = false,
     String? projectId,
+    Project? project,
     List<Value> values = const <Value>[],
+    String? overridePrimaryValueId,
+    String? overrideSecondaryValueId,
     OccurrenceData? occurrence,
   }) {
     return Task(
@@ -33,8 +36,11 @@ void main() {
       completed: completed,
       startDate: startDate,
       deadlineDate: deadlineDate,
-      projectId: projectId,
+      projectId: projectId ?? project?.id,
+      project: project,
       values: values,
+      overridePrimaryValueId: overridePrimaryValueId,
+      overrideSecondaryValueId: overrideSecondaryValueId,
       occurrence: occurrence,
     );
   }
@@ -299,7 +305,22 @@ void main() {
     });
 
     testSafe('hasAll requires all ids present', () async {
-      final t = task(values: [value('a'), value('b')]);
+      final v1 = value('a');
+      final v2 = value('b');
+      final project = Project(
+        id: 'p1',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        name: 'Project',
+        completed: false,
+        values: [v1, v2],
+        primaryValueId: 'a',
+      );
+      final t = task(
+        project: project,
+        values: [v2],
+        overridePrimaryValueId: 'b',
+      );
       final rule = ValueRule(
         operator: ValueRuleOperator.hasAll,
         valueIds: const ['a', 'b'],
@@ -309,7 +330,17 @@ void main() {
     });
 
     testSafe('hasAny matches when any id present', () async {
-      final t = task(values: [value('a')]);
+      final v1 = value('a');
+      final project = Project(
+        id: 'p1',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        name: 'Project',
+        completed: false,
+        values: [v1],
+        primaryValueId: 'a',
+      );
+      final t = task(project: project);
       final rule = ValueRule(
         operator: ValueRuleOperator.hasAny,
         valueIds: const ['x', 'a'],
@@ -340,7 +371,17 @@ void main() {
     });
 
     testSafe('isNotNull matches when task has any values', () async {
-      final t = task(values: [value('a')]);
+      final v1 = value('a');
+      final project = Project(
+        id: 'p1',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        name: 'Project',
+        completed: false,
+        values: [v1],
+        primaryValueId: 'a',
+      );
+      final t = task(project: project);
       final rule = ValueRule(operator: ValueRuleOperator.isNotNull);
 
       expect(rule.applies(t, DateTime.utc(2026, 1, 18)), isTrue);

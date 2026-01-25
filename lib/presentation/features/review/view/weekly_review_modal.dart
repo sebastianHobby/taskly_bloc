@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/review/bloc/weekly_review_cubit.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_domain/analytics.dart';
@@ -15,6 +17,7 @@ Future<void> showWeeklyReviewModal(
   required GlobalSettings settings,
 }) {
   final config = WeeklyReviewConfig.fromSettings(settings);
+  final parentContext = context;
   final height = MediaQuery.sizeOf(context).height * 0.92;
 
   return showModalBottomSheet<void>(
@@ -33,7 +36,10 @@ Future<void> showWeeklyReviewModal(
             taskRepository: getIt<TaskRepositoryContract>(),
             nowService: getIt<NowService>(),
           )..load(config),
-          child: _WeeklyReviewModal(config: config),
+          child: _WeeklyReviewModal(
+            config: config,
+            parentContext: parentContext,
+          ),
         ),
       );
     },
@@ -41,9 +47,13 @@ Future<void> showWeeklyReviewModal(
 }
 
 class _WeeklyReviewModal extends StatefulWidget {
-  const _WeeklyReviewModal({required this.config});
+  const _WeeklyReviewModal({
+    required this.config,
+    required this.parentContext,
+  });
 
   final WeeklyReviewConfig config;
+  final BuildContext parentContext;
 
   @override
   State<_WeeklyReviewModal> createState() => _WeeklyReviewModalState();
@@ -81,6 +91,12 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
       GlobalSettingsEvent.weeklyReviewCompleted(nowUtc),
     );
     Navigator.of(context).maybePop();
+  }
+
+  void _openSettings() {
+    Navigator.of(context).maybePop();
+    if (!widget.parentContext.mounted) return;
+    Routing.toScreenKey(widget.parentContext, 'settings');
   }
 
   @override
@@ -127,6 +143,10 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
                       'Weekly Review',
                       style: theme.textTheme.titleLarge,
                     ),
+                  ),
+                  TextButton(
+                    onPressed: _openSettings,
+                    child: Text(context.l10n.settingsTitle),
                   ),
                   IconButton(
                     tooltip: 'Close',

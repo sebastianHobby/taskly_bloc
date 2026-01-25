@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/review/utils/weekly_review_schedule.dart';
 import 'package:taskly_bloc/presentation/features/review/view/weekly_review_modal.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
@@ -15,11 +17,11 @@ import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart
 import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
+import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
-import 'package:taskly_bloc/presentation/screens/view/my_day_ritual_wizard_page.dart';
-import 'package:taskly_bloc/presentation/screens/widgets/my_day_suggestion_settings_sheet.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/view/plan_my_day_page.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
@@ -37,7 +39,6 @@ class MyDayPage extends StatefulWidget {
 
 class _MyDayPageState extends State<MyDayPage> {
   _MyDayMode _mode = _MyDayMode.execute;
-  MyDayRitualWizardInitialSection? _planInitialSection;
 
   Future<void> _openNewTaskEditor(
     BuildContext context, {
@@ -60,22 +61,17 @@ class _MyDayPageState extends State<MyDayPage> {
     );
   }
 
-  void _enterPlanMode(
-    BuildContext context, {
-    MyDayRitualWizardInitialSection? initialSection,
-  }) {
-    context.read<MyDayRitualBloc>().add(const MyDayRitualStarted());
+  void _enterPlanMode(BuildContext context) {
+    context.read<PlanMyDayBloc>().add(const PlanMyDayStarted());
 
     setState(() {
       _mode = _MyDayMode.plan;
-      _planInitialSection = initialSection;
     });
   }
 
   void _exitPlanMode() {
     setState(() {
       _mode = _MyDayMode.execute;
-      _planInitialSection = null;
     });
   }
 
@@ -87,34 +83,14 @@ class _MyDayPageState extends State<MyDayPage> {
       providers: [
         BlocProvider<MyDayGateBloc>(create: (_) => getIt<MyDayGateBloc>()),
         BlocProvider<MyDayBloc>(create: (_) => getIt<MyDayBloc>()),
-        BlocProvider<MyDayRitualBloc>(create: (_) => getIt<MyDayRitualBloc>()),
+        BlocProvider<PlanMyDayBloc>(create: (_) => getIt<PlanMyDayBloc>()),
         BlocProvider(create: (_) => SelectionCubit()),
       ],
-      child: BlocBuilder<MyDayRitualBloc, MyDayRitualState>(
-        builder: (context, ritualState) {
-          final needsRitual =
-              ritualState is MyDayRitualReady && ritualState.needsRitual;
-          final ritualReady = ritualState is MyDayRitualReady
-              ? ritualState
-              : null;
-          final suggestionSettingsEnabled = ritualReady != null;
-
-          final effectiveMode = needsRitual ? _MyDayMode.plan : _mode;
-
-          if (effectiveMode == _MyDayMode.plan) {
-            return MyDayRitualWizardPage(
-              allowClose: !needsRitual,
-              initialSection: _planInitialSection,
+      child: BlocBuilder<PlanMyDayBloc, PlanMyDayState>(
+        builder: (context, _) {
+          if (_mode == _MyDayMode.plan) {
+            return PlanMyDayPage(
               onCloseRequested: _exitPlanMode,
-            );
-          }
-
-          if (ritualState is MyDayRitualLoading) {
-            return AppLoadingScreen(
-              appBarTitle: context.l10n.myDayTitle,
-              title: 'Preparing a calm list for today...',
-              subtitle: '',
-              icon: Icons.auto_awesome,
             );
           }
 
@@ -137,17 +113,10 @@ class _MyDayPageState extends State<MyDayPage> {
                         ),
                         actions: [
                           IconButton(
-                            tooltip: context.l10n.myDaySuggestionSettingsTitle,
+                            tooltip: context.l10n.settingsTitle,
                             icon: const Icon(Icons.settings_outlined),
-                            onPressed: !suggestionSettingsEnabled
-                                ? null
-                                : () => openSuggestionSettingsSheet(
-                                    context,
-                                    dueWindowDays: ritualReady.dueWindowDays,
-                                    dueSoonEnabled: ritualReady.showDueSoon,
-                                    showAvailableToStart:
-                                        ritualReady.showAvailableToStart,
-                                  ),
+                            onPressed: () =>
+                                Routing.toScreenKey(context, 'settings'),
                           ),
                         ],
                       ),
@@ -165,10 +134,7 @@ class _MyDayPageState extends State<MyDayPage> {
                       ),
                 body: _MyDayLoadedBody(
                   today: today,
-                  onOpenPlan: (initialSection) => _enterPlanMode(
-                    context,
-                    initialSection: initialSection,
-                  ),
+                  onOpenPlan: () => _enterPlanMode(context),
                 ),
               );
             },
@@ -186,14 +152,15 @@ class _MyDayLoadedBody extends StatelessWidget {
   });
 
   final DateTime today;
-  final void Function(MyDayRitualWizardInitialSection? initialSection)
-  onOpenPlan;
+  final VoidCallback onOpenPlan;
 
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<GlobalSettingsBloc>().state.settings;
     final nowLocal = getIt<NowService>().nowLocal();
     final reviewReady = isWeeklyReviewReady(settings, nowLocal);
+    final showDueSoon = settings.myDayDueSoonEnabled;
+    final showPlanned = settings.myDayShowAvailableToStart;
 
     return BlocBuilder<MyDayBloc, MyDayState>(
       builder: (context, state) {
@@ -225,11 +192,16 @@ class _MyDayLoadedBody extends StatelessWidget {
                         context,
                         settings: settings,
                       ),
+                      onSettings: () =>
+                          Routing.toScreenKey(context, 'settings'),
                     ),
                     const SizedBox(height: 12),
                   ],
                   _MyDayHeaderRow(
-                    onUpdatePlan: () => onOpenPlan(null),
+                    today: today,
+                    showDueSoon: showDueSoon,
+                    showPlanned: showPlanned,
+                    onUpdatePlan: onOpenPlan,
                   ),
                   const SizedBox(height: 12),
                   _MyDayTaskList(
@@ -250,58 +222,58 @@ class _MyDayLoadedBody extends StatelessWidget {
 
 class _MyDayHeaderRow extends StatelessWidget {
   const _MyDayHeaderRow({
+    required this.today,
+    required this.showDueSoon,
+    required this.showPlanned,
     required this.onUpdatePlan,
   });
 
+  final DateTime today;
+  final bool showDueSoon;
+  final bool showPlanned;
   final VoidCallback onUpdatePlan;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final dateLabel = DateFormat('EEE, d MMM', locale).format(today);
+    final l10n = context.l10n;
 
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Today, aligned with your values.',
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                dateLabel,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                "Here's what supports what matters.",
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: cs.onSurfaceVariant,
+            ),
+            TextButton(
+              onPressed: onUpdatePlan,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                textStyle: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        FilledButton.tonal(
-          onPressed: onUpdatePlan,
-          style: FilledButton.styleFrom(
-            backgroundColor: cs.primaryContainer.withOpacity(0.6),
-            foregroundColor: cs.primary,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            textStyle: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
+              child: Text(l10n.myDayUpdatePlanTitle),
             ),
-          ),
-          child: Text(context.l10n.myDayUpdatePlanTitle),
+          ],
         ),
       ],
     );
   }
 }
 
-class _MyDayTaskList extends StatelessWidget {
+class _MyDayTaskList extends StatefulWidget {
   const _MyDayTaskList({
     required this.today,
     required this.acceptedDue,
@@ -317,15 +289,30 @@ class _MyDayTaskList extends StatelessWidget {
   final List<Task> pinnedTasks;
 
   @override
+  State<_MyDayTaskList> createState() => _MyDayTaskListState();
+}
+
+class _MyDayTaskListState extends State<_MyDayTaskList> {
+  final Set<String> _collapsedValueKeys = <String>{};
+
+  void _toggleValueCollapsed(String key) {
+    setState(() {
+      if (!_collapsedValueKeys.add(key)) {
+        _collapsedValueKeys.remove(key);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final selection = context.read<SelectionCubit>();
-    final todayDate = dateOnly(today);
+    final todayDate = dateOnly(widget.today);
 
     final merged = _mergeMyDayTasks(
-      acceptedDue: acceptedDue,
-      acceptedStarts: acceptedStarts,
-      acceptedFocus: acceptedFocus,
-      pinnedTasks: pinnedTasks,
+      acceptedDue: widget.acceptedDue,
+      acceptedStarts: widget.acceptedStarts,
+      acceptedFocus: widget.acceptedFocus,
+      pinnedTasks: widget.pinnedTasks,
     );
 
     final sorted = sortTasksByDeadlineThenStartThenPriorityThenName(
@@ -348,12 +335,66 @@ class _MyDayTaskList extends StatelessWidget {
 
     _registerVisibleTasks(selection, sorted);
 
-    final rows = _buildRows(context, sorted);
+    final valueGroups = <String, _MyDayValueGroup>{};
+
+    void ensureGroup(String key, Value? value) {
+      valueGroups.putIfAbsent(
+        key,
+        () => _MyDayValueGroup(valueId: value?.id, value: value),
+      );
+    }
+
+    for (final task in sorted) {
+      final value = task.effectivePrimaryValue;
+      final key = _myDayValueKey(value?.id);
+      ensureGroup(key, value);
+      valueGroups[key]!.tasks.add(task);
+    }
+
+    final groups = valueGroups.values.toList(growable: false)
+      ..sort(_compareMyDayValueGroups);
+
+    final groupedRows = <TasklyRowSpec>[];
+
+    for (final group in groups) {
+      final key = _myDayValueKey(group.valueId);
+      final value = group.value;
+      final chip =
+          value?.toChipData(context) ?? _myDayMissingValueChip(context);
+      final valueName = value?.name.trim();
+      final headerTitle = (valueName?.isNotEmpty ?? false)
+          ? valueName!
+          : context.l10n.valueMissingLabel;
+      final priorityLabel = _valuePriorityLabel(context, value?.priority);
+      final countLabel = group.tasks.length.toString();
+      final isCollapsed = _collapsedValueKeys.contains(key);
+
+      groupedRows.add(
+        TasklyRowSpec.valueHeader(
+          key: 'myday-value-$key',
+          depth: 0,
+          title: headerTitle,
+          leadingChip: chip,
+          trailingLabel: countLabel,
+          priorityLabel: priorityLabel,
+          isCollapsed: isCollapsed,
+          onToggleCollapsed: () => _toggleValueCollapsed(key),
+        ),
+      );
+
+      groupedRows.addAll(
+        _buildRows(
+          context,
+          group.tasks,
+          depthOffset: 1,
+        ),
+      );
+    }
 
     return TasklyFeedRenderer.buildSection(
       TasklySectionSpec.standardList(
         id: 'myday-execute',
-        rows: rows,
+        rows: groupedRows,
       ),
     );
   }
@@ -398,14 +439,19 @@ class _MyDayErrorState extends StatelessWidget {
 }
 
 class _WeeklyReviewBanner extends StatelessWidget {
-  const _WeeklyReviewBanner({required this.onReview});
+  const _WeeklyReviewBanner({
+    required this.onReview,
+    required this.onSettings,
+  });
 
   final VoidCallback onReview;
+  final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final l10n = context.l10n;
 
     return Material(
       color: scheme.surfaceContainerHighest,
@@ -431,6 +477,10 @@ class _WeeklyReviewBanner extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
+              TextButton(
+                onPressed: onSettings,
+                child: Text(l10n.settingsTitle),
+              ),
               TextButton(
                 onPressed: onReview,
                 child: const Text('Review'),
@@ -488,10 +538,66 @@ void _registerVisibleTasks(
   );
 }
 
+String _myDayValueKey(String? valueId) {
+  final trimmed = valueId?.trim();
+  if (trimmed == null || trimmed.isEmpty) return '_myday_value_none';
+  return trimmed;
+}
+
+ValueChipData _myDayMissingValueChip(BuildContext context) {
+  final scheme = Theme.of(context).colorScheme;
+  final l10n = context.l10n;
+
+  return ValueChipData(
+    label: l10n.valueMissingLabel,
+    color: scheme.primary,
+    icon: Icons.star_border,
+    semanticLabel: l10n.valueMissingLabel,
+  );
+}
+
+String? _valuePriorityLabel(BuildContext context, ValuePriority? priority) {
+  return switch (priority) {
+    ValuePriority.high => context.l10n.valuePriorityHighLabel,
+    ValuePriority.medium => context.l10n.valuePriorityMediumLabel,
+    ValuePriority.low => context.l10n.valuePriorityLowLabel,
+    null => null,
+  };
+}
+
+class _MyDayValueGroup {
+  _MyDayValueGroup({
+    required this.valueId,
+    required this.value,
+  });
+
+  final String? valueId;
+  final Value? value;
+  final List<Task> tasks = <Task>[];
+}
+
+int _compareMyDayValueGroups(_MyDayValueGroup a, _MyDayValueGroup b) {
+  final rankA = _valuePriorityRank(a.value?.priority ?? ValuePriority.medium);
+  final rankB = _valuePriorityRank(b.value?.priority ?? ValuePriority.medium);
+  if (rankA != rankB) return rankA.compareTo(rankB);
+  final aName = (a.value?.name ?? '').toLowerCase();
+  final bName = (b.value?.name ?? '').toLowerCase();
+  return aName.compareTo(bName);
+}
+
+int _valuePriorityRank(ValuePriority priority) {
+  return switch (priority) {
+    ValuePriority.high => 0,
+    ValuePriority.medium => 1,
+    ValuePriority.low => 2,
+  };
+}
+
 List<TasklyRowSpec> _buildRows(
   BuildContext context,
-  List<Task> tasks,
-) {
+  List<Task> tasks, {
+  int depthOffset = 0,
+}) {
   final selection = context.read<SelectionCubit>();
   final selectionMode = selection.isSelectionMode;
 
@@ -524,17 +630,16 @@ List<TasklyRowSpec> _buildRows(
           deemphasized: data.deemphasized,
           checkboxSemanticLabel: data.checkboxSemanticLabel,
           labels: labels,
+          pinned: task.isPinned,
         );
 
         return TasklyRowSpec.task(
           key: 'myday-accepted-${task.id}',
           data: updatedData,
-          preset: selectionMode
-              ? TasklyTaskRowPreset.bulkSelection(selected: isSelected)
-              : const TasklyTaskRowPreset.standard(),
-          markers: TasklyTaskRowMarkers(
-            pinned: task.isPinned,
-          ),
+          depth: depthOffset,
+          style: selectionMode
+              ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
+              : const TasklyTaskRowStyle.standard(),
           actions: TasklyTaskRowActions(
             onTap: () {
               if (selection.shouldInterceptTapAsSelection()) {

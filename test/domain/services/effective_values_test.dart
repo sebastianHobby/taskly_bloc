@@ -10,14 +10,24 @@ void main() {
   setUp(setUpTestEnvironment);
 
   group('TaskEffectiveValuesX', () {
-    testSafe('uses task values when overriding', () async {
+    testSafe('includes task overrides alongside project primary', () async {
       final primary = TestData.value(id: 'v1');
       final secondary = TestData.value(id: 'v2');
+      final project = Project(
+        id: 'p1',
+        createdAt: TestConstants.referenceDate,
+        updatedAt: TestConstants.referenceDate,
+        name: 'Project',
+        completed: false,
+        values: [primary, secondary],
+        primaryValueId: 'v1',
+      );
 
       final task = TestData.task(
+        project: project,
         values: [primary, secondary],
-        overridePrimaryValueId: 'v1',
-        overrideSecondaryValueId: 'v2',
+        overridePrimaryValueId: 'v2',
+        overrideSecondaryValueId: null,
       );
 
       expect(task.isOverridingValues, isTrue);
@@ -29,23 +39,21 @@ void main() {
 
     testSafe('inherits project values when not overriding', () async {
       final primary = TestData.value(id: 'v1');
-      final secondary = TestData.value(id: 'v2');
       final project = Project(
         id: 'p1',
         createdAt: TestConstants.referenceDate,
         updatedAt: TestConstants.referenceDate,
         name: 'Project',
         completed: false,
-        values: [primary, secondary],
+        values: [primary],
         primaryValueId: 'v1',
-        secondaryValueId: 'v2',
       );
       final task = TestData.task(project: project);
 
       expect(task.isInheritingValues, isTrue);
       expect(task.effectivePrimaryValueId, 'v1');
-      expect(task.effectiveSecondaryValueId, 'v2');
-      expect(task.effectiveValues.map((v) => v.id), containsAll(['v1', 'v2']));
+      expect(task.effectiveSecondaryValueId, isNull);
+      expect(task.effectiveValues.map((v) => v.id), contains('v1'));
     });
 
     testSafe('reports valueless when no values present', () async {

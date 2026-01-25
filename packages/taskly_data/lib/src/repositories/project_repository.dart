@@ -179,6 +179,48 @@ class ProjectRepository implements ProjectRepositoryContract {
     });
   }
 
+  Future<void> _removeConflictingTaskOverrides({
+    required String projectId,
+    required String projectPrimaryValueId,
+  }) async {
+    final tasks = await (driftDb.select(
+      driftDb.taskTable,
+    )..where((t) => t.projectId.equals(projectId))).get();
+
+    if (tasks.isEmpty) return;
+
+    final now = DateTime.now();
+    for (final task in tasks) {
+      final overrides = <String>[
+        if (task.overridePrimaryValueId != null) task.overridePrimaryValueId!,
+        if (task.overrideSecondaryValueId != null)
+          task.overrideSecondaryValueId!,
+      ];
+      final normalized = TaskValuePolicy.normalizeOverrides(
+        valueIds: overrides,
+        projectPrimaryValueId: projectPrimaryValueId,
+      );
+
+      final nextPrimary = normalized.isEmpty ? null : normalized.first;
+      final nextSecondary = normalized.length > 1 ? normalized[1] : null;
+
+      if (nextPrimary == task.overridePrimaryValueId &&
+          nextSecondary == task.overrideSecondaryValueId) {
+        continue;
+      }
+
+      await (driftDb.update(
+        driftDb.taskTable,
+      )..where((t) => t.id.equals(task.id))).write(
+        TaskTableCompanion(
+          overridePrimaryValueId: drift_pkg.Value(nextPrimary),
+          overrideSecondaryValueId: drift_pkg.Value(nextSecondary),
+          updatedAt: drift_pkg.Value(now),
+        ),
+      );
+    }
+  }
+
   Future<ProjectTableData?> _getProjectById(String id) async {
     return driftDb.managers.projectTable
         .filter((f) => f.id.equals(id))
@@ -202,7 +244,6 @@ class ProjectRepository implements ProjectRepositoryContract {
           rows: rows,
           driftDb: driftDb,
           primaryValueTable: join.primaryValueTable,
-          secondaryValueTable: join.secondaryValueTable,
         ).toProjects();
       }).shareValue();
       return _attachTaskCounts(_sharedProjectsWithRelated!);
@@ -225,7 +266,6 @@ class ProjectRepository implements ProjectRepositoryContract {
           rows: rows,
           driftDb: driftDb,
           primaryValueTable: join.primaryValueTable,
-          secondaryValueTable: join.secondaryValueTable,
         ).toProjects();
       });
       return _attachTaskCounts(base);
@@ -238,7 +278,6 @@ class ProjectRepository implements ProjectRepositoryContract {
           rows: rows,
           driftDb: driftDb,
           primaryValueTable: join.primaryValueTable,
-          secondaryValueTable: join.secondaryValueTable,
         ).toProjects();
       });
     });
@@ -256,7 +295,6 @@ class ProjectRepository implements ProjectRepositoryContract {
         rows: rows,
         driftDb: driftDb,
         primaryValueTable: join.primaryValueTable,
-        secondaryValueTable: join.secondaryValueTable,
       ).toProjects();
 
       return _mergeTaskCountsOnce(projects);
@@ -277,7 +315,6 @@ class ProjectRepository implements ProjectRepositoryContract {
       rows: rows,
       driftDb: driftDb,
       primaryValueTable: join.primaryValueTable,
-      secondaryValueTable: join.secondaryValueTable,
     ).toProjects();
 
     return _mergeTaskCountsOnce(projects);
@@ -326,7 +363,6 @@ class ProjectRepository implements ProjectRepositoryContract {
   ({
     drift_pkg.JoinedSelectStatement<drift_pkg.HasResultSet, dynamic> joined,
     $ValueTableTable primaryValueTable,
-    $ValueTableTable secondaryValueTable,
   })
   _projectWithRelatedJoin({QueryFilter<ProjectPredicate>? filter}) {
     final query = driftDb.select(driftDb.projectTable)
@@ -334,9 +370,6 @@ class ProjectRepository implements ProjectRepositoryContract {
 
     final primaryValueTable = driftDb.valueTable.createAlias(
       'project_primary_value',
-    );
-    final secondaryValueTable = driftDb.valueTable.createAlias(
-      'project_secondary_value',
     );
 
     if (filter != null) {
@@ -351,26 +384,15 @@ class ProjectRepository implements ProjectRepositoryContract {
         primaryValueTable,
         driftDb.projectTable.primaryValueId.equalsExp(primaryValueTable.id),
       ),
-      drift_pkg.leftOuterJoin(
-        secondaryValueTable,
-        driftDb.projectTable.secondaryValueId.equalsExp(secondaryValueTable.id),
-      ),
     ]);
 
-    return (
-      joined: joined,
-      primaryValueTable: primaryValueTable,
-      secondaryValueTable: secondaryValueTable,
-    );
+    return (joined: joined, primaryValueTable: primaryValueTable);
   }
 
   @override
   Stream<Project?> watchById(String id) {
     final primaryValueTable = driftDb.valueTable.createAlias(
       'project_primary_value',
-    );
-    final secondaryValueTable = driftDb.valueTable.createAlias(
-      'project_secondary_value',
     );
 
     final joined =
@@ -381,12 +403,6 @@ class ProjectRepository implements ProjectRepositoryContract {
             primaryValueTable,
             driftDb.projectTable.primaryValueId.equalsExp(primaryValueTable.id),
           ),
-          drift_pkg.leftOuterJoin(
-            secondaryValueTable,
-            driftDb.projectTable.secondaryValueId.equalsExp(
-              secondaryValueTable.id,
-            ),
-          ),
         ]);
 
     final base = joined.watch().map((rows) {
@@ -394,7 +410,6 @@ class ProjectRepository implements ProjectRepositoryContract {
         rows: rows,
         driftDb: driftDb,
         primaryValueTable: primaryValueTable,
-        secondaryValueTable: secondaryValueTable,
       ).toSingleProject();
     });
 
@@ -415,9 +430,6 @@ class ProjectRepository implements ProjectRepositoryContract {
     final primaryValueTable = driftDb.valueTable.createAlias(
       'project_primary_value',
     );
-    final secondaryValueTable = driftDb.valueTable.createAlias(
-      'project_secondary_value',
-    );
 
     final joined =
         (driftDb.select(
@@ -427,12 +439,6 @@ class ProjectRepository implements ProjectRepositoryContract {
             primaryValueTable,
             driftDb.projectTable.primaryValueId.equalsExp(primaryValueTable.id),
           ),
-          drift_pkg.leftOuterJoin(
-            secondaryValueTable,
-            driftDb.projectTable.secondaryValueId.equalsExp(
-              secondaryValueTable.id,
-            ),
-          ),
         ]);
 
     final rows = await joined.get();
@@ -440,7 +446,6 @@ class ProjectRepository implements ProjectRepositoryContract {
       rows: rows,
       driftDb: driftDb,
       primaryValueTable: primaryValueTable,
-      secondaryValueTable: secondaryValueTable,
     ).toSingleProject();
 
     if (project == null) return null;
@@ -497,21 +502,12 @@ class ProjectRepository implements ProjectRepositoryContract {
             'Projects must have at least one value.',
           );
         }
-        if (normalizedValueIds.length > 2) {
+        if (normalizedValueIds.length > 1) {
           throw RepositoryValidationException(
-            'Projects may have at most two values (primary + optional secondary).',
+            'Projects may have exactly one primary value.',
           );
         }
         final primaryValueId = normalizedValueIds.first;
-        final secondaryValueId = normalizedValueIds.length > 1
-            ? normalizedValueIds[1]
-            : null;
-
-        if (secondaryValueId != null && secondaryValueId == primaryValueId) {
-          throw RepositoryValidationException(
-            'Secondary value must be different from primary value.',
-          );
-        }
         final now = DateTime.now();
         final id = idGenerator.projectId();
 
@@ -534,7 +530,6 @@ class ProjectRepository implements ProjectRepositoryContract {
               seriesEnded: drift_pkg.Value(seriesEnded),
               priority: drift_pkg.Value(priority),
               primaryValueId: drift_pkg.Value(primaryValueId),
-              secondaryValueId: drift_pkg.Value(secondaryValueId),
               psMetadata: psMetadata == null
                   ? const drift_pkg.Value<String?>.absent()
                   : drift_pkg.Value(psMetadata),
@@ -587,15 +582,9 @@ class ProjectRepository implements ProjectRepositoryContract {
               'Projects must have at least one value.',
             );
           }
-          if (normalizedValueIds.length > 2) {
+          if (normalizedValueIds.length > 1) {
             throw RepositoryValidationException(
-              'Projects may have at most two values (primary + optional secondary).',
-            );
-          }
-          if (normalizedValueIds.length == 2 &&
-              normalizedValueIds[0] == normalizedValueIds[1]) {
-            throw RepositoryValidationException(
-              'Secondary value must be different from primary value.',
+              'Projects may have exactly one primary value.',
             );
           }
         }
@@ -616,6 +605,14 @@ class ProjectRepository implements ProjectRepositoryContract {
         final nextPinned = !completed && (isPinned ?? existing.isPinned);
 
         final psMetadata = encodeCrudMetadata(context);
+
+        final nextPrimaryValueId = normalizedValueIds == null
+            ? existing.primaryValueId
+            : normalizedValueIds.first;
+        final primaryChanged =
+            normalizedValueIds != null &&
+            nextPrimaryValueId != null &&
+            nextPrimaryValueId != existing.primaryValueId;
 
         await driftDb.transaction(() async {
           await _updateProject(
@@ -640,19 +637,19 @@ class ProjectRepository implements ProjectRepositoryContract {
               primaryValueId: normalizedValueIds == null
                   ? const drift_pkg.Value<String?>.absent()
                   : drift_pkg.Value(normalizedValueIds.first),
-              secondaryValueId: normalizedValueIds == null
-                  ? const drift_pkg.Value<String?>.absent()
-                  : drift_pkg.Value(
-                      normalizedValueIds.length > 1
-                          ? normalizedValueIds[1]
-                          : null,
-                    ),
               psMetadata: psMetadata == null
                   ? const drift_pkg.Value<String?>.absent()
                   : drift_pkg.Value(psMetadata),
               updatedAt: drift_pkg.Value(now),
             ),
           );
+
+          if (primaryChanged) {
+            await _removeConflictingTaskOverrides(
+              projectId: id,
+              projectPrimaryValueId: nextPrimaryValueId,
+            );
+          }
         });
       },
       area: 'data.project',

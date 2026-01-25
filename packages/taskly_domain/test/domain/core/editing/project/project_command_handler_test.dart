@@ -17,11 +17,11 @@ void main() {
       final repo = _RecordingProjectRepository();
       final handler = ProjectCommandHandler(projectRepository: repo);
 
-    const cmd = CreateProjectCommand(
-      name: '   ',
-      completed: false,
-      valueIds: ['v1'],
-    );
+      const cmd = CreateProjectCommand(
+        name: '   ',
+        completed: false,
+        valueIds: ['v1'],
+      );
       final result = await handler.handleCreate(cmd);
 
       expect(result, isA<CommandValidationFailure>());
@@ -78,6 +78,25 @@ void main() {
     expect(repo.lastCreatedName, 'P');
     expect(repo.lastCreatedContext, ctx);
     expect(repo.lastCreatedValueIds, ['v1']);
+  });
+
+  testSafe('handleCreate rejects more than one project value', () async {
+    final repo = _RecordingProjectRepository();
+    final handler = ProjectCommandHandler(projectRepository: repo);
+
+    const cmd = CreateProjectCommand(
+      name: 'Project',
+      completed: false,
+      valueIds: ['v1', 'v2'],
+    );
+
+    final result = await handler.handleCreate(cmd);
+
+    expect(result, isA<CommandValidationFailure>());
+    final failure = (result as CommandValidationFailure).failure;
+
+    expect(failure.fieldErrors.keys, contains(ProjectFieldKeys.valueIds));
+    expect(repo.createCalls, 0);
   });
 
   testSafe('handleCreate validates max lengths', () async {

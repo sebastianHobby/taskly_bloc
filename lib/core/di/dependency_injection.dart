@@ -30,7 +30,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/my_day_ritual_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
 
@@ -142,6 +142,14 @@ Future<void> setupDependencies() async {
         clock: getIt<Clock>(),
       ),
     )
+    ..registerLazySingleton<TaskSuggestionService>(
+      () => TaskSuggestionService(
+        allocationOrchestrator: getIt<AllocationOrchestrator>(),
+        taskRepository: getIt<TaskRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
+        clock: getIt<Clock>(),
+      ),
+    )
     ..registerLazySingleton<OccurrenceCommandService>(
       () => OccurrenceCommandService(
         taskRepository: getIt<TaskRepositoryContract>(),
@@ -201,6 +209,7 @@ Future<void> setupDependencies() async {
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
+        myDayRepository: getIt<MyDayRepositoryContract>(),
       ),
     )
     ..registerLazySingleton<AuthenticatedAppServicesCoordinator>(
@@ -266,9 +275,9 @@ Future<void> setupDependencies() async {
     )
     ..registerLazySingleton<AnytimeSessionQueryService>(
       () => AnytimeSessionQueryService(
-        occurrenceReadService: getIt<OccurrenceReadService>(),
-        myDayRepository: getIt<MyDayRepositoryContract>(),
-        sessionDayKeyService: getIt<SessionDayKeyService>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        taskRepository: getIt<TaskRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
         appLifecycleService: getIt<AppLifecycleService>(),
       ),
     )
@@ -285,11 +294,11 @@ Future<void> setupDependencies() async {
         queryService: getIt<MyDaySessionQueryService>(),
       ),
     )
-    ..registerFactory<MyDayRitualBloc>(
-      () => MyDayRitualBloc(
+    ..registerFactory<PlanMyDayBloc>(
+      () => PlanMyDayBloc(
         settingsRepository: getIt<SettingsRepositoryContract>(),
         myDayRepository: getIt<MyDayRepositoryContract>(),
-        allocationOrchestrator: getIt<AllocationOrchestrator>(),
+        taskSuggestionService: getIt<TaskSuggestionService>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),

@@ -332,6 +332,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       ProjectFieldKeys.valueIds.id:
           (widget.initialData?.values ?? <Value>[]) // Use values property
               .map((Value e) => e.id)
+              .take(1)
               .toList(growable: false),
       ProjectFieldKeys.repeatIcalRrule.id:
           widget.initialData?.repeatIcalRrule ?? '',
@@ -525,7 +526,14 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TasklyFormSectionLabel(text: l10n.valuesAlignedToTitle),
+                  TasklyFormSectionLabel(text: l10n.projectValueTitle),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.projectValueHelper,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   TasklyFormRowGroup(
                     children: [
@@ -538,16 +546,10 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                         builder: (field) {
                           final valueIds = List<String>.of(
                             field.value ?? const <String>[],
-                          );
-                          final effectiveIds = valueIds
-                              .take(2)
-                              .toList(growable: false);
-                          final primary = effectiveIds.isEmpty
+                          ).take(1).toList(growable: false);
+                          final primary = valueIds.isEmpty
                               ? null
-                              : availableValuesById[effectiveIds.first];
-                          final secondary = effectiveIds.length < 2
-                              ? null
-                              : availableValuesById[effectiveIds[1]];
+                              : availableValuesById[valueIds.first];
 
                           return Builder(
                             builder: (chipContext) {
@@ -560,7 +562,9 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                                   target: target,
                                 );
                                 if (!mounted || result == null) return;
-                                field.didChange(result);
+                                field.didChange(
+                                  result.take(1).toList(growable: false),
+                                );
                                 markDirty();
                                 setState(() {});
                               }
@@ -583,16 +587,6 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                               }
 
                               final theme = Theme.of(context);
-                              final secondaryEnabled = primary != null;
-                              final secondaryPlaceholder =
-                                  TasklyFormValueChipModel(
-                                    label: context.l10n.valuesSecondaryLabel,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                    icon: Icons.label_outline,
-                                    semanticLabel:
-                                        context.l10n.valuesSecondaryLabel,
-                                  );
-
                               return KeyedSubtree(
                                 key: _valuesKey,
                                 child: TasklyFormRowGroup(
@@ -619,24 +613,6 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                                       isSelected: primary != null,
                                       isPrimary: true,
                                       preset: TasklyFormPreset.standard.chip,
-                                    ),
-                                    Opacity(
-                                      opacity: secondaryEnabled ? 1 : 0.55,
-                                      child: AbsorbPointer(
-                                        absorbing: !secondaryEnabled,
-                                        child: TasklyFormValueChip(
-                                          model: secondary != null
-                                              ? toModel(secondary)
-                                              : secondaryPlaceholder,
-                                          onTap: () => open(
-                                            ValuesAlignmentTarget.secondary,
-                                          ),
-                                          isSelected: secondary != null,
-                                          isPrimary: false,
-                                          preset:
-                                              TasklyFormPreset.standard.chip,
-                                        ),
-                                      ),
                                     ),
                                   ],
                                 ),

@@ -23,6 +23,15 @@ final class MyDayDayPicks {
 
   bool get hasSelection => picks.isNotEmpty;
 
-  Set<String> get selectedTaskIds =>
-      Set.unmodifiable(picks.map((p) => p.taskId));
+  Set<String> get selectedTaskIds => Set.unmodifiable(
+    picks
+        .where((p) => p.targetType == MyDayPickTargetType.task)
+        .map((p) => p.targetId),
+  );
+
+  Set<String> get selectedRoutineIds => Set.unmodifiable(
+    picks
+        .where((p) => p.targetType == MyDayPickTargetType.routine)
+        .map((p) => p.targetId),
+  );
 }

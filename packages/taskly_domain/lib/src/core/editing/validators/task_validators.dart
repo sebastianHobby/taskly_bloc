@@ -1,5 +1,6 @@
 import 'package:taskly_domain/src/core/editing/validation_error.dart';
 import 'package:taskly_domain/src/forms/field_key.dart';
+import 'package:taskly_domain/src/services/values/task_value_policy.dart';
 
 final class TaskValidators {
   TaskValidators._();
@@ -43,16 +44,17 @@ final class TaskValidators {
     return const [];
   }
 
-  static List<ValidationError> valueIds(List<String>? valueIds) {
-    final ids = valueIds ?? const <String>[];
-    final hasValue = ids.any((id) => id.trim().isNotEmpty);
-    if (hasValue) return const [];
-    return const [
-      ValidationError(
-        code: 'required',
-        messageKey: 'taskFormValuesRequired',
-      ),
-    ];
+  static List<ValidationError> valueIds(
+    List<String>? valueIds, {
+    String? projectId,
+    String? projectPrimaryValueId,
+  }) {
+    final result = TaskValuePolicy.validate(
+      valueIds: valueIds,
+      projectId: projectId,
+      projectPrimaryValueId: projectPrimaryValueId,
+    );
+    return TaskValuePolicy.toValidationErrors(result.issues);
   }
 
   static Map<FieldKey, List<ValidationError>> dateOrder(

@@ -17,14 +17,26 @@ Task _task({
   bool completed = false,
 }) {
   final value = valueId == null ? null : _value(id: valueId, now: now);
+  final project = value == null
+      ? null
+      : Project(
+          id: 'p-$id',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Project $id',
+          completed: false,
+          values: [value],
+          primaryValueId: value.id,
+        );
   return Task(
     id: id,
     createdAt: now,
     updatedAt: now,
     name: 'Task $id',
     completed: completed,
-    values: value == null ? const <Value>[] : <Value>[value],
-    overridePrimaryValueId: valueId,
+    projectId: project?.id,
+    project: project,
+    values: const <Value>[],
   );
 }
 

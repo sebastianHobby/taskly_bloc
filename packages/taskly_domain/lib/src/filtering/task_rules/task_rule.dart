@@ -2,6 +2,7 @@ import 'package:taskly_domain/src/time/date_only.dart';
 import 'package:taskly_domain/src/filtering/evaluation_context.dart';
 import 'package:taskly_domain/src/filtering/task_rules/rule_types.dart';
 import 'package:taskly_domain/src/core/model/task.dart';
+import 'package:taskly_domain/src/services/values/effective_values.dart';
 
 /// Base class for all task filtering rules.
 abstract class TaskRule {
@@ -362,7 +363,7 @@ class ValueRule extends TaskRule {
 
   @override
   bool applies(Task task, DateTime today) {
-    final values = task.values;
+    final values = task.effectiveValues;
 
     if (operator == ValueRuleOperator.isNull) {
       return values.isEmpty;

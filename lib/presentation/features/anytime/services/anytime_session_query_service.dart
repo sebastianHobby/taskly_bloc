@@ -3,39 +3,38 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
-import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
 
 @immutable
-final class AnytimeBaseSnapshot {
-  const AnytimeBaseSnapshot({
-    required this.todayDayKeyUtc,
-    required this.tasks,
-    required this.todaySelectedTaskIds,
+final class AnytimeProjectsSnapshot {
+  const AnytimeProjectsSnapshot({
+    required this.projects,
+    required this.inboxTaskCount,
+    required this.values,
   });
 
-  final DateTime todayDayKeyUtc;
-  final List<Task> tasks;
-  final Set<String> todaySelectedTaskIds;
+  final List<Project> projects;
+  final int? inboxTaskCount;
+  final List<Value> values;
 }
 
 final class AnytimeSessionQueryService {
   AnytimeSessionQueryService({
-    required OccurrenceReadService occurrenceReadService,
-    required MyDayRepositoryContract myDayRepository,
-    required SessionDayKeyService sessionDayKeyService,
+    required ProjectRepositoryContract projectRepository,
+    required TaskRepositoryContract taskRepository,
+    required ValueRepositoryContract valueRepository,
     required AppLifecycleService appLifecycleService,
-  }) : _occurrenceReadService = occurrenceReadService,
-       _myDayRepository = myDayRepository,
-       _sessionDayKeyService = sessionDayKeyService,
+  }) : _projectRepository = projectRepository,
+       _taskRepository = taskRepository,
+       _valueRepository = valueRepository,
        _appLifecycleService = appLifecycleService;
 
-  final OccurrenceReadService _occurrenceReadService;
-  final MyDayRepositoryContract _myDayRepository;
-  final SessionDayKeyService _sessionDayKeyService;
+  final ProjectRepositoryContract _projectRepository;
+  final TaskRepositoryContract _taskRepository;
+  final ValueRepositoryContract _valueRepository;
   final AppLifecycleService _appLifecycleService;
 
   final Map<_ScopeKey, _ScopeEntry> _scopes = <_ScopeKey, _ScopeEntry>{};
@@ -79,7 +78,7 @@ final class AnytimeSessionQueryService {
     _scopes.clear();
   }
 
-  ValueStream<AnytimeBaseSnapshot> watchBase({AnytimeScope? scope}) {
+  ValueStream<AnytimeProjectsSnapshot> watchProjects({AnytimeScope? scope}) {
     if (!_started) start();
     final entry = _ensureScope(scope);
     if (_started && _foreground) {
@@ -91,7 +90,7 @@ final class AnytimeSessionQueryService {
   _ScopeEntry _ensureScope(AnytimeScope? scope) {
     final key = _ScopeKey.fromScope(scope);
     return _scopes.putIfAbsent(key, () {
-      final subject = BehaviorSubject<AnytimeBaseSnapshot>();
+      final subject = BehaviorSubject<AnytimeProjectsSnapshot>();
       return _ScopeEntry(scope: scope, subject: subject);
     });
   }
@@ -115,44 +114,37 @@ final class AnytimeSessionQueryService {
     if (entry == null) return;
     if (entry.subscription != null) return;
 
-    final dayKey$ = _sessionDayKeyService.todayDayKeyUtc;
+    final projects$ = _projectsForScope(scope);
+    final values$ = _valueRepository.watchAll();
 
-    final tasks$ = dayKey$.switchMap((dayKey) {
-      final preview = OccurrencePolicy.anytimePreview(asOfDayKey: dayKey);
-      final query = _scopeQuery(TaskQuery.incomplete(), scope);
-      return _occurrenceReadService.watchTasksWithOccurrencePreview(
-        query: query,
-        preview: preview,
-      );
-    });
-
-    final todaySelectionIds$ = dayKey$
-        .switchMap(_myDayRepository.watchDay)
-        .map((picks) {
-          if (picks.ritualCompletedAtUtc == null) return <String>{};
-          return picks.selectedTaskIds
-              .map((id) => id.trim())
-              .where((id) => id.isNotEmpty)
-              .toSet();
-        })
-        .distinct(_areSetsEqual);
-
-    final combined$ =
+    final combined$ = switch (scope) {
+      null =>
         Rx.combineLatest3<
-          DateTime,
-          List<Task>,
-          Set<String>,
-          AnytimeBaseSnapshot
+          List<Project>,
+          int,
+          List<Value>,
+          AnytimeProjectsSnapshot
         >(
-          dayKey$,
-          tasks$,
-          todaySelectionIds$,
-          (dayKey, tasks, todaySelectionIds) => AnytimeBaseSnapshot(
-            todayDayKeyUtc: dayKey,
-            tasks: tasks,
-            todaySelectedTaskIds: todaySelectionIds,
+          projects$,
+          _taskRepository.watchAllCount(TaskQuery.inbox()),
+          values$,
+          (projects, inboxTaskCount, values) => AnytimeProjectsSnapshot(
+            projects: projects,
+            inboxTaskCount: inboxTaskCount,
+            values: values,
           ),
-        );
+        ),
+      _ =>
+        Rx.combineLatest2<List<Project>, List<Value>, AnytimeProjectsSnapshot>(
+          projects$,
+          values$,
+          (projects, values) => AnytimeProjectsSnapshot(
+            projects: projects,
+            inboxTaskCount: null,
+            values: values,
+          ),
+        ),
+    };
 
     entry.subscription = combined$.listen(
       entry.subject.add,
@@ -160,24 +152,24 @@ final class AnytimeSessionQueryService {
     );
   }
 
-  TaskQuery _scopeQuery(TaskQuery base, AnytimeScope? scope) {
-    if (scope == null) return base;
+  Stream<List<Project>> _projectsForScope(AnytimeScope? scope) {
+    const incompletePredicate = ProjectBoolPredicate(
+      field: ProjectBoolField.completed,
+      operator: BoolOperator.isFalse,
+    );
 
     return switch (scope) {
-      AnytimeProjectScope(:final projectId) => base.withAdditionalPredicates([
-        TaskProjectPredicate(
-          operator: ProjectOperator.matches,
-          projectId: projectId,
-        ),
-      ]),
-      AnytimeValueScope() => base,
+      null => _projectRepository.watchAll(ProjectQuery.incomplete()),
+      AnytimeProjectScope(:final projectId) =>
+        _projectRepository
+            .watchById(projectId)
+            .map((project) => project == null ? const [] : [project]),
+      AnytimeValueScope(:final valueId) => _projectRepository.watchAll(
+        ProjectQuery.byValues([valueId]).withAdditionalPredicates([
+          incompletePredicate,
+        ]),
+      ),
     };
-  }
-
-  bool _areSetsEqual(Set<String> a, Set<String> b) {
-    if (identical(a, b)) return true;
-    if (a.length != b.length) return false;
-    return a.containsAll(b);
   }
 }
 
@@ -188,10 +180,10 @@ final class _ScopeEntry {
   });
 
   final AnytimeScope? scope;
-  final BehaviorSubject<AnytimeBaseSnapshot> subject;
+  final BehaviorSubject<AnytimeProjectsSnapshot> subject;
 
   /// Owned by this entry; cancelled in [dispose].
-  StreamSubscription<AnytimeBaseSnapshot>? subscription;
+  StreamSubscription<AnytimeProjectsSnapshot>? subscription;
 
   Future<void> dispose() async {
     await subscription?.cancel();

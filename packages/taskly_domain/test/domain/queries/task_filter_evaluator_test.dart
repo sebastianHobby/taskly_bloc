@@ -141,4 +141,39 @@ void main() {
       expect(evaluator.matches(t, filter, ctx), isTrue);
     },
   );
+
+  testSafe(
+    'value includeInherited treats project values and task tags as a union',
+    () async {
+      final v1 = value('v1');
+      final v2 = value('v2');
+      final p = Project(
+        id: 'p1',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        name: 'Project',
+        completed: false,
+        values: [v1],
+        primaryValueId: 'v1',
+      );
+
+      final t = task(
+        projectId: 'p1',
+        project: p,
+        values: [v2],
+      );
+
+      final filter = QueryFilter<TaskPredicate>(
+        shared: const [
+          TaskValuePredicate(
+            operator: ValueOperator.hasAll,
+            valueIds: ['v1', 'v2'],
+            includeInherited: true,
+          ),
+        ],
+      );
+
+      expect(evaluator.matches(t, filter, ctx), isTrue);
+    },
+  );
 }

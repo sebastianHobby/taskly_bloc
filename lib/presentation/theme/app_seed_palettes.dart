@@ -40,39 +40,39 @@ class AppSeedPalettes {
   /// Focused productivity palette set.
   static const List<ThemePaletteOption> focusedProductivity = [
     ThemePaletteOption(
-      id: 'focused_indigo',
-      name: 'Indigo',
+      id: 'calm_indigo',
+      name: 'Calm Indigo',
       seedColor: Color(0xFF4F46E5),
     ),
     ThemePaletteOption(
-      id: 'calm_indigo',
-      name: 'Calm Indigo',
-      seedColor: Color(0xFF3F51B5),
+      id: 'soft_blue',
+      name: 'Soft Blue',
+      seedColor: Color(0xFF3B82F6),
     ),
     ThemePaletteOption(
-      id: 'focused_sky',
-      name: 'Sky',
-      seedColor: Color(0xFF0EA5E9),
-    ),
-    ThemePaletteOption(
-      id: 'focused_teal',
-      name: 'Teal',
+      id: 'mist_teal',
+      name: 'Mist Teal',
       seedColor: Color(0xFF14B8A6),
     ),
     ThemePaletteOption(
-      id: 'fresh_sage',
-      name: 'Fresh Sage',
-      seedColor: Color(0xFF4CAF50),
+      id: 'sage',
+      name: 'Sage',
+      seedColor: Color(0xFF34D399),
     ),
     ThemePaletteOption(
-      id: 'focused_amber',
-      name: 'Amber',
-      seedColor: Color(0xFFF59E0B),
+      id: 'fern',
+      name: 'Fern',
+      seedColor: Color(0xFF4ADE80),
     ),
     ThemePaletteOption(
-      id: 'warm_slate',
-      name: 'Warm Slate',
-      seedColor: Color(0xFF546E7A),
+      id: 'warm_amber',
+      name: 'Warm Amber',
+      seedColor: Color(0xFFFBBF24),
+    ),
+    ThemePaletteOption(
+      id: 'slate',
+      name: 'Slate',
+      seedColor: Color(0xFF94A3B8),
     ),
   ];
 }

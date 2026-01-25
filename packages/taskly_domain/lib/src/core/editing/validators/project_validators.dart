@@ -52,13 +52,24 @@ final class ProjectValidators {
   static List<ValidationError> valueIds(List<String>? valueIds) {
     final ids = valueIds ?? const <String>[];
     final hasValue = ids.any((id) => id.trim().isNotEmpty);
-    if (hasValue) return const [];
-    return const [
-      ValidationError(
-        code: 'required',
-        messageKey: 'projectFormValuesRequired',
-      ),
-    ];
+    if (!hasValue) {
+      return const [
+        ValidationError(
+          code: 'required',
+          messageKey: 'projectFormValuesRequired',
+        ),
+      ];
+    }
+    final normalized = ids.where((id) => id.trim().isNotEmpty).toList();
+    if (normalized.length > 1) {
+      return const [
+        ValidationError(
+          code: 'max_items',
+          messageKey: 'projectFormSingleValueOnly',
+        ),
+      ];
+    }
+    return const [];
   }
 
   static Map<FieldKey, List<ValidationError>> dateOrder(

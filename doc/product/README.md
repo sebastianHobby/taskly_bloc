@@ -8,3 +8,5 @@
 ## Index
 
 - Screen meaning and contracts: [SCREEN_PURPOSE_CONCEPTS.md](SCREEN_PURPOSE_CONCEPTS.md)
+- Routines spec (Plan My Day): [SPEC_ROUTINES.md](SPEC_ROUTINES.md)
+- Project next actions + anchors: [SPEC_NEXT_ACTIONS_AND_ANCHORS.md](SPEC_NEXT_ACTIONS_AND_ANCHORS.md)

@@ -41,13 +41,13 @@ final class MyDayLoaded extends MyDayState {
   final List<Task> tasks;
   final List<Task> pinnedTasks;
 
-  /// Tasks accepted from the ritual "Overdue & due" section.
+  /// Tasks accepted from the plan "Overdue & due" section.
   final List<Task> acceptedDue;
 
-  /// Tasks accepted from the ritual "Starts today" section.
+  /// Tasks accepted from the plan "Starts today" section.
   final List<Task> acceptedStarts;
 
-  /// Tasks accepted from the ritual "Suggestions" section.
+  /// Tasks accepted from the plan "Suggestions" section.
   final List<Task> acceptedFocus;
 
   /// Tasks selected for today that are already completed.
@@ -55,7 +55,7 @@ final class MyDayLoaded extends MyDayState {
 
   final int selectedTotalCount;
 
-  /// Full set of task ids selected for today (from ritual persistence).
+  /// Full set of task ids selected for today (from plan persistence).
   final Set<String> todaySelectedTaskIds;
 }
 

@@ -7,15 +7,21 @@ import 'package:taskly_domain/src/core/editing/command_result.dart';
 import 'package:taskly_domain/src/core/editing/task/task_command_handler.dart';
 import 'package:taskly_domain/src/core/editing/task/task_commands.dart';
 import 'package:taskly_domain/src/forms/field_key.dart';
+import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
+import 'package:taskly_domain/core.dart';
 
 void main() {
   testSafe(
     'handleCreate validates name and does not call repository',
     () async {
       final repo = _RecordingTaskRepository();
-      final handler = TaskCommandHandler(taskRepository: repo);
+      final projectRepo = _RecordingProjectRepository();
+      final handler = TaskCommandHandler(
+        taskRepository: repo,
+        projectRepository: projectRepo,
+      );
 
       const cmd = CreateTaskCommand(name: '   ', completed: false);
       final result = await handler.handleCreate(cmd);
@@ -30,7 +36,12 @@ void main() {
 
   testSafe('handleCreate trims name and forwards args to repository', () async {
     final repo = _RecordingTaskRepository();
-    final handler = TaskCommandHandler(taskRepository: repo);
+    final projectRepo = _RecordingProjectRepository()
+      ..projectsById['p1'] = _projectWithPrimary('p1', 'v1');
+    final handler = TaskCommandHandler(
+      taskRepository: repo,
+      projectRepository: projectRepo,
+    );
 
     final ctx = OperationContext(
       correlationId: 'c1',
@@ -50,7 +61,7 @@ void main() {
       repeatIcalRrule: 'RRULE:FREQ=DAILY',
       repeatFromCompletion: true,
       seriesEnded: true,
-      valueIds: const ['v1'],
+      valueIds: const ['v2'],
     );
 
     final result = await handler.handleCreate(cmd, context: ctx);
@@ -59,12 +70,16 @@ void main() {
     expect(repo.createCalls, 1);
     expect(repo.lastCreatedName, 'Hello');
     expect(repo.lastCreatedContext, ctx);
-    expect(repo.lastCreatedValueIds, ['v1']);
+    expect(repo.lastCreatedValueIds, ['v2']);
   });
 
   testSafe('handleUpdate validates deadline after start', () async {
     final repo = _RecordingTaskRepository();
-    final handler = TaskCommandHandler(taskRepository: repo);
+    final projectRepo = _RecordingProjectRepository();
+    final handler = TaskCommandHandler(
+      taskRepository: repo,
+      projectRepository: projectRepo,
+    );
 
     final cmd = UpdateTaskCommand(
       id: 't1',
@@ -85,7 +100,11 @@ void main() {
 
   testSafe('handleCreate validates max lengths', () async {
     final repo = _RecordingTaskRepository();
-    final handler = TaskCommandHandler(taskRepository: repo);
+    final projectRepo = _RecordingProjectRepository();
+    final handler = TaskCommandHandler(
+      taskRepository: repo,
+      projectRepository: projectRepo,
+    );
 
     final cmd = CreateTaskCommand(
       name: List.filled(121, 'a').join(),
@@ -105,9 +124,39 @@ void main() {
     expect(repo.createCalls, 0);
   });
 
+  testSafe(
+    'handleCreate rejects tags when no project is selected',
+    () async {
+      final repo = _RecordingTaskRepository();
+      final projectRepo = _RecordingProjectRepository();
+      final handler = TaskCommandHandler(
+        taskRepository: repo,
+        projectRepository: projectRepo,
+      );
+
+      const cmd = CreateTaskCommand(
+        name: 'Task',
+        completed: false,
+        valueIds: ['v1'],
+      );
+
+      final result = await handler.handleCreate(cmd);
+
+      expect(result, isA<CommandValidationFailure>());
+      final failure = (result as CommandValidationFailure).failure;
+      expect(failure.fieldErrors.keys, contains(TaskFieldKeys.valueIds));
+      expect(repo.createCalls, 0);
+    },
+  );
+
   testSafe('handleUpdate forwards args to repository', () async {
     final repo = _RecordingTaskRepository();
-    final handler = TaskCommandHandler(taskRepository: repo);
+    final projectRepo = _RecordingProjectRepository()
+      ..projectsById['p1'] = _projectWithPrimary('p1', 'v1');
+    final handler = TaskCommandHandler(
+      taskRepository: repo,
+      projectRepository: projectRepo,
+    );
 
     final ctx = OperationContext(
       correlationId: 'c2',
@@ -125,7 +174,7 @@ void main() {
       deadlineDate: DateTime.utc(2026, 1, 2),
       projectId: 'p1',
       priority: 1,
-      valueIds: const ['v1', 'v2'],
+      valueIds: const ['v2', 'v3'],
     );
 
     final result = await handler.handleUpdate(cmd, context: ctx);
@@ -136,6 +185,33 @@ void main() {
     expect(repo.lastUpdatedName, 'Updated');
     expect(repo.lastUpdatedContext, ctx);
   });
+
+  testSafe(
+    'handleCreate rejects tags that match the project primary value',
+    () async {
+      final repo = _RecordingTaskRepository();
+      final projectRepo = _RecordingProjectRepository()
+        ..projectsById['p1'] = _projectWithPrimary('p1', 'v1');
+      final handler = TaskCommandHandler(
+        taskRepository: repo,
+        projectRepository: projectRepo,
+      );
+
+      const cmd = CreateTaskCommand(
+        name: 'Task',
+        completed: false,
+        projectId: 'p1',
+        valueIds: ['v1'],
+      );
+
+      final result = await handler.handleCreate(cmd);
+
+      expect(result, isA<CommandValidationFailure>());
+      final failure = (result as CommandValidationFailure).failure;
+      expect(failure.fieldErrors.keys, contains(TaskFieldKeys.valueIds));
+      expect(repo.createCalls, 0);
+    },
+  );
 }
 
 final class _RecordingTaskRepository implements TaskRepositoryContract {
@@ -213,4 +289,33 @@ final class _RecordingTaskRepository implements TaskRepositoryContract {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+final class _RecordingProjectRepository implements ProjectRepositoryContract {
+  final Map<String, Project> projectsById = {};
+
+  @override
+  Future<Project?> getById(String id) async => projectsById[id];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+Project _projectWithPrimary(String id, String primaryValueId) {
+  return Project(
+    id: id,
+    createdAt: DateTime.utc(2026, 1, 1),
+    updatedAt: DateTime.utc(2026, 1, 1),
+    name: 'Project $id',
+    completed: false,
+    values: [
+      Value(
+        id: primaryValueId,
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        name: 'V$primaryValueId',
+      ),
+    ],
+    primaryValueId: primaryValueId,
+  );
 }

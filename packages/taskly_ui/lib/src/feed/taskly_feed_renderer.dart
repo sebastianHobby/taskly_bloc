@@ -422,69 +422,77 @@ class _ValueHeaderRow extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final tokens = TasklyEntityTileTheme.of(context);
-    final feedTheme = TasklyFeedTheme.of(context);
 
     final chip = row.leadingChip;
-    final countLabel = row.trailingLabel?.trim();
-    final hasCount = countLabel != null && countLabel.isNotEmpty;
+    final priorityLabel = row.priorityLabel?.trim();
+
+    final accentColor = chip?.color ?? scheme.primary;
+    final iconData = chip?.icon ?? Icons.star_rounded;
+    final backgroundOpacity = theme.brightness == Brightness.dark ? 0.2 : 0.12;
+    final title = row.title.trim().toUpperCase();
+    final priorityText = priorityLabel == null || priorityLabel.isEmpty
+        ? null
+        : priorityLabel.toUpperCase();
 
     final content = DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
+        color: accentColor.withValues(alpha: backgroundOpacity),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            if (chip != null)
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: chip.color.withValues(
-                    alpha: scheme.brightness == Brightness.dark ? 0.28 : 0.18,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(chip.icon, size: 18, color: chip.color),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: BorderRadius.circular(999),
               ),
-            if (chip != null) const SizedBox(width: 10),
+              child: Icon(iconData, size: 18, color: accentColor),
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
-                row.title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: scheme.onSurface,
+                title,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: accentColor,
+                  letterSpacing: 0.4,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (hasCount) ...[
+            if (priorityText != null) ...[
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest,
+                  color: accentColor.withValues(alpha: 0.25),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  countLabel,
-                  style: feedTheme.valueHeaderCount.copyWith(
-                    color: scheme.onSurfaceVariant,
+                  priorityText,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: accentColor,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
             ],
             Icon(
               row.isCollapsed
                   ? Icons.expand_more_rounded
                   : Icons.expand_less_rounded,
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+              size: 16,
+              color: accentColor.withValues(alpha: 0.8),
             ),
           ],
         ),
@@ -494,12 +502,12 @@ class _ValueHeaderRow extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         tokens.sectionPaddingH,
-        4,
+        2,
         tokens.sectionPaddingH,
-        4,
+        2,
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(999),
         onTap: row.onToggleCollapsed,
         child: content,
       ),
@@ -518,36 +526,21 @@ class _ValueGroupSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final tokens = TasklyEntityTileTheme.of(context);
     final hasRows = rows.isNotEmpty;
-    final accentColor = header.leadingChip?.color;
-
     final children = <Widget>[
       _ValueHeaderRow(row: header),
-      if (hasRows)
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            tokens.sectionPaddingH + 8,
-            2,
-            tokens.sectionPaddingH,
-            4,
-          ),
-          child: Container(
-            height: 1,
-            color: scheme.outlineVariant.withValues(alpha: 0.4),
-          ),
-        ),
     ];
 
-    if (hasRows) {
+    if (hasRows && !header.isCollapsed) {
+      children.add(const SizedBox(height: 8));
       children.add(
         Padding(
           padding: EdgeInsets.fromLTRB(
-            tokens.sectionPaddingH + 18,
-            2,
+            tokens.sectionPaddingH + 12,
+            0,
             tokens.sectionPaddingH,
-            12,
+            8,
           ),
           child: Column(
             children: _buildFlatRows(context, rows),
@@ -557,37 +550,10 @@ class _ValueGroupSection extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color:
-              accentColor?.withValues(alpha: 0.045) ??
-              scheme.surfaceContainerLowest.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Stack(
-          children: [
-            if (accentColor != null)
-              Positioned.fill(
-                left: tokens.sectionPaddingH + 6,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    width: 3,
-                    margin: const EdgeInsets.symmetric(vertical: 18),
-                    decoration: BoxDecoration(
-                      color: accentColor.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
-              ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: children,
-            ),
-          ],
-        ),
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
       ),
     );
   }
@@ -602,8 +568,7 @@ class _TaskRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return TaskEntityTile(
       model: row.data,
-      preset: row.preset,
-      markers: row.markers,
+      style: row.style,
       actions: row.actions,
     );
   }
@@ -798,7 +763,7 @@ class _ScheduledDaySection extends StatelessWidget {
           const SizedBox(height: 10),
           _RowList(
             rows: rows,
-            emptyLabel: emptyLabel ?? 'No tasks',
+            emptyLabel: emptyLabel,
             onAddRequested: onAddRequested,
           ),
         ],

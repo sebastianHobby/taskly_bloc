@@ -3,9 +3,9 @@ import 'package:taskly_domain/src/core/model/value.dart';
 
 /// Represents a value assignment to a task or project, including primary status.
 ///
-/// Taskly's current data model uses primary/secondary value slots (and task
-/// overrides). This type remains useful as a UI/domain representation of a
-/// value selection with a primary flag.
+/// Taskly's model uses a single project primary value plus optional task
+/// override slots for additional values. This type remains useful as a
+/// UI/domain representation of a value selection with a primary flag.
 @immutable
 class ValueAssignment {
   const ValueAssignment({

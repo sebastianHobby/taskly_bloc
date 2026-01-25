@@ -641,13 +641,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         key:
             'scheduled-task-${task.id}-${occurrence.localDay.toIso8601String()}',
         data: data,
-        markers: TasklyTaskRowMarkers(pinned: task.isPinned),
-        preset: selectionState.isSelectionMode
-            ? TasklyTaskRowPreset.bulkSelection(selected: isSelected)
-            : const TasklyTaskRowPreset.standard(),
-        emphasis: data.meta.isOverdue
-            ? TasklyRowEmphasis.overdue
-            : TasklyRowEmphasis.none,
+        style: selectionState.isSelectionMode
+            ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
+            : const TasklyTaskRowStyle.standard(),
         actions: TasklyTaskRowActions(
           onTap: () {
             if (selection.shouldInterceptTapAsSelection()) {
@@ -688,9 +684,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         preset: selectionState.isSelectionMode
             ? TasklyProjectRowPreset.bulkSelection(selected: isSelected)
             : const TasklyProjectRowPreset.standard(),
-        emphasis: data.meta.isOverdue
-            ? TasklyRowEmphasis.overdue
-            : TasklyRowEmphasis.none,
         actions: TasklyProjectRowActions(
           onTap: () {
             if (selection.shouldInterceptTapAsSelection()) {

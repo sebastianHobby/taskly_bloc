@@ -270,7 +270,7 @@ final class TaskValuePredicate extends TaskPredicate {
   /// project has the value. This is particularly useful for values where
   /// a project's value (e.g., "Health") should apply to all its tasks.
   ///
-  /// Defaults to true.
+  /// Defaults to false.
   final bool includeInherited;
 
   @override

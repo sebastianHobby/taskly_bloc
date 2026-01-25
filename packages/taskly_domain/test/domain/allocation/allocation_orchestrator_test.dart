@@ -68,6 +68,8 @@ void main() {
     bool isPinned = false,
     List<Value> values = const <Value>[],
     String? overridePrimaryValueId,
+    Project? project,
+    String? projectId,
   }) {
     return Task(
       id: id,
@@ -76,6 +78,8 @@ void main() {
       name: 'Task $id',
       completed: completed,
       isPinned: isPinned,
+      projectId: projectId ?? project?.id,
+      project: project,
       values: values,
       overridePrimaryValueId: overridePrimaryValueId,
     );
@@ -94,7 +98,12 @@ void main() {
     );
   }
 
-  Project buildProject({required String id, bool isPinned = false}) {
+  Project buildProject({
+    required String id,
+    bool isPinned = false,
+    List<Value> values = const <Value>[],
+    String? primaryValueId,
+  }) {
     return Project(
       id: id,
       createdAt: DateTime.utc(2026, 1, 1),
@@ -102,6 +111,8 @@ void main() {
       name: 'Project $id',
       completed: false,
       isPinned: isPinned,
+      values: values,
+      primaryValueId: primaryValueId,
     );
   }
 
@@ -237,10 +248,14 @@ void main() {
     final value = buildValue(id: 'v1');
     when(() => valueRepo.getAll()).thenAnswer((_) async => <Value>[value]);
 
+    final project = buildProject(
+      id: 'p1',
+      values: [value],
+      primaryValueId: value.id,
+    );
     final task = buildTask(
       id: 't1',
-      values: <Value>[value],
-      overridePrimaryValueId: value.id,
+      project: project,
     );
 
     final orchestrator = AllocationOrchestrator(

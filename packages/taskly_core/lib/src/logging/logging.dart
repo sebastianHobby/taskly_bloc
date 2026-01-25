@@ -77,7 +77,17 @@ void initializeLogging() {
         )
       : null;
 
-  final raw = TalkerFlutter.init(observer: observer);
+  final raw = TalkerFlutter.init(
+    observer: observer,
+    filter: TalkerFilter(
+      enabledKeys: const <String>[
+        TalkerKey.warning,
+        TalkerKey.error,
+        TalkerKey.exception,
+        TalkerKey.critical,
+      ],
+    ),
+  );
   _backend = TasklyTalker(raw);
   talker = _TasklyLogAdapter(_backend);
   _isInitialized = true;
@@ -246,11 +256,8 @@ class TalkerFailFastPolicy {
 
 /// Backend wrapper around Talker.
 class TasklyTalker {
-  TasklyTalker(
-    this._raw, {
-    TalkerFailFastPolicy? failFastPolicy,
-  }) : failFastPolicy =
-           failFastPolicy ?? TalkerFailFastPolicy.fromEnvironment();
+  TasklyTalker(this._raw, {TalkerFailFastPolicy? failFastPolicy})
+    : failFastPolicy = failFastPolicy ?? TalkerFailFastPolicy.fromEnvironment();
 
   final Talker _raw;
 
@@ -328,11 +335,7 @@ class TasklyTalker {
     handle(error, stackTrace, 'API Error: $endpoint');
   }
 
-  void databaseError(
-    String operation,
-    Object error, [
-    StackTrace? stackTrace,
-  ]) {
+  void databaseError(String operation, Object error, [StackTrace? stackTrace]) {
     handle(error, stackTrace, 'Database Error: $operation');
   }
 
@@ -346,10 +349,7 @@ class TasklyTalker {
 }
 
 class TasklyLogRecord extends TalkerLog {
-  TasklyLogRecord(
-    super.message, {
-    this.category = 'app',
-  });
+  TasklyLogRecord(super.message, {this.category = 'app'});
 
   final String category;
 
@@ -364,9 +364,8 @@ class TasklyLogRecord extends TalkerLog {
 }
 
 class MultiTalkerObserver extends TalkerObserver {
-  MultiTalkerObserver({
-    required List<TalkerObserver> observers,
-  }) : _observers = observers;
+  MultiTalkerObserver({required List<TalkerObserver> observers})
+    : _observers = observers;
 
   final List<TalkerObserver> _observers;
 
@@ -470,12 +469,7 @@ class DebugFileLogObserver extends TalkerObserver {
   @override
   void onException(TalkerException err) {
     _ensureInitialized();
-    _writeLog(
-      'EXCEPTION',
-      err.message,
-      err.exception,
-      err.stackTrace,
-    );
+    _writeLog('EXCEPTION', err.message, err.exception, err.stackTrace);
   }
 
   @override
@@ -642,9 +636,7 @@ class _AppendFileWriter {
   void write(String text) {
     if (!_initialized) return;
     try {
-      _truncateIfOversizedSync(
-        reason: 'max size exceeded ($_maxBytes bytes)',
-      );
+      _truncateIfOversizedSync(reason: 'max size exceeded ($_maxBytes bytes)');
       _file.writeAsStringSync(text, mode: FileMode.append, flush: true);
     } catch (_) {
       // Best-effort only.

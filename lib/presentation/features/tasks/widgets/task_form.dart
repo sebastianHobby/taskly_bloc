@@ -94,6 +94,46 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
   String? _recurrenceLabel;
   String? _lastRecurrenceRrule;
 
+  Project? _findProjectById(String? id) {
+    final normalized = (id ?? '').trim();
+    if (normalized.isEmpty) return null;
+    return widget.availableProjects
+        .where((p) => p.id == normalized)
+        .firstOrNull;
+  }
+
+  bool _projectHasPrimaryValue(Project? project) {
+    return project?.primaryValueId?.trim().isNotEmpty ?? false;
+  }
+
+  void _clearTagsIfNotAllowed() {
+    final formState = widget.formKey.currentState;
+    if (formState == null) return;
+    final projectId =
+        formState.fields[TaskFieldKeys.projectId.id]?.value as String?;
+    final project = _findProjectById(projectId);
+    final primaryId = project?.primaryValueId?.trim();
+    final hasPrimary = primaryId != null && primaryId.isNotEmpty;
+
+    final valuesField = formState.fields[TaskFieldKeys.valueIds.id];
+    final valueIds = List<String>.of(
+      (valuesField?.value as List<String>?) ?? const <String>[],
+    );
+    if (valueIds.isEmpty) return;
+
+    if (!hasPrimary) {
+      valuesField?.didChange(const <String>[]);
+      valuesField?.validate();
+      return;
+    }
+
+    final next = valueIds.where((id) => id.trim() != primaryId).toList();
+    if (next.length == valueIds.length) return;
+
+    valuesField?.didChange(next);
+    valuesField?.validate();
+  }
+
   void _recordRecentProjectId(String projectId) {
     final id = projectId.trim();
     if (id.isEmpty) return;
@@ -182,12 +222,23 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
             _recordRecentProjectId(project.id);
         }
 
+        _clearTagsIfNotAllowed();
         markDirty();
         setState(() {});
         return;
       }
 
       if (widget.openToValues) {
+        final projectId =
+            widget
+                    .formKey
+                    .currentState
+                    ?.fields[TaskFieldKeys.projectId.id]
+                    ?.value
+                as String?;
+        final project = _findProjectById(projectId);
+        if (!_projectHasPrimaryValue(project)) return;
+
         final targetContext = _valuesKey.currentContext;
         if (targetContext != null) {
           await Scrollable.ensureVisible(
@@ -211,6 +262,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
           anchorContext: anchorContext,
           explicitValueIds: explicitValueIds,
           target: ValuesAlignmentTarget.primary,
+          inheritedValueLabel: project?.primaryValue?.name,
+          inheritedValueId: project?.primaryValue?.id,
         );
         if (!context.mounted || result == null) return;
 
@@ -327,6 +380,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     required BuildContext anchorContext,
     required List<String> explicitValueIds,
     required ValuesAlignmentTarget target,
+    String? inheritedValueLabel,
+    String? inheritedValueId,
   }) {
     if (_isCompact(context)) {
       return showValuesAlignmentSheetForTask(
@@ -334,6 +389,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
         availableValues: widget.availableValues,
         explicitValueIds: explicitValueIds,
         target: target,
+        inheritedValueLabel: inheritedValueLabel,
+        inheritedValueId: inheritedValueId,
       );
     }
 
@@ -348,6 +405,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
           availableValues: widget.availableValues,
           explicitValueIds: explicitValueIds,
           target: target,
+          inheritedValueLabel: inheritedValueLabel,
+          inheritedValueId: inheritedValueId,
         ),
       ),
     );
@@ -426,6 +485,11 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       for (final v in widget.availableValues) v.id: v,
     };
 
+    final initialProjectId =
+        widget.initialData?.projectId ?? widget.defaultProjectId ?? '';
+    final initialProject = _findProjectById(initialProjectId);
+    final initialTagsEnabled = _projectHasPrimaryValue(initialProject);
+
     final initialValues = <String, dynamic>{
       TaskFieldKeys.name.id: widget.initialData?.name ?? '',
       TaskFieldKeys.description.id: widget.initialData?.description ?? '',
@@ -434,12 +498,12 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
           widget.initialData?.startDate ?? widget.defaultStartDate,
       TaskFieldKeys.deadlineDate.id:
           widget.initialData?.deadlineDate ?? widget.defaultDeadlineDate,
-      TaskFieldKeys.projectId.id:
-          widget.initialData?.projectId ?? widget.defaultProjectId ?? '',
+      TaskFieldKeys.projectId.id: initialProjectId,
       TaskFieldKeys.priority.id: widget.initialData?.priority,
-      TaskFieldKeys.valueIds.id:
-          widget.initialData?.values.map((e) => e.id).toList() ??
-          (widget.defaultValueIds ?? const <String>[]),
+      TaskFieldKeys.valueIds.id: initialTagsEnabled
+          ? (widget.initialData?.values.map((e) => e.id).toList() ??
+                (widget.defaultValueIds ?? const <String>[]))
+          : const <String>[],
       TaskFieldKeys.repeatIcalRrule.id:
           widget.initialData?.repeatIcalRrule ?? '',
       TaskFieldKeys.repeatFromCompletion.id:
@@ -549,6 +613,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
           onChanged: () {
             markDirty();
             setState(() {});
+            _clearTagsIfNotAllowed();
             final rrule =
                 widget
                         .formKey
@@ -627,134 +692,6 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
 
               SizedBox(height: sectionGap),
 
-              TasklyFormSectionLabel(text: l10n.valuesAlignedToTitle),
-              const SizedBox(height: 8),
-              FormBuilderField<List<String>>(
-                name: TaskFieldKeys.valueIds.id,
-                validator: toFormBuilderValidator<List<String>>(
-                  TaskValidators.valueIds,
-                  context,
-                ),
-                builder: (field) {
-                  final explicitValueIds = List<String>.of(
-                    field.value ?? const <String>[],
-                  );
-                  final explicitIds = explicitValueIds
-                      .take(2)
-                      .toList(growable: false);
-
-                  final primary = explicitIds.isEmpty
-                      ? null
-                      : availableValuesById[explicitIds.first];
-                  final secondary = explicitIds.length < 2
-                      ? null
-                      : availableValuesById[explicitIds[1]];
-
-                  return Builder(
-                    builder: (chipContext) {
-                      Future<void> open(ValuesAlignmentTarget target) async {
-                        final result = await _showValuesAlignmentPicker(
-                          anchorContext: chipContext,
-                          explicitValueIds: explicitValueIds,
-                          target: target,
-                        );
-                        if (!mounted || result == null) return;
-                        field.didChange(result);
-                        markDirty();
-                        setState(() {});
-                      }
-
-                      TasklyFormValueChipModel toModel(Value value) {
-                        final iconData =
-                            getIconDataFromName(value.iconName) ?? Icons.star;
-                        final color = ColorUtils.fromHexWithThemeFallback(
-                          context,
-                          value.color,
-                        );
-                        return TasklyFormValueChipModel(
-                          label: value.name,
-                          color: color,
-                          icon: iconData,
-                          semanticLabel: value.name,
-                        );
-                      }
-
-                      final theme = Theme.of(context);
-                      final secondaryEnabled = primary != null;
-                      final secondaryPlaceholder = TasklyFormValueChipModel(
-                        label: context.l10n.valuesSecondaryLabel,
-                        color: theme.colorScheme.onSurfaceVariant,
-                        icon: Icons.label_outline,
-                        semanticLabel: context.l10n.valuesSecondaryLabel,
-                      );
-
-                      return KeyedSubtree(
-                        key: _valuesKey,
-                        child: TasklyFormRowGroup(
-                          spacing: 12,
-                          runSpacing: 8,
-                          children: [
-                            TasklyFormValueChip(
-                              model: primary != null
-                                  ? toModel(primary)
-                                  : TasklyFormValueChipModel(
-                                      label: context.l10n.valuesPrimaryLabel,
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                      icon: Icons.star_border,
-                                      semanticLabel:
-                                          context.l10n.valuesPrimaryLabel,
-                                    ),
-                              onTap: () => open(ValuesAlignmentTarget.primary),
-                              isSelected: primary != null,
-                              isPrimary: true,
-                              preset: TasklyFormPreset.standard.chip,
-                            ),
-                            Opacity(
-                              opacity: secondaryEnabled ? 1 : 0.55,
-                              child: AbsorbPointer(
-                                absorbing: !secondaryEnabled,
-                                child: TasklyFormValueChip(
-                                  model: secondary != null
-                                      ? toModel(secondary)
-                                      : secondaryPlaceholder,
-                                  onTap: () =>
-                                      open(ValuesAlignmentTarget.secondary),
-                                  isSelected: secondary != null,
-                                  isPrimary: false,
-                                  preset: TasklyFormPreset.standard.chip,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-              Builder(
-                builder: (context) {
-                  final errorText = widget
-                      .formKey
-                      .currentState
-                      ?.fields[TaskFieldKeys.valueIds.id]
-                      ?.errorText;
-                  if (errorText == null) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      errorText,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.error,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-              SizedBox(height: sectionGap),
-
               if (widget.availableProjects.isNotEmpty) ...[
                 TasklyFormSectionLabel(text: l10n.projectLabel),
                 const SizedBox(height: 8),
@@ -791,6 +728,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                             }
 
                             markDirty();
+                            _clearTagsIfNotAllowed();
                             setState(() {});
                           },
                         ),
@@ -800,6 +738,267 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                 ),
                 SizedBox(height: sectionGap),
               ],
+
+              Builder(
+                builder: (context) {
+                  final projectId =
+                      widget
+                              .formKey
+                              .currentState
+                              ?.fields[TaskFieldKeys.projectId.id]
+                              ?.value
+                          as String?;
+                  final project = _findProjectById(projectId);
+                  if (project == null) return const SizedBox.shrink();
+
+                  final primaryValue = project.primaryValue;
+                  final hasProjectPrimary = _projectHasPrimaryValue(project);
+
+                  TasklyFormValueChipModel? primaryChip;
+                  if (primaryValue != null) {
+                    final iconData =
+                        getIconDataFromName(primaryValue.iconName) ??
+                        Icons.star;
+                    final color = ColorUtils.fromHexWithThemeFallback(
+                      context,
+                      primaryValue.color,
+                    );
+                    primaryChip = TasklyFormValueChipModel(
+                      label: primaryValue.name,
+                      color: color,
+                      icon: iconData,
+                      semanticLabel: primaryValue.name,
+                    );
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TasklyFormSectionLabel(
+                        text: l10n.taskProjectValueTitle,
+                      ),
+                      const SizedBox(height: 8),
+                      if (primaryChip != null)
+                        Row(
+                          children: [
+                            AbsorbPointer(
+                              child: TasklyFormValueChip(
+                                model: primaryChip,
+                                onTap: () {},
+                                isSelected: true,
+                                isPrimary: true,
+                                preset: TasklyFormPreset.standard.chip,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.lock_outline,
+                              size: 16,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              l10n.taskProjectValueLockedLabel,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Text(
+                          l10n.taskProjectValueNotSet,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      if (!hasProjectPrimary)
+                        Text(
+                          l10n.taskAdditionalValuesDisabled,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        )
+                      else ...[
+                        TasklyFormSectionLabel(
+                          text: l10n.taskAdditionalValuesTitle,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.taskAdditionalValuesHelper,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        FormBuilderField<List<String>>(
+                          name: TaskFieldKeys.valueIds.id,
+                          validator: (value) {
+                            final projectId =
+                                widget
+                                        .formKey
+                                        .currentState
+                                        ?.fields[TaskFieldKeys.projectId.id]
+                                        ?.value
+                                    as String?;
+                            final project = _findProjectById(projectId);
+                            return toFormBuilderValidator<List<String>>(
+                              (ids) => TaskValidators.valueIds(
+                                ids,
+                                projectId: projectId,
+                                projectPrimaryValueId:
+                                    project?.primaryValueId,
+                              ),
+                              context,
+                            )(value);
+                          },
+                          builder: (field) {
+                            final explicitValueIds = List<String>.of(
+                              field.value ?? const <String>[],
+                            );
+                            final explicitIds = explicitValueIds
+                                .take(2)
+                                .toList(growable: false);
+
+                            final primary = explicitIds.isEmpty
+                                ? null
+                                : availableValuesById[explicitIds.first];
+                            final secondary = explicitIds.length < 2
+                                ? null
+                                : availableValuesById[explicitIds[1]];
+
+                            return Builder(
+                              builder: (chipContext) {
+                                Future<void> open(
+                                  ValuesAlignmentTarget target,
+                                ) async {
+                                  final result =
+                                      await _showValuesAlignmentPicker(
+                                        anchorContext: chipContext,
+                                        explicitValueIds: explicitValueIds,
+                                        target: target,
+                                        inheritedValueLabel: primaryValue?.name,
+                                        inheritedValueId: primaryValue?.id,
+                                      );
+                                  if (!mounted || result == null) return;
+                                  field.didChange(result);
+                                  markDirty();
+                                  setState(() {});
+                                }
+
+                                TasklyFormValueChipModel toModel(Value value) {
+                                  final iconData =
+                                      getIconDataFromName(value.iconName) ??
+                                      Icons.star;
+                                  final color =
+                                      ColorUtils.fromHexWithThemeFallback(
+                                        context,
+                                        value.color,
+                                      );
+                                  return TasklyFormValueChipModel(
+                                    label: value.name,
+                                    color: color,
+                                    icon: iconData,
+                                    semanticLabel: value.name,
+                                  );
+                                }
+
+                                final theme = Theme.of(context);
+                                final secondaryEnabled = primary != null;
+                                final primaryPlaceholder =
+                                    TasklyFormValueChipModel(
+                                      label: context
+                                          .l10n
+                                          .taskAdditionalValuePrimaryLabel,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                      icon: Icons.label_outline,
+                                      semanticLabel: context
+                                          .l10n
+                                          .taskAdditionalValuePrimaryLabel,
+                                    );
+                                final secondaryPlaceholder =
+                                    TasklyFormValueChipModel(
+                                      label: context
+                                          .l10n
+                                          .taskAdditionalValueSecondaryLabel,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                      icon: Icons.label_outline,
+                                      semanticLabel: context
+                                          .l10n
+                                          .taskAdditionalValueSecondaryLabel,
+                                    );
+
+                                return KeyedSubtree(
+                                  key: _valuesKey,
+                                  child: TasklyFormRowGroup(
+                                    spacing: 12,
+                                    runSpacing: 8,
+                                    children: [
+                                      TasklyFormValueChip(
+                                        model: primary != null
+                                            ? toModel(primary)
+                                            : primaryPlaceholder,
+                                        onTap: () => open(
+                                          ValuesAlignmentTarget.primary,
+                                        ),
+                                        isSelected: primary != null,
+                                        isPrimary: true,
+                                        preset: TasklyFormPreset.standard.chip,
+                                      ),
+                                      Opacity(
+                                        opacity: secondaryEnabled ? 1 : 0.55,
+                                        child: AbsorbPointer(
+                                          absorbing: !secondaryEnabled,
+                                          child: TasklyFormValueChip(
+                                            model: secondary != null
+                                                ? toModel(secondary)
+                                                : secondaryPlaceholder,
+                                            onTap: () => open(
+                                              ValuesAlignmentTarget.secondary,
+                                            ),
+                                            isSelected: secondary != null,
+                                            isPrimary: false,
+                                            preset:
+                                                TasklyFormPreset.standard.chip,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                        Builder(
+                          builder: (context) {
+                            final errorText = widget
+                                .formKey
+                                .currentState
+                                ?.fields[TaskFieldKeys.valueIds.id]
+                                ?.errorText;
+                            if (errorText == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                errorText,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.error,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                      SizedBox(height: sectionGap),
+                    ],
+                  );
+                },
+              ),
 
               Builder(
                 builder: (context) {

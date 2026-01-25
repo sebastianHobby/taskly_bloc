@@ -88,6 +88,7 @@ TasklyTaskRowData buildTaskRowData(
     checkboxSemanticLabel: isCompleted
         ? 'Mark "${task.name}" as incomplete'
         : 'Mark "${task.name}" as complete',
+    pinned: task.isPinned,
   );
 }
 

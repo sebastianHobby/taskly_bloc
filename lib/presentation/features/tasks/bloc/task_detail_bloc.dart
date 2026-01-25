@@ -80,7 +80,10 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
        _errorReporter = errorReporter,
-       _commandHandler = TaskCommandHandler(taskRepository: taskRepository),
+       _commandHandler = TaskCommandHandler(
+         taskRepository: taskRepository,
+         projectRepository: projectRepository,
+       ),
        super(const TaskDetailState.initial()) {
     on<_TaskDetailLoadInitialData>(
       _onLoadInitialData,

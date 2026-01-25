@@ -302,10 +302,10 @@ See: [doc/architecture/README.md](README.md)
 
 See also: [guides/BLOC_GUIDELINES.md](guides/BLOC_GUIDELINES.md)
 
-### 2.1.2 Entity rows are preset-driven (strict)
+### 2.1.2 Entity rows are style-driven (strict)
 
-Tasklyâ€™s canonical Task/Project/Value â€œentity rowsâ€ are shared UI and must be
-consumed using the **preset, not config** pattern.
+Taskly's canonical Task/Project/Value "entity rows" are shared UI and must be
+consumed using the **style, not config** pattern.
 
 Normative rules:
 
@@ -314,17 +314,18 @@ Normative rules:
   - Entity tiles are **not** a public API; the renderer owns them.
 
 - Entity rows must not be configured via one-off visual knobs.
-  - The app supplies a **preset** (`*RowPreset`) that describes the supported
+  - The app supplies a **style** (`*RowStyle`) that describes the supported
     tile layout.
   - The app supplies **actions** (`*RowActions`) and the renderer derives
     affordances from callback presence.
-  - Semantic markers (for example â€œpinnedâ€) must be passed via explicit
-    markers/models, not via ad-hoc badge lists.
+  - Semantic facts (for example "pinned" or "primary value icon only") must
+    flow through row data fields (for example `TasklyTaskRowData.pinned`) rather
+    than ad-hoc knobs.
 
 - `taskly_ui` remains pure UI.
-  - Presets and actions are UI-level types.
+  - Styles and actions are UI-level types.
   - Any routing, writes, overflow menu orchestration, analytics, etc. remain in
-    the appâ€™s presentation layer. `taskly_ui` only raises callbacks.
+    the app's presentation layer. `taskly_ui` only raises callbacks.
 
 ### 2.2 UI composition model (4-tier) (strict)
 
@@ -494,19 +495,19 @@ Normative rules:
   `kMinInteractiveDimension` unless a design-approved compact token is defined
   in theme extensions, and never go below 40dp.
 
-## 2.5 Entity tile presets and catalog (strict)
+## 2.5 Entity tile styles and catalog (strict)
 
-Entity tiles must be rendered via **explicit presets**, not ad-hoc
+Entity tiles must be rendered via **explicit styles**, not ad-hoc
 combinations of flags or custom layout tweaks.
 
 Normative rules:
 
-- Task/Project/Value tiles must be constructed using the preset variants
-  defined in `taskly_ui` (for example `TasklyTaskRowPreset.*`,
+- Task/Project/Value tiles must be constructed using the documented variants
+  defined in `taskly_ui` (for example `TasklyTaskRowStyle.*`,
   `TasklyProjectRowPreset.*`, `TasklyValueRowPreset.*`).
 - App code must not invent new tile styles through custom flags or screen-local
   widget overrides.
-- Every preset must be represented in the shared catalog widget
+- Every style must be represented in the shared catalog widget
   (`TasklyTileCatalog`) so the full visual surface is auditable in one place.
 
 ## 3) State management standard

@@ -50,18 +50,15 @@ class ProjectTable extends Table {
   BoolColumn get isPinned =>
       boolean().clientDefault(() => false).named('pinned')();
 
+  /// Last time a task in this project was completed (UTC).
+  DateTimeColumn get lastProgressAt =>
+      dateTime().nullable().named('last_progress_at')();
+
   /// Primary value slot for this project (nullable).
   @ReferenceName('primaryValueProjects')
   TextColumn get primaryValueId => text()
       .nullable()
       .named('primary_value_id')
-      .references(ValueTable, #id, onDelete: KeyAction.setNull)();
-
-  /// Secondary value slot for this project (nullable).
-  @ReferenceName('secondaryValueProjects')
-  TextColumn get secondaryValueId => text()
-      .nullable()
-      .named('secondary_value_id')
       .references(ValueTable, #id, onDelete: KeyAction.setNull)();
 
   /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
@@ -241,7 +238,13 @@ class MyDayPicksTable extends Table {
 
   TextColumn get taskId => text()
       .named('task_id')
+      .nullable()
       .references(TaskTable, #id, onDelete: KeyAction.cascade)();
+
+  TextColumn get routineId => text()
+      .named('routine_id')
+      .nullable()
+      .references(RoutinesTable, #id, onDelete: KeyAction.cascade)();
 
   /// One of: due, starts, focus.
   TextColumn get bucket => text().named('bucket')();
@@ -456,6 +459,159 @@ class ProjectRecurrenceExceptionsTable extends Table {
   ];
 }
 
+class ProjectNextActionsTable extends Table {
+  @override
+  String get tableName => 'project_next_actions';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  TextColumn get projectId => text()
+      .named('project_id')
+      .references(ProjectTable, #id, onDelete: KeyAction.cascade)();
+
+  TextColumn get taskId => text()
+      .named('task_id')
+      .references(TaskTable, #id, onDelete: KeyAction.cascade)();
+
+  IntColumn get rank => integer().named('rank')();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class ProjectAnchorStateTable extends Table {
+  @override
+  String get tableName => 'project_anchor_state';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  TextColumn get projectId => text()
+      .named('project_id')
+      .references(ProjectTable, #id, onDelete: KeyAction.cascade)();
+
+  DateTimeColumn get lastAnchoredAt =>
+      dateTime().named('last_anchored_at')();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class RoutinesTable extends Table {
+  @override
+  String get tableName => 'routines';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
+  TextColumn get valueId => text()
+      .named('value_id')
+      .references(ValueTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get projectId => text()
+      .nullable()
+      .named('project_id')
+      .references(ProjectTable, #id, onDelete: KeyAction.setNull)();
+
+  TextColumn get routineType => text().named('routine_type')();
+  IntColumn get targetCount => integer().named('target_count')();
+
+  TextColumn get scheduleDays => text()
+      .map(const JsonIntListConverter())
+      .nullable()
+      .named('schedule_days')();
+  IntColumn get minSpacingDays =>
+      integer().nullable().named('min_spacing_days')();
+  IntColumn get restDayBuffer =>
+      integer().nullable().named('rest_day_buffer')();
+  TextColumn get preferredWeeks => text()
+      .map(const JsonIntListConverter())
+      .nullable()
+      .named('preferred_weeks')();
+  IntColumn get fixedDayOfMonth =>
+      integer().nullable().named('fixed_day_of_month')();
+  IntColumn get fixedWeekday =>
+      integer().nullable().named('fixed_weekday')();
+  IntColumn get fixedWeekOfMonth =>
+      integer().nullable().named('fixed_week_of_month')();
+  BoolColumn get isActive =>
+      boolean().clientDefault(() => true).named('is_active')();
+  TextColumn get pausedUntil =>
+      text().map(dateOnlyStringConverter).nullable().named('paused_until')();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class RoutineCompletionsTable extends Table {
+  @override
+  String get tableName => 'routine_completions';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+  TextColumn get routineId => text()
+      .named('routine_id')
+      .references(RoutinesTable, #id, onDelete: KeyAction.cascade)();
+  DateTimeColumn get completedAt =>
+      dateTime().named('completed_at')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+
+  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class RoutineSkipsTable extends Table {
+  @override
+  String get tableName => 'routine_skips';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+  TextColumn get routineId => text()
+      .named('routine_id')
+      .references(RoutinesTable, #id, onDelete: KeyAction.cascade)();
+
+  TextColumn get periodType => text().named('period_type')();
+  TextColumn get periodKey =>
+      text().map(dateOnlyStringConverter).named('period_key')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+
+  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     ProjectTable,
@@ -469,6 +625,11 @@ class ProjectRecurrenceExceptionsTable extends Table {
     ProjectCompletionHistoryTable,
     TaskRecurrenceExceptionsTable,
     ProjectRecurrenceExceptionsTable,
+    ProjectNextActionsTable,
+    ProjectAnchorStateTable,
+    RoutinesTable,
+    RoutineCompletionsTable,
+    RoutineSkipsTable,
     // Analytics tables
     AnalyticsSnapshots,
     AnalyticsCorrelations,

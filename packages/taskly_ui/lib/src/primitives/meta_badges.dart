@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 class PriorityPill extends StatelessWidget {
   const PriorityPill({
     required this.priority,
+    this.compact = false,
     this.textStyle,
     super.key,
   });
 
   final int priority;
+  final bool compact;
   final TextStyle? textStyle;
 
   @override
@@ -16,18 +18,26 @@ class PriorityPill extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final label = 'P$priority';
 
+    final padding = EdgeInsets.symmetric(
+      horizontal: compact ? 4 : 6,
+      vertical: compact ? 1 : 2,
+    );
+    final baseStyle = (textStyle ?? Theme.of(context).textTheme.labelSmall)
+        ?.copyWith(
+          color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+          fontWeight: FontWeight.w700,
+          fontSize: compact ? 10 : null,
+        );
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: padding,
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
-        style: (textStyle ?? Theme.of(context).textTheme.labelSmall)?.copyWith(
-          color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
-          fontWeight: FontWeight.w700,
-        ),
+        style: baseStyle,
       ),
     );
   }

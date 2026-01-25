@@ -46,7 +46,7 @@ void main() {
       );
     });
 
-    testSafe('create writes primary/secondary values', () async {
+    testSafe('create writes primary value', () async {
       final db = createAutoClosingDb();
       final repo = ProjectRepository(
         driftDb: db,
@@ -55,11 +55,25 @@ void main() {
         idGenerator: IdGenerator.withUserId('user-1'),
       );
 
-      await repo.create(name: 'Project', valueIds: ['v1', 'v2']);
+      await repo.create(name: 'Project', valueIds: ['v1']);
 
       final row = await db.select(db.projectTable).getSingle();
       expect(row.primaryValueId, equals('v1'));
-      expect(row.secondaryValueId, equals('v2'));
+    });
+
+    testSafe('create rejects more than one value', () async {
+      final db = createAutoClosingDb();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      expect(
+        () => repo.create(name: 'Project', valueIds: ['v1', 'v2']),
+        throwsA(isA<InputValidationFailure>()),
+      );
     });
 
     testSafe('update throws when project not found', () async {

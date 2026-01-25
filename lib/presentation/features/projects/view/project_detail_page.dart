@@ -5,11 +5,15 @@ import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mappe
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_ui/taskly_ui_feed.dart';
 
 class ProjectDetailPage extends StatelessWidget {
@@ -22,13 +26,18 @@ class ProjectDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => ProjectOverviewBloc(
-        projectId: projectId,
-        projectRepository: getIt<ProjectRepositoryContract>(),
-        occurrenceReadService: getIt<OccurrenceReadService>(),
-        sessionDayKeyService: getIt<SessionDayKeyService>(),
-      ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => ProjectOverviewBloc(
+            projectId: projectId,
+            projectRepository: getIt<ProjectRepositoryContract>(),
+            occurrenceReadService: getIt<OccurrenceReadService>(),
+            sessionDayKeyService: getIt<SessionDayKeyService>(),
+          ),
+        ),
+        BlocProvider(create: (_) => SelectionCubit()),
+      ],
       child: const _ProjectDetailView(),
     );
   }
@@ -51,48 +60,58 @@ class _ProjectDetailView extends StatelessWidget {
       padding: chrome.iconButtonPadding,
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        toolbarHeight: chrome.anytimeAppBarHeight,
-        title: const Text('Project details'),
-        leading: IconButton(
-          tooltip: 'Back',
-          icon: const Icon(Icons.arrow_back),
-          style: iconButtonStyle,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Search',
-            icon: const Icon(Icons.search),
-            style: iconButtonStyle,
-            onPressed: () {},
+    return BlocBuilder<SelectionCubit, SelectionState>(
+      builder: (context, selectionState) {
+        return Scaffold(
+          appBar: selectionState.isSelectionMode
+              ? SelectionAppBar(
+                  baseTitle: 'Project details',
+                  onExit: () {},
+                )
+              : AppBar(
+                  centerTitle: true,
+                  toolbarHeight: chrome.anytimeAppBarHeight,
+                  title: const Text('Project details'),
+                  leading: IconButton(
+                    tooltip: 'Back',
+                    icon: const Icon(Icons.arrow_back),
+                    style: iconButtonStyle,
+                    onPressed: () => Navigator.of(context).maybePop(),
+                  ),
+                  actions: [
+                    IconButton(
+                      tooltip: 'Search',
+                      icon: const Icon(Icons.search),
+                      style: iconButtonStyle,
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
+          body: BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
+            builder: (context, state) {
+              return switch (state) {
+                ProjectOverviewLoading() => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                ProjectOverviewError(:final message) => Center(
+                  child: Text(message),
+                ),
+                ProjectOverviewLoaded(
+                  :final project,
+                  :final tasks,
+                  :final todayDayKeyUtc,
+                ) =>
+                  _ProjectDetailBody(
+                    project: project,
+                    tasks: tasks,
+                    todayDayKeyUtc: todayDayKeyUtc,
+                    selectionState: selectionState,
+                  ),
+              };
+            },
           ),
-        ],
-      ),
-      body: BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
-        builder: (context, state) {
-          return switch (state) {
-            ProjectOverviewLoading() => const Center(
-              child: CircularProgressIndicator(),
-            ),
-            ProjectOverviewError(:final message) => Center(
-              child: Text(message),
-            ),
-            ProjectOverviewLoaded(
-              :final project,
-              :final tasks,
-              :final todayDayKeyUtc,
-            ) =>
-              _ProjectDetailBody(
-                project: project,
-                tasks: tasks,
-                todayDayKeyUtc: todayDayKeyUtc,
-              ),
-          };
-        },
-      ),
+        );
+      },
     );
   }
 }
@@ -102,11 +121,13 @@ class _ProjectDetailBody extends StatelessWidget {
     required this.project,
     required this.tasks,
     required this.todayDayKeyUtc,
+    required this.selectionState,
   });
 
   final Project project;
   final List<Task> tasks;
   final DateTime todayDayKeyUtc;
+  final SelectionState selectionState;
 
   @override
   Widget build(BuildContext context) {
@@ -144,19 +165,23 @@ class _ProjectDetailBody extends StatelessWidget {
       actions: const TasklyProjectRowActions(),
     );
 
+    final selection = context.read<SelectionCubit>();
+    final visibleTasks = [...open, ...completed];
+    _registerVisibleTasks(selection, visibleTasks);
+
     final rows = <TasklyRowSpec>[
       TasklyRowSpec.header(
         key: 'project-detail-open-header',
         title: 'Tasks',
         trailingLabel: '${open.length} remaining',
       ),
-      ...open.map((task) => _taskRow(context, task)),
+      ...open.map((task) => _taskRow(context, task, selectionState)),
       if (completed.isNotEmpty) ...[
         TasklyRowSpec.header(
           key: 'project-detail-completed-header',
           title: 'Completed',
         ),
-        ...completed.map((task) => _taskRow(context, task)),
+        ...completed.map((task) => _taskRow(context, task, selectionState)),
       ],
     ];
 
@@ -172,7 +197,12 @@ class _ProjectDetailBody extends StatelessWidget {
     );
   }
 
-  TasklyRowSpec _taskRow(BuildContext context, Task task) {
+  TasklyRowSpec _taskRow(
+    BuildContext context,
+    Task task,
+    SelectionState selectionState,
+  ) {
+    final selection = context.read<SelectionCubit>();
     final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
     final data = buildTaskRowData(
       context,
@@ -180,13 +210,46 @@ class _ProjectDetailBody extends StatelessWidget {
       tileCapabilities: tileCapabilities,
     );
 
+    final key = SelectionKey(
+      entityType: EntityType.task,
+      entityId: task.id,
+    );
+    final isSelected = selectionState.selected.contains(key);
+
+    final rowData = TasklyTaskRowData(
+      id: data.id,
+      title: data.title,
+      completed: data.completed,
+      meta: data.meta,
+      leadingChip: data.leadingChip,
+      secondaryChips: data.secondaryChips,
+      deemphasized: data.deemphasized,
+      checkboxSemanticLabel: data.checkboxSemanticLabel,
+      labels: data.labels,
+      pinned: data.pinned,
+      primaryValueIconOnly: true,
+    );
+
+    final style = selectionState.isSelectionMode
+        ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
+        : const TasklyTaskRowStyle.standard();
+
     return TasklyRowSpec.task(
       key: 'project-detail-task-${task.id}',
-      data: data,
-      markers: TasklyTaskRowMarkers(pinned: task.isPinned),
-      preset: const TasklyTaskRowPreset.standard(),
+      data: rowData,
+      style: style,
       actions: TasklyTaskRowActions(
-        onTap: buildTaskOpenEditorHandler(context, task: task),
+        onTap: () {
+          if (selection.shouldInterceptTapAsSelection()) {
+            selection.handleEntityTap(key);
+            return;
+          }
+          buildTaskOpenEditorHandler(context, task: task)();
+        },
+        onLongPress: () => selection.enterSelectionMode(initialSelection: key),
+        onToggleSelected: selectionState.isSelectionMode
+            ? () => selection.handleEntityTap(key)
+            : null,
         onToggleCompletion: buildTaskToggleCompletionHandler(
           context,
           task: task,
@@ -195,6 +258,29 @@ class _ProjectDetailBody extends StatelessWidget {
       ),
     );
   }
+}
+
+void _registerVisibleTasks(
+  SelectionCubit selection,
+  List<Task> tasks,
+) {
+  selection.updateVisibleEntities(
+    tasks
+        .map(
+          (task) => SelectionEntityMeta(
+            key: SelectionKey(
+              entityType: EntityType.task,
+              entityId: task.id,
+            ),
+            displayName: task.name,
+            canDelete: true,
+            completed: task.completed,
+            pinned: task.isPinned,
+            canCompleteSeries: task.isRepeating && !task.seriesEnded,
+          ),
+        )
+        .toList(growable: false),
+  );
 }
 
 int _countDueSoon(
