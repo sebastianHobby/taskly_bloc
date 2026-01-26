@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+
 /// A form field for selecting task priority (1-4).
 class FormBuilderPriorityPicker extends FormBuilderFieldDecoration<int?> {
   FormBuilderPriorityPicker({
@@ -79,10 +80,9 @@ class _PriorityChip extends StatelessWidget {
       onSelected: (_) => onTap(),
       selectedColor: color.withValues(alpha: 0.16),
       checkmarkColor: color,
-      backgroundColor:
-          isDark
-              ? scheme.surface.withValues(alpha: 0)
-              : scheme.surfaceContainerLowest,
+      backgroundColor: isDark
+          ? scheme.surface.withValues(alpha: 0)
+          : scheme.surfaceContainerLowest,
       labelStyle: TextStyle(
         color: isSelected ? color : theme.colorScheme.onSurfaceVariant,
         fontWeight: isSelected ? FontWeight.bold : null,

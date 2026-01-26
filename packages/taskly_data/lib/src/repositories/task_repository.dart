@@ -81,8 +81,10 @@ class TaskRepository implements TaskRepositoryContract {
       TaskValueIssue.duplicate,
     ];
 
-    final issue =
-        priorityOrder.firstWhere(issues.contains, orElse: () => issues.first);
+    final issue = priorityOrder.firstWhere(
+      issues.contains,
+      orElse: () => issues.first,
+    );
 
     return switch (issue) {
       TaskValueIssue.projectRequired =>
@@ -419,8 +421,8 @@ class TaskRepository implements TaskRepositoryContract {
 
         final projectPrimaryValueId =
             normalizedProjectId == null || !_hasNonEmptyValueIds(valueIds)
-                ? null
-                : await _getProjectPrimaryValueId(normalizedProjectId);
+            ? null
+            : await _getProjectPrimaryValueId(normalizedProjectId);
         final valueValidation = TaskValuePolicy.validate(
           valueIds: valueIds,
           projectId: normalizedProjectId,
@@ -433,10 +435,12 @@ class TaskRepository implements TaskRepositoryContract {
         }
 
         final normalizedValueIds = valueValidation.normalizedIds;
-        final overridePrimaryValueId =
-            normalizedValueIds.isEmpty ? null : normalizedValueIds.first;
-        final overrideSecondaryValueId =
-            normalizedValueIds.length > 1 ? normalizedValueIds[1] : null;
+        final overridePrimaryValueId = normalizedValueIds.isEmpty
+            ? null
+            : normalizedValueIds.first;
+        final overrideSecondaryValueId = normalizedValueIds.length > 1
+            ? normalizedValueIds[1]
+            : null;
 
         final psMetadata = encodeCrudMetadata(context);
 
@@ -507,28 +511,28 @@ class TaskRepository implements TaskRepositoryContract {
         final existing = await (driftDb.select(
           driftDb.taskTable,
         )..where((t) => t.id.equals(id))).getSingleOrNull();
-          if (existing == null) {
-            talker.warning(
-              '[TaskRepository] update failed: task not found id=$id',
-            );
-            throw RepositoryNotFoundException('No task found to update');
-          }
+        if (existing == null) {
+          talker.warning(
+            '[TaskRepository] update failed: task not found id=$id',
+          );
+          throw RepositoryNotFoundException('No task found to update');
+        }
 
-          final now = DateTime.now();
+        final now = DateTime.now();
 
-          final normalizedStartDate = dateOnlyOrNull(startDate);
-          final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
+        final normalizedStartDate = dateOnlyOrNull(startDate);
+        final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
-          final nextPinned = !completed && (isPinned ?? existing.isPinned);
-          final previousProjectId = existing.projectId;
-          final projectChanged = normalizedProjectId != previousProjectId;
+        final nextPinned = !completed && (isPinned ?? existing.isPinned);
+        final previousProjectId = existing.projectId;
+        final projectChanged = normalizedProjectId != previousProjectId;
 
         List<String>? normalizedValueIds;
         if (valueIds != null) {
           final projectPrimaryValueId =
               normalizedProjectId == null || !_hasNonEmptyValueIds(valueIds)
-                  ? null
-                  : await _getProjectPrimaryValueId(normalizedProjectId);
+              ? null
+              : await _getProjectPrimaryValueId(normalizedProjectId);
           final valueValidation = TaskValuePolicy.validate(
             valueIds: valueIds,
             projectId: normalizedProjectId,
@@ -552,11 +556,11 @@ class TaskRepository implements TaskRepositoryContract {
 
         final psMetadata = encodeCrudMetadata(context);
 
-          await driftDb.transaction(() async {
-            await driftDb
-                .update(driftDb.taskTable)
-                .replace(
-                  TaskTableCompanion(
+        await driftDb.transaction(() async {
+          await driftDb
+              .update(driftDb.taskTable)
+              .replace(
+                TaskTableCompanion(
                   id: drift_pkg.Value(id),
                   name: drift_pkg.Value(name),
                   description: drift_pkg.Value(description),
@@ -580,36 +584,36 @@ class TaskRepository implements TaskRepositoryContract {
                       : drift_pkg.Value(seriesEnded),
                   overridePrimaryValueId:
                       normalizedValueIds == null && !clearOverrides
-                          ? const drift_pkg.Value<String?>.absent()
-                          : drift_pkg.Value(
-                            clearOverrides ? null : overridePrimaryValueId,
-                          ),
+                      ? const drift_pkg.Value<String?>.absent()
+                      : drift_pkg.Value(
+                          clearOverrides ? null : overridePrimaryValueId,
+                        ),
                   overrideSecondaryValueId:
                       normalizedValueIds == null && !clearOverrides
-                          ? const drift_pkg.Value<String?>.absent()
-                          : drift_pkg.Value(
-                            clearOverrides ? null : overrideSecondaryValueId,
-                          ),
+                      ? const drift_pkg.Value<String?>.absent()
+                      : drift_pkg.Value(
+                          clearOverrides ? null : overrideSecondaryValueId,
+                        ),
                   psMetadata: psMetadata == null
                       ? const drift_pkg.Value<String?>.absent()
                       : drift_pkg.Value(psMetadata),
                   createdAt: drift_pkg.Value(existing.createdAt),
-                    updatedAt: drift_pkg.Value(now),
-                  ),
-                );
-
-            if (projectChanged) {
-              await _removeNextActionForTask(
-                taskId: id,
-                now: now,
-                psMetadata: psMetadata,
+                  updatedAt: drift_pkg.Value(now),
+                ),
               );
-            }
-          });
-        },
-        area: 'data.task',
-        opName: 'update',
-        context: context,
+
+          if (projectChanged) {
+            await _removeNextActionForTask(
+              taskId: id,
+              now: now,
+              psMetadata: psMetadata,
+            );
+          }
+        });
+      },
+      area: 'data.task',
+      opName: 'update',
+      context: context,
     );
   }
 
@@ -1324,11 +1328,11 @@ class TaskRepository implements TaskRepositoryContract {
     required DateTime now,
     required String? psMetadata,
   }) async {
-    final rows = await (driftDb.select(
-      driftDb.projectNextActionsTable,
-    )..where((t) => t.projectId.equals(projectId))
-          ..orderBy([(t) => drift_pkg.OrderingTerm(expression: t.rank)]))
-        .get();
+    final rows =
+        await (driftDb.select(driftDb.projectNextActionsTable)
+              ..where((t) => t.projectId.equals(projectId))
+              ..orderBy([(t) => drift_pkg.OrderingTerm(expression: t.rank)]))
+            .get();
 
     var nextRank = 1;
     for (final row in rows) {

@@ -25,6 +25,4 @@ class DateOnlyStringConverter extends TypeConverter<DateTime, String> {
 const dateOnlyStringConverter = DateOnlyStringConverter();
 
 final NullAwareTypeConverter<DateTime, String> dateOnlyStringNullableConverter =
-    NullAwareTypeConverter.wrap(
-      dateOnlyStringConverter,
-    );
+    NullAwareTypeConverter.wrap(dateOnlyStringConverter);

@@ -7,6 +7,7 @@ import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
 
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 
 sealed class ProjectOverviewEvent {
   const ProjectOverviewEvent();
@@ -14,6 +15,16 @@ sealed class ProjectOverviewEvent {
 
 final class ProjectOverviewStarted extends ProjectOverviewEvent {
   const ProjectOverviewStarted();
+}
+
+final class ProjectOverviewNextActionsUpdated extends ProjectOverviewEvent {
+  const ProjectOverviewNextActionsUpdated({
+    required this.actions,
+    required this.intent,
+  });
+
+  final List<ProjectNextActionDraft> actions;
+  final String intent;
 }
 
 sealed class ProjectOverviewState {
@@ -29,11 +40,13 @@ final class ProjectOverviewLoaded extends ProjectOverviewState {
     required this.project,
     required this.tasks,
     required this.todayDayKeyUtc,
+    required this.nextActions,
   });
 
   final Project project;
   final List<Task> tasks;
   final DateTime todayDayKeyUtc;
+  final List<ProjectNextAction> nextActions;
 }
 
 final class ProjectOverviewError extends ProjectOverviewState {
@@ -48,21 +61,30 @@ class ProjectOverviewBloc
     required String projectId,
     required ProjectRepositoryContract projectRepository,
     required OccurrenceReadService occurrenceReadService,
+    required ProjectNextActionsRepositoryContract projectNextActionsRepository,
     required SessionDayKeyService sessionDayKeyService,
   }) : _projectId = projectId,
        _projectRepository = projectRepository,
        _occurrenceReadService = occurrenceReadService,
+       _projectNextActionsRepository = projectNextActionsRepository,
        _sessionDayKeyService = sessionDayKeyService,
        super(const ProjectOverviewLoading()) {
     on<ProjectOverviewStarted>(_onStarted, transformer: restartable());
+    on<ProjectOverviewNextActionsUpdated>(
+      _onNextActionsUpdated,
+      transformer: sequential(),
+    );
     add(const ProjectOverviewStarted());
   }
 
   final String _projectId;
   final ProjectRepositoryContract _projectRepository;
   final OccurrenceReadService _occurrenceReadService;
+  final ProjectNextActionsRepositoryContract _projectNextActionsRepository;
   final SessionDayKeyService _sessionDayKeyService;
   final String _inboxProjectKey = ProjectGroupingRef.inbox().stableKey;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
 
   bool get _isInbox => _projectId == _inboxProjectKey;
 
@@ -83,6 +105,7 @@ class ProjectOverviewBloc
             project: project,
             tasks: snapshot.tasks,
             todayDayKeyUtc: snapshot.todayDayKeyUtc,
+            nextActions: snapshot.nextActions,
           ),
         );
       },
@@ -113,15 +136,51 @@ class ProjectOverviewBloc
       );
     });
 
-    return Rx.combineLatest3<DateTime, Project?, List<Task>, _OverviewSnapshot>(
+    final nextActions$ = _isInbox
+        ? Stream<List<ProjectNextAction>>.value(const [])
+        : _projectNextActionsRepository.watchForProject(_projectId);
+
+    return Rx.combineLatest4<
+      DateTime,
+      Project?,
+      List<Task>,
+      List<ProjectNextAction>,
+      _OverviewSnapshot
+    >(
       dayKey$,
       project$,
       tasks$,
-      (dayKey, project, tasks) => _OverviewSnapshot(
+      nextActions$,
+      (dayKey, project, tasks, nextActions) => _OverviewSnapshot(
         todayDayKeyUtc: dayKey,
         project: project,
         tasks: tasks,
+        nextActions: nextActions,
       ),
+    );
+  }
+
+  Future<void> _onNextActionsUpdated(
+    ProjectOverviewNextActionsUpdated event,
+    Emitter<ProjectOverviewState> emit,
+  ) async {
+    if (_isInbox) return;
+    final context = _contextFactory.create(
+      feature: 'projects',
+      screen: 'project_detail',
+      intent: event.intent,
+      operation: 'project_next_actions.set',
+      entityType: 'project',
+      entityId: _projectId,
+      extraFields: <String, Object?>{
+        'count': event.actions.length,
+      },
+    );
+
+    await _projectNextActionsRepository.setForProject(
+      projectId: _projectId,
+      actions: event.actions,
+      context: context,
     );
   }
 
@@ -141,9 +200,11 @@ final class _OverviewSnapshot {
     required this.todayDayKeyUtc,
     required this.project,
     required this.tasks,
+    required this.nextActions,
   });
 
   final DateTime todayDayKeyUtc;
   final Project? project;
   final List<Task> tasks;
+  final List<ProjectNextAction> nextActions;
 }

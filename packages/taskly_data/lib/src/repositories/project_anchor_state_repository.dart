@@ -4,7 +4,7 @@ import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/infrastructure/powersync/crud_metadata.dart';
 import 'package:taskly_data/src/mappers/drift_to_domain.dart';
-import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/core.dart' hide Value;
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/telemetry.dart';
 
@@ -25,15 +25,15 @@ final class ProjectAnchorStateRepository
       ..orderBy([(t) => OrderingTerm(expression: t.projectId)]);
 
     return query.watch().map(
-          (rows) => rows.map(projectAnchorStateFromTable).toList(growable: false),
-        );
+      (rows) => rows.map(projectAnchorStateFromTable).toList(growable: false),
+    );
   }
 
   @override
   Future<List<ProjectAnchorState>> getAll() async {
-    final rows = await (_db.select(_db.projectAnchorStateTable)
-          ..orderBy([(t) => OrderingTerm(expression: t.projectId)]))
-        .get();
+    final rows = await (_db.select(
+      _db.projectAnchorStateTable,
+    )..orderBy([(t) => OrderingTerm(expression: t.projectId)])).get();
     return rows.map(projectAnchorStateFromTable).toList(growable: false);
   }
 
@@ -54,22 +54,27 @@ final class ProjectAnchorStateRepository
 
         await _db.transaction(() async {
           for (final projectId in ids) {
-            final updated = await (_db.update(
-              _db.projectAnchorStateTable,
-            )..where((t) => t.projectId.equals(projectId))).write(
-              ProjectAnchorStateTableCompanion(
-                lastAnchoredAt: Value(anchoredAtUtc),
-                updatedAt: Value(now),
-                psMetadata: psMetadata == null
-                    ? const Value.absent()
-                    : Value(psMetadata),
-              ),
-            );
+            final updated =
+                await (_db.update(
+                  _db.projectAnchorStateTable,
+                )..where((t) => t.projectId.equals(projectId))).write(
+                  ProjectAnchorStateTableCompanion(
+                    lastAnchoredAt: Value(anchoredAtUtc),
+                    updatedAt: Value(now),
+                    psMetadata: psMetadata == null
+                        ? const Value.absent()
+                        : Value(psMetadata),
+                  ),
+                );
 
             if (updated == 0) {
-              await _db.into(_db.projectAnchorStateTable).insert(
+              await _db
+                  .into(_db.projectAnchorStateTable)
+                  .insert(
                     ProjectAnchorStateTableCompanion.insert(
-                      id: _ids.projectAnchorStateId(),
+                      id: _ids.projectAnchorStateIdForProject(
+                        projectId: projectId,
+                      ),
                       userId: Value(userId),
                       projectId: projectId,
                       lastAnchoredAt: anchoredAtUtc,

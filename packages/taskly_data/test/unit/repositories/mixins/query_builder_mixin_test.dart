@@ -56,9 +56,7 @@ void main() {
     testSafe(
       'relativeToAbsolute uses injected Clock and normalizes to midnight',
       () async {
-        final h = _Harness(
-          clock: FixedClock(DateTime(2025, 1, 15, 18, 30)),
-        );
+        final h = _Harness(clock: FixedClock(DateTime(2025, 1, 15, 18, 30)));
 
         final today = h.relativeToAbsolute(0);
         final next = h.relativeToAbsolute(1);

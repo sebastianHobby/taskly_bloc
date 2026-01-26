@@ -6,30 +6,27 @@ import 'package:taskly_domain/services.dart';
 enum MyDayPlannedItemType { task, routine }
 
 final class MyDayPlannedItem {
-  const MyDayPlannedItem.task({
-    required Task task,
+  MyDayPlannedItem.task({
+    required Task this.task,
     required this.bucket,
     required this.sortIndex,
     required this.qualifyingValueId,
   }) : type = MyDayPlannedItemType.task,
        id = task.id,
-       task = task,
        routine = null,
        routineSnapshot = null,
        completed = task.occurrence?.isCompleted ?? task.completed;
 
-  const MyDayPlannedItem.routine({
-    required Routine routine,
-    required RoutineCadenceSnapshot snapshot,
+  MyDayPlannedItem.routine({
+    required Routine this.routine,
+    required RoutineCadenceSnapshot this.routineSnapshot,
     required this.bucket,
     required this.sortIndex,
     required this.qualifyingValueId,
     required this.completed,
   }) : type = MyDayPlannedItemType.routine,
        id = routine.id,
-       task = null,
-       routine = routine,
-       routineSnapshot = snapshot;
+       task = null;
 
   final MyDayPlannedItemType type;
   final String id;

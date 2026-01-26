@@ -73,8 +73,7 @@ abstract class GlobalSettings with _$GlobalSettings {
         (json['myDayDueWindowDays'] as num?)?.toInt() ??
         defaultMyDayDueWindowDays;
 
-    final rawMyDayDueSoonEnabled =
-        json['myDayDueSoonEnabled'] as bool?;
+    final rawMyDayDueSoonEnabled = json['myDayDueSoonEnabled'] as bool?;
     final rawMyDayShowAvailableToStart =
         json['myDayShowAvailableToStart'] as bool?;
     final rawMyDayPlanFlow = json['myDayPlanFlow'] as String?;
@@ -220,7 +219,8 @@ extension GlobalSettingsJson on GlobalSettings {
     'maintenanceDueSoonEnabled': maintenanceDueSoonEnabled,
     'maintenanceStaleEnabled': maintenanceStaleEnabled,
     'maintenanceFrequentSnoozedEnabled': maintenanceFrequentSnoozedEnabled,
-    'maintenanceMissingNextActionsEnabled': maintenanceMissingNextActionsEnabled,
+    'maintenanceMissingNextActionsEnabled':
+        maintenanceMissingNextActionsEnabled,
     'textScaleFactor': textScaleFactor,
     'onboardingCompleted': onboardingCompleted,
   };

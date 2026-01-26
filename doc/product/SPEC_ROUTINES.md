@@ -227,3 +227,45 @@ Pick behavior:
 ## Open Questions
 
 - None.
+
+## Implementation Status (2026-01-26)
+
+Completed:
+- Routine pause semantics: `pausedUntil` is exclusive (routine is paused on day D only if pausedUntil is after D).
+- Allocation setting default on: routine selections count 1:1 against value quotas.
+- Routine validators updated to allow optional weekly suggested days (validated if present).
+- Routine form simplified to weekly/monthly flexible only; monthly fixed removed; suggested days UI added for weekly flexible; spacing inputs removed.
+- Routine detail view updated to keep suggested days for weekly flexible.
+- Routine tile mapping updated: monthly window label uses period end date; suggested days rendered as badges; “skip” label removed.
+- Plan My Day BLoC: routine items filtered to remaining > 0; routine skip event removed.
+
+Remaining:
+- Plan My Day UI rewrite to 4-step wizard (Values → Routines → Triage → Summary), auto-skip empty steps, summary shows “No …” lines for skipped sections.
+- Plan My Day pause sheet: only “Pause until next window (date)” and “Pick a date”.
+- L10n additions for routine + plan-my-day strings; regenerate localizations.
+- Legacy Plan My Day card UI removal and unused wiring cleanup after wizard is in place.
+
+## Prompt for Next AI
+
+You are continuing implementation in `c:\Users\User\FlutterProjects\taskly_bloc`.
+
+Goal: finish SPEC_ROUTINES per latest decisions in this chat (these override spec text).
+
+Must-do:
+1) Rewrite `lib/presentation/screens/view/plan_my_day_page.dart` into a 4-step wizard driven by `PlanMyDayBloc.steps/currentStep`:
+   - Steps: Values, Routines, Triage, Summary; auto-skip empty steps; summary shows “No …” for skipped steps.
+   - Remove legacy card UI (time-sensitive banner, pinned/snoozed sections, etc.).
+   - Use existing `taskly_ui` feed rows; do not introduce new app-owned section widgets.
+2) Implement Plan My Day routine pause sheet with only:
+   - “Pause until next window (date)” (compute next window start based on week/month).
+   - “Pick a date”.
+3) Add missing l10n keys referenced by routines and plan-my-day UI into:
+   - `lib/l10n/arb/app_en.arb`
+   - `lib/l10n/arb/app_es.arb` (English ok if needed)
+   - Run `flutter gen-l10n` after updates.
+4) Remove unused/legacy wiring once wizard is live, after confirming it’s unused.
+5) Run `dart format` on edited files and `dart analyze` at the end.
+
+Notes:
+- BLoC boundary is strict: widgets must not call repositories directly.
+- Shared UI changes in `taskly_ui` require explicit approval.

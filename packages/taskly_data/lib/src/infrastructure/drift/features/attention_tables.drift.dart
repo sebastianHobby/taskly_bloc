@@ -24,12 +24,12 @@ class AttentionRules extends Table {
 
   TextColumn get userId => text().nullable().named('user_id')();
 
-    /// Server-required non-null domain marker.
-    ///
-    /// This column exists in Supabase and is NOT NULL. PowerSync uploads full-row
-    /// payloads, so missing/NULL values will be rejected.
-    TextColumn get domain =>
-            text().clientDefault(() => 'attention').named('domain')();
+  /// Server-required non-null domain marker.
+  ///
+  /// This column exists in Supabase and is NOT NULL. PowerSync uploads full-row
+  /// payloads, so missing/NULL values will be rejected.
+  TextColumn get domain =>
+      text().clientDefault(() => 'attention').named('domain')();
 
   /// Stable grouping axes.
   TextColumn get bucket => textEnum<AttentionBucket>().named('bucket')();

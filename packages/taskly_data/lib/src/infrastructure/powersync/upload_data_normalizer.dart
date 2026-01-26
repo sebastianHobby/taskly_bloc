@@ -2,11 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
-enum UploadJsonExpectation {
-  map,
-  list,
-  any,
-}
+enum UploadJsonExpectation { map, list, any }
 
 /// Upload-time JSON/array expectations for Supabase columns.
 ///
@@ -16,9 +12,7 @@ enum UploadJsonExpectation {
 /// structured values before sending to PostgREST.
 final Map<String, Map<String, UploadJsonExpectation>>
 uploadJsonExpectationsByTable = {
-  'user_profiles': {
-    'settings_overrides': UploadJsonExpectation.map,
-  },
+  'user_profiles': {'settings_overrides': UploadJsonExpectation.map},
   'attention_rules': {
     // Legacy attention rule schema columns.
     'trigger_config': UploadJsonExpectation.map,
@@ -28,9 +22,7 @@ uploadJsonExpectationsByTable = {
     // Supabase: text[] (PostgREST expects a JSON array)
     'resolution_actions': UploadJsonExpectation.list,
   },
-  'pending_notifications': {
-    'payload': UploadJsonExpectation.any,
-  },
+  'pending_notifications': {'payload': UploadJsonExpectation.any},
   'tracker_definitions': {
     // Supabase: text[] (PostgREST expects a JSON array)
     'roles': UploadJsonExpectation.list,
@@ -50,12 +42,8 @@ uploadJsonExpectationsByTable = {
     // Supabase: jsonb
     'value': UploadJsonExpectation.any,
   },
-  'analytics_snapshots': {
-    'metrics': UploadJsonExpectation.map,
-  },
-  'analytics_insights': {
-    'metadata': UploadJsonExpectation.map,
-  },
+  'analytics_snapshots': {'metrics': UploadJsonExpectation.map},
+  'analytics_insights': {'metadata': UploadJsonExpectation.map},
   'analytics_correlations': {
     // Supabase: jsonb
     'performance_metrics': UploadJsonExpectation.map,

@@ -49,7 +49,8 @@ class TasklyFeedTheme extends ThemeExtension<TasklyFeedTheme> {
 
   factory TasklyFeedTheme.of(BuildContext context) {
     final theme = Theme.of(context);
-    return theme.extension<TasklyFeedTheme>() ?? TasklyFeedTheme.fromTheme(theme);
+    return theme.extension<TasklyFeedTheme>() ??
+        TasklyFeedTheme.fromTheme(theme);
   }
 
   final double rowIndent;

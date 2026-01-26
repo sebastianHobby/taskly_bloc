@@ -143,8 +143,7 @@ final class RoutineValidators {
         ValidationError(code: 'invalid', messageKey: 'validationInvalid'),
       ];
     }
-    if (fixedWeekday != null &&
-        (fixedWeekday < 1 || fixedWeekday > 7)) {
+    if (fixedWeekday != null && (fixedWeekday < 1 || fixedWeekday > 7)) {
       return const [
         ValidationError(code: 'invalid', messageKey: 'validationInvalid'),
       ];

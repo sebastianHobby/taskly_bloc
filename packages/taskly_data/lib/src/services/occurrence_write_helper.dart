@@ -169,10 +169,7 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
         );
       }
 
-      await _removeNextActionForTask(
-        taskId: taskId,
-        now: now,
-      );
+      await _removeNextActionForTask(taskId: taskId, now: now);
     });
   }
 
@@ -653,10 +650,7 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     )..where((t) => t.taskId.equals(taskId))).go();
 
     for (final projectId in projectIds) {
-      await _compactProjectNextActionRanks(
-        projectId: projectId,
-        now: now,
-      );
+      await _compactProjectNextActionRanks(projectId: projectId, now: now);
     }
   }
 
@@ -664,11 +658,11 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     required String projectId,
     required DateTime now,
   }) async {
-    final rows = await (driftDb.select(
-      driftDb.projectNextActionsTable,
-    )..where((t) => t.projectId.equals(projectId))
-          ..orderBy([(t) => OrderingTerm(expression: t.rank)]))
-        .get();
+    final rows =
+        await (driftDb.select(driftDb.projectNextActionsTable)
+              ..where((t) => t.projectId.equals(projectId))
+              ..orderBy([(t) => OrderingTerm(expression: t.rank)]))
+            .get();
 
     var nextRank = 1;
     for (final row in rows) {

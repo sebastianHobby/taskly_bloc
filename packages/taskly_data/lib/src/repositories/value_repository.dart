@@ -13,10 +13,7 @@ import 'package:taskly_data/src/mappers/drift_to_domain.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
 class ValueRepository implements ValueRepositoryContract {
-  ValueRepository({
-    required this.driftDb,
-    required this.idGenerator,
-  });
+  ValueRepository({required this.driftDb, required this.idGenerator});
   final drift.AppDatabase driftDb;
   final IdGenerator idGenerator;
 
@@ -37,9 +34,7 @@ class ValueRepository implements ValueRepositoryContract {
   }
 
   Stream<List<drift.ValueTableData>> get _valueStream =>
-      (driftDb.select(
-            driftDb.valueTable,
-          )..orderBy([
+      (driftDb.select(driftDb.valueTable)..orderBy([
             (l) => drift_pkg.OrderingTerm(
               expression: _prioritySortExpr(l),
               mode: drift_pkg.OrderingMode.desc,
@@ -49,9 +44,7 @@ class ValueRepository implements ValueRepositoryContract {
           .watch();
 
   Future<List<drift.ValueTableData>> get _valueList =>
-      (driftDb.select(
-            driftDb.valueTable,
-          )..orderBy([
+      (driftDb.select(driftDb.valueTable)..orderBy([
             (l) => drift_pkg.OrderingTerm(
               expression: _prioritySortExpr(l),
               mode: drift_pkg.OrderingMode.desc,
@@ -85,74 +78,66 @@ class ValueRepository implements ValueRepositoryContract {
       // - routine log on subscribe/first emission
       // - warn if first emission is delayed (helps identify "infinite loading")
       // - error is captured via AppLog.handleStructured
-      return Stream<List<Value>>.multi(
-        (controller) {
-          late final StreamSubscription<List<Value>> sub;
-          var hasFirstEmission = false;
-          Timer? delayedFirstEmissionTimer;
+      return Stream<List<Value>>.multi((controller) {
+        late final StreamSubscription<List<Value>> sub;
+        var hasFirstEmission = false;
+        Timer? delayedFirstEmissionTimer;
 
-          void cancelDelayTimer() {
-            delayedFirstEmissionTimer?.cancel();
-            delayedFirstEmissionTimer = null;
-          }
+        void cancelDelayTimer() {
+          delayedFirstEmissionTimer?.cancel();
+          delayedFirstEmissionTimer = null;
+        }
 
-          controller.onCancel = () async {
-            cancelDelayTimer();
-            await sub.cancel();
-          };
+        controller.onCancel = () async {
+          cancelDelayTimer();
+          await sub.cancel();
+        };
 
-          AppLog.routineStructured(
+        AppLog.routineStructured(
+          'data.value',
+          'watchAll subscribed',
+          fields: fields,
+        );
+
+        delayedFirstEmissionTimer = Timer(const Duration(seconds: 2), () {
+          if (hasFirstEmission) return;
+          AppLog.warnStructured(
             'data.value',
-            'watchAll subscribed',
-            fields: fields,
+            'watchAll first emission delayed',
+            fields: <String, Object?>{...fields, 'delayMs': 2000},
           );
+        });
 
-          delayedFirstEmissionTimer = Timer(const Duration(seconds: 2), () {
-            if (hasFirstEmission) return;
-            AppLog.warnStructured(
-              'data.value',
-              'watchAll first emission delayed',
-              fields: <String, Object?>{
-                ...fields,
-                'delayMs': 2000,
-              },
-            );
-          });
-
-          sub = source.listen(
-            (values) {
-              if (!hasFirstEmission) {
-                hasFirstEmission = true;
-                cancelDelayTimer();
-                AppLog.routineStructured(
-                  'data.value',
-                  'watchAll first emission',
-                  fields: <String, Object?>{
-                    ...fields,
-                    'count': values.length,
-                  },
-                );
-              }
-              controller.add(values);
-            },
-            onError: (Object error, StackTrace stackTrace) {
+        sub = source.listen(
+          (values) {
+            if (!hasFirstEmission) {
+              hasFirstEmission = true;
               cancelDelayTimer();
-              AppLog.handleStructured(
+              AppLog.routineStructured(
                 'data.value',
-                'watchAll stream error',
-                error,
-                stackTrace,
-                fields,
+                'watchAll first emission',
+                fields: <String, Object?>{...fields, 'count': values.length},
               );
-              controller.addError(error, stackTrace);
-            },
-            onDone: () {
-              cancelDelayTimer();
-              controller.close();
-            },
-          );
-        },
-      );
+            }
+            controller.add(values);
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            cancelDelayTimer();
+            AppLog.handleStructured(
+              'data.value',
+              'watchAll stream error',
+              error,
+              stackTrace,
+              fields,
+            );
+            controller.addError(error, stackTrace);
+          },
+          onDone: () {
+            cancelDelayTimer();
+            controller.close();
+          },
+        );
+      });
     }
 
     return _sharedWatchAllCache.getOrCreate(normalizedQuery, () {
@@ -398,17 +383,12 @@ class ValueRepository implements ValueRepositoryContract {
   }
 
   @override
-  Future<void> delete(
-    String id, {
-    OperationContext? context,
-  }) async {
+  Future<void> delete(String id, {OperationContext? context}) async {
     return FailureGuard.run(
       () async {
         talker.debug('[ValueRepository] delete: id=$id');
 
-        await _deleteValue(
-          drift.ValueTableCompanion(id: drift_pkg.Value(id)),
-        );
+        await _deleteValue(drift.ValueTableCompanion(id: drift_pkg.Value(id)));
       },
       area: 'data.value',
       opName: 'delete',

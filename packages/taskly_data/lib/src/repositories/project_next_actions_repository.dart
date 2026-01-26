@@ -5,7 +5,7 @@ import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/infrastructure/powersync/crud_metadata.dart';
 import 'package:taskly_data/src/mappers/drift_to_domain.dart';
 import 'package:taskly_data/src/repositories/repository_exceptions.dart';
-import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/core.dart' hide Value;
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/telemetry.dart';
 
@@ -29,8 +29,8 @@ final class ProjectNextActionsRepository
       ]);
 
     return query.watch().map(
-          (rows) => rows.map(projectNextActionFromTable).toList(growable: false),
-        );
+      (rows) => rows.map(projectNextActionFromTable).toList(growable: false),
+    );
   }
 
   @override
@@ -40,27 +40,28 @@ final class ProjectNextActionsRepository
       ..orderBy([(t) => OrderingTerm(expression: t.rank)]);
 
     return query.watch().map(
-          (rows) => rows.map(projectNextActionFromTable).toList(growable: false),
-        );
+      (rows) => rows.map(projectNextActionFromTable).toList(growable: false),
+    );
   }
 
   @override
   Future<List<ProjectNextAction>> getAll() async {
-    final rows = await (_db.select(_db.projectNextActionsTable)
-          ..orderBy([
-            (t) => OrderingTerm(expression: t.projectId),
-            (t) => OrderingTerm(expression: t.rank),
-          ]))
-        .get();
+    final rows =
+        await (_db.select(_db.projectNextActionsTable)..orderBy([
+              (t) => OrderingTerm(expression: t.projectId),
+              (t) => OrderingTerm(expression: t.rank),
+            ]))
+            .get();
     return rows.map(projectNextActionFromTable).toList(growable: false);
   }
 
   @override
   Future<List<ProjectNextAction>> getForProject(String projectId) async {
-    final rows = await (_db.select(_db.projectNextActionsTable)
-          ..where((t) => t.projectId.equals(projectId))
-          ..orderBy([(t) => OrderingTerm(expression: t.rank)]))
-        .get();
+    final rows =
+        await (_db.select(_db.projectNextActionsTable)
+              ..where((t) => t.projectId.equals(projectId))
+              ..orderBy([(t) => OrderingTerm(expression: t.rank)]))
+            .get();
     return rows.map(projectNextActionFromTable).toList(growable: false);
   }
 
@@ -83,7 +84,9 @@ final class ProjectNextActionsRepository
           )..where((t) => t.projectId.equals(projectId))).go();
 
           for (final action in normalized) {
-            await _db.into(_db.projectNextActionsTable).insert(
+            await _db
+                .into(_db.projectNextActionsTable)
+                .insert(
                   ProjectNextActionsTableCompanion.insert(
                     id: _ids.projectNextActionId(),
                     userId: Value(userId),
@@ -175,11 +178,11 @@ final class ProjectNextActionsRepository
     required DateTime now,
     required String? psMetadata,
   }) async {
-    final rows = await (_db.select(
-      _db.projectNextActionsTable,
-    )..where((t) => t.projectId.equals(projectId))
-          ..orderBy([(t) => OrderingTerm(expression: t.rank)]))
-        .get();
+    final rows =
+        await (_db.select(_db.projectNextActionsTable)
+              ..where((t) => t.projectId.equals(projectId))
+              ..orderBy([(t) => OrderingTerm(expression: t.rank)]))
+            .get();
 
     var nextRank = 1;
     for (final row in rows) {

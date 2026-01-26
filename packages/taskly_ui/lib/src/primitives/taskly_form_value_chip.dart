@@ -41,8 +41,9 @@ class TasklyFormValueChip extends StatelessWidget {
     final bg = isSelected
         ? model.color.withValues(alpha: 0.16)
         : scheme.surface;
-    final borderColor =
-        isSelected ? model.color.withValues(alpha: 0.6) : scheme.outlineVariant;
+    final borderColor = isSelected
+        ? model.color.withValues(alpha: 0.6)
+        : scheme.outlineVariant;
     final labelColor = isSelected ? color : scheme.onSurfaceVariant;
     final iconColor = isSelected ? color : scheme.onSurfaceVariant;
 
@@ -74,11 +75,11 @@ class TasklyFormValueChip extends StatelessWidget {
                   model.label,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: labelColor,
-                        fontWeight: isSelected
-                            ? (isPrimary ? FontWeight.w700 : FontWeight.w600)
-                            : null,
-                      ),
+                    color: labelColor,
+                    fontWeight: isSelected
+                        ? (isPrimary ? FontWeight.w700 : FontWeight.w600)
+                        : null,
+                  ),
                 ),
               ),
               if (isSelected) ...[

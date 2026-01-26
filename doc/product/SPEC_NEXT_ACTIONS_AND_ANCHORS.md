@@ -138,3 +138,34 @@ Track:
 
 - Project recency uses projects.last_progress_at (cache updated on task
   completion).
+
+## Implementation Status (2026-01-26)
+
+Completed:
+- Attention rule template added: `problem_project_missing_next_actions`.
+- Attention engine evaluates missing next actions and is wired via DI.
+
+Remaining:
+- Project detail UI: “Next actions” list at top with drag reorder (ranks 1..3).
+- BLoC wiring: load next actions stream, reorder event, and `setForProject` updates with `OperationContext`.
+- Task UI affordance: “Mark as next action” with rank chooser (where appropriate).
+- Weekly review: add attention toggle + section for missing next actions.
+- L10n additions for new UI strings and regenerate localizations.
+
+## Prompt for Next AI
+
+You are continuing implementation in `c:\Users\User\FlutterProjects\taskly_bloc`.
+
+Goal: finish SPEC_NEXT_ACTIONS_AND_ANCHORS per latest decisions in chat.
+
+Must-do:
+1) Project detail: add a “Next actions” list at top of the task list with drag reorder (ranks 1..3).
+2) BLoC: extend `ProjectOverviewBloc` (or equivalent) to include next actions stream and a reorder event using `ProjectNextActionsRepositoryContract.setForProject(...)` with `OperationContext`.
+3) Task affordance: add “Mark as next action” with rank chooser; when list is full, replace a chosen rank.
+4) Weekly review: add toggle setting (default on) and show missing next actions in maintenance section.
+5) L10n: add new strings to `lib/l10n/arb/app_en.arb` + `app_es.arb`; run `flutter gen-l10n`.
+6) Run `dart format` and `dart analyze` after changes.
+
+Notes:
+- BLoC boundary is strict: widgets must not call repositories directly.
+- Shared UI changes in `taskly_ui` require explicit approval.

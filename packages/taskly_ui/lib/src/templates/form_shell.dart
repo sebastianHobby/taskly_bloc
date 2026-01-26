@@ -186,26 +186,25 @@ class FormShell extends StatelessWidget {
         ...resolvedTrailingActions,
       ],
     );
-    final headerContent =
-        headerTitle == null
-            ? headerRow
-            : centerHeaderTitle
-            ? Stack(
-                alignment: Alignment.center,
-                children: [
-                  headerRow,
-                  Center(child: headerTitle),
-                ],
-              )
-            : Row(
-                children: [
-                  ...resolvedLeadingActions,
-                  const SizedBox(width: 12),
-                  headerTitle!,
-                  const Spacer(),
-                  ...resolvedTrailingActions,
-                ],
-              );
+    final headerContent = headerTitle == null
+        ? headerRow
+        : centerHeaderTitle
+        ? Stack(
+            alignment: Alignment.center,
+            children: [
+              headerRow,
+              Center(child: headerTitle),
+            ],
+          )
+        : Row(
+            children: [
+              ...resolvedLeadingActions,
+              const SizedBox(width: 12),
+              headerTitle!,
+              const Spacer(),
+              ...resolvedTrailingActions,
+            ],
+          );
 
     return Container(
       decoration: BoxDecoration(

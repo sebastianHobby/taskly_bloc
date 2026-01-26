@@ -134,9 +134,7 @@ RoutineCompletion routineCompletionFromTable(
   );
 }
 
-RoutineSkip routineSkipFromTable(
-  drift.RoutineSkipsTableData t,
-) {
+RoutineSkip routineSkipFromTable(drift.RoutineSkipsTableData t) {
   return RoutineSkip(
     id: t.id,
     routineId: t.routineId,

@@ -12,6 +12,7 @@ import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dar
 import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class RoutineDetailSheetPage extends StatelessWidget {
@@ -105,12 +106,10 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
         const <int>[];
     final minSpacingDays =
         formValues[RoutineFieldKeys.minSpacingDays.id] as int?;
-    final restDayBuffer =
-        formValues[RoutineFieldKeys.restDayBuffer.id] as int?;
+    final restDayBuffer = formValues[RoutineFieldKeys.restDayBuffer.id] as int?;
     final fixedDayOfMonth =
         formValues[RoutineFieldKeys.fixedDayOfMonth.id] as int?;
-    final fixedWeekday =
-        formValues[RoutineFieldKeys.fixedWeekday.id] as int?;
+    final fixedWeekday = formValues[RoutineFieldKeys.fixedWeekday.id] as int?;
     final fixedWeekOfMonth =
         formValues[RoutineFieldKeys.fixedWeekOfMonth.id] as int?;
     final isActive = extractBoolValue(
@@ -142,6 +141,8 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
       case RoutineType.weeklyFlexible:
         final sorted = scheduleDays.toSet().toList()..sort();
         scheduleDays = sorted;
+        resolvedMinSpacing = null;
+        resolvedRestBuffer = null;
         preferredWeeks = const <int>[];
         resolvedFixedDay = null;
         resolvedFixedWeekday = null;
@@ -260,7 +261,7 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
       ).colorScheme.errorContainer.withValues(alpha: 0.3),
       content: buildDeleteConfirmationContent(
         context,
-        name,
+        itemName: name,
         description: context.l10n.routineDeleteDescription,
       ),
     );

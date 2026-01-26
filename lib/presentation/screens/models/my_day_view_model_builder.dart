@@ -61,13 +61,14 @@ final class MyDayViewModelBuilder {
         final completedToday = routineCompletions.any(
           (completion) =>
               completion.routineId == routineId &&
-              dateOnly(completion.completedAtUtc)
-                  .isAtSameMomentAs(dateOnly(dayPicks.dayKeyUtc)),
+              dateOnly(
+                completion.completedAtUtc,
+              ).isAtSameMomentAs(dateOnly(dayPicks.dayKeyUtc)),
         );
         plannedItems.add(
           MyDayPlannedItem.routine(
             routine: routine,
-            snapshot: snapshot,
+            routineSnapshot: snapshot,
             bucket: pick.bucket,
             sortIndex: pick.sortIndex,
             qualifyingValueId: pick.qualifyingValueId ?? routine.valueId,
@@ -86,22 +87,20 @@ final class MyDayViewModelBuilder {
           task: task,
           bucket: pick.bucket,
           sortIndex: pick.sortIndex,
-          qualifyingValueId: pick.qualifyingValueId ??
-              task.effectivePrimaryValueId,
+          qualifyingValueId:
+              pick.qualifyingValueId ?? task.effectivePrimaryValueId,
         ),
       );
     }
 
-    final selectedTaskIds =
-        plannedItems
-            .where((item) => item.type == MyDayPlannedItemType.task)
-            .map((item) => item.id)
-            .toSet();
-    final selectedRoutineIds =
-        plannedItems
-            .where((item) => item.type == MyDayPlannedItemType.routine)
-            .map((item) => item.id)
-            .toSet();
+    final selectedTaskIds = plannedItems
+        .where((item) => item.type == MyDayPlannedItemType.task)
+        .map((item) => item.id)
+        .toSet();
+    final selectedRoutineIds = plannedItems
+        .where((item) => item.type == MyDayPlannedItemType.routine)
+        .map((item) => item.id)
+        .toSet();
 
     final orderedTasks = plannedItems
         .where(

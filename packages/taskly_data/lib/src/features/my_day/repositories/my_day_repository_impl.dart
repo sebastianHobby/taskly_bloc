@@ -34,17 +34,13 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
       MyDayDaysTableData?,
       List<MyDayPicksTableData>,
       domain.MyDayDayPicks
-    >(
-      dayRow$,
-      picks$,
-      (dayRow, pickRows) {
-        return domain.MyDayDayPicks(
-          dayKeyUtc: dayUtc,
-          ritualCompletedAtUtc: dayRow?.ritualCompletedAt,
-          picks: pickRows.map(_pickFromRow).toList(growable: false),
-        );
-      },
-    );
+    >(dayRow$, picks$, (dayRow, pickRows) {
+      return domain.MyDayDayPicks(
+        dayKeyUtc: dayUtc,
+        ritualCompletedAtUtc: dayRow?.ritualCompletedAt,
+        picks: pickRows.map(_pickFromRow).toList(growable: false),
+      );
+    });
   }
 
   @override
@@ -99,12 +95,23 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
 
   domain.MyDayPickBucket _bucketFromDb(String raw) {
     return switch (raw) {
-      'values' => domain.MyDayPickBucket.values,
+      'values' => domain.MyDayPickBucket.valueSuggestions,
+      'valueSuggestions' => domain.MyDayPickBucket.valueSuggestions,
       'routine' => domain.MyDayPickBucket.routine,
       'due' => domain.MyDayPickBucket.due,
       'starts' => domain.MyDayPickBucket.starts,
       'manual' => domain.MyDayPickBucket.manual,
       _ => throw StateError('Unknown My Day pick bucket: $raw'),
+    };
+  }
+
+  String _bucketToDb(domain.MyDayPickBucket bucket) {
+    return switch (bucket) {
+      domain.MyDayPickBucket.valueSuggestions => 'values',
+      domain.MyDayPickBucket.routine => 'routine',
+      domain.MyDayPickBucket.due => 'due',
+      domain.MyDayPickBucket.starts => 'starts',
+      domain.MyDayPickBucket.manual => 'manual',
     };
   }
 
@@ -175,7 +182,7 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
                 dayId: dayId,
                 taskId: Value(taskId),
                 routineId: Value(routineId),
-                bucket: pick.bucket.name,
+                bucket: _bucketToDb(pick.bucket),
                 sortIndex: pick.sortIndex,
                 pickedAt: pick.pickedAtUtc.toUtc(),
                 suggestionRank: Value(pick.suggestionRank),
@@ -258,7 +265,7 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
               userId: Value(userId),
               dayId: dayId,
               taskId: Value(taskId),
-              bucket: bucket.name,
+              bucket: _bucketToDb(bucket),
               sortIndex: nextIndex,
               pickedAt: nowUtc,
               createdAt: Value(nowUtc),

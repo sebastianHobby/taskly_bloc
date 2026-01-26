@@ -503,7 +503,10 @@ class TasklyChromeTheme extends ThemeExtension<TasklyChromeTheme> {
         fontWeight: FontWeight.w700,
       ),
       filterRowSpacing: 8,
-      filterPillPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      filterPillPadding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 6,
+      ),
       filterPillRadius: 8,
       filterPillIconSize: 14,
       filterPillTextStyle: base(textTheme.labelSmall).copyWith(
@@ -627,8 +630,7 @@ class TasklyChromeTheme extends ThemeExtension<TasklyChromeTheme> {
       monthStripHeight: monthStripHeight ?? this.monthStripHeight,
       monthStripPaddingV: monthStripPaddingV ?? this.monthStripPaddingV,
       monthStripSpacing: monthStripSpacing ?? this.monthStripSpacing,
-      monthStripLabelStyle:
-          monthStripLabelStyle ?? this.monthStripLabelStyle,
+      monthStripLabelStyle: monthStripLabelStyle ?? this.monthStripLabelStyle,
       monthStripLabelSelectedStyle:
           monthStripLabelSelectedStyle ?? this.monthStripLabelSelectedStyle,
       monthStripLabelSpacing:
@@ -664,7 +666,11 @@ class TasklyChromeTheme extends ThemeExtension<TasklyChromeTheme> {
           ) ??
           iconButtonBackgroundAlpha,
       anytimeHeaderPadding:
-          EdgeInsets.lerp(anytimeHeaderPadding, other.anytimeHeaderPadding, t) ??
+          EdgeInsets.lerp(
+            anytimeHeaderPadding,
+            other.anytimeHeaderPadding,
+            t,
+          ) ??
           anytimeHeaderPadding,
       valueRowHeight:
           lerpDouble(valueRowHeight, other.valueRowHeight, t) ?? valueRowHeight,

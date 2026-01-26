@@ -112,13 +112,15 @@ void main() {
         IdGenerator.withUserId('user-1'),
       );
 
-      await db.into(db.taskTable).insert(
-        TaskTableCompanion.insert(
-          id: const drift.Value('task-1'),
-          name: 'Task One',
-          completed: const drift.Value(false),
-        ),
-      );
+      await db
+          .into(db.taskTable)
+          .insert(
+            TaskTableCompanion.insert(
+              id: const drift.Value('task-1'),
+              name: 'Task One',
+              completed: const drift.Value(false),
+            ),
+          );
 
       final significance = StatisticalSignificance(
         pValue: 0.01,
@@ -127,26 +129,28 @@ void main() {
         standardError: 0.1,
         isSignificant: true,
       );
-      await db.into(db.analyticsCorrelations).insert(
-        AnalyticsCorrelationsCompanion(
-          id: const drift.Value('c1'),
-          correlationType: const drift.Value('task_project'),
-          sourceType: const drift.Value('task'),
-          sourceId: const drift.Value('task-1'),
-          targetType: const drift.Value('project'),
-          targetId: const drift.Value('project-1'),
-          periodStart: drift.Value(DateTime.utc(2025, 1, 1)),
-          periodEnd: drift.Value(DateTime.utc(2025, 1, 2)),
-          coefficient: const drift.Value(0.6),
-          sampleSize: const drift.Value(5),
-          strength: drift.Value(CorrelationStrength.strongPositive.name),
-          insight: const drift.Value('ok'),
-          valueWithSource: const drift.Value(1.0),
-          valueWithoutSource: const drift.Value(0.0),
-          computedAt: drift.Value(DateTime.utc(2025, 1, 2)),
-          statisticalSignificance: drift.Value(significance.toJson()),
-        ),
-      );
+      await db
+          .into(db.analyticsCorrelations)
+          .insert(
+            AnalyticsCorrelationsCompanion(
+              id: const drift.Value('c1'),
+              correlationType: const drift.Value('task_project'),
+              sourceType: const drift.Value('task'),
+              sourceId: const drift.Value('task-1'),
+              targetType: const drift.Value('project'),
+              targetId: const drift.Value('project-1'),
+              periodStart: drift.Value(DateTime.utc(2025, 1, 1)),
+              periodEnd: drift.Value(DateTime.utc(2025, 1, 2)),
+              coefficient: const drift.Value(0.6),
+              sampleSize: const drift.Value(5),
+              strength: drift.Value(CorrelationStrength.strongPositive.name),
+              insight: const drift.Value('ok'),
+              valueWithSource: const drift.Value(1.0),
+              valueWithoutSource: const drift.Value(0.0),
+              computedAt: drift.Value(DateTime.utc(2025, 1, 2)),
+              statisticalSignificance: drift.Value(significance.toJson()),
+            ),
+          );
 
       final results = await repo.getCachedCorrelations(
         correlationType: 'task_project',

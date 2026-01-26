@@ -72,10 +72,7 @@ class SettingsRepository implements SettingsRepositoryContract {
           profileId: profile.id,
         );
         final updated = _upsertOverride(key, value, overrides);
-        await _writeOverrides(
-          profileId: profile.id,
-          overrides: updated,
-        );
+        await _writeOverrides(profileId: profile.id, overrides: updated);
 
         final driftWriteTime = DateTime.now();
         _lastSaveCompletedAtUtc = driftWriteTime.toUtc();
@@ -97,9 +94,7 @@ class SettingsRepository implements SettingsRepositoryContract {
 
   Stream<UserProfileTableData?> get _profileStream {
     final query = driftDb.select(driftDb.userProfileTable)
-      ..where(
-        (row) => row.createdAt.isNotNull() & row.updatedAt.isNotNull(),
-      )
+      ..where((row) => row.createdAt.isNotNull() & row.updatedAt.isNotNull())
       ..orderBy([(row) => OrderingTerm.desc(row.updatedAt)])
       ..limit(1);
 
@@ -133,9 +128,7 @@ class SettingsRepository implements SettingsRepositoryContract {
 
   Future<UserProfileTableData?> _selectProfile() async {
     final query = driftDb.select(driftDb.userProfileTable)
-      ..where(
-        (row) => row.createdAt.isNotNull() & row.updatedAt.isNotNull(),
-      )
+      ..where((row) => row.createdAt.isNotNull() & row.updatedAt.isNotNull())
       ..orderBy([(row) => OrderingTerm.desc(row.updatedAt)])
       ..limit(1);
 
@@ -193,10 +186,10 @@ class SettingsRepository implements SettingsRepositoryContract {
     _lastRepairAttemptAtUtc = nowUtc;
 
     unawaited(
-      _writeOverrides(
-        profileId: profileId,
-        overrides: repaired,
-      ).catchError((Object e, StackTrace st) {
+      _writeOverrides(profileId: profileId, overrides: repaired).catchError((
+        Object e,
+        StackTrace st,
+      ) {
         talker.databaseError('[Settings] repair write failed', e, st);
       }),
     );

@@ -15,11 +15,9 @@ import 'package:taskly_domain/attention.dart' as domain;
 /// - insertOrIgnore for safe re-runs
 /// - Reads templates, writes to database
 class AttentionSeeder {
-  AttentionSeeder({
-    required AppDatabase db,
-    required IdGenerator idGenerator,
-  }) : _db = db,
-       _idGenerator = idGenerator;
+  AttentionSeeder({required AppDatabase db, required IdGenerator idGenerator})
+    : _db = db,
+      _idGenerator = idGenerator;
   static const String attentionRulesDomain = 'attention';
   final AppDatabase _db;
   final IdGenerator _idGenerator;

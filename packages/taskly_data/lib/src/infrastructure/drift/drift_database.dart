@@ -246,8 +246,8 @@ class MyDayPicksTable extends Table {
       .nullable()
       .references(RoutinesTable, #id, onDelete: KeyAction.cascade)();
 
-    /// One of: values, routine, due, starts, manual.
-    TextColumn get bucket => text().named('bucket')();
+  /// One of: values, routine, due, starts, manual.
+  TextColumn get bucket => text().named('bucket')();
 
   IntColumn get sortIndex => integer().named('sort_index')();
 
@@ -499,8 +499,7 @@ class ProjectAnchorStateTable extends Table {
       .named('project_id')
       .references(ProjectTable, #id, onDelete: KeyAction.cascade)();
 
-  DateTimeColumn get lastAnchoredAt =>
-      dateTime().named('last_anchored_at')();
+  DateTimeColumn get lastAnchoredAt => dateTime().named('last_anchored_at')();
 
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
@@ -547,8 +546,7 @@ class RoutinesTable extends Table {
       .named('preferred_weeks')();
   IntColumn get fixedDayOfMonth =>
       integer().nullable().named('fixed_day_of_month')();
-  IntColumn get fixedWeekday =>
-      integer().nullable().named('fixed_weekday')();
+  IntColumn get fixedWeekday => integer().nullable().named('fixed_weekday')();
   IntColumn get fixedWeekOfMonth =>
       integer().nullable().named('fixed_week_of_month')();
   BoolColumn get isActive =>
@@ -577,8 +575,7 @@ class RoutineCompletionsTable extends Table {
   TextColumn get routineId => text()
       .named('routine_id')
       .references(RoutinesTable, #id, onDelete: KeyAction.cascade)();
-  DateTimeColumn get completedAt =>
-      dateTime().named('completed_at')();
+  DateTimeColumn get completedAt => dateTime().named('completed_at')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
 

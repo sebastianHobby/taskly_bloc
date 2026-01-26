@@ -251,9 +251,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
   ///
   /// The stack itself owns the wiring between infra + repositories. The app
   /// consumes domain services via the returned bindings.
-  TasklyDataBindings createBindings({
-    Clock clock = systemClock,
-  }) {
+  TasklyDataBindings createBindings({Clock clock = systemClock}) {
     final settingsRepository = SettingsRepository(driftDb: driftDb);
 
     final homeDayKeyService = HomeDayKeyService(

@@ -53,10 +53,7 @@ void main() {
 
     testSafe('JsonStringListConverter throws for non-list', () async {
       const converter = JsonStringListConverter();
-      expect(
-        () => converter.fromSql('{"a":1}'),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => converter.fromSql('{"a":1}'), throwsA(isA<ArgumentError>()));
     });
   });
 }

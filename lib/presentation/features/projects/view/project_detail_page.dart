@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
@@ -33,6 +34,8 @@ class ProjectDetailPage extends StatelessWidget {
             projectId: projectId,
             projectRepository: getIt<ProjectRepositoryContract>(),
             occurrenceReadService: getIt<OccurrenceReadService>(),
+            projectNextActionsRepository:
+                getIt<ProjectNextActionsRepositoryContract>(),
             sessionDayKeyService: getIt<SessionDayKeyService>(),
           ),
         ),
@@ -100,11 +103,13 @@ class _ProjectDetailView extends StatelessWidget {
                   :final project,
                   :final tasks,
                   :final todayDayKeyUtc,
+                  :final nextActions,
                 ) =>
                   _ProjectDetailBody(
                     project: project,
                     tasks: tasks,
                     todayDayKeyUtc: todayDayKeyUtc,
+                    nextActions: nextActions,
                     selectionState: selectionState,
                   ),
               };
@@ -121,12 +126,14 @@ class _ProjectDetailBody extends StatelessWidget {
     required this.project,
     required this.tasks,
     required this.todayDayKeyUtc,
+    required this.nextActions,
     required this.selectionState,
   });
 
   final Project project;
   final List<Task> tasks;
   final DateTime todayDayKeyUtc;
+  final List<ProjectNextAction> nextActions;
   final SelectionState selectionState;
 
   @override
@@ -148,6 +155,20 @@ class _ProjectDetailBody extends StatelessWidget {
         .where((task) => !(task.occurrence?.isCompleted ?? task.completed))
         .toList();
 
+    final orderedNextActions = List<ProjectNextAction>.from(nextActions)
+      ..sort((a, b) => a.rank.compareTo(b.rank));
+    final tasksById = {for (final task in tasks) task.id: task};
+    final nextActionEntries = _buildNextActionEntries(
+      orderedNextActions,
+      tasksById: tasksById,
+    );
+    final nextActionTaskIds = nextActionEntries
+        .map((entry) => entry.task.id)
+        .toSet();
+    final remainingOpen = open
+        .where((task) => !nextActionTaskIds.contains(task.id))
+        .toList(growable: false);
+
     final headerData = buildProjectRowData(
       context,
       project: project,
@@ -166,22 +187,30 @@ class _ProjectDetailBody extends StatelessWidget {
     );
 
     final selection = context.read<SelectionCubit>();
-    final visibleTasks = [...open, ...completed];
+    final visibleTasks = [
+      ...nextActionEntries.map((entry) => entry.task),
+      ...remainingOpen,
+      ...completed,
+    ];
     _registerVisibleTasks(selection, visibleTasks);
 
     final rows = <TasklyRowSpec>[
       TasklyRowSpec.header(
         key: 'project-detail-open-header',
         title: 'Tasks',
-        trailingLabel: '${open.length} remaining',
+        trailingLabel: '${remainingOpen.length} remaining',
       ),
-      ...open.map((task) => _taskRow(context, task, selectionState)),
+      ...remainingOpen.map(
+        (task) => _buildProjectTaskRow(context, task, selectionState),
+      ),
       if (completed.isNotEmpty) ...[
         TasklyRowSpec.header(
           key: 'project-detail-completed-header',
           title: 'Completed',
         ),
-        ...completed.map((task) => _taskRow(context, task, selectionState)),
+        ...completed.map(
+          (task) => _buildProjectTaskRow(context, task, selectionState),
+        ),
       ],
     ];
 
@@ -190,6 +219,27 @@ class _ProjectDetailBody extends StatelessWidget {
       children: [
         TasklyFeedRenderer.buildRow(headerRow, context: context),
         const SizedBox(height: 12),
+        if (!isInbox)
+          _ProjectNextActionsSection(
+            entries: nextActionEntries,
+            selectionState: selectionState,
+            onPickRequested: () => _showNextActionPicker(
+              context,
+              availableTasks: remainingOpen,
+              existingActions: orderedNextActions,
+              tasksById: tasksById,
+            ),
+            onRemoveRequested: (taskId) => _removeNextAction(
+              context,
+              taskId: taskId,
+              existingActions: orderedNextActions,
+            ),
+            onReorderRequested: (entries) => _reorderNextActions(
+              context,
+              entries: entries,
+            ),
+          ),
+        if (!isInbox) const SizedBox(height: 12),
         TasklyFeedRenderer.buildSection(
           TasklySectionSpec.standardList(id: 'project-detail', rows: rows),
         ),
@@ -197,67 +247,506 @@ class _ProjectDetailBody extends StatelessWidget {
     );
   }
 
-  TasklyRowSpec _taskRow(
-    BuildContext context,
-    Task task,
-    SelectionState selectionState,
-  ) {
-    final selection = context.read<SelectionCubit>();
-    final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
-    final data = buildTaskRowData(
-      context,
-      task: task,
-      tileCapabilities: tileCapabilities,
+  List<_NextActionEntry> _buildNextActionEntries(
+    List<ProjectNextAction> actions, {
+    required Map<String, Task> tasksById,
+  }) {
+    final entries = <_NextActionEntry>[];
+    for (final action in actions) {
+      final task = tasksById[action.taskId];
+      if (task == null) continue;
+      if (task.occurrence?.isCompleted ?? task.completed) continue;
+      entries.add(_NextActionEntry(action: action, task: task));
+    }
+    return entries;
+  }
+
+  Future<void> _showNextActionPicker(
+    BuildContext context, {
+    required List<Task> availableTasks,
+    required List<ProjectNextAction> existingActions,
+    required Map<String, Task> tasksById,
+  }) async {
+    final l10n = context.l10n;
+    final parentContext = context;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        final rows = availableTasks
+            .map((task) {
+              final data = buildTaskRowData(
+                sheetContext,
+                task: task,
+                tileCapabilities: EntityTileCapabilitiesResolver.forTask(task),
+              );
+
+              final rowData = TasklyTaskRowData(
+                id: data.id,
+                title: data.title,
+                completed: data.completed,
+                meta: data.meta,
+                leadingChip: data.leadingChip,
+                secondaryChips: data.secondaryChips,
+                deemphasized: data.deemphasized,
+                checkboxSemanticLabel: data.checkboxSemanticLabel,
+                labels: data.labels,
+                pinned: data.pinned,
+                primaryValueIconOnly: true,
+              );
+
+              return TasklyRowSpec.task(
+                key: 'project-next-action-pick-${task.id}',
+                data: rowData,
+                style: const TasklyTaskRowStyle.pickerAction(selected: false),
+                actions: TasklyTaskRowActions(
+                  onToggleSelected: () async {
+                    Navigator.of(sheetContext).pop();
+                    final rank = await _showNextActionRankPicker(
+                      parentContext,
+                      existingActions: existingActions,
+                      tasksById: tasksById,
+                    );
+                    if (rank == null) return;
+                    final drafts = _draftsForAddOrReplace(
+                      actions: existingActions,
+                      taskId: task.id,
+                      rank: rank,
+                    );
+                    if (!parentContext.mounted) return;
+                    parentContext.read<ProjectOverviewBloc>().add(
+                      ProjectOverviewNextActionsUpdated(
+                        actions: drafts,
+                        intent: 'add_next_action',
+                      ),
+                    );
+                  },
+                ),
+              );
+            })
+            .toList(growable: false);
+
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l10n.projectNextActionsPickerTitle),
+                subtitle: Text(l10n.projectNextActionsPickerSubtitle),
+              ),
+              if (rows.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    l10n.projectNextActionsEmptyLabel,
+                    style: Theme.of(sheetContext).textTheme.bodyMedium
+                        ?.copyWith(
+                          color: Theme.of(
+                            sheetContext,
+                          ).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                )
+              else
+                for (final row in rows) ...[
+                  TasklyFeedRenderer.buildRow(row, context: sheetContext),
+                  const SizedBox(height: 8),
+                ],
+            ],
+          ),
+        );
+      },
     );
+  }
 
-    final key = SelectionKey(
-      entityType: EntityType.task,
-      entityId: task.id,
+  Future<int?> _showNextActionRankPicker(
+    BuildContext context, {
+    required List<ProjectNextAction> existingActions,
+    required Map<String, Task> tasksById,
+  }) {
+    final l10n = context.l10n;
+    final actionsByRank = {
+      for (final action in existingActions) action.rank: action,
+    };
+
+    return showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return ListView(
+          shrinkWrap: true,
+          children: [
+            for (var rank = 1; rank <= 3; rank += 1)
+              ListTile(
+                title: Text(l10n.projectNextActionsRankLabel(rank)),
+                subtitle: actionsByRank[rank] == null
+                    ? null
+                    : Text(
+                        tasksById[actionsByRank[rank]!.taskId]?.name ?? 'Task',
+                      ),
+                onTap: () => Navigator.of(sheetContext).pop(rank),
+              ),
+          ],
+        );
+      },
     );
-    final isSelected = selectionState.selected.contains(key);
+  }
 
-    final rowData = TasklyTaskRowData(
-      id: data.id,
-      title: data.title,
-      completed: data.completed,
-      meta: data.meta,
-      leadingChip: data.leadingChip,
-      secondaryChips: data.secondaryChips,
-      deemphasized: data.deemphasized,
-      checkboxSemanticLabel: data.checkboxSemanticLabel,
-      labels: data.labels,
-      pinned: data.pinned,
-      primaryValueIconOnly: true,
-    );
-
-    final style = selectionState.isSelectionMode
-        ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
-        : const TasklyTaskRowStyle.standard();
-
-    return TasklyRowSpec.task(
-      key: 'project-detail-task-${task.id}',
-      data: rowData,
-      style: style,
-      actions: TasklyTaskRowActions(
-        onTap: () {
-          if (selection.shouldInterceptTapAsSelection()) {
-            selection.handleEntityTap(key);
-            return;
-          }
-          buildTaskOpenEditorHandler(context, task: task)();
-        },
-        onLongPress: () => selection.enterSelectionMode(initialSelection: key),
-        onToggleSelected: selectionState.isSelectionMode
-            ? () => selection.handleEntityTap(key)
-            : null,
-        onToggleCompletion: buildTaskToggleCompletionHandler(
-          context,
-          task: task,
-          tileCapabilities: tileCapabilities,
-        ),
+  void _removeNextAction(
+    BuildContext context, {
+    required String taskId,
+    required List<ProjectNextAction> existingActions,
+  }) {
+    final drafts = _draftsForRemoval(existingActions, taskId);
+    context.read<ProjectOverviewBloc>().add(
+      ProjectOverviewNextActionsUpdated(
+        actions: drafts,
+        intent: 'remove_next_action',
       ),
     );
   }
+
+  void _reorderNextActions(
+    BuildContext context, {
+    required List<_NextActionEntry> entries,
+  }) {
+    final drafts = _draftsForReorder(entries);
+    context.read<ProjectOverviewBloc>().add(
+      ProjectOverviewNextActionsUpdated(
+        actions: drafts,
+        intent: 'reorder_next_actions',
+      ),
+    );
+  }
+
+  List<ProjectNextActionDraft> _draftsForReorder(
+    List<_NextActionEntry> entries,
+  ) {
+    return [
+      for (var i = 0; i < entries.length; i += 1)
+        ProjectNextActionDraft(
+          taskId: entries[i].task.id,
+          rank: i + 1,
+        ),
+    ];
+  }
+
+  List<ProjectNextActionDraft> _draftsForRemoval(
+    List<ProjectNextAction> actions,
+    String taskId,
+  ) {
+    final remaining =
+        actions
+            .where((action) => action.taskId != taskId)
+            .toList(growable: false)
+          ..sort((a, b) => a.rank.compareTo(b.rank));
+
+    return [
+      for (var i = 0; i < remaining.length; i += 1)
+        ProjectNextActionDraft(
+          taskId: remaining[i].taskId,
+          rank: i + 1,
+        ),
+    ];
+  }
+
+  List<ProjectNextActionDraft> _draftsForAddOrReplace({
+    required List<ProjectNextAction> actions,
+    required String taskId,
+    required int rank,
+  }) {
+    final filtered = actions
+        .where((action) => action.rank != rank && action.taskId != taskId)
+        .map(
+          (action) => ProjectNextActionDraft(
+            taskId: action.taskId,
+            rank: action.rank,
+          ),
+        )
+        .toList(growable: false);
+
+    return [
+      ...filtered,
+      ProjectNextActionDraft(taskId: taskId, rank: rank),
+    ]..sort((a, b) => a.rank.compareTo(b.rank));
+  }
+}
+
+class _ProjectNextActionsSection extends StatefulWidget {
+  const _ProjectNextActionsSection({
+    required this.entries,
+    required this.selectionState,
+    required this.onPickRequested,
+    required this.onRemoveRequested,
+    required this.onReorderRequested,
+  });
+
+  final List<_NextActionEntry> entries;
+  final SelectionState selectionState;
+  final VoidCallback onPickRequested;
+  final ValueChanged<String> onRemoveRequested;
+  final ValueChanged<List<_NextActionEntry>> onReorderRequested;
+
+  @override
+  State<_ProjectNextActionsSection> createState() =>
+      _ProjectNextActionsSectionState();
+}
+
+class _ProjectNextActionsSectionState
+    extends State<_ProjectNextActionsSection> {
+  late List<_NextActionEntry> _entries;
+
+  @override
+  void initState() {
+    super.initState();
+    _entries = List<_NextActionEntry>.from(widget.entries);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProjectNextActionsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_hasSameEntries(widget.entries, _entries)) {
+      _entries = List<_NextActionEntry>.from(widget.entries);
+    }
+  }
+
+  bool _hasSameEntries(
+    List<_NextActionEntry> incoming,
+    List<_NextActionEntry> current,
+  ) {
+    if (incoming.length != current.length) return false;
+    for (var i = 0; i < incoming.length; i += 1) {
+      final a = incoming[i];
+      final b = current[i];
+      if (a.action.taskId != b.action.taskId ||
+          a.action.rank != b.action.rank) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _handleReorder(int oldIndex, int newIndex) {
+    setState(() {
+      final effectiveIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
+      final entry = _entries.removeAt(oldIndex);
+      _entries.insert(effectiveIndex, entry);
+    });
+    widget.onReorderRequested(List<_NextActionEntry>.from(_entries));
+  }
+
+  Future<void> _showActionSheet(_NextActionEntry entry) async {
+    final l10n = context.l10n;
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.push_pin_outlined),
+                title: Text(l10n.projectNextActionsRemoveAction),
+                onTap: () => Navigator.of(sheetContext).pop(true),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result ?? false) {
+      widget.onRemoveRequested(entry.task.id);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+
+    final countLabel = l10n.projectNextActionsCountLabel(
+      _entries.length,
+      3,
+    );
+
+    final header = TasklyRowSpec.header(
+      key: 'project-next-actions-header',
+      title: l10n.projectNextActionsTitle,
+      trailingLabel: countLabel,
+    );
+
+    final pickerRow = TasklyRowSpec.inlineAction(
+      key: 'project-next-actions-picker',
+      label: l10n.projectNextActionsChooseAction,
+      onTap: widget.onPickRequested,
+    );
+
+    final rows = _entries
+        .asMap()
+        .entries
+        .map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          final badge = TasklyBadgeData(
+            label: l10n.projectNextActionsRankLabel(item.action.rank),
+            color: scheme.onSurfaceVariant,
+            tone: TasklyBadgeTone.outline,
+          );
+
+          final rowSpec = _buildProjectTaskRow(
+            context,
+            item.task,
+            widget.selectionState,
+            badges: [badge],
+            onLongPressOverride: widget.selectionState.isSelectionMode
+                ? null
+                : () => _showActionSheet(item),
+          );
+          final row = TasklyFeedRenderer.buildRow(
+            rowSpec,
+            context: context,
+          );
+
+          return Container(
+            key: ValueKey('project-next-action-${item.task.id}'),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, top: 16),
+                  child: ReorderableDragStartListener(
+                    index: index,
+                    child: Icon(
+                      Icons.drag_handle,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(child: row),
+              ],
+            ),
+          );
+        })
+        .toList(growable: false);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TasklyFeedRenderer.buildRow(header, context: context),
+        TasklyFeedRenderer.buildRow(pickerRow, context: context),
+        const SizedBox(height: 6),
+        if (rows.isEmpty)
+          TasklyFeedRenderer.buildRow(
+            TasklyRowSpec.subheader(
+              key: 'project-next-actions-empty',
+              title: l10n.projectNextActionsEmptyLabel,
+            ),
+            context: context,
+          )
+        else
+          ReorderableListView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            onReorder: _handleReorder,
+            children: rows,
+          ),
+      ],
+    );
+  }
+}
+
+class _NextActionEntry {
+  const _NextActionEntry({
+    required this.action,
+    required this.task,
+  });
+
+  final ProjectNextAction action;
+  final Task task;
+}
+
+TasklyRowSpec _buildProjectTaskRow(
+  BuildContext context,
+  Task task,
+  SelectionState selectionState, {
+  List<TasklyBadgeData> badges = const [],
+  VoidCallback? onTapOverride,
+  VoidCallback? onLongPressOverride,
+}) {
+  final selection = context.read<SelectionCubit>();
+  final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
+  final data = buildTaskRowData(
+    context,
+    task: task,
+    tileCapabilities: tileCapabilities,
+  );
+
+  final key = SelectionKey(
+    entityType: EntityType.task,
+    entityId: task.id,
+  );
+  final isSelected = selectionState.selected.contains(key);
+
+  final rowData = TasklyTaskRowData(
+    id: data.id,
+    title: data.title,
+    completed: data.completed,
+    meta: data.meta,
+    leadingChip: data.leadingChip,
+    secondaryChips: data.secondaryChips,
+    badges: badges,
+    deemphasized: data.deemphasized,
+    checkboxSemanticLabel: data.checkboxSemanticLabel,
+    labels: data.labels,
+    pinned: data.pinned,
+    primaryValueIconOnly: true,
+  );
+
+  final style = selectionState.isSelectionMode
+      ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
+      : const TasklyTaskRowStyle.standard();
+
+  return TasklyRowSpec.task(
+    key: 'project-detail-task-${task.id}',
+    data: rowData,
+    style: style,
+    actions: TasklyTaskRowActions(
+      onTap: () {
+        if (selection.shouldInterceptTapAsSelection()) {
+          selection.handleEntityTap(key);
+          return;
+        }
+        if (onTapOverride != null) {
+          onTapOverride();
+        } else {
+          buildTaskOpenEditorHandler(context, task: task)();
+        }
+      },
+      onLongPress: () {
+        if (onLongPressOverride != null) {
+          onLongPressOverride();
+        } else {
+          selection.enterSelectionMode(initialSelection: key);
+        }
+      },
+      onToggleSelected: selectionState.isSelectionMode
+          ? () => selection.handleEntityTap(key)
+          : null,
+      onToggleCompletion: buildTaskToggleCompletionHandler(
+        context,
+        task: task,
+        tileCapabilities: tileCapabilities,
+      ),
+    ),
+  );
 }
 
 void _registerVisibleTasks(

@@ -97,7 +97,8 @@ class FormBuilderColorPickerModern extends StatelessWidget {
         },
         enabled: enabled,
         builder: (FormFieldState<Color> field) {
-          final currentColor = field.value ?? initialValue ?? colorScheme.primary;
+          final currentColor =
+              field.value ?? initialValue ?? colorScheme.primary;
           final resolvedChipLabel =
               chipLabelBuilder?.call(currentColor) ??
               _defaultHexLabel(currentColor, includeAlpha: enableOpacity);

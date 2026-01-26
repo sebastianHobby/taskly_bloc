@@ -847,8 +847,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                               (ids) => TaskValidators.valueIds(
                                 ids,
                                 projectId: projectId,
-                                projectPrimaryValueId:
-                                    project?.primaryValueId,
+                                projectPrimaryValueId: project?.primaryValueId,
                               ),
                               context,
                             )(value);

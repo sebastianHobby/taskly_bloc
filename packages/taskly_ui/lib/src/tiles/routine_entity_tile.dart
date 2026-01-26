@@ -30,31 +30,36 @@ class RoutineEntityTile extends StatelessWidget {
     final badges = model.badges;
     final hasBadges = badges.isNotEmpty;
 
+    final notTodayLabel = labels?.notTodayLabel?.trim();
+    final laterThisWeekLabel = labels?.laterThisWeekLabel?.trim();
+    final skipPeriodLabel = labels?.skipPeriodLabel?.trim();
+    final pauseLabel = labels?.pauseLabel?.trim();
+    final editLabel = labels?.editLabel?.trim();
+
     final menuEntries = <_RoutineMenuEntry>[
-      if (actions.onNotToday != null && _hasLabel(labels?.notTodayLabel))
+      if (actions.onNotToday != null && _hasLabel(notTodayLabel))
         _RoutineMenuEntry(
-          label: labels!.notTodayLabel!.trim(),
+          label: notTodayLabel!,
           onTap: actions.onNotToday!,
         ),
-      if (actions.onLaterThisWeek != null &&
-          _hasLabel(labels?.laterThisWeekLabel))
+      if (actions.onLaterThisWeek != null && _hasLabel(laterThisWeekLabel))
         _RoutineMenuEntry(
-          label: labels!.laterThisWeekLabel!.trim(),
+          label: laterThisWeekLabel!,
           onTap: actions.onLaterThisWeek!,
         ),
-      if (actions.onSkipPeriod != null && _hasLabel(labels?.skipPeriodLabel))
+      if (actions.onSkipPeriod != null && _hasLabel(skipPeriodLabel))
         _RoutineMenuEntry(
-          label: labels!.skipPeriodLabel!.trim(),
+          label: skipPeriodLabel!,
           onTap: actions.onSkipPeriod!,
         ),
-      if (actions.onPause != null && _hasLabel(labels?.pauseLabel))
+      if (actions.onPause != null && _hasLabel(pauseLabel))
         _RoutineMenuEntry(
-          label: labels!.pauseLabel!.trim(),
+          label: pauseLabel!,
           onTap: actions.onPause!,
         ),
-      if (actions.onEdit != null && _hasLabel(labels?.editLabel))
+      if (actions.onEdit != null && _hasLabel(editLabel))
         _RoutineMenuEntry(
-          label: labels!.editLabel!.trim(),
+          label: editLabel!,
           onTap: actions.onEdit!,
         ),
     ];
@@ -72,11 +77,10 @@ class RoutineEntityTile extends StatelessWidget {
 
     final titleStyle = tokens.taskTitle.copyWith(
       fontWeight: FontWeight.w700,
-      color: model.completed
-          ? scheme.onSurfaceVariant
-          : scheme.onSurface,
-      decoration:
-          model.completed ? TextDecoration.lineThrough : TextDecoration.none,
+      color: model.completed ? scheme.onSurfaceVariant : scheme.onSurface,
+      decoration: model.completed
+          ? TextDecoration.lineThrough
+          : TextDecoration.none,
     );
 
     final surfaceTint = model.selected
@@ -205,7 +209,7 @@ class RoutineEntityTile extends StatelessWidget {
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            child: Text(primaryLabel!),
+                            child: Text(primaryLabel),
                           ),
                         if (showMenu) ...[
                           if (showPrimary) const SizedBox(height: 4),

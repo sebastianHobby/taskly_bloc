@@ -92,28 +92,29 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
     final skips$ = _routineRepository.watchSkips();
     final dayKey$ = _sessionDayKeyService.todayDayKeyUtc;
 
-    final combined$ = Rx.combineLatest4<
-      DateTime,
-      List<Routine>,
-      List<RoutineCompletion>,
-      List<RoutineSkip>,
-      RoutineListState
-    >(
-      dayKey$,
-      routines$,
-      completions$,
-      skips$,
-      (dayKey, routines, completions, skips) {
-        return RoutineListLoaded(
-          routines: _buildItems(
-            routines: routines,
-            dayKeyUtc: dayKey,
-            completions: completions,
-            skips: skips,
-          ),
+    final combined$ =
+        Rx.combineLatest4<
+          DateTime,
+          List<Routine>,
+          List<RoutineCompletion>,
+          List<RoutineSkip>,
+          RoutineListState
+        >(
+          dayKey$,
+          routines$,
+          completions$,
+          skips$,
+          (dayKey, routines, completions, skips) {
+            return RoutineListLoaded(
+              routines: _buildItems(
+                routines: routines,
+                dayKeyUtc: dayKey,
+                completions: completions,
+                skips: skips,
+              ),
+            );
+          },
         );
-      },
-    );
 
     await emit.forEach<RoutineListState>(
       combined$,

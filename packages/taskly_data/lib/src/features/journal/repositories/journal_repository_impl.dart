@@ -63,10 +63,8 @@ class JournalRepositoryImpl
   ) {
     return whereExpressionFromFilter(
       filter: filter,
-      predicateToExpression: (p) => _predicateMapper.predicateToExpression(
-        p,
-        _database.journalEntries,
-      ),
+      predicateToExpression: (p) =>
+          _predicateMapper.predicateToExpression(p, _database.journalEntries),
     );
   }
 
@@ -188,9 +186,7 @@ class JournalRepositoryImpl
     final query = _database.select(_database.trackerGroups)
       ..orderBy([(g) => OrderingTerm.asc(g.sortOrder)]);
 
-    return query.watch().map(
-      (rows) => rows.map(_mapToTrackerGroup).toList(),
-    );
+    return query.watch().map((rows) => rows.map(_mapToTrackerGroup).toList());
   }
 
   @override

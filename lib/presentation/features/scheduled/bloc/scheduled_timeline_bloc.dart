@@ -114,9 +114,9 @@ final class ScheduledTimelineBloc
     required NowService nowService,
     this.scope = const GlobalScheduledScope(),
   }) : _occurrencesService = occurrencesService,
-        _sessionDayKeyService = sessionDayKeyService,
-        _nowService = nowService,
-        super(const ScheduledTimelineLoading()) {
+       _sessionDayKeyService = sessionDayKeyService,
+       _nowService = nowService,
+       super(const ScheduledTimelineLoading()) {
     on<ScheduledTimelineStarted>(_onStarted);
     on<_ScheduledTimelineOccurrencesUpdated>(_onOccurrencesUpdated);
     on<_ScheduledTimelineWatchFailed>(_onWatchFailed);

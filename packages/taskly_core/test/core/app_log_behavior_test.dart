@@ -11,9 +11,8 @@ final class _RecordingLog implements TasklyLog {
   final List<String> handles = <String>[];
 
   @override
-  TalkerFailFastPolicy get failFastPolicy => const TalkerFailFastPolicy(
-    enabled: false,
-  );
+  TalkerFailFastPolicy get failFastPolicy =>
+      const TalkerFailFastPolicy(enabled: false);
 
   @override
   void trace(String message) => traces.add(message);
@@ -140,11 +139,7 @@ void main() {
     testSafe(
       'structured methods do not append when fields are empty',
       () async {
-        AppLog.warnStructured(
-          'core',
-          'w',
-          fields: const <String, Object?>{},
-        );
+        AppLog.warnStructured('core', 'w', fields: const <String, Object?>{});
 
         expect(recorder.warnings.single, isNot(contains('|')));
       },

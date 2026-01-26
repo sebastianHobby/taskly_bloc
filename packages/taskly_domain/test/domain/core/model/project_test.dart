@@ -40,18 +40,21 @@ void main() {
     expect(project(repeatIcalRrule: 'RRULE:FREQ=WEEKLY').isRepeating, isTrue);
   });
 
-  testSafe('Project.isOccurrenceInstance reflects occurrence presence', () async {
-    expect(project().isOccurrenceInstance, isFalse);
+  testSafe(
+    'Project.isOccurrenceInstance reflects occurrence presence',
+    () async {
+      expect(project().isOccurrenceInstance, isFalse);
 
-    final withOcc = project(
-      occurrence: OccurrenceData(
-        date: DateTime.utc(2026, 1, 18),
-        isRescheduled: false,
-      ),
-    );
+      final withOcc = project(
+        occurrence: OccurrenceData(
+          date: DateTime.utc(2026, 1, 18),
+          isRescheduled: false,
+        ),
+      );
 
-    expect(withOcc.isOccurrenceInstance, isTrue);
-  });
+      expect(withOcc.isOccurrenceInstance, isTrue);
+    },
+  );
 
   testSafe('Project.primaryValue resolves by id', () async {
     final v1 = value('v1');

@@ -19,40 +19,46 @@ void main() {
       final repo = PendingNotificationsRepositoryImpl(db);
 
       final now = DateTime.utc(2025, 1, 1);
-      await db.into(db.pendingNotifications).insert(
-        PendingNotificationsCompanion.insert(
-          id: const drift.Value('p1'),
-          userId: const drift.Value('u1'),
-          screenKey: 'screen',
-          scheduledFor: now,
-          status: 'pending',
-          payload: const drift.Value('{"a":1}'),
-          createdAt: drift.Value(now),
-        ),
-      );
-      await db.into(db.pendingNotifications).insert(
-        PendingNotificationsCompanion.insert(
-          id: const drift.Value('p2'),
-          userId: const drift.Value('u1'),
-          screenKey: 'screen',
-          scheduledFor: now.add(const Duration(minutes: 1)),
-          status: 'delivered',
-          payload: const drift.Value('{"a":2}'),
-          createdAt: drift.Value(now),
-        ),
-      );
-      await db.into(db.pendingNotifications).insert(
-        PendingNotificationsCompanion.insert(
-          id: const drift.Value('p3'),
-          userId: const drift.Value('u1'),
-          screenKey: 'screen',
-          scheduledFor: now.add(const Duration(minutes: 2)),
-          status: 'pending',
-          payload: const drift.Value('{"a":3}'),
-          createdAt: drift.Value(now),
-          deliveredAt: drift.Value(now),
-        ),
-      );
+      await db
+          .into(db.pendingNotifications)
+          .insert(
+            PendingNotificationsCompanion.insert(
+              id: const drift.Value('p1'),
+              userId: const drift.Value('u1'),
+              screenKey: 'screen',
+              scheduledFor: now,
+              status: 'pending',
+              payload: const drift.Value('{"a":1}'),
+              createdAt: drift.Value(now),
+            ),
+          );
+      await db
+          .into(db.pendingNotifications)
+          .insert(
+            PendingNotificationsCompanion.insert(
+              id: const drift.Value('p2'),
+              userId: const drift.Value('u1'),
+              screenKey: 'screen',
+              scheduledFor: now.add(const Duration(minutes: 1)),
+              status: 'delivered',
+              payload: const drift.Value('{"a":2}'),
+              createdAt: drift.Value(now),
+            ),
+          );
+      await db
+          .into(db.pendingNotifications)
+          .insert(
+            PendingNotificationsCompanion.insert(
+              id: const drift.Value('p3'),
+              userId: const drift.Value('u1'),
+              screenKey: 'screen',
+              scheduledFor: now.add(const Duration(minutes: 2)),
+              status: 'pending',
+              payload: const drift.Value('{"a":3}'),
+              createdAt: drift.Value(now),
+              deliveredAt: drift.Value(now),
+            ),
+          );
 
       final pending = await repo.watchPending().first;
       expect(pending.length, equals(1));
@@ -65,17 +71,19 @@ void main() {
       final repo = PendingNotificationsRepositoryImpl(db);
 
       final now = DateTime.utc(2025, 1, 1);
-      await db.into(db.pendingNotifications).insert(
-        PendingNotificationsCompanion.insert(
-          id: const drift.Value('p1'),
-          userId: const drift.Value('u1'),
-          screenKey: 'screen',
-          scheduledFor: now,
-          status: 'pending',
-          payload: const drift.Value('{}'),
-          createdAt: drift.Value(now),
-        ),
-      );
+      await db
+          .into(db.pendingNotifications)
+          .insert(
+            PendingNotificationsCompanion.insert(
+              id: const drift.Value('p1'),
+              userId: const drift.Value('u1'),
+              screenKey: 'screen',
+              scheduledFor: now,
+              status: 'pending',
+              payload: const drift.Value('{}'),
+              createdAt: drift.Value(now),
+            ),
+          );
 
       final deliveredAt = DateTime.utc(2025, 1, 2);
       await repo.markDelivered(id: 'p1', deliveredAt: deliveredAt);

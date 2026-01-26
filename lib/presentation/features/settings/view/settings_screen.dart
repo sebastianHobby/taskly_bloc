@@ -786,6 +786,17 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
                     },
                   ),
                   SwitchListTile.adaptive(
+                    title: const Text('Missing next actions'),
+                    value: settings.maintenanceMissingNextActionsEnabled,
+                    onChanged: (value) {
+                      context.read<GlobalSettingsBloc>().add(
+                        GlobalSettingsEvent.maintenanceMissingNextActionsChanged(
+                          value,
+                        ),
+                      );
+                    },
+                  ),
+                  SwitchListTile.adaptive(
                     title: const Text('Frequently snoozed tasks'),
                     value: settings.maintenanceFrequentSnoozedEnabled,
                     onChanged: (value) {
