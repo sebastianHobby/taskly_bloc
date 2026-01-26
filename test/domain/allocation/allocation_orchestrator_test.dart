@@ -18,6 +18,8 @@ void main() {
     late FakeValueRepository valueRepository;
     late FakeSettingsRepository settingsRepository;
     late FakeProjectRepository projectRepository;
+    late FakeProjectNextActionsRepository projectNextActionsRepository;
+    late FakeProjectAnchorStateRepository projectAnchorStateRepository;
     late MockAnalyticsService analyticsService;
     late HomeDayKeyService dayKeyService;
 
@@ -28,11 +30,16 @@ void main() {
         allocation: const AllocationConfig(suggestionsPerBatch: 2),
       );
       projectRepository = FakeProjectRepository();
+      projectNextActionsRepository = FakeProjectNextActionsRepository();
+      projectAnchorStateRepository = FakeProjectAnchorStateRepository();
       analyticsService = MockAnalyticsService();
       dayKeyService = HomeDayKeyService(settingsRepository: settingsRepository);
 
-      when(() => analyticsService.getRecentCompletionsByValue(days: any(named: 'days')))
-          .thenAnswer((_) async => const <String, int>{});
+      when(
+        () => analyticsService.getRecentCompletionsByValue(
+          days: any(named: 'days'),
+        ),
+      ).thenAnswer((_) async => const <String, int>{});
     });
 
     testSafe('returns requiresValueSetup when no values exist', () async {
@@ -42,6 +49,8 @@ void main() {
         settingsRepository: settingsRepository,
         analyticsService: analyticsService,
         projectRepository: projectRepository,
+        projectNextActionsRepository: projectNextActionsRepository,
+        projectAnchorStateRepository: projectAnchorStateRepository,
         dayKeyService: dayKeyService,
       );
 
@@ -56,17 +65,23 @@ void main() {
     testSafe('allocates pinned tasks and regular tasks', () async {
       final value = TestData.value(id: 'v1');
       valueRepository.pushValues([value]);
+      final project = TestData.project(
+        values: [value],
+      ).copyWith(primaryValueId: value.id);
+      projectRepository.pushProjects([project]);
 
       final pinnedTask = TestData.task(
         id: 't1',
         isPinned: true,
         values: [value],
         overridePrimaryValueId: value.id,
+        projectId: project.id,
       );
       final regularTask = TestData.task(
         id: 't2',
         values: [value],
         overridePrimaryValueId: value.id,
+        projectId: project.id,
       );
       taskRepository.pushTasks([pinnedTask, regularTask]);
 
@@ -76,6 +91,8 @@ void main() {
         settingsRepository: settingsRepository,
         analyticsService: analyticsService,
         projectRepository: projectRepository,
+        projectNextActionsRepository: projectNextActionsRepository,
+        projectAnchorStateRepository: projectAnchorStateRepository,
         dayKeyService: dayKeyService,
       );
 
@@ -107,6 +124,8 @@ void main() {
         settingsRepository: settingsRepository,
         analyticsService: analyticsService,
         projectRepository: projectRepository,
+        projectNextActionsRepository: projectNextActionsRepository,
+        projectAnchorStateRepository: projectAnchorStateRepository,
         dayKeyService: dayKeyService,
       );
 

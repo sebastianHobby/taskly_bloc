@@ -30,7 +30,7 @@ class ValueDistributionSection extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 16),
+      padding: const EdgeInsets.fromLTRB(0, 6, 0, 16),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: scheme.surface,

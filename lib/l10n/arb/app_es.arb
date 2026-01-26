@@ -2848,6 +2848,14 @@
     "@routineFormNameHint": {
         "description": "Hint text for the routine name field"
     },
+    "routineFormNewTitle": "Nueva rutina",
+    "@routineFormNewTitle": {
+        "description": "Title for the routine create form"
+    },
+    "routineFormEditTitle": "Editar rutina",
+    "@routineFormEditTitle": {
+        "description": "Title for the routine edit form"
+    },
     "routineFormNameEmpty": "Name is required.",
     "@routineFormNameEmpty": {
         "description": "Validation message when routine name is empty."
@@ -2923,22 +2931,42 @@
     "@routinePauseLabel": {
         "description": "Menu label to pause a routine."
     },
-    "routineEditLabel": "Edit schedule",
-    "@routineEditLabel": {
-        "description": "Menu label to edit a routine schedule."
-    },
-    "routineStatusOnPace": "On pace",
-    "@routineStatusOnPace": {
-        "description": "Status label when routine is on pace."
-    },
+  "routineEditLabel": "Edit schedule",
+  "@routineEditLabel": {
+    "description": "Menu label to edit a routine schedule."
+  },
+  "routineCadenceScheduledLabel": "Programado",
+  "@routineCadenceScheduledLabel": {
+    "description": "Cadence label for scheduled weekly routines."
+  },
+  "routineCadenceFlexibleLabel": "Flexible",
+  "@routineCadenceFlexibleLabel": {
+    "description": "Cadence label for flexible routines."
+  },
+  "routinePanelScheduledTitle": "Programadas hoy",
+  "@routinePanelScheduledTitle": {
+    "description": "Panel title for scheduled routines in Plan My Day."
+  },
+  "routinePanelFlexibleTitle": "Enfoque flexible",
+  "@routinePanelFlexibleTitle": {
+    "description": "Panel title for flexible routines in Plan My Day."
+  },
+  "routineCatchUpSupportLine": "Los pasos pequeños cuentan.",
+  "@routineCatchUpSupportLine": {
+    "description": "Supportive line shown on catch-up routine days."
+  },
+  "routineStatusOnPace": "En camino",
+  "@routineStatusOnPace": {
+    "description": "Status label when routine is on pace."
+  },
     "routineStatusTightWeek": "Tight week",
     "@routineStatusTightWeek": {
         "description": "Status label when routine has a tight week."
     },
-    "routineStatusCatchUp": "Catch-up window",
-    "@routineStatusCatchUp": {
-        "description": "Status label when routine needs a catch-up window."
-    },
+  "routineStatusCatchUp": "Día de recuperación",
+  "@routineStatusCatchUp": {
+    "description": "Status label when routine needs a catch-up window."
+  },
     "routineStatusRestWeek": "Rest week",
     "@routineStatusRestWeek": {
         "description": "Status label when routine period is skipped."
@@ -2981,11 +3009,11 @@
     "@myDayDueSoonToggleSubtitle": {
         "description": "Subtitle for the My Day due soon toggle."
     },
-    "myDayStepValuesTitle": "Values first",
+    "myDayStepValuesTitle": "Values-guided",
     "@myDayStepValuesTitle": {
         "description": "Title for the Values step in the Plan My Day wizard."
     },
-    "myDayStepValuesLabel": "Values",
+    "myDayStepValuesLabel": "Values-guided",
     "@myDayStepValuesLabel": {
         "description": "Short label for the Values step in the Plan My Day wizard."
     },
@@ -2997,11 +3025,11 @@
     "@myDayStepRoutinesLabel": {
         "description": "Short label for the Routines step in the Plan My Day wizard."
     },
-    "myDayStepTriageTitle": "Urgent & planned",
+    "myDayStepTriageTitle": "Time-sensitive",
     "@myDayStepTriageTitle": {
         "description": "Title for the Triage step in the Plan My Day wizard."
     },
-    "myDayStepTriageLabel": "Triage",
+    "myDayStepTriageLabel": "Time-sensitive",
     "@myDayStepTriageLabel": {
         "description": "Short label for the Triage step in the Plan My Day wizard."
     },

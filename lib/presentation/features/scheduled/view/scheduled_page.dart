@@ -14,6 +14,8 @@ import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.d
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/analytics.dart';
@@ -31,8 +33,8 @@ class ScheduledPage extends StatelessWidget {
       providers: [
         BlocProvider(
           create: (_) => ScheduledScreenBloc(
-            taskRepository: getIt(),
-            projectRepository: getIt(),
+            taskWriteService: getIt(),
+            projectWriteService: getIt(),
           ),
         ),
         BlocProvider(
@@ -110,6 +112,24 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
 
     context.read<ScheduledTimelineBloc>().add(
       ScheduledTimelineVisibleDayChanged(day: day),
+    );
+  }
+
+  DateTime _fallbackTodayLocal() {
+    final todayUtc = getIt<SessionDayKeyService>().todayDayKeyUtc.valueOrNull;
+    final base = (todayUtc ?? getIt<NowService>().nowUtc()).toLocal();
+    return DateTime(base.year, base.month, base.day);
+  }
+
+  Widget _buildAddSpeedDial(DateTime today) {
+    return EntityAddSpeedDial(
+      heroTag: 'add_speed_dial_scheduled_timeline',
+      onCreateTask: () => context.read<ScheduledScreenBloc>().add(
+        ScheduledCreateTaskForDayRequested(day: today),
+      ),
+      onCreateProject: () => context.read<ScheduledScreenBloc>().add(
+        const ScheduledCreateProjectRequested(),
+      ),
     );
   }
 
@@ -268,6 +288,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   ],
                 ),
               ),
+              floatingActionButton: _buildAddSpeedDial(_fallbackTodayLocal()),
               body: const TasklyFeedRenderer(
                 spec: TasklyFeedSpec.loading(),
               ),
@@ -293,6 +314,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   ],
                 ),
               ),
+              floatingActionButton: _buildAddSpeedDial(_fallbackTodayLocal()),
               body: TasklyFeedRenderer(
                 spec: TasklyFeedSpec.error(
                   message: message,
@@ -435,6 +457,8 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   ? '1 task'
                   : '${overdueRows.length} tasks');
 
+        final feedTokens = TasklyEntityTileTheme.of(context);
+
         return Scaffold(
           appBar: selectionState.isSelectionMode
               ? SelectionAppBar(baseTitle: 'Schedule', onExit: () {})
@@ -465,16 +489,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 ),
           floatingActionButton: selectionState.isSelectionMode
               ? null
-              : EntityAddSpeedDial(
-                  heroTag: 'add_speed_dial_scheduled_timeline',
-                  onCreateTask: () => context.read<ScheduledScreenBloc>().add(
-                    ScheduledCreateTaskForDayRequested(day: today),
-                  ),
-                  onCreateProject: () =>
-                      context.read<ScheduledScreenBloc>().add(
-                        const ScheduledCreateProjectRequested(),
-                      ),
-                ),
+              : _buildAddSpeedDial(today),
           body: Column(
             children: [
               if (showScopeHeader)
@@ -485,6 +500,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 child: ScrollablePositionedList.builder(
                   itemScrollController: _itemScrollController,
                   itemPositionsListener: _itemPositionsListener,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: feedTokens.sectionPaddingH,
+                  ),
                   itemCount: itemCount,
                   itemBuilder: (context, index) {
                     if (overdueOffset == 1 && index == 0) {

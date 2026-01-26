@@ -13,6 +13,7 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 
 class ValuesPage extends StatelessWidget {
@@ -29,6 +30,7 @@ class ValuesPage extends StatelessWidget {
         BlocProvider<ValueListBloc>(
           create: (context) => ValueListBloc(
             valueRepository: getIt<ValueRepositoryContract>(),
+            valueWriteService: getIt<ValueWriteService>(),
             errorReporter: context.read<AppErrorReporter>(),
           )..add(const ValueListEvent.subscriptionRequested()),
         ),

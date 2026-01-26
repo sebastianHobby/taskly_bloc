@@ -8,6 +8,7 @@ import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 
 import 'package:taskly_bloc/presentation/features/routines/model/routine_list_item.dart';
+import 'package:taskly_bloc/presentation/shared/utils/routine_day_policy.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 
 part 'routine_list_bloc.freezed.dart';
@@ -144,7 +145,19 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
         completions: completions,
         skips: skips,
       );
-      items.add(RoutineListItem(routine: routine, snapshot: snapshot));
+      final policy = evaluateRoutineDayPolicy(
+        routine: routine,
+        snapshot: snapshot,
+        dayKeyUtc: dayKeyUtc,
+        completions: completions,
+      );
+      items.add(
+        RoutineListItem(
+          routine: routine,
+          snapshot: snapshot,
+          isCatchUpDay: policy.isCatchUpDay,
+        ),
+      );
     }
 
     items.sort((a, b) => a.routine.name.compareTo(b.routine.name));

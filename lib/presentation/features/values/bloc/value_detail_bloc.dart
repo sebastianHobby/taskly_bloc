@@ -8,6 +8,7 @@ import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/taskly_domain.dart';
+import 'package:taskly_domain/services.dart';
 
 part 'value_detail_bloc.freezed.dart';
 
@@ -52,11 +53,12 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
     with DetailBlocMixin<ValueDetailEvent, ValueDetailState, Value> {
   ValueDetailBloc({
     required ValueRepositoryContract valueRepository,
+    required ValueWriteService valueWriteService,
     required AppErrorReporter errorReporter,
     String? valueId,
   }) : _valueRepository = valueRepository,
+       _valueWriteService = valueWriteService,
        _errorReporter = errorReporter,
-       _commandHandler = ValueCommandHandler(valueRepository: valueRepository),
        super(const ValueDetailState.initial()) {
     on<_ValueDetailLoadById>(_onGet, transformer: restartable());
     on<_ValueDetailCreate>(_onCreate, transformer: droppable());
@@ -69,8 +71,8 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
   }
 
   final ValueRepositoryContract _valueRepository;
+  final ValueWriteService _valueWriteService;
   final AppErrorReporter _errorReporter;
-  final ValueCommandHandler _commandHandler;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
@@ -173,7 +175,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
     await _executeValidatedCommand(
       emit,
       EntityOperation.create,
-      () => _commandHandler.handleCreate(event.command, context: context),
+      () => _valueWriteService.create(event.command, context: context),
       context: context,
     );
   }
@@ -190,7 +192,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
     await _executeValidatedCommand(
       emit,
       EntityOperation.update,
-      () => _commandHandler.handleUpdate(event.command, context: context),
+      () => _valueWriteService.update(event.command, context: context),
       context: context,
     );
   }
@@ -205,7 +207,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
       entityId: event.id,
     );
     try {
-      await _valueRepository.delete(event.id, context: context);
+      await _valueWriteService.delete(event.id, context: context);
       await Future<void>.delayed(const Duration(milliseconds: 50));
       emit(createOperationSuccessState(EntityOperation.delete));
     } catch (error, stackTrace) {

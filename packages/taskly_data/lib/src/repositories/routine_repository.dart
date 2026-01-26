@@ -98,7 +98,6 @@ final class RoutineRepository implements RoutineRepositoryContract {
     return FailureGuard.run(
       () async {
         final now = DateTime.now();
-        final userId = _ids.userId;
         final psMetadata = encodeCrudMetadata(context);
 
         await _db
@@ -106,7 +105,6 @@ final class RoutineRepository implements RoutineRepositoryContract {
             .insert(
               RoutinesTableCompanion.insert(
                 id: _ids.routineId(),
-                userId: Value(userId),
                 name: name,
                 valueId: valueId,
                 projectId: Value(_normalizeId(projectId)),
@@ -252,7 +250,6 @@ final class RoutineRepository implements RoutineRepositoryContract {
     return FailureGuard.run(
       () async {
         final now = DateTime.now();
-        final userId = _ids.userId;
         final psMetadata = encodeCrudMetadata(context);
 
         await _db
@@ -260,7 +257,6 @@ final class RoutineRepository implements RoutineRepositoryContract {
             .insert(
               RoutineCompletionsTableCompanion.insert(
                 id: _ids.routineCompletionId(),
-                userId: Value(userId),
                 routineId: routineId,
                 completedAt: completedAtUtc ?? now,
                 createdAt: Value(now),
@@ -285,7 +281,6 @@ final class RoutineRepository implements RoutineRepositoryContract {
     return FailureGuard.run(
       () async {
         final now = DateTime.now();
-        final userId = _ids.userId;
         final psMetadata = encodeCrudMetadata(context);
         final normalizedKey = dateOnly(periodKeyUtc);
 
@@ -305,7 +300,6 @@ final class RoutineRepository implements RoutineRepositoryContract {
             .insert(
               RoutineSkipsTableCompanion.insert(
                 id: _ids.routineSkipId(),
-                userId: Value(userId),
                 routineId: routineId,
                 periodType: periodType.name,
                 periodKey: normalizedKey,

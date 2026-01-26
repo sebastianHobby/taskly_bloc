@@ -61,10 +61,20 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
     bool enabled,
   ) = GlobalSettingsMyDayShowAvailableToStartChanged;
 
-  /// User changed Plan My Day flow preset.
-  const factory GlobalSettingsEvent.myDayPlanFlowChanged(
-    MyDayPlanFlow flow,
-  ) = GlobalSettingsMyDayPlanFlowChanged;
+  /// User toggled whether to show the routines step.
+  const factory GlobalSettingsEvent.myDayShowRoutinesChanged(
+    bool enabled,
+  ) = GlobalSettingsMyDayShowRoutinesChanged;
+
+  /// User toggled whether triage picks count against value quotas.
+  const factory GlobalSettingsEvent.myDayCountTriagePicksAgainstValueQuotasChanged(
+    bool enabled,
+  ) = GlobalSettingsMyDayCountTriagePicksAgainstValueQuotasChanged;
+
+  /// User toggled whether routine picks count against value quotas.
+  const factory GlobalSettingsEvent.myDayCountRoutinePicksAgainstValueQuotasChanged(
+    bool enabled,
+  ) = GlobalSettingsMyDayCountRoutinePicksAgainstValueQuotasChanged;
 
   /// User toggled weekly review scheduling.
   const factory GlobalSettingsEvent.weeklyReviewEnabledChanged(bool enabled) =
@@ -235,8 +245,16 @@ class GlobalSettingsBloc
       _onMyDayShowAvailableToStartChanged,
       transformer: sequential(),
     );
-    on<GlobalSettingsMyDayPlanFlowChanged>(
-      _onMyDayPlanFlowChanged,
+    on<GlobalSettingsMyDayShowRoutinesChanged>(
+      _onMyDayShowRoutinesChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMyDayCountTriagePicksAgainstValueQuotasChanged>(
+      _onMyDayCountTriagePicksAgainstValueQuotasChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMyDayCountRoutinePicksAgainstValueQuotasChanged>(
+      _onMyDayCountRoutinePicksAgainstValueQuotasChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsWeeklyReviewEnabledChanged>(
@@ -690,37 +708,45 @@ class GlobalSettingsBloc
     }
   }
 
-  Future<void> _onMyDayPlanFlowChanged(
-    GlobalSettingsMyDayPlanFlowChanged event,
+  Future<void> _onMyDayShowRoutinesChanged(
+    GlobalSettingsMyDayShowRoutinesChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(myDayShowRoutines: event.enabled);
+    await _persistSettings(
+      updated,
+      intent: 'settings_my_day_show_routines_changed',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+  }
+
+  Future<void> _onMyDayCountTriagePicksAgainstValueQuotasChanged(
+    GlobalSettingsMyDayCountTriagePicksAgainstValueQuotasChanged event,
     Emitter<GlobalSettingsState> emit,
   ) async {
     final updated = state.settings.copyWith(
-      myDayPlanFlow: event.flow,
+      myDayCountTriagePicksAgainstValueQuotas: event.enabled,
     );
-    final context = _newContext(
-      intent: 'settings_my_day_plan_flow_changed',
-      operation: 'settings.save.global',
-      extraFields: <String, Object?>{'flow': event.flow.name},
+    await _persistSettings(
+      updated,
+      intent: 'settings_my_day_count_triage_picks_against_value_quotas_changed',
+      extraFields: <String, Object?>{'enabled': event.enabled},
     );
-    try {
-      await _settingsRepository.save(
-        SettingsKey.global,
-        updated,
-        context: context,
-      );
-    } catch (e, st) {
-      talker.error(
-        '[settings.global] My Day plan flow persist FAILED',
-        e,
-        st,
-      );
-      _reportIfUnexpectedOrUnmapped(
-        e,
-        st,
-        context: context,
-        message: '[GlobalSettingsBloc] my day plan flow persist failed',
-      );
-    }
+  }
+
+  Future<void> _onMyDayCountRoutinePicksAgainstValueQuotasChanged(
+    GlobalSettingsMyDayCountRoutinePicksAgainstValueQuotasChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      myDayCountRoutinePicksAgainstValueQuotas: event.enabled,
+    );
+    await _persistSettings(
+      updated,
+      intent:
+          'settings_my_day_count_routine_picks_against_value_quotas_changed',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
   }
 
   Future<void> _onWeeklyReviewEnabledChanged(

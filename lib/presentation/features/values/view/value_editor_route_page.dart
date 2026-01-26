@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_host_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_detail_view.dart';
 
@@ -42,12 +43,14 @@ class _ValueEditorFullPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final valueRepository = getIt<ValueRepositoryContract>();
+    final valueWriteService = getIt<ValueWriteService>();
 
     return Scaffold(
       body: SafeArea(
         child: ValueDetailSheetPage(
           valueId: valueId,
           valueRepository: valueRepository,
+          valueWriteService: valueWriteService,
         ),
       ),
     );

@@ -281,6 +281,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
     final projectAnchorStateRepository = ProjectAnchorStateRepository(
       driftDb: driftDb,
       idGenerator: idGenerator,
+      clock: clock,
     );
 
     final taskRepository = TaskRepository(

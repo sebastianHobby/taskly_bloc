@@ -9,13 +9,18 @@ void main() {
   setUp(setUpTestEnvironment);
 
   group('TaskRule.fromJson', () {
-    testSafe('defaults to BooleanRule when type is missing or unknown', () async {
-      final missing = TaskRule.fromJson(const <String, dynamic>{});
-      final unknown = TaskRule.fromJson(const <String, dynamic>{'type': 'nope'});
+    testSafe(
+      'defaults to BooleanRule when type is missing or unknown',
+      () async {
+        final missing = TaskRule.fromJson(const <String, dynamic>{});
+        final unknown = TaskRule.fromJson(const <String, dynamic>{
+          'type': 'nope',
+        });
 
-      expect(missing, isA<BooleanRule>());
-      expect(unknown, isA<BooleanRule>());
-    });
+        expect(missing, isA<BooleanRule>());
+        expect(unknown, isA<BooleanRule>());
+      },
+    );
 
     testSafe('hydrates known rule types', () async {
       final dateRule = TaskRule.fromJson(const <String, dynamic>{
@@ -199,7 +204,14 @@ void main() {
     testSafe('applies value operators against task values', () async {
       final urgent = TestData.value(id: 'urgent');
       final work = TestData.value(id: 'work');
-      final task = TestData.task(values: [urgent, work]);
+      final project = TestData.project(
+        values: [urgent, work],
+      ).copyWith(primaryValueId: urgent.id);
+      final task = TestData.task(
+        projectId: project.id,
+        project: project,
+        overrideSecondaryValueId: work.id,
+      );
 
       final hasAll = ValueRule(
         operator: ValueRuleOperator.hasAll,

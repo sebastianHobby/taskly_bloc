@@ -49,9 +49,13 @@ final class AnytimeFeedLoading extends AnytimeFeedState {
 }
 
 final class AnytimeFeedLoaded extends AnytimeFeedState {
-  const AnytimeFeedLoaded({required this.rows});
+  const AnytimeFeedLoaded({
+    required this.rows,
+    required this.inboxTaskCount,
+  });
 
   final List<ListRowUiModel> rows;
+  final int inboxTaskCount;
 }
 
 final class AnytimeFeedError extends AnytimeFeedState {
@@ -142,8 +146,13 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
   void _emitRows(Emitter<AnytimeFeedState> emit) {
     try {
-      final rows = _mapToRows(_latestProjects, _inboxTaskCount, _latestValues);
-      emit(AnytimeFeedLoaded(rows: rows));
+      final rows = _mapToRows(_latestProjects, _latestValues);
+      emit(
+        AnytimeFeedLoaded(
+          rows: rows,
+          inboxTaskCount: _inboxTaskCount ?? 0,
+        ),
+      );
     } catch (e) {
       emit(AnytimeFeedError(message: e.toString()));
     }
@@ -151,14 +160,12 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
   List<ListRowUiModel> _mapToRows(
     List<Project> projects,
-    int? inboxTaskCount,
     List<Value> values,
   ) {
-    final aggregates = _aggregateProjects(projects, inboxTaskCount);
+    final aggregates = _aggregateProjects(projects);
     final filtered = aggregates.where(_matchesFilters).toList(growable: false)
       ..sort(_compareProjectGroups);
 
-    final inboxRows = <_ProjectAggregate>[];
     final valueGroups = <String, _ValueGroup>{};
 
     void ensureGroup(String key, Value? value) {
@@ -173,11 +180,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     }
 
     for (final aggregate in filtered) {
-      if (aggregate.projectRef.isInbox) {
-        inboxRows.add(aggregate);
-        continue;
-      }
-
       final value = aggregate.project?.primaryValue;
       final key = _valueGroupKey(value?.id);
       ensureGroup(key, value);
@@ -203,25 +205,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
           ..sort(_compareValueGroups);
 
     final rows = <ListRowUiModel>[];
-
-    for (final aggregate in inboxRows) {
-      rows.add(
-        ProjectRowUiModel(
-          rowKey: RowKey.v1(
-            screen: 'anytime',
-            rowType: 'project',
-            params: <String, String>{
-              'project': aggregate.projectRef.stableKey,
-            },
-          ),
-          depth: 0,
-          project: aggregate.project,
-          taskCount: aggregate.taskCount,
-          completedTaskCount: aggregate.completedTaskCount,
-          dueSoonCount: aggregate.dueSoonCount,
-        ),
-      );
-    }
 
     for (final group in groupsToShow) {
       final valueKey = _valueGroupKey(group.valueId);
@@ -270,9 +253,8 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
   List<_ProjectAggregate> _aggregateProjects(
     List<Project> projects,
-    int? inboxTaskCount,
   ) {
-    final aggregates = projects
+    return projects
         .map(
           (project) {
             final aggregate = _ProjectAggregate(
@@ -295,29 +277,9 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
           },
         )
         .toList(growable: true);
-
-    if (_scope == null) {
-      aggregates.insert(
-        0,
-        _ProjectAggregate(
-          projectRef: const ProjectGroupingRef.inbox(),
-          title: 'Inbox',
-          project: null,
-          taskCount: inboxTaskCount ?? 0,
-          completedTaskCount: 0,
-          dueSoonCount: 0,
-        ),
-      );
-    }
-
-    return aggregates;
   }
 
   bool _matchesFilters(_ProjectAggregate aggregate) {
-    if (aggregate.projectRef.isInbox && _noFiltersActive()) {
-      return true;
-    }
-
     final search = _searchQuery.toLowerCase().trim();
     if (search.isNotEmpty) {
       final title = aggregate.title.toLowerCase();
@@ -332,17 +294,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     return true;
   }
 
-  bool _noFiltersActive() {
-    if (_searchQuery.trim().isNotEmpty) return false;
-    if (_scope is AnytimeValueScope) return false;
-    return true;
-  }
-
   int _compareProjectGroups(_ProjectAggregate a, _ProjectAggregate b) {
-    if (a.projectRef.isInbox != b.projectRef.isInbox) {
-      return a.projectRef.isInbox ? -1 : 1;
-    }
-
     final aDate = a.sortDeadline(_sortOrder);
     final bDate = b.sortDeadline(_sortOrder);
     final aHasDate = aDate != null;

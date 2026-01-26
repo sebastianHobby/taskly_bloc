@@ -11,6 +11,7 @@ import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/value_form.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
@@ -18,6 +19,7 @@ import 'package:taskly_ui/taskly_ui_sections.dart';
 class ValueDetailSheetPage extends StatelessWidget {
   const ValueDetailSheetPage({
     required this.valueRepository,
+    required this.valueWriteService,
     this.valueId,
     this.initialDraft,
     this.onSaved,
@@ -25,6 +27,7 @@ class ValueDetailSheetPage extends StatelessWidget {
   });
 
   final ValueRepositoryContract valueRepository;
+  final ValueWriteService valueWriteService;
   final String? valueId;
 
   /// Optional initial values for the create flow.
@@ -41,6 +44,7 @@ class ValueDetailSheetPage extends StatelessWidget {
     return BlocProvider(
       create: (context) => ValueDetailBloc(
         valueRepository: valueRepository,
+        valueWriteService: valueWriteService,
         valueId: valueId,
         errorReporter: context.read<AppErrorReporter>(),
       ),

@@ -5,6 +5,7 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/my_day.dart' show MyDayRitualStatus;
 
 import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
 import 'package:taskly_bloc/presentation/screens/models/my_day_view_model_builder.dart';
@@ -15,6 +16,7 @@ final class MyDayQueryService {
     required TaskRepositoryContract taskRepository,
     required ValueRepositoryContract valueRepository,
     required MyDayRepositoryContract myDayRepository,
+    required MyDayRitualStatusService ritualStatusService,
     required RoutineRepositoryContract routineRepository,
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
@@ -23,6 +25,7 @@ final class MyDayQueryService {
        _taskRepository = taskRepository,
        _valueRepository = valueRepository,
        _myDayRepository = myDayRepository,
+       _ritualStatusService = ritualStatusService,
        _routineRepository = routineRepository,
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
@@ -32,6 +35,7 @@ final class MyDayQueryService {
   final TaskRepositoryContract _taskRepository;
   final ValueRepositoryContract _valueRepository;
   final MyDayRepositoryContract _myDayRepository;
+  final MyDayRitualStatusService _ritualStatusService;
   final RoutineRepositoryContract _routineRepository;
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
@@ -64,6 +68,7 @@ final class MyDayQueryService {
     ]);
 
     return dayPicks$.switchMap((dayPicks) {
+      final ritualStatus = _ritualStatusService.fromDayPicks(dayPicks);
       if (dayPicks.ritualCompletedAtUtc != null) {
         final values$ = Stream.fromFuture(valuesFuture);
 
@@ -103,6 +108,7 @@ final class MyDayQueryService {
           (tasks, values, routines, completions, skips) =>
               _viewModelBuilder.fromDailyPicks(
                 dayPicks: dayPicks,
+                ritualStatus: ritualStatus,
                 tasks: tasks,
                 values: values,
                 routines: routines,
@@ -112,11 +118,15 @@ final class MyDayQueryService {
         );
       }
 
-      return Stream.fromFuture(_loadAllocationViewModel());
+      return Stream.fromFuture(
+        _loadAllocationViewModel(ritualStatus: ritualStatus),
+      );
     });
   }
 
-  Future<MyDayViewModel> _loadAllocationViewModel() async {
+  Future<MyDayViewModel> _loadAllocationViewModel({
+    required MyDayRitualStatus ritualStatus,
+  }) async {
     final results = await Future.wait([
       _allocationOrchestrator.getAllocationSnapshot(),
       _valueRepository.getAll(),
@@ -128,6 +138,7 @@ final class MyDayQueryService {
     return _viewModelBuilder.fromAllocation(
       allocation: allocation,
       values: values,
+      ritualStatus: ritualStatus,
     );
   }
 }

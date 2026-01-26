@@ -75,7 +75,6 @@ final class ProjectNextActionsRepository
       () async {
         final normalized = _normalizeActions(actions);
         final now = DateTime.now();
-        final userId = _ids.userId;
         final psMetadata = encodeCrudMetadata(context);
 
         await _db.transaction(() async {
@@ -89,7 +88,6 @@ final class ProjectNextActionsRepository
                 .insert(
                   ProjectNextActionsTableCompanion.insert(
                     id: _ids.projectNextActionId(),
-                    userId: Value(userId),
                     projectId: projectId,
                     taskId: action.taskId,
                     rank: action.rank,

@@ -120,10 +120,6 @@ class IdGenerator {
   /// Generate random ID for a project next action.
   String projectNextActionId() => _uuid.v4();
 
-  /// Generate random ID for a project anchor state row.
-  @Deprecated('Use projectAnchorStateIdForProject for deterministic IDs.')
-  String projectAnchorStateId() => _uuid.v4();
-
   /// Generate random ID for a routine.
   String routineId() => _uuid.v4();
 

@@ -21,8 +21,54 @@ class PlanMyDayPage extends StatelessWidget {
 
   final VoidCallback onCloseRequested;
 
-  void _handleClose(BuildContext context) {
-    onCloseRequested();
+  Future<void> _handleClose(
+    BuildContext context, {
+    PlanMyDayReady? data,
+  }) async {
+    if (data == null) {
+      onCloseRequested();
+      return;
+    }
+
+    final hasSelections =
+        data.selectedTaskIds.isNotEmpty || data.selectedRoutineIds.isNotEmpty;
+    if (!hasSelections) {
+      onCloseRequested();
+      return;
+    }
+
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Exit without saving?'),
+          content: const Text(
+            "Your picks won't be saved to today's plan.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Stay'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: scheme.error,
+                foregroundColor: scheme.onError,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Exit'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed ?? false) {
+      onCloseRequested();
+    }
   }
 
   @override
@@ -51,17 +97,23 @@ class PlanMyDayPage extends StatelessWidget {
                 ),
                 PlanMyDayReady() => Scaffold(
                   appBar: AppBar(
-                    leading: IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => _handleClose(context),
-                    ),
+                    leading: planState.currentStepIndex == 0
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.chevron_left),
+                            onPressed: () => context.read<PlanMyDayBloc>().add(
+                              const PlanMyDayStepBackRequested(),
+                            ),
+                          ),
                     title: Text(context.l10n.myDayPlanTitle),
                     actions: [
                       IconButton(
-                        tooltip: context.l10n.settingsTitle,
-                        icon: const Icon(Icons.settings_outlined),
-                        onPressed: () =>
-                            Routing.toScreenKey(context, 'settings'),
+                        tooltip: 'Exit plan',
+                        icon: const Icon(Icons.close),
+                        onPressed: () => _handleClose(
+                          context,
+                          data: planState,
+                        ),
                       ),
                     ],
                   ),
@@ -95,11 +147,12 @@ class _PlanWizard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stepTitle = _stepTitle(context, data.currentStep);
+    final stepSubtitle = _stepSubtitle(context, data.currentStep);
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -109,35 +162,56 @@ class _PlanWizard extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final step in data.steps)
-                    ChoiceChip(
-                      label: Text(_stepLabel(context, step)),
-                      selected: step == data.currentStep,
-                      onSelected: (_) => context.read<PlanMyDayBloc>().add(
-                        PlanMyDayStepRequested(step),
-                      ),
-                    ),
-                ],
+              const SizedBox(height: 6),
+              Text(
+                stepSubtitle,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
         ),
         const Divider(height: 1),
         Expanded(
-          child: switch (data.currentStep) {
-            PlanMyDayStep.valuesStep => _PlanValuesStep(
-              data: data,
-              gateState: gateState,
-            ),
-            PlanMyDayStep.routines => _PlanRoutinesStep(data: data),
-            PlanMyDayStep.triage => _PlanTriageStep(data: data),
-            PlanMyDayStep.summary => _PlanSummaryStep(data: data),
-          },
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (child, animation) {
+              final offsetTween = Tween<Offset>(
+                begin: const Offset(0.05, 0),
+                end: Offset.zero,
+              );
+              return SlideTransition(
+                position: animation.drive(offsetTween),
+                child: FadeTransition(
+                  opacity: animation,
+                  child: child,
+                ),
+              );
+            },
+            child: switch (data.currentStep) {
+              PlanMyDayStep.valuesStep => _PlanValuesStep(
+                key: const ValueKey('plan-step-values'),
+                data: data,
+                gateState: gateState,
+              ),
+              PlanMyDayStep.routines => _PlanRoutinesStep(
+                key: const ValueKey('plan-step-routines'),
+                data: data,
+              ),
+              PlanMyDayStep.triage => _PlanTriageStep(
+                key: const ValueKey('plan-step-triage'),
+                data: data,
+              ),
+              PlanMyDayStep.summary => _PlanSummaryStep(
+                key: const ValueKey('plan-step-summary'),
+                data: data,
+              ),
+            },
+          ),
         ),
       ],
     );
@@ -148,6 +222,7 @@ class _PlanValuesStep extends StatelessWidget {
   const _PlanValuesStep({
     required this.data,
     required this.gateState,
+    super.key,
   });
 
   final PlanMyDayReady data;
@@ -200,6 +275,20 @@ class _PlanValuesStep extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () => _showWhySuggestedSheet(context),
+            icon: const Icon(Icons.info_outline, size: 18),
+            label: const Text('Why suggested'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         TasklyFeedRenderer.buildSection(
           TasklySectionSpec.standardList(
             id: 'plan-values',
@@ -209,40 +298,130 @@ class _PlanValuesStep extends StatelessWidget {
       ],
     );
   }
+
+  Future<void> _showWhySuggestedSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              const Text(
+                'Why suggested',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'These suggestions balance your values and recent choices. '
+                'They are meant to be a gentle starting point.',
+                style: Theme.of(sheetContext).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
-class _PlanRoutinesStep extends StatelessWidget {
-  const _PlanRoutinesStep({required this.data});
+class _PlanRoutinesStep extends StatefulWidget {
+  const _PlanRoutinesStep({required this.data, super.key});
 
   final PlanMyDayReady data;
 
   @override
-  Widget build(BuildContext context) {
-    final routines = data.routines;
-    final l10n = context.l10n;
+  State<_PlanRoutinesStep> createState() => _PlanRoutinesStepState();
+}
 
-    if (routines.isEmpty) {
-      return TasklyFeedRenderer(
-        spec: TasklyFeedSpec.empty(
-          empty: TasklyEmptyStateSpec(
-            icon: Icons.self_improvement_outlined,
-            title: l10n.routineEmptyTitle,
-            description: l10n.routineEmptyDescription,
-          ),
+class _PlanRoutinesStepState extends State<_PlanRoutinesStep> {
+  static const int _scheduledLimit = 3;
+  static const int _flexibleLimit = 4;
+  var _showAllScheduled = false;
+  var _showAllFlexible = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final scheduled = widget.data.scheduledRoutines;
+    final flexible = widget.data.flexibleRoutines;
+    final scheduledVisible = _showAllScheduled
+        ? scheduled
+        : scheduled.take(_scheduledLimit).toList(growable: false);
+    final flexibleVisible = _showAllFlexible
+        ? flexible
+        : flexible.take(_flexibleLimit).toList(growable: false);
+
+    final rows = <TasklyRowSpec>[];
+
+    if (scheduled.isNotEmpty) {
+      rows.add(
+        TasklyRowSpec.header(
+          key: 'plan-routines-scheduled-header',
+          title: l10n.routinePanelScheduledTitle,
+          trailingLabel: '${scheduled.length}',
         ),
       );
-    }
-
-    final rows = routines
-        .map(
+      rows.addAll(
+        scheduledVisible.map(
           (item) => _buildRoutineRow(
             context,
-            data: data,
+            data: widget.data,
             item: item,
             primaryActionLabel: l10n.routinePrimaryActionLabel,
           ),
-        )
-        .toList(growable: false);
+        ),
+      );
+      if (!_showAllScheduled && scheduled.length > _scheduledLimit) {
+        final remaining = scheduled.length - _scheduledLimit;
+        rows.add(
+          TasklyRowSpec.inlineAction(
+            key: 'plan-routines-scheduled-show-more',
+            label: 'Show more ($remaining)',
+            onTap: () => setState(() => _showAllScheduled = true),
+          ),
+        );
+      }
+    }
+
+    if (flexible.isNotEmpty) {
+      if (rows.isNotEmpty) {
+        rows.add(
+          TasklyRowSpec.divider(
+            key: 'plan-routines-divider',
+          ),
+        );
+      }
+      rows.add(
+        TasklyRowSpec.header(
+          key: 'plan-routines-flexible-header',
+          title: l10n.routinePanelFlexibleTitle,
+          trailingLabel: '${flexible.length}',
+        ),
+      );
+      rows.addAll(
+        flexibleVisible.map(
+          (item) => _buildRoutineRow(
+            context,
+            data: widget.data,
+            item: item,
+            primaryActionLabel: l10n.routinePrimaryActionLabel,
+          ),
+        ),
+      );
+      if (!_showAllFlexible && flexible.length > _flexibleLimit) {
+        final remaining = flexible.length - _flexibleLimit;
+        rows.add(
+          TasklyRowSpec.inlineAction(
+            key: 'plan-routines-flexible-show-more',
+            label: 'Show more ($remaining)',
+            onTap: () => setState(() => _showAllFlexible = true),
+          ),
+        );
+      }
+    }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -258,20 +437,37 @@ class _PlanRoutinesStep extends StatelessWidget {
   }
 }
 
-class _PlanTriageStep extends StatelessWidget {
-  const _PlanTriageStep({required this.data});
+class _PlanTriageStep extends StatefulWidget {
+  const _PlanTriageStep({required this.data, super.key});
 
   final PlanMyDayReady data;
 
   @override
+  State<_PlanTriageStep> createState() => _PlanTriageStepState();
+}
+
+class _PlanTriageStepState extends State<_PlanTriageStep> {
+  static const int _dueLimit = 3;
+  static const int _plannedLimit = 3;
+  var _showAllDue = false;
+  var _showAllPlanned = false;
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final dayKey = dateOnly(data.dayKeyUtc);
+    final dayKey = dateOnly(widget.data.dayKeyUtc);
     final due = sortTasksByDeadline(
-      data.triageDue,
+      widget.data.triageDue,
       today: dayKey,
     );
-    final planned = sortTasksByStartDate(data.triageStarts);
+    final planned = sortTasksByStartDate(widget.data.triageStarts);
+
+    final visibleDue = _showAllDue
+        ? due
+        : due.take(_dueLimit).toList(growable: false);
+    final visiblePlanned = _showAllPlanned
+        ? planned
+        : planned.take(_plannedLimit).toList(growable: false);
 
     final rows = <TasklyRowSpec>[
       TasklyRowSpec.header(
@@ -279,40 +475,42 @@ class _PlanTriageStep extends StatelessWidget {
         title: l10n.myDayDueSoonLabel,
         trailingLabel: due.isEmpty ? null : '${due.length}',
       ),
-      if (due.isEmpty)
-        TasklyRowSpec.subheader(
-          key: 'plan-triage-due-empty',
-          title: l10n.myDayPlanDueEmptyTitle,
-        )
-      else
+      if (due.isNotEmpty)
         ..._buildTaskRows(
           context,
-          tasks: due,
-          selectedTaskIds: data.selectedTaskIds,
+          tasks: visibleDue,
+          selectedTaskIds: widget.data.selectedTaskIds,
           enableSnooze: true,
-          dayKeyUtc: data.dayKeyUtc,
+          dayKeyUtc: widget.data.dayKeyUtc,
           style: TasklyTaskRowStyle.planPick,
-          badgeLabel: l10n.myDayBadgeDue,
+          keyPrefix: 'plan-task-due',
+        ),
+      if (!_showAllDue && due.length > _dueLimit)
+        TasklyRowSpec.inlineAction(
+          key: 'plan-triage-due-show-more',
+          label: 'Show more (${due.length - _dueLimit})',
+          onTap: () => setState(() => _showAllDue = true),
         ),
       TasklyRowSpec.header(
         key: 'plan-triage-planned-header',
         title: l10n.myDayPlannedSectionTitle,
         trailingLabel: planned.isEmpty ? null : '${planned.length}',
       ),
-      if (planned.isEmpty)
-        TasklyRowSpec.subheader(
-          key: 'plan-triage-planned-empty',
-          title: l10n.myDayPlanPlannedEmptyTitle,
-        )
-      else
+      if (planned.isNotEmpty)
         ..._buildTaskRows(
           context,
-          tasks: planned,
-          selectedTaskIds: data.selectedTaskIds,
+          tasks: visiblePlanned,
+          selectedTaskIds: widget.data.selectedTaskIds,
           enableSnooze: true,
-          dayKeyUtc: data.dayKeyUtc,
+          dayKeyUtc: widget.data.dayKeyUtc,
           style: TasklyTaskRowStyle.planPick,
-          badgeLabel: l10n.myDayBadgeStarts,
+          keyPrefix: 'plan-task-starts',
+        ),
+      if (!_showAllPlanned && planned.length > _plannedLimit)
+        TasklyRowSpec.inlineAction(
+          key: 'plan-triage-planned-show-more',
+          label: 'Show more (${planned.length - _plannedLimit})',
+          onTap: () => setState(() => _showAllPlanned = true),
         ),
     ];
 
@@ -331,7 +529,7 @@ class _PlanTriageStep extends StatelessWidget {
 }
 
 class _PlanSummaryStep extends StatelessWidget {
-  const _PlanSummaryStep({required this.data});
+  const _PlanSummaryStep({required this.data, super.key});
 
   final PlanMyDayReady data;
 
@@ -371,19 +569,17 @@ class _PlanBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
     final totalSelected =
         data.selectedTaskIds.length + data.selectedRoutineIds.length;
     final isSummary = data.currentStep == PlanMyDayStep.summary;
-    final isFirst = data.currentStepIndex == 0;
+
+    final nextStep = !isSummary
+        ? data.steps[data.currentStepIndex + 1]
+        : PlanMyDayStep.summary;
 
     final primaryLabel = isSummary
-        ? (totalSelected == 0
-              ? l10n.myDaySelectItemsToContinueLabel
-              : data.needsPlan
-              ? l10n.myDayContinueToMyDayLabel(totalSelected)
-              : l10n.myDayUpdateMyDayLabel(totalSelected))
-        : l10n.myDayWizardNextLabel;
+        ? (data.needsPlan ? 'Confirm plan' : 'Update plan')
+        : 'Next: ${_stepTitle(context, nextStep)}';
 
     final primaryEnabled = !isSummary || totalSelected > 0;
 
@@ -399,40 +595,39 @@ class _PlanBottomBar extends StatelessWidget {
             ),
           ),
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (!isFirst)
-              TextButton(
-                onPressed: () => context.read<PlanMyDayBloc>().add(
-                  const PlanMyDayStepBackRequested(),
-                ),
-                child: Text(l10n.myDayWizardBackLabel),
-              )
-            else
-              const SizedBox(width: 12),
-            const SizedBox(width: 8),
-            Expanded(
-              child: FilledButton(
-                onPressed: !primaryEnabled
-                    ? null
-                    : () {
-                        final bloc = context.read<PlanMyDayBloc>();
-                        if (isSummary) {
-                          bloc.add(
-                            const PlanMyDayConfirm(closeOnSuccess: true),
-                          );
-                        } else {
-                          bloc.add(const PlanMyDayStepNextRequested());
-                        }
-                      },
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                ),
-                child: Text(primaryLabel),
+            Text(
+              'Step ${data.currentStepIndex + 1} of ${data.steps.length} - '
+              '$totalSelected selected',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
+            ),
+            const SizedBox(height: 8),
+            FilledButton(
+              onPressed: !primaryEnabled
+                  ? null
+                  : () {
+                      final bloc = context.read<PlanMyDayBloc>();
+                      if (isSummary) {
+                        bloc.add(
+                          const PlanMyDayConfirm(closeOnSuccess: true),
+                        );
+                      } else {
+                        bloc.add(const PlanMyDayStepNextRequested());
+                      }
+                    },
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+              ),
+              child: Text(primaryLabel),
             ),
           ],
         ),
@@ -450,12 +645,13 @@ String _stepTitle(BuildContext context, PlanMyDayStep step) {
   };
 }
 
-String _stepLabel(BuildContext context, PlanMyDayStep step) {
+String _stepSubtitle(BuildContext context, PlanMyDayStep step) {
   return switch (step) {
-    PlanMyDayStep.valuesStep => context.l10n.myDayStepValuesLabel,
-    PlanMyDayStep.routines => context.l10n.myDayStepRoutinesLabel,
-    PlanMyDayStep.triage => context.l10n.myDayStepTriageLabel,
-    PlanMyDayStep.summary => context.l10n.myDayStepSummaryLabel,
+    PlanMyDayStep.valuesStep =>
+      'Pick tasks aligned to your values - balance what matters.',
+    PlanMyDayStep.routines => 'Choose routines that support your values.',
+    PlanMyDayStep.triage => 'Clear the urgent noise first.',
+    PlanMyDayStep.summary => 'Confirm what you want to carry into today.',
   };
 }
 
@@ -466,18 +662,10 @@ List<TasklyRowSpec> _buildTaskRows(
   required bool enableSnooze,
   required DateTime dayKeyUtc,
   required TasklyTaskRowStyle Function({required bool selected}) style,
-  String? badgeLabel,
+  String keyPrefix = 'plan-task',
 }) {
   final l10n = context.l10n;
-  final badges = badgeLabel == null
-      ? const <TasklyBadgeData>[]
-      : [
-          TasklyBadgeData(
-            label: badgeLabel,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            tone: TasklyBadgeTone.outline,
-          ),
-        ];
+  const badges = <TasklyBadgeData>[];
 
   return tasks
       .map((task) {
@@ -510,7 +698,7 @@ List<TasklyRowSpec> _buildTaskRows(
         );
 
         return TasklyRowSpec.task(
-          key: 'plan-task-${task.id}',
+          key: '$keyPrefix-${task.id}',
           data: updatedData,
           style: style(selected: isSelected),
           actions: TasklyTaskRowActions(
@@ -568,6 +756,7 @@ TasklyRowSpec _buildRoutineRow(
     snapshot: item.snapshot,
     selected: item.selected,
     completed: item.completedToday,
+    isCatchUpDay: item.isCatchUpDay,
     badges: badges,
     labels: labels,
   );
@@ -610,35 +799,8 @@ List<TasklyRowSpec> _buildSummaryRows(
   BuildContext context, {
   required PlanMyDayReady data,
 }) {
-  final l10n = context.l10n;
   final rows = <TasklyRowSpec>[];
 
-  if (!data.steps.contains(PlanMyDayStep.valuesStep)) {
-    rows.add(
-      TasklyRowSpec.subheader(
-        key: 'plan-summary-no-values',
-        title: l10n.myDaySummaryNoValues,
-      ),
-    );
-  }
-  if (!data.steps.contains(PlanMyDayStep.routines)) {
-    rows.add(
-      TasklyRowSpec.subheader(
-        key: 'plan-summary-no-routines',
-        title: l10n.myDaySummaryNoRoutines,
-      ),
-    );
-  }
-  if (!data.steps.contains(PlanMyDayStep.triage)) {
-    rows.add(
-      TasklyRowSpec.subheader(
-        key: 'plan-summary-no-triage',
-        title: l10n.myDaySummaryNoTriage,
-      ),
-    );
-  }
-
-  final tasksById = {for (final task in data.allTasks) task.id: task};
   final selectedTaskIds = data.selectedTaskIds;
   final selectedRoutineIds = data.selectedRoutineIds;
 
@@ -646,86 +808,156 @@ List<TasklyRowSpec> _buildSummaryRows(
   final dueIds = data.triageDue.map((task) => task.id).toSet();
   final startsIds = data.triageStarts.map((task) => task.id).toSet();
   final routineItemsById = {
-    for (final item in data.routines) item.routine.id: item,
+    for (final item in data.allRoutines) item.routine.id: item,
   };
 
-  final orderedTaskIds = _orderedSelectedTaskIds(data);
   final orderedRoutineIds = _orderedSelectedRoutineIds(data);
 
-  for (final routineId in orderedRoutineIds) {
-    final item = routineItemsById[routineId];
-    if (item == null) continue;
+  if (data.steps.contains(PlanMyDayStep.triage)) {
+    final triageIds = <String>{
+      for (final id in dueIds)
+        if (selectedTaskIds.contains(id)) id,
+      for (final id in startsIds)
+        if (selectedTaskIds.contains(id) && !suggestedIds.contains(id)) id,
+    };
+
+    final dueSorted = sortTasksByDeadline(
+      data.triageDue.where((t) => triageIds.contains(t.id)).toList(),
+      today: dateOnly(data.dayKeyUtc),
+    );
+    final startsSorted = sortTasksByStartDate(
+      data.triageStarts.where((t) => triageIds.contains(t.id)).toList(),
+    );
+    final triageOrdered = [
+      ...dueSorted,
+      for (final task in startsSorted)
+        if (!dueIds.contains(task.id)) task,
+    ];
+
     rows.add(
-      _buildRoutineRow(
-        context,
-        data: data,
-        item: item,
-        primaryActionLabel: l10n.myDayRemoveAction,
-        badgeLabel: l10n.myDayBadgeRoutine,
-        allowRemove: true,
+      TasklyRowSpec.header(
+        key: 'plan-summary-triage-header',
+        title: 'Time-sensitive',
+        trailingLabel: triageOrdered.isEmpty ? null : '${triageOrdered.length}',
       ),
     );
-  }
-
-  for (final taskId in orderedTaskIds) {
-    final task = tasksById[taskId];
-    if (task == null) continue;
-
-    final badgeLabel = suggestedIds.contains(taskId)
-        ? l10n.myDayBadgeValues
-        : dueIds.contains(taskId)
-        ? l10n.myDayBadgeDue
-        : startsIds.contains(taskId)
-        ? l10n.myDayBadgeStarts
-        : l10n.myDayBadgeManual;
-
-    final rowsForTask = _buildTaskRows(
-      context,
-      tasks: [task],
-      selectedTaskIds: selectedTaskIds,
-      enableSnooze: false,
-      dayKeyUtc: data.dayKeyUtc,
-      style: TasklyTaskRowStyle.pickerAction,
-      badgeLabel: badgeLabel,
+    rows.add(
+      TasklyRowSpec.subheader(
+        key: 'plan-summary-triage-subtitle',
+        title: 'A few due items to clear space.',
+      ),
     );
-    rows.addAll(rowsForTask);
+    if (triageOrdered.isEmpty) {
+      rows.add(
+        TasklyRowSpec.subheader(
+          key: 'plan-summary-triage-empty',
+          title: 'Nothing to pick here today.',
+        ),
+      );
+    } else {
+      rows.addAll(
+        _buildTaskRows(
+          context,
+          tasks: triageOrdered,
+          selectedTaskIds: selectedTaskIds,
+          enableSnooze: false,
+          dayKeyUtc: data.dayKeyUtc,
+          style: TasklyTaskRowStyle.pickerAction,
+          keyPrefix: 'plan-summary-triage',
+        ),
+      );
+    }
   }
 
-  if (selectedTaskIds.isEmpty && selectedRoutineIds.isEmpty) {
-    return rows;
+  if (data.steps.contains(PlanMyDayStep.routines)) {
+    final routineRows = <TasklyRowSpec>[
+      for (final routineId in orderedRoutineIds)
+        if (selectedRoutineIds.contains(routineId))
+          if (routineItemsById[routineId] != null)
+            _buildRoutineRow(
+              context,
+              data: data,
+              item: routineItemsById[routineId]!,
+              primaryActionLabel: context.l10n.myDayRemoveAction,
+              allowRemove: true,
+            ),
+    ];
+
+    rows.add(
+      TasklyRowSpec.header(
+        key: 'plan-summary-routines-header',
+        title: 'Routines',
+        trailingLabel: routineRows.isEmpty ? null : '${routineRows.length}',
+      ),
+    );
+    rows.add(
+      TasklyRowSpec.subheader(
+        key: 'plan-summary-routines-subtitle',
+        title: 'Small routines that move the day forward.',
+      ),
+    );
+    if (routineRows.isEmpty) {
+      rows.add(
+        TasklyRowSpec.subheader(
+          key: 'plan-summary-routines-empty',
+          title: 'Nothing to pick here today.',
+        ),
+      );
+    } else {
+      rows.addAll(routineRows);
+    }
+  }
+
+  if (data.steps.contains(PlanMyDayStep.valuesStep)) {
+    final suggestedOrdered = [
+      for (final task in data.suggested)
+        if (selectedTaskIds.contains(task.id)) task,
+    ];
+
+    rows.add(
+      TasklyRowSpec.header(
+        key: 'plan-summary-values-header',
+        title: 'Values-guided',
+        trailingLabel: suggestedOrdered.isEmpty
+            ? null
+            : '${suggestedOrdered.length}',
+      ),
+    );
+    rows.add(
+      TasklyRowSpec.subheader(
+        key: 'plan-summary-values-subtitle',
+        title: 'Pick what feels most meaningful today.',
+      ),
+    );
+    if (suggestedOrdered.isEmpty) {
+      rows.add(
+        TasklyRowSpec.subheader(
+          key: 'plan-summary-values-empty',
+          title: 'Nothing to pick here today.',
+        ),
+      );
+    } else {
+      rows.addAll(
+        _buildTaskRows(
+          context,
+          tasks: suggestedOrdered,
+          selectedTaskIds: selectedTaskIds,
+          enableSnooze: false,
+          dayKeyUtc: data.dayKeyUtc,
+          style: TasklyTaskRowStyle.pickerAction,
+          keyPrefix: 'plan-summary-values',
+        ),
+      );
+    }
   }
 
   return rows;
 }
 
-List<String> _orderedSelectedTaskIds(PlanMyDayReady data) {
-  final selected = data.selectedTaskIds;
-  final ordered = <String>[];
-
-  for (final task in data.suggested) {
-    if (selected.contains(task.id)) ordered.add(task.id);
-  }
-  for (final task in data.triageDue) {
-    if (selected.contains(task.id) && !ordered.contains(task.id)) {
-      ordered.add(task.id);
-    }
-  }
-  for (final task in data.triageStarts) {
-    if (selected.contains(task.id) && !ordered.contains(task.id)) {
-      ordered.add(task.id);
-    }
-  }
-  for (final taskId in selected) {
-    if (!ordered.contains(taskId)) ordered.add(taskId);
-  }
-
-  return ordered;
-}
-
 List<String> _orderedSelectedRoutineIds(PlanMyDayReady data) {
   final selected = data.selectedRoutineIds;
   final ordered = <String>[];
-  for (final item in data.routines) {
+  for (final item in data.allRoutines) {
     if (selected.contains(item.routine.id)) {
       ordered.add(item.routine.id);
     }

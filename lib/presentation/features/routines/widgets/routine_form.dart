@@ -41,6 +41,7 @@ class RoutineForm extends StatefulWidget {
 
 class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
   late RoutineType _currentType;
+  final _scrollController = ScrollController();
 
   @override
   VoidCallback? get onClose => widget.onClose;
@@ -115,18 +116,73 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
     final submitEnabled =
         isDirty && (widget.formKey.currentState?.isValid ?? false);
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final headerActionStyle = TextButton.styleFrom(
+      textStyle: theme.textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
+    );
+    final headerTitle = Text(
+      isCreating ? l10n.routineFormNewTitle : l10n.routineFormEditTitle,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
+    );
+
     return FormShell(
       onSubmit: widget.onSubmit,
-      submitTooltip: widget.submitTooltip,
+      submitTooltip: l10n.saveLabel,
       submitIcon: isCreating ? Icons.add : Icons.check,
       submitEnabled: submitEnabled,
-      showHeaderSubmit: true,
+      showHeaderSubmit: false,
       showFooterSubmit: false,
-      closeOnLeft: true,
-      onDelete: widget.initialData != null ? widget.onDelete : null,
+      closeOnLeft: false,
+      onDelete: null,
       deleteTooltip: l10n.routineDeleteTitle,
-      onClose: widget.onClose != null ? handleClose : null,
+      onClose: null,
       closeTooltip: l10n.closeLabel,
+      scrollController: _scrollController,
+      headerTitle: headerTitle,
+      centerHeaderTitle: true,
+      leadingActions: [
+        if (widget.onClose != null)
+          TextButton(
+            onPressed: handleClose,
+            style: headerActionStyle,
+            child: Text(l10n.cancelLabel),
+          ),
+      ],
+      trailingActions: [
+        if (widget.initialData != null && widget.onDelete != null)
+          PopupMenuButton<int>(
+            tooltip: l10n.moreOptionsLabel,
+            itemBuilder: (context) => [
+              PopupMenuItem<int>(
+                value: 0,
+                child: Text(
+                  l10n.routineDeleteTitle,
+                  style: TextStyle(color: colorScheme.error),
+                ),
+              ),
+            ],
+            onSelected: (_) => widget.onDelete?.call(),
+          ),
+        Tooltip(
+          message: widget.submitTooltip,
+          child: TextButton(
+            onPressed: submitEnabled ? widget.onSubmit : null,
+            style: headerActionStyle.copyWith(
+              foregroundColor: WidgetStateProperty.resolveWith<Color?>(
+                (states) => states.contains(WidgetState.disabled)
+                    ? colorScheme.onSurfaceVariant
+                    : colorScheme.primary,
+              ),
+            ),
+            child: Text(l10n.saveLabel),
+          ),
+        ),
+      ],
       child: Padding(
         padding: const EdgeInsets.only(bottom: 16),
         child: FormBuilder(
@@ -144,20 +200,24 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const SizedBox(height: 12),
               FormBuilderTextField(
                 name: RoutineFieldKeys.name.id,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
                 textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
                 maxLength: RoutineValidators.maxNameLength,
-                decoration: InputDecoration(
-                  hintText: l10n.routineFormNameHint,
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
+                decoration:
+                    const InputDecoration(
+                      border: InputBorder.none,
+                      hintText: '',
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ).copyWith(
+                      hintText: l10n.routineFormNameHint,
+                    ),
                 validator: toFormBuilderValidator<String>(
                   RoutineValidators.name,
                   context,

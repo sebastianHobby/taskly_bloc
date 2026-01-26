@@ -246,7 +246,9 @@ class _AuthenticatedApp extends StatelessWidget {
           ),
           BlocProvider<ScreenActionsBloc>(
             create: (context) => ScreenActionsBloc(
-              entityActionService: getIt<EntityActionService>(),
+              taskWriteService: getIt<TaskWriteService>(),
+              projectWriteService: getIt<ProjectWriteService>(),
+              valueWriteService: getIt<ValueWriteService>(),
               errorReporter: context.read<AppErrorReporter>(),
             ),
           ),

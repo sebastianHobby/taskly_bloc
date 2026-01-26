@@ -8,6 +8,7 @@ import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/taskly_domain.dart';
+import 'package:taskly_domain/services.dart';
 
 part 'project_detail_bloc.freezed.dart';
 
@@ -73,13 +74,12 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
   ProjectDetailBloc({
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
+    required ProjectWriteService projectWriteService,
     required AppErrorReporter errorReporter,
   }) : _projectRepository = projectRepository,
        _valueRepository = valueRepository,
+       _projectWriteService = projectWriteService,
        _errorReporter = errorReporter,
-       _commandHandler = ProjectCommandHandler(
-         projectRepository: projectRepository,
-       ),
        super(const ProjectDetailState.initial()) {
     on<_ProjectDetailLoadById>(
       (event, emit) => _onGet(event.projectId, emit),
@@ -97,8 +97,8 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
 
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
+  final ProjectWriteService _projectWriteService;
   final AppErrorReporter _errorReporter;
-  final ProjectCommandHandler _commandHandler;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
@@ -231,7 +231,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     await _executeValidatedCommand(
       emit,
       EntityOperation.update,
-      () => _commandHandler.handleUpdate(event.command, context: context),
+      () => _projectWriteService.update(event.command, context: context),
       context: context,
     );
   }
@@ -247,7 +247,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     );
 
     try {
-      await _projectRepository.delete(event.id, context: context);
+      await _projectWriteService.delete(event.id, context: context);
       await Future<void>.delayed(const Duration(milliseconds: 50));
       emit(createOperationSuccessState(EntityOperation.delete));
     } catch (error, stackTrace) {
@@ -272,7 +272,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     await _executeValidatedCommand(
       emit,
       EntityOperation.create,
-      () => _commandHandler.handleCreate(event.command, context: context),
+      () => _projectWriteService.create(event.command, context: context),
       context: context,
     );
   }
@@ -289,8 +289,8 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     );
 
     try {
-      await _projectRepository.setPinned(
-        id: event.id,
+      await _projectWriteService.setPinned(
+        event.id,
         isPinned: event.isPinned,
         context: context,
       );

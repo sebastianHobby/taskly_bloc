@@ -59,10 +59,12 @@ class SettingsScreen extends StatelessWidget {
                     context: context,
                     title: 'My Day',
                     children: [
-                      _MyDayDueSoonToggle(settings: settings),
+                      _MyDayShowTriageToggle(settings: settings),
                       _MyDayDueWindowSlider(settings: settings),
-                      _MyDayShowAvailableToStartToggle(settings: settings),
-                      _MyDayPlanFlowSelector(settings: settings),
+                      _MyDayShowPlannedToggle(settings: settings),
+                      _MyDayShowRoutinesToggle(settings: settings),
+                      _MyDayCountTriagePicksToggle(settings: settings),
+                      _MyDayCountRoutinePicksToggle(settings: settings),
                     ],
                   ),
                   _buildSection(
@@ -282,18 +284,16 @@ class _TextSizeSlider extends StatelessWidget {
   }
 }
 
-class _MyDayDueSoonToggle extends StatelessWidget {
-  const _MyDayDueSoonToggle({required this.settings});
+class _MyDayShowTriageToggle extends StatelessWidget {
+  const _MyDayShowTriageToggle({required this.settings});
 
   final GlobalSettings settings;
 
   @override
   Widget build(BuildContext context) {
     return SwitchListTile.adaptive(
-      title: const Text('Due soon'),
-      subtitle: const Text(
-        'Include tasks with due dates in the due-soon window.',
-      ),
+      title: const Text('Show triage'),
+      subtitle: const Text('Include time-sensitive tasks due soon.'),
       value: settings.myDayDueSoonEnabled,
       onChanged: (enabled) {
         context.read<GlobalSettingsBloc>().add(
@@ -318,7 +318,7 @@ class _MyDayDueWindowSlider extends StatelessWidget {
     final enabled = settings.myDayDueSoonEnabled;
     final helperText = enabled
         ? 'Include tasks due within the next $days days'
-        : 'Enable the "Due soon" toggle to include deadline-based tasks.';
+        : 'Enable "Show triage" to include deadline-based tasks.';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -367,59 +367,89 @@ class _MyDayDueWindowSlider extends StatelessWidget {
   }
 }
 
-class _MyDayShowAvailableToStartToggle extends StatelessWidget {
-  const _MyDayShowAvailableToStartToggle({required this.settings});
+class _MyDayShowPlannedToggle extends StatelessWidget {
+  const _MyDayShowPlannedToggle({required this.settings});
+
+  final GlobalSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = settings.myDayDueSoonEnabled;
+    return SwitchListTile.adaptive(
+      title: const Text('Show planned'),
+      subtitle: const Text('Tasks with a planned date of today or earlier.'),
+      value: settings.myDayShowAvailableToStart,
+      onChanged: enabled
+          ? (value) {
+              context.read<GlobalSettingsBloc>().add(
+                GlobalSettingsEvent.myDayShowAvailableToStartChanged(value),
+              );
+            }
+          : null,
+    );
+  }
+}
+
+class _MyDayShowRoutinesToggle extends StatelessWidget {
+  const _MyDayShowRoutinesToggle({required this.settings});
 
   final GlobalSettings settings;
 
   @override
   Widget build(BuildContext context) {
     return SwitchListTile.adaptive(
-      title: const Text('Show planned tasks'),
-      subtitle: const Text('Tasks with a planned date of today or earlier'),
-      value: settings.myDayShowAvailableToStart,
+      title: const Text('Show routines'),
+      subtitle: const Text('Include routines as a guided step.'),
+      value: settings.myDayShowRoutines,
       onChanged: (enabled) {
         context.read<GlobalSettingsBloc>().add(
-          GlobalSettingsEvent.myDayShowAvailableToStartChanged(enabled),
+          GlobalSettingsEvent.myDayShowRoutinesChanged(enabled),
         );
       },
     );
   }
 }
 
-class _MyDayPlanFlowSelector extends StatelessWidget {
-  const _MyDayPlanFlowSelector({required this.settings});
+class _MyDayCountTriagePicksToggle extends StatelessWidget {
+  const _MyDayCountTriagePicksToggle({required this.settings});
 
   final GlobalSettings settings;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: const Text('Plan flow'),
-      subtitle: const Text('Choose the order of Plan My Day steps'),
-      trailing: DropdownButton<MyDayPlanFlow>(
-        value: settings.myDayPlanFlow,
-        items: const [
-          DropdownMenuItem(
-            value: MyDayPlanFlow.valuesFirst,
-            child: Text('Values first'),
+    return SwitchListTile.adaptive(
+      title: const Text('Count triage picks'),
+      subtitle: const Text('Reduce value suggestions based on triage picks.'),
+      value: settings.myDayCountTriagePicksAgainstValueQuotas,
+      onChanged: (enabled) {
+        context.read<GlobalSettingsBloc>().add(
+          GlobalSettingsEvent.myDayCountTriagePicksAgainstValueQuotasChanged(
+            enabled,
           ),
-          DropdownMenuItem(
-            value: MyDayPlanFlow.routinesFirst,
-            child: Text('Routines first'),
+        );
+      },
+    );
+  }
+}
+
+class _MyDayCountRoutinePicksToggle extends StatelessWidget {
+  const _MyDayCountRoutinePicksToggle({required this.settings});
+
+  final GlobalSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile.adaptive(
+      title: const Text('Count routine picks'),
+      subtitle: const Text('Reduce value suggestions based on routines.'),
+      value: settings.myDayCountRoutinePicksAgainstValueQuotas,
+      onChanged: (enabled) {
+        context.read<GlobalSettingsBloc>().add(
+          GlobalSettingsEvent.myDayCountRoutinePicksAgainstValueQuotasChanged(
+            enabled,
           ),
-          DropdownMenuItem(
-            value: MyDayPlanFlow.triageFirst,
-            child: Text('Triage first'),
-          ),
-        ],
-        onChanged: (flow) {
-          if (flow == null) return;
-          context.read<GlobalSettingsBloc>().add(
-            GlobalSettingsEvent.myDayPlanFlowChanged(flow),
-          );
-        },
-      ),
+        );
+      },
     );
   }
 }

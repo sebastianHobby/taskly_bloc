@@ -10,6 +10,7 @@ import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.d
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 
@@ -52,11 +53,10 @@ class RoutinesPage extends StatelessWidget {
               ),
             ),
             floatingActionButton: isCompact
-                ? FloatingActionButton(
+                ? EntityAddFab(
                     tooltip: context.l10n.routineCreateTooltip,
                     onPressed: () => _createRoutine(context),
                     heroTag: 'create_routine_fab',
-                    child: const Icon(Icons.add),
                   )
                 : null,
             body: BlocBuilder<RoutineListBloc, RoutineListState>(

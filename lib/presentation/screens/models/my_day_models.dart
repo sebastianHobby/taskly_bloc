@@ -1,5 +1,6 @@
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/my_day.dart' as my_day;
+import 'package:taskly_domain/my_day.dart' show MyDayRitualStatus;
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 
@@ -15,7 +16,8 @@ final class MyDayPlannedItem {
        id = task.id,
        routine = null,
        routineSnapshot = null,
-       completed = task.occurrence?.isCompleted ?? task.completed;
+       completed = task.occurrence?.isCompleted ?? task.completed,
+       isCatchUpDay = false;
 
   MyDayPlannedItem.routine({
     required Routine this.routine,
@@ -24,6 +26,7 @@ final class MyDayPlannedItem {
     required this.sortIndex,
     required this.qualifyingValueId,
     required this.completed,
+    required this.isCatchUpDay,
   }) : type = MyDayPlannedItemType.routine,
        id = routine.id,
        task = null;
@@ -37,6 +40,7 @@ final class MyDayPlannedItem {
   final Routine? routine;
   final RoutineCadenceSnapshot? routineSnapshot;
   final bool completed;
+  final bool isCatchUpDay;
 
   String? get valueId {
     final fromPick = qualifyingValueId;
@@ -56,6 +60,7 @@ final class MyDayViewModel {
   const MyDayViewModel({
     required this.tasks,
     required this.plannedItems,
+    required this.ritualStatus,
     required this.summary,
     required this.mix,
     required this.pinnedTasks,
@@ -67,6 +72,7 @@ final class MyDayViewModel {
 
   final List<Task> tasks;
   final List<MyDayPlannedItem> plannedItems;
+  final MyDayRitualStatus ritualStatus;
   final MyDaySummary summary;
   final MyDayMixVm mix;
 

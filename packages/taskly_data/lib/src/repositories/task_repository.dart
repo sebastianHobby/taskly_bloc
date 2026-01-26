@@ -618,6 +618,65 @@ class TaskRepository implements TaskRepositoryContract {
   }
 
   @override
+  Future<int> bulkRescheduleDeadlines({
+    required Iterable<String> taskIds,
+    required DateTime deadlineDate,
+    OperationContext? context,
+  }) async {
+    final ids = taskIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (ids.isEmpty) return 0;
+
+    return FailureGuard.run(
+      () async {
+        final normalizedDeadline = dateOnlyOrNull(deadlineDate);
+        final now = DateTime.now();
+        final psMetadata = encodeCrudMetadata(context);
+
+        return driftDb.transaction(() async {
+          final existingIds =
+              await (driftDb.selectOnly(driftDb.taskTable)
+                    ..addColumns([driftDb.taskTable.id])
+                    ..where(driftDb.taskTable.id.isIn(ids)))
+                  .map((row) => row.read(driftDb.taskTable.id)!)
+                  .get();
+
+          if (existingIds.length != ids.length) {
+            throw RepositoryNotFoundException(
+              'Some tasks were not found for bulk deadline update',
+            );
+          }
+
+          final updated =
+              await (driftDb.update(
+                driftDb.taskTable,
+              )..where((t) => t.id.isIn(ids))).write(
+                TaskTableCompanion(
+                  deadlineDate: drift_pkg.Value(normalizedDeadline),
+                  updatedAt: drift_pkg.Value(now),
+                  psMetadata: psMetadata == null
+                      ? const drift_pkg.Value<String?>.absent()
+                      : drift_pkg.Value(psMetadata),
+                ),
+              );
+
+          if (updated != ids.length) {
+            throw RepositoryException('Bulk task deadline update failed');
+          }
+
+          return updated;
+        });
+      },
+      area: 'data.task',
+      opName: 'bulk_update_deadline',
+      context: context,
+    );
+  }
+
+  @override
   Future<void> setPinned({
     required String id,
     required bool isPinned,

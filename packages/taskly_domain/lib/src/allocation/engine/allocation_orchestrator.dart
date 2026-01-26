@@ -173,9 +173,7 @@ class AllocationOrchestrator {
     Map<String, int> routineSelectionsByValue = const {},
   }) async {
     final strategy = allocationConfig.strategySettings;
-    final routineSelections = strategy.countRoutineSelectionsAgainstValueQuotas
-        ? routineSelectionsByValue
-        : const <String, int>{};
+    final routineSelections = routineSelectionsByValue;
     final anchorCount = (anchorCountOverride ?? strategy.anchorCount).clamp(
       0,
       100,

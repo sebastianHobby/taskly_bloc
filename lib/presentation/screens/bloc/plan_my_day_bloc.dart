@@ -5,6 +5,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/utils/routine_day_policy.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -108,12 +109,20 @@ final class PlanMyDayRoutineItem {
     required this.snapshot,
     required this.selected,
     required this.completedToday,
+    required this.isCatchUpDay,
+    required this.isScheduled,
+    required this.isEligibleToday,
+    required this.lastScheduledDayUtc,
   });
 
   final Routine routine;
   final RoutineCadenceSnapshot snapshot;
   final bool selected;
   final bool completedToday;
+  final bool isCatchUpDay;
+  final bool isScheduled;
+  final bool isEligibleToday;
+  final DateTime? lastScheduledDayUtc;
 }
 
 @immutable
@@ -121,7 +130,6 @@ final class PlanMyDayReady extends PlanMyDayState {
   const PlanMyDayReady({
     required this.needsPlan,
     required this.dayKeyUtc,
-    required this.flow,
     required this.steps,
     required this.currentStep,
     required this.dueWindowDays,
@@ -132,7 +140,9 @@ final class PlanMyDayReady extends PlanMyDayState {
     required this.suggested,
     required this.triageDue,
     required this.triageStarts,
-    required this.routines,
+    required this.scheduledRoutines,
+    required this.flexibleRoutines,
+    required this.allRoutines,
     required this.selectedTaskIds,
     required this.selectedRoutineIds,
     required this.allTasks,
@@ -143,7 +153,6 @@ final class PlanMyDayReady extends PlanMyDayState {
 
   final bool needsPlan;
   final DateTime dayKeyUtc;
-  final MyDayPlanFlow flow;
   final List<PlanMyDayStep> steps;
   final PlanMyDayStep currentStep;
   final int dueWindowDays;
@@ -154,7 +163,9 @@ final class PlanMyDayReady extends PlanMyDayState {
   final List<Task> suggested;
   final List<Task> triageDue;
   final List<Task> triageStarts;
-  final List<PlanMyDayRoutineItem> routines;
+  final List<PlanMyDayRoutineItem> scheduledRoutines;
+  final List<PlanMyDayRoutineItem> flexibleRoutines;
+  final List<PlanMyDayRoutineItem> allRoutines;
   final Set<String> selectedTaskIds;
   final Set<String> selectedRoutineIds;
   final List<Task> allTasks;
@@ -167,7 +178,6 @@ final class PlanMyDayReady extends PlanMyDayState {
   PlanMyDayReady copyWith({
     bool? needsPlan,
     DateTime? dayKeyUtc,
-    MyDayPlanFlow? flow,
     List<PlanMyDayStep>? steps,
     PlanMyDayStep? currentStep,
     int? dueWindowDays,
@@ -178,7 +188,9 @@ final class PlanMyDayReady extends PlanMyDayState {
     List<Task>? suggested,
     List<Task>? triageDue,
     List<Task>? triageStarts,
-    List<PlanMyDayRoutineItem>? routines,
+    List<PlanMyDayRoutineItem>? scheduledRoutines,
+    List<PlanMyDayRoutineItem>? flexibleRoutines,
+    List<PlanMyDayRoutineItem>? allRoutines,
     Set<String>? selectedTaskIds,
     Set<String>? selectedRoutineIds,
     List<Task>? allTasks,
@@ -189,7 +201,6 @@ final class PlanMyDayReady extends PlanMyDayState {
     return PlanMyDayReady(
       needsPlan: needsPlan ?? this.needsPlan,
       dayKeyUtc: dayKeyUtc ?? this.dayKeyUtc,
-      flow: flow ?? this.flow,
       steps: steps ?? this.steps,
       currentStep: currentStep ?? this.currentStep,
       dueWindowDays: dueWindowDays ?? this.dueWindowDays,
@@ -201,7 +212,9 @@ final class PlanMyDayReady extends PlanMyDayState {
       suggested: suggested ?? this.suggested,
       triageDue: triageDue ?? this.triageDue,
       triageStarts: triageStarts ?? this.triageStarts,
-      routines: routines ?? this.routines,
+      scheduledRoutines: scheduledRoutines ?? this.scheduledRoutines,
+      flexibleRoutines: flexibleRoutines ?? this.flexibleRoutines,
+      allRoutines: allRoutines ?? this.allRoutines,
       selectedTaskIds: selectedTaskIds ?? this.selectedTaskIds,
       selectedRoutineIds: selectedRoutineIds ?? this.selectedRoutineIds,
       allTasks: allTasks ?? this.allTasks,
@@ -220,6 +233,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     required TaskSuggestionService taskSuggestionService,
     required TaskRepositoryContract taskRepository,
     required RoutineRepositoryContract routineRepository,
+    required TaskWriteService taskWriteService,
+    required RoutineWriteService routineWriteService,
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
     required NowService nowService,
@@ -229,6 +244,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
        _taskSuggestionService = taskSuggestionService,
        _taskRepository = taskRepository,
        _routineRepository = routineRepository,
+       _taskWriteService = taskWriteService,
+       _routineWriteService = routineWriteService,
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
        _nowService = nowService,
@@ -253,6 +270,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   final TaskSuggestionService _taskSuggestionService;
   final TaskRepositoryContract _taskRepository;
   final RoutineRepositoryContract _routineRepository;
+  final TaskWriteService _taskWriteService;
+  final RoutineWriteService _routineWriteService;
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
   final NowService _nowService;
@@ -262,8 +281,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       const OperationContextFactory();
 
   settings.GlobalSettings _globalSettings = const settings.GlobalSettings();
-  settings.AllocationConfig _allocationConfig =
-      const settings.AllocationConfig();
   DateTime _dayKeyUtc;
 
   TaskSuggestionSnapshot? _suggestionSnapshot;
@@ -363,10 +380,10 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     emit(ready.copyWith(currentStep: nextStep));
   }
 
-  void _onToggleTask(
+  Future<void> _onToggleTask(
     PlanMyDayToggleTask event,
     Emitter<PlanMyDayState> emit,
-  ) {
+  ) async {
     if (state is! PlanMyDayReady) return;
 
     if (!event.selected && _lockedCompletedPickIds.contains(event.taskId)) {
@@ -380,11 +397,15 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       _selectedTaskIds = {..._selectedTaskIds}..remove(event.taskId);
     }
 
-    emit(
-      (state as PlanMyDayReady).copyWith(
-        selectedTaskIds: _selectedTaskIds,
-      ),
-    );
+    final shouldRefresh =
+        _globalSettings.myDayCountTriagePicksAgainstValueQuotas &&
+        _isTriageTaskId(event.taskId);
+    if (shouldRefresh) {
+      await _refreshSuggestions();
+      if (emit.isDone) return;
+    }
+
+    _emitReady(emit);
   }
 
   Future<void> _onToggleRoutine(
@@ -429,21 +450,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       },
     );
 
-    await _routineRepository.update(
-      id: routine.id,
-      name: routine.name,
-      valueId: routine.valueId,
-      projectId: routine.projectId,
-      routineType: routine.routineType,
-      targetCount: routine.targetCount,
-      scheduleDays: routine.scheduleDays,
-      minSpacingDays: routine.minSpacingDays,
-      restDayBuffer: routine.restDayBuffer,
-      preferredWeeks: routine.preferredWeeks,
-      fixedDayOfMonth: routine.fixedDayOfMonth,
-      fixedWeekday: routine.fixedWeekday,
-      fixedWeekOfMonth: routine.fixedWeekOfMonth,
-      isActive: routine.isActive,
+    await _routineWriteService.setPausedUntil(
+      routine.id,
       pausedUntilUtc: event.pausedUntilUtc,
       context: context,
     );
@@ -461,8 +469,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     if (state is! PlanMyDayReady) return;
     final current = state as PlanMyDayReady;
 
-    final selectedTaskIds = _selectedTaskIds;
-    final selectedRoutineIds = _selectedRoutineIds;
+    final selectedTaskIds = current.selectedTaskIds;
+    final selectedRoutineIds = current.selectedRoutineIds;
 
     if (selectedTaskIds.isEmpty && selectedRoutineIds.isEmpty) {
       if (!event.closeOnSuccess) return;
@@ -493,7 +501,12 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     }
 
     final orderedRoutineIds = <String>[];
-    for (final item in current.routines) {
+    for (final item in current.scheduledRoutines) {
+      if (selectedRoutineIds.contains(item.routine.id)) {
+        orderedRoutineIds.add(item.routine.id);
+      }
+    }
+    for (final item in current.flexibleRoutines) {
       if (selectedRoutineIds.contains(item.routine.id)) {
         orderedRoutineIds.add(item.routine.id);
       }
@@ -522,8 +535,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     final routinesById = {for (final routine in _routines) routine.id: routine};
 
     final suggestedById = <String, SuggestedTask>{
-      for (final entry in _suggestionSnapshot?.suggested ??
-          const <SuggestedTask>[])
+      for (final entry
+          in _suggestionSnapshot?.suggested ?? const <SuggestedTask>[])
         entry.task.id: entry,
     };
 
@@ -671,8 +684,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       }
     }
 
-    await _taskRepository.setMyDaySnoozedUntil(
-      id: task.id,
+    await _taskWriteService.setMyDaySnoozedUntil(
+      task.id,
       untilUtc: event.untilUtc,
       context: context,
     );
@@ -711,9 +724,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     try {
       final results = await Future.wait([
         _settingsRepository.load<settings.GlobalSettings>(SettingsKey.global),
-        _settingsRepository.load<settings.AllocationConfig>(
-          SettingsKey.allocation,
-        ),
         _myDayRepository.loadDay(_dayKeyUtc),
         _taskRepository.getAll(TaskQuery.incomplete()),
         _routineRepository.getAll(includeInactive: true),
@@ -722,17 +732,16 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       ]);
 
       _globalSettings = results[0] as settings.GlobalSettings;
-      _allocationConfig = results[1] as settings.AllocationConfig;
 
-      final picks = results[2] as my_day.MyDayDayPicks;
+      final picks = results[1] as my_day.MyDayDayPicks;
       _dayPicks = picks;
 
-      final incompleteTasks = results[3] as List<Task>;
+      final incompleteTasks = results[2] as List<Task>;
       _incompleteTasks = incompleteTasks;
 
-      final routines = results[4] as List<Routine>;
-      final completions = results[5] as List<RoutineCompletion>;
-      final skips = results[6] as List<RoutineSkip>;
+      final routines = results[3] as List<Routine>;
+      final completions = results[4] as List<RoutineCompletion>;
+      final skips = results[5] as List<RoutineSkip>;
 
       _routines = routines;
       _routineCompletions = completions;
@@ -789,21 +798,30 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   }
 
   Future<void> _refreshSuggestions() async {
-    final countRoutines = _allocationConfig
-        .strategySettings
-        .countRoutineSelectionsAgainstValueQuotas;
+    final showTriage = _globalSettings.myDayDueSoonEnabled;
+    final showPlanned = showTriage && _globalSettings.myDayShowAvailableToStart;
+    final showRoutines = _globalSettings.myDayShowRoutines;
 
-    final routineSelections = countRoutines
+    final routineSelections =
+        showRoutines && _globalSettings.myDayCountRoutinePicksAgainstValueQuotas
         ? _routineSelectionsByValue()
         : const <String, int>{};
+    final triageSelections =
+        _globalSettings.myDayCountTriagePicksAgainstValueQuotas
+        ? _triageSelectionsByValue()
+        : const <String, int>{};
+    final selectionCounts = _mergeSelectionCounts(
+      routineSelections,
+      triageSelections,
+    );
 
     _suggestionSnapshot = await _taskSuggestionService.getSnapshot(
       dueWindowDays: _globalSettings.myDayDueWindowDays,
-      includeDueSoon: _globalSettings.myDayDueSoonEnabled,
-      includeAvailableToStart: _globalSettings.myDayShowAvailableToStart,
+      includeDueSoon: showTriage,
+      includeAvailableToStart: showPlanned,
       batchCount: _suggestionBatchCount,
       tasksOverride: _incompleteTasks,
-      routineSelectionsByValue: routineSelections,
+      routineSelectionsByValue: selectionCounts,
       nowUtc: _nowService.nowUtc(),
     );
   }
@@ -817,7 +835,11 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     final dueRaw = snapshot?.dueSoonNotSuggested ?? const <Task>[];
     final startsRaw = snapshot?.availableToStartNotSuggested ?? const <Task>[];
 
-    final triageDue = _globalSettings.myDayDueSoonEnabled
+    final showTriage = _globalSettings.myDayDueSoonEnabled;
+    final showPlanned = showTriage && _globalSettings.myDayShowAvailableToStart;
+    final showRoutines = _globalSettings.myDayShowRoutines;
+
+    final triageDue = showTriage
         ? dueRaw
               .where((task) => !_selectedTaskIds.contains(task.id))
               .toList(
@@ -825,19 +847,32 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
               )
         : const <Task>[];
 
-    final triageStarts = _globalSettings.myDayShowAvailableToStart
+    final triageStarts = showPlanned
         ? startsRaw
               .where((task) => !_selectedTaskIds.contains(task.id))
               .toList(growable: false)
         : const <Task>[];
 
-    final routines = _buildRoutineItems();
+    final routineItems = showRoutines
+        ? _buildRoutineItems()
+        : _RoutineItemBuildResult.empty;
+    final scheduledRoutines = routineItems.scheduledEligible;
+    final flexibleRoutines = routineItems.flexibleEligible;
+    final allRoutines = routineItems.allItems;
+
+    final selectedTaskIds = _filteredSelectedTaskIds(
+      suggested: suggested,
+      triageDue: triageDue,
+      triageStarts: triageStarts,
+    );
+    final selectedRoutineIds = showRoutines
+        ? _selectedRoutineIds
+        : const <String>{};
 
     final steps = _buildSteps(
-      flow: _globalSettings.myDayPlanFlow,
       hasValues:
           suggested.isNotEmpty || (snapshot?.requiresValueSetup ?? false),
-      hasRoutines: routines.isNotEmpty,
+      hasRoutines: scheduledRoutines.isNotEmpty || flexibleRoutines.isNotEmpty,
       hasTriage: triageDue.isNotEmpty || triageStarts.isNotEmpty,
     );
 
@@ -848,29 +883,29 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       PlanMyDayReady(
         needsPlan: _dayPicks.ritualCompletedAtUtc == null,
         dayKeyUtc: _dayKeyUtc,
-        flow: _globalSettings.myDayPlanFlow,
         steps: steps,
         currentStep: currentStep,
         dueWindowDays: _globalSettings.myDayDueWindowDays,
-        showAvailableToStart: _globalSettings.myDayShowAvailableToStart,
-        showDueSoon: _globalSettings.myDayDueSoonEnabled,
+        showAvailableToStart: showPlanned,
+        showDueSoon: showTriage,
         requiresValueSetup: snapshot?.requiresValueSetup ?? false,
-        countRoutinesAgainstValues: _allocationConfig
-            .strategySettings
-            .countRoutineSelectionsAgainstValueQuotas,
+        countRoutinesAgainstValues:
+            _globalSettings.myDayCountRoutinePicksAgainstValueQuotas,
         suggested: suggested,
         triageDue: triageDue,
         triageStarts: triageStarts,
-        routines: routines,
-        selectedTaskIds: _selectedTaskIds,
-        selectedRoutineIds: _selectedRoutineIds,
+        scheduledRoutines: scheduledRoutines,
+        flexibleRoutines: flexibleRoutines,
+        allRoutines: allRoutines,
+        selectedTaskIds: selectedTaskIds,
+        selectedRoutineIds: selectedRoutineIds,
         allTasks: _tasks,
         routineSelectionsByValue: _routineSelectionsByValue(),
       ),
     );
   }
 
-  List<PlanMyDayRoutineItem> _buildRoutineItems() {
+  _RoutineItemBuildResult _buildRoutineItems() {
     final todayKey = dateOnly(_dayKeyUtc);
     final completedToday = _routineCompletions
         .where(
@@ -879,59 +914,136 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         )
         .map((completion) => completion.routineId)
         .toSet();
+    final scheduledEligible = <PlanMyDayRoutineItem>[];
+    final flexibleEligible = <PlanMyDayRoutineItem>[];
+    final allItems = <PlanMyDayRoutineItem>[];
 
-    return _routines
-        .where((routine) => routine.isActive)
-        .where((routine) => !routine.isPausedOn(todayKey))
-        .map((routine) {
-          final snapshot = _scheduleService.buildSnapshot(
-            routine: routine,
-            dayKeyUtc: _dayKeyUtc,
-            completions: _routineCompletions,
-            skips: _routineSkips,
-          );
+    for (final routine in _routines.where((routine) => routine.isActive)) {
+      if (routine.isPausedOn(todayKey)) continue;
 
-          if (snapshot.remainingCount <= 0) {
-            return null;
-          }
+      final snapshot = _scheduleService.buildSnapshot(
+        routine: routine,
+        dayKeyUtc: _dayKeyUtc,
+        completions: _routineCompletions,
+        skips: _routineSkips,
+      );
+      if (snapshot.remainingCount <= 0) continue;
 
-          return PlanMyDayRoutineItem(
-            routine: routine,
-            snapshot: snapshot,
-            selected: _selectedRoutineIds.contains(routine.id),
-            completedToday: completedToday.contains(routine.id),
-          );
-        })
-        .whereType<PlanMyDayRoutineItem>()
-        .toList(growable: false);
+      final policy = evaluateRoutineDayPolicy(
+        routine: routine,
+        snapshot: snapshot,
+        dayKeyUtc: _dayKeyUtc,
+        completions: _routineCompletions,
+      );
+      final isCompletedToday = completedToday.contains(routine.id);
+      final item = PlanMyDayRoutineItem(
+        routine: routine,
+        snapshot: snapshot,
+        selected: _selectedRoutineIds.contains(routine.id),
+        completedToday: isCompletedToday,
+        isCatchUpDay: policy.isCatchUpDay,
+        isScheduled: policy.cadenceKind == RoutineCadenceKind.scheduled,
+        isEligibleToday: policy.isEligibleToday && !isCompletedToday,
+        lastScheduledDayUtc: policy.lastScheduledDayUtc,
+      );
+
+      if (item.isEligibleToday) {
+        if (item.isScheduled) {
+          scheduledEligible.add(item);
+        } else {
+          flexibleEligible.add(item);
+        }
+      }
+
+      if (item.isEligibleToday ||
+          _selectedRoutineIds.contains(routine.id) ||
+          _lockedCompletedRoutineIds.contains(routine.id)) {
+        allItems.add(item);
+      }
+    }
+
+    scheduledEligible.sort(_compareScheduledRoutines);
+    flexibleEligible.sort(_compareFlexibleRoutines);
+
+    return _RoutineItemBuildResult(
+      allItems: allItems,
+      scheduledEligible: scheduledEligible,
+      flexibleEligible: flexibleEligible,
+    );
+  }
+
+  int _compareScheduledRoutines(
+    PlanMyDayRoutineItem a,
+    PlanMyDayRoutineItem b,
+  ) {
+    if (a.isCatchUpDay != b.isCatchUpDay) {
+      return a.isCatchUpDay ? -1 : 1;
+    }
+    if (a.isCatchUpDay && b.isCatchUpDay) {
+      final byValuePriority = _valuePriorityRank(
+        a.routine.value?.priority,
+      ).compareTo(_valuePriorityRank(b.routine.value?.priority));
+      if (byValuePriority != 0) return byValuePriority;
+    }
+
+    final byLastScheduled = _compareLastScheduledDay(a, b);
+    if (byLastScheduled != 0) return byLastScheduled;
+
+    return a.routine.name.compareTo(b.routine.name);
+  }
+
+  int _compareFlexibleRoutines(
+    PlanMyDayRoutineItem a,
+    PlanMyDayRoutineItem b,
+  ) {
+    final byDaysLeft = a.snapshot.daysLeft.compareTo(b.snapshot.daysLeft);
+    if (byDaysLeft != 0) return byDaysLeft;
+
+    final byRemaining = b.snapshot.remainingCount.compareTo(
+      a.snapshot.remainingCount,
+    );
+    if (byRemaining != 0) return byRemaining;
+
+    final byValuePriority = _valuePriorityRank(
+      a.routine.value?.priority,
+    ).compareTo(_valuePriorityRank(b.routine.value?.priority));
+    if (byValuePriority != 0) return byValuePriority;
+
+    return a.routine.name.compareTo(b.routine.name);
+  }
+
+  int _compareLastScheduledDay(
+    PlanMyDayRoutineItem a,
+    PlanMyDayRoutineItem b,
+  ) {
+    final aDay = a.lastScheduledDayUtc;
+    final bDay = b.lastScheduledDayUtc;
+    if (aDay == null && bDay == null) return 0;
+    if (aDay == null) return 1;
+    if (bDay == null) return -1;
+    return aDay.compareTo(bDay);
+  }
+
+  int _valuePriorityRank(ValuePriority? priority) {
+    return switch (priority) {
+      ValuePriority.high => 0,
+      ValuePriority.medium => 1,
+      ValuePriority.low => 2,
+      null => 1,
+    };
   }
 
   List<PlanMyDayStep> _buildSteps({
-    required MyDayPlanFlow flow,
     required bool hasValues,
     required bool hasRoutines,
     required bool hasTriage,
   }) {
-    final ordered = switch (flow) {
-      MyDayPlanFlow.valuesFirst => [
-        PlanMyDayStep.valuesStep,
-        PlanMyDayStep.routines,
-        PlanMyDayStep.triage,
-        PlanMyDayStep.summary,
-      ],
-      MyDayPlanFlow.routinesFirst => [
-        PlanMyDayStep.routines,
-        PlanMyDayStep.valuesStep,
-        PlanMyDayStep.triage,
-        PlanMyDayStep.summary,
-      ],
-      MyDayPlanFlow.triageFirst => [
-        PlanMyDayStep.triage,
-        PlanMyDayStep.valuesStep,
-        PlanMyDayStep.routines,
-        PlanMyDayStep.summary,
-      ],
-    };
+    const ordered = [
+      PlanMyDayStep.triage,
+      PlanMyDayStep.routines,
+      PlanMyDayStep.valuesStep,
+      PlanMyDayStep.summary,
+    ];
 
     return ordered
         .where((step) {
@@ -952,9 +1064,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   }
 
   Map<String, int> _routineSelectionsByValue() {
-    if (!_allocationConfig
-        .strategySettings
-        .countRoutineSelectionsAgainstValueQuotas) {
+    if (!_globalSettings.myDayShowRoutines ||
+        !_globalSettings.myDayCountRoutinePicksAgainstValueQuotas) {
       return const <String, int>{};
     }
 
@@ -968,6 +1079,71 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     return counts;
   }
 
+  Map<String, int> _triageSelectionsByValue() {
+    if (!_globalSettings.myDayDueSoonEnabled ||
+        !_globalSettings.myDayCountTriagePicksAgainstValueQuotas) {
+      return const <String, int>{};
+    }
+
+    final triageIds = _triageTaskIdsFromSnapshot();
+    if (triageIds.isEmpty) return const <String, int>{};
+
+    final tasksById = {for (final task in _tasks) task.id: task};
+    final counts = <String, int>{};
+
+    for (final taskId in _selectedTaskIds) {
+      if (!triageIds.contains(taskId)) continue;
+      final valueId = tasksById[taskId]?.effectivePrimaryValueId;
+      if (valueId == null || valueId.isEmpty) continue;
+      counts[valueId] = (counts[valueId] ?? 0) + 1;
+    }
+
+    return counts;
+  }
+
+  Set<String> _triageTaskIdsFromSnapshot() {
+    final snapshot = _suggestionSnapshot;
+    if (snapshot == null) return const <String>{};
+    return {
+      for (final task in snapshot.dueSoonNotSuggested) task.id,
+      for (final task in snapshot.availableToStartNotSuggested) task.id,
+    };
+  }
+
+  bool _isTriageTaskId(String taskId) {
+    return _triageTaskIdsFromSnapshot().contains(taskId);
+  }
+
+  Map<String, int> _mergeSelectionCounts(
+    Map<String, int> routineCounts,
+    Map<String, int> triageCounts,
+  ) {
+    if (routineCounts.isEmpty) return triageCounts;
+    if (triageCounts.isEmpty) return routineCounts;
+
+    final merged = Map<String, int>.from(routineCounts);
+    for (final entry in triageCounts.entries) {
+      merged[entry.key] = (merged[entry.key] ?? 0) + entry.value;
+    }
+    return merged;
+  }
+
+  Set<String> _filteredSelectedTaskIds({
+    required List<Task> suggested,
+    required List<Task> triageDue,
+    required List<Task> triageStarts,
+  }) {
+    final visibleIds = <String>{
+      for (final task in suggested) task.id,
+      for (final task in triageDue) task.id,
+      for (final task in triageStarts) task.id,
+    };
+
+    if (visibleIds.isEmpty) return const <String>{};
+
+    return _selectedTaskIds.where(visibleIds.contains).toSet();
+  }
+
   bool _isSameDayUtc(DateTime a, DateTime b) {
     return dateOnly(a).isAtSameMomentAs(dateOnly(b));
   }
@@ -978,4 +1154,23 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     }
     return null;
   }
+}
+
+@immutable
+final class _RoutineItemBuildResult {
+  const _RoutineItemBuildResult({
+    required this.allItems,
+    required this.scheduledEligible,
+    required this.flexibleEligible,
+  });
+
+  final List<PlanMyDayRoutineItem> allItems;
+  final List<PlanMyDayRoutineItem> scheduledEligible;
+  final List<PlanMyDayRoutineItem> flexibleEligible;
+
+  static const empty = _RoutineItemBuildResult(
+    allItems: <PlanMyDayRoutineItem>[],
+    scheduledEligible: <PlanMyDayRoutineItem>[],
+    flexibleEligible: <PlanMyDayRoutineItem>[],
+  );
 }

@@ -8,6 +8,7 @@ import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/taskly_domain.dart';
+import 'package:taskly_domain/services.dart';
 
 part 'task_detail_bloc.freezed.dart';
 
@@ -73,17 +74,15 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
+    required TaskWriteService taskWriteService,
     required AppErrorReporter errorReporter,
     String? taskId,
     bool autoLoad = true,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
+       _taskWriteService = taskWriteService,
        _errorReporter = errorReporter,
-       _commandHandler = TaskCommandHandler(
-         taskRepository: taskRepository,
-         projectRepository: projectRepository,
-       ),
        super(const TaskDetailState.initial()) {
     on<_TaskDetailLoadInitialData>(
       _onLoadInitialData,
@@ -107,8 +106,8 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
+  final TaskWriteService _taskWriteService;
   final AppErrorReporter _errorReporter;
-  final TaskCommandHandler _commandHandler;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
@@ -261,7 +260,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     await _executeValidatedCommand(
       emit,
       EntityOperation.create,
-      () => _commandHandler.handleCreate(event.command, context: context),
+      () => _taskWriteService.create(event.command, context: context),
       context: context,
     );
   }
@@ -278,7 +277,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     await _executeValidatedCommand(
       emit,
       EntityOperation.update,
-      () => _commandHandler.handleUpdate(event.command, context: context),
+      () => _taskWriteService.update(event.command, context: context),
       context: context,
     );
   }
@@ -294,7 +293,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     );
 
     try {
-      await _taskRepository.delete(event.id, context: context);
+      await _taskWriteService.delete(event.id, context: context);
       await Future<void>.delayed(const Duration(milliseconds: 50));
       emit(createOperationSuccessState(EntityOperation.delete));
     } catch (error, stackTrace) {
@@ -320,8 +319,8 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     );
 
     try {
-      await _taskRepository.setPinned(
-        id: event.id,
+      await _taskWriteService.setPinned(
+        event.id,
         isPinned: event.isPinned,
         context: context,
       );

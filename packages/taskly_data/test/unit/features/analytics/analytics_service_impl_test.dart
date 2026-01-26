@@ -389,6 +389,13 @@ class _FakeTaskRepository implements TaskRepositoryContract {
   }) async => throw UnimplementedError();
 
   @override
+  Future<int> bulkRescheduleDeadlines({
+    required Iterable<String> taskIds,
+    required DateTime deadlineDate,
+    OperationContext? context,
+  }) async => throw UnimplementedError();
+
+  @override
   Future<void> setPinned({
     required String id,
     required bool isPinned,
@@ -537,6 +544,13 @@ class _FakeProjectRepository implements ProjectRepositoryContract {
     List<String>? valueIds,
     int? priority,
     bool? isPinned,
+    OperationContext? context,
+  }) async => throw UnimplementedError();
+
+  @override
+  Future<int> bulkRescheduleDeadlines({
+    required Iterable<String> projectIds,
+    required DateTime deadlineDate,
     OperationContext? context,
   }) async => throw UnimplementedError();
 

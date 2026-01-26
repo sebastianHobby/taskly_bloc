@@ -4,12 +4,14 @@ import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -41,13 +43,35 @@ class ProjectDetailPage extends StatelessWidget {
         ),
         BlocProvider(create: (_) => SelectionCubit()),
       ],
-      child: const _ProjectDetailView(),
+      child: _ProjectDetailView(projectId: projectId),
     );
   }
 }
 
 class _ProjectDetailView extends StatelessWidget {
-  const _ProjectDetailView();
+  const _ProjectDetailView({required this.projectId});
+
+  final String projectId;
+
+  Future<void> _openNewTaskEditor(BuildContext context) {
+    final inboxId = ProjectGroupingRef.inbox().stableKey;
+    final defaultProjectId = projectId == inboxId ? null : projectId;
+
+    return EditorLauncher.fromGetIt().openTaskEditor(
+      context,
+      taskId: null,
+      defaultProjectId: defaultProjectId,
+      showDragHandle: true,
+    );
+  }
+
+  Future<void> _openNewProjectEditor(BuildContext context) {
+    return EditorLauncher.fromGetIt().openProjectEditor(
+      context,
+      projectId: null,
+      showDragHandle: true,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +113,13 @@ class _ProjectDetailView extends StatelessWidget {
                       onPressed: () {},
                     ),
                   ],
+                ),
+          floatingActionButton: selectionState.isSelectionMode
+              ? null
+              : EntityAddSpeedDial(
+                  heroTag: 'add_speed_dial_project_detail',
+                  onCreateTask: () => _openNewTaskEditor(context),
+                  onCreateProject: () => _openNewProjectEditor(context),
                 ),
           body: BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
             builder: (context, state) {
@@ -593,17 +624,10 @@ class _ProjectNextActionsSectionState
         .map((entry) {
           final index = entry.key;
           final item = entry.value;
-          final badge = TasklyBadgeData(
-            label: l10n.projectNextActionsRankLabel(item.action.rank),
-            color: scheme.onSurfaceVariant,
-            tone: TasklyBadgeTone.outline,
-          );
-
           final rowSpec = _buildProjectTaskRow(
             context,
             item.task,
             widget.selectionState,
-            badges: [badge],
             onLongPressOverride: widget.selectionState.isSelectionMode
                 ? null
                 : () => _showActionSheet(item),

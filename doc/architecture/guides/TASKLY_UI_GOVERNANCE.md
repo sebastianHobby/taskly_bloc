@@ -34,24 +34,15 @@ surface are governed.
 - **Internal-only change**: a change that does not alter the public surface and
   does not change default visuals/behavior.
 
-## 3) Changes that typically need explicit approval
+## 3) Shared UI change notification
 
-Any of the following typically require explicit user approval before implementation:
+If a change to `taskly_ui` impacts other screens, the user must be informed of
+the impacts before implementation.
 
-- Adding a new shared entity/section/template.
-- Adding a new tile preset or changing an existing preset's visuals/behavior.
-- Adding new public configuration options (constructor params, new exported
-  models, new enums/variants, new entrypoints).
-- Any breaking change or downstream migration requirement.
-- Any change to default visuals or interaction behavior.
-- Any change to accessibility semantics (labels/roles/reading order).
+Minimum expectation:
 
-Expected approval packet (minimum):
-
-- **Impact analysis**: list affected call sites and migration steps.
-- **Contract statement**: what changes, what stays the same.
-- **Decision record**: if this introduces a new shared pattern, record it in
-  the PR description or under `doc/architecture/`.
+- **Impact analysis**: list affected call sites and any required wiring or
+  migration steps.
 
 ## 4) Fast path allowed
 
@@ -60,6 +51,12 @@ These may proceed without explicit user approval:
 - Internal refactors that do not change the public surface.
 - Bugfixes that restore intended behavior without changing defaults.
 - Performance improvements with no user-visible changes.
+
+## 4.1) Opt-in behavior changes via presets
+
+Behavior changes may be opt-in via a new preset or explicit parameter when
+appropriate, but approval is governed by the shared UI change notification
+rule above.
 
 ## 5) Configuration hygiene
 

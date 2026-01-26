@@ -89,6 +89,16 @@ abstract class ProjectRepositoryContract {
     OperationContext? context,
   });
 
+  /// Bulk update project deadlines.
+  ///
+  /// This operation is atomic: either all projects are updated or the call fails.
+  /// Returns the number of updated projects.
+  Future<int> bulkRescheduleDeadlines({
+    required Iterable<String> projectIds,
+    required DateTime deadlineDate,
+    OperationContext? context,
+  });
+
   /// Set the pinned status of a project.
   Future<void> setPinned({
     required String id,
