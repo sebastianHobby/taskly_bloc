@@ -8,7 +8,6 @@ import 'package:taskly_bloc/presentation/features/routines/widgets/routines_list
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -35,30 +34,19 @@ class RoutinesPage extends StatelessWidget {
       )..add(const RoutineListEvent.subscriptionRequested()),
       child: Builder(
         builder: (context) {
-          final isCompact = WindowSizeClass.of(context).isCompact;
-
           return Scaffold(
             appBar: AppBar(
               title: Text(context.l10n.routinesTitle),
               actions: TasklyAppBarActions.withAttentionBell(
                 context,
-                actions: [
-                  if (!isCompact)
-                    IconButton(
-                      tooltip: context.l10n.routineCreateTooltip,
-                      onPressed: () => _createRoutine(context),
-                      icon: const Icon(Icons.add),
-                    ),
-                ],
+                actions: const [],
               ),
             ),
-            floatingActionButton: isCompact
-                ? EntityAddFab(
-                    tooltip: context.l10n.routineCreateTooltip,
-                    onPressed: () => _createRoutine(context),
-                    heroTag: 'create_routine_fab',
-                  )
-                : null,
+            floatingActionButton: EntityAddFab(
+              tooltip: context.l10n.routineCreateTooltip,
+              onPressed: () => _createRoutine(context),
+              heroTag: 'create_routine_fab',
+            ),
             body: BlocBuilder<RoutineListBloc, RoutineListState>(
               builder: (context, state) {
                 return switch (state) {

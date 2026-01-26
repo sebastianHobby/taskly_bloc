@@ -9,7 +9,6 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
@@ -123,7 +122,6 @@ class _AnytimeViewState extends State<_AnytimeView> {
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = WindowSizeClass.of(context).isCompact;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final chrome = TasklyChromeTheme.of(context);
@@ -248,22 +246,12 @@ class _AnytimeViewState extends State<_AnytimeView> {
                             style: iconButtonStyle,
                             onPressed: () => _setSearchActive(false),
                           ),
-                        if (!isCompact)
-                          EntityAddMenuButton(
-                            onCreateTask: () =>
-                                context.read<AnytimeScreenBloc>().add(
-                                  const AnytimeCreateTaskRequested(),
-                                ),
-                            onCreateProject: () =>
-                                context.read<AnytimeScreenBloc>().add(
-                                  const AnytimeCreateProjectRequested(),
-                                ),
-                          ),
                       ],
                     ),
                   ),
-            floatingActionButton: isCompact
-                ? EntityAddSpeedDial(
+            floatingActionButton: selectionState.isSelectionMode
+                ? null
+                : EntityAddSpeedDial(
                     heroTag: 'add_speed_dial_anytime',
                     onCreateTask: () => context.read<AnytimeScreenBloc>().add(
                       const AnytimeCreateTaskRequested(),
@@ -272,8 +260,7 @@ class _AnytimeViewState extends State<_AnytimeView> {
                         context.read<AnytimeScreenBloc>().add(
                           const AnytimeCreateProjectRequested(),
                         ),
-                  )
-                : null,
+                  ),
             body: Column(
               children: [
                 Padding(
@@ -282,7 +269,9 @@ class _AnytimeViewState extends State<_AnytimeView> {
                 ),
                 Expanded(
                   child: BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
-                    buildWhen: (p, n) => p.searchQuery != n.searchQuery,
+                    buildWhen: (p, n) =>
+                        p.searchQuery != n.searchQuery ||
+                        !_sameSet(p.collapsedValueIds, n.collapsedValueIds),
                     builder: (context, screenState) {
                       return BlocBuilder<AnytimeFeedBloc, AnytimeFeedState>(
                         builder: (context, state) {

@@ -442,10 +442,9 @@ class _ValueHeaderRow extends StatelessWidget {
     final content = DecoratedBox(
       decoration: BoxDecoration(
         color: accentColor.withValues(alpha: backgroundOpacity),
-        borderRadius: BorderRadius.circular(999),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: EdgeInsets.fromLTRB(tokens.sectionPaddingH, 6, 10, 6),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -505,16 +504,21 @@ class _ValueHeaderRow extends StatelessWidget {
     );
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        tokens.sectionPaddingH,
-        2,
-        tokens.sectionPaddingH,
-        2,
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: row.onToggleCollapsed,
-        child: content,
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final fullWidth = constraints.maxWidth + tokens.sectionPaddingH * 2;
+          return Align(
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: fullWidth,
+              child: InkWell(
+                onTap: row.onToggleCollapsed,
+                child: content,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
