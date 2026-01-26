@@ -30,18 +30,15 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
     return _db
         .select(_db.attentionRules)
         .watch()
-        .map(
-          (rows) => rows.map(_ruleToDomain).toList(growable: false),
-        );
+        .map((rows) => rows.map(_ruleToDomain).toList(growable: false));
   }
 
   @override
   Stream<List<domain_rule.AttentionRule>> watchActiveRules() {
-    return (_db.select(
-      _db.attentionRules,
-    )..where((tbl) => tbl.active.equals(true))).watch().map(
-      (rows) => rows.map(_ruleToDomain).toList(growable: false),
-    );
+    return (_db.select(_db.attentionRules)
+          ..where((tbl) => tbl.active.equals(true)))
+        .watch()
+        .map((rows) => rows.map(_ruleToDomain).toList(growable: false));
   }
 
   @override
@@ -49,11 +46,10 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
     domain_rule.AttentionBucket bucket,
   ) {
     final driftBucket = _mapBucket(bucket);
-    return (_db.select(
-      _db.attentionRules,
-    )..where((tbl) => tbl.bucket.equalsValue(driftBucket))).watch().map(
-      (rows) => rows.map(_ruleToDomain).toList(growable: false),
-    );
+    return (_db.select(_db.attentionRules)
+          ..where((tbl) => tbl.bucket.equalsValue(driftBucket)))
+        .watch()
+        .map((rows) => rows.map(_ruleToDomain).toList(growable: false));
   }
 
   @override
@@ -61,11 +57,10 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
     List<domain_rule.AttentionBucket> buckets,
   ) {
     final driftBuckets = buckets.map(_mapBucket).toList(growable: false);
-    return (_db.select(
-      _db.attentionRules,
-    )..where((tbl) => tbl.bucket.isInValues(driftBuckets))).watch().map(
-      (rows) => rows.map(_ruleToDomain).toList(growable: false),
-    );
+    return (_db.select(_db.attentionRules)
+          ..where((tbl) => tbl.bucket.isInValues(driftBuckets)))
+        .watch()
+        .map((rows) => rows.map(_ruleToDomain).toList(growable: false));
   }
 
   @override
@@ -90,11 +85,9 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
   Future<void> upsertRule(domain_rule.AttentionRule rule) async {
     try {
       final updated =
-          await (_db.update(
-            _db.attentionRules,
-          )..where((t) => t.id.equals(rule.id))).write(
-            _ruleToCompanion(rule, forUpdate: true),
-          );
+          await (_db.update(_db.attentionRules)
+                ..where((t) => t.id.equals(rule.id)))
+              .write(_ruleToCompanion(rule, forUpdate: true));
 
       if (updated == 0) {
         await _db
@@ -164,9 +157,7 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
           ..where((tbl) => tbl.ruleId.equals(ruleId))
           ..orderBy([(tbl) => OrderingTerm.desc(tbl.resolvedAt)]))
         .watch()
-        .map(
-          (rows) => rows.map(_resolutionToDomain).toList(growable: false),
-        );
+        .map((rows) => rows.map(_resolutionToDomain).toList(growable: false));
   }
 
   @override
@@ -180,9 +171,7 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
           ..where((tbl) => tbl.entityType.equals(entityTypeValue))
           ..orderBy([(tbl) => OrderingTerm.desc(tbl.resolvedAt)]))
         .watch()
-        .map(
-          (rows) => rows.map(_resolutionToDomain).toList(growable: false),
-        );
+        .map((rows) => rows.map(_resolutionToDomain).toList(growable: false));
   }
 
   @override
@@ -244,16 +233,12 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
 
   @override
   Stream<List<domain_runtime.AttentionRuleRuntimeState>>
-  watchRuntimeStateForRule(
-    String ruleId,
-  ) {
+  watchRuntimeStateForRule(String ruleId) {
     return (_db.select(_db.attentionRuleRuntimeStates)
           ..where((tbl) => tbl.ruleId.equals(ruleId))
           ..orderBy([(tbl) => OrderingTerm.desc(tbl.updatedAt)]))
         .watch()
-        .map(
-          (rows) => rows.map(_runtimeStateToDomain).toList(growable: false),
-        );
+        .map((rows) => rows.map(_runtimeStateToDomain).toList(growable: false));
   }
 
   @override
@@ -290,11 +275,9 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
     _validateEntityPair(entityType: state.entityType, entityId: state.entityId);
 
     final updated =
-        await (_db.update(
-          _db.attentionRuleRuntimeStates,
-        )..where((t) => t.id.equals(state.id))).write(
-          _runtimeStateToCompanion(state, forUpdate: true),
-        );
+        await (_db.update(_db.attentionRuleRuntimeStates)
+              ..where((t) => t.id.equals(state.id)))
+            .write(_runtimeStateToCompanion(state, forUpdate: true));
 
     if (updated == 0) {
       await _db
@@ -359,9 +342,7 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
       entityId: row.entityId,
       entityType: _parseEntityType(row.entityType),
       resolvedAt: row.resolvedAt,
-      resolutionAction: _parseResolutionAction(
-        row.resolutionAction,
-      ),
+      resolutionAction: _parseResolutionAction(row.resolutionAction),
       actionDetails: row.actionDetails,
       createdAt: row.createdAt,
     );

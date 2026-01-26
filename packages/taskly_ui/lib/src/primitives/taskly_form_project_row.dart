@@ -50,9 +50,9 @@ class TasklyFormProjectRow extends StatelessWidget {
                 child: Text(
                   label,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: textColor,
-                        fontWeight: hasValue ? FontWeight.w600 : null,
-                      ),
+                    color: textColor,
+                    fontWeight: hasValue ? FontWeight.w600 : null,
+                  ),
                 ),
               ),
               Icon(

@@ -17,18 +17,12 @@ void main() {
       final observer = AppRouteObserver();
 
       final route1 = MaterialPageRoute<void>(
-        settings: const RouteSettings(
-          name: '/one',
-          arguments: 'arg1',
-        ),
+        settings: const RouteSettings(name: '/one', arguments: 'arg1'),
         builder: (_) => const SizedBox.shrink(),
       );
 
       final route2 = MaterialPageRoute<void>(
-        settings: RouteSettings(
-          name: '/two',
-          arguments: _LongArgs('x' * 1000),
-        ),
+        settings: RouteSettings(name: '/two', arguments: _LongArgs('x' * 1000)),
         builder: (_) => const SizedBox.shrink(),
       );
 

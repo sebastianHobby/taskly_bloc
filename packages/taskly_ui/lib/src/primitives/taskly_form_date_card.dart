@@ -90,16 +90,16 @@ class _DateRow extends StatelessWidget {
               child: Text(
                 row.label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             Text(
               trailingLabel,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: trailingColor,
-                    fontWeight: hasValue ? FontWeight.w600 : null,
-                  ),
+                color: trailingColor,
+                fontWeight: hasValue ? FontWeight.w600 : null,
+              ),
             ),
             if (canClear) ...[
               const SizedBox(width: 4),

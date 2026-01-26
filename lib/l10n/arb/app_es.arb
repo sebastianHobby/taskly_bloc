@@ -606,6 +606,51 @@
     "@projectNotFound": {
         "description": "Error mostrado cuando no se encuentra un proyecto"
     },
+    "projectNextActionsTitle": "Next actions",
+    "@projectNextActionsTitle": {
+        "description": "Section title for project next actions."
+    },
+    "projectNextActionsCountLabel": "{count} of {max}",
+    "@projectNextActionsCountLabel": {
+        "description": "Count label for project next actions.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "projectNextActionsChooseAction": "Choose next action...",
+    "@projectNextActionsChooseAction": {
+        "description": "Inline action label to pick a next action."
+    },
+    "projectNextActionsPickerTitle": "Choose next action",
+    "@projectNextActionsPickerTitle": {
+        "description": "Title for the next action picker sheet."
+    },
+    "projectNextActionsPickerSubtitle": "Pick a task to mark as next in this project.",
+    "@projectNextActionsPickerSubtitle": {
+        "description": "Subtitle for the next action picker sheet."
+    },
+    "projectNextActionsRankLabel": "Rank {rank}",
+    "@projectNextActionsRankLabel": {
+        "description": "Label for a next action rank option.",
+        "placeholders": {
+            "rank": {
+                "type": "int"
+            }
+        }
+    },
+    "projectNextActionsRemoveAction": "Remove from next actions",
+    "@projectNextActionsRemoveAction": {
+        "description": "Action label to remove a task from next actions."
+    },
+    "projectNextActionsEmptyLabel": "No next actions yet",
+    "@projectNextActionsEmptyLabel": {
+        "description": "Empty label when a project has no next actions."
+    },
     "labelNotFound": "No se encontrÃ³ la etiqueta.",
     "@labelNotFound": {
         "description": "Error mostrado cuando no se encuentra una etiqueta"
@@ -1292,6 +1337,26 @@
     "myDayAvailableToStartLabel": "Disponible para empezar",
     "@myDayAvailableToStartLabel": {
         "description": "Label for tasks that are available to start in the My Day ritual."
+    },
+    "myDayBadgeValues": "Values",
+    "@myDayBadgeValues": {
+        "description": "Badge label for value-suggested items in My Day."
+    },
+    "myDayBadgeRoutine": "Routine",
+    "@myDayBadgeRoutine": {
+        "description": "Badge label for routine picks in My Day."
+    },
+    "myDayBadgeDue": "Due",
+    "@myDayBadgeDue": {
+        "description": "Badge label for due-soon picks in My Day."
+    },
+    "myDayBadgeStarts": "Planned",
+    "@myDayBadgeStarts": {
+        "description": "Badge label for planned/start-date picks in My Day."
+    },
+    "myDayBadgeManual": "Manual",
+    "@myDayBadgeManual": {
+        "description": "Badge label for manually added items in My Day."
     },
     "myDaySuggestionSettingsTitle": "Ajustes de sugerencias",
     "@myDaySuggestionSettingsTitle": {
@@ -2774,9 +2839,226 @@
     "settingsSaved": "ConfiguraciÃ³n guardada",
     "settingsSaveError": "Error al guardar la configuraciÃ³n: {error}",
     "settingsLoadError": "Error al cargar la configuraciÃ³n: {error}",
+    "routinesTitle": "Rutinas",
+    "routineCreateTooltip": "Crear rutina",
+    "routineEmptyTitle": "Aun no hay rutinas",
+    "routineEmptyDescription": "Crea una rutina para mantener la constancia.",
+    "routineCreateCta": "Crear rutina",
+    "routineFormNameHint": "Nombre",
+    "@routineFormNameHint": {
+        "description": "Hint text for the routine name field"
+    },
+    "routineFormNameEmpty": "Name is required.",
+    "@routineFormNameEmpty": {
+        "description": "Validation message when routine name is empty."
+    },
+    "routineFormNameTooLong": "Name must be {max} characters or fewer.",
+    "@routineFormNameTooLong": {
+        "description": "Validation message when routine name is too long.",
+        "placeholders": {
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "routineTargetWeekly": "{count}x/week",
+    "@routineTargetWeekly": {
+        "description": "Target cadence label for weekly routines.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "routineTargetMonthly": "{count}x/month",
+    "@routineTargetMonthly": {
+        "description": "Target cadence label for monthly routines.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "routineRemaining": "{count} left",
+    "@routineRemaining": {
+        "description": "Remaining count label for routine cadence.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "routineWindowWeekly": "{daysLeft} days left ({startLabel}-{endLabel})",
+    "@routineWindowWeekly": {
+        "description": "Window label for weekly routines.",
+        "placeholders": {
+            "daysLeft": {
+                "type": "int"
+            },
+            "startLabel": {
+                "type": "String"
+            },
+            "endLabel": {
+                "type": "String"
+            }
+        }
+    },
+    "routineWindowMonthlyByDate": "Window ends {endLabel} · {daysLeft} days left",
+    "@routineWindowMonthlyByDate": {
+        "description": "Window label for monthly routines using an end date.",
+        "placeholders": {
+            "endLabel": {
+                "type": "String"
+            },
+            "daysLeft": {
+                "type": "int"
+            }
+        }
+    },
+    "routinePrimaryActionLabel": "Do today",
+    "@routinePrimaryActionLabel": {
+        "description": "Primary action label for routine cards."
+    },
+    "routinePauseLabel": "Pause routine",
+    "@routinePauseLabel": {
+        "description": "Menu label to pause a routine."
+    },
+    "routineEditLabel": "Edit schedule",
+    "@routineEditLabel": {
+        "description": "Menu label to edit a routine schedule."
+    },
+    "routineStatusOnPace": "On pace",
+    "@routineStatusOnPace": {
+        "description": "Status label when routine is on pace."
+    },
+    "routineStatusTightWeek": "Tight week",
+    "@routineStatusTightWeek": {
+        "description": "Status label when routine has a tight week."
+    },
+    "routineStatusCatchUp": "Catch-up window",
+    "@routineStatusCatchUp": {
+        "description": "Status label when routine needs a catch-up window."
+    },
+    "routineStatusRestWeek": "Rest week",
+    "@routineStatusRestWeek": {
+        "description": "Status label when routine period is skipped."
+    },
+    "routineFormValueLabel": "Valor",
+    "routineFormValueHint": "Selecciona un valor",
+    "routineFormProjectLabel": "Proyecto (opcional)",
+    "routineFormProjectHint": "Selecciona un proyecto",
+    "routineFormProjectNone": "Sin proyecto",
+    "routineFormTypeLabel": "Cadencia",
+    "routineTypeWeeklyFlexible": "Semanal (flexible)",
+    "routineTypeMonthlyFlexible": "Mensual (flexible)",
+    "routineFormTargetWeeklyLabel": "Veces por semana",
+    "routineFormSuggestedDaysLabel": "Dias sugeridos",
+    "routineFormTargetMonthlyLabel": "Veces por mes",
+    "routineFormPreferredWeeksLabel": "Semanas preferidas",
+    "routineFormActiveLabel": "Activa",
+    "routineWeek1Label": "Semana 1",
+    "routineWeek2Label": "Semana 2",
+    "routineWeek3Label": "Semana 3",
+    "routineWeek4Label": "Semana 4",
+    "routineWeekLastLabel": "Ultima semana",
+    "routineDeleteTitle": "Eliminar rutina",
+    "routineDeleteDescription": "Esta rutina y su historial se eliminaran.",
+    "routineCreatedSuccessfully": "Rutina creada",
+    "routineUpdatedSuccessfully": "Rutina actualizada",
+    "routineDeletedSuccessfully": "Rutina eliminada",
     "deleteValue": "Eliminar valor",
     "editValue": "Editar valor",
-    "valueNotFound": "No se encontrÃ³ el valor."
+    "valueNotFound": "No se encontrÃ³ el valor.",
+    "routineNotFound": "Routine not found.",
+    "@routineNotFound": {
+        "description": "Error shown when a routine cannot be found"
+    },
+    "myDayDueSoonToggleTitle": "Due soon",
+    "@myDayDueSoonToggleTitle": {
+        "description": "Title for the My Day due soon toggle."
+    },
+    "myDayDueSoonToggleSubtitle": "Include tasks with due dates in the due-soon window.",
+    "@myDayDueSoonToggleSubtitle": {
+        "description": "Subtitle for the My Day due soon toggle."
+    },
+    "myDayStepValuesTitle": "Values first",
+    "@myDayStepValuesTitle": {
+        "description": "Title for the Values step in the Plan My Day wizard."
+    },
+    "myDayStepValuesLabel": "Values",
+    "@myDayStepValuesLabel": {
+        "description": "Short label for the Values step in the Plan My Day wizard."
+    },
+    "myDayStepRoutinesTitle": "Routines",
+    "@myDayStepRoutinesTitle": {
+        "description": "Title for the Routines step in the Plan My Day wizard."
+    },
+    "myDayStepRoutinesLabel": "Routines",
+    "@myDayStepRoutinesLabel": {
+        "description": "Short label for the Routines step in the Plan My Day wizard."
+    },
+    "myDayStepTriageTitle": "Urgent & planned",
+    "@myDayStepTriageTitle": {
+        "description": "Title for the Triage step in the Plan My Day wizard."
+    },
+    "myDayStepTriageLabel": "Triage",
+    "@myDayStepTriageLabel": {
+        "description": "Short label for the Triage step in the Plan My Day wizard."
+    },
+    "myDayStepSummaryTitle": "Summary",
+    "@myDayStepSummaryTitle": {
+        "description": "Title for the Summary step in the Plan My Day wizard."
+    },
+    "myDayStepSummaryLabel": "Summary",
+    "@myDayStepSummaryLabel": {
+        "description": "Short label for the Summary step in the Plan My Day wizard."
+    },
+    "myDayWizardNextLabel": "Next",
+    "@myDayWizardNextLabel": {
+        "description": "Label for the wizard next button."
+    },
+    "myDayWizardBackLabel": "Back",
+    "@myDayWizardBackLabel": {
+        "description": "Label for the wizard back button."
+    },
+    "myDaySummaryNoValues": "No values suggestions",
+    "@myDaySummaryNoValues": {
+        "description": "Summary line when the Values step is skipped."
+    },
+    "myDaySummaryNoRoutines": "No routines",
+    "@myDaySummaryNoRoutines": {
+        "description": "Summary line when the Routines step is skipped."
+    },
+    "myDaySummaryNoTriage": "No due or planned tasks",
+    "@myDaySummaryNoTriage": {
+        "description": "Summary line when the Triage step is skipped."
+    },
+    "myDayRemoveAction": "Remove",
+    "@myDayRemoveAction": {
+        "description": "Action label to remove an item from the Plan My Day summary."
+    },
+    "routinePauseSheetTitle": "Pause routine",
+    "@routinePauseSheetTitle": {
+        "description": "Title for the pause routine sheet."
+    },
+    "routinePauseSheetSubtitle": "Hide this routine until...",
+    "@routinePauseSheetSubtitle": {
+        "description": "Subtitle for the pause routine sheet."
+    },
+    "routinePauseUntilNextWindow": "Pause until next window ({date})",
+    "@routinePauseUntilNextWindow": {
+        "description": "Label for pausing a routine until the next cadence window.",
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "Feb 1"
+            }
+        }
+    },
+    "routinePausePickDate": "Pick a date",
+    "@routinePausePickDate": {
+        "description": "Label for picking a custom pause date."
+    }
 }
 
 

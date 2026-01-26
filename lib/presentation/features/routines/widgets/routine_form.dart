@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
@@ -50,7 +51,9 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
     final routine = widget.initialData;
     final draft = widget.initialDraft;
     final rawType =
-        routine?.routineType ?? draft?.routineType ?? RoutineType.weeklyFlexible;
+        routine?.routineType ??
+        draft?.routineType ??
+        RoutineType.weeklyFlexible;
     _currentType = switch (rawType) {
       RoutineType.weeklyFixed => RoutineType.weeklyFlexible,
       RoutineType.monthlyFixed => RoutineType.monthlyFlexible,
@@ -58,7 +61,10 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
     };
   }
 
-  void _onRoutineTypeChanged(FormBuilderFieldState<RoutineType?> field, RoutineType next) {
+  void _onRoutineTypeChanged(
+    FormFieldState<RoutineType> field,
+    RoutineType next,
+  ) {
     field.didChange(next);
     setState(() {
       _currentType = next;
@@ -70,7 +76,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isCreating = widget.initialData == null;
-    final preset = TasklyFormPreset.standard;
+    const preset = TasklyFormPreset.standard;
 
     final RoutineDraft? draft = widget.initialData == null
         ? (widget.initialDraft ?? RoutineDraft.empty())
@@ -93,7 +99,9 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
       RoutineFieldKeys.restDayBuffer.id:
           widget.initialData?.restDayBuffer ?? draft?.restDayBuffer,
       RoutineFieldKeys.preferredWeeks.id:
-          widget.initialData?.preferredWeeks ?? draft?.preferredWeeks ?? <int>[],
+          widget.initialData?.preferredWeeks ??
+          draft?.preferredWeeks ??
+          <int>[],
       RoutineFieldKeys.fixedDayOfMonth.id:
           widget.initialData?.fixedDayOfMonth ?? draft?.fixedDayOfMonth,
       RoutineFieldKeys.fixedWeekday.id:
@@ -254,7 +262,9 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                   routineType: _currentType,
                 ),
                 const SizedBox(height: 12),
-                TasklyFormSectionLabel(text: l10n.routineFormPreferredWeeksLabel),
+                TasklyFormSectionLabel(
+                  text: l10n.routineFormPreferredWeeksLabel,
+                ),
                 const SizedBox(height: 8),
                 _MultiSelectWeeksField(
                   name: RoutineFieldKeys.preferredWeeks.id,
@@ -366,12 +376,11 @@ class _MultiSelectWeekdaysField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = MaterialLocalizations.of(context);
+    final locale = Localizations.localeOf(context).toString();
+    final formatter = DateFormat.E(locale);
     final weekdays = [
       for (var i = 0; i < 7; i++)
-        localizations.formatShortWeekday(
-          DateTime.utc(2024, 1, 1 + i),
-        ),
+        formatter.format(DateTime.utc(2024, 1, 1 + i)),
     ];
 
     return FormBuilderField<List<int>>(

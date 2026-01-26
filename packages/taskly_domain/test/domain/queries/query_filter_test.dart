@@ -16,7 +16,9 @@ void main() {
   testSafe('QueryFilter.toDnfTerms returns shared when no orGroups', () async {
     const f = QueryFilter<int>(shared: [1, 2]);
 
-    expect(f.toDnfTerms(), [<int>[1, 2]]);
+    expect(f.toDnfTerms(), [
+      <int>[1, 2],
+    ]);
   });
 
   testSafe('QueryFilter.toDnfTerms prepends shared to each orGroup', () async {
@@ -56,8 +58,18 @@ void main() {
   });
 
   testSafe('QueryFilterExtension.merge combines shared and orGroups', () async {
-    const a = QueryFilter<int>(shared: [1], orGroups: [[2]]);
-    const b = QueryFilter<int>(shared: [3], orGroups: [[4, 5]]);
+    const a = QueryFilter<int>(
+      shared: [1],
+      orGroups: [
+        [2],
+      ],
+    );
+    const b = QueryFilter<int>(
+      shared: [3],
+      orGroups: [
+        [4, 5],
+      ],
+    );
 
     final merged = a.merge(b);
     expect(merged.shared, [1, 3]);

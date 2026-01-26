@@ -52,12 +52,6 @@ final class PlanMyDayToggleRoutine extends PlanMyDayEvent {
   final bool selected;
 }
 
-final class PlanMyDaySkipRoutineRequested extends PlanMyDayEvent {
-  const PlanMyDaySkipRoutineRequested(this.routineId);
-
-  final String routineId;
-}
-
 final class PlanMyDayPauseRoutineRequested extends PlanMyDayEvent {
   const PlanMyDayPauseRoutineRequested({
     required this.routineId,
@@ -89,7 +83,7 @@ final class PlanMyDayMoreSuggestionsRequested extends PlanMyDayEvent {
 }
 
 enum PlanMyDayStep {
-  values,
+  valuesStep,
   routines,
   triage,
   summary,
@@ -247,7 +241,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     on<PlanMyDayStepNextRequested>(_onStepNextRequested);
     on<PlanMyDayToggleTask>(_onToggleTask);
     on<PlanMyDayToggleRoutine>(_onToggleRoutine);
-    on<PlanMyDaySkipRoutineRequested>(_onSkipRoutineRequested);
     on<PlanMyDayPauseRoutineRequested>(_onPauseRoutineRequested);
     on<PlanMyDayConfirm>(_onConfirm);
     on<PlanMyDaySnoozeTaskRequested>(_onSnoozeTaskRequested);
@@ -277,8 +270,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   List<Task> _tasks = const <Task>[];
   List<Task> _incompleteTasks = const <Task>[];
   List<Routine> _routines = const <Routine>[];
-  List<RoutineCompletion> _routineCompletions =
-      const <RoutineCompletion>[];
+  List<RoutineCompletion> _routineCompletions = const <RoutineCompletion>[];
   List<RoutineSkip> _routineSkips = const <RoutineSkip>[];
   late my_day.MyDayDayPicks _dayPicks;
 
@@ -401,7 +393,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   ) async {
     if (state is! PlanMyDayReady) return;
 
-    if (!event.selected && _lockedCompletedRoutineIds.contains(event.routineId)) {
+    if (!event.selected &&
+        _lockedCompletedRoutineIds.contains(event.routineId)) {
       return;
     }
 
@@ -413,46 +406,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     }
 
     await _refreshSuggestions();
-    if (emit.isDone) return;
-    _emitReady(emit);
-  }
-
-  Future<void> _onSkipRoutineRequested(
-    PlanMyDaySkipRoutineRequested event,
-    Emitter<PlanMyDayState> emit,
-  ) async {
-    final routine = _findRoutine(event.routineId);
-    if (routine == null) return;
-
-    final snapshot = _scheduleService.buildSnapshot(
-      routine: routine,
-      dayKeyUtc: _dayKeyUtc,
-      completions: _routineCompletions,
-      skips: _routineSkips,
-    );
-
-    final context = _contextFactory.create(
-      feature: 'routines',
-      screen: 'plan_my_day',
-      intent: 'skip_target',
-      operation: 'routine.record_skip',
-      entityType: 'routine',
-      entityId: routine.id,
-      extraFields: <String, Object?>{
-        'periodType': snapshot.periodType.name,
-        'periodKeyUtc': snapshot.periodStartUtc.toIso8601String(),
-      },
-    );
-
-    await _routineRepository.recordSkip(
-      routineId: routine.id,
-      periodType: snapshot.periodType,
-      periodKeyUtc: snapshot.periodStartUtc,
-      context: context,
-    );
-
-    _selectedRoutineIds = {..._selectedRoutineIds}..remove(routine.id);
-    await _refreshSnapshots(resetSelection: false);
     if (emit.isDone) return;
     _emitReady(emit);
   }
@@ -569,13 +522,14 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     final routinesById = {for (final routine in _routines) routine.id: routine};
 
     final suggestedById = <String, SuggestedTask>{
-      for (final entry in _suggestionSnapshot?.suggested ?? const [])
+      for (final entry in _suggestionSnapshot?.suggested ??
+          const <SuggestedTask>[])
         entry.task.id: entry,
     };
 
     my_day.MyDayPickBucket bucketForTaskId(String taskId) {
       if (valuesSelectedIds.contains(taskId)) {
-        return my_day.MyDayPickBucket.values;
+        return my_day.MyDayPickBucket.valueSuggestions;
       }
       if (dueSelectedIds.contains(taskId)) {
         return my_day.MyDayPickBucket.due;
@@ -610,12 +564,13 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       final task = tasksById[taskId];
 
       final qualifyingValueId = switch (bucket) {
-        my_day.MyDayPickBucket.values => suggestedInfo?.qualifyingValueId,
+        my_day.MyDayPickBucket.valueSuggestions =>
+          suggestedInfo?.qualifyingValueId,
         _ => task?.effectivePrimaryValueId,
       };
 
       final reasonCodes = switch (bucket) {
-        my_day.MyDayPickBucket.values =>
+        my_day.MyDayPickBucket.valueSuggestions =>
           suggestedInfo == null
               ? const <String>[]
               : suggestedInfo.reasonCodes
@@ -625,7 +580,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       };
 
       final suggestionRank = switch (bucket) {
-        my_day.MyDayPickBucket.values => suggestedInfo?.rank,
+        my_day.MyDayPickBucket.valueSuggestions => suggestedInfo?.rank,
         _ => null,
       };
 
@@ -795,14 +750,15 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
           .where((task) => task.completed)
           .toList(growable: false);
 
-      _lockedCompletedPickIds =
-          Set.unmodifiable(completedPickTasks.map((task) => task.id));
+      _lockedCompletedPickIds = Set.unmodifiable(
+        completedPickTasks.map((task) => task.id),
+      );
 
       final completedRoutineIds = _routineCompletions
           .where(
-            (completion) =>
-                dateOnly(completion.completedAtUtc)
-                    .isAtSameMomentAs(dateOnly(_dayKeyUtc)),
+            (completion) => dateOnly(
+              completion.completedAtUtc,
+            ).isAtSameMomentAs(dateOnly(_dayKeyUtc)),
           )
           .map((completion) => completion.routineId)
           .toSet();
@@ -833,11 +789,13 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   }
 
   Future<void> _refreshSuggestions() async {
-    final countRoutines =
-        _allocationConfig.strategySettings.countRoutineSelectionsAgainstValueQuotas;
+    final countRoutines = _allocationConfig
+        .strategySettings
+        .countRoutineSelectionsAgainstValueQuotas;
 
-    final routineSelections =
-        countRoutines ? _routineSelectionsByValue() : const <String, int>{};
+    final routineSelections = countRoutines
+        ? _routineSelectionsByValue()
+        : const <String, int>{};
 
     _suggestionSnapshot = await _taskSuggestionService.getSnapshot(
       dueWindowDays: _globalSettings.myDayDueWindowDays,
@@ -860,22 +818,25 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     final startsRaw = snapshot?.availableToStartNotSuggested ?? const <Task>[];
 
     final triageDue = _globalSettings.myDayDueSoonEnabled
-        ? dueRaw.where((task) => !_selectedTaskIds.contains(task.id)).toList(
-            growable: false,
-          )
+        ? dueRaw
+              .where((task) => !_selectedTaskIds.contains(task.id))
+              .toList(
+                growable: false,
+              )
         : const <Task>[];
 
     final triageStarts = _globalSettings.myDayShowAvailableToStart
         ? startsRaw
-            .where((task) => !_selectedTaskIds.contains(task.id))
-            .toList(growable: false)
+              .where((task) => !_selectedTaskIds.contains(task.id))
+              .toList(growable: false)
         : const <Task>[];
 
     final routines = _buildRoutineItems();
 
     final steps = _buildSteps(
       flow: _globalSettings.myDayPlanFlow,
-      hasValues: suggested.isNotEmpty || snapshot?.requiresValueSetup == true,
+      hasValues:
+          suggested.isNotEmpty || (snapshot?.requiresValueSetup ?? false),
       hasRoutines: routines.isNotEmpty,
       hasTriage: triageDue.isNotEmpty || triageStarts.isNotEmpty,
     );
@@ -894,8 +855,9 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         showAvailableToStart: _globalSettings.myDayShowAvailableToStart,
         showDueSoon: _globalSettings.myDayDueSoonEnabled,
         requiresValueSetup: snapshot?.requiresValueSetup ?? false,
-        countRoutinesAgainstValues:
-            _allocationConfig.strategySettings.countRoutineSelectionsAgainstValueQuotas,
+        countRoutinesAgainstValues: _allocationConfig
+            .strategySettings
+            .countRoutineSelectionsAgainstValueQuotas,
         suggested: suggested,
         triageDue: triageDue,
         triageStarts: triageStarts,
@@ -929,6 +891,10 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
             skips: _routineSkips,
           );
 
+          if (snapshot.remainingCount <= 0) {
+            return null;
+          }
+
           return PlanMyDayRoutineItem(
             routine: routine,
             snapshot: snapshot,
@@ -936,6 +902,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
             completedToday: completedToday.contains(routine.id),
           );
         })
+        .whereType<PlanMyDayRoutineItem>()
         .toList(growable: false);
   }
 
@@ -947,33 +914,35 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   }) {
     final ordered = switch (flow) {
       MyDayPlanFlow.valuesFirst => [
-        PlanMyDayStep.values,
+        PlanMyDayStep.valuesStep,
         PlanMyDayStep.routines,
         PlanMyDayStep.triage,
         PlanMyDayStep.summary,
       ],
       MyDayPlanFlow.routinesFirst => [
         PlanMyDayStep.routines,
-        PlanMyDayStep.values,
+        PlanMyDayStep.valuesStep,
         PlanMyDayStep.triage,
         PlanMyDayStep.summary,
       ],
       MyDayPlanFlow.triageFirst => [
         PlanMyDayStep.triage,
-        PlanMyDayStep.values,
+        PlanMyDayStep.valuesStep,
         PlanMyDayStep.routines,
         PlanMyDayStep.summary,
       ],
     };
 
-    return ordered.where((step) {
-      return switch (step) {
-        PlanMyDayStep.values => hasValues,
-        PlanMyDayStep.routines => hasRoutines,
-        PlanMyDayStep.triage => hasTriage,
-        PlanMyDayStep.summary => true,
-      };
-    }).toList(growable: false);
+    return ordered
+        .where((step) {
+          return switch (step) {
+            PlanMyDayStep.valuesStep => hasValues,
+            PlanMyDayStep.routines => hasRoutines,
+            PlanMyDayStep.triage => hasTriage,
+            PlanMyDayStep.summary => true,
+          };
+        })
+        .toList(growable: false);
   }
 
   PlanMyDayStep _resolveCurrentStep(List<PlanMyDayStep> steps) {
@@ -983,7 +952,9 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   }
 
   Map<String, int> _routineSelectionsByValue() {
-    if (!_allocationConfig.strategySettings.countRoutineSelectionsAgainstValueQuotas) {
+    if (!_allocationConfig
+        .strategySettings
+        .countRoutineSelectionsAgainstValueQuotas) {
       return const <String, int>{};
     }
 

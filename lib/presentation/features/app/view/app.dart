@@ -285,7 +285,7 @@ class _AuthenticatedApp extends StatelessWidget {
                     InitialSyncGateFailure() => true,
                     InitialSyncGateInProgress(:final progress) =>
                       !(progress?.hasSynced ?? false) &&
-                      progress?.lastSyncedAt == null,
+                          progress?.lastSyncedAt == null,
                   };
 
                   if (shouldBlockOnSync) {

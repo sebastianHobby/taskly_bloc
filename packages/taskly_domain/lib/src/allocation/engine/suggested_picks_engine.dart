@@ -63,11 +63,7 @@ final class SuggestedPicksEngine implements AllocationStrategy {
       );
     }
 
-    final (
-      tasksByProject,
-      projectsByValue,
-      excludedPre,
-    ) = _groupEligible(
+    final (:tasksByProject, :projectsByValue, :excludedPre) = _groupEligible(
       tasks,
       projects: projects,
       categories: categories,
@@ -640,17 +636,16 @@ final class SuggestedPicksEngine implements AllocationStrategy {
       }
     }
 
-    final remaining = tasks
-        .where((t) => !selectedIds.contains(t.id))
-        .toList(growable: false)
-      ..sort(
-        (a, b) => _compareTasksCalm(
-          a,
-          b,
-          todayDayKeyUtc: todayDayKeyUtc,
-          urgencyThresholdDays: urgencyThresholdDays,
-        ),
-      );
+    final remaining =
+        tasks.where((t) => !selectedIds.contains(t.id)).toList(growable: false)
+          ..sort(
+            (a, b) => _compareTasksCalm(
+              a,
+              b,
+              todayDayKeyUtc: todayDayKeyUtc,
+              urgencyThresholdDays: urgencyThresholdDays,
+            ),
+          );
 
     for (final task in remaining) {
       if (selected.length >= maxCount) break;

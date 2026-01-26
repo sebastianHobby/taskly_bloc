@@ -95,9 +95,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
   }
 
   @override
-  Future<Map<int, int>> getMoodDistribution({
-    required DateRange range,
-  }) async {
+  Future<Map<int, int>> getMoodDistribution({required DateRange range}) async {
     final moodTrackerId = await _getMoodTrackerId();
     if (moodTrackerId == null) return const <int, int>{};
 
@@ -125,9 +123,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
   }
 
   @override
-  Future<MoodSummary> getMoodSummary({
-    required DateRange range,
-  }) async {
+  Future<MoodSummary> getMoodSummary({required DateRange range}) async {
     final moodTrackerId = await _getMoodTrackerId();
     if (moodTrackerId == null) {
       return const MoodSummary(
@@ -341,9 +337,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
       results.add(result);
     }
 
-    results.sort(
-      (a, b) => b.coefficient.abs().compareTo(a.coefficient.abs()),
-    );
+    results.sort((a, b) => b.coefficient.abs().compareTo(a.coefficient.abs()));
 
     return results.take(limit).toList(growable: false);
   }
@@ -360,9 +354,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
 
   Future<Map<String, String>> _getTrackerLabels() async {
     final defs = await _journalRepo.watchTrackerDefinitions().first;
-    return {
-      for (final d in defs) d.id: d.name,
-    };
+    return {for (final d in defs) d.id: d.name};
   }
 
   Future<String> _getEntityLabel({

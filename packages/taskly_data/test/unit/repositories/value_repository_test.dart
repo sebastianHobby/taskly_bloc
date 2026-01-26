@@ -48,11 +48,7 @@ void main() {
       final repo = ValueRepository(driftDb: db, idGenerator: idGen);
 
       expect(
-        () => repo.update(
-          id: 'missing',
-          name: 'Missing',
-          color: '#123456',
-        ),
+        () => repo.update(id: 'missing', name: 'Missing', color: '#123456'),
         throwsA(isA<NotFoundFailure>()),
       );
     });
@@ -87,30 +83,36 @@ void main() {
         idGenerator: IdGenerator.withUserId('user-1'),
       );
 
-      await db.into(db.valueTable).insert(
-        ValueTableCompanion.insert(
-          id: 'v-low',
-          name: 'B',
-          color: '#000000',
-          priority: const drift.Value(ValuePriority.low),
-        ),
-      );
-      await db.into(db.valueTable).insert(
-        ValueTableCompanion.insert(
-          id: 'v-high',
-          name: 'C',
-          color: '#000000',
-          priority: const drift.Value(ValuePriority.high),
-        ),
-      );
-      await db.into(db.valueTable).insert(
-        ValueTableCompanion.insert(
-          id: 'v-med',
-          name: 'A',
-          color: '#000000',
-          priority: const drift.Value(ValuePriority.medium),
-        ),
-      );
+      await db
+          .into(db.valueTable)
+          .insert(
+            ValueTableCompanion.insert(
+              id: 'v-low',
+              name: 'B',
+              color: '#000000',
+              priority: const drift.Value(ValuePriority.low),
+            ),
+          );
+      await db
+          .into(db.valueTable)
+          .insert(
+            ValueTableCompanion.insert(
+              id: 'v-high',
+              name: 'C',
+              color: '#000000',
+              priority: const drift.Value(ValuePriority.high),
+            ),
+          );
+      await db
+          .into(db.valueTable)
+          .insert(
+            ValueTableCompanion.insert(
+              id: 'v-med',
+              name: 'A',
+              color: '#000000',
+              priority: const drift.Value(ValuePriority.medium),
+            ),
+          );
 
       final values = await repo.watchAll().first;
       expect(

@@ -22,35 +22,31 @@ final class RoutineRepository implements RoutineRepositoryContract {
 
   @override
   Stream<List<Routine>> watchAll({bool includeInactive = true}) {
-    final routines$ = (_db.select(_db.routinesTable)
-          ..orderBy([(t) => OrderingTerm(expression: t.name)]))
-        .watch();
+    final routines$ = (_db.select(
+      _db.routinesTable,
+    )..orderBy([(t) => OrderingTerm(expression: t.name)])).watch();
     final values$ = _db.select(_db.valueTable).watch();
     final projects$ = _db.select(_db.projectTable).watch();
 
-    return Rx.combineLatest3(
-      routines$,
-      values$,
-      projects$,
-      (List<RoutinesTableData> routineRows,
-          List<ValueTableData> valueRows,
-          List<ProjectTableData> projectRows) {
-        return _mapRoutines(
-          routineRows,
-          valueRows,
-          projectRows,
-          includeInactive: includeInactive,
-        );
-      },
-    );
+    return Rx.combineLatest3(routines$, values$, projects$, (
+      List<RoutinesTableData> routineRows,
+      List<ValueTableData> valueRows,
+      List<ProjectTableData> projectRows,
+    ) {
+      return _mapRoutines(
+        routineRows,
+        valueRows,
+        projectRows,
+        includeInactive: includeInactive,
+      );
+    });
   }
 
   @override
   Future<List<Routine>> getAll({bool includeInactive = true}) async {
-    final routineRows =
-        await (_db.select(_db.routinesTable)
-              ..orderBy([(t) => OrderingTerm(expression: t.name)]))
-            .get();
+    final routineRows = await (_db.select(
+      _db.routinesTable,
+    )..orderBy([(t) => OrderingTerm(expression: t.name)])).get();
     final valueRows = await _db.select(_db.valueTable).get();
     final projectRows = await _db.select(_db.projectTable).get();
 
@@ -85,9 +81,9 @@ final class RoutineRepository implements RoutineRepositoryContract {
   Future<void> create({
     required String name,
     required String valueId,
-    String? projectId,
     required RoutineType routineType,
     required int targetCount,
+    String? projectId,
     List<int> scheduleDays = const <int>[],
     int? minSpacingDays,
     int? restDayBuffer,
@@ -105,7 +101,9 @@ final class RoutineRepository implements RoutineRepositoryContract {
         final userId = _ids.userId;
         final psMetadata = encodeCrudMetadata(context);
 
-        await _db.into(_db.routinesTable).insert(
+        await _db
+            .into(_db.routinesTable)
+            .insert(
               RoutinesTableCompanion.insert(
                 id: _ids.routineId(),
                 userId: Value(userId),
@@ -117,8 +115,9 @@ final class RoutineRepository implements RoutineRepositoryContract {
                 scheduleDays: Value(scheduleDays.isEmpty ? null : scheduleDays),
                 minSpacingDays: Value(minSpacingDays),
                 restDayBuffer: Value(restDayBuffer),
-                preferredWeeks:
-                    Value(preferredWeeks.isEmpty ? null : preferredWeeks),
+                preferredWeeks: Value(
+                  preferredWeeks.isEmpty ? null : preferredWeeks,
+                ),
                 fixedDayOfMonth: Value(fixedDayOfMonth),
                 fixedWeekday: Value(fixedWeekday),
                 fixedWeekOfMonth: Value(fixedWeekOfMonth),
@@ -142,9 +141,9 @@ final class RoutineRepository implements RoutineRepositoryContract {
     required String id,
     required String name,
     required String valueId,
-    String? projectId,
     required RoutineType routineType,
     required int targetCount,
+    String? projectId,
     List<int>? scheduleDays,
     int? minSpacingDays,
     int? restDayBuffer,
@@ -170,8 +169,9 @@ final class RoutineRepository implements RoutineRepositoryContract {
             projectId: Value(_normalizeId(projectId)),
             routineType: Value(routineType.storageKey),
             targetCount: Value(targetCount),
-            scheduleDays:
-                scheduleDays == null ? const Value.absent() : Value(scheduleDays),
+            scheduleDays: scheduleDays == null
+                ? const Value.absent()
+                : Value(scheduleDays),
             minSpacingDays: Value(minSpacingDays),
             restDayBuffer: Value(restDayBuffer),
             preferredWeeks: preferredWeeks == null
@@ -180,7 +180,7 @@ final class RoutineRepository implements RoutineRepositoryContract {
             fixedDayOfMonth: Value(fixedDayOfMonth),
             fixedWeekday: Value(fixedWeekday),
             fixedWeekOfMonth: Value(fixedWeekOfMonth),
-            isActive: Value(isActive),
+            isActive: isActive == null ? const Value.absent() : Value(isActive),
             pausedUntil: Value(dateOnlyOrNull(pausedUntilUtc)),
             updatedAt: Value(now),
             psMetadata: psMetadata == null
@@ -214,9 +214,8 @@ final class RoutineRepository implements RoutineRepositoryContract {
     final query = _db.select(_db.routineCompletionsTable)
       ..orderBy([(t) => OrderingTerm(expression: t.completedAt)]);
     return query.watch().map(
-          (rows) =>
-              rows.map(routineCompletionFromTable).toList(growable: false),
-        );
+      (rows) => rows.map(routineCompletionFromTable).toList(growable: false),
+    );
   }
 
   @override
@@ -224,23 +223,23 @@ final class RoutineRepository implements RoutineRepositoryContract {
     final query = _db.select(_db.routineSkipsTable)
       ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
     return query.watch().map(
-          (rows) => rows.map(routineSkipFromTable).toList(growable: false),
-        );
+      (rows) => rows.map(routineSkipFromTable).toList(growable: false),
+    );
   }
 
   @override
   Future<List<RoutineCompletion>> getCompletions() async {
-    final rows = await (_db.select(_db.routineCompletionsTable)
-          ..orderBy([(t) => OrderingTerm(expression: t.completedAt)]))
-        .get();
+    final rows = await (_db.select(
+      _db.routineCompletionsTable,
+    )..orderBy([(t) => OrderingTerm(expression: t.completedAt)])).get();
     return rows.map(routineCompletionFromTable).toList(growable: false);
   }
 
   @override
   Future<List<RoutineSkip>> getSkips() async {
-    final rows = await (_db.select(_db.routineSkipsTable)
-          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]))
-        .get();
+    final rows = await (_db.select(
+      _db.routineSkipsTable,
+    )..orderBy([(t) => OrderingTerm(expression: t.createdAt)])).get();
     return rows.map(routineSkipFromTable).toList(growable: false);
   }
 
@@ -256,12 +255,14 @@ final class RoutineRepository implements RoutineRepositoryContract {
         final userId = _ids.userId;
         final psMetadata = encodeCrudMetadata(context);
 
-        await _db.into(_db.routineCompletionsTable).insert(
+        await _db
+            .into(_db.routineCompletionsTable)
+            .insert(
               RoutineCompletionsTableCompanion.insert(
                 id: _ids.routineCompletionId(),
                 userId: Value(userId),
                 routineId: routineId,
-                completedAt: Value(completedAtUtc ?? now),
+                completedAt: completedAtUtc ?? now,
                 createdAt: Value(now),
                 psMetadata: Value(psMetadata),
               ),
@@ -288,15 +289,20 @@ final class RoutineRepository implements RoutineRepositoryContract {
         final psMetadata = encodeCrudMetadata(context);
         final normalizedKey = dateOnly(periodKeyUtc);
 
-        final existing = await (_db.select(
-          _db.routineSkipsTable,
-        )..where((t) => t.routineId.equals(routineId))
-              ..where((t) => t.periodType.equals(periodType.name))
-              ..where((t) => t.periodKey.equals(normalizedKey))).getSingleOrNull();
+        final existing =
+            await (_db.select(_db.routineSkipsTable)
+                  ..where((t) => t.routineId.equals(routineId))
+                  ..where((t) => t.periodType.equals(periodType.name))
+                  ..where(
+                    (t) => t.periodKey.equals(encodeDateOnly(normalizedKey)),
+                  ))
+                .getSingleOrNull();
 
         if (existing != null) return;
 
-        await _db.into(_db.routineSkipsTable).insert(
+        await _db
+            .into(_db.routineSkipsTable)
+            .insert(
               RoutineSkipsTableCompanion.insert(
                 id: _ids.routineSkipId(),
                 userId: Value(userId),
@@ -325,8 +331,7 @@ final class RoutineRepository implements RoutineRepositoryContract {
       for (final value in valueRows) value.id: valueFromTable(value),
     };
     final projectsById = {
-      for (final project in projectRows)
-        project.id: projectFromTable(project),
+      for (final project in projectRows) project.id: projectFromTable(project),
     };
 
     final routines = <Routine>[];

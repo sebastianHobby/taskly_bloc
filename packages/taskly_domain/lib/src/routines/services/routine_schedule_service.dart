@@ -253,7 +253,8 @@ final class RoutineScheduleService {
       today.add(const Duration(days: 7)),
     );
     final prefersNext =
-        preferred.contains(nextWeek) || (preferred.contains(5) && isNextLastWeek);
+        preferred.contains(nextWeek) ||
+        (preferred.contains(5) && isNextLastWeek);
     if (prefersNext) return RoutineWindowPhase.nextWeek;
 
     return RoutineWindowPhase.laterThisMonth;

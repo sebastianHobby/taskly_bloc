@@ -49,11 +49,11 @@ class ProjectNextAction {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        projectId,
-        taskId,
-        rank,
-        createdAtUtc,
-        updatedAtUtc,
-      );
+    id,
+    projectId,
+    taskId,
+    rank,
+    createdAtUtc,
+    updatedAtUtc,
+  );
 }

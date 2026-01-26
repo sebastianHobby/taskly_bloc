@@ -5,7 +5,7 @@ import 'package:meta/meta.dart';
 /// These correspond to the sources the user accepts items from.
 enum MyDayPickBucket {
   /// Value-led suggestions selected during the ritual.
-  values,
+  valueSuggestions,
 
   /// Routine picks selected for today.
   routine,

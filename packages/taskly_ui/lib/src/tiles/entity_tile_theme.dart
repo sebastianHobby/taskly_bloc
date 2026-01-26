@@ -256,8 +256,7 @@ class TasklyEntityTileTheme extends ThemeExtension<TasklyEntityTileTheme> {
           Color.lerp(cardShadowColor, other.cardShadowColor, t) ??
           cardShadowColor,
       cardShadowBlur:
-          lerpDouble(cardShadowBlur, other.cardShadowBlur, t) ??
-          cardShadowBlur,
+          lerpDouble(cardShadowBlur, other.cardShadowBlur, t) ?? cardShadowBlur,
       cardShadowOffset:
           Offset.lerp(cardShadowOffset, other.cardShadowOffset, t) ??
           cardShadowOffset,
@@ -277,15 +276,13 @@ class TasklyEntityTileTheme extends ThemeExtension<TasklyEntityTileTheme> {
           priorityBadge,
       badgePadding:
           EdgeInsets.lerp(badgePadding, other.badgePadding, t) ?? badgePadding,
-      badgeRadius:
-          lerpDouble(badgeRadius, other.badgeRadius, t) ?? badgeRadius,
+      badgeRadius: lerpDouble(badgeRadius, other.badgeRadius, t) ?? badgeRadius,
       metaLabelCaps:
           TextStyle.lerp(metaLabelCaps, other.metaLabelCaps, t) ??
           metaLabelCaps,
       metaValue: TextStyle.lerp(metaValue, other.metaValue, t) ?? metaValue,
       progressHeight:
-          lerpDouble(progressHeight, other.progressHeight, t) ??
-          progressHeight,
+          lerpDouble(progressHeight, other.progressHeight, t) ?? progressHeight,
       progressTrackColor:
           Color.lerp(progressTrackColor, other.progressTrackColor, t) ??
           progressTrackColor,

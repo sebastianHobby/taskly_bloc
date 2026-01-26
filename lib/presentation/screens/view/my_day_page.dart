@@ -22,6 +22,7 @@ import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
 import 'package:taskly_bloc/presentation/screens/view/plan_my_day_page.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/my_day.dart' as my_day;
@@ -401,12 +402,13 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
         ),
       );
 
-      final routineEntries = group.entries
-          .where((entry) => entry.item.type == MyDayPlannedItemType.routine)
-          .toList()
-        ..sort(
-          (a, b) => a.item.sortIndex.compareTo(b.item.sortIndex),
-        );
+      final routineEntries =
+          group.entries
+              .where((entry) => entry.item.type == MyDayPlannedItemType.routine)
+              .toList()
+            ..sort(
+              (a, b) => a.item.sortIndex.compareTo(b.item.sortIndex),
+            );
 
       final taskEntries = group.entries
           .where((entry) => entry.item.type == MyDayPlannedItemType.task)
@@ -425,8 +427,7 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
       );
       final sortedTaskEntries = [
         for (final task in sortedTasks)
-          if (taskEntriesById[task.id] != null)
-            taskEntriesById[task.id]!,
+          if (taskEntriesById[task.id] != null) taskEntriesById[task.id]!,
       ];
 
       final orderedEntries = [...routineEntries, ...sortedTaskEntries];
@@ -667,7 +668,7 @@ TasklyBadgeData _badgeForBucket(
   final l10n = context.l10n;
 
   return switch (bucket) {
-    my_day.MyDayPickBucket.values => TasklyBadgeData(
+    my_day.MyDayPickBucket.valueSuggestions => TasklyBadgeData(
       label: l10n.myDayBadgeValues,
       color: scheme.primary,
       tone: TasklyBadgeTone.soft,
@@ -720,8 +721,8 @@ TasklyRowSpec _buildRoutineRow(
       onTap: completed
           ? null
           : () => context.read<MyDayBloc>().add(
-                MyDayRoutineCompletionRequested(routineId: routine.id),
-              ),
+              MyDayRoutineCompletionRequested(routineId: routine.id),
+            ),
       onEdit: () => Routing.toRoutineEdit(context, routine.id),
     ),
   );

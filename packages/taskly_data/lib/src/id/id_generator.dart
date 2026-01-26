@@ -51,6 +51,7 @@ class IdGenerator {
     'tracker_definition_choices',
     'analytics_snapshots',
     'attention_rules',
+    'project_anchor_state',
   };
 
   /// Tables using UUID v4 (random - user content with no natural key).
@@ -66,7 +67,6 @@ class IdGenerator {
     'attention_resolutions',
     'task_snooze_events',
     'project_next_actions',
-    'project_anchor_state',
     'routines',
     'routine_completions',
     'routine_skips',
@@ -121,6 +121,7 @@ class IdGenerator {
   String projectNextActionId() => _uuid.v4();
 
   /// Generate random ID for a project anchor state row.
+  @Deprecated('Use projectAnchorStateIdForProject for deterministic IDs.')
   String projectAnchorStateId() => _uuid.v4();
 
   /// Generate random ID for a routine.
@@ -246,6 +247,12 @@ class IdGenerator {
   /// Natural key: userId + ruleKey
   String attentionRuleId({required String ruleKey}) {
     return _v5('attention_rules/$ruleKey');
+  }
+
+  /// Generate deterministic ID for a project anchor state row.
+  /// Natural key: userId + projectId
+  String projectAnchorStateIdForProject({required String projectId}) {
+    return _v5('project_anchor_state/$projectId');
   }
 
   /// Generate random ID for attention resolution.

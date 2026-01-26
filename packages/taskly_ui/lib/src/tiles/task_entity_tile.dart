@@ -84,15 +84,13 @@ class TaskEntityTile extends StatelessWidget {
     // Bulk selection UX: hide completion affordance and show selection control.
     // Keep left-side spacing so rows don't horizontally jump when entering/exiting
     // selection mode.
-    final showCompletionControl =
-        !_isBulkSelectionStyle && !_isPickerLikeStyle;
+    final showCompletionControl = !_isBulkSelectionStyle && !_isPickerLikeStyle;
 
     final VoidCallback? onTap = switch (style) {
       TasklyTaskRowStylePicker() => actions.onToggleSelected ?? actions.onTap,
       TasklyTaskRowStylePickerAction() =>
         actions.onToggleSelected ?? actions.onTap,
-      TasklyTaskRowStylePlanPick() =>
-        actions.onToggleSelected ?? actions.onTap,
+      TasklyTaskRowStylePlanPick() => actions.onToggleSelected ?? actions.onTap,
       TasklyTaskRowStyleBulkSelection() =>
         actions.onToggleSelected ?? actions.onTap,
       _ => actions.onTap,
@@ -442,8 +440,7 @@ class _MetaRow extends StatelessWidget {
                 children: [
                   for (var i = 0; i < items.length; i++) ...[
                     items[i],
-                    if (i != items.length - 1)
-                      const SizedBox(width: spacing),
+                    if (i != items.length - 1) const SizedBox(width: spacing),
                   ],
                 ],
               );
@@ -478,8 +475,10 @@ class _MetaRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (metaRow != null) metaRow,
-        if (metaRow != null) const SizedBox(height: 6),
+        if (metaRow != null) ...[
+          metaRow,
+          const SizedBox(height: 6),
+        ],
         Wrap(
           spacing: 6,
           runSpacing: 6,

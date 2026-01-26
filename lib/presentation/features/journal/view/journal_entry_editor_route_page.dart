@@ -323,9 +323,16 @@ class _JournalEntryEditorRoutePageState
                             border: OutlineInputBorder(),
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        Text('Right now', style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Log things that happened with this entry.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                         const SizedBox(height: 12),
-                        Text('Trackers', style: theme.textTheme.titleMedium),
-                        const SizedBox(height: 8),
                         for (final group in groupOptions())
                           Builder(
                             builder: (context) {
@@ -352,6 +359,15 @@ class _JournalEntryEditorRoutePageState
                               );
                             },
                           ),
+                        const SizedBox(height: 16),
+                        Text('All-day', style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Totals or habits that apply to the whole day.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ],
                     ),
             ),

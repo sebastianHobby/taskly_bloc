@@ -13,9 +13,7 @@ class PendingNotificationsRepositoryImpl
   @override
   Stream<List<PendingNotification>> watchPending() {
     return (_db.select(_db.pendingNotifications)
-          ..where(
-            (t) => t.status.equals('pending') & t.deliveredAt.isNull(),
-          )
+          ..where((t) => t.status.equals('pending') & t.deliveredAt.isNull())
           ..orderBy([(t) => OrderingTerm(expression: t.scheduledFor)]))
         .watch()
         .map(

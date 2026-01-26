@@ -51,10 +51,9 @@ class TasklyFormQuickPickChips extends StatelessWidget {
                 child: Text(
                   item.label,
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                        fontWeight:
-                            item.emphasized ? FontWeight.w700 : null,
-                      ),
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: item.emphasized ? FontWeight.w700 : null,
+                  ),
                 ),
               ),
             ),

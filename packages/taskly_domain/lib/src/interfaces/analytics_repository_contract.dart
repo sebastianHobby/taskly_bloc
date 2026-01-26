@@ -14,7 +14,10 @@ abstract class AnalyticsRepositoryContract {
     String? entityId,
   });
 
-  Future<void> saveSnapshot(AnalyticsSnapshot snapshot, {OperationContext? context});
+  Future<void> saveSnapshot(
+    AnalyticsSnapshot snapshot, {
+    OperationContext? context,
+  });
 
   Future<void> saveSnapshots(
     List<AnalyticsSnapshot> snapshots, {
@@ -45,7 +48,10 @@ abstract class AnalyticsRepositoryContract {
     int? limit,
   });
 
-  Future<void> saveInsight(AnalyticsInsight insight, {OperationContext? context});
+  Future<void> saveInsight(
+    AnalyticsInsight insight, {
+    OperationContext? context,
+  });
 
   Future<void> dismissInsight(String insightId, {OperationContext? context});
 }

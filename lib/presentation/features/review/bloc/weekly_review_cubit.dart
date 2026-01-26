@@ -17,6 +17,7 @@ class WeeklyReviewConfig {
     required this.showDeadlineRisk,
     required this.showDueSoonUnderControl,
     required this.showStaleItems,
+    required this.showMissingNextActions,
     required this.showFrequentSnoozed,
   });
 
@@ -29,6 +30,7 @@ class WeeklyReviewConfig {
       showDeadlineRisk: settings.maintenanceDeadlineRiskEnabled,
       showDueSoonUnderControl: settings.maintenanceDueSoonEnabled,
       showStaleItems: settings.maintenanceStaleEnabled,
+      showMissingNextActions: settings.maintenanceMissingNextActionsEnabled,
       showFrequentSnoozed: settings.maintenanceFrequentSnoozedEnabled,
     );
   }
@@ -40,6 +42,7 @@ class WeeklyReviewConfig {
   final bool showDeadlineRisk;
   final bool showDueSoonUnderControl;
   final bool showStaleItems;
+  final bool showMissingNextActions;
   final bool showFrequentSnoozed;
 }
 
@@ -355,6 +358,22 @@ class WeeklyReviewCubit extends Cubit<WeeklyReviewState> {
       );
     }
 
+    if (config.showMissingNextActions) {
+      final missingItems = items.where(
+        (i) => i.ruleKey == 'problem_project_missing_next_actions',
+      );
+      sections.add(
+        WeeklyReviewMaintenanceSection(
+          id: 'missing-next-actions',
+          title: 'Missing Next Actions',
+          emptyMessage: 'No projects are missing next actions.',
+          items: missingItems
+              .map(_mapMissingNextActionsItem)
+              .toList(growable: false),
+        ),
+      );
+    }
+
     if (config.showFrequentSnoozed) {
       sections.add(_buildFrequentSnoozedSection(state.maintenanceSections));
     }
@@ -500,6 +519,18 @@ class WeeklyReviewCubit extends Cubit<WeeklyReviewState> {
     return WeeklyReviewMaintenanceItem(
       title: name,
       description: 'No activity in 30 days.',
+    );
+  }
+
+  WeeklyReviewMaintenanceItem _mapMissingNextActionsItem(AttentionItem item) {
+    final name =
+        item.metadata?['project_name'] as String? ??
+        item.metadata?['entity_display_name'] as String? ??
+        'Project';
+
+    return WeeklyReviewMaintenanceItem(
+      title: name,
+      description: item.description,
     );
   }
 

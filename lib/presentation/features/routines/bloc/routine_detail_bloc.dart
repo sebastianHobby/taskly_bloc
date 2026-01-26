@@ -6,9 +6,12 @@ import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_core/logging.dart';
+import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/errors.dart';
+import 'package:taskly_domain/routines.dart';
+import 'package:taskly_domain/telemetry.dart';
 
 part 'routine_detail_bloc.freezed.dart';
 
@@ -33,7 +36,8 @@ sealed class RoutineDetailEvent with _$RoutineDetailEvent {
 @freezed
 sealed class RoutineDetailState with _$RoutineDetailState {
   const factory RoutineDetailState.initial() = RoutineDetailInitial;
-  const factory RoutineDetailState.loadInProgress() = RoutineDetailLoadInProgress;
+  const factory RoutineDetailState.loadInProgress() =
+      RoutineDetailLoadInProgress;
   const factory RoutineDetailState.initialDataLoadSuccess({
     required List<Project> availableProjects,
     required List<Value> availableValues,
@@ -54,8 +58,7 @@ sealed class RoutineDetailState with _$RoutineDetailState {
   }) = RoutineDetailOperationFailure;
 }
 
-class RoutineDetailBloc
-    extends Bloc<RoutineDetailEvent, RoutineDetailState>
+class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
     with DetailBlocMixin<RoutineDetailEvent, RoutineDetailState, Routine> {
   RoutineDetailBloc({
     required RoutineRepositoryContract routineRepository,
@@ -71,7 +74,10 @@ class RoutineDetailBloc
          routineRepository: routineRepository,
        ),
        super(const RoutineDetailState.initial()) {
-    on<_RoutineDetailLoadForCreate>(_onLoadForCreate, transformer: restartable());
+    on<_RoutineDetailLoadForCreate>(
+      _onLoadForCreate,
+      transformer: restartable(),
+    );
     on<_RoutineDetailLoadById>(_onLoadById, transformer: restartable());
     on<_RoutineDetailCreate>(_onCreate, transformer: droppable());
     on<_RoutineDetailUpdate>(_onUpdate, transformer: droppable());
@@ -123,8 +129,7 @@ class RoutineDetailBloc
   @override
   RoutineDetailState createOperationFailureState(
     DetailBlocError<Routine> error,
-  ) =>
-      RoutineDetailState.operationFailure(errorDetails: error);
+  ) => RoutineDetailState.operationFailure(errorDetails: error);
 
   void _reportIfUnexpectedOrUnmapped(
     Object error,
@@ -175,8 +180,8 @@ class RoutineDetailBloc
         _projectRepository.getAll(),
         _valueRepository.getAll(),
       ]);
-      final projects = results[0] as List<Project>;
-      final values = results[1] as List<Value>;
+      final projects = (results[0] as List<Project>?) ?? const <Project>[];
+      final values = (results[1] as List<Value>?) ?? const <Value>[];
       emit(
         RoutineDetailState.initialDataLoadSuccess(
           availableProjects: projects,
@@ -206,8 +211,8 @@ class RoutineDetailBloc
         _valueRepository.getAll(),
         _routineRepository.getById(event.routineId),
       ]);
-      final projects = results[0] as List<Project>;
-      final values = results[1] as List<Value>;
+      final projects = (results[0] as List<Project>?) ?? const <Project>[];
+      final values = (results[1] as List<Value>?) ?? const <Value>[];
       final routine = results[2] as Routine?;
       if (routine == null) {
         emit(

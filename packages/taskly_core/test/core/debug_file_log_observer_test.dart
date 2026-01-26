@@ -298,33 +298,30 @@ void main() {
       expect(content, contains('<omitted>'));
     });
 
-    testSafe(
-      'large writes do not create rotated backup files',
-      () async {
-        final tempDir = await Directory.systemTemp.createTemp(
-          'taskly_core_logs_',
-        );
-        addTearDown(() async {
-          await tempDir.delete(recursive: true);
-        });
+    testSafe('large writes do not create rotated backup files', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'taskly_core_logs_',
+      );
+      addTearDown(() async {
+        await tempDir.delete(recursive: true);
+      });
 
-        final observer = DebugFileLogObserver(
-          supportDirectoryProvider: () async => tempDir,
-        );
-        await observer.ensureInitializedForTest();
+      final observer = DebugFileLogObserver(
+        supportDirectoryProvider: () async => tempDir,
+      );
+      await observer.ensureInitializedForTest();
 
-        final t = Talker(observer: observer);
-        final big = 'A' * 600;
-        t.handle(StateError('boom'), StackTrace.empty, big);
-        t.handle(StateError('boom2'), StackTrace.empty, big);
+      final t = Talker(observer: observer);
+      final big = 'A' * 600;
+      t.handle(StateError('boom'), StackTrace.empty, big);
+      t.handle(StateError('boom2'), StackTrace.empty, big);
 
-        final current = File(observer.logFilePath!);
-        expect(await current.exists(), isTrue);
+      final current = File(observer.logFilePath!);
+      expect(await current.exists(), isTrue);
 
-        // With backups disabled, rotation should not leave a .0 file.
-        final rotated0 = File('${current.path}.0');
-        expect(await rotated0.exists(), isFalse);
-      },
-    );
+      // With backups disabled, rotation should not leave a .0 file.
+      final rotated0 = File('${current.path}.0');
+      expect(await rotated0.exists(), isFalse);
+    });
   });
 }

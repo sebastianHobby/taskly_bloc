@@ -142,19 +142,22 @@ class ProjectEntityTile extends StatelessWidget {
                                         model.title,
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
-                                        style: (isReadOnlyHeader
-                                                ? tokens.projectHeaderTitle
-                                                : tokens.projectTitle)
-                                            .copyWith(
-                                          color: scheme.onSurface,
-                                          decoration: model.completed
-                                              ? TextDecoration.lineThrough
-                                              : null,
-                                          decorationColor:
-                                              scheme.onSurface.withValues(
-                                            alpha: 0.55,
-                                          ),
-                                        ),
+                                        style:
+                                            (isReadOnlyHeader
+                                                    ? tokens.projectHeaderTitle
+                                                    : tokens.projectTitle)
+                                                .copyWith(
+                                                  color: scheme.onSurface,
+                                                  decoration: model.completed
+                                                      ? TextDecoration
+                                                            .lineThrough
+                                                      : null,
+                                                  decorationColor: scheme
+                                                      .onSurface
+                                                      .withValues(
+                                                        alpha: 0.55,
+                                                      ),
+                                                ),
                                       ),
                                     ),
                                     if (_selected != null) ...[
@@ -167,7 +170,8 @@ class ProjectEntityTile extends StatelessWidget {
                                         icon: Icon(
                                           (_selected ?? false)
                                               ? Icons.check_circle_rounded
-                                              : Icons.radio_button_unchecked_rounded,
+                                              : Icons
+                                                    .radio_button_unchecked_rounded,
                                           color: (_selected ?? false)
                                               ? scheme.primary
                                               : scheme.onSurfaceVariant,
@@ -313,7 +317,7 @@ class _ProjectMetaRow extends StatelessWidget {
     final label = dueLabel?.trim();
     final showLabel = label != null && label.isNotEmpty;
     final showDue = showLabel || dueSoon > 0;
-      if (showDue) {
+    if (showDue) {
       final dueColor = (isOverdue || isDueToday)
           ? scheme.error
           : scheme.onSurfaceVariant;

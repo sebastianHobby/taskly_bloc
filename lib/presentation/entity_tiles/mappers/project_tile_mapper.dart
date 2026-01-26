@@ -110,5 +110,3 @@ String _formatMonthDay(BuildContext context, DateTime date) {
   final locale = Localizations.localeOf(context);
   return DateFormat.MMMd(locale.toLanguageTag()).format(date);
 }
-
-

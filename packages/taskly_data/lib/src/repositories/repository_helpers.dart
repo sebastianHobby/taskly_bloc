@@ -55,10 +55,7 @@ class ProjectAggregation {
   List<Project> toProjects() {
     return projectsById.entries.map((entry) {
       final values = sortedValuesFromMap(valuesByProject[entry.key]);
-      return projectFromTable(
-        entry.value,
-        values: values,
-      );
+      return projectFromTable(entry.value, values: values);
     }).toList();
   }
 
@@ -69,10 +66,7 @@ class ProjectAggregation {
 
     final entry = projectsById.entries.first;
     final values = sortedValuesFromMap(valuesByProject[entry.key]);
-    return projectFromTable(
-      entry.value,
-      values: values,
-    );
+    return projectFromTable(entry.value, values: values);
   }
 }
 

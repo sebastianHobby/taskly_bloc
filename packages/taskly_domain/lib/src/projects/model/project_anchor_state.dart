@@ -44,10 +44,10 @@ class ProjectAnchorState {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        projectId,
-        lastAnchoredAtUtc,
-        createdAtUtc,
-        updatedAtUtc,
-      );
+    id,
+    projectId,
+    lastAnchoredAtUtc,
+    createdAtUtc,
+    updatedAtUtc,
+  );
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_domain/routines.dart';
@@ -18,12 +19,16 @@ TasklyRoutineRowData buildRoutineRowData(
       ? context.l10n.routineTargetWeekly(snapshot.targetCount)
       : context.l10n.routineTargetMonthly(snapshot.targetCount);
 
-  final remainingLabel =
-      context.l10n.routineRemaining(snapshot.remainingCount);
+  final remainingLabel = context.l10n.routineRemaining(snapshot.remainingCount);
 
   final windowLabel = periodType == RoutinePeriodType.week
       ? _weeklyWindowLabel(context, snapshot)
       : _monthlyWindowLabel(context, snapshot);
+
+  final suggestedDayBadges = _suggestedDayBadges(
+    context,
+    routine: routine,
+  );
 
   return TasklyRoutineRowData(
     id: routine.id,
@@ -33,10 +38,10 @@ TasklyRoutineRowData buildRoutineRowData(
     windowLabel: windowLabel,
     statusLabel: _statusLabel(context, snapshot.status),
     statusTone: _statusTone(snapshot.status),
-    valueChip: routine.value == null ? null : routine.value!.toChipData(context),
+    valueChip: routine.value?.toChipData(context),
     selected: selected,
     completed: completed,
-    badges: badges,
+    badges: [...badges, ...suggestedDayBadges],
     labels: labels,
   );
 }
@@ -47,7 +52,6 @@ TasklyRoutineRowLabels buildRoutinePlanLabels(
 }) {
   return TasklyRoutineRowLabels(
     primaryActionLabel: context.l10n.routinePrimaryActionLabel,
-    skipPeriodLabel: skipPeriodLabel ?? context.l10n.routineSkipPeriodLabel,
     pauseLabel: context.l10n.routinePauseLabel,
     editLabel: context.l10n.routineEditLabel,
   );
@@ -77,14 +81,14 @@ TasklyRoutineStatusTone _statusTone(RoutineStatus status) {
   };
 }
 
-String _weeklyWindowLabel(BuildContext context, RoutineCadenceSnapshot snapshot) {
-  final localizations = MaterialLocalizations.of(context);
-  final startLabel = localizations.formatShortWeekday(
-    snapshot.periodStartUtc.toLocal(),
-  );
-  final endLabel = localizations.formatShortWeekday(
-    snapshot.periodEndUtc.toLocal(),
-  );
+String _weeklyWindowLabel(
+  BuildContext context,
+  RoutineCadenceSnapshot snapshot,
+) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final formatter = DateFormat.E(locale);
+  final startLabel = formatter.format(snapshot.periodStartUtc.toLocal());
+  final endLabel = formatter.format(snapshot.periodEndUtc.toLocal());
 
   return context.l10n.routineWindowWeekly(
     snapshot.daysLeft,
@@ -97,11 +101,38 @@ String _monthlyWindowLabel(
   BuildContext context,
   RoutineCadenceSnapshot snapshot,
 ) {
-  return switch (snapshot.windowPhase) {
-    RoutineWindowPhase.thisWeek => context.l10n.routineWindowMonthlyThisWeek,
-    RoutineWindowPhase.nextWeek => context.l10n.routineWindowMonthlyNextWeek,
-    RoutineWindowPhase.laterThisMonth =>
-      context.l10n.routineWindowMonthlyLater,
-    null => context.l10n.routineWindowMonthlyLater,
-  };
+  final localizations = MaterialLocalizations.of(context);
+  final endDate = snapshot.periodEndUtc.toLocal();
+  final endLabel = localizations.formatMediumDate(endDate);
+  return context.l10n.routineWindowMonthlyByDate(
+    endLabel,
+    snapshot.daysLeft,
+  );
+}
+
+List<TasklyBadgeData> _suggestedDayBadges(
+  BuildContext context, {
+  required Routine routine,
+}) {
+  if (routine.routineType != RoutineType.weeklyFlexible &&
+      routine.routineType != RoutineType.weeklyFixed) {
+    return const <TasklyBadgeData>[];
+  }
+
+  final scheduleDays = routine.scheduleDays;
+  if (scheduleDays.isEmpty) return const <TasklyBadgeData>[];
+
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final formatter = DateFormat.E(locale);
+  final scheme = Theme.of(context).colorScheme;
+  final sorted = scheduleDays.toSet().toList()..sort();
+
+  return [
+    for (final day in sorted)
+      TasklyBadgeData(
+        label: formatter.format(DateTime.utc(2024, 1, day)),
+        color: scheme.onSurfaceVariant,
+        tone: TasklyBadgeTone.outline,
+      ),
+  ];
 }

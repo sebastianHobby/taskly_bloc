@@ -6,6 +6,7 @@ import 'package:taskly_domain/src/core/editing/validators/routine_validators.dar
 import 'package:taskly_domain/src/forms/field_key.dart';
 import 'package:taskly_domain/src/interfaces/routine_repository_contract.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
+import 'package:taskly_domain/routines.dart';
 
 final class RoutineCommandHandler {
   RoutineCommandHandler({
@@ -74,7 +75,7 @@ final class RoutineCommandHandler {
   ValidationFailure? _validate(dynamic command) {
     final name = (command as dynamic).name as String;
     final valueId = (command as dynamic).valueId as String;
-    final routineType = (command as dynamic).routineType;
+    final routineType = (command as dynamic).routineType as RoutineType;
     final targetCount = (command as dynamic).targetCount as int?;
     final scheduleDays = (command as dynamic).scheduleDays as List<int>;
     final preferredWeeks = (command as dynamic).preferredWeeks as List<int>;

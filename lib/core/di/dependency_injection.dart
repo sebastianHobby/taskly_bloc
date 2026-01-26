@@ -317,6 +317,7 @@ Future<void> setupDependencies() async {
         myDayRepository: getIt<MyDayRepositoryContract>(),
         taskSuggestionService: getIt<TaskSuggestionService>(),
         taskRepository: getIt<TaskRepositoryContract>(),
+        routineRepository: getIt<RoutineRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
         nowService: getIt<NowService>(),

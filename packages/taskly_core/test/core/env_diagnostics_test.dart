@@ -15,9 +15,8 @@ final class _RecordingLog implements TasklyLog {
   int handleCalls = 0;
 
   @override
-  TalkerFailFastPolicy get failFastPolicy => const TalkerFailFastPolicy(
-    enabled: false,
-  );
+  TalkerFailFastPolicy get failFastPolicy =>
+      const TalkerFailFastPolicy(enabled: false);
 
   @override
   void debug(String message, [Object? error, StackTrace? stackTrace]) {

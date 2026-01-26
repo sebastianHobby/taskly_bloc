@@ -514,9 +514,7 @@ Future<String> getDatabasePath() async {
 }
 
 /// Opens the PowerSync database and sets up auth state listeners.
-Future<PowerSyncDatabase> openDatabase({
-  String? pathOverride,
-}) async {
+Future<PowerSyncDatabase> openDatabase({String? pathOverride}) async {
   installPowerSyncLogForwarding();
 
   const powersyncVerbose = bool.fromEnvironment('POWERSYNC_VERBOSE_LOGS');
@@ -654,17 +652,13 @@ Future<void> runPostAuthMaintenance({
   talker.info('[PostAuthMaintenance] Completed');
 }
 
-Future<void> _backfillAttentionRulesDomain({
-  required AppDatabase db,
-}) async {
+Future<void> _backfillAttentionRulesDomain({required AppDatabase db}) async {
   try {
     final updated = await db.customUpdate(
       'UPDATE attention_rules '
       'SET domain = ? '
       "WHERE domain IS NULL OR domain = ''",
-      variables: [
-        Variable.withString(AttentionSeeder.attentionRulesDomain),
-      ],
+      variables: [Variable.withString(AttentionSeeder.attentionRulesDomain)],
       updates: {db.attentionRules},
     );
 

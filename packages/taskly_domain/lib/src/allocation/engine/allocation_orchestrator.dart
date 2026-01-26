@@ -176,14 +176,20 @@ class AllocationOrchestrator {
     final routineSelections = strategy.countRoutineSelectionsAgainstValueQuotas
         ? routineSelectionsByValue
         : const <String, int>{};
-    final anchorCount =
-        (anchorCountOverride ?? strategy.anchorCount).clamp(0, 100);
+    final anchorCount = (anchorCountOverride ?? strategy.anchorCount).clamp(
+      0,
+      100,
+    );
     final freeSlots = strategy.freeSlots.clamp(0, 10);
-    final baseMaxTasks =
-        math.max(0, (anchorCount * strategy.tasksPerAnchorMax) + freeSlots);
+    final baseMaxTasks = math.max(
+      0,
+      (anchorCount * strategy.tasksPerAnchorMax) + freeSlots,
+    );
     final maxTasks = math.max(
       0,
-      maxTasksOverride == null ? baseMaxTasks : math.min(baseMaxTasks, maxTasksOverride),
+      maxTasksOverride == null
+          ? baseMaxTasks
+          : math.min(baseMaxTasks, maxTasksOverride),
     );
 
     AppLog.routine(
