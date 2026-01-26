@@ -7,17 +7,21 @@ import 'package:taskly_data/src/mappers/drift_to_domain.dart';
 import 'package:taskly_domain/core.dart' hide Value;
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/telemetry.dart';
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 final class ProjectAnchorStateRepository
     implements ProjectAnchorStateRepositoryContract {
   ProjectAnchorStateRepository({
     required AppDatabase driftDb,
     required IdGenerator idGenerator,
+    Clock clock = systemClock,
   }) : _db = driftDb,
-       _ids = idGenerator;
+       _ids = idGenerator,
+       _clock = clock;
 
   final AppDatabase _db;
   final IdGenerator _ids;
+  final Clock _clock;
 
   @override
   Stream<List<ProjectAnchorState>> watchAll() {
@@ -48,43 +52,43 @@ final class ProjectAnchorStateRepository
 
     return FailureGuard.run(
       () async {
-        final now = DateTime.now();
-        final userId = _ids.userId;
+        final now = _clock.nowUtc();
+        final idByProjectId = <String, String>{
+          for (final projectId in ids)
+            projectId: _ids.projectAnchorStateIdForProject(
+              projectId: projectId,
+            ),
+        };
         final psMetadata = encodeCrudMetadata(context);
 
         await _db.transaction(() async {
           for (final projectId in ids) {
-            final updated =
-                await (_db.update(
-                  _db.projectAnchorStateTable,
-                )..where((t) => t.projectId.equals(projectId))).write(
-                  ProjectAnchorStateTableCompanion(
-                    lastAnchoredAt: Value(anchoredAtUtc),
-                    updatedAt: Value(now),
-                    psMetadata: psMetadata == null
-                        ? const Value.absent()
-                        : Value(psMetadata),
-                  ),
-                );
+            final anchorId = idByProjectId[projectId]!;
 
-            if (updated == 0) {
-              await _db
-                  .into(_db.projectAnchorStateTable)
-                  .insert(
-                    ProjectAnchorStateTableCompanion.insert(
-                      id: _ids.projectAnchorStateIdForProject(
-                        projectId: projectId,
-                      ),
-                      userId: Value(userId),
-                      projectId: projectId,
-                      lastAnchoredAt: anchoredAtUtc,
-                      createdAt: Value(now),
-                      updatedAt: Value(now),
-                      psMetadata: Value(psMetadata),
-                    ),
-                    mode: InsertMode.insert,
-                  );
-            }
+            await _db.into(_db.projectAnchorStateTable).insert(
+              ProjectAnchorStateTableCompanion.insert(
+                id: anchorId,
+                projectId: projectId,
+                lastAnchoredAt: anchoredAtUtc,
+                createdAt: Value(now),
+                updatedAt: Value(now),
+                psMetadata: Value(psMetadata),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+
+            await (_db.update(
+              _db.projectAnchorStateTable,
+            )..where((t) => t.id.equals(anchorId))).write(
+              ProjectAnchorStateTableCompanion(
+                projectId: Value(projectId),
+                lastAnchoredAt: Value(anchoredAtUtc),
+                updatedAt: Value(now),
+                psMetadata: psMetadata == null
+                    ? const Value.absent()
+                    : Value(psMetadata),
+              ),
+            );
           }
         });
       },

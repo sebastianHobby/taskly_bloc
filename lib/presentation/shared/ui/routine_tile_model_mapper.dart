@@ -11,11 +11,12 @@ TasklyRoutineRowData buildRoutineRowData(
   required RoutineCadenceSnapshot snapshot,
   bool selected = false,
   bool completed = false,
+  bool isCatchUpDay = false,
   List<TasklyBadgeData> badges = const <TasklyBadgeData>[],
   TasklyRoutineRowLabels? labels,
 }) {
   final periodType = snapshot.periodType;
-  final targetLabel = periodType == RoutinePeriodType.week
+  final baseTargetLabel = periodType == RoutinePeriodType.week
       ? context.l10n.routineTargetWeekly(snapshot.targetCount)
       : context.l10n.routineTargetMonthly(snapshot.targetCount);
 
@@ -25,10 +26,17 @@ TasklyRoutineRowData buildRoutineRowData(
       ? _weeklyWindowLabel(context, snapshot)
       : _monthlyWindowLabel(context, snapshot);
 
-  final suggestedDayBadges = _suggestedDayBadges(
-    context,
-    routine: routine,
-  );
+  final cadenceSegments = _cadenceSegments(context, routine);
+  final targetLabel = _joinSegments([...cadenceSegments, baseTargetLabel]);
+  final supportBadges = isCatchUpDay
+      ? [
+          TasklyBadgeData(
+            label: context.l10n.routineCatchUpSupportLine,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            tone: TasklyBadgeTone.soft,
+          ),
+        ]
+      : const <TasklyBadgeData>[];
 
   return TasklyRoutineRowData(
     id: routine.id,
@@ -36,12 +44,19 @@ TasklyRoutineRowData buildRoutineRowData(
     targetLabel: targetLabel,
     remainingLabel: remainingLabel,
     windowLabel: windowLabel,
-    statusLabel: _statusLabel(context, snapshot.status),
-    statusTone: _statusTone(snapshot.status),
+    statusLabel: _statusLabel(
+      context,
+      snapshot.status,
+      isCatchUpDay: isCatchUpDay,
+    ),
+    statusTone: _statusTone(
+      snapshot.status,
+      isCatchUpDay: isCatchUpDay,
+    ),
     valueChip: routine.value?.toChipData(context),
     selected: selected,
     completed: completed,
-    badges: [...badges, ...suggestedDayBadges],
+    badges: [...badges, ...supportBadges],
     labels: labels,
   );
 }
@@ -63,21 +78,26 @@ TasklyRoutineRowLabels buildRoutineListLabels(BuildContext context) {
   );
 }
 
-String _statusLabel(BuildContext context, RoutineStatus status) {
+String _statusLabel(
+  BuildContext context,
+  RoutineStatus status, {
+  required bool isCatchUpDay,
+}) {
+  if (isCatchUpDay) return context.l10n.routineStatusCatchUp;
   return switch (status) {
-    RoutineStatus.onPace => context.l10n.routineStatusOnPace,
-    RoutineStatus.tightWeek => context.l10n.routineStatusTightWeek,
-    RoutineStatus.catchUp => context.l10n.routineStatusCatchUp,
     RoutineStatus.restWeek => context.l10n.routineStatusRestWeek,
+    _ => context.l10n.routineStatusOnPace,
   };
 }
 
-TasklyRoutineStatusTone _statusTone(RoutineStatus status) {
+TasklyRoutineStatusTone _statusTone(
+  RoutineStatus status, {
+  required bool isCatchUpDay,
+}) {
+  if (isCatchUpDay) return TasklyRoutineStatusTone.catchUp;
   return switch (status) {
-    RoutineStatus.onPace => TasklyRoutineStatusTone.onPace,
-    RoutineStatus.tightWeek => TasklyRoutineStatusTone.tightWeek,
-    RoutineStatus.catchUp => TasklyRoutineStatusTone.catchUp,
     RoutineStatus.restWeek => TasklyRoutineStatusTone.restWeek,
+    _ => TasklyRoutineStatusTone.onPace,
   };
 }
 
@@ -110,29 +130,33 @@ String _monthlyWindowLabel(
   );
 }
 
-List<TasklyBadgeData> _suggestedDayBadges(
-  BuildContext context, {
-  required Routine routine,
-}) {
-  if (routine.routineType != RoutineType.weeklyFlexible &&
-      routine.routineType != RoutineType.weeklyFixed) {
-    return const <TasklyBadgeData>[];
+List<String> _cadenceSegments(BuildContext context, Routine routine) {
+  if (routine.routineType == RoutineType.weeklyFixed) {
+    final scheduleDays = routine.scheduleDays;
+    if (scheduleDays.isEmpty) {
+      return [context.l10n.routineCadenceScheduledLabel];
+    }
+    return [
+      context.l10n.routineCadenceScheduledLabel,
+      _scheduledDaysLabel(context, scheduleDays),
+    ];
   }
+  return [context.l10n.routineCadenceFlexibleLabel];
+}
 
-  final scheduleDays = routine.scheduleDays;
-  if (scheduleDays.isEmpty) return const <TasklyBadgeData>[];
-
+String _scheduledDaysLabel(BuildContext context, List<int> scheduleDays) {
+  if (scheduleDays.isEmpty) return '';
   final locale = Localizations.localeOf(context).toLanguageTag();
   final formatter = DateFormat.E(locale);
-  final scheme = Theme.of(context).colorScheme;
   final sorted = scheduleDays.toSet().toList()..sort();
+  return sorted
+      .map((day) => formatter.format(DateTime.utc(2024, 1, day)))
+      .join('/');
+}
 
-  return [
-    for (final day in sorted)
-      TasklyBadgeData(
-        label: formatter.format(DateTime.utc(2024, 1, day)),
-        color: scheme.onSurfaceVariant,
-        tone: TasklyBadgeTone.outline,
-      ),
-  ];
+String _joinSegments(List<String> segments) {
+  return segments
+      .map((text) => text.trim())
+      .where((text) => text.isNotEmpty)
+      .join(' \u00b7 ');
 }

@@ -447,26 +447,15 @@ Definitions:
 - **Internal-only change**: refactors/bugfixes/performance work that do not
   change the public API, default visuals, or interaction contracts.
 
-#### Requires explicit user approval
+#### Shared UI change notification (strict)
 
-The following require explicit user approval before implementation:
+If a change to `taskly_ui` impacts other screens, the user must be informed of
+the impacts before implementation.
 
-- New shared UI: introducing a new entity/section/template intended for reuse.
-- New or expanded public API options: new constructor parameters, new enums,
-  new exported models, or new entrypoints.
-- Any breaking/shared contract change:
-  - changing default visuals (colors, spacing, typography, iconography)
-  - changing default interaction behavior (tap/gesture semantics, affordances)
-  - changing accessibility semantics (labels/roles)
-  - changing callback contracts or their meaning
-  - renames/removals that force downstream updates
+Minimum expectation:
 
-Approval expectations (minimum):
-
-- Impact analysis: list affected call sites and migration plan.
-- Contract statement: what is changing and what stays the same.
-- Record the decision (in the PR description or a short note under
-  `doc/architecture/`) when the change is a new shared pattern.
+- Impact analysis: list affected call sites and any required wiring or
+  migration steps.
 
 #### Fast path allowed (no approval required)
 
@@ -475,6 +464,12 @@ The following may proceed without explicit user approval:
 - Internal refactors that do not change the public surface.
 - Bugfixes that restore intended behavior without changing defaults.
 - Performance improvements with no user-visible behavior changes.
+
+#### Opt-in behavior changes via presets (strict)
+
+Behavior changes may be opt-in via a new preset or explicit parameter when
+appropriate, but approval is governed by the shared UI change notification
+rule above.
 
 #### Configuration hygiene (required)
 
@@ -880,6 +875,13 @@ Guardrail:
 - Pre-push validation: implemented in [git_hooks.dart](../../git_hooks.dart)
   (compares `lib/data/infrastructure/powersync/schema.dart` against
   `lib/data/id/id_generator.dart` when present)
+
+### 5.4 `user_id` is server-owned (strict)
+
+- `user_id` is derived from the authenticated Supabase JWT on the server.
+- App writes must **not** set or override `user_id` in local insert/update
+  payloads.
+- The client treats `user_id` as read-only data that may appear after sync.
 
 ## 6) Sync conflicts/anomalies policy
 

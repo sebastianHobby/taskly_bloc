@@ -51,6 +51,7 @@ Ritual flow (Presentation)
     -> SuggestedPicksEngine.allocate(parameters)
     -> AllocationResult (allocatedTasks + excludedTasks + reasoning)
   -> user selects tasks (including non-suggested due/starts/planned)
+  -> optional: pass triage/routine selection counts by value to adjust quotas
   -> MyDayRepository.setDayPicks(dayKeyUtc, picks, ritualCompletedAtUtc)
     -> Drift / PowerSync tables: my_day_days + my_day_picks
 ```
@@ -115,6 +116,11 @@ Implementation notes:
 - The orchestrator treats this as a boolean on/off toggle.
 - Analytics lookback is a fixed window (currently 14 days) to avoid exposing
   tuning knobs.
+
+My Day selection settings (global):
+
+- **Count triage picks against value quotas** -> `GlobalSettings.myDayCountTriagePicksAgainstValueQuotas`
+- **Count routine picks against value quotas** -> `GlobalSettings.myDayCountRoutinePicksAgainstValueQuotas`
 
 Urgency settings:
 

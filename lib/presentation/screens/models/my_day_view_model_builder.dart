@@ -1,11 +1,13 @@
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/my_day.dart' as my_day;
+import 'package:taskly_domain/my_day.dart' show MyDayRitualStatus;
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 
 import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
+import 'package:taskly_bloc/presentation/shared/utils/routine_day_policy.dart';
 
 final class MyDayViewModelBuilder {
   const MyDayViewModelBuilder();
@@ -13,6 +15,7 @@ final class MyDayViewModelBuilder {
   MyDayViewModel fromAllocation({
     required AllocationResult allocation,
     required List<Value> values,
+    required MyDayRitualStatus ritualStatus,
   }) {
     final tasks = allocation.allocatedTasks
         .map((entry) => entry.task)
@@ -28,11 +31,13 @@ final class MyDayViewModelBuilder {
       plannedItems: const <MyDayPlannedItem>[],
       values: values,
       qualifyingByTaskId: qualifyingByTaskId,
+      ritualStatus: ritualStatus,
     );
   }
 
   MyDayViewModel fromDailyPicks({
     required my_day.MyDayDayPicks dayPicks,
+    required MyDayRitualStatus ritualStatus,
     required List<Task> tasks,
     required List<Value> values,
     required List<Routine> routines,
@@ -58,6 +63,12 @@ final class MyDayViewModelBuilder {
           completions: routineCompletions,
           skips: routineSkips,
         );
+        final policy = evaluateRoutineDayPolicy(
+          routine: routine,
+          snapshot: snapshot,
+          dayKeyUtc: dayPicks.dayKeyUtc,
+          completions: routineCompletions,
+        );
         final completedToday = routineCompletions.any(
           (completion) =>
               completion.routineId == routineId &&
@@ -73,6 +84,7 @@ final class MyDayViewModelBuilder {
             sortIndex: pick.sortIndex,
             qualifyingValueId: pick.qualifyingValueId ?? routine.valueId,
             completed: completedToday,
+            isCatchUpDay: policy.isCatchUpDay,
           ),
         );
         continue;
@@ -146,6 +158,7 @@ final class MyDayViewModelBuilder {
       plannedItems: plannedItems,
       values: values,
       qualifyingByTaskId: qualifyingByTaskId,
+      ritualStatus: ritualStatus,
       pinnedTasks: pinnedTasks,
       completedPicks: completedPicks,
       selectedTotalCount: plannedItems.length,
@@ -159,6 +172,7 @@ final class MyDayViewModelBuilder {
     required List<MyDayPlannedItem> plannedItems,
     required List<Value> values,
     required Map<String, String?> qualifyingByTaskId,
+    required MyDayRitualStatus ritualStatus,
     List<Task> pinnedTasks = const <Task>[],
     List<Task> completedPicks = const <Task>[],
     int selectedTotalCount = 0,
@@ -179,6 +193,7 @@ final class MyDayViewModelBuilder {
     return MyDayViewModel(
       tasks: tasks,
       plannedItems: plannedItems,
+      ritualStatus: ritualStatus,
       summary: MyDaySummary(
         doneCount: doneCount,
         totalCount: totalCount,

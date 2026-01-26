@@ -135,9 +135,13 @@ final class ScreenActionsFailureEvent extends ScreenActionsEvent {
 
 class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
   ScreenActionsBloc({
-    required EntityActionService entityActionService,
+    required TaskWriteService taskWriteService,
+    required ProjectWriteService projectWriteService,
+    required ValueWriteService valueWriteService,
     required AppErrorReporter errorReporter,
-  }) : _entityActionService = entityActionService,
+  }) : _taskWriteService = taskWriteService,
+       _projectWriteService = projectWriteService,
+       _valueWriteService = valueWriteService,
        _errorReporter = errorReporter,
        super(const ScreenActionsIdleState()) {
     on<ScreenActionsTaskCompletionChanged>(
@@ -178,7 +182,9 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     );
   }
 
-  final EntityActionService _entityActionService;
+  final TaskWriteService _taskWriteService;
+  final ProjectWriteService _projectWriteService;
+  final ValueWriteService _valueWriteService;
   final AppErrorReporter _errorReporter;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
@@ -244,14 +250,14 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
 
     try {
       if (event.completed) {
-        await _entityActionService.completeTask(
+        await _taskWriteService.complete(
           event.taskId,
           occurrenceDate: event.occurrenceDate,
           originalOccurrenceDate: event.originalOccurrenceDate,
           context: context,
         );
       } else {
-        await _entityActionService.uncompleteTask(
+        await _taskWriteService.uncomplete(
           event.taskId,
           occurrenceDate: event.occurrenceDate,
           context: context,
@@ -304,14 +310,14 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
 
     try {
       if (event.completed) {
-        await _entityActionService.completeProject(
+        await _projectWriteService.complete(
           event.projectId,
           occurrenceDate: event.occurrenceDate,
           originalOccurrenceDate: event.originalOccurrenceDate,
           context: context,
         );
       } else {
-        await _entityActionService.uncompleteProject(
+        await _projectWriteService.uncomplete(
           event.projectId,
           occurrenceDate: event.occurrenceDate,
           context: context,
@@ -356,10 +362,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     );
 
     try {
-      await _entityActionService.completeTaskSeries(
-        event.taskId,
-        context: context,
-      );
+      await _taskWriteService.completeSeries(event.taskId, context: context);
       event.completer?.complete();
     } catch (e, st) {
       _reportIfUnexpectedOrUnmapped(
@@ -399,7 +402,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     );
 
     try {
-      await _entityActionService.completeProjectSeries(
+      await _projectWriteService.completeSeries(
         event.projectId,
         context: context,
       );
@@ -447,11 +450,11 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     );
 
     try {
-      if (event.pinned) {
-        await _entityActionService.pinTask(event.taskId, context: context);
-      } else {
-        await _entityActionService.unpinTask(event.taskId, context: context);
-      }
+      await _taskWriteService.setPinned(
+        event.taskId,
+        isPinned: event.pinned,
+        context: context,
+      );
       event.completer?.complete();
     } catch (e, st) {
       _reportIfUnexpectedOrUnmapped(
@@ -492,17 +495,11 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     );
 
     try {
-      if (event.pinned) {
-        await _entityActionService.pinProject(
-          event.projectId,
-          context: context,
-        );
-      } else {
-        await _entityActionService.unpinProject(
-          event.projectId,
-          context: context,
-        );
-      }
+      await _projectWriteService.setPinned(
+        event.projectId,
+        isPinned: event.pinned,
+        context: context,
+      );
       event.completer?.complete();
     } catch (e, st) {
       _reportIfUnexpectedOrUnmapped(
@@ -544,12 +541,14 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     );
 
     try {
-      await _entityActionService.performAction(
-        entityId: event.entityId,
-        entityType: event.entityType,
-        action: EntityActionType.delete,
-        context: context,
-      );
+      switch (event.entityType) {
+        case EntityType.task:
+          await _taskWriteService.delete(event.entityId, context: context);
+        case EntityType.project:
+          await _projectWriteService.delete(event.entityId, context: context);
+        case EntityType.value:
+          await _valueWriteService.delete(event.entityId, context: context);
+      }
       event.completer?.complete();
     } catch (e, st) {
       _reportIfUnexpectedOrUnmapped(
@@ -593,7 +592,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     );
 
     try {
-      await _entityActionService.moveTask(
+      await _taskWriteService.move(
         event.taskId,
         targetProjectId,
         context: context,

@@ -13,6 +13,7 @@ import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.d
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class RoutineDetailSheetPage extends StatelessWidget {
@@ -20,6 +21,7 @@ class RoutineDetailSheetPage extends StatelessWidget {
     required this.routineRepository,
     required this.projectRepository,
     required this.valueRepository,
+    required this.routineWriteService,
     this.routineId,
     super.key,
   });
@@ -27,6 +29,7 @@ class RoutineDetailSheetPage extends StatelessWidget {
   final RoutineRepositoryContract routineRepository;
   final ProjectRepositoryContract projectRepository;
   final ValueRepositoryContract valueRepository;
+  final RoutineWriteService routineWriteService;
   final String? routineId;
 
   @override
@@ -36,6 +39,7 @@ class RoutineDetailSheetPage extends StatelessWidget {
         routineRepository: routineRepository,
         projectRepository: projectRepository,
         valueRepository: valueRepository,
+        routineWriteService: routineWriteService,
         errorReporter: context.read<AppErrorReporter>(),
         routineId: routineId,
       ),

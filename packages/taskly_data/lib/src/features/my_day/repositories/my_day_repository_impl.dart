@@ -122,7 +122,6 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
     required List<domain.MyDayPick> picks,
     required OperationContext context,
   }) async {
-    final userId = _ids.userId;
     final nowUtc = DateTime.now().toUtc();
 
     final dayUtc = dateOnly(dayKeyUtc);
@@ -137,7 +136,6 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
           .insert(
             MyDayDaysTableCompanion.insert(
               id: dayId,
-              userId: Value(userId),
               dayUtc: dayUtc,
               ritualCompletedAt: Value(ritualCompletedAtUtc.toUtc()),
               createdAt: Value(nowUtc),
@@ -178,7 +176,6 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
                   targetType: targetType,
                   targetId: targetId,
                 ),
-                userId: Value(userId),
                 dayId: dayId,
                 taskId: Value(taskId),
                 routineId: Value(routineId),
@@ -207,7 +204,6 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
     required domain.MyDayPickBucket bucket,
     required OperationContext context,
   }) async {
-    final userId = _ids.userId;
     final nowUtc = DateTime.now().toUtc();
 
     final dayUtc = dateOnly(dayKeyUtc);
@@ -223,7 +219,6 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
           .insert(
             MyDayDaysTableCompanion.insert(
               id: dayId,
-              userId: Value(userId),
               dayUtc: dayUtc,
               ritualCompletedAt: Value(nowUtc),
               createdAt: Value(nowUtc),
@@ -262,7 +257,6 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
                 targetType: domain.MyDayPickTargetType.task.name,
                 targetId: taskId,
               ),
-              userId: Value(userId),
               dayId: dayId,
               taskId: Value(taskId),
               bucket: _bucketToDb(bucket),

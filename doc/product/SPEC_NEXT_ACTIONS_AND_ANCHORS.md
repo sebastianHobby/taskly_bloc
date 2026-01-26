@@ -1,7 +1,7 @@
 # Spec: Project Next Actions and Project-First Anchors
 
 Created at: 2026-01-26
-Status: Draft
+Status: Implemented (project detail + review)
 Owner: TBD
 
 ## Summary
@@ -79,8 +79,9 @@ Behavior:
 
 - Project detail: "Next actions" list at the top of the task list with drag
   reorder (ranks 1-3).
-- Task row action: "Mark as next in this project" with rank chooser.
-- Weekly review: "Projects missing next actions" prompt to set 1-3.
+  - Inline action row above the list: "Choose next action..." opens a picker.
+- Weekly review: "Projects missing next actions" appears in maintenance and
+  links to project detail to set next actions.
 
 ### Adding and ranking rules
 
@@ -139,32 +140,31 @@ Track:
 - Project recency uses projects.last_progress_at (cache updated on task
   completion).
 
-## Implementation Status (2026-01-26)
+## Implementation Status (2026-01-27)
 
 Completed:
 - Attention rule template added: `problem_project_missing_next_actions`.
 - Attention engine evaluates missing next actions and is wired via DI.
+- Project detail UI: "Next actions" list at top with drag reorder (ranks 1..3).
+- Project detail inline action row: "Choose next action..." opens picker.
+- BLoC wiring: load next actions stream, reorder event, and `setForProject`
+  updates with `OperationContext`.
+- Weekly review: toggle setting (default on) and maintenance section for missing
+  next actions, linking to project detail.
+- L10n additions for new UI strings and regenerated localizations.
+- Task row action intentionally not implemented (project detail only).
 
 Remaining:
-- Project detail UI: “Next actions” list at top with drag reorder (ranks 1..3).
-- BLoC wiring: load next actions stream, reorder event, and `setForProject` updates with `OperationContext`.
-- Task UI affordance: “Mark as next action” with rank chooser (where appropriate).
-- Weekly review: add attention toggle + section for missing next actions.
-- L10n additions for new UI strings and regenerate localizations.
+- None.
 
 ## Prompt for Next AI
 
 You are continuing implementation in `c:\Users\User\FlutterProjects\taskly_bloc`.
 
-Goal: finish SPEC_NEXT_ACTIONS_AND_ANCHORS per latest decisions in chat.
+Goal: confirm scope is complete; no additional implementation required.
 
 Must-do:
-1) Project detail: add a “Next actions” list at top of the task list with drag reorder (ranks 1..3).
-2) BLoC: extend `ProjectOverviewBloc` (or equivalent) to include next actions stream and a reorder event using `ProjectNextActionsRepositoryContract.setForProject(...)` with `OperationContext`.
-3) Task affordance: add “Mark as next action” with rank chooser; when list is full, replace a chosen rank.
-4) Weekly review: add toggle setting (default on) and show missing next actions in maintenance section.
-5) L10n: add new strings to `lib/l10n/arb/app_en.arb` + `app_es.arb`; run `flutter gen-l10n`.
-6) Run `dart format` and `dart analyze` after changes.
+- None.
 
 Notes:
 - BLoC boundary is strict: widgets must not call repositories directly.

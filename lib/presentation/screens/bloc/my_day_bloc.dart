@@ -1,8 +1,9 @@
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 
-import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/my_day.dart' show MyDayRitualStatus;
+import 'package:taskly_domain/services.dart';
 
 import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
@@ -42,6 +43,7 @@ final class MyDayLoaded extends MyDayState {
     required this.selectedTotalCount,
     required this.todaySelectedTaskIds,
     required this.todaySelectedRoutineIds,
+    required this.ritualStatus,
   });
 
   final MyDaySummary summary;
@@ -60,6 +62,8 @@ final class MyDayLoaded extends MyDayState {
 
   /// Full set of routine ids selected for today (from plan persistence).
   final Set<String> todaySelectedRoutineIds;
+
+  final MyDayRitualStatus ritualStatus;
 }
 
 final class MyDayError extends MyDayState {
@@ -71,10 +75,10 @@ final class MyDayError extends MyDayState {
 final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
   MyDayBloc({
     required MyDaySessionQueryService queryService,
-    required RoutineRepositoryContract routineRepository,
+    required RoutineWriteService routineWriteService,
     required NowService nowService,
   }) : _queryService = queryService,
-       _routineRepository = routineRepository,
+       _routineWriteService = routineWriteService,
        _nowService = nowService,
        super(const MyDayLoading()) {
     on<MyDayStarted>(_onStarted, transformer: restartable());
@@ -86,7 +90,7 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
   }
 
   final MyDaySessionQueryService _queryService;
-  final RoutineRepositoryContract _routineRepository;
+  final RoutineWriteService _routineWriteService;
   final NowService _nowService;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
@@ -113,6 +117,7 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         selectedTotalCount: vm.selectedTotalCount,
         todaySelectedTaskIds: vm.todaySelectedTaskIds,
         todaySelectedRoutineIds: vm.todaySelectedRoutineIds,
+        ritualStatus: vm.ritualStatus,
       ),
     );
   }
@@ -130,7 +135,7 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
       entityId: event.routineId,
     );
 
-    await _routineRepository.recordCompletion(
+    await _routineWriteService.recordCompletion(
       routineId: event.routineId,
       completedAtUtc: _nowService.nowUtc(),
       context: context,

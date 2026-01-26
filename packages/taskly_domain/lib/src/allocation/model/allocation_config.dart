@@ -107,9 +107,6 @@ abstract class StrategySettings with _$StrategySettings {
 
     /// Extra free slots beyond anchor allocation.
     @Default(0) int freeSlots,
-
-    /// Count routine selections against value quotas during allocation.
-    @Default(true) bool countRoutineSelectionsAgainstValueQuotas,
   }) = _StrategySettings;
   const StrategySettings._();
 

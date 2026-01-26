@@ -1,7 +1,7 @@
-# Spec: Routines (Plan My Day)
+﻿# Spec: Routines (Plan My Day)
 
 Created at: 2026-01-26
-Status: Draft
+Status: Implemented (core flow), with deferred actions
 Owner: TBD
 
 ## Summary
@@ -15,7 +15,8 @@ The allocation engine must not output routines as suggestions.
 
 ## Goals
 
-- Show routines every day in Plan My Day with clear target and remaining info.
+- Show routines when they are eligible for today with clear target and
+  remaining info.
 - Keep UX calm and supportive (no prompts or warnings).
 - Allow routines without projects (value is required).
 - Keep routines out of Scheduled view.
@@ -45,27 +46,35 @@ Steps auto-hide when empty. Users select from curated flow presets:
 
 #### Routines step ("This week's routines")
 
-Each routine card shows:
+Routines are presented in two panels:
+- Scheduled Today (weekly scheduled routines)
+- Flexible Focus (weekly/monthly flexible routines)
+
+Panel limits and "Show more":
+- Scheduled Today shows up to 3 items, then "Show more (X)".
+- Flexible Focus shows up to 4 items, then "Show more (X)".
+
+Each routine row shows:
+- Cadence prefix: "Scheduled" or "Flexible" on the meta line.
 - Target: "3x/week" or "1x/month"
 - Remaining: "2 left"
-- Window: "4 days left (Mon-Sun)" or "Window: this week / next week / later this month"
-- Status chip: "On pace" / "Tight week" / "Catch-up window"
+- Window: "4 days left (Mon-Sun)" or "Window ends {date}"
+- Status chip: "On track" or "Catch-up day"
+- Supportive line on catch-up days: "Small steps still count."
 
 Primary action:
 - "Do today" (adds a planned pick for today; does not mark completion)
 
 Secondary actions:
-- "Not today" (hide until tomorrow)
-- "Later this week" (hide until next recommended day; see logic below)
-- "Skip this week" (sets remaining = 0 and marks status as "Rest week")
 - "Pause routine" (hide until resumed)
 - "Edit schedule"
 
-Step 2: "Suggested tasks"
+Deferred (not implemented in the current flow):
+- "Not today" (hide until tomorrow)
+- "Later this week" (hide until next recommended day; see logic below)
+- "Skip this week" (sets remaining = 0 and marks status as "Rest week")
 
-Show a small summary line:
-- "Routines selected today: X"
-- If value slot counting is enabled: "Reserving Y value slots"
+Routines step summary lines are intentionally not shown.
 
 #### Urgent/Planned step
 
@@ -88,53 +97,60 @@ Show a small summary line:
   remaining counts.
 - Completed routines remain visible in the My Day list for the day (completed
   state).
+- My Day groups routine rows under their value headers (no separate routine
+  section).
+
+#### Routines list (backlog)
+
+- Always shows all routines regardless of today/window.
+- Grouped by Scheduled vs Flexible.
+- Uses cadence prefix in the meta line.
 
 ### Monthly routines (Option M1)
 
-Always visible in the routine list, with a window label:
-- "Window: this week" (highlighted softly)
-- "Window: next week"
-- "Window: later this month"
+Monthly routines are flexible only and always visible within the month, with a
+window label:
+- "Window ends {date}" with days remaining.
 
-No prompts or warnings. Highlight only when window is current.
+No prompts or warnings.
 
 ## Recurrence Options
 
 Week starts Monday.
 
-Weekly fixed days:
+Weekly scheduled days:
 - Pick days (Mon-Sun)
 
 Weekly flexible:
 - Target count 1-7 per week
-- Optional rest day buffer 0-2
+- Optional suggested days (weekly only)
+- Suggested days are not shown as badges on routine tiles.
 
 Monthly flexible:
 - Target count 1-4 per month
 - Preferred weeks (Week 1, Week 2, Week 3, Week 4, or last week)
-
-Monthly fixed:
-- Nth weekday (for example, 1st Saturday)
-- Or exact date (1-31)
+- No suggested days UI
 
 ## Pacing and Status Logic
 
 Weekly flexible routines:
 - Remaining = target - completed this week
 - Days left = count of days remaining in the week
-- Recommended days are spaced across days left
+- Recommended days are spaced across days left (spacing as a floor)
 - Status chip rules:
-  - "On pace": remaining <= ceil(daysLeft / spacingGoal)
-  - "Tight week": remaining == daysLeft or remaining == daysLeft - 1
-  - "Catch-up window": remaining > daysLeft
+  - "On track": remaining <= daysLeft
+  - "Catch-up day": remaining > daysLeft
 
-Weekly fixed routines:
+Weekly scheduled routines:
 - Remaining = fixed days not completed this week
 - Status based on remaining vs days left
 
 Monthly routines:
 - Remaining = target - completed this month
-- Window label based on preferred week
+- Always visible within the month
+- Status:
+  - "On track" when remaining fits the days left
+  - "Catch-up day" when remaining > days left
 
 ### Spacing rules (hard vs soft)
 
@@ -142,6 +158,28 @@ Monthly routines:
   - Example: min_spacing_days = 1 means at least 1 day off between completions.
 - rest_day_buffer = soft spacing (try to leave buffer days off, but can break
   the buffer if the user is behind).
+
+### Suggested days vs spacing (weekly flexible)
+
+- Suggested days are preferred only when they respect spacing.
+- If a suggested day is earlier than the next recommended day, skip it.
+- If no suggested day fits, use the next recommended day.
+
+### Catch-up behavior (B3)
+
+- Missed = not completed by end of local day.
+- After a miss, show the routine daily until the next recommended day.
+- If still missed on the next recommended day, hide until the following
+  recommended day.
+- Never show a routine twice on the same day.
+
+### Scheduled weekly catch-up
+
+- Scheduled days are the primary rhythm.
+- If a scheduled day is missed, show the routine on each day until the next
+  scheduled day.
+- The next scheduled day counts as the next occurrence (the missed occurrence
+  remains missed even if completed late).
 
 ### "Later this week" logic (explicit)
 
@@ -215,6 +253,7 @@ Pick behavior:
 - Consistency: average spacing between completions
 - Recovery: time to resume after a skip
 - Mood correlation: routine completion days vs mood days (optional)
+- Scheduled lateness: on-time vs late completion (future)
 
 ## Edge Cases
 
@@ -224,11 +263,36 @@ Pick behavior:
 - "Not today": hidden until next day
 - "Later this week": hidden until next recommended day
 
+## Sorting & Limits (Plan My Day)
+
+Scheduled Today:
+- Show up to 3 items, then "Show more (X)".
+- Sorting:
+  1) Catch-up first
+  2) Value priority (break ties within catch-ups)
+  3) Last scheduled day (oldest missed first)
+  4) Name
+
+Flexible Focus:
+- Show up to 4 items, then "Show more (X)".
+- Sorting:
+  1) Fewest days left
+  2) Remaining count (highest first)
+  3) Value priority
+  4) Name
+
+## Future Enhancements
+
+- Daily target count (multiple times per day) cadence (e.g., brush teeth 2x/day).
+- Catch-up light version suggestions (micro-goals such as 10-minute gym or
+  5-minute walk) when behind.
+- Option to remove spacing and rely on flexible daily visibility.
+
 ## Open Questions
 
 - None.
 
-## Implementation Status (2026-01-26)
+## Implementation Status (2026-01-27)
 
 Completed:
 - Routine pause semantics: `pausedUntil` is exclusive (routine is paused on day D only if pausedUntil is after D).
@@ -236,35 +300,26 @@ Completed:
 - Routine validators updated to allow optional weekly suggested days (validated if present).
 - Routine form simplified to weekly/monthly flexible only; monthly fixed removed; suggested days UI added for weekly flexible; spacing inputs removed.
 - Routine detail view updated to keep suggested days for weekly flexible.
-- Routine tile mapping updated: monthly window label uses period end date; suggested days rendered as badges; “skip” label removed.
+- Routine tile mapping updated: monthly window label uses period end date; suggested days rendered as badges; "skip" label removed.
 - Plan My Day BLoC: routine items filtered to remaining > 0; routine skip event removed.
+- Plan My Day UI rewritten to 4-step wizard (Values -> Routines -> Triage -> Summary), auto-skip empty steps, summary shows "No ..." lines for skipped sections.
+- Plan My Day pause sheet limited to "Pause until next window (date)" and "Pick a date" (monthly uses start of next month).
+- L10n additions for routine + plan-my-day strings; localizations regenerated.
+- Legacy Plan My Day card UI removed (wizard is now the only flow).
 
 Remaining:
-- Plan My Day UI rewrite to 4-step wizard (Values → Routines → Triage → Summary), auto-skip empty steps, summary shows “No …” lines for skipped sections.
-- Plan My Day pause sheet: only “Pause until next window (date)” and “Pick a date”.
-- L10n additions for routine + plan-my-day strings; regenerate localizations.
-- Legacy Plan My Day card UI removal and unused wiring cleanup after wizard is in place.
+- Optional: add "Not today" / "Later this week" / "Skip this week" actions if re-scoped.
+- Optional: add routines step summary line ("Routines selected today" / "Reserving Y value slots") if re-scoped.
 
 ## Prompt for Next AI
 
 You are continuing implementation in `c:\Users\User\FlutterProjects\taskly_bloc`.
 
-Goal: finish SPEC_ROUTINES per latest decisions in this chat (these override spec text).
+Goal: optional follow-ups only (see Remaining).
 
-Must-do:
-1) Rewrite `lib/presentation/screens/view/plan_my_day_page.dart` into a 4-step wizard driven by `PlanMyDayBloc.steps/currentStep`:
-   - Steps: Values, Routines, Triage, Summary; auto-skip empty steps; summary shows “No …” for skipped steps.
-   - Remove legacy card UI (time-sensitive banner, pinned/snoozed sections, etc.).
-   - Use existing `taskly_ui` feed rows; do not introduce new app-owned section widgets.
-2) Implement Plan My Day routine pause sheet with only:
-   - “Pause until next window (date)” (compute next window start based on week/month).
-   - “Pick a date”.
-3) Add missing l10n keys referenced by routines and plan-my-day UI into:
-   - `lib/l10n/arb/app_en.arb`
-   - `lib/l10n/arb/app_es.arb` (English ok if needed)
-   - Run `flutter gen-l10n` after updates.
-4) Remove unused/legacy wiring once wizard is live, after confirming it’s unused.
-5) Run `dart format` on edited files and `dart analyze` at the end.
+Must-do (optional, if re-scoped):
+1) Add "Not today" / "Later this week" / "Skip this week" actions.
+2) Add routines step summary line for routine counts/value slots.
 
 Notes:
 - BLoC boundary is strict: widgets must not call repositories directly.

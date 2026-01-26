@@ -4,6 +4,7 @@ import 'package:taskly_bloc/presentation/features/editors/editor_host_page.dart'
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routine_detail_view.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/services.dart';
 
 /// Route-backed entry point for the routine editor.
 ///
@@ -45,6 +46,7 @@ class _RoutineEditorFullPage extends StatelessWidget {
           routineRepository: getIt<RoutineRepositoryContract>(),
           projectRepository: getIt<ProjectRepositoryContract>(),
           valueRepository: getIt<ValueRepositoryContract>(),
+          routineWriteService: getIt<RoutineWriteService>(),
         ),
       ),
     );

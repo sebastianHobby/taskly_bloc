@@ -4,6 +4,7 @@ import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routine_detail_view.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
@@ -27,10 +28,18 @@ class EditorLauncher {
     required ValueRepositoryContract valueRepository,
     TaskRepositoryContract? taskRepository,
     RoutineRepositoryContract? routineRepository,
+    TaskWriteService? taskWriteService,
+    ProjectWriteService? projectWriteService,
+    ValueWriteService? valueWriteService,
+    RoutineWriteService? routineWriteService,
   }) : _taskRepository = taskRepository,
        _routineRepository = routineRepository,
        _projectRepository = projectRepository,
-       _valueRepository = valueRepository;
+       _valueRepository = valueRepository,
+       _taskWriteService = taskWriteService,
+       _projectWriteService = projectWriteService,
+       _valueWriteService = valueWriteService,
+       _routineWriteService = routineWriteService;
 
   factory EditorLauncher.fromGetIt() {
     return EditorLauncher(
@@ -38,6 +47,10 @@ class EditorLauncher {
       projectRepository: getIt<ProjectRepositoryContract>(),
       valueRepository: getIt<ValueRepositoryContract>(),
       routineRepository: getIt<RoutineRepositoryContract>(),
+      taskWriteService: getIt<TaskWriteService>(),
+      projectWriteService: getIt<ProjectWriteService>(),
+      valueWriteService: getIt<ValueWriteService>(),
+      routineWriteService: getIt<RoutineWriteService>(),
     );
   }
 
@@ -45,6 +58,10 @@ class EditorLauncher {
   final RoutineRepositoryContract? _routineRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
+  final TaskWriteService? _taskWriteService;
+  final ProjectWriteService? _projectWriteService;
+  final ValueWriteService? _valueWriteService;
+  final RoutineWriteService? _routineWriteService;
 
   Future<void> openTaskEditor(
     BuildContext context, {
@@ -58,7 +75,8 @@ class EditorLauncher {
     bool? showDragHandle,
   }) {
     final taskRepository = _taskRepository;
-    if (taskRepository == null) {
+    final taskWriteService = _taskWriteService;
+    if (taskRepository == null || taskWriteService == null) {
       throw StateError(
         'EditorLauncher.openTaskEditor requires a TaskRepositoryContract.',
       );
@@ -78,6 +96,7 @@ class EditorLauncher {
             taskRepository: taskRepository,
             projectRepository: _projectRepository,
             valueRepository: _valueRepository,
+            taskWriteService: taskWriteService,
             errorReporter: context.read<AppErrorReporter>(),
           ),
           child: TaskDetailSheet(
@@ -108,10 +127,17 @@ class EditorLauncher {
       context: context,
       showDragHandle: effectiveShowDragHandle,
       childBuilder: (modalContext) {
+        final projectWriteService = _projectWriteService;
+        if (projectWriteService == null) {
+          throw StateError(
+            'EditorLauncher.openProjectEditor requires a ProjectWriteService.',
+          );
+        }
         return ProjectEditSheetPage(
           projectId: projectId,
           projectRepository: _projectRepository,
           valueRepository: _valueRepository,
+          projectWriteService: projectWriteService,
           onSaved: onSaved,
           openToValues: openToValues,
         );
@@ -134,9 +160,16 @@ class EditorLauncher {
       context: context,
       showDragHandle: effectiveShowDragHandle,
       childBuilder: (modalContext) {
+        final valueWriteService = _valueWriteService;
+        if (valueWriteService == null) {
+          throw StateError(
+            'EditorLauncher.openValueEditor requires a ValueWriteService.',
+          );
+        }
         return ValueDetailSheetPage(
           valueId: valueId,
           valueRepository: _valueRepository,
+          valueWriteService: valueWriteService,
           initialDraft: valueId == null ? initialDraft : null,
           onSaved: onSaved,
         );
@@ -150,7 +183,8 @@ class EditorLauncher {
     bool? showDragHandle,
   }) {
     final routineRepository = _routineRepository;
-    if (routineRepository == null) {
+    final routineWriteService = _routineWriteService;
+    if (routineRepository == null || routineWriteService == null) {
       throw StateError(
         'EditorLauncher.openRoutineEditor requires a RoutineRepositoryContract.',
       );
@@ -169,6 +203,7 @@ class EditorLauncher {
           routineRepository: routineRepository,
           projectRepository: _projectRepository,
           valueRepository: _valueRepository,
+          routineWriteService: routineWriteService,
         );
       },
     );

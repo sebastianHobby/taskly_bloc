@@ -12,6 +12,7 @@ import 'package:taskly_bloc/presentation/features/editors/editor_feedback.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
 import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_form.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
@@ -22,6 +23,7 @@ class ProjectEditSheetPage extends StatelessWidget {
   const ProjectEditSheetPage({
     required this.projectRepository,
     required this.valueRepository,
+    required this.projectWriteService,
     this.projectId,
     this.onSaved,
     this.openToValues = false,
@@ -30,6 +32,7 @@ class ProjectEditSheetPage extends StatelessWidget {
 
   final ProjectRepositoryContract projectRepository;
   final ValueRepositoryContract valueRepository;
+  final ProjectWriteService projectWriteService;
   final String? projectId;
 
   /// When true, scrolls to the values section and opens the values alignment
@@ -46,6 +49,7 @@ class ProjectEditSheetPage extends StatelessWidget {
       create: (context) => ProjectDetailBloc(
         projectRepository: projectRepository,
         valueRepository: valueRepository,
+        projectWriteService: projectWriteService,
         errorReporter: context.read<AppErrorReporter>(),
       ),
       lazy: false,

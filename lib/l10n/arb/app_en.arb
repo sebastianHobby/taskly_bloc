@@ -2322,11 +2322,11 @@
   "@myDayPlanTitle": {
     "description": "Title shown at the top of the My Day ritual wizard when planning."
   },
-  "myDayStepValuesTitle": "Values",
+  "myDayStepValuesTitle": "Values-guided",
   "@myDayStepValuesTitle": {
     "description": "Header title for the Values step in Plan My Day."
   },
-  "myDayStepValuesLabel": "Values",
+  "myDayStepValuesLabel": "Values-guided",
   "@myDayStepValuesLabel": {
     "description": "Chip label for the Values step in Plan My Day."
   },
@@ -2338,11 +2338,11 @@
   "@myDayStepRoutinesLabel": {
     "description": "Chip label for the Routines step in Plan My Day."
   },
-  "myDayStepTriageTitle": "Triage",
+  "myDayStepTriageTitle": "Time-sensitive",
   "@myDayStepTriageTitle": {
     "description": "Header title for the Triage step in Plan My Day."
   },
-  "myDayStepTriageLabel": "Triage",
+  "myDayStepTriageLabel": "Time-sensitive",
   "@myDayStepTriageLabel": {
     "description": "Chip label for the Triage step in Plan My Day."
   },
@@ -2933,6 +2933,14 @@
   "@routineFormNameHint": {
     "description": "Hint text for the routine name field"
   },
+  "routineFormNewTitle": "New routine",
+  "@routineFormNewTitle": {
+    "description": "Title for the routine create form"
+  },
+  "routineFormEditTitle": "Edit routine",
+  "@routineFormEditTitle": {
+    "description": "Title for the routine edit form"
+  },
   "routineFormNameEmpty": "Name is required.",
   "@routineFormNameEmpty": {
     "description": "Validation message when routine name is empty."
@@ -3033,7 +3041,27 @@
   "@routineEditLabel": {
     "description": "Menu label to edit a routine schedule."
   },
-  "routineStatusOnPace": "On pace",
+  "routineCadenceScheduledLabel": "Scheduled",
+  "@routineCadenceScheduledLabel": {
+    "description": "Cadence label for scheduled weekly routines."
+  },
+  "routineCadenceFlexibleLabel": "Flexible",
+  "@routineCadenceFlexibleLabel": {
+    "description": "Cadence label for flexible routines."
+  },
+  "routinePanelScheduledTitle": "Scheduled Today",
+  "@routinePanelScheduledTitle": {
+    "description": "Panel title for scheduled routines in Plan My Day."
+  },
+  "routinePanelFlexibleTitle": "Flexible Focus",
+  "@routinePanelFlexibleTitle": {
+    "description": "Panel title for flexible routines in Plan My Day."
+  },
+  "routineCatchUpSupportLine": "Small steps still count.",
+  "@routineCatchUpSupportLine": {
+    "description": "Supportive line shown on catch-up routine days."
+  },
+  "routineStatusOnPace": "On track",
   "@routineStatusOnPace": {
     "description": "Status label when routine is on pace."
   },
@@ -3041,7 +3069,7 @@
   "@routineStatusTightWeek": {
     "description": "Status label when routine has a tight week."
   },
-  "routineStatusCatchUp": "Catch-up window",
+  "routineStatusCatchUp": "Catch-up day",
   "@routineStatusCatchUp": {
     "description": "Status label when routine needs a catch-up window."
   },

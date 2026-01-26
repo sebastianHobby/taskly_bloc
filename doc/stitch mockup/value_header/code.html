@@ -2,7 +2,7 @@
 <html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Value Priority Roadmap V1</title>
+<title>Value Priority Roadmap V3</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -45,6 +45,11 @@
       min-height: max(884px, 100dvh);
     }
   </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
   </head>
 <body class="bg-background-light dark:bg-background-dark text-text-main-light dark:text-text-main-dark font-display antialiased overflow-hidden">
 <div class="relative flex h-full min-h-screen w-full flex-col max-w-md mx-auto bg-background-light dark:bg-background-dark overflow-hidden shadow-2xl">
@@ -56,25 +61,35 @@
 </button>
 </div>
 </header>
-<main class="flex-1 overflow-y-auto no-scrollbar pb-28 px-4">
+<main class="flex-1 overflow-y-auto no-scrollbar pb-28">
 <section class="mb-6">
-<div class="sticky top-0 z-10 py-3 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm">
-<div class="flex items-center justify-between bg-green-100/50 dark:bg-green-900/20 p-1.5 pr-4 rounded-full">
-<div class="flex items-center gap-3">
-<div class="text-green-800 dark:text-green-300 flex items-center justify-center rounded-full bg-surface-light dark:bg-white/10 shrink-0 size-9 shadow-sm">
+<div class="sticky top-0 z-10 bg-green-50/95 dark:bg-green-900/90 backdrop-blur-md border-b border-green-100 dark:border-green-800/30">
+<div class="flex items-center justify-between px-4 py-3 w-full cursor-pointer hover:bg-green-100/50 dark:hover:bg-green-900/50 transition-colors group">
+<div class="flex items-center gap-3 flex-1">
+<div class="text-green-800 dark:text-green-300 flex items-center justify-center rounded-full bg-surface-light dark:bg-white/10 shrink-0 size-10 shadow-sm group-hover:scale-105 transition-transform">
 <span class="material-symbols-outlined" style="font-size: 20px;">favorite</span>
 </div>
-<p class="text-green-900 dark:text-green-100 text-sm font-bold tracking-wide leading-normal">HEALTH</p>
-</div>
-<div class="shrink-0">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-500 text-white dark:text-black">
-                                HIGH
-                            </span>
-</div>
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-2">
+<p class="text-green-900 dark:text-green-100 text-sm font-bold tracking-wide leading-none">HEALTH</p>
+<div class="flex items-center justify-center size-5 rounded-full bg-green-200/50 dark:bg-green-800/50 border border-green-200 dark:border-green-800">
+<span class="text-[10px] font-bold text-green-800 dark:text-green-200">2</span>
 </div>
 </div>
-<div class="space-y-3">
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl border border-black/5 dark:border-white/5 relative">
+<div class="flex items-center gap-1.5">
+<div class="size-1.5 rounded-full bg-red-500"></div>
+<p class="text-[10px] font-medium text-green-700 dark:text-green-400 uppercase tracking-wider">High Priority</p>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-4 w-px bg-green-200 dark:bg-green-800"></div>
+<span class="material-symbols-outlined text-green-800 dark:text-green-300 transform transition-transform group-hover:rotate-180" style="font-size: 24px;">expand_more</span>
+</div>
+</div>
+</div>
+<div class="space-y-3 px-4 pt-4">
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl border border-black/5 dark:border-white/5 relative shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] dark:shadow-none hover:shadow-md transition-shadow">
 <div class="absolute top-4 right-4 bg-gray-100 dark:bg-white/10 px-2 py-1 rounded-full text-[10px] font-bold text-gray-600 dark:text-gray-300">
                             OCT 12
                         </div>
@@ -96,7 +111,7 @@
 </div>
 </div>
 </div>
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl border border-black/5 dark:border-white/5 relative">
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl border border-black/5 dark:border-white/5 relative shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] dark:shadow-none hover:shadow-md transition-shadow">
 <div class="absolute top-4 right-4 bg-gray-100 dark:bg-white/10 px-2 py-1 rounded-full text-[10px] font-bold text-gray-400 dark:text-gray-500">
                             NO DATE
                         </div>
@@ -121,23 +136,33 @@
 </div>
 </section>
 <section class="mb-6">
-<div class="sticky top-0 z-10 py-3 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm">
-<div class="flex items-center justify-between bg-orange-100/50 dark:bg-orange-900/20 p-1.5 pr-4 rounded-full">
-<div class="flex items-center gap-3">
-<div class="text-orange-700 dark:text-orange-300 flex items-center justify-center rounded-full bg-surface-light dark:bg-white/10 shrink-0 size-9 shadow-sm">
+<div class="sticky top-0 z-10 bg-orange-50/95 dark:bg-orange-900/90 backdrop-blur-md border-b border-orange-100 dark:border-orange-800/30">
+<div class="flex items-center justify-between px-4 py-3 w-full cursor-pointer hover:bg-orange-100/50 dark:hover:bg-orange-900/50 transition-colors group">
+<div class="flex items-center gap-3 flex-1">
+<div class="text-orange-700 dark:text-orange-300 flex items-center justify-center rounded-full bg-surface-light dark:bg-white/10 shrink-0 size-10 shadow-sm group-hover:scale-105 transition-transform">
 <span class="material-symbols-outlined" style="font-size: 20px;">eco</span>
 </div>
-<p class="text-orange-900 dark:text-orange-100 text-sm font-bold tracking-wide leading-normal">GROWTH</p>
-</div>
-<div class="shrink-0">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-200 dark:bg-orange-800/50 text-orange-800 dark:text-orange-100">
-                                MED
-                            </span>
-</div>
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-2">
+<p class="text-orange-900 dark:text-orange-100 text-sm font-bold tracking-wide leading-none">GROWTH</p>
+<div class="flex items-center justify-center size-5 rounded-full bg-orange-200/50 dark:bg-orange-800/50 border border-orange-200 dark:border-orange-800">
+<span class="text-[10px] font-bold text-orange-800 dark:text-orange-200">1</span>
 </div>
 </div>
-<div class="space-y-3">
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl border border-black/5 dark:border-white/5 relative">
+<div class="flex items-center gap-1.5">
+<div class="size-1.5 rounded-full bg-orange-500"></div>
+<p class="text-[10px] font-medium text-orange-700 dark:text-orange-400 uppercase tracking-wider">Medium Priority</p>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-4 w-px bg-orange-200 dark:bg-orange-800"></div>
+<span class="material-symbols-outlined text-orange-800 dark:text-orange-300 transform transition-transform group-hover:rotate-180" style="font-size: 24px;">expand_more</span>
+</div>
+</div>
+</div>
+<div class="space-y-3 px-4 pt-4">
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl border border-black/5 dark:border-white/5 relative shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] dark:shadow-none hover:shadow-md transition-shadow">
 <div class="absolute top-4 right-4 bg-orange-100 dark:bg-orange-900/40 px-2 py-1 rounded-full text-[10px] font-bold text-orange-700 dark:text-orange-300">
                             NOV 01
                         </div>
@@ -162,23 +187,33 @@
 </div>
 </section>
 <section class="mb-6">
-<div class="sticky top-0 z-10 py-3 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm">
-<div class="flex items-center justify-between bg-blue-100/50 dark:bg-blue-900/20 p-1.5 pr-4 rounded-full">
-<div class="flex items-center gap-3">
-<div class="text-blue-700 dark:text-blue-300 flex items-center justify-center rounded-full bg-surface-light dark:bg-white/10 shrink-0 size-9 shadow-sm">
+<div class="sticky top-0 z-10 bg-blue-50/95 dark:bg-blue-900/90 backdrop-blur-md border-b border-blue-100 dark:border-blue-800/30">
+<div class="flex items-center justify-between px-4 py-3 w-full cursor-pointer hover:bg-blue-100/50 dark:hover:bg-blue-900/50 transition-colors group">
+<div class="flex items-center gap-3 flex-1">
+<div class="text-blue-700 dark:text-blue-300 flex items-center justify-center rounded-full bg-surface-light dark:bg-white/10 shrink-0 size-10 shadow-sm group-hover:scale-105 transition-transform">
 <span class="material-symbols-outlined" style="font-size: 20px;">account_balance_wallet</span>
 </div>
-<p class="text-blue-900 dark:text-blue-100 text-sm font-bold tracking-wide leading-normal">FINANCE</p>
-</div>
-<div class="shrink-0">
-<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-800/30 text-blue-700 dark:text-blue-200">
-                                LOW
-                            </span>
-</div>
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-2">
+<p class="text-blue-900 dark:text-blue-100 text-sm font-bold tracking-wide leading-none">FINANCE</p>
+<div class="flex items-center justify-center size-5 rounded-full bg-blue-200/50 dark:bg-blue-800/50 border border-blue-200 dark:border-blue-800">
+<span class="text-[10px] font-bold text-blue-800 dark:text-blue-200">1</span>
 </div>
 </div>
-<div class="space-y-3">
-<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl border border-black/5 dark:border-white/5 relative">
+<div class="flex items-center gap-1.5">
+<div class="size-1.5 rounded-full bg-blue-400"></div>
+<p class="text-[10px] font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wider">Low Priority</p>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-4 w-px bg-blue-200 dark:bg-blue-800"></div>
+<span class="material-symbols-outlined text-blue-800 dark:text-blue-300 transform transition-transform group-hover:rotate-180" style="font-size: 24px;">expand_more</span>
+</div>
+</div>
+</div>
+<div class="space-y-3 px-4 pt-4">
+<div class="bg-surface-light dark:bg-surface-dark p-4 rounded-2xl border border-black/5 dark:border-white/5 relative shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] dark:shadow-none hover:shadow-md transition-shadow">
 <div class="absolute top-4 right-4 bg-gray-100 dark:bg-white/10 px-2 py-1 rounded-full text-[10px] font-bold text-gray-600 dark:text-gray-300">
                             APR 15
                         </div>

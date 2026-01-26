@@ -270,7 +270,7 @@ class TaskEntityTile extends StatelessWidget {
                             addTooltip: addTooltipLabel,
                             snoozeTooltip: model.labels?.snoozeTooltip,
                             onAddPressed: actions.onToggleSelected,
-                            onSnoozePressed: actions.onSnoozeRequested,
+                            onSnoozePressed: null,
                           )
                         else if (_isPickerActionStyle)
                           _PickerActionButton(
@@ -323,10 +323,41 @@ class TaskEntityTile extends StatelessWidget {
       ),
     );
 
+    final swipeEnabled = _isPlanPickStyle && actions.onSnoozeRequested != null;
+    final swipeLabel = model.labels?.snoozeTooltip?.trim();
+    final effectiveSwipeLabel =
+        (swipeLabel != null && swipeLabel.isNotEmpty) ? swipeLabel : 'Snooze';
+
+    final Widget swipeWrapped = swipeEnabled
+        ? Dismissible(
+            key: ValueKey('task-snooze-${model.id}'),
+            direction: DismissDirection.endToStart,
+            dismissThresholds: const {DismissDirection.endToStart: 0.35},
+            confirmDismiss: (_) async {
+              await HapticFeedback.mediumImpact();
+              actions.onSnoozeRequested?.call();
+              return false;
+            },
+            background: _buildSnoozeBackground(
+              context,
+              scheme,
+              label: effectiveSwipeLabel,
+              isStartToEnd: true,
+            ),
+            secondaryBackground: _buildSnoozeBackground(
+              context,
+              scheme,
+              label: effectiveSwipeLabel,
+              isStartToEnd: false,
+            ),
+            child: tile,
+          )
+        : tile;
+
     return Opacity(
       key: Key('task-${model.id}'),
       opacity: opacity,
-      child: tile,
+      child: swipeWrapped,
     );
   }
 }
@@ -1025,6 +1056,7 @@ class _PickerActionCluster extends StatelessWidget {
     final divider = scheme.outlineVariant.withValues(alpha: 0.55);
     final addBg = selected ? scheme.primaryContainer : scheme.primary;
     final addFg = selected ? scheme.primary : scheme.onPrimary;
+    final showSnooze = onSnoozePressed != null;
 
     final add = IconButton(
       onPressed: onAddPressed,
@@ -1059,17 +1091,57 @@ class _PickerActionCluster extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           add,
-          Container(
-            width: 1,
-            height: 22,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            color: divider,
-          ),
-          snooze,
+          if (showSnooze) ...[
+            Container(
+              width: 1,
+              height: 22,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              color: divider,
+            ),
+            snooze,
+          ],
         ],
       ),
     );
   }
+}
+
+Widget _buildSnoozeBackground(
+  BuildContext context,
+  ColorScheme scheme, {
+  required String label,
+  required bool isStartToEnd,
+}) {
+  return Container(
+    margin: const EdgeInsets.symmetric(vertical: 4),
+    decoration: BoxDecoration(
+      color: scheme.secondaryContainer,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    alignment: isStartToEnd ? Alignment.centerLeft : Alignment.centerRight,
+    padding: EdgeInsets.only(
+      left: isStartToEnd ? 24 : 0,
+      right: isStartToEnd ? 0 : 24,
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.snooze_rounded,
+          color: scheme.onSecondaryContainer,
+          size: 22,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: scheme.onSecondaryContainer,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _PickerStatusPill extends StatelessWidget {

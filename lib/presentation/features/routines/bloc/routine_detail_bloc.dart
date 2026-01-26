@@ -11,6 +11,7 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/errors.dart';
 import 'package:taskly_domain/routines.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
 
 part 'routine_detail_bloc.freezed.dart';
@@ -64,15 +65,14 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
     required RoutineRepositoryContract routineRepository,
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
+    required RoutineWriteService routineWriteService,
     required AppErrorReporter errorReporter,
     String? routineId,
   }) : _routineRepository = routineRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
+       _routineWriteService = routineWriteService,
        _errorReporter = errorReporter,
-       _commandHandler = RoutineCommandHandler(
-         routineRepository: routineRepository,
-       ),
        super(const RoutineDetailState.initial()) {
     on<_RoutineDetailLoadForCreate>(
       _onLoadForCreate,
@@ -93,8 +93,8 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
   final RoutineRepositoryContract _routineRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
+  final RoutineWriteService _routineWriteService;
   final AppErrorReporter _errorReporter;
-  final RoutineCommandHandler _commandHandler;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
@@ -255,7 +255,7 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
     await _executeValidatedCommand(
       emit,
       EntityOperation.create,
-      () => _commandHandler.handleCreate(event.command, context: context),
+      () => _routineWriteService.create(event.command, context: context),
       context: context,
     );
   }
@@ -272,7 +272,7 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
     await _executeValidatedCommand(
       emit,
       EntityOperation.update,
-      () => _commandHandler.handleUpdate(event.command, context: context),
+      () => _routineWriteService.update(event.command, context: context),
       context: context,
     );
   }
@@ -287,7 +287,7 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
       entityId: event.id,
     );
     try {
-      await _routineRepository.delete(event.id, context: context);
+      await _routineWriteService.delete(event.id, context: context);
       await Future<void>.delayed(const Duration(milliseconds: 50));
       emit(createOperationSuccessState(EntityOperation.delete));
     } catch (error, stackTrace) {

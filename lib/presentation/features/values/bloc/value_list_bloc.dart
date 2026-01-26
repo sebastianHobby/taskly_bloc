@@ -9,6 +9,7 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/errors.dart';
 import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
 
 part 'value_list_bloc.freezed.dart';
@@ -41,6 +42,7 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
     with ListBlocMixin<ValueListEvent, ValueListState, Value> {
   ValueListBloc({
     required ValueRepositoryContract valueRepository,
+    required ValueWriteService valueWriteService,
     required AppErrorReporter errorReporter,
     SettingsRepositoryContract? settingsRepository,
     PageKey? pageKey,
@@ -48,6 +50,7 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
       criteria: [SortCriterion(field: SortField.name)],
     ),
   }) : _valueRepository = valueRepository,
+       _valueWriteService = valueWriteService,
        _errorReporter = errorReporter,
        _settingsRepository = settingsRepository,
        _pageKey = pageKey,
@@ -62,6 +65,7 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
   }
 
   final ValueRepositoryContract _valueRepository;
+  final ValueWriteService _valueWriteService;
   final AppErrorReporter _errorReporter;
   final SettingsRepositoryContract? _settingsRepository;
   final PageKey? _pageKey;
@@ -226,7 +230,7 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
       emit,
       delete: () async {
         try {
-          await _valueRepository.delete(event.value.id, context: context);
+          await _valueWriteService.delete(event.value.id, context: context);
         } catch (error, stackTrace) {
           _reportIfUnexpectedOrUnmapped(
             error,

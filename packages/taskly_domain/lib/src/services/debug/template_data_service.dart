@@ -539,7 +539,7 @@ const _templateTaskSeeds = <_TemplateTaskSeed>[
     projectName: 'Home chores',
     startOffset: -2,
     priority: 3,
-    valueNames: ['Home & Comfort', 'Health & Energy'],
+    valueNames: ['Health & Energy'],
   ),
   _TemplateTaskSeed(
     name: 'Prep seasonal cleaning plan',
@@ -608,7 +608,7 @@ const _templateTaskSeeds = <_TemplateTaskSeed>[
     projectName: 'Organise birthday for Sam',
     deadlineOffset: 4,
     priority: 2,
-    valueNames: ['Relationships', 'Life Admin'],
+    valueNames: ['Life Admin'],
   ),
   _TemplateTaskSeed(
     name: 'Plan workouts for next week',
@@ -632,7 +632,6 @@ const _templateTaskSeeds = <_TemplateTaskSeed>[
     name: 'Create a warm-up checklist',
     projectName: 'Exercise Routines',
     priority: 4,
-    valueNames: ['Health & Energy'],
   ),
   _TemplateTaskSeed(
     name: 'Research a beginner mobility routine',

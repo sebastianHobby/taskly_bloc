@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_host_page.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
 
@@ -43,6 +44,7 @@ class _ProjectEditorFullPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final projectRepository = getIt<ProjectRepositoryContract>();
     final valueRepository = getIt<ValueRepositoryContract>();
+    final projectWriteService = getIt<ProjectWriteService>();
 
     return Scaffold(
       body: SafeArea(
@@ -50,6 +52,7 @@ class _ProjectEditorFullPage extends StatelessWidget {
           projectId: projectId,
           projectRepository: projectRepository,
           valueRepository: valueRepository,
+          projectWriteService: projectWriteService,
         ),
       ),
     );

@@ -22,6 +22,9 @@ void main() {
       expect(settings.myDayDueWindowDays, 30);
       expect(settings.myDayDueSoonEnabled, isTrue);
       expect(settings.myDayShowAvailableToStart, isFalse);
+      expect(settings.myDayShowRoutines, isTrue);
+      expect(settings.myDayCountTriagePicksAgainstValueQuotas, isTrue);
+      expect(settings.myDayCountRoutinePicksAgainstValueQuotas, isTrue);
       expect(settings.textScaleFactor, 1.25);
       expect(settings.onboardingCompleted, isTrue);
     },
@@ -53,6 +56,9 @@ void main() {
       myDayDueWindowDays: 0, // should clamp on write
       myDayDueSoonEnabled: false,
       myDayShowAvailableToStart: true,
+      myDayShowRoutines: false,
+      myDayCountTriagePicksAgainstValueQuotas: false,
+      myDayCountRoutinePicksAgainstValueQuotas: false,
       textScaleFactor: 0.9,
       onboardingCompleted: true,
     );
@@ -67,6 +73,9 @@ void main() {
     expect(decoded.myDayDueWindowDays, 1);
     expect(decoded.myDayDueSoonEnabled, isFalse);
     expect(decoded.myDayShowAvailableToStart, isTrue);
+    expect(decoded.myDayShowRoutines, isFalse);
+    expect(decoded.myDayCountTriagePicksAgainstValueQuotas, isFalse);
+    expect(decoded.myDayCountRoutinePicksAgainstValueQuotas, isFalse);
     expect(decoded.textScaleFactor, 0.9);
     expect(decoded.onboardingCompleted, isTrue);
   });

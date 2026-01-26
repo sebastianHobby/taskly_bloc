@@ -659,6 +659,65 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
+  Future<int> bulkRescheduleDeadlines({
+    required Iterable<String> projectIds,
+    required DateTime deadlineDate,
+    OperationContext? context,
+  }) async {
+    final ids = projectIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (ids.isEmpty) return 0;
+
+    return FailureGuard.run(
+      () async {
+        final normalizedDeadline = dateOnlyOrNull(deadlineDate);
+        final now = DateTime.now();
+        final psMetadata = encodeCrudMetadata(context);
+
+        return driftDb.transaction(() async {
+          final existingIds =
+              await (driftDb.selectOnly(driftDb.projectTable)
+                    ..addColumns([driftDb.projectTable.id])
+                    ..where(driftDb.projectTable.id.isIn(ids)))
+                  .map((row) => row.read(driftDb.projectTable.id)!)
+                  .get();
+
+          if (existingIds.length != ids.length) {
+            throw RepositoryNotFoundException(
+              'Some projects were not found for bulk deadline update',
+            );
+          }
+
+          final updated =
+              await (driftDb.update(
+                driftDb.projectTable,
+              )..where((p) => p.id.isIn(ids))).write(
+                ProjectTableCompanion(
+                  deadlineDate: drift_pkg.Value(normalizedDeadline),
+                  updatedAt: drift_pkg.Value(now),
+                  psMetadata: psMetadata == null
+                      ? const drift_pkg.Value<String?>.absent()
+                      : drift_pkg.Value(psMetadata),
+                ),
+              );
+
+          if (updated != ids.length) {
+            throw RepositoryException('Bulk project deadline update failed');
+          }
+
+          return updated;
+        });
+      },
+      area: 'data.project',
+      opName: 'bulk_update_deadline',
+      context: context,
+    );
+  }
+
+  @override
   Future<void> setPinned({
     required String id,
     required bool isPinned,

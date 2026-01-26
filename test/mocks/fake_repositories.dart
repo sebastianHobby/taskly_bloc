@@ -134,6 +134,31 @@ class FakeTaskRepository implements TaskRepositoryContract {
   }
 
   @override
+  Future<int> bulkRescheduleDeadlines({
+    required Iterable<String> taskIds,
+    required DateTime deadlineDate,
+    OperationContext? context,
+  }) async {
+    final ids = taskIds.toSet();
+    if (ids.isEmpty) return 0;
+    if (_last.where((t) => ids.contains(t.id)).length != ids.length) {
+      throw StateError('Missing task in bulk update');
+    }
+
+    final updatedTasks = _last
+        .map(
+          (task) => ids.contains(task.id)
+              ? task.copyWith(deadlineDate: deadlineDate, updatedAt: _now())
+              : task,
+        )
+        .toList(growable: false);
+
+    _last = updatedTasks;
+    _controller.add(_last);
+    return ids.length;
+  }
+
+  @override
   Future<void> setPinned({
     required String id,
     required bool isPinned,
@@ -148,6 +173,31 @@ class FakeTaskRepository implements TaskRepositoryContract {
 
     _last = updated;
     _controller.add(_last);
+  }
+
+  @override
+  Future<int> bulkRescheduleDeadlines({
+    required Iterable<String> projectIds,
+    required DateTime deadlineDate,
+    OperationContext? context,
+  }) async {
+    final ids = projectIds.toSet();
+    if (ids.isEmpty) return 0;
+    if (_last.where((p) => ids.contains(p.id)).length != ids.length) {
+      throw StateError('Missing project in bulk update');
+    }
+
+    final updatedProjects = _last
+        .map(
+          (project) => ids.contains(project.id)
+              ? project.copyWith(deadlineDate: deadlineDate, updatedAt: _now())
+              : project,
+        )
+        .toList(growable: false);
+
+    _last = updatedProjects;
+    _controller.add(_last);
+    return ids.length;
   }
 
   @override
@@ -637,6 +687,144 @@ class FakeProjectRepository implements ProjectRepositoryContract {
 
   void dispose() {
     _controller.close();
+  }
+}
+
+class FakeProjectNextActionsRepository
+    implements ProjectNextActionsRepositoryContract {
+  FakeProjectNextActionsRepository({DateTime Function()? now})
+    : _now = now ?? _defaultNow;
+
+  static int _idCounter = 0;
+  final DateTime Function() _now;
+
+  final _controller = BehaviorSubject<List<ProjectNextAction>>.seeded([]);
+  List<ProjectNextAction> get _last => _controller.value;
+  set _last(List<ProjectNextAction> value) => _controller.add(value);
+
+  void pushNextActions(List<ProjectNextAction> actions) {
+    _controller.add(actions);
+  }
+
+  @override
+  Stream<List<ProjectNextAction>> watchAll() => _controller.stream;
+
+  @override
+  Stream<List<ProjectNextAction>> watchForProject(String projectId) {
+    return _controller.stream.map((rows) {
+      final filtered =
+          rows.where((r) => r.projectId == projectId).toList(growable: false)
+            ..sort((a, b) => a.rank.compareTo(b.rank));
+      return filtered;
+    });
+  }
+
+  @override
+  Future<List<ProjectNextAction>> getAll() async => _last;
+
+  @override
+  Future<List<ProjectNextAction>> getForProject(String projectId) async {
+    final filtered =
+        _last.where((r) => r.projectId == projectId).toList(growable: false)
+          ..sort((a, b) => a.rank.compareTo(b.rank));
+    return filtered;
+  }
+
+  @override
+  Future<void> setForProject({
+    required String projectId,
+    required List<ProjectNextActionDraft> actions,
+    required OperationContext context,
+  }) async {
+    final now = _now();
+    final remaining = _last
+        .where((r) => r.projectId != projectId)
+        .toList(growable: false);
+    final next = actions
+        .map(
+          (draft) => ProjectNextAction(
+            id: 'na-${_idCounter++}',
+            projectId: projectId,
+            taskId: draft.taskId,
+            rank: draft.rank,
+            createdAtUtc: now,
+            updatedAtUtc: now,
+          ),
+        )
+        .toList(growable: false);
+
+    _last = [...remaining, ...next];
+  }
+
+  @override
+  Future<void> removeForTask({
+    required String taskId,
+    OperationContext? context,
+  }) async {
+    _last = _last.where((r) => r.taskId != taskId).toList(growable: false);
+  }
+}
+
+class FakeProjectAnchorStateRepository
+    implements ProjectAnchorStateRepositoryContract {
+  FakeProjectAnchorStateRepository({DateTime Function()? now})
+    : _now = now ?? _defaultNow;
+
+  static int _idCounter = 0;
+  final DateTime Function() _now;
+
+  final _controller = BehaviorSubject<List<ProjectAnchorState>>.seeded([]);
+  List<ProjectAnchorState> get _last => _controller.value;
+  set _last(List<ProjectAnchorState> value) => _controller.add(value);
+
+  void pushAnchorStates(List<ProjectAnchorState> states) {
+    _controller.add(states);
+  }
+
+  @override
+  Stream<List<ProjectAnchorState>> watchAll() => _controller.stream;
+
+  @override
+  Future<List<ProjectAnchorState>> getAll() async => _last;
+
+  @override
+  Future<void> recordAnchors({
+    required Iterable<String> projectIds,
+    required DateTime anchoredAtUtc,
+    OperationContext? context,
+  }) async {
+    final now = _now();
+    final currentByProject = {
+      for (final state in _last) state.projectId: state,
+    };
+    final updated = <ProjectAnchorState>[
+      for (final state in _last)
+        if (!projectIds.contains(state.projectId)) state,
+    ];
+
+    for (final projectId in projectIds) {
+      final existing = currentByProject[projectId];
+      if (existing == null) {
+        updated.add(
+          ProjectAnchorState(
+            id: 'anchor-${_idCounter++}',
+            projectId: projectId,
+            lastAnchoredAtUtc: anchoredAtUtc,
+            createdAtUtc: now,
+            updatedAtUtc: now,
+          ),
+        );
+      } else {
+        updated.add(
+          existing.copyWith(
+            lastAnchoredAtUtc: anchoredAtUtc,
+            updatedAtUtc: now,
+          ),
+        );
+      }
+    }
+
+    _last = updated;
   }
 }
 

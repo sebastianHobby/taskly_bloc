@@ -4,6 +4,7 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_host_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
@@ -65,6 +66,7 @@ class _TaskEditorFullPage extends StatelessWidget {
     final taskRepository = getIt<TaskRepositoryContract>();
     final projectRepository = getIt<ProjectRepositoryContract>();
     final valueRepository = getIt<ValueRepositoryContract>();
+    final taskWriteService = getIt<TaskWriteService>();
 
     return Scaffold(
       body: SafeArea(
@@ -74,6 +76,7 @@ class _TaskEditorFullPage extends StatelessWidget {
             taskRepository: taskRepository,
             projectRepository: projectRepository,
             valueRepository: valueRepository,
+            taskWriteService: taskWriteService,
             errorReporter: context.read<AppErrorReporter>(),
           ),
           child: TaskDetailSheet(

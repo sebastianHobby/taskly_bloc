@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
-import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/services.dart';
 
 sealed class ScheduledScreenEffect {
   const ScheduledScreenEffect();
@@ -109,11 +109,11 @@ final class ScheduledScreenReady extends ScheduledScreenState {
 class ScheduledScreenBloc
     extends Bloc<ScheduledScreenEvent, ScheduledScreenState> {
   ScheduledScreenBloc({
-    required TaskRepositoryContract taskRepository,
-    required ProjectRepositoryContract projectRepository,
+    required TaskWriteService taskWriteService,
+    required ProjectWriteService projectWriteService,
     OperationContextFactory contextFactory = const OperationContextFactory(),
-  }) : _taskRepository = taskRepository,
-       _projectRepository = projectRepository,
+  }) : _taskWriteService = taskWriteService,
+       _projectWriteService = projectWriteService,
        _contextFactory = contextFactory,
        super(const ScheduledScreenReady()) {
     on<ScheduledCreateTaskForDayRequested>((event, emit) {
@@ -148,8 +148,8 @@ class ScheduledScreenBloc
     );
   }
 
-  final TaskRepositoryContract _taskRepository;
-  final ProjectRepositoryContract _projectRepository;
+  final TaskWriteService _taskWriteService;
+  final ProjectWriteService _projectWriteService;
   final OperationContextFactory _contextFactory;
 
   Future<void> _onRescheduleTasksDeadline(
@@ -176,32 +176,12 @@ class ScheduledScreenBloc
       },
     );
 
-    var updated = 0;
-
     try {
-      for (final taskId in uniqueTaskIds) {
-        final task = await _taskRepository.getById(taskId);
-        if (task == null) continue;
-
-        await _taskRepository.update(
-          id: task.id,
-          name: task.name,
-          completed: task.completed,
-          description: task.description,
-          startDate: task.startDate,
-          deadlineDate: newDeadlineDay,
-          projectId: task.projectId,
-          priority: task.priority,
-          repeatIcalRrule: task.repeatIcalRrule,
-          repeatFromCompletion: task.repeatFromCompletion,
-          seriesEnded: task.seriesEnded,
-          valueIds: task.values.map((v) => v.id).toList(growable: false),
-          isPinned: task.isPinned,
-          context: baseContext.copyWith(entityType: 'task', entityId: task.id),
-        );
-
-        updated++;
-      }
+      final updated = await _taskWriteService.bulkRescheduleDeadlines(
+        uniqueTaskIds,
+        newDeadlineDay,
+        context: baseContext.copyWith(entityType: 'task'),
+      );
 
       emit(
         ScheduledScreenReady(
@@ -241,34 +221,12 @@ class ScheduledScreenBloc
       },
     );
 
-    var updated = 0;
-
     try {
-      for (final projectId in uniqueProjectIds) {
-        final project = await _projectRepository.getById(projectId);
-        if (project == null) continue;
-
-        await _projectRepository.update(
-          id: project.id,
-          name: project.name,
-          completed: project.completed,
-          description: project.description,
-          startDate: project.startDate,
-          deadlineDate: newDeadlineDay,
-          priority: project.priority,
-          repeatIcalRrule: project.repeatIcalRrule,
-          repeatFromCompletion: project.repeatFromCompletion,
-          seriesEnded: project.seriesEnded,
-          valueIds: project.values.map((v) => v.id).toList(growable: false),
-          isPinned: project.isPinned,
-          context: baseContext.copyWith(
-            entityType: 'project',
-            entityId: project.id,
-          ),
-        );
-
-        updated++;
-      }
+      final updated = await _projectWriteService.bulkRescheduleDeadlines(
+        uniqueProjectIds,
+        newDeadlineDay,
+        context: baseContext.copyWith(entityType: 'project'),
+      );
 
       emit(
         ScheduledScreenReady(
@@ -310,59 +268,19 @@ class ScheduledScreenBloc
       },
     );
 
-    var updatedTasks = 0;
-    var updatedProjects = 0;
-
     try {
-      for (final taskId in uniqueTaskIds) {
-        final task = await _taskRepository.getById(taskId);
-        if (task == null) continue;
+      final updatedTasks = await _taskWriteService.bulkRescheduleDeadlines(
+        uniqueTaskIds,
+        newDeadlineDay,
+        context: baseContext.copyWith(entityType: 'task'),
+      );
 
-        await _taskRepository.update(
-          id: task.id,
-          name: task.name,
-          completed: task.completed,
-          description: task.description,
-          startDate: task.startDate,
-          deadlineDate: newDeadlineDay,
-          projectId: task.projectId,
-          priority: task.priority,
-          repeatIcalRrule: task.repeatIcalRrule,
-          repeatFromCompletion: task.repeatFromCompletion,
-          seriesEnded: task.seriesEnded,
-          valueIds: task.values.map((v) => v.id).toList(growable: false),
-          isPinned: task.isPinned,
-          context: baseContext.copyWith(entityType: 'task', entityId: task.id),
-        );
-
-        updatedTasks++;
-      }
-
-      for (final projectId in uniqueProjectIds) {
-        final project = await _projectRepository.getById(projectId);
-        if (project == null) continue;
-
-        await _projectRepository.update(
-          id: project.id,
-          name: project.name,
-          completed: project.completed,
-          description: project.description,
-          startDate: project.startDate,
-          deadlineDate: newDeadlineDay,
-          priority: project.priority,
-          repeatIcalRrule: project.repeatIcalRrule,
-          repeatFromCompletion: project.repeatFromCompletion,
-          seriesEnded: project.seriesEnded,
-          valueIds: project.values.map((v) => v.id).toList(growable: false),
-          isPinned: project.isPinned,
-          context: baseContext.copyWith(
-            entityType: 'project',
-            entityId: project.id,
-          ),
-        );
-
-        updatedProjects++;
-      }
+      final updatedProjects = await _projectWriteService
+          .bulkRescheduleDeadlines(
+            uniqueProjectIds,
+            newDeadlineDay,
+            context: baseContext.copyWith(entityType: 'project'),
+          );
 
       emit(
         ScheduledScreenReady(

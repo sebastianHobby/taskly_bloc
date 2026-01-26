@@ -94,6 +94,11 @@ Future<void> setupDependencies() async {
     ..registerSingleton<MyDayRepositoryContract>(
       getIt<TasklyDataBindings>().myDayRepository,
     )
+    ..registerLazySingleton<MyDayRitualStatusService>(
+      () => MyDayRitualStatusService(
+        myDayRepository: getIt<MyDayRepositoryContract>(),
+      ),
+    )
     ..registerSingleton<attention_repo_v2.AttentionRepositoryContract>(
       getIt<TasklyDataBindings>().attentionRepository,
     )
@@ -170,14 +175,29 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
       ),
     )
-    // Entity action service for cross-screen entity mutations.
-    ..registerLazySingleton<EntityActionService>(
-      () => EntityActionService(
+    ..registerLazySingleton<TaskWriteService>(
+      () => TaskWriteService(
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
-        valueRepository: getIt<ValueRepositoryContract>(),
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
         occurrenceCommandService: getIt<OccurrenceCommandService>(),
+      ),
+    )
+    ..registerLazySingleton<ProjectWriteService>(
+      () => ProjectWriteService(
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        allocationOrchestrator: getIt<AllocationOrchestrator>(),
+        occurrenceCommandService: getIt<OccurrenceCommandService>(),
+      ),
+    )
+    ..registerLazySingleton<ValueWriteService>(
+      () => ValueWriteService(
+        valueRepository: getIt<ValueRepositoryContract>(),
+      ),
+    )
+    ..registerLazySingleton<RoutineWriteService>(
+      () => RoutineWriteService(
+        routineRepository: getIt<RoutineRepositoryContract>(),
       ),
     )
     ..registerLazySingleton<ScheduledOccurrencesService>(
@@ -270,6 +290,7 @@ Future<void> setupDependencies() async {
         taskRepository: getIt<TaskRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
         myDayRepository: getIt<MyDayRepositoryContract>(),
+        ritualStatusService: getIt<MyDayRitualStatusService>(),
         routineRepository: getIt<RoutineRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
@@ -307,7 +328,7 @@ Future<void> setupDependencies() async {
     ..registerFactory<MyDayBloc>(
       () => MyDayBloc(
         queryService: getIt<MyDaySessionQueryService>(),
-        routineRepository: getIt<RoutineRepositoryContract>(),
+        routineWriteService: getIt<RoutineWriteService>(),
         nowService: getIt<NowService>(),
       ),
     )
@@ -318,6 +339,8 @@ Future<void> setupDependencies() async {
         taskSuggestionService: getIt<TaskSuggestionService>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         routineRepository: getIt<RoutineRepositoryContract>(),
+        taskWriteService: getIt<TaskWriteService>(),
+        routineWriteService: getIt<RoutineWriteService>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
         nowService: getIt<NowService>(),
