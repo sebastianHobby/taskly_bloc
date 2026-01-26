@@ -17,12 +17,15 @@ import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart
 import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
+import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/view/plan_my_day_page.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/my_day.dart' as my_day;
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_domain/time.dart';
@@ -176,9 +179,7 @@ class _MyDayLoadedBody extends StatelessWidget {
             onRetry: () => context.read<MyDayBloc>().add(const MyDayStarted()),
           ),
           MyDayLoaded(
-            :final acceptedDue,
-            :final acceptedStarts,
-            :final acceptedFocus,
+            :final plannedItems,
             :final pinnedTasks,
           ) =>
             SafeArea(
@@ -206,9 +207,7 @@ class _MyDayLoadedBody extends StatelessWidget {
                   const SizedBox(height: 12),
                   _MyDayTaskList(
                     today: today,
-                    acceptedDue: acceptedDue,
-                    acceptedStarts: acceptedStarts,
-                    acceptedFocus: acceptedFocus,
+                    plannedItems: plannedItems,
                     pinnedTasks: pinnedTasks,
                   ),
                 ],
@@ -276,16 +275,12 @@ class _MyDayHeaderRow extends StatelessWidget {
 class _MyDayTaskList extends StatefulWidget {
   const _MyDayTaskList({
     required this.today,
-    required this.acceptedDue,
-    required this.acceptedStarts,
-    required this.acceptedFocus,
+    required this.plannedItems,
     required this.pinnedTasks,
   });
 
   final DateTime today;
-  final List<Task> acceptedDue;
-  final List<Task> acceptedStarts;
-  final List<Task> acceptedFocus;
+  final List<MyDayPlannedItem> plannedItems;
   final List<Task> pinnedTasks;
 
   @override
@@ -308,19 +303,33 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
     final selection = context.read<SelectionCubit>();
     final todayDate = dateOnly(widget.today);
 
-    final merged = _mergeMyDayTasks(
-      acceptedDue: widget.acceptedDue,
-      acceptedStarts: widget.acceptedStarts,
-      acceptedFocus: widget.acceptedFocus,
-      pinnedTasks: widget.pinnedTasks,
-    );
+    final pickedTaskIds = widget.plannedItems
+        .where((item) => item.type == MyDayPlannedItemType.task)
+        .map((item) => item.id)
+        .toSet();
 
-    final sorted = sortTasksByDeadlineThenStartThenPriorityThenName(
-      merged,
-      today: todayDate,
-    );
+    final plannedEntries = widget.plannedItems
+        .map((item) => _MyDayListEntry(item: item, showBadge: true))
+        .toList(growable: false);
 
-    if (sorted.isEmpty) {
+    final pinnedEntries = widget.pinnedTasks
+        .where((task) => !pickedTaskIds.contains(task.id))
+        .map(
+          (task) => _MyDayListEntry(
+            item: MyDayPlannedItem.task(
+              task: task,
+              bucket: my_day.MyDayPickBucket.manual,
+              sortIndex: -1,
+              qualifyingValueId: task.effectivePrimaryValueId,
+            ),
+            showBadge: false,
+          ),
+        )
+        .toList(growable: false);
+
+    final entries = [...pinnedEntries, ...plannedEntries];
+
+    if (entries.isEmpty) {
       return TasklyFeedRenderer(
         spec: TasklyFeedSpec.empty(
           empty: TasklyEmptyStateSpec(
@@ -333,7 +342,14 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
       );
     }
 
-    _registerVisibleTasks(selection, sorted);
+    final visibleTasks = [
+      ...widget.pinnedTasks,
+      ...widget.plannedItems
+          .where((item) => item.type == MyDayPlannedItemType.task)
+          .map((item) => item.task)
+          .whereType<Task>(),
+    ];
+    _registerVisibleTasks(selection, visibleTasks);
 
     final valueGroups = <String, _MyDayValueGroup>{};
 
@@ -344,11 +360,14 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
       );
     }
 
-    for (final task in sorted) {
-      final value = task.effectivePrimaryValue;
+    for (final entry in entries) {
+      final item = entry.item;
+      final value = item.type == MyDayPlannedItemType.task
+          ? item.task?.effectivePrimaryValue
+          : item.routine?.value;
       final key = _myDayValueKey(value?.id);
       ensureGroup(key, value);
-      valueGroups[key]!.tasks.add(task);
+      valueGroups[key]!.entries.add(entry);
     }
 
     final groups = valueGroups.values.toList(growable: false)
@@ -366,7 +385,7 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
           ? valueName!
           : context.l10n.valueMissingLabel;
       final priorityLabel = _valuePriorityLabel(context, value?.priority);
-      final countLabel = group.tasks.length.toString();
+      final countLabel = group.entries.length.toString();
       final isCollapsed = _collapsedValueKeys.contains(key);
 
       groupedRows.add(
@@ -382,13 +401,72 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
         ),
       );
 
-      groupedRows.addAll(
-        _buildRows(
-          context,
-          group.tasks,
-          depthOffset: 1,
-        ),
+      final routineEntries = group.entries
+          .where((entry) => entry.item.type == MyDayPlannedItemType.routine)
+          .toList()
+        ..sort(
+          (a, b) => a.item.sortIndex.compareTo(b.item.sortIndex),
+        );
+
+      final taskEntries = group.entries
+          .where((entry) => entry.item.type == MyDayPlannedItemType.task)
+          .toList(growable: false);
+
+      final taskEntriesById = {
+        for (final entry in taskEntries)
+          if (entry.item.task != null) entry.item.task!.id: entry,
+      };
+      final sortedTasks = sortTasksByDeadlineThenStartThenPriorityThenName(
+        taskEntries
+            .map((entry) => entry.item.task)
+            .whereType<Task>()
+            .toList(growable: false),
+        today: todayDate,
       );
+      final sortedTaskEntries = [
+        for (final task in sortedTasks)
+          if (taskEntriesById[task.id] != null)
+            taskEntriesById[task.id]!,
+      ];
+
+      final orderedEntries = [...routineEntries, ...sortedTaskEntries];
+
+      for (final entry in orderedEntries) {
+        final item = entry.item;
+        if (item.type == MyDayPlannedItemType.routine) {
+          final routine = item.routine;
+          final snapshot = item.routineSnapshot;
+          if (routine == null || snapshot == null) continue;
+          final badges = entry.showBadge
+              ? [_badgeForBucket(context, item.bucket)]
+              : const <TasklyBadgeData>[];
+          groupedRows.add(
+            _buildRoutineRow(
+              context,
+              routine: routine,
+              snapshot: snapshot,
+              completed: item.completed,
+              badges: badges,
+              depthOffset: 1,
+            ),
+          );
+          continue;
+        }
+
+        final task = item.task;
+        if (task == null) continue;
+        final badges = entry.showBadge
+            ? [_badgeForBucket(context, item.bucket)]
+            : const <TasklyBadgeData>[];
+        groupedRows.add(
+          _buildTaskRowSpec(
+            context,
+            task,
+            badges: badges,
+            depthOffset: 1,
+          ),
+        );
+      }
     }
 
     return TasklyFeedRenderer.buildSection(
@@ -493,28 +571,6 @@ class _WeeklyReviewBanner extends StatelessWidget {
   }
 }
 
-List<Task> _mergeMyDayTasks({
-  required List<Task> acceptedDue,
-  required List<Task> acceptedStarts,
-  required List<Task> acceptedFocus,
-  required List<Task> pinnedTasks,
-}) {
-  final byId = <String, Task>{};
-  final all = [
-    ...acceptedDue,
-    ...acceptedStarts,
-    ...acceptedFocus,
-    ...pinnedTasks,
-  ];
-
-  for (final task in all) {
-    if (task.completed) continue;
-    byId.putIfAbsent(task.id, () => task);
-  }
-
-  return byId.values.toList(growable: false);
-}
-
 void _registerVisibleTasks(
   SelectionCubit selection,
   List<Task> tasks,
@@ -565,6 +621,16 @@ String? _valuePriorityLabel(BuildContext context, ValuePriority? priority) {
   };
 }
 
+final class _MyDayListEntry {
+  const _MyDayListEntry({
+    required this.item,
+    required this.showBadge,
+  });
+
+  final MyDayPlannedItem item;
+  final bool showBadge;
+}
+
 class _MyDayValueGroup {
   _MyDayValueGroup({
     required this.valueId,
@@ -573,7 +639,7 @@ class _MyDayValueGroup {
 
   final String? valueId;
   final Value? value;
-  final List<Task> tasks = <Task>[];
+  final List<_MyDayListEntry> entries = <_MyDayListEntry>[];
 }
 
 int _compareMyDayValueGroups(_MyDayValueGroup a, _MyDayValueGroup b) {
@@ -593,75 +659,140 @@ int _valuePriorityRank(ValuePriority priority) {
   };
 }
 
-List<TasklyRowSpec> _buildRows(
+TasklyBadgeData _badgeForBucket(
   BuildContext context,
-  List<Task> tasks, {
+  my_day.MyDayPickBucket bucket,
+) {
+  final scheme = Theme.of(context).colorScheme;
+  final l10n = context.l10n;
+
+  return switch (bucket) {
+    my_day.MyDayPickBucket.values => TasklyBadgeData(
+      label: l10n.myDayBadgeValues,
+      color: scheme.primary,
+      tone: TasklyBadgeTone.soft,
+    ),
+    my_day.MyDayPickBucket.routine => TasklyBadgeData(
+      label: l10n.myDayBadgeRoutine,
+      color: scheme.tertiary,
+      tone: TasklyBadgeTone.soft,
+    ),
+    my_day.MyDayPickBucket.due => TasklyBadgeData(
+      label: l10n.myDayBadgeDue,
+      color: scheme.error,
+      tone: TasklyBadgeTone.soft,
+    ),
+    my_day.MyDayPickBucket.starts => TasklyBadgeData(
+      label: l10n.myDayBadgeStarts,
+      color: scheme.secondary,
+      tone: TasklyBadgeTone.soft,
+    ),
+    my_day.MyDayPickBucket.manual => TasklyBadgeData(
+      label: l10n.myDayBadgeManual,
+      color: scheme.onSurfaceVariant,
+      tone: TasklyBadgeTone.outline,
+    ),
+  };
+}
+
+TasklyRowSpec _buildRoutineRow(
+  BuildContext context, {
+  required Routine routine,
+  required RoutineCadenceSnapshot snapshot,
+  required bool completed,
+  List<TasklyBadgeData> badges = const <TasklyBadgeData>[],
+  int depthOffset = 0,
+}) {
+  final data = buildRoutineRowData(
+    context,
+    routine: routine,
+    snapshot: snapshot,
+    completed: completed,
+    badges: badges,
+    labels: buildRoutineListLabels(context),
+  );
+
+  return TasklyRowSpec.routine(
+    key: 'myday-routine-${routine.id}',
+    data: data,
+    depth: depthOffset,
+    actions: TasklyRoutineRowActions(
+      onTap: completed
+          ? null
+          : () => context.read<MyDayBloc>().add(
+                MyDayRoutineCompletionRequested(routineId: routine.id),
+              ),
+      onEdit: () => Routing.toRoutineEdit(context, routine.id),
+    ),
+  );
+}
+
+TasklyRowSpec _buildTaskRowSpec(
+  BuildContext context,
+  Task task, {
+  List<TasklyBadgeData> badges = const <TasklyBadgeData>[],
   int depthOffset = 0,
 }) {
   final selection = context.read<SelectionCubit>();
   final selectionMode = selection.isSelectionMode;
+  final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
+  final key = SelectionKey(
+    entityType: EntityType.task,
+    entityId: task.id,
+  );
+  final isSelected = selection.isSelected(key);
 
-  return tasks
-      .map((task) {
-        final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
-        final key = SelectionKey(
-          entityType: EntityType.task,
-          entityId: task.id,
-        );
-        final isSelected = selection.isSelected(key);
+  final data = buildTaskRowData(
+    context,
+    task: task,
+    tileCapabilities: tileCapabilities,
+  );
 
-        final data = buildTaskRowData(
-          context,
-          task: task,
-          tileCapabilities: tileCapabilities,
-        );
+  final labels = TasklyTaskRowLabels(
+    pinnedSemanticLabel: context.l10n.pinnedSemanticLabel,
+  );
 
-        final labels = TasklyTaskRowLabels(
-          pinnedSemanticLabel: context.l10n.pinnedSemanticLabel,
-        );
+  final updatedData = TasklyTaskRowData(
+    id: data.id,
+    title: data.title,
+    completed: data.completed,
+    meta: data.meta,
+    leadingChip: data.leadingChip,
+    secondaryChips: data.secondaryChips,
+    badges: badges,
+    deemphasized: data.deemphasized,
+    checkboxSemanticLabel: data.checkboxSemanticLabel,
+    labels: labels,
+    pinned: task.isPinned,
+  );
 
-        final updatedData = TasklyTaskRowData(
-          id: data.id,
-          title: data.title,
-          completed: data.completed,
-          meta: data.meta,
-          leadingChip: data.leadingChip,
-          secondaryChips: data.secondaryChips,
-          deemphasized: data.deemphasized,
-          checkboxSemanticLabel: data.checkboxSemanticLabel,
-          labels: labels,
-          pinned: task.isPinned,
-        );
-
-        return TasklyRowSpec.task(
-          key: 'myday-accepted-${task.id}',
-          data: updatedData,
-          depth: depthOffset,
-          style: selectionMode
-              ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
-              : const TasklyTaskRowStyle.standard(),
-          actions: TasklyTaskRowActions(
-            onTap: () {
-              if (selection.shouldInterceptTapAsSelection()) {
-                selection.handleEntityTap(key);
-                return;
-              }
-              buildTaskOpenEditorHandler(context, task: task)();
-            },
-            onLongPress: () {
-              selection.enterSelectionMode(initialSelection: key);
-            },
-            onToggleSelected: () => selection.toggleSelection(
-              key,
-              extendRange: false,
-            ),
-            onToggleCompletion: buildTaskToggleCompletionHandler(
-              context,
-              task: task,
-              tileCapabilities: tileCapabilities,
-            ),
-          ),
-        );
-      })
-      .toList(growable: false);
+  return TasklyRowSpec.task(
+    key: 'myday-accepted-${task.id}',
+    data: updatedData,
+    depth: depthOffset,
+    style: selectionMode
+        ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
+        : const TasklyTaskRowStyle.standard(),
+    actions: TasklyTaskRowActions(
+      onTap: () {
+        if (selection.shouldInterceptTapAsSelection()) {
+          selection.handleEntityTap(key);
+          return;
+        }
+        buildTaskOpenEditorHandler(context, task: task)();
+      },
+      onLongPress: () {
+        selection.enterSelectionMode(initialSelection: key);
+      },
+      onToggleSelected: () => selection.toggleSelection(
+        key,
+        extendRange: false,
+      ),
+      onToggleCompletion: buildTaskToggleCompletionHandler(
+        context,
+        task: task,
+        tileCapabilities: tileCapabilities,
+      ),
+    ),
+  );
 }

@@ -245,6 +245,14 @@ sealed class TasklyRowSpec {
     required TasklyValueRowActions actions,
     TasklyValueRowPreset preset,
   }) = TasklyValueRowSpec;
+
+  const factory TasklyRowSpec.routine({
+    required String key,
+    required TasklyRoutineRowData data,
+    required TasklyRoutineRowActions actions,
+    TasklyRowEmphasis emphasis,
+    int depth,
+  }) = TasklyRoutineRowSpec;
 }
 
 final class TasklyHeaderRowSpec extends TasklyRowSpec {
@@ -373,6 +381,23 @@ final class TasklyValueRowSpec extends TasklyRowSpec {
 }
 
 enum TasklyRowEmphasis { none, overdue }
+
+enum TasklyBadgeTone { solid, outline, soft }
+
+@immutable
+final class TasklyBadgeData {
+  const TasklyBadgeData({
+    required this.label,
+    required this.color,
+    this.icon,
+    this.tone = TasklyBadgeTone.solid,
+  });
+
+  final String label;
+  final Color color;
+  final IconData? icon;
+  final TasklyBadgeTone tone;
+}
 
 sealed class TasklyTaskRowStyle {
   const TasklyTaskRowStyle();
@@ -569,6 +594,7 @@ final class TasklyTaskRowData {
     required this.meta,
     this.leadingChip,
     this.secondaryChips = const <ValueChipData>[],
+    this.badges = const <TasklyBadgeData>[],
     this.deemphasized = false,
     this.checkboxSemanticLabel,
     this.labels,
@@ -582,6 +608,7 @@ final class TasklyTaskRowData {
   final TasklyEntityMetaData meta;
   final ValueChipData? leadingChip;
   final List<ValueChipData> secondaryChips;
+  final List<TasklyBadgeData> badges;
   final bool deemphasized;
   final String? checkboxSemanticLabel;
   final TasklyTaskRowLabels? labels;
@@ -645,6 +672,95 @@ final class TasklyProjectRowData {
   final bool deemphasized;
   final IconData? groupLeadingIcon;
   final String? groupTrailingLabel;
+}
+
+enum TasklyRoutineStatusTone { onPace, tightWeek, catchUp, restWeek }
+
+@immutable
+final class TasklyRoutineRowData {
+  const TasklyRoutineRowData({
+    required this.id,
+    required this.title,
+    required this.targetLabel,
+    required this.remainingLabel,
+    required this.windowLabel,
+    required this.statusLabel,
+    required this.statusTone,
+    this.valueChip,
+    this.selected = false,
+    this.completed = false,
+    this.badges = const <TasklyBadgeData>[],
+    this.labels,
+  });
+
+  final String id;
+  final String title;
+  final String targetLabel;
+  final String remainingLabel;
+  final String windowLabel;
+  final String statusLabel;
+  final TasklyRoutineStatusTone statusTone;
+  final ValueChipData? valueChip;
+  final bool selected;
+  final bool completed;
+  final List<TasklyBadgeData> badges;
+  final TasklyRoutineRowLabels? labels;
+}
+
+@immutable
+final class TasklyRoutineRowLabels {
+  const TasklyRoutineRowLabels({
+    this.primaryActionLabel,
+    this.notTodayLabel,
+    this.laterThisWeekLabel,
+    this.skipPeriodLabel,
+    this.pauseLabel,
+    this.editLabel,
+  });
+
+  final String? primaryActionLabel;
+  final String? notTodayLabel;
+  final String? laterThisWeekLabel;
+  final String? skipPeriodLabel;
+  final String? pauseLabel;
+  final String? editLabel;
+}
+
+@immutable
+final class TasklyRoutineRowActions {
+  const TasklyRoutineRowActions({
+    this.onTap,
+    this.onPrimaryAction,
+    this.onNotToday,
+    this.onLaterThisWeek,
+    this.onSkipPeriod,
+    this.onPause,
+    this.onEdit,
+  });
+
+  final VoidCallback? onTap;
+  final VoidCallback? onPrimaryAction;
+  final VoidCallback? onNotToday;
+  final VoidCallback? onLaterThisWeek;
+  final VoidCallback? onSkipPeriod;
+  final VoidCallback? onPause;
+  final VoidCallback? onEdit;
+}
+
+final class TasklyRoutineRowSpec extends TasklyRowSpec {
+  const TasklyRoutineRowSpec({
+    required this.key,
+    required this.data,
+    required this.actions,
+    this.emphasis = TasklyRowEmphasis.none,
+    this.depth = 0,
+  });
+
+  final String key;
+  final TasklyRoutineRowData data;
+  final TasklyRoutineRowActions actions;
+  final TasklyRowEmphasis emphasis;
+  final int depth;
 }
 
 @immutable

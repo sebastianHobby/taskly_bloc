@@ -7,6 +7,7 @@ import 'package:taskly_ui/src/sections/value_distribution_section.dart';
 import 'package:taskly_ui/src/feed/taskly_feed_theme.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
 import 'package:taskly_ui/src/tiles/project_entity_tile.dart';
+import 'package:taskly_ui/src/tiles/routine_entity_tile.dart';
 import 'package:taskly_ui/src/tiles/task_entity_tile.dart';
 import 'package:taskly_ui/src/tiles/value_entity_tile.dart';
 
@@ -137,6 +138,7 @@ class TasklyFeedRenderer extends StatelessWidget {
       TasklyTaskRowSpec() => _TaskRow(row: row),
       TasklyProjectRowSpec() => _ProjectRow(row: row),
       TasklyValueRowSpec() => _ValueRow(row: row),
+      TasklyRoutineRowSpec() => _RoutineRow(row: row),
     };
 
     final key = switch (row) {
@@ -148,6 +150,7 @@ class TasklyFeedRenderer extends StatelessWidget {
       TasklyTaskRowSpec(:final key) => key,
       TasklyProjectRowSpec(:final key) => key,
       TasklyValueRowSpec(:final key) => key,
+      TasklyRoutineRowSpec(:final key) => key,
     };
 
     final depth = switch (row) {
@@ -159,6 +162,7 @@ class TasklyFeedRenderer extends StatelessWidget {
       TasklyTaskRowSpec(:final depth) => depth,
       TasklyProjectRowSpec(:final depth) => depth,
       TasklyValueRowSpec() => 0,
+      TasklyRoutineRowSpec(:final depth) => depth,
     };
 
     final indented = depth <= 0
@@ -270,6 +274,7 @@ double _spacingAfter(TasklyRowSpec row, TasklyFeedTheme feedTheme) {
     TasklyTaskRowSpec() => feedTheme.entityRowSpacing,
     TasklyProjectRowSpec() => feedTheme.entityRowSpacing,
     TasklyValueRowSpec() => feedTheme.entityRowSpacing,
+    TasklyRoutineRowSpec() => feedTheme.entityRowSpacing,
   };
 }
 
@@ -684,6 +689,20 @@ class _ValueRow extends StatelessWidget {
     return ValueEntityTile(
       model: row.data,
       preset: row.preset,
+      actions: row.actions,
+    );
+  }
+}
+
+class _RoutineRow extends StatelessWidget {
+  const _RoutineRow({required this.row});
+
+  final TasklyRoutineRowSpec row;
+
+  @override
+  Widget build(BuildContext context) {
+    return RoutineEntityTile(
+      model: row.data,
       actions: row.actions,
     );
   }

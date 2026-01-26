@@ -19,8 +19,9 @@ class ValueDistributionSection extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    final effectiveEntries =
-        entries.where((entry) => entry.count > 0).toList(growable: false);
+    final effectiveEntries = entries
+        .where((entry) => entry.count > 0)
+        .toList(growable: false);
     final sortedEntries = effectiveEntries.toList(growable: false)
       ..sort((a, b) => b.count.compareTo(a.count));
 
@@ -234,9 +235,9 @@ class _MoreValuesPill extends StatelessWidget {
         child: Text(
           '+$count',
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: scheme.onSurface,
-              ),
+            fontWeight: FontWeight.w800,
+            color: scheme.onSurface,
+          ),
         ),
       ),
     );
@@ -262,8 +263,8 @@ class _MoreValuesPill extends StatelessWidget {
               trailing: Text(
                 entry.count.toString(),
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             );
           },

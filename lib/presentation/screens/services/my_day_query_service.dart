@@ -3,6 +3,7 @@ import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 
 import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
@@ -14,6 +15,7 @@ final class MyDayQueryService {
     required TaskRepositoryContract taskRepository,
     required ValueRepositoryContract valueRepository,
     required MyDayRepositoryContract myDayRepository,
+    required RoutineRepositoryContract routineRepository,
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
     MyDayViewModelBuilder viewModelBuilder = const MyDayViewModelBuilder(),
@@ -21,6 +23,7 @@ final class MyDayQueryService {
        _taskRepository = taskRepository,
        _valueRepository = valueRepository,
        _myDayRepository = myDayRepository,
+       _routineRepository = routineRepository,
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
        _viewModelBuilder = viewModelBuilder;
@@ -29,6 +32,7 @@ final class MyDayQueryService {
   final TaskRepositoryContract _taskRepository;
   final ValueRepositoryContract _valueRepository;
   final MyDayRepositoryContract _myDayRepository;
+  final RoutineRepositoryContract _routineRepository;
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
   final MyDayViewModelBuilder _viewModelBuilder;
@@ -68,14 +72,43 @@ final class MyDayQueryService {
           _taskRepository.watchAll(TaskQuery.all()),
         ]);
 
-        return Rx.combineLatest2<List<Task>, List<Value>, MyDayViewModel>(
+        final routines$ = Rx.concat([
+          Stream.fromFuture(
+            _routineRepository.getAll(includeInactive: true),
+          ),
+          _routineRepository.watchAll(includeInactive: true),
+        ]);
+        final completions$ = Rx.concat([
+          Stream.fromFuture(_routineRepository.getCompletions()),
+          _routineRepository.watchCompletions(),
+        ]);
+        final skips$ = Rx.concat([
+          Stream.fromFuture(_routineRepository.getSkips()),
+          _routineRepository.watchSkips(),
+        ]);
+
+        return Rx.combineLatest5<
+          List<Task>,
+          List<Value>,
+          List<Routine>,
+          List<RoutineCompletion>,
+          List<RoutineSkip>,
+          MyDayViewModel
+        >(
           tasks$,
           values$,
-          (tasks, values) => _viewModelBuilder.fromDailyPicks(
-            dayPicks: dayPicks,
-            tasks: tasks,
-            values: values,
-          ),
+          routines$,
+          completions$,
+          skips$,
+          (tasks, values, routines, completions, skips) =>
+              _viewModelBuilder.fromDailyPicks(
+                dayPicks: dayPicks,
+                tasks: tasks,
+                values: values,
+                routines: routines,
+                routineCompletions: completions,
+                routineSkips: skips,
+              ),
         );
       }
 

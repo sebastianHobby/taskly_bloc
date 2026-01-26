@@ -1,28 +1,29 @@
 import 'dart:math' as math;
 
 import 'package:taskly_domain/src/allocation/engine/allocation_strategy.dart';
+import 'package:taskly_domain/src/allocation/model/allocation_config.dart';
 import 'package:taskly_domain/src/allocation/model/allocation_result.dart';
+import 'package:taskly_domain/src/core/model/project.dart';
 import 'package:taskly_domain/src/core/model/task.dart';
+import 'package:taskly_domain/src/projects/model/project_anchor_state.dart';
+import 'package:taskly_domain/src/projects/model/project_next_action.dart';
 import 'package:taskly_domain/src/services/values/effective_values.dart';
+import 'package:taskly_domain/time.dart';
 
-/// Single, calm, values-led allocator used for "Suggested" picks.
-///
-/// Key properties:
-/// - Proportional value distribution based on category weights.
-/// - Optional bounded value balancing via "quota repair" (Q2).
-/// - Calm tie-break ordering (no multiplicative urgency/priority weighting).
+/// Values-first allocator that anchors on projects, then selects tasks.
 final class SuggestedPicksEngine implements AllocationStrategy {
   @override
-  String get strategyName => 'SuggestedPicksEngine';
+  String get strategyName => 'ProjectFirstAnchors';
 
   @override
   String get description =>
-      'Allocates tasks proportionally by value and optionally rebalances toward '
-      'neglected values using bounded quota repair.';
+      'Allocates anchor projects by value priority, then selects tasks within '
+      'each anchor (next actions first, then calm tie-break rules).';
 
   @override
   AllocationResult allocate(AllocationParameters parameters) {
     final tasks = parameters.tasks;
+    final projects = parameters.projects;
     final categories = parameters.categories;
     final totalLimit = parameters.maxTasks;
     final todayDayKeyUtc = parameters.todayDayKeyUtc;
@@ -54,7 +55,7 @@ final class SuggestedPicksEngine implements AllocationStrategy {
         allocatedTasks: [],
         excludedTasks: [],
         reasoning: AllocationReasoning(
-          strategyUsed: 'SuggestedPicksEngine',
+          strategyUsed: 'ProjectFirstAnchors',
           categoryAllocations: {},
           categoryWeights: {},
           explanation: 'No categories with weights defined',
@@ -63,149 +64,173 @@ final class SuggestedPicksEngine implements AllocationStrategy {
     }
 
     final (
-      tasksByCategory,
-      tasksWithoutCategory,
+      tasksByProject,
+      projectsByValue,
       excludedPre,
-    ) = _groupTasksByCategory(
+    ) = _groupEligible(
       tasks,
+      projects: projects,
       categories: categories,
+      readinessFilter: parameters.readinessFilter,
     );
-
-    final baseQuotas = _computeProportionalQuotas(
-      categories: categories,
-      totalWeight: totalWeight,
-      totalLimit: totalLimit,
-    );
-
-    final baseSelection = _selectByQuotas(
-      tasksByCategory: tasksByCategory,
-      quotas: baseQuotas,
-      parameters: parameters,
-    );
-
-    final bool keepValuesInBalance =
-        parameters.keepValuesInBalance &&
-        parameters.completionsByValue.isNotEmpty;
-
-    final finalQuotas = keepValuesInBalance
-        ? _applyBoundedQuotaRepairQ2(
-            baseQuotas: baseQuotas,
-            tasksByCategory: tasksByCategory,
-            categories: categories,
-            totalWeight: totalWeight,
-            suggestedCount: totalLimit,
-            completionsByValue: parameters.completionsByValue,
-          )
-        : baseQuotas;
-
-    final selection = _selectByQuotas(
-      tasksByCategory: tasksByCategory,
-      quotas: finalQuotas,
-      parameters: parameters,
-    );
-
-    final repairedSelectionIds = keepValuesInBalance
-        ? selection.selectedTaskIds.difference(baseSelection.selectedTaskIds)
-        : const <String>{};
-
-    final allocatedTasks = <AllocatedTask>[];
-    for (final allocated in selection.selected) {
-      final reasonCodes = _buildReasonCodes(
-        task: allocated.task,
-        todayDayKeyUtc: todayDayKeyUtc,
-        urgencyThresholdDays: parameters.taskUrgencyThresholdDays,
-        isBalancePick: repairedSelectionIds.contains(allocated.task.id),
-      );
-
-      allocatedTasks.add(
-        AllocatedTask(
-          task: allocated.task,
-          qualifyingValueId: allocated.categoryId,
-          allocationScore: categories[allocated.categoryId] ?? 0,
-          reasonCodes: reasonCodes,
-        ),
-      );
-    }
-
-    final excludedTasks = <ExcludedTask>[
-      ...excludedPre,
-      ..._excludeUnselectedByCategory(
-        tasksByCategory: tasksByCategory,
-        selectedTaskIds: selection.selectedTaskIds,
-        quotas: finalQuotas,
-        parameters: parameters,
-      ),
-      ..._excludeWithoutCategory(
-        tasksWithoutCategory,
-        reason: 'Task has no matching priority category',
-        todayDayKeyUtc: todayDayKeyUtc,
-        urgencyThresholdDays: parameters.taskUrgencyThresholdDays,
-      ),
-    ];
-
-    return AllocationResult(
-      allocatedTasks: allocatedTasks,
-      excludedTasks: excludedTasks,
-      reasoning: AllocationReasoning(
-        strategyUsed: strategyName,
-        categoryAllocations: finalQuotas,
-        categoryWeights: categories,
-        explanation: keepValuesInBalance
-            ? 'Proportional allocation with bounded value balancing'
-            : 'Proportional allocation',
-      ),
-    );
-  }
-
-  ({
-    List<_SelectedTask> selected,
-    Set<String> selectedTaskIds,
-  })
-  _selectByQuotas({
-    required Map<String, List<Task>> tasksByCategory,
-    required Map<String, int> quotas,
-    required AllocationParameters parameters,
-  }) {
-    final todayDayKeyUtc = parameters.todayDayKeyUtc;
-
-    final selected = <_SelectedTask>[];
-    final selectedIds = <String>{};
-
-    for (final entry in quotas.entries) {
-      final categoryId = entry.key;
-      final quota = entry.value;
-
-      final available = List<Task>.from(
-        tasksByCategory[categoryId] ?? const [],
-      );
-      if (available.isEmpty || quota <= 0) continue;
-
-      available.sort(
-        (a, b) => _compareTasksCalm(
-          a,
-          b,
-          todayDayKeyUtc: todayDayKeyUtc,
-          urgencyThresholdDays: parameters.taskUrgencyThresholdDays,
-        ),
-      );
-
-      final takeCount = math.min(quota, available.length);
-      for (var i = 0; i < takeCount; i++) {
-        final task = available[i];
-        selected.add(_SelectedTask(task: task, categoryId: categoryId));
-        selectedIds.add(task.id);
+    final projectValueById = <String, String>{};
+    for (final entry in projectsByValue.entries) {
+      for (final project in entry.value) {
+        projectValueById[project.id] = entry.key;
       }
     }
 
-    // Fill remaining slots (if some categories are empty) with best remaining.
-    final remainingSlots = parameters.maxTasks - selected.length;
-    if (remainingSlots > 0) {
+    if (projectsByValue.isEmpty) {
+      return AllocationResult(
+        allocatedTasks: const [],
+        excludedTasks: excludedPre,
+        reasoning: AllocationReasoning(
+          strategyUsed: strategyName,
+          categoryAllocations: const {},
+          categoryWeights: categories,
+          explanation: 'No eligible projects for allocation',
+        ),
+      );
+    }
+
+    final anchorCount = math.max(0, parameters.anchorCount);
+    if (anchorCount == 0) {
+      return AllocationResult(
+        allocatedTasks: const [],
+        excludedTasks: excludedPre,
+        reasoning: AllocationReasoning(
+          strategyUsed: strategyName,
+          categoryAllocations: const {},
+          categoryWeights: categories,
+          explanation: 'Anchor count is zero',
+        ),
+      );
+    }
+
+    final availableValues = {
+      for (final entry in projectsByValue.entries)
+        if (entry.value.isNotEmpty) entry.key: categories[entry.key] ?? 0,
+    };
+    final availableWeight = availableValues.values.fold<double>(
+      0,
+      (sum, w) => sum + w,
+    );
+    if (availableWeight <= 0) {
+      return AllocationResult(
+        allocatedTasks: const [],
+        excludedTasks: excludedPre,
+        reasoning: AllocationReasoning(
+          strategyUsed: strategyName,
+          categoryAllocations: const {},
+          categoryWeights: categories,
+          explanation: 'No eligible values for allocation',
+        ),
+      );
+    }
+
+    final baseQuotas = _computeProportionalQuotas(
+      categories: availableValues,
+      totalWeight: availableWeight,
+      totalLimit: anchorCount,
+    );
+
+    final keepValuesInBalance =
+        parameters.keepValuesInBalance &&
+        parameters.completionsByValue.isNotEmpty;
+
+    final (
+      repairedQuotas,
+      repairedCategories,
+    ) = keepValuesInBalance
+        ? _applyBoundedQuotaRepairQ2(
+            baseQuotas: baseQuotas,
+            availableCounts: {
+              for (final entry in projectsByValue.entries)
+                entry.key: entry.value.length,
+            },
+            categories: availableValues,
+            totalWeight: availableWeight,
+            suggestedCount: anchorCount,
+            completionsByValue: parameters.completionsByValue,
+          )
+        : (baseQuotas, const <String>{});
+
+    final adjustedQuotas = _applyRoutineSelectionAdjustment(
+      quotas: repairedQuotas,
+      routineSelectionsByValue: parameters.routineSelectionsByValue,
+    );
+
+    final anchorByProjectId = {
+      for (final entry in parameters.projectAnchorStates)
+        entry.projectId: entry,
+    };
+    final totalEligibleProjects = projectsByValue.values.fold<int>(
+      0,
+      (sum, list) => sum + list.length,
+    );
+    final targetAnchorCount = math.min(anchorCount, totalEligibleProjects);
+
+    final anchorSelection = _selectAnchors(
+      projectsByValue: projectsByValue,
+      quotas: adjustedQuotas,
+      todayDayKeyUtc: todayDayKeyUtc,
+      rotationPressureDays: parameters.rotationPressureDays,
+      anchorByProjectId: anchorByProjectId,
+      targetAnchorCount: targetAnchorCount,
+    );
+
+    final anchorProjectIds = anchorSelection.map((a) => a.project.id).toList();
+    final maxAnchorTasks = math.max(0, totalLimit - parameters.freeSlots);
+    final selected = <_SelectedTask>[];
+    final selectedTaskIds = <String>{};
+
+    final nextActionsByProject = _groupNextActions(
+      parameters.projectNextActions,
+    );
+
+    var remainingAnchorSlots = maxAnchorTasks;
+    for (final anchor in anchorSelection) {
+      if (remainingAnchorSlots <= 0) break;
+      final tasksForProject = tasksByProject[anchor.project.id] ?? const [];
+      if (tasksForProject.isEmpty) continue;
+
+      final nextActions = nextActionsByProject[anchor.project.id] ?? const [];
+      final limit = math.min(
+        parameters.tasksPerAnchorMax,
+        remainingAnchorSlots,
+      );
+      final selectedForProject = _selectTasksForProject(
+        tasksForProject,
+        nextActions: nextActions,
+        policy: parameters.nextActionPolicy,
+        maxCount: limit,
+        todayDayKeyUtc: todayDayKeyUtc,
+        urgencyThresholdDays: parameters.taskUrgencyThresholdDays,
+      );
+
+      for (final task in selectedForProject) {
+        if (selectedTaskIds.contains(task.id)) continue;
+        selected.add(
+          _SelectedTask(task: task, categoryId: anchor.valueId),
+        );
+        selectedTaskIds.add(task.id);
+        remainingAnchorSlots -= 1;
+        if (remainingAnchorSlots <= 0) break;
+      }
+    }
+
+    final remainingFreeSlots = math.min(
+      parameters.freeSlots,
+      totalLimit - selected.length,
+    );
+    if (remainingFreeSlots > 0) {
       final remaining = <_SelectedTask>[];
-      for (final entry in tasksByCategory.entries) {
-        final categoryId = entry.key;
+      for (final entry in tasksByProject.entries) {
+        final projectId = entry.key;
+        final valueId = projectValueById[projectId] ?? '';
         for (final task in entry.value) {
-          if (selectedIds.contains(task.id)) continue;
-          remaining.add(_SelectedTask(task: task, categoryId: categoryId));
+          if (selectedTaskIds.contains(task.id)) continue;
+          remaining.add(_SelectedTask(task: task, categoryId: valueId));
         }
       }
 
@@ -218,59 +243,58 @@ final class SuggestedPicksEngine implements AllocationStrategy {
         ),
       );
 
-      for (final pick in remaining.take(remainingSlots)) {
+      for (final pick in remaining.take(remainingFreeSlots)) {
         selected.add(pick);
-        selectedIds.add(pick.task.id);
+        selectedTaskIds.add(pick.task.id);
       }
     }
 
-    return (selected: selected, selectedTaskIds: selectedIds);
-  }
+    final allocatedTasks = <AllocatedTask>[];
+    for (final allocated in selected) {
+      final reasonCodes = _buildReasonCodes(
+        task: allocated.task,
+        todayDayKeyUtc: todayDayKeyUtc,
+        urgencyThresholdDays: parameters.taskUrgencyThresholdDays,
+        isBalancePick: repairedCategories.contains(allocated.categoryId),
+      );
 
-  (
-    Map<String, List<Task>> tasksByCategory,
-    List<Task> tasksWithoutCategory,
-    List<ExcludedTask> excludedPre,
-  )
-  _groupTasksByCategory(
-    List<Task> tasks, {
-    required Map<String, double> categories,
-  }) {
-    final tasksByCategory = <String, List<Task>>{};
-    final tasksWithoutCategory = <Task>[];
-    final excludedPre = <ExcludedTask>[];
+      final qualifyingValueId = allocated.categoryId.isEmpty
+          ? (allocated.task.effectivePrimaryValueId ?? '')
+          : allocated.categoryId;
 
-    for (final task in tasks) {
-      if (task.completed) {
-        excludedPre.add(
-          ExcludedTask(
-            task: task,
-            reason: 'Task is completed',
-            exclusionType: ExclusionType.completed,
-          ),
-        );
-        continue;
-      }
-
-      // Use effective values (task values override project, else inherit).
-      final effectiveValueIds = task.effectiveValues.map((v) => v.id).toSet();
-
-      // Match categories from parameters.
-      final matched = categories.keys
-          .where(effectiveValueIds.contains)
-          .toList();
-      if (matched.isEmpty) {
-        tasksWithoutCategory.add(task);
-        continue;
-      }
-
-      // Assign to highest-weighted matching category.
-      matched.sort((a, b) => categories[b]!.compareTo(categories[a]!));
-      final categoryId = matched.first;
-      tasksByCategory.putIfAbsent(categoryId, () => []).add(task);
+      allocatedTasks.add(
+        AllocatedTask(
+          task: allocated.task,
+          qualifyingValueId: qualifyingValueId,
+          allocationScore: categories[qualifyingValueId] ?? 0,
+          reasonCodes: reasonCodes,
+        ),
+      );
     }
 
-    return (tasksByCategory, tasksWithoutCategory, excludedPre);
+    final excludedTasks = <ExcludedTask>[
+      ...excludedPre,
+      ..._excludeUnselected(
+        tasksByProject: tasksByProject,
+        selectedTaskIds: selectedTaskIds,
+        todayDayKeyUtc: todayDayKeyUtc,
+        urgencyThresholdDays: parameters.taskUrgencyThresholdDays,
+      ),
+    ];
+
+    return AllocationResult(
+      allocatedTasks: allocatedTasks,
+      excludedTasks: excludedTasks,
+      anchorProjectIds: anchorProjectIds,
+      reasoning: AllocationReasoning(
+        strategyUsed: strategyName,
+        categoryAllocations: adjustedQuotas,
+        categoryWeights: categories,
+        explanation: keepValuesInBalance
+            ? 'Project-first anchors with bounded value balancing'
+            : 'Project-first anchors',
+      ),
+    );
   }
 
   Map<String, int> _computeProportionalQuotas({
@@ -311,25 +335,21 @@ final class SuggestedPicksEngine implements AllocationStrategy {
   /// Q2 bounded quota repair:
   ///
   /// maxMoves = clamp(round(suggestedCount * 0.25 * topNeglect), 0, 3)
-  Map<String, int> _applyBoundedQuotaRepairQ2({
+  (Map<String, int>, Set<String>) _applyBoundedQuotaRepairQ2({
     required Map<String, int> baseQuotas,
-    required Map<String, List<Task>> tasksByCategory,
+    required Map<String, int> availableCounts,
     required Map<String, double> categories,
     required double totalWeight,
     required int suggestedCount,
     required Map<String, int> completionsByValue,
   }) {
-    // Only consider categories that have at least one candidate task.
-    final availableCountByCategory = <String, int>{
-      for (final entry in categories.entries)
-        entry.key: (tasksByCategory[entry.key]?.length ?? 0),
-    };
-
     final relevantCategories = categories.keys
-        .where((id) => (availableCountByCategory[id] ?? 0) > 0)
+        .where((id) => (availableCounts[id] ?? 0) > 0)
         .toList(growable: false);
 
-    if (relevantCategories.length <= 1) return baseQuotas;
+    if (relevantCategories.length <= 1) {
+      return (baseQuotas, const <String>{});
+    }
 
     final totalCompletions = relevantCategories.fold<int>(
       0,
@@ -337,7 +357,9 @@ final class SuggestedPicksEngine implements AllocationStrategy {
     );
 
     // If we have no completion data, we can't honestly claim "neglect".
-    if (totalCompletions <= 0) return baseQuotas;
+    if (totalCompletions <= 0) {
+      return (baseQuotas, const <String>{});
+    }
 
     final deficits = <String, double>{};
     var topNeglect = 0.0;
@@ -351,9 +373,10 @@ final class SuggestedPicksEngine implements AllocationStrategy {
     }
 
     final maxMoves = (suggestedCount * 0.25 * topNeglect).round().clamp(0, 3);
-    if (maxMoves <= 0) return baseQuotas;
+    if (maxMoves <= 0) return (baseQuotas, const <String>{});
 
     final repairedQuotas = Map<String, int>.from(baseQuotas);
+    final boosted = <String>{};
 
     String? pickReceiver() {
       final sorted = deficits.entries.toList()
@@ -362,7 +385,7 @@ final class SuggestedPicksEngine implements AllocationStrategy {
       for (final entry in sorted) {
         final categoryId = entry.key;
         final quota = repairedQuotas[categoryId] ?? 0;
-        final available = availableCountByCategory[categoryId] ?? 0;
+        final available = availableCounts[categoryId] ?? 0;
         if (quota < available) return categoryId;
       }
       return null;
@@ -389,9 +412,304 @@ final class SuggestedPicksEngine implements AllocationStrategy {
 
       repairedQuotas[receiver] = (repairedQuotas[receiver] ?? 0) + 1;
       repairedQuotas[donor] = (repairedQuotas[donor] ?? 0) - 1;
+      boosted.add(receiver);
     }
 
-    return repairedQuotas;
+    return (repairedQuotas, boosted);
+  }
+
+  Map<String, int> _applyRoutineSelectionAdjustment({
+    required Map<String, int> quotas,
+    required Map<String, int> routineSelectionsByValue,
+  }) {
+    if (routineSelectionsByValue.isEmpty) return quotas;
+
+    final adjusted = Map<String, int>.from(quotas);
+
+    for (final entry in routineSelectionsByValue.entries) {
+      final valueId = entry.key;
+      final count = entry.value;
+      if (!adjusted.containsKey(valueId) || count <= 0) continue;
+      adjusted[valueId] = math.max(0, (adjusted[valueId] ?? 0) - count);
+    }
+
+    return adjusted;
+  }
+
+  ({
+    Map<String, List<Task>> tasksByProject,
+    Map<String, List<Project>> projectsByValue,
+    List<ExcludedTask> excludedPre,
+  })
+  _groupEligible(
+    List<Task> tasks, {
+    required List<Project> projects,
+    required Map<String, double> categories,
+    required bool readinessFilter,
+  }) {
+    final projectsById = {for (final project in projects) project.id: project};
+    final tasksByProject = <String, List<Task>>{};
+    final excludedPre = <ExcludedTask>[];
+
+    for (final task in tasks) {
+      if (task.completed) {
+        excludedPre.add(
+          ExcludedTask(
+            task: task,
+            reason: 'Task is completed',
+            exclusionType: ExclusionType.completed,
+          ),
+        );
+        continue;
+      }
+
+      final projectId = task.projectId;
+      if (projectId == null) {
+        excludedPre.add(
+          ExcludedTask(
+            task: task,
+            reason: 'Task has no project',
+            exclusionType: ExclusionType.noCategory,
+          ),
+        );
+        continue;
+      }
+
+      final project = projectsById[projectId];
+      if (project == null || project.completed) {
+        excludedPre.add(
+          ExcludedTask(
+            task: task,
+            reason: 'Project is unavailable',
+            exclusionType: ExclusionType.completed,
+          ),
+        );
+        continue;
+      }
+
+      if (project.primaryValueId == null ||
+          !categories.containsKey(project.primaryValueId)) {
+        excludedPre.add(
+          ExcludedTask(
+            task: task,
+            reason: 'Project has no value priority',
+            exclusionType: ExclusionType.noCategory,
+          ),
+        );
+        continue;
+      }
+
+      tasksByProject.putIfAbsent(projectId, () => []).add(task);
+    }
+
+    final projectsByValue = <String, List<Project>>{};
+    for (final project in projects) {
+      if (project.completed) continue;
+      final valueId = project.primaryValueId;
+      if (valueId == null || !categories.containsKey(valueId)) continue;
+
+      final tasksForProject = tasksByProject[project.id] ?? const [];
+      if (readinessFilter && tasksForProject.isEmpty) continue;
+
+      projectsByValue.putIfAbsent(valueId, () => []).add(project);
+    }
+
+    return (
+      tasksByProject: tasksByProject,
+      projectsByValue: projectsByValue,
+      excludedPre: excludedPre,
+    );
+  }
+
+  List<_AnchorProject> _selectAnchors({
+    required Map<String, List<Project>> projectsByValue,
+    required Map<String, int> quotas,
+    required DateTime todayDayKeyUtc,
+    required int rotationPressureDays,
+    required Map<String, ProjectAnchorState> anchorByProjectId,
+    required int targetAnchorCount,
+  }) {
+    final anchors = <_AnchorProject>[];
+    final selectedProjectIds = <String>{};
+
+    final valueOrder = quotas.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    for (final entry in valueOrder) {
+      final valueId = entry.key;
+      final quota = entry.value;
+      if (quota <= 0) continue;
+
+      final available = List<Project>.from(
+        projectsByValue[valueId] ?? const [],
+      );
+      available.sort(
+        (a, b) => _compareProjects(
+          a,
+          b,
+          todayDayKeyUtc: todayDayKeyUtc,
+          rotationPressureDays: rotationPressureDays,
+          anchorByProjectId: anchorByProjectId,
+        ),
+      );
+
+      for (final project in available) {
+        if (anchors.length >= quotas.values.fold<int>(0, (s, v) => s + v)) {
+          break;
+        }
+        if (selectedProjectIds.contains(project.id)) continue;
+        anchors.add(_AnchorProject(project: project, valueId: valueId));
+        selectedProjectIds.add(project.id);
+        if (anchors.where((a) => a.valueId == valueId).length >= quota) {
+          break;
+        }
+      }
+    }
+
+    if (anchors.length < targetAnchorCount) {
+      final remaining = <_AnchorProject>[];
+      for (final entry in projectsByValue.entries) {
+        for (final project in entry.value) {
+          if (selectedProjectIds.contains(project.id)) continue;
+          remaining.add(
+            _AnchorProject(project: project, valueId: entry.key),
+          );
+        }
+      }
+
+      remaining.sort(
+        (a, b) => _compareProjects(
+          a.project,
+          b.project,
+          todayDayKeyUtc: todayDayKeyUtc,
+          rotationPressureDays: rotationPressureDays,
+          anchorByProjectId: anchorByProjectId,
+        ),
+      );
+
+      for (final candidate in remaining) {
+        if (anchors.length >= targetAnchorCount) break;
+        if (selectedProjectIds.contains(candidate.project.id)) continue;
+        anchors.add(candidate);
+        selectedProjectIds.add(candidate.project.id);
+      }
+    }
+
+    return anchors;
+  }
+
+  Map<String, List<ProjectNextAction>> _groupNextActions(
+    List<ProjectNextAction> actions,
+  ) {
+    final grouped = <String, List<ProjectNextAction>>{};
+    for (final action in actions) {
+      grouped.putIfAbsent(action.projectId, () => []).add(action);
+    }
+
+    for (final entry in grouped.entries) {
+      entry.value.sort((a, b) => a.rank.compareTo(b.rank));
+    }
+
+    return grouped;
+  }
+
+  List<Task> _selectTasksForProject(
+    List<Task> tasks, {
+    required List<ProjectNextAction> nextActions,
+    required NextActionPolicy policy,
+    required int maxCount,
+    required DateTime todayDayKeyUtc,
+    required int urgencyThresholdDays,
+  }) {
+    if (maxCount <= 0 || tasks.isEmpty) return const [];
+
+    final tasksById = {for (final task in tasks) task.id: task};
+    final selected = <Task>[];
+    final selectedIds = <String>{};
+
+    final useNextActions =
+        policy != NextActionPolicy.off && nextActions.isNotEmpty;
+
+    if (useNextActions) {
+      for (final action in nextActions) {
+        final task = tasksById[action.taskId];
+        if (task == null) continue;
+        selected.add(task);
+        selectedIds.add(task.id);
+        if (selected.length >= maxCount) return selected;
+      }
+    }
+
+    final remaining = tasks
+        .where((t) => !selectedIds.contains(t.id))
+        .toList(growable: false)
+      ..sort(
+        (a, b) => _compareTasksCalm(
+          a,
+          b,
+          todayDayKeyUtc: todayDayKeyUtc,
+          urgencyThresholdDays: urgencyThresholdDays,
+        ),
+      );
+
+    for (final task in remaining) {
+      if (selected.length >= maxCount) break;
+      selected.add(task);
+      selectedIds.add(task.id);
+    }
+
+    return selected;
+  }
+
+  int _compareProjects(
+    Project a,
+    Project b, {
+    required DateTime todayDayKeyUtc,
+    required int rotationPressureDays,
+    required Map<String, ProjectAnchorState> anchorByProjectId,
+  }) {
+    final aDeadline = a.deadlineDate;
+    final bDeadline = b.deadlineDate;
+    if (aDeadline != null || bDeadline != null) {
+      if (aDeadline == null) return 1;
+      if (bDeadline == null) return -1;
+      final c = aDeadline.compareTo(bDeadline);
+      if (c != 0) return c;
+    }
+
+    final aPriority = a.priority;
+    final bPriority = b.priority;
+    if (aPriority != null || bPriority != null) {
+      if (aPriority == null) return 1;
+      if (bPriority == null) return -1;
+      final c = aPriority.compareTo(bPriority);
+      if (c != 0) return c;
+    }
+
+    final aIdleDays = _daysSince(a.lastProgressAt, todayDayKeyUtc);
+    final bIdleDays = _daysSince(b.lastProgressAt, todayDayKeyUtc);
+    if (aIdleDays != bIdleDays) {
+      return bIdleDays.compareTo(aIdleDays);
+    }
+
+    if (rotationPressureDays > 0) {
+      final aAnchorDays = _daysSince(
+        anchorByProjectId[a.id]?.lastAnchoredAtUtc,
+        todayDayKeyUtc,
+      );
+      final bAnchorDays = _daysSince(
+        anchorByProjectId[b.id]?.lastAnchoredAtUtc,
+        todayDayKeyUtc,
+      );
+      final aPressure = aAnchorDays >= rotationPressureDays;
+      final bPressure = bAnchorDays >= rotationPressureDays;
+      if (aPressure != bPressure) return aPressure ? -1 : 1;
+      if (aAnchorDays != bAnchorDays) {
+        return bAnchorDays.compareTo(aAnchorDays);
+      }
+    }
+
+    return a.name.compareTo(b.name);
   }
 
   int _compareTasksCalm(
@@ -436,7 +754,21 @@ final class SuggestedPicksEngine implements AllocationStrategy {
     final createdC = a.createdAt.compareTo(b.createdAt);
     if (createdC != 0) return createdC;
 
+    final aStart = a.startDate;
+    final bStart = b.startDate;
+    if (aStart != null || bStart != null) {
+      if (aStart == null) return 1;
+      if (bStart == null) return -1;
+      final c = aStart.compareTo(bStart);
+      if (c != 0) return c;
+    }
+
     return a.name.compareTo(b.name);
+  }
+
+  int _daysSince(DateTime? date, DateTime todayDayKeyUtc) {
+    if (date == null) return 9999;
+    return todayDayKeyUtc.difference(dateOnly(date)).inDays;
   }
 
   bool _isUrgent(
@@ -493,32 +825,26 @@ final class SuggestedPicksEngine implements AllocationStrategy {
         .toList(growable: false);
   }
 
-  List<ExcludedTask> _excludeUnselectedByCategory({
-    required Map<String, List<Task>> tasksByCategory,
+  List<ExcludedTask> _excludeUnselected({
+    required Map<String, List<Task>> tasksByProject,
     required Set<String> selectedTaskIds,
-    required Map<String, int> quotas,
-    required AllocationParameters parameters,
+    required DateTime todayDayKeyUtc,
+    required int urgencyThresholdDays,
   }) {
     final excluded = <ExcludedTask>[];
 
-    for (final entry in quotas.entries) {
-      final categoryId = entry.key;
-      final allocation = entry.value;
-      final available = tasksByCategory[categoryId] ?? const [];
-      if (available.isEmpty) continue;
-
-      // Exclude all tasks in category that weren't selected.
-      for (final task in available) {
+    for (final entry in tasksByProject.entries) {
+      for (final task in entry.value) {
         if (selectedTaskIds.contains(task.id)) continue;
         excluded.add(
           ExcludedTask(
             task: task,
-            reason: 'Category limit reached ($allocation tasks)',
+            reason: 'Anchor quota reached',
             exclusionType: ExclusionType.categoryLimitReached,
             isUrgent: _isUrgent(
               task,
-              parameters.taskUrgencyThresholdDays,
-              todayDayKeyUtc: parameters.todayDayKeyUtc,
+              urgencyThresholdDays,
+              todayDayKeyUtc: todayDayKeyUtc,
             ),
           ),
         );
@@ -527,28 +853,13 @@ final class SuggestedPicksEngine implements AllocationStrategy {
 
     return excluded;
   }
+}
 
-  List<ExcludedTask> _excludeWithoutCategory(
-    List<Task> tasks, {
-    required String reason,
-    required DateTime todayDayKeyUtc,
-    required int urgencyThresholdDays,
-  }) {
-    return tasks
-        .map(
-          (t) => ExcludedTask(
-            task: t,
-            reason: reason,
-            exclusionType: ExclusionType.noCategory,
-            isUrgent: _isUrgent(
-              t,
-              urgencyThresholdDays,
-              todayDayKeyUtc: todayDayKeyUtc,
-            ),
-          ),
-        )
-        .toList(growable: false);
-  }
+final class _AnchorProject {
+  const _AnchorProject({required this.project, required this.valueId});
+
+  final Project project;
+  final String valueId;
 }
 
 final class _SelectedTask {

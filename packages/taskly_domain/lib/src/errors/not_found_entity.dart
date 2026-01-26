@@ -5,4 +5,5 @@ enum NotFoundEntity {
   task,
   project,
   value,
+  routine,
 }

@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_domain/src/settings/model/app_theme_mode.dart';
+import 'package:taskly_domain/src/settings/model/my_day_plan_flow.dart';
 
 part 'global_settings.freezed.dart';
 
@@ -36,6 +37,9 @@ abstract class GlobalSettings with _$GlobalSettings {
     /// is enabled.
     @Default(true) bool myDayShowAvailableToStart,
 
+    /// Plan My Day wizard flow preset.
+    @Default(MyDayPlanFlow.valuesFirst) MyDayPlanFlow myDayPlanFlow,
+
     /// Weekly review scheduling.
     @Default(true) bool weeklyReviewEnabled,
     @Default(GlobalSettings.defaultWeeklyReviewDayOfWeek)
@@ -59,6 +63,7 @@ abstract class GlobalSettings with _$GlobalSettings {
     @Default(true) bool maintenanceDueSoonEnabled,
     @Default(true) bool maintenanceStaleEnabled,
     @Default(true) bool maintenanceFrequentSnoozedEnabled,
+    @Default(true) bool maintenanceMissingNextActionsEnabled,
     @Default(1.0) double textScaleFactor,
     @Default(false) bool onboardingCompleted,
   }) = _GlobalSettings;
@@ -72,6 +77,8 @@ abstract class GlobalSettings with _$GlobalSettings {
         json['myDayDueSoonEnabled'] as bool?;
     final rawMyDayShowAvailableToStart =
         json['myDayShowAvailableToStart'] as bool?;
+    final rawMyDayPlanFlow = json['myDayPlanFlow'] as String?;
+
     final rawWeeklyReviewDay =
         (json['weeklyReviewDayOfWeek'] as num?)?.toInt() ??
         defaultWeeklyReviewDayOfWeek;
@@ -104,6 +111,7 @@ abstract class GlobalSettings with _$GlobalSettings {
       myDayDueWindowDays: rawMyDayDueWindowDays.clamp(1, 30),
       myDayDueSoonEnabled: rawMyDayDueSoonEnabled ?? true,
       myDayShowAvailableToStart: rawMyDayShowAvailableToStart ?? true,
+      myDayPlanFlow: MyDayPlanFlow.fromName(rawMyDayPlanFlow),
       weeklyReviewEnabled: json['weeklyReviewEnabled'] as bool? ?? true,
       weeklyReviewDayOfWeek: rawWeeklyReviewDay.clamp(1, 7),
       weeklyReviewTimeMinutes: rawWeeklyReviewTimeMinutes.clamp(0, 1439),
@@ -122,6 +130,8 @@ abstract class GlobalSettings with _$GlobalSettings {
       maintenanceStaleEnabled: json['maintenanceStaleEnabled'] as bool? ?? true,
       maintenanceFrequentSnoozedEnabled:
           json['maintenanceFrequentSnoozedEnabled'] as bool? ?? true,
+      maintenanceMissingNextActionsEnabled:
+          json['maintenanceMissingNextActionsEnabled'] as bool? ?? true,
       textScaleFactor: (json['textScaleFactor'] as num?)?.toDouble() ?? 1.0,
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
     );
@@ -194,6 +204,7 @@ extension GlobalSettingsJson on GlobalSettings {
     'myDayDueWindowDays': myDayDueWindowDays.clamp(1, 30),
     'myDayDueSoonEnabled': myDayDueSoonEnabled,
     'myDayShowAvailableToStart': myDayShowAvailableToStart,
+    'myDayPlanFlow': myDayPlanFlow.name,
     'weeklyReviewEnabled': weeklyReviewEnabled,
     'weeklyReviewDayOfWeek': weeklyReviewDayOfWeek.clamp(1, 7),
     'weeklyReviewTimeMinutes': weeklyReviewTimeMinutes.clamp(0, 1439),
@@ -209,6 +220,7 @@ extension GlobalSettingsJson on GlobalSettings {
     'maintenanceDueSoonEnabled': maintenanceDueSoonEnabled,
     'maintenanceStaleEnabled': maintenanceStaleEnabled,
     'maintenanceFrequentSnoozedEnabled': maintenanceFrequentSnoozedEnabled,
+    'maintenanceMissingNextActionsEnabled': maintenanceMissingNextActionsEnabled,
     'textScaleFactor': textScaleFactor,
     'onboardingCompleted': onboardingCompleted,
   };

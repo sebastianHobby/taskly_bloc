@@ -1,12 +1,18 @@
+import 'dart:math' as math;
+
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/src/interfaces/value_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
+import 'package:taskly_domain/src/interfaces/project_anchor_state_repository_contract.dart';
+import 'package:taskly_domain/src/interfaces/project_next_actions_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/settings_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
 import 'package:taskly_domain/src/settings/settings.dart';
 import 'package:taskly_domain/src/preferences/model/settings_key.dart';
 import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/core/model/project.dart';
+import 'package:taskly_domain/src/projects/model/project_anchor_state.dart';
+import 'package:taskly_domain/src/projects/model/project_next_action.dart';
 import 'package:taskly_domain/src/allocation/model/allocation_result.dart';
 import 'package:taskly_domain/src/queries/task_query.dart';
 import 'package:taskly_domain/src/allocation/engine/allocation_strategy.dart';
@@ -29,6 +35,8 @@ class AllocationOrchestrator {
     required SettingsRepositoryContract settingsRepository,
     required AnalyticsService analyticsService,
     required ProjectRepositoryContract projectRepository,
+    required ProjectNextActionsRepositoryContract projectNextActionsRepository,
+    required ProjectAnchorStateRepositoryContract projectAnchorStateRepository,
     required HomeDayKeyService dayKeyService,
     Clock clock = systemClock,
   }) : _taskRepository = taskRepository,
@@ -36,6 +44,8 @@ class AllocationOrchestrator {
        _settingsRepository = settingsRepository,
        _analyticsService = analyticsService,
        _projectRepository = projectRepository,
+       _projectNextActionsRepository = projectNextActionsRepository,
+       _projectAnchorStateRepository = projectAnchorStateRepository,
        _dayKeyService = dayKeyService,
        _clock = clock;
 
@@ -44,6 +54,8 @@ class AllocationOrchestrator {
   final SettingsRepositoryContract _settingsRepository;
   final AnalyticsService _analyticsService;
   final ProjectRepositoryContract _projectRepository;
+  final ProjectNextActionsRepositoryContract _projectNextActionsRepository;
+  final ProjectAnchorStateRepositoryContract _projectAnchorStateRepository;
   final HomeDayKeyService _dayKeyService;
   final Clock _clock;
 
@@ -55,6 +67,8 @@ class AllocationOrchestrator {
   Future<AllocationResult> getAllocationSnapshot({
     DateTime? nowUtc,
     int? maxTasksOverride,
+    int? anchorCountOverride,
+    Map<String, int> routineSelectionsByValue = const {},
   }) async {
     final resolvedNowUtc = nowUtc ?? _clock.nowUtc();
     final todayUtc = _dayKeyService.todayDayKeyUtc(nowUtc: resolvedNowUtc);
@@ -68,20 +82,28 @@ class AllocationOrchestrator {
     final results = await Future.wait([
       _taskRepository.getAll(TaskQuery.incomplete()),
       _projectRepository.getAll(),
+      _projectNextActionsRepository.getAll(),
+      _projectAnchorStateRepository.getAll(),
       _settingsRepository.load(SettingsKey.allocation),
     ]);
 
     final tasks = results[0] as List<Task>;
     final projects = results[1] as List<Project>;
-    final allocationConfig = results[2] as AllocationConfig;
+    final projectNextActions = results[2] as List<ProjectNextAction>;
+    final projectAnchorStates = results[3] as List<ProjectAnchorState>;
+    final allocationConfig = results[4] as AllocationConfig;
 
     return _computeAllocation(
       tasks: tasks,
       projects: projects,
+      projectNextActions: projectNextActions,
+      projectAnchorStates: projectAnchorStates,
       allocationConfig: allocationConfig,
       nowUtc: resolvedNowUtc,
       todayDayKeyUtc: todayUtc,
       maxTasksOverride: maxTasksOverride,
+      anchorCountOverride: anchorCountOverride,
+      routineSelectionsByValue: routineSelectionsByValue,
     );
   }
 
@@ -92,6 +114,7 @@ class AllocationOrchestrator {
   Future<AllocationResult> getSuggestedSnapshot({
     required int batchCount,
     DateTime? nowUtc,
+    Map<String, int> routineSelectionsByValue = const {},
   }) async {
     final resolvedNowUtc = nowUtc ?? _clock.nowUtc();
     final todayUtc = _dayKeyService.todayDayKeyUtc(nowUtc: resolvedNowUtc);
@@ -106,44 +129,67 @@ class AllocationOrchestrator {
     final results = await Future.wait([
       _taskRepository.getAll(TaskQuery.incomplete()),
       _projectRepository.getAll(),
+      _projectNextActionsRepository.getAll(),
+      _projectAnchorStateRepository.getAll(),
       _settingsRepository.load(SettingsKey.allocation),
     ]);
 
     final tasks = results[0] as List<Task>;
     final projects = results[1] as List<Project>;
-    final allocationConfig = results[2] as AllocationConfig;
+    final projectNextActions = results[2] as List<ProjectNextAction>;
+    final projectAnchorStates = results[3] as List<ProjectAnchorState>;
+    final allocationConfig = results[4] as AllocationConfig;
 
     final safeBatchCount = batchCount.clamp(1, 50);
-    final safeSuggestionsPerBatch = allocationConfig.suggestionsPerBatch.clamp(
+    final safeAnchorCount = allocationConfig.strategySettings.anchorCount.clamp(
       1,
       50,
     );
-    final maxTasksOverride = safeSuggestionsPerBatch * safeBatchCount;
+    final anchorCountOverride = safeAnchorCount * safeBatchCount;
 
     return _computeAllocation(
       tasks: tasks,
       projects: projects,
+      projectNextActions: projectNextActions,
+      projectAnchorStates: projectAnchorStates,
       allocationConfig: allocationConfig,
       nowUtc: resolvedNowUtc,
       todayDayKeyUtc: todayUtc,
-      maxTasksOverride: maxTasksOverride,
+      anchorCountOverride: anchorCountOverride,
+      routineSelectionsByValue: routineSelectionsByValue,
     );
   }
 
   Future<AllocationResult> _computeAllocation({
     required List<Task> tasks,
     required List<Project> projects,
+    required List<ProjectNextAction> projectNextActions,
+    required List<ProjectAnchorState> projectAnchorStates,
     required AllocationConfig allocationConfig,
     required DateTime nowUtc,
     required DateTime todayDayKeyUtc,
     int? maxTasksOverride,
+    int? anchorCountOverride,
+    Map<String, int> routineSelectionsByValue = const {},
   }) async {
-    final maxTasks = maxTasksOverride ?? allocationConfig.suggestionsPerBatch;
+    final strategy = allocationConfig.strategySettings;
+    final routineSelections = strategy.countRoutineSelectionsAgainstValueQuotas
+        ? routineSelectionsByValue
+        : const <String, int>{};
+    final anchorCount =
+        (anchorCountOverride ?? strategy.anchorCount).clamp(0, 100);
+    final freeSlots = strategy.freeSlots.clamp(0, 10);
+    final baseMaxTasks =
+        math.max(0, (anchorCount * strategy.tasksPerAnchorMax) + freeSlots);
+    final maxTasks = math.max(
+      0,
+      maxTasksOverride == null ? baseMaxTasks : math.min(baseMaxTasks, maxTasksOverride),
+    );
 
     AppLog.routine(
       'domain.allocation',
       'Compute: ${tasks.length} tasks, ${projects.length} projects, '
-          'maxTasks=$maxTasks',
+          'anchors=$anchorCount maxTasks=$maxTasks',
     );
 
     // Ensure values exist (soft-gate).
@@ -185,10 +231,15 @@ class AllocationOrchestrator {
 
     final allocatedRegularTasks = await allocateRegularTasks(
       regularTasks,
-      allocationConfig,
+      projects: projects,
+      projectNextActions: projectNextActions,
+      projectAnchorStates: projectAnchorStates,
+      allocationConfig: allocationConfig,
       nowUtc: nowUtc,
       todayDayKeyUtc: todayDayKeyUtc,
-      maxTasksOverride: maxTasksOverride,
+      maxTasksOverride: maxTasks,
+      anchorCountOverride: anchorCount,
+      routineSelectionsByValue: routineSelections,
     );
 
     // Best-effort logging: urgent valueless tasks are a key signal for UX.
@@ -204,23 +255,39 @@ class AllocationOrchestrator {
       );
     }
 
-    return AllocationResult(
+    final result = AllocationResult(
       allocatedTasks: allocatedRegularTasks.allocatedTasks,
       reasoning: allocatedRegularTasks.reasoning,
       excludedTasks: allocatedRegularTasks.excludedTasks,
       activeFocusMode: allocationConfig.focusMode,
+      anchorProjectIds: allocatedRegularTasks.anchorProjectIds,
+      requiresValueSetup: allocatedRegularTasks.requiresValueSetup,
     );
+
+    if (result.anchorProjectIds.isNotEmpty) {
+      await _projectAnchorStateRepository.recordAnchors(
+        projectIds: result.anchorProjectIds,
+        anchoredAtUtc: nowUtc,
+      );
+    }
+
+    return result;
   }
 
   /// Allocate regular (non-pinned) tasks using the configured strategy.
   ///
   /// Regular allocation uses a single engine: [SuggestedPicksEngine].
   Future<AllocationResult> allocateRegularTasks(
-    List<Task> tasks,
-    AllocationConfig config, {
+    List<Task> tasks, {
+    required List<Project> projects,
+    required List<ProjectNextAction> projectNextActions,
+    required List<ProjectAnchorState> projectAnchorStates,
+    required AllocationConfig allocationConfig,
     required DateTime nowUtc,
     required DateTime todayDayKeyUtc,
-    int? maxTasksOverride,
+    required int maxTasksOverride,
+    required int anchorCountOverride,
+    Map<String, int> routineSelectionsByValue = const {},
   }) async {
     // Get all values first - needed for both ranking check and allocation
     final values = await _valueRepository.getAll();
@@ -279,7 +346,7 @@ class AllocationOrchestrator {
     );
 
     // Fetch recent completions by value if value balancing is enabled.
-    final settings = config.strategySettings;
+    final settings = allocationConfig.strategySettings;
     Map<String, int> completionsByValue = const {};
     if (settings.enableNeglectWeighting) {
       completionsByValue = await _analyticsService.getRecentCompletionsByValue(
@@ -296,18 +363,29 @@ class AllocationOrchestrator {
     }
 
     // Run allocation
-    final maxTasks = maxTasksOverride ?? config.suggestionsPerBatch;
+    final maxTasks = maxTasksOverride;
 
     final parameters = AllocationParameters(
       nowUtc: nowUtc,
       todayDayKeyUtc: todayDayKeyUtc,
       tasks: tasks,
+      projects: projects,
+      projectNextActions: projectNextActions,
+      projectAnchorStates: projectAnchorStates,
       categories: categories,
       maxTasks: maxTasks,
+      anchorCount: anchorCountOverride,
+      tasksPerAnchorMin: settings.tasksPerAnchorMin,
+      tasksPerAnchorMax: settings.tasksPerAnchorMax,
+      freeSlots: settings.freeSlots,
+      nextActionPolicy: settings.nextActionPolicy,
+      rotationPressureDays: settings.rotationPressureDays,
+      readinessFilter: settings.readinessFilter,
       taskUrgencyThresholdDays: settings.taskUrgencyThresholdDays,
       keepValuesInBalance:
           settings.enableNeglectWeighting && completionsByValue.isNotEmpty,
       completionsByValue: completionsByValue,
+      routineSelectionsByValue: routineSelectionsByValue,
     );
 
     return engine.allocate(parameters);

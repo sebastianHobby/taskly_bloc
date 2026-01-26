@@ -1,4 +1,4 @@
-# Architecture Exceptions
+﻿# Architecture Exceptions
 
 > Audience: developers + reviewers + AI agents
 >
@@ -7,8 +7,8 @@
 
 ## 1) Policy
 
-Taskly’s invariants exist to keep the codebase maintainable long-term.
-If an invariant blocks progress, we allow a **narrow, temporary exception** —
+Taskly's invariants exist to keep the codebase maintainable long-term.
+If an invariant blocks progress, we allow a **narrow, temporary exception** --
 but only when it is explicitly documented and has an owner + expiry.
 
 ## 2) Rules
@@ -34,3 +34,23 @@ In practice:
 ## 4) Registry
 
 See: [exceptions/README.md](exceptions/README.md)
+
+## 5) Examples (format only)
+
+Example A: temporary deep import while extracting a public API
+
+- File: `exceptions/EXC-20260125-promote-domain-api.md`
+- Scope: `lib/presentation/features/foo/...`
+- Expiry: 2026-02-15
+- Reason: needed for one release while `taskly_domain` public API is promoted
+- Removal plan: expose the symbol via `taskly_domain.dart`, update call sites
+
+Example B: legacy DI usage during refactor
+
+- File: `exceptions/EXC-20260125-di-bridge.md`
+- Scope: `lib/presentation/screens/legacy_bar_screen.dart`
+- Expiry: 2026-02-01
+- Reason: screen still uses a service locator pending BLoC migration
+- Removal plan: add BLoC boundary and remove locator usage
+
+

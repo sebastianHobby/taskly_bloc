@@ -61,6 +61,11 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
     bool enabled,
   ) = GlobalSettingsMyDayShowAvailableToStartChanged;
 
+  /// User changed Plan My Day flow preset.
+  const factory GlobalSettingsEvent.myDayPlanFlowChanged(
+    MyDayPlanFlow flow,
+  ) = GlobalSettingsMyDayPlanFlowChanged;
+
   /// User toggled weekly review scheduling.
   const factory GlobalSettingsEvent.weeklyReviewEnabledChanged(bool enabled) =
       GlobalSettingsWeeklyReviewEnabledChanged;
@@ -223,6 +228,10 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsMyDayShowAvailableToStartChanged>(
       _onMyDayShowAvailableToStartChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMyDayPlanFlowChanged>(
+      _onMyDayPlanFlowChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsWeeklyReviewEnabledChanged>(
@@ -668,6 +677,39 @@ class GlobalSettingsBloc
         context: context,
         message:
             '[GlobalSettingsBloc] my day show available-to-start persist failed',
+      );
+    }
+  }
+
+  Future<void> _onMyDayPlanFlowChanged(
+    GlobalSettingsMyDayPlanFlowChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      myDayPlanFlow: event.flow,
+    );
+    final context = _newContext(
+      intent: 'settings_my_day_plan_flow_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'flow': event.flow.name},
+    );
+    try {
+      await _settingsRepository.save(
+        SettingsKey.global,
+        updated,
+        context: context,
+      );
+    } catch (e, st) {
+      talker.error(
+        '[settings.global] My Day plan flow persist FAILED',
+        e,
+        st,
+      );
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[GlobalSettingsBloc] my day plan flow persist failed',
       );
     }
   }

@@ -66,7 +66,7 @@ class Routine {
   bool isPausedOn(DateTime dayKeyUtc) {
     final paused = pausedUntil;
     if (paused == null) return false;
-    return paused.isAfter(dayKeyUtc) || paused.isAtSameMomentAs(dayKeyUtc);
+    return paused.isAfter(dayKeyUtc);
   }
 
   Routine copyWith({

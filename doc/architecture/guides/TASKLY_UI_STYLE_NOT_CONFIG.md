@@ -1,4 +1,4 @@
-# 	askly_ui — Style, Not Config
+﻿# 	askly_ui -- Style, Not Config
 
 > Audience: developers
 >
@@ -69,3 +69,4 @@ its visual surface is visible in one place.
 Prefer consuming shared UI via the feed entrypoint:
 
 - package:taskly_ui/taskly_ui_feed.dart
+

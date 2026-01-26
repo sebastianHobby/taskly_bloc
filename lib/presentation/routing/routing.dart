@@ -54,6 +54,7 @@ abstract final class Routing {
     'my_day',
     'scheduled',
     'someday',
+    'routines',
     'journal',
     'values',
     'settings',
@@ -193,6 +194,14 @@ abstract final class Routing {
 
   static void toValueEdit(BuildContext context, String valueId) =>
       GoRouter.of(context).push('/value/$valueId/edit');
+
+  // === ROUTINE EDITOR ROUTES ===
+
+  static void toRoutineNew(BuildContext context) =>
+      GoRouter.of(context).push('/routine/new');
+
+  static void toRoutineEdit(BuildContext context, String routineId) =>
+      GoRouter.of(context).push('/routine/$routineId/edit');
 
   // === JOURNAL ENTRY EDITOR ROUTES (Journal Today-first) ===
 

@@ -1,4 +1,4 @@
-# `taskly_ui` governance
+﻿# `taskly_ui` governance
 
 > Audience: developers
 >
@@ -82,7 +82,7 @@ See: [../INVARIANTS.md](../INVARIANTS.md#25-entity-tile-presets-and-catalog-stri
 
 To keep shared UI consistent across screens:
 
-- Avoid “widget injection” parameters for entity rows.
+- Avoid "widget injection" parameters for entity rows.
 - Prefer strings and UI-only models (data-in) and callbacks (events-out).
 - If an extension point is unavoidable, keep it narrow and semantically named
   (for example a `titlePrefix` widget) rather than exposing a full `trailing`
@@ -99,3 +99,4 @@ Form UI primitives and presets live in `taskly_ui_forms.dart` so form visuals
 stay consistent across features. Form state, validation, and domain-specific
 labeling remain in the app; `taskly_ui` widgets are render-only and take
 data-in/events-out inputs.
+

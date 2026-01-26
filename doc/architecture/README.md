@@ -1,76 +1,51 @@
-# Taskly — Architecture (Starting Point)
+﻿# Taskly -- Architecture Docs
 
-> Audience: developers + architects
+> Audience: developers + AI agents
 >
-> Scope: a high-level overview of Taskly’s architecture, how key subsystems
-> integrate, and where to find deeper documentation.
+> Goal: a clear entrypoint to the architectural overview, invariants, and
+> implementation guides.
 
-## 1) Big Picture
+## Start here (10 minutes)
 
-Taskly is a Flutter app with a layered architecture and an offline-first data
-model:
+1) Mental model (descriptive): [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)
+2) Non-negotiable rules (normative, single source of truth):
+   [INVARIANTS.md](INVARIANTS.md)
 
-- **Presentation** renders UI, routes navigation, and hosts feature flows.
-- **Domain** implements business semantics and orchestrates use-cases.
-- **Data** persists locally (SQLite) and integrates with sync/backends.
-- **Offline-first**: the local DB is the primary source of truth for UI; sync is
-  responsible for convergence.
+If you need to violate a guardrail, follow:
+- [EXCEPTIONS.md](EXCEPTIONS.md)
 
-Boundary rule of thumb:
+## Guides (how to build)
 
-- Domain outputs are **view-neutral** (no screen models, no UI strings).
-- Presentation owns screen-shaped policy (composition, sectioning, paging,
-  # Taskly — Architecture Docs
+These are descriptive playbooks. They must not introduce new "must/shall" rules.
 
-  > Audience: developers + AI agents
-  >
-  > Goal: a **clear architectural overview** + a single place for **normative
-  > invariants**.
+- BLoC patterns and stream safety: [guides/BLOC_GUIDELINES.md](guides/BLOC_GUIDELINES.md)
+- Screen composition + routing: [guides/SCREEN_ARCHITECTURE.md](guides/SCREEN_ARCHITECTURE.md)
+- Shared UI governance and patterns: [guides/TASKLY_UI_GOVERNANCE.md](guides/TASKLY_UI_GOVERNANCE.md)
+- "Style, not config" pattern: [guides/TASKLY_UI_STYLE_NOT_CONFIG.md](guides/TASKLY_UI_STYLE_NOT_CONFIG.md)
+- Testing guide (policy + taxonomy; invariants live in INVARIANTS):
+  [guides/TESTING_ARCHITECTURE.md](guides/TESTING_ARCHITECTURE.md)
+- New feature checklist: [guides/NEW_FEATURE_CHECKLIST.md](guides/NEW_FEATURE_CHECKLIST.md)
 
-  ## Start here (10 minutes)
+## Deep dives (subsystems)
 
-  1) Architecture mental model (descriptive): [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)
-  2) Non-negotiable rules (normative, single source of truth):
-     [INVARIANTS.md](INVARIANTS.md)
+- Sync pipeline: [deep_dives/POWERSYNC_SUPABASE.md](deep_dives/POWERSYNC_SUPABASE.md)
+- Attention system: [deep_dives/ATTENTION_SYSTEM.md](deep_dives/ATTENTION_SYSTEM.md)
+- Journal + analytics: [deep_dives/JOURNAL_AND_STATISTICS.md](deep_dives/JOURNAL_AND_STATISTICS.md)
+- Suggested picks (allocation): [deep_dives/SUGGESTED_PICKS.md](deep_dives/SUGGESTED_PICKS.md)
 
-  If you need to violate a guardrail, follow:
-  - [EXCEPTIONS.md](EXCEPTIONS.md)
+## Specs (locked implementer contracts)
 
-  ## Guides (how to build)
+- Recurrence + sync contract: [specs/RECURRENCE_SYNC_CONTRACT.md](specs/RECURRENCE_SYNC_CONTRACT.md)
 
-  These are descriptive playbooks. They must not introduce new “must” rules.
+## Runbooks (operational)
 
-  - BLoC patterns and stream safety: [guides/BLOC_GUIDELINES.md](guides/BLOC_GUIDELINES.md)
-  - Screen composition + routing: [guides/SCREEN_ARCHITECTURE.md](guides/SCREEN_ARCHITECTURE.md)
-  - Shared UI governance and patterns: [guides/TASKLY_UI_GOVERNANCE.md](guides/TASKLY_UI_GOVERNANCE.md)
-- “Style, not config” pattern: [guides/TASKLY_UI_STYLE_NOT_CONFIG.md](guides/TASKLY_UI_STYLE_NOT_CONFIG.md)
-  - Testing guide (policy + taxonomy; invariants live in INVARIANTS):
-    [guides/TESTING_ARCHITECTURE.md](guides/TESTING_ARCHITECTURE.md)
+- Local Supabase + PowerSync E2E stack: [runbooks/LOCAL_E2E_STACK.md](runbooks/LOCAL_E2E_STACK.md)
 
-  ## Deep dives (subsystems)
+## Product meaning
 
-  - Sync pipeline: [deep_dives/POWERSYNC_SUPABASE.md](deep_dives/POWERSYNC_SUPABASE.md)
-  - Attention system: [deep_dives/ATTENTION_SYSTEM.md](deep_dives/ATTENTION_SYSTEM.md)
-  - Journal + analytics: [deep_dives/JOURNAL_AND_STATISTICS.md](deep_dives/JOURNAL_AND_STATISTICS.md)
-  - Suggested picks (allocation): [deep_dives/SUGGESTED_PICKS.md](deep_dives/SUGGESTED_PICKS.md)
+Product intent lives outside architecture:
+- [doc/product/README.md](../product/README.md)
 
-  ## Specs (locked implementer contracts)
+## Glossary
 
-  - Recurrence + sync contract: [specs/RECURRENCE_SYNC_CONTRACT.md](specs/RECURRENCE_SYNC_CONTRACT.md)
-
-  ## Runbooks (operational)
-
-  - Local Supabase + PowerSync E2E stack: [runbooks/LOCAL_E2E_STACK.md](runbooks/LOCAL_E2E_STACK.md)
-
-  ## Product meaning
-
-  Product intent lives outside architecture:
-  - [doc/product/README.md](../product/README.md)
-### A.2 Project root (supporting folders)
-
-- `test/` — tests (unit/widget/integration), typically organized by layer/feature
-- `tool/` — developer scripts and local automation
-- `supabase/` — migrations and Supabase-related configuration
-- `infra/` — local stack/runtime infrastructure (e.g., docker compose)
-- `android/`, `ios/`, `macos/`, `windows/`, `web/` — Flutter platform hosts
-- `doc/` — documentation (this folder is the architecture entrypoint)
+- [GLOSSARY.md](GLOSSARY.md)

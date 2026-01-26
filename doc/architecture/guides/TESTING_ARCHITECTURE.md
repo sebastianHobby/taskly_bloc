@@ -1,9 +1,9 @@
-# Testing — Guide
+﻿# Testing -- Guide
 
 > Audience: developers + architects
 >
-> Scope: the **structure** of tests in this repo — taxonomy, execution model,
-> taxonomy, and enforcement. Operational “how to run tests” details belong in
+> Scope: the **structure** of tests in this repo -- taxonomy, execution model,
+> taxonomy, and enforcement. Operational "how to run tests" details belong in
 > `test/README.md` so this doc stays stable as tooling evolves.
 
 This document is **descriptive**. The single normative source of testing rules
@@ -40,7 +40,7 @@ Core principles:
 All non-negotiable rules live in:
 - [../INVARIANTS.md](../INVARIANTS.md)
   - Test hang safety for reactive code
-  - Testing invariants (TG-001…TG-009)
+  - Testing invariants (TG-001...TG-009)
   - Testing taxonomy (directory contract)
 
 ## 4) Taxonomy: where tests live (directory contract)
@@ -60,7 +60,7 @@ This contract is intended to keep tests discoverable and enforceable.
 
 Notes:
 
-- “local DB only” means no network; use in-memory or ephemeral on-disk DB.
+- "local DB only" means no network; use in-memory or ephemeral on-disk DB.
 - Pipeline tests self-skip if the environment is not pointing at a local stack.
 
 ### 4.1 Canonical templates (seed suite)
@@ -116,7 +116,7 @@ Coverage can be generated and filtered via repo tooling.
 Guardrails should be cheap, predictable, and aligned with the invariants.
 Enforcement targets include:
 
-- Directory ↔ tag contract (TG-005-A)
+- Directory <-> tag contract (TG-005-A)
 - No `src/` deep imports (TG-007-A)
 - Preset exclusions for `flaky` and `slow` (TG-008-A, TG-009-A)
 
@@ -130,3 +130,5 @@ Layering invariants are already enforced by repo guardrails (see
 - Tests that rely on `DateTime.now()` or environment time.
 - Tests that leak stream subscriptions/timers/BLoCs.
 - Tests that import `package:<local>/src/...` across packages.
+
+

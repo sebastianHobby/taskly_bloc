@@ -73,11 +73,20 @@ Future<void> setupDependencies() async {
     ..registerSingleton<ProjectRepositoryContract>(
       getIt<TasklyDataBindings>().projectRepository,
     )
+    ..registerSingleton<ProjectNextActionsRepositoryContract>(
+      getIt<TasklyDataBindings>().projectNextActionsRepository,
+    )
+    ..registerSingleton<ProjectAnchorStateRepositoryContract>(
+      getIt<TasklyDataBindings>().projectAnchorStateRepository,
+    )
     ..registerSingleton<TaskRepositoryContract>(
       getIt<TasklyDataBindings>().taskRepository,
     )
     ..registerSingleton<ValueRepositoryContract>(
       getIt<TasklyDataBindings>().valueRepository,
+    )
+    ..registerSingleton<RoutineRepositoryContract>(
+      getIt<TasklyDataBindings>().routineRepository,
     )
     ..registerSingleton<SettingsRepositoryContract>(
       getIt<TasklyDataBindings>().settingsRepository,
@@ -138,6 +147,10 @@ Future<void> setupDependencies() async {
         settingsRepository: getIt<SettingsRepositoryContract>(),
         analyticsService: getIt<AnalyticsService>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
+        projectNextActionsRepository:
+            getIt<ProjectNextActionsRepositoryContract>(),
+        projectAnchorStateRepository:
+            getIt<ProjectAnchorStateRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         clock: getIt<Clock>(),
       ),
@@ -182,6 +195,8 @@ Future<void> setupDependencies() async {
             getIt<attention_repo_v2.AttentionRepositoryContract>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
+        projectNextActionsRepository:
+            getIt<ProjectNextActionsRepositoryContract>(),
         invalidations:
             getIt<AttentionTemporalInvalidationService>().invalidations,
         clock: getIt<Clock>(),
@@ -227,7 +242,6 @@ Future<void> setupDependencies() async {
     ..registerFactory<JournalTodayBloc>(
       () => JournalTodayBloc(
         repository: getIt<JournalRepositoryContract>(),
-        nowUtc: getIt<NowService>().nowUtc,
       ),
     )
     ..registerFactory<JournalHistoryBloc>(
@@ -256,6 +270,7 @@ Future<void> setupDependencies() async {
         taskRepository: getIt<TaskRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
         myDayRepository: getIt<MyDayRepositoryContract>(),
+        routineRepository: getIt<RoutineRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
       ),
@@ -292,6 +307,8 @@ Future<void> setupDependencies() async {
     ..registerFactory<MyDayBloc>(
       () => MyDayBloc(
         queryService: getIt<MyDaySessionQueryService>(),
+        routineRepository: getIt<RoutineRepositoryContract>(),
+        nowService: getIt<NowService>(),
       ),
     )
     ..registerFactory<PlanMyDayBloc>(

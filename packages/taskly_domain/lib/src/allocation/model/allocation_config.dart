@@ -26,6 +26,18 @@ enum UrgentTaskBehavior {
   includeAll,
 }
 
+/// Controls how project next actions are used during allocation.
+enum NextActionPolicy {
+  @JsonValue('off')
+  off,
+
+  @JsonValue('prefer')
+  prefer,
+
+  @JsonValue('require')
+  require,
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -74,6 +86,30 @@ abstract class StrategySettings with _$StrategySettings {
 
     /// Enable neglect-based weighting (Reflector mode feature).
     @Default(false) bool enableNeglectWeighting,
+
+    /// How many anchor projects to select per batch.
+    @Default(2) int anchorCount,
+
+    /// Minimum tasks to select per anchor project.
+    @Default(1) int tasksPerAnchorMin,
+
+    /// Maximum tasks to select per anchor project.
+    @Default(2) int tasksPerAnchorMax,
+
+    /// How next actions are used during selection.
+    @Default(NextActionPolicy.prefer) NextActionPolicy nextActionPolicy,
+
+    /// Days since last progress before a project receives rotation pressure.
+    @Default(7) int rotationPressureDays,
+
+    /// Only anchor projects that have actionable tasks.
+    @Default(true) bool readinessFilter,
+
+    /// Extra free slots beyond anchor allocation.
+    @Default(0) int freeSlots,
+
+    /// Count routine selections against value quotas during allocation.
+    @Default(true) bool countRoutineSelectionsAgainstValueQuotas,
   }) = _StrategySettings;
   const StrategySettings._();
 

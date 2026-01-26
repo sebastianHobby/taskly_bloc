@@ -1,4 +1,4 @@
-# Local Supabase + PowerSync (Deterministic E2E)
+﻿# Local Supabase + PowerSync (Deterministic E2E)
 
 This repo can run a fully local stack for E2E-style tests:
 - Supabase local dev (via Supabase CLI + Docker)
@@ -18,7 +18,7 @@ The Flutter app uses entrypoint-based build-time configuration:
 ### One-time setup
 1. Initialize Supabase project (already done in this repo): see `supabase/config.toml`.
 2. Create PowerSync local env file:
-   - Copy `infra/powersync_local/powersync.env.example` → `infra/powersync_local/.env`
+   - Copy `infra/powersync_local/powersync.env.example` -> `infra/powersync_local/.env`
 
 ### Start stack (optionally reset DB)
 - Start without reset:
@@ -38,7 +38,7 @@ What reset does:
 - Windows PowerShell: `powershell -File tool/e2e/Run-LocalE2ETests.ps1 -ResetDb`
 
 Notes:
-- The app’s local endpoints/keys are selected via `lib/main_local.dart`.
+- The app's local endpoints/keys are selected via `lib/main_local.dart`.
 - PowerSync sync rules are mounted from `supabase/powersync-sync-rules.yaml`.
 
 What the test script runs:
@@ -66,3 +66,5 @@ to manually maintain schema drift.
 
 - If `supabase status -o json` returns empty values:
   - Start Supabase first (`supabase start`).
+
+

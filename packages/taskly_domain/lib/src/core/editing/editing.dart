@@ -12,3 +12,7 @@ export 'package:taskly_domain/src/core/editing/project/project_command_handler.d
 export 'package:taskly_domain/src/core/editing/task/task_draft.dart';
 export 'package:taskly_domain/src/core/editing/task/task_commands.dart';
 export 'package:taskly_domain/src/core/editing/task/task_command_handler.dart';
+
+export 'package:taskly_domain/src/core/editing/routine/routine_draft.dart';
+export 'package:taskly_domain/src/core/editing/routine/routine_commands.dart';
+export 'package:taskly_domain/src/core/editing/routine/routine_command_handler.dart';

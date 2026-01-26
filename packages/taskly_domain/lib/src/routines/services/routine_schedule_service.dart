@@ -236,7 +236,13 @@ final class RoutineScheduleService {
     final currentWeek = _weekOfMonth(today);
     final nextWeek = math.min(5, currentWeek + 1);
     final isLastWeek = _isLastWeekOfMonth(today);
-    final preferred = routine.preferredWeeks;
+    var preferred = routine.preferredWeeks;
+    if (routine.routineType == RoutineType.monthlyFixed && preferred.isEmpty) {
+      final derivedWeek = _deriveFixedWeek(routine, today: today);
+      if (derivedWeek != null) {
+        preferred = [derivedWeek];
+      }
+    }
 
     final prefersCurrent =
         preferred.contains(currentWeek) ||
@@ -251,6 +257,22 @@ final class RoutineScheduleService {
     if (prefersNext) return RoutineWindowPhase.nextWeek;
 
     return RoutineWindowPhase.laterThisMonth;
+  }
+
+  int? _deriveFixedWeek(
+    Routine routine, {
+    required DateTime today,
+  }) {
+    final fixedWeek = routine.fixedWeekOfMonth;
+    if (fixedWeek != null) return fixedWeek;
+
+    final fixedDay = routine.fixedDayOfMonth;
+    if (fixedDay == null) return null;
+
+    final monthEnd = _monthEnd(today).day;
+    final clampedDay = fixedDay.clamp(1, monthEnd);
+    final fixedDate = DateTime.utc(today.year, today.month, clampedDay);
+    return _weekOfMonth(fixedDate);
   }
 
   DateTime _weekStart(DateTime dayKeyUtc) {

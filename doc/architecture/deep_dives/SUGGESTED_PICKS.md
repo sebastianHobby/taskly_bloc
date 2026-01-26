@@ -1,12 +1,12 @@
-# Suggested Picks Engine — Architecture
+﻿# Suggested Picks Engine -- Architecture
 
 > Audience: developers
 >
-> Scope: the “Suggested picks” allocation path used by the My Day ritual.
+> Scope: the "Suggested picks" allocation path used by the My Day ritual.
 
 ## 1) Purpose
 
-Taskly’s “Suggested picks” are meant to be calm, values-led recommendations.
+Taskly's "Suggested picks" are meant to be calm, values-led recommendations.
 They help users select a small set of tasks for today without turning the app
 into an urgency/priority optimizer.
 
@@ -14,7 +14,7 @@ Key goals:
 
 - Values-led distribution (proportional to value weights)
 - Optional, bounded value balancing (a gentle nudge)
-- Explainability (“Why suggested”) with stable reason codes
+- Explainability ("Why suggested") with stable reason codes
 - Offline-first: local DB remains the source of truth
 
 ## 2) Layering + ownership
@@ -22,18 +22,18 @@ Key goals:
 - **Presentation** owns screens and BLoCs (e.g. My Day BLoCs). Widgets do not
   talk to repositories directly.
 - **Domain** owns the allocation orchestration and scoring policy.
-- **Data** persists tasks/values and the user’s **My Day selection**.
+- **Data** persists tasks/values and the user's **My Day selection**.
 
 Primary entrypoints:
 
 - `AllocationOrchestrator.getAllocationSnapshot()` computes the **Suggested**
   list (ephemeral suggestions).
 - `MyDayRepositoryContract.watchDay(dayKeyUtc)` provides the **persisted ritual
-  selection** for the day (source of truth for “today”).
+  selection** for the day (source of truth for "today").
 
 Core engine:
 
-- `SuggestedPicksEngine` is the only allocator used for “Suggested picks”.
+- `SuggestedPicksEngine` is the only allocator used for "Suggested picks".
 
 ## 3) Data flow (runtime)
 
@@ -62,7 +62,7 @@ Notes:
 - Allocation executes synchronously; any async inputs are pre-fetched in the
   orchestrator and passed into `AllocationParameters`.
 - Suggested picks are **not persisted** as an allocation snapshot.
-  Only the user’s selection is persisted.
+  Only the user's selection is persisted.
 - My Day persistence uses deterministic UUID v5 IDs (via `IdGenerator`) for
   `my_day_days` and `my_day_picks` to support offline-first upserts and
   cross-device convergence.
@@ -73,7 +73,7 @@ Notes:
 
 Given:
 
-- categories: valueId → weight
+- categories: valueId -> weight
 - suggestedCount (daily limit)
 
 Compute integer quotas per value that sum to `suggestedCount`, proportional to
@@ -81,7 +81,7 @@ weights.
 
 Selection is then done per value using a calm tie-break sort.
 
-### 4.2 Bounded value balancing (“Keep my values in balance”)
+### 4.2 Bounded value balancing ("Keep my values in balance")
 
 When enabled, the engine may perform a **bounded quota repair** pass:
 
@@ -89,7 +89,7 @@ When enabled, the engine may perform a **bounded quota repair** pass:
   user has focused on less recently.
 - Performs a small, capped reallocation of quota toward the most-neglected
   values.
-- The cap is intentionally tight so this never “overrides the plan”.
+- The cap is intentionally tight so this never "overrides the plan".
 
 This produces explainability via the reason code `neglectBalance` for any tasks
 that enter the selection due to the quota repair step.
@@ -101,14 +101,14 @@ Within a value, tasks are ordered using deterministic tie-breaks:
 - urgency (deadline proximity) as a tie-break
 - then timestamps / name
 
-This avoids “spiky” ranking behavior and prevents urgency/priority from becoming
+This avoids "spiky" ranking behavior and prevents urgency/priority from becoming
 an implicit global optimizer.
 
 ## 5) Settings model
 
 User-facing setting:
 
-- **Keep my values in balance** → `AllocationConfig.strategySettings.enableNeglectWeighting`
+- **Keep my values in balance** -> `AllocationConfig.strategySettings.enableNeglectWeighting`
 
 Implementation notes:
 
@@ -123,11 +123,11 @@ Urgency settings:
 
 ## 6) Explainability
 
-Each allocated task includes `reasonCodes` that the UI can render as “Why
-suggested” chips.
+Each allocated task includes `reasonCodes` that the UI can render as "Why
+suggested" chips.
 
 When the ritual is confirmed, Taskly persists a subset of suggestion metadata
-into `my_day_picks` so the UI can continue to render “Why suggested” without
+into `my_day_picks` so the UI can continue to render "Why suggested" without
 recomputing or snapshot persistence:
 
 - `suggestion_rank` (1-based rank within the suggested list)
@@ -136,11 +136,11 @@ recomputing or snapshot persistence:
 
 Important reason codes:
 
-- `valueAlignment` — task matches a value category
-- `crossValue` — task spans multiple values
-- `urgency` — deadline is near
-- `priority` — task has explicit priority metadata
-- `neglectBalance` — selected due to bounded value balancing
+- `valueAlignment` -- task matches a value category
+- `crossValue` -- task spans multiple values
+- `urgency` -- deadline is near
+- `priority` -- task has explicit priority metadata
+- `neglectBalance` -- selected due to bounded value balancing
 
 ## 7) Guardrails + failure modes
 
@@ -152,10 +152,10 @@ Important reason codes:
 
 My Day integration notes:
 
-- The “missing due” / “missing starts” UX is computed dynamically at render
-  time from current tasks; there are no “frozen candidates”.
+- The "missing due" / "missing starts" UX is computed dynamically at render
+  time from current tasks; there are no "frozen candidates".
 - The persisted selection is stored in buckets (see `MyDayPickBucket`), so the
-  UI can show “Today / Due soon / Starts today” sections while remaining robust
+  UI can show "Today / Due soon / Starts today" sections while remaining robust
   to task edits/deletes.
 
 ## 8) Code locations
@@ -171,4 +171,6 @@ My Day integration notes:
 
 - Multiple competing allocation strategies
 - User-tunable scoring knobs (urgency multipliers, weighting sliders, etc.)
-- Project “diversity preference” as a separate optimizer
+- Project "diversity preference" as a separate optimizer
+
+

@@ -7,6 +7,7 @@ library;
 part '../core/forms/task_field_keys.dart';
 part '../core/forms/project_field_keys.dart';
 part '../core/forms/value_field_keys.dart';
+part '../core/forms/routine_field_keys.dart';
 
 final class FieldKey {
   const FieldKey(this.id);

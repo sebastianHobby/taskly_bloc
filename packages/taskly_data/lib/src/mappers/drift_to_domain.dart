@@ -69,3 +69,82 @@ Task taskFromTable(
     overrideSecondaryValueId: t.overrideSecondaryValueId,
   );
 }
+
+ProjectNextAction projectNextActionFromTable(
+  drift.ProjectNextActionsTableData t,
+) {
+  return ProjectNextAction(
+    id: t.id,
+    projectId: t.projectId,
+    taskId: t.taskId,
+    rank: t.rank,
+    createdAtUtc: t.createdAt,
+    updatedAtUtc: t.updatedAt,
+  );
+}
+
+ProjectAnchorState projectAnchorStateFromTable(
+  drift.ProjectAnchorStateTableData t,
+) {
+  return ProjectAnchorState(
+    id: t.id,
+    projectId: t.projectId,
+    lastAnchoredAtUtc: t.lastAnchoredAt,
+    createdAtUtc: t.createdAt,
+    updatedAtUtc: t.updatedAt,
+  );
+}
+
+Routine routineFromTable(
+  drift.RoutinesTableData t, {
+  Value? value,
+  Project? project,
+}) {
+  return Routine(
+    id: t.id,
+    createdAt: t.createdAt,
+    updatedAt: t.updatedAt,
+    name: t.name,
+    valueId: t.valueId,
+    projectId: t.projectId,
+    routineType: RoutineTypeStorageKey.fromStorageKey(t.routineType),
+    targetCount: t.targetCount,
+    scheduleDays: t.scheduleDays ?? const <int>[],
+    minSpacingDays: t.minSpacingDays,
+    restDayBuffer: t.restDayBuffer,
+    preferredWeeks: t.preferredWeeks ?? const <int>[],
+    fixedDayOfMonth: t.fixedDayOfMonth,
+    fixedWeekday: t.fixedWeekday,
+    fixedWeekOfMonth: t.fixedWeekOfMonth,
+    isActive: t.isActive,
+    pausedUntil: t.pausedUntil,
+    value: value,
+    project: project,
+  );
+}
+
+RoutineCompletion routineCompletionFromTable(
+  drift.RoutineCompletionsTableData t,
+) {
+  return RoutineCompletion(
+    id: t.id,
+    routineId: t.routineId,
+    completedAtUtc: t.completedAt,
+    createdAtUtc: t.createdAt,
+  );
+}
+
+RoutineSkip routineSkipFromTable(
+  drift.RoutineSkipsTableData t,
+) {
+  return RoutineSkip(
+    id: t.id,
+    routineId: t.routineId,
+    periodType: RoutineSkipPeriodType.values.firstWhere(
+      (value) => value.name == t.periodType,
+      orElse: () => RoutineSkipPeriodType.week,
+    ),
+    periodKeyUtc: t.periodKey,
+    createdAtUtc: t.createdAt,
+  );
+}

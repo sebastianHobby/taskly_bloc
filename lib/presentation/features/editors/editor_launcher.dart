@@ -5,6 +5,7 @@ import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
+import 'package:taskly_bloc/presentation/features/routines/view/routine_detail_view.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_detail_view.dart';
@@ -25,7 +26,9 @@ class EditorLauncher {
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
     TaskRepositoryContract? taskRepository,
+    RoutineRepositoryContract? routineRepository,
   }) : _taskRepository = taskRepository,
+       _routineRepository = routineRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository;
 
@@ -34,10 +37,12 @@ class EditorLauncher {
       taskRepository: getIt<TaskRepositoryContract>(),
       projectRepository: getIt<ProjectRepositoryContract>(),
       valueRepository: getIt<ValueRepositoryContract>(),
+      routineRepository: getIt<RoutineRepositoryContract>(),
     );
   }
 
   final TaskRepositoryContract? _taskRepository;
+  final RoutineRepositoryContract? _routineRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
 
@@ -134,6 +139,35 @@ class EditorLauncher {
           valueRepository: _valueRepository,
           initialDraft: valueId == null ? initialDraft : null,
           onSaved: onSaved,
+        );
+      },
+    );
+  }
+  Future<void> openRoutineEditor(
+    BuildContext context, {
+    String? routineId,
+    bool? showDragHandle,
+  }) {
+    final routineRepository = _routineRepository;
+    if (routineRepository == null) {
+      throw StateError(
+        'EditorLauncher.openRoutineEditor requires a RoutineRepositoryContract.',
+      );
+    }
+
+    final windowSizeClass = WindowSizeClass.of(context);
+    final effectiveShowDragHandle =
+        windowSizeClass.isCompact && (showDragHandle ?? true);
+
+    return showDetailModal<void>(
+      context: context,
+      showDragHandle: effectiveShowDragHandle,
+      childBuilder: (modalContext) {
+        return RoutineDetailSheetPage(
+          routineId: routineId,
+          routineRepository: routineRepository,
+          projectRepository: _projectRepository,
+          valueRepository: _valueRepository,
         );
       },
     );

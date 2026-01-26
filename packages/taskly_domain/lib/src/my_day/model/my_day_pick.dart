@@ -2,16 +2,22 @@ import 'package:meta/meta.dart';
 
 /// Buckets used by the My Day ritual.
 ///
-/// These correspond to the sections the user accepts tasks from.
+/// These correspond to the sources the user accepts items from.
 enum MyDayPickBucket {
-  /// A normal planned pick (selected in the ritual but not classified as due or
-  /// starts, and not a curated suggestion).
-  /// Todo confirm if all these buckets are still used.
-  planned,
-  due,
-  starts,
-  focus,
+  /// Value-led suggestions selected during the ritual.
+  values,
+
+  /// Routine picks selected for today.
   routine,
+
+  /// Time-sensitive picks (deadline-driven).
+  due,
+
+  /// Time-sensitive picks (start date-driven).
+  starts,
+
+  /// Manual picks that are not in the above categories.
+  manual,
 }
 
 enum MyDayPickTargetType { task, routine }

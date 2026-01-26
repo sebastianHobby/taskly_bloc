@@ -70,8 +70,24 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
   }
 
   domain.MyDayPick _pickFromRow(MyDayPicksTableData row) {
-    return domain.MyDayPick(
-      taskId: row.taskId,
+    final routineId = row.routineId;
+    if (routineId != null) {
+      return domain.MyDayPick.routine(
+        routineId: routineId,
+        bucket: _bucketFromDb(row.bucket),
+        sortIndex: row.sortIndex,
+        pickedAtUtc: row.pickedAt.toUtc(),
+        qualifyingValueId: row.qualifyingValueId,
+      );
+    }
+
+    final taskId = row.taskId;
+    if (taskId == null) {
+      throw StateError('My Day pick is missing task_id and routine_id.');
+    }
+
+    return domain.MyDayPick.task(
+      taskId: taskId,
       bucket: _bucketFromDb(row.bucket),
       sortIndex: row.sortIndex,
       pickedAtUtc: row.pickedAt.toUtc(),
@@ -83,11 +99,12 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
 
   domain.MyDayPickBucket _bucketFromDb(String raw) {
     return switch (raw) {
-      'planned' => domain.MyDayPickBucket.planned,
+      'values' => domain.MyDayPickBucket.values,
+      'routine' => domain.MyDayPickBucket.routine,
       'due' => domain.MyDayPickBucket.due,
       'starts' => domain.MyDayPickBucket.starts,
-      'focus' => domain.MyDayPickBucket.focus,
-      _ => domain.MyDayPickBucket.focus,
+      'manual' => domain.MyDayPickBucket.manual,
+      _ => throw StateError('Unknown My Day pick bucket: $raw'),
     };
   }
 
@@ -140,14 +157,24 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
       )..where((t) => t.dayId.equals(dayId))).go();
 
       for (final pick in picks) {
+        final targetType = pick.targetType.name;
+        final targetId = pick.targetId;
+        final taskId = pick.taskId;
+        final routineId = pick.routineId;
+
         await _db
             .into(_db.myDayPicksTable)
             .insert(
               MyDayPicksTableCompanion.insert(
-                id: _ids.myDayPickId(dayId: dayId, taskId: pick.taskId),
+                id: _ids.myDayPickId(
+                  dayId: dayId,
+                  targetType: targetType,
+                  targetId: targetId,
+                ),
                 userId: Value(userId),
                 dayId: dayId,
-                taskId: pick.taskId,
+                taskId: Value(taskId),
+                routineId: Value(routineId),
                 bucket: pick.bucket.name,
                 sortIndex: pick.sortIndex,
                 pickedAt: pick.pickedAtUtc.toUtc(),
@@ -223,10 +250,14 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
           .into(_db.myDayPicksTable)
           .insert(
             MyDayPicksTableCompanion.insert(
-              id: _ids.myDayPickId(dayId: dayId, taskId: taskId),
+              id: _ids.myDayPickId(
+                dayId: dayId,
+                targetType: domain.MyDayPickTargetType.task.name,
+                targetId: taskId,
+              ),
               userId: Value(userId),
               dayId: dayId,
-              taskId: taskId,
+              taskId: Value(taskId),
               bucket: bucket.name,
               sortIndex: nextIndex,
               pickedAt: nowUtc,

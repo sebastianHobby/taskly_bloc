@@ -246,8 +246,8 @@ class MyDayPicksTable extends Table {
       .nullable()
       .references(RoutinesTable, #id, onDelete: KeyAction.cascade)();
 
-  /// One of: due, starts, focus.
-  TextColumn get bucket => text().named('bucket')();
+    /// One of: values, routine, due, starts, manual.
+    TextColumn get bucket => text().named('bucket')();
 
   IntColumn get sortIndex => integer().named('sort_index')();
 

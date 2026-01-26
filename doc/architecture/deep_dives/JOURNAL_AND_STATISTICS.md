@@ -1,4 +1,4 @@
-# Journal + Statistics — Architecture Overview
+﻿# Journal + Statistics -- Architecture Overview
 
 > Audience: developers + architects
 >
@@ -7,7 +7,7 @@
 
 ## 1) Executive Summary
 
-Taskly’s **Journal system** is an offline-first, event-log oriented subsystem
+Taskly's **Journal system** is an offline-first, event-log oriented subsystem
 that lets users:
 
 - create **journal entries** (text + timestamps)
@@ -20,7 +20,7 @@ The Journal is intentionally designed to support higher-order **statistics**:
 
 - time-series trends (e.g., mood trend)
 - distributions (e.g., mood histogram)
-- correlations (e.g., “exercise ↔ mood”) and derived insights
+- correlations (e.g., "exercise <-> mood") and derived insights
 - daily snapshots for entities (tasks/projects/values) and/or journal-derived
   metrics
 
@@ -98,7 +98,7 @@ The Journal tracker subsystem follows an **event log** approach:
 
 This enables:
 
-- immediate UI reflection by reading raw events (useful for “Today”)
+- immediate UI reflection by reading raw events (useful for "Today")
 - efficient analytics by querying projections (for heavier aggregation)
 
 ### 3.2 Persistence model (conceptual)
@@ -149,7 +149,7 @@ See:
 
 ### 3.3 Seeding system trackers
 
-The Journal seeds a small “safe” system tracker set (e.g. mood/exercise/meds).
+The Journal seeds a small "safe" system tracker set (e.g. mood/exercise/meds).
 The templates live in `SystemTrackers` and are inserted idempotently by a
 maintenance/seeding component.
 
@@ -170,9 +170,9 @@ Journal screens subscribe to repository streams through BLoCs:
 
 ## 4) Statistics / Analytics Architecture
 
-### 4.1 What “Statistics” means in Taskly
+### 4.1 What "Statistics" means in Taskly
 
-In this repo, “statistics” spans several related concerns:
+In this repo, "statistics" spans several related concerns:
 
 - **task stats** (e.g., completion rate) computed from task streams
 - **value stats** and activity-derived signals
@@ -192,7 +192,7 @@ The primary orchestration layer is `AnalyticsServiceImpl` which composes:
 This keeps heavy computation out of widgets and allows caching/persistence where
 appropriate.
 
-### 4.3 Correlations (journal factors ↔ outcomes)
+### 4.3 Correlations (journal factors <-> outcomes)
 
 Correlation computation uses a dedicated calculator that operates on series
 extracted from journal tracker projections or event streams.
@@ -242,7 +242,9 @@ for the product/architecture:
 
 - Replace the `statisticsDashboard` placeholder with an explicit statistics
   dashboard screen driven by a presentation-layer BLoC.
-- Define stable “journal stats” read models/APIs for commonly requested
+- Define stable "journal stats" read models/APIs for commonly requested
   analytics (mood trend, distributions, correlations).
 - Decide which computations should be *purely derived* vs *persisted* (snapshots)
   for offline speed and sync friendliness.
+
+

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 import 'package:taskly_ui/src/models/value_chip_data.dart';
 import 'package:taskly_ui/src/primitives/meta_badges.dart';
+import 'package:taskly_ui/src/primitives/taskly_badge.dart';
 import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
 import 'package:taskly_ui/src/primitives/value_chip_widget.dart';
 
@@ -353,6 +354,8 @@ class _MetaRow extends StatelessWidget {
     final valueChip = model.leadingChip;
     final secondaryChips = model.secondaryChips;
     final hasValue = valueChip != null || secondaryChips.isNotEmpty;
+    final badges = model.badges;
+    final hasBadges = badges.isNotEmpty;
     final plan = meta.startDateLabel?.trim() ?? '';
     final due = meta.deadlineDateLabel?.trim() ?? '';
 
@@ -361,7 +364,7 @@ class _MetaRow extends StatelessWidget {
     final hasPriority = meta.priority != null;
     final hasMeta = hasPriority || hasPlan || hasDue;
 
-    if (!hasValue && !hasMeta) {
+    if (!hasValue && !hasMeta && !hasBadges) {
       return const SizedBox.shrink();
     }
 
@@ -381,88 +384,116 @@ class _MetaRow extends StatelessWidget {
         ? 96.0
         : 140.0;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const spacing = 8.0;
-        final rightWidth = _rightMetaWidth(
-          context,
-          showDue: hasDue,
-          dueLabel: due,
-          dueStyle: dueValueStyle,
-        );
+    final Widget? metaRow = (hasValue || hasMeta)
+        ? LayoutBuilder(
+            builder: (context, constraints) {
+              const spacing = 8.0;
+              final rightWidth = _rightMetaWidth(
+                context,
+                showDue: hasDue,
+                dueLabel: due,
+                dueStyle: dueValueStyle,
+              );
 
-        final maxLeftWidth = _leftMaxWidth(
-          constraints.maxWidth,
-          rightWidth,
-          spacing,
-        );
+              final maxLeftWidth = _leftMaxWidth(
+                constraints.maxWidth,
+                rightWidth,
+                spacing,
+              );
 
-        final leftLayout = _resolveLeftLayout(
-          context,
-          maxLeftWidth: maxLeftWidth,
-          leadingChip: valueChip,
-          secondaryChips: secondaryChips,
-          hasPriority: hasPriority,
-          priority: meta.priority,
-          hasPlan: hasPlan,
-          planLabel: plan,
-          planStyle: valueStyle,
-          compactPriorityPill: compactPriorityPill,
-          primaryIconOnly: primaryIconOnly,
-          primaryLabelMaxWidth: primaryLabelMaxWidth,
-        );
+              final leftLayout = _resolveLeftLayout(
+                context,
+                maxLeftWidth: maxLeftWidth,
+                leadingChip: valueChip,
+                secondaryChips: secondaryChips,
+                hasPriority: hasPriority,
+                priority: meta.priority,
+                hasPlan: hasPlan,
+                planLabel: plan,
+                planStyle: valueStyle,
+                compactPriorityPill: compactPriorityPill,
+                primaryIconOnly: primaryIconOnly,
+                primaryLabelMaxWidth: primaryLabelMaxWidth,
+              );
 
-        final items = <Widget>[
-          for (final chip in leftLayout.chips)
-            ValueChip(
-              data: chip.data,
-              iconOnly: chip.iconOnly,
-              maxLabelWidth: chip.maxLabelWidth,
-            ),
-          if (leftLayout.showPriority)
-            PriorityPill(
-              priority: meta.priority!,
-              compact: compactPriorityPill,
-            ),
-          if (leftLayout.showPlan)
-            MetaIconLabel(
-              icon: Icons.calendar_today_rounded,
-              label: plan,
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
-              textStyle: valueStyle,
-            ),
-        ];
+              final items = <Widget>[
+                for (final chip in leftLayout.chips)
+                  ValueChip(
+                    data: chip.data,
+                    iconOnly: chip.iconOnly,
+                    maxLabelWidth: chip.maxLabelWidth,
+                  ),
+                if (leftLayout.showPriority)
+                  PriorityPill(
+                    priority: meta.priority!,
+                    compact: compactPriorityPill,
+                  ),
+                if (leftLayout.showPlan)
+                  MetaIconLabel(
+                    icon: Icons.calendar_today_rounded,
+                    label: plan,
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    textStyle: valueStyle,
+                  ),
+              ];
 
-        final leftMeta = Row(
-          mainAxisSize: MainAxisSize.min,
+              final leftMeta = Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < items.length; i++) ...[
+                    items[i],
+                    if (i != items.length - 1)
+                      const SizedBox(width: spacing),
+                  ],
+                ],
+              );
+
+              if (!hasDue) {
+                return leftMeta;
+              }
+
+              final rightMeta = MetaIconLabel(
+                icon: Icons.flag_rounded,
+                label: due,
+                color: dueColor,
+                textStyle: dueValueStyle,
+              );
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(child: leftMeta),
+                  const SizedBox(width: spacing),
+                  rightMeta,
+                ],
+              );
+            },
+          )
+        : null;
+
+    if (!hasBadges) {
+      return metaRow ?? const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (metaRow != null) metaRow,
+        if (metaRow != null) const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
           children: [
-            for (var i = 0; i < items.length; i++) ...[
-              items[i],
-              if (i != items.length - 1) const SizedBox(width: spacing),
-            ],
+            for (final badge in badges)
+              TasklyBadge(
+                label: badge.label,
+                icon: badge.icon,
+                color: badge.color,
+                style: _badgeStyle(badge.tone),
+              ),
           ],
-        );
-
-        if (!hasDue) {
-          return leftMeta;
-        }
-
-        final rightMeta = MetaIconLabel(
-          icon: Icons.flag_rounded,
-          label: due,
-          color: dueColor,
-          textStyle: dueValueStyle,
-        );
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(child: leftMeta),
-            const SizedBox(width: spacing),
-            rightMeta,
-          ],
-        );
-      },
+        ),
+      ],
     );
   }
 
@@ -768,6 +799,14 @@ class _LeftLayoutCandidate {
 
   final bool showPriority;
   final bool showPlan;
+}
+
+TasklyBadgeStyle _badgeStyle(TasklyBadgeTone tone) {
+  return switch (tone) {
+    TasklyBadgeTone.solid => TasklyBadgeStyle.solid,
+    TasklyBadgeTone.outline => TasklyBadgeStyle.outline,
+    TasklyBadgeTone.soft => TasklyBadgeStyle.softOutline,
+  };
 }
 
 class _LeftMetaLayout {

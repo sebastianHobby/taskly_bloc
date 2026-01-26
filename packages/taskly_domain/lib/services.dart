@@ -25,3 +25,4 @@ export 'src/services/time/temporal_trigger_service.dart';
 export 'src/services/suggestions/task_suggestion_service.dart';
 export 'src/services/actions/entity_action_service.dart';
 export 'src/services/capabilities/entity_tile_capabilities_resolver.dart';
+export 'src/routines/services/routine_schedule_service.dart';
