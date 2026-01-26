@@ -20,7 +20,10 @@ import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/infrastructure/powersync/api_connector.dart';
 import 'package:taskly_data/src/infrastructure/supabase/supabase.dart';
 import 'package:taskly_data/src/repositories/auth_repository.dart';
+import 'package:taskly_data/src/repositories/project_anchor_state_repository.dart';
+import 'package:taskly_data/src/repositories/project_next_actions_repository.dart';
 import 'package:taskly_data/src/repositories/project_repository.dart';
+import 'package:taskly_data/src/repositories/routine_repository.dart';
 import 'package:taskly_data/src/repositories/settings_repository.dart';
 import 'package:taskly_data/src/repositories/task_repository.dart';
 import 'package:taskly_data/src/repositories/value_repository.dart';
@@ -38,9 +41,12 @@ final class TasklyDataBindings {
     required this.authRepository,
     required this.localDataMaintenanceService,
     required this.projectRepository,
+    required this.projectNextActionsRepository,
+    required this.projectAnchorStateRepository,
     required this.taskRepository,
     required this.valueRepository,
     required this.myDayRepository,
+    required this.routineRepository,
     required this.settingsRepository,
     required this.homeDayKeyService,
     required this.occurrenceReadService,
@@ -60,9 +66,12 @@ final class TasklyDataBindings {
   final LocalDataMaintenanceService localDataMaintenanceService;
 
   final ProjectRepositoryContract projectRepository;
+  final ProjectNextActionsRepositoryContract projectNextActionsRepository;
+  final ProjectAnchorStateRepositoryContract projectAnchorStateRepository;
   final TaskRepositoryContract taskRepository;
   final ValueRepositoryContract valueRepository;
   final MyDayRepositoryContract myDayRepository;
+  final RoutineRepositoryContract routineRepository;
   final SettingsRepositoryContract settingsRepository;
   final HomeDayKeyService homeDayKeyService;
   final OccurrenceReadService occurrenceReadService;
@@ -266,6 +275,16 @@ final class TasklyDataStack implements SyncAnomalyStream {
       idGenerator: idGenerator,
     );
 
+    final projectNextActionsRepository = ProjectNextActionsRepository(
+      driftDb: driftDb,
+      idGenerator: idGenerator,
+    );
+
+    final projectAnchorStateRepository = ProjectAnchorStateRepository(
+      driftDb: driftDb,
+      idGenerator: idGenerator,
+    );
+
     final taskRepository = TaskRepository(
       driftDb: driftDb,
       occurrenceExpander: occurrenceExpander,
@@ -281,6 +300,11 @@ final class TasklyDataStack implements SyncAnomalyStream {
     final myDayRepository = MyDayRepositoryImpl(
       driftDb: driftDb,
       ids: idGenerator,
+    );
+
+    final routineRepository = RoutineRepository(
+      driftDb: driftDb,
+      idGenerator: idGenerator,
     );
 
     final attentionRepository = attention_repo_v2_impl.AttentionRepositoryV2(
@@ -328,9 +352,12 @@ final class TasklyDataStack implements SyncAnomalyStream {
       authRepository: authRepository,
       localDataMaintenanceService: localDataMaintenanceService,
       projectRepository: projectRepository,
+      projectNextActionsRepository: projectNextActionsRepository,
+      projectAnchorStateRepository: projectAnchorStateRepository,
       taskRepository: taskRepository,
       valueRepository: valueRepository,
       myDayRepository: myDayRepository,
+      routineRepository: routineRepository,
       settingsRepository: settingsRepository,
       homeDayKeyService: homeDayKeyService,
       occurrenceReadService: occurrenceReadService,

@@ -3,26 +3,35 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/journal_daily_detail_sheet.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 
-class JournalTodayPage extends StatelessWidget {
+class JournalTodayPage extends StatefulWidget {
   const JournalTodayPage({required this.day, super.key});
 
   final DateTime day;
 
   @override
+  State<JournalTodayPage> createState() => _JournalTodayPageState();
+}
+
+class _JournalTodayPageState extends State<JournalTodayPage> {
+  bool _showDailyDetails = true;
+
+  @override
   Widget build(BuildContext context) {
+    final day = widget.day;
+
     return BlocProvider<JournalTodayBloc>(
       key: ValueKey<DateTime>(DateTime(day.year, day.month, day.day)),
       create: (_) => JournalTodayBloc(
         repository: getIt<JournalRepositoryContract>(),
-        nowUtc: getIt<NowService>().nowUtc,
         selectedDay: day,
-      ),
+      )..add(JournalTodayStarted(selectedDay: day)),
       child: BlocBuilder<JournalTodayBloc, JournalTodayState>(
         builder: (context, state) {
           return switch (state) {
@@ -35,16 +44,56 @@ class JournalTodayPage extends StatelessWidget {
               :final eventsByEntryId,
               :final definitionById,
               :final moodTrackerId,
+              :final moodAverage,
+              :final dailySummaryItems,
+              :final dailySummaryTotalCount,
             ) =>
               ListView(
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
                 children: [
-                  _TodaySummary(
-                    entries: entries,
-                    eventsByEntryId: eventsByEntryId,
-                    moodTrackerId: moodTrackerId,
+                  _DailySummaryHeader(
+                    isExpanded: _showDailyDetails,
+                    onToggle: () => setState(() {
+                      _showDailyDetails = !_showDailyDetails;
+                    }),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
+                  TasklyJournalDailySummarySection(
+                    moodEmoji: _moodEmoji(moodAverage),
+                    moodLabel: _moodLabel(moodAverage),
+                    entryCountLabel: entries.length == 1
+                        ? '1 entry'
+                        : '${entries.length} entries',
+                    items: [
+                      for (final item in dailySummaryItems)
+                        TasklyJournalDailySummaryItem(
+                          label: item.label,
+                          value: item.value,
+                        ),
+                    ],
+                    showItems: _showDailyDetails,
+                    onEditDaily: () => JournalDailyDetailSheet.show(
+                      context: context,
+                      selectedDayLocal: day,
+                      readOnly: false,
+                    ),
+                    onSeeAll: dailySummaryTotalCount > dailySummaryItems.length
+                        ? () => JournalDailyDetailSheet.show(
+                            context: context,
+                            selectedDayLocal: day,
+                            readOnly: true,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(height: 16),
+                  _EntriesHeader(
+                    showAdd: entries.isEmpty,
+                    onAddLog: () => AddLogSheet.show(
+                      context: context,
+                      selectedDayLocal: day,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   _Timeline(
                     entries: entries,
                     eventsByEntryId: eventsByEntryId,
@@ -68,90 +117,52 @@ class JournalTodayPage extends StatelessWidget {
   }
 }
 
-class _TodaySummary extends StatelessWidget {
-  const _TodaySummary({
-    required this.entries,
-    required this.eventsByEntryId,
-    required this.moodTrackerId,
+class _DailySummaryHeader extends StatelessWidget {
+  const _DailySummaryHeader({
+    required this.isExpanded,
+    required this.onToggle,
   });
 
-  final List<JournalEntry> entries;
-  final Map<String, List<TrackerEvent>> eventsByEntryId;
-  final String? moodTrackerId;
+  final bool isExpanded;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final moodValues = <int>[];
+    return Row(
+      children: [
+        Text('Daily summary', style: Theme.of(context).textTheme.titleMedium),
+        const Spacer(),
+        IconButton(
+          tooltip: isExpanded ? 'Collapse' : 'Expand',
+          onPressed: onToggle,
+          icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more),
+        ),
+      ],
+    );
+  }
+}
 
-    final id = moodTrackerId;
-    if (id != null) {
-      for (final entry in entries) {
-        final events = eventsByEntryId[entry.id] ?? const <TrackerEvent>[];
-        for (final e in events) {
-          if (e.trackerId == id && e.value is int) {
-            moodValues.add(e.value! as int);
-            break;
-          }
-        }
-      }
-    }
+class _EntriesHeader extends StatelessWidget {
+  const _EntriesHeader({
+    required this.showAdd,
+    required this.onAddLog,
+  });
 
-    final double? moodAverage = moodValues.isEmpty
-        ? null
-        : moodValues.reduce((a, b) => a + b) / moodValues.length;
-    final MoodRating? moodDisplay = moodAverage == null
-        ? null
-        : MoodRating.fromValue(moodAverage.round().clamp(1, 5));
+  final bool showAdd;
+  final VoidCallback onAddLog;
 
-    final moodText = moodAverage == null
-        ? 'Mood avg: —'
-        : 'Mood avg: ${moodAverage.toStringAsFixed(1)}';
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              moodDisplay?.emoji ?? '•',
-              style: theme.textTheme.titleLarge,
-            ),
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text('Entries', style: Theme.of(context).textTheme.titleMedium),
+        const Spacer(),
+        if (showAdd)
+          TextButton(
+            onPressed: onAddLog,
+            child: const Text('Add entry'),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  moodText,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  entries.length == 1 ? '1 entry' : '${entries.length} entries',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -211,4 +222,14 @@ class _ErrorState extends StatelessWidget {
       ),
     );
   }
+}
+
+String _moodEmoji(double? moodAverage) {
+  if (moodAverage == null) return '-';
+  return MoodRating.fromValue(moodAverage.round().clamp(1, 5)).emoji;
+}
+
+String _moodLabel(double? moodAverage) {
+  if (moodAverage == null) return 'Mood avg: -';
+  return 'Mood avg: ${moodAverage.toStringAsFixed(1)}';
 }

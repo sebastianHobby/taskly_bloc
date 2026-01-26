@@ -154,8 +154,12 @@ class FakeIdGenerator implements IdGenerator {
   }
 
   @override
-  String myDayPickId({required String dayId, required String taskId}) {
-    return 'my-day-pick-$dayId-$taskId';
+  String myDayPickId({
+    required String dayId,
+    required String targetType,
+    required String targetId,
+  }) {
+    return 'my-day-pick-$dayId-$targetType-$targetId';
   }
 
   @override

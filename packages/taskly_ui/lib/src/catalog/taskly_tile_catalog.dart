@@ -237,6 +237,33 @@ class TasklyTileCatalog extends StatelessWidget {
         actions: _taskActionsWithSnooze,
       ),
       TasklyRowSpec.header(
+        key: 'catalog-routines',
+        title: 'Routines',
+        trailingLabel: 'Rows',
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-standard',
+        data: TasklyRoutineRowData(
+          id: 'r-standard-1',
+          title: 'Gym session',
+          targetLabel: '3×/week',
+          remainingLabel: '2 left',
+          windowLabel: '4 days left (Mon–Sun)',
+          statusLabel: 'On pace',
+          statusTone: TasklyRoutineStatusTone.onPace,
+          valueChip: valueHealth,
+          labels: const TasklyRoutineRowLabels(
+            primaryActionLabel: 'Do today',
+            notTodayLabel: 'Not today',
+            laterThisWeekLabel: 'Later this week',
+            skipPeriodLabel: 'Skip this week',
+            pauseLabel: 'Pause routine',
+            editLabel: 'Edit schedule',
+          ),
+        ),
+        actions: _routineActions,
+      ),
+      TasklyRowSpec.header(
         key: 'catalog-projects',
         title: 'Projects',
         trailingLabel: 'Presets',
@@ -492,6 +519,16 @@ final TasklyValueRowActions _valueActions = TasklyValueRowActions(
   onTap: _noop,
   onToggleSelected: _noop,
   onLongPress: _noop,
+);
+
+final TasklyRoutineRowActions _routineActions = TasklyRoutineRowActions(
+  onTap: _noop,
+  onPrimaryAction: _noop,
+  onNotToday: _noop,
+  onLaterThisWeek: _noop,
+  onSkipPeriod: _noop,
+  onPause: _noop,
+  onEdit: _noop,
 );
 
 void _noop() {}

@@ -14,6 +14,7 @@ export 'journal.dart';
 export 'notifications.dart';
 export 'preferences.dart';
 export 'queries.dart';
+export 'routines.dart';
 export 'services.dart';
 export 'settings.dart';
 export 'telemetry.dart';

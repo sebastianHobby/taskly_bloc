@@ -59,6 +59,7 @@ final class TaskSuggestionService {
     required bool includeAvailableToStart,
     required int batchCount,
     List<Task>? tasksOverride,
+    Map<String, int> routineSelectionsByValue = const {},
     DateTime? nowUtc,
   }) async {
     final resolvedNowUtc = nowUtc ?? _clock.nowUtc();
@@ -76,6 +77,7 @@ final class TaskSuggestionService {
     final allocation = await _allocationOrchestrator.getSuggestedSnapshot(
       batchCount: batchCount,
       nowUtc: resolvedNowUtc,
+      routineSelectionsByValue: routineSelectionsByValue,
     );
 
     final suggested = _buildSuggested(

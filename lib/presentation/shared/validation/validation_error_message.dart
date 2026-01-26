@@ -59,6 +59,20 @@ String validationErrorMessage(BuildContext context, ValidationError error) {
       return l10n.valueFormNameTooLong(max);
     case 'validationRequired':
       return l10n.validationRequired;
+    case 'validationInvalid':
+      return l10n.validationInvalid;
+    case 'validationMustBeGreaterThanZero':
+      return l10n.validationMustBeGreaterThanZero;
+    case 'validationMaxValue':
+      final max = error.args['max'] as int? ?? 0;
+      return l10n.validationMaxValue(max);
+
+    // Routine
+    case 'routineFormNameEmpty':
+      return l10n.routineFormNameEmpty;
+    case 'routineFormNameTooLong':
+      final max = error.args['max'] as int? ?? 100;
+      return l10n.routineFormNameTooLong(max);
 
     default:
       return error.messageKey;

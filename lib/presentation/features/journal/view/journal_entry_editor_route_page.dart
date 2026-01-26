@@ -6,8 +6,7 @@ import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
-import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_cubit.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_bloc.dart';
 
 class JournalEntryEditorRoutePage extends StatefulWidget {
   const JournalEntryEditorRoutePage({
@@ -42,15 +41,15 @@ class _JournalEntryEditorRoutePageState
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<JournalEntryEditorCubit>(
-      create: (context) => JournalEntryEditorCubit(
+    return BlocProvider<JournalEntryEditorBloc>(
+      create: (context) => JournalEntryEditorBloc(
         repository: getIt<JournalRepositoryContract>(),
         errorReporter: context.read<AppErrorReporter>(),
         entryId: widget.entryId,
         preselectedTrackerIds: widget.preselectedTrackerIds,
         nowUtc: getIt<NowService>().nowUtc,
-      ),
-      child: BlocConsumer<JournalEntryEditorCubit, JournalEntryEditorState>(
+      )..add(const JournalEntryEditorStarted()),
+      child: BlocConsumer<JournalEntryEditorBloc, JournalEntryEditorState>(
         listenWhen: (prev, next) =>
             prev.status.runtimeType != next.status.runtimeType,
         listener: (context, state) {
@@ -76,6 +75,7 @@ class _JournalEntryEditorRoutePageState
           }
         },
         builder: (context, state) {
+          final theme = Theme.of(context);
           final isSaving = state.status is JournalEntryEditorSaving;
           final isLoading = state.status is JournalEntryEditorLoading;
           final canSave =
@@ -84,10 +84,188 @@ class _JournalEntryEditorRoutePageState
               (!state.isEditingExisting || state.isDirty);
 
           if (_noteController.text != state.note && !isLoading) {
-            // Keep controller in sync with prefill.
             _noteController.text = state.note;
             _noteController.selection = TextSelection.fromPosition(
               TextPosition(offset: _noteController.text.length),
+            );
+          }
+
+          List<TrackerGroup?> groupOptions() {
+            return <TrackerGroup?>[null, ...state.groups];
+          }
+
+          String groupLabel(TrackerGroup? group) => group?.name ?? 'Ungrouped';
+
+          List<TrackerDefinition> trackersForGroup(String? groupId) {
+            final key = groupId ?? '';
+            return state.trackers
+                .where((d) => (d.groupId ?? '') == key)
+                .toList(growable: false)
+              ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+          }
+
+          Widget trackerInputRow({required TrackerDefinition d}) {
+            final currentValue = state.entryValues[d.id];
+
+            void setValue(Object? v) {
+              context.read<JournalEntryEditorBloc>().add(
+                JournalEntryEditorEntryValueChanged(
+                  trackerId: d.id,
+                  value: v,
+                ),
+              );
+            }
+
+            final valueType = d.valueType.trim().toLowerCase();
+            final valueKind = (d.valueKind ?? '').trim().toLowerCase();
+
+            if (valueType == 'yes_no' || valueKind == 'boolean') {
+              final boolValue = (currentValue is bool) && currentValue;
+              return SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(d.name),
+                value: boolValue,
+                onChanged: isSaving ? null : setValue,
+              );
+            }
+
+            if (valueType == 'rating') {
+              final min = d.minInt ?? 1;
+              final max = d.maxInt ?? 5;
+              final step = d.stepInt ?? 1;
+              final divisions = ((max - min) ~/ step).clamp(1, 50);
+
+              final intValue = switch (currentValue) {
+                final int v => v,
+                final double v => v.round(),
+                _ => min,
+              };
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(d.name, style: theme.textTheme.titleSmall),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Slider(
+                          value: intValue.toDouble().clamp(
+                            min.toDouble(),
+                            max.toDouble(),
+                          ),
+                          min: min.toDouble(),
+                          max: max.toDouble(),
+                          divisions: divisions,
+                          onChanged: isSaving
+                              ? null
+                              : (v) => setValue(v.round()),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 36,
+                        child: Text(
+                          '$intValue',
+                          textAlign: TextAlign.end,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }
+
+            if (valueType == 'quantity') {
+              final min = d.minInt;
+              final max = d.maxInt;
+              final step = d.stepInt ?? 1;
+
+              final intValue = switch (currentValue) {
+                final int v => v,
+                final double v => v.round(),
+                _ => 0,
+              };
+
+              int clamp(int v) {
+                var out = v;
+                if (min != null) out = out < min ? min : out;
+                if (max != null) out = out > max ? max : out;
+                return out;
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(d.name, style: theme.textTheme.titleSmall),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: isSaving
+                            ? null
+                            : () => setValue(clamp(intValue - step)),
+                        icon: const Icon(Icons.remove),
+                      ),
+                      Text('$intValue', style: theme.textTheme.titleMedium),
+                      IconButton(
+                        onPressed: isSaving
+                            ? null
+                            : () => setValue(clamp(intValue + step)),
+                        icon: const Icon(Icons.add),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }
+
+            if (valueType == 'choice') {
+              return FutureBuilder<List<TrackerDefinitionChoice>>(
+                future: context.read<JournalEntryEditorBloc>().getChoices(d.id),
+                builder: (context, snapshot) {
+                  final choices =
+                      snapshot.data ?? const <TrackerDefinitionChoice>[];
+                  final selectedKey = currentValue is String
+                      ? currentValue
+                      : null;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(d.name, style: theme.textTheme.titleSmall),
+                      const SizedBox(height: 8),
+                      if (choices.isEmpty)
+                        Text(
+                          'No options',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        )
+                      else
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final c in choices)
+                              ChoiceChip(
+                                label: Text(c.label),
+                                selected: selectedKey == c.choiceKey,
+                                onSelected: isSaving
+                                    ? null
+                                    : (_) => setValue(c.choiceKey),
+                              ),
+                          ],
+                        ),
+                    ],
+                  );
+                },
+              );
+            }
+
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(d.name),
+              subtitle: Text('Unsupported: ${d.valueType}'),
             );
           }
 
@@ -100,7 +278,9 @@ class _JournalEntryEditorRoutePageState
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                 child: FilledButton.icon(
                   onPressed: canSave
-                      ? () => context.read<JournalEntryEditorCubit>().save()
+                      ? () => context.read<JournalEntryEditorBloc>().add(
+                          const JournalEntryEditorSaveRequested(),
+                        )
                       : null,
                   icon: isSaving
                       ? const SizedBox(
@@ -121,118 +301,62 @@ class _JournalEntryEditorRoutePageState
                   : ListView(
                       padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
                       children: [
-                        _TodayHeader(now: getIt<NowService>().nowLocal()),
+                        Text('Mood', style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        _MoodScalePicker(
+                          value: state.mood,
+                          enabled: !isSaving,
+                          onChanged: (m) => context
+                              .read<JournalEntryEditorBloc>()
+                              .add(JournalEntryEditorMoodChanged(m)),
+                        ),
                         const SizedBox(height: 12),
-                        _SectionCard(
-                          title: 'Mood',
-                          subtitle: 'Tap what matches your day so far.',
-                          child: _MoodScalePicker(
-                            value: state.mood,
-                            enabled: !isSaving,
-                            onChanged: (m) => context
-                                .read<JournalEntryEditorCubit>()
-                                .moodChanged(m),
+                        TextField(
+                          controller: _noteController,
+                          onChanged: (v) => context
+                              .read<JournalEntryEditorBloc>()
+                              .add(JournalEntryEditorNoteChanged(v)),
+                          maxLines: 6,
+                          enabled: !isSaving,
+                          decoration: const InputDecoration(
+                            labelText: 'Note (optional)',
+                            border: OutlineInputBorder(),
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _SectionCard(
-                          title: 'Trackers',
-                          subtitle: 'Optional — keep it light.',
-                          child: _TrackerCards(
-                            trackers: state.availableTrackers,
-                            selectedTrackerIds: state.selectedTrackerIds,
-                            enabled: !isSaving,
-                            onToggle: (id) => context
-                                .read<JournalEntryEditorCubit>()
-                                .toggleTracker(id),
+                        Text('Trackers', style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        for (final group in groupOptions())
+                          Builder(
+                            builder: (context) {
+                              final groupId = group?.id;
+                              final inGroup = trackersForGroup(groupId);
+                              if (inGroup.isEmpty) {
+                                return const SizedBox.shrink();
+                              }
+
+                              return ExpansionTile(
+                                initiallyExpanded: true,
+                                title: Text(groupLabel(group)),
+                                childrenPadding: const EdgeInsets.only(
+                                  left: 12,
+                                  right: 12,
+                                  bottom: 12,
+                                ),
+                                children: [
+                                  for (final d in inGroup) ...[
+                                    trackerInputRow(d: d),
+                                    const Divider(height: 1),
+                                  ],
+                                ],
+                              );
+                            },
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        _SectionCard(
-                          title: 'Note',
-                          subtitle: 'One sentence is enough.',
-                          child: TextField(
-                            controller: _noteController,
-                            onChanged: (v) => context
-                                .read<JournalEntryEditorCubit>()
-                                .noteChanged(v),
-                            maxLines: 6,
-                            enabled: !isSaving,
-                            decoration: const InputDecoration(
-                              hintText: 'What do you want to remember?',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _TodayHeader extends StatelessWidget {
-  const _TodayHeader({required this.now});
-
-  final DateTime now;
-
-  @override
-  Widget build(BuildContext context) {
-    final materialLocalizations = MaterialLocalizations.of(context);
-    final date = materialLocalizations.formatFullDate(now);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Today', style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 2),
-        Text(
-          date,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.title,
-    required this.subtitle,
-    required this.child,
-  });
-
-  final String title;
-  final String subtitle;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
       ),
     );
   }
@@ -335,164 +459,6 @@ class _MoodOptionButton extends StatelessWidget {
   }
 }
 
-class _TrackerCards extends StatelessWidget {
-  const _TrackerCards({
-    required this.trackers,
-    required this.selectedTrackerIds,
-    required this.enabled,
-    required this.onToggle,
-  });
-
-  final List<TrackerDefinition> trackers;
-  final Set<String> selectedTrackerIds;
-  final bool enabled;
-  final ValueChanged<String> onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    if (trackers.isEmpty) {
-      return _TrackersEmptyState(enabled: enabled);
-    }
-
-    return Column(
-      children: [
-        for (final tracker in trackers)
-          _TrackerCard(
-            tracker: tracker,
-            selected: selectedTrackerIds.contains(tracker.id),
-            enabled: enabled,
-            onToggle: () => onToggle(tracker.id),
-          ),
-      ],
-    );
-  }
-}
-
-class _TrackersEmptyState extends StatelessWidget {
-  const _TrackersEmptyState({required this.enabled});
-
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: theme.dividerColor),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.tune,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'No quick-add trackers yet',
-                  style: theme.textTheme.titleSmall,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Enable a few to make logging feel effortless.',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          OutlinedButton(
-            onPressed: enabled
-                ? () =>
-                      Routing.pushScreenKey(context, 'journal_manage_trackers')
-                : null,
-            child: const Text('Manage'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TrackerCard extends StatelessWidget {
-  const _TrackerCard({
-    required this.tracker,
-    required this.selected,
-    required this.enabled,
-    required this.onToggle,
-  });
-
-  final TrackerDefinition tracker;
-  final bool selected;
-  final bool enabled;
-  final VoidCallback onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final icon = _trackerIcon(tracker);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: enabled ? onToggle : null,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    tracker.name,
-                    style: theme.textTheme.bodyLarge,
-                  ),
-                ),
-                Switch.adaptive(
-                  value: selected,
-                  onChanged: enabled ? (_) => onToggle() : null,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 Color _getMoodColor(MoodRating mood, ColorScheme colorScheme) {
   return switch (mood) {
     MoodRating.veryLow => colorScheme.error,
@@ -500,14 +466,5 @@ Color _getMoodColor(MoodRating mood, ColorScheme colorScheme) {
     MoodRating.neutral => colorScheme.onSurfaceVariant,
     MoodRating.good => colorScheme.tertiary,
     MoodRating.excellent => colorScheme.primary,
-  };
-}
-
-IconData _trackerIcon(TrackerDefinition tracker) {
-  return switch (tracker.systemKey) {
-    'exercise' => Icons.fitness_center,
-    'meds' => Icons.medication_outlined,
-    'meditation' => Icons.self_improvement,
-    _ => Icons.bookmark_border,
   };
 }

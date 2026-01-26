@@ -47,6 +47,10 @@ class NavigationIconResolver {
         icon: Icons.list_alt_outlined,
         selectedIcon: Icons.list_alt,
       ),
+      'routines' => (
+        icon: Icons.repeat_outlined,
+        selectedIcon: Icons.repeat,
+      ),
       // Legacy screen key (map to my_day icon)
       'next_actions' || 'next-actions' => (
         icon: Icons.wb_sunny_outlined,

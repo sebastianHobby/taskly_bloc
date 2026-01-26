@@ -1,12 +1,12 @@
-# Architecture Exceptions
+﻿# Architecture Exceptions
 
 > Audience: developers + reviewers
 >
 > Scope: the only acceptable way to temporarily violate an architecture invariant
 > or repo guardrail.
 
-Taskly’s invariants are intended to keep the codebase clean long-term. When an
-invariant blocks progress, we allow a *narrow*, *temporary* exception — but only
+Taskly's invariants are intended to keep the codebase clean long-term. When an
+invariant blocks progress, we allow a *narrow*, *temporary* exception -- but only
 when it is explicitly documented and has an owner and an expiry.
 
 ## How exceptions work
@@ -37,3 +37,5 @@ Example:
 ## Template
 
 Start from [EXCEPTION_TEMPLATE.md](EXCEPTION_TEMPLATE.md).
+
+

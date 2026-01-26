@@ -34,6 +34,7 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'my_day',
       'scheduled',
       'someday',
+      'routines',
       'journal',
       'values',
       'settings',
@@ -43,6 +44,7 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'my_day': 'My Day',
       'scheduled': 'Scheduled',
       'someday': 'Anytime',
+      'routines': 'Routines',
       'journal': 'Journal',
       'values': 'Values',
       'settings': 'Settings',
@@ -53,6 +55,7 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'scheduled': 1,
       'someday': 2,
       'journal': 3,
+      'routines': 4,
       'values': 5,
       'settings': 100,
     };

@@ -61,9 +61,9 @@ All editor/detail screens should prefer `flutter_form_builder` for forms.
 - The **widget** owns the `FormBuilder` key/state and composes field widgets.
 - The **BLoC** owns entity subscriptions/snapshots, validation policy, and
   save/delete intents.
-- Keep the widget â†’ BLoC boundary strongly typed:
+- Keep the widget -> BLoC boundary strongly typed:
   - do not pass `Map<String, dynamic>` as the draft model
-  - do not let raw string field names become a â€œprotocolâ€ into BLoCs
+  - do not let raw string field names become a "protocol" into BLoCs
 - Use domain validator helpers (`*Validators`) via presentation adapters for
   all field validation to keep UI behavior aligned with domain rules.
 
@@ -91,8 +91,8 @@ Recommended reuse mechanisms:
 All UI uses the same composition vocabulary:
 
 - **Primitives**: tiny, style-driven building blocks with no domain meaning.
-- **Entities**: render-only UI for a single domain concept, still â€œdata in /
-  events outâ€.
+- **Entities**: render-only UI for a single domain concept, still "data in /
+  events out".
 - **Sections**: composed, reusable chunks that group primitives/entities.
   Sections stay presentation-agnostic (no routing/state).
 - **Screens/Templates**: full pages and flows (routing, BLoC wiring, effects,
@@ -164,5 +164,7 @@ User-initiated mutations are correlated end-to-end using `OperationContext`.
 
 See the canonical rule in:
 - [../INVARIANTS.md](../INVARIANTS.md) (OperationContext write correlation)
+
+
 
 

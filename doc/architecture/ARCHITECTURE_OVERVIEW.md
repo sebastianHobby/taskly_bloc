@@ -1,8 +1,8 @@
-# Taskly — Architecture Overview
+﻿# Taskly -- Architecture Overview
 
 > Audience: developers + AI agents
 >
-> Scope: a **high-level mental model** of Taskly’s architecture: layers,
+> Scope: a **high-level mental model** of Taskly's architecture: layers,
 > responsibilities, and how data flows through the app.
 >
 > This document is **descriptive** (non-normative). All non-negotiable rules
@@ -63,7 +63,32 @@ render-only.
 Canonical rule: [INVARIANTS.md](INVARIANTS.md) (Presentation
 boundary).
 
-## 4) Where to read next
+## 4) Where code goes (feature slice map)
+
+Use this as a quick orientation when adding a new feature or screen. Paths are
+examples; follow existing feature naming.
+
+Presentation (screen + BLoC):
+- Screen widgets and routing: `lib/presentation/features/<feature>/`
+- BLoC + events/state: `lib/presentation/features/<feature>/bloc/`
+- Screen-local widgets: `lib/presentation/features/<feature>/widgets/`
+
+Domain (business semantics):
+- Use-cases/write facades: `packages/taskly_domain/lib/src/<feature>/use_cases/`
+- Domain models/entities: `packages/taskly_domain/lib/src/<feature>/model/`
+- Repository contracts: `packages/taskly_domain/lib/src/<feature>/contracts/`
+
+Data (persistence + sync):
+- Repository implementations: `packages/taskly_data/lib/src/<feature>/`
+- Drift tables/DAOs: `packages/taskly_data/lib/src/persistence/`
+- Sync adapters/serializers: `packages/taskly_data/lib/src/sync/`
+
+Shared UI (reusable visuals only):
+- Primitives/entities/sections: `packages/taskly_ui/lib/src/`
+
+Related vocabulary: [GLOSSARY.md](GLOSSARY.md)
+
+## 5) Where to read next
 
 - Non-negotiable rules (single source of truth): [INVARIANTS.md](INVARIANTS.md)
 - Screen patterns and BLoC guidance: [guides/BLOC_GUIDELINES.md](guides/BLOC_GUIDELINES.md)
@@ -71,3 +96,5 @@ boundary).
 - Sync deep dive: [deep_dives/POWERSYNC_SUPABASE.md](deep_dives/POWERSYNC_SUPABASE.md)
 - Local E2E stack runbook: [runbooks/LOCAL_E2E_STACK.md](runbooks/LOCAL_E2E_STACK.md)
 - Recurrence sync contract: [specs/RECURRENCE_SYNC_CONTRACT.md](specs/RECURRENCE_SYNC_CONTRACT.md)
+
+

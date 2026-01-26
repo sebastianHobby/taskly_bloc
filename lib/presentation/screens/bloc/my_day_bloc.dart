@@ -1,10 +1,13 @@
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 
 import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 
 sealed class MyDayEvent {
   const MyDayEvent();
@@ -12,6 +15,12 @@ sealed class MyDayEvent {
 
 final class MyDayStarted extends MyDayEvent {
   const MyDayStarted();
+}
+
+final class MyDayRoutineCompletionRequested extends MyDayEvent {
+  const MyDayRoutineCompletionRequested({required this.routineId});
+
+  final String routineId;
 }
 
 sealed class MyDayState {
@@ -27,28 +36,19 @@ final class MyDayLoaded extends MyDayState {
     required this.summary,
     required this.mix,
     required this.tasks,
+    required this.plannedItems,
     required this.pinnedTasks,
-    required this.acceptedDue,
-    required this.acceptedStarts,
-    required this.acceptedFocus,
     required this.completedPicks,
     required this.selectedTotalCount,
     required this.todaySelectedTaskIds,
+    required this.todaySelectedRoutineIds,
   });
 
   final MyDaySummary summary;
   final MyDayMixVm mix;
   final List<Task> tasks;
+  final List<MyDayPlannedItem> plannedItems;
   final List<Task> pinnedTasks;
-
-  /// Tasks accepted from the plan "Overdue & due" section.
-  final List<Task> acceptedDue;
-
-  /// Tasks accepted from the plan "Starts today" section.
-  final List<Task> acceptedStarts;
-
-  /// Tasks accepted from the plan "Suggestions" section.
-  final List<Task> acceptedFocus;
 
   /// Tasks selected for today that are already completed.
   final List<Task> completedPicks;
@@ -57,6 +57,9 @@ final class MyDayLoaded extends MyDayState {
 
   /// Full set of task ids selected for today (from plan persistence).
   final Set<String> todaySelectedTaskIds;
+
+  /// Full set of routine ids selected for today (from plan persistence).
+  final Set<String> todaySelectedRoutineIds;
 }
 
 final class MyDayError extends MyDayState {
@@ -68,13 +71,25 @@ final class MyDayError extends MyDayState {
 final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
   MyDayBloc({
     required MyDaySessionQueryService queryService,
+    required RoutineRepositoryContract routineRepository,
+    required NowService nowService,
   }) : _queryService = queryService,
+       _routineRepository = routineRepository,
+       _nowService = nowService,
        super(const MyDayLoading()) {
     on<MyDayStarted>(_onStarted, transformer: restartable());
+    on<MyDayRoutineCompletionRequested>(
+      _onRoutineCompletionRequested,
+      transformer: droppable(),
+    );
     add(const MyDayStarted());
   }
 
   final MyDaySessionQueryService _queryService;
+  final RoutineRepositoryContract _routineRepository;
+  final NowService _nowService;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
 
   Future<void> _onStarted(MyDayStarted event, Emitter<MyDayState> emit) async {
     await emit.forEach<MyDayState>(
@@ -92,14 +107,33 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         summary: vm.summary,
         mix: vm.mix,
         tasks: vm.tasks,
+        plannedItems: vm.plannedItems,
         pinnedTasks: vm.pinnedTasks,
-        acceptedDue: vm.acceptedDue,
-        acceptedStarts: vm.acceptedStarts,
-        acceptedFocus: vm.acceptedFocus,
         completedPicks: vm.completedPicks,
         selectedTotalCount: vm.selectedTotalCount,
         todaySelectedTaskIds: vm.todaySelectedTaskIds,
+        todaySelectedRoutineIds: vm.todaySelectedRoutineIds,
       ),
+    );
+  }
+
+  Future<void> _onRoutineCompletionRequested(
+    MyDayRoutineCompletionRequested event,
+    Emitter<MyDayState> emit,
+  ) async {
+    final context = _contextFactory.create(
+      feature: 'routines',
+      screen: 'my_day',
+      intent: 'routine_complete',
+      operation: 'routines.complete',
+      entityType: 'routine',
+      entityId: event.routineId,
+    );
+
+    await _routineRepository.recordCompletion(
+      routineId: event.routineId,
+      completedAtUtc: _nowService.nowUtc(),
+      context: context,
     );
   }
 }

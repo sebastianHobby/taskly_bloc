@@ -15,6 +15,9 @@ abstract class AllocationResult with _$AllocationResult {
     /// The focus mode used for this allocation
     FocusMode? activeFocusMode,
 
+    /// Projects selected as anchors (project-first allocation).
+    @Default(<String>[]) List<String> anchorProjectIds,
+
     /// True if allocation cannot proceed because user has no values defined.
     /// When true, the UI should show a gateway prompting value setup.
     @Default(false) bool requiresValueSetup,

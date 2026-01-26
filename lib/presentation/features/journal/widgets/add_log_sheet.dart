@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/presentation/features/journal/bloc/journal_add_entry_cubit.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_add_entry_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
@@ -32,14 +32,13 @@ class AddLogSheet extends StatelessWidget {
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) {
-        return BlocProvider<JournalAddEntryCubit>(
-          create: (context) => JournalAddEntryCubit(
+        return BlocProvider<JournalAddEntryBloc>(
+          create: (context) => JournalAddEntryBloc(
             repository: getIt<JournalRepositoryContract>(),
             errorReporter: context.read<AppErrorReporter>(),
-            selectedDayLocal: day,
             nowUtc: getIt<NowService>().nowUtc,
             preselectedTrackerIds: preselectedTrackerIds,
-          ),
+          )..add(JournalAddEntryStarted(selectedDayLocal: day)),
           child: Padding(
             padding: EdgeInsets.only(
               bottom: MediaQuery.viewInsetsOf(context).bottom,
@@ -81,7 +80,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<JournalAddEntryCubit, JournalAddEntryState>(
+    return BlocConsumer<JournalAddEntryBloc, JournalAddEntryState>(
       listenWhen: (prev, next) =>
           prev.status.runtimeType != next.status.runtimeType,
       listener: (context, state) {
@@ -110,52 +109,28 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
 
         final groupsById = {for (final g in state.groups) g.id: g};
 
-        bool isDailyScope(TrackerDefinition d) {
-          final s = d.scope.trim().toLowerCase();
-          return s == 'day' || s == 'daily' || s == 'sleep_night';
+        List<TrackerGroup?> groupOptions() {
+          return <TrackerGroup?>[null, ...state.groups];
         }
 
-        List<TrackerDefinition> scopeTrackers(bool daily) {
+        List<TrackerDefinition> trackersForGroup(String? groupId) {
+          final key = groupId ?? '';
           return state.trackers
-              .where((d) => d.systemKey != 'mood')
-              .where((d) => daily ? isDailyScope(d) : !isDailyScope(d))
+              .where((d) => (d.groupId ?? '') == key)
               .toList(growable: false)
             ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
         }
 
-        List<String?> groupOrderFor(List<TrackerDefinition> defs) {
-          final presentIds = defs.map((d) => d.groupId).toSet();
-          final known = state.groups
-              .where((g) => presentIds.contains(g.id))
-              .toList();
-          known.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-          final out = <String?>[];
-          out.add(null);
-          out.addAll(known.map((g) => g.id));
-          return out;
-        }
-
-        Object? effectiveDailyValue(String trackerId) {
-          if (state.dailyValues.containsKey(trackerId)) {
-            return state.dailyValues[trackerId];
-          }
-          return state.dayStateByTrackerId[trackerId]?.value;
-        }
-
-        Widget trackerInputRow({
-          required TrackerDefinition d,
-          required bool daily,
-        }) {
-          final currentValue = daily
-              ? effectiveDailyValue(d.id)
-              : state.entryValues[d.id];
+        Widget trackerInputRow({required TrackerDefinition d}) {
+          final currentValue = state.entryValues[d.id];
 
           void setValue(Object? v) {
-            if (daily) {
-              context.read<JournalAddEntryCubit>().setDailyValue(d.id, v);
-            } else {
-              context.read<JournalAddEntryCubit>().setEntryValue(d.id, v);
-            }
+            context.read<JournalAddEntryBloc>().add(
+              JournalAddEntryEntryValueChanged(
+                trackerId: d.id,
+                value: v,
+              ),
+            );
           }
 
           final valueType = d.valueType.trim().toLowerCase();
@@ -261,7 +236,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
 
           if (valueType == 'choice') {
             return FutureBuilder<List<TrackerDefinitionChoice>>(
-              future: context.read<JournalAddEntryCubit>().getChoices(d.id),
+              future: context.read<JournalAddEntryBloc>().getChoices(d.id),
               builder: (context, snapshot) {
                 final choices =
                     snapshot.data ?? const <TrackerDefinitionChoice>[];
@@ -309,55 +284,6 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
           );
         }
 
-        Widget groupedTrackers({required bool daily}) {
-          final defs = scopeTrackers(daily);
-          if (defs.isEmpty) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                daily ? 'No daily trackers yet.' : 'No entry trackers yet.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            );
-          }
-
-          final order = groupOrderFor(defs);
-          return Column(
-            children: [
-              for (final groupId in order)
-                Builder(
-                  builder: (context) {
-                    final groupName = groupId == null
-                        ? 'Ungrouped'
-                        : (groupsById[groupId]?.name ?? 'Ungrouped');
-                    final inGroup = defs
-                        .where((d) => (d.groupId ?? '') == (groupId ?? ''))
-                        .toList(growable: false);
-                    if (inGroup.isEmpty) return const SizedBox.shrink();
-
-                    return ExpansionTile(
-                      initiallyExpanded: true,
-                      title: Text(groupName),
-                      childrenPadding: const EdgeInsets.only(
-                        left: 12,
-                        right: 12,
-                        bottom: 12,
-                      ),
-                      children: [
-                        for (final d in inGroup) ...[
-                          trackerInputRow(d: d, daily: daily),
-                          const Divider(height: 1),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-            ],
-          );
-        }
-
         return Padding(
           padding: const EdgeInsets.all(16),
           child: SingleChildScrollView(
@@ -401,8 +327,9 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                   _MoodScalePicker(
                     value: state.mood,
                     enabled: !isSaving,
-                    onChanged: (value) =>
-                        context.read<JournalAddEntryCubit>().moodChanged(value),
+                    onChanged: (value) => context
+                        .read<JournalAddEntryBloc>()
+                        .add(JournalAddEntryMoodChanged(value)),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -413,45 +340,50 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                       border: OutlineInputBorder(),
                     ),
                     enabled: !isSaving,
-                    onChanged: (v) =>
-                        context.read<JournalAddEntryCubit>().noteChanged(v),
+                    onChanged: (v) => context.read<JournalAddEntryBloc>().add(
+                      JournalAddEntryNoteChanged(v),
+                    ),
                   ),
+                  const SizedBox(height: 12),
+                  Text('Trackers', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  ExpansionTile(
-                    initiallyExpanded: true,
-                    title: const Text('Factors'),
-                    childrenPadding: const EdgeInsets.symmetric(horizontal: 8),
-                    children: [
-                      ExpansionTile(
-                        initiallyExpanded: true,
-                        title: const Text('Daily (applies to the day)'),
-                        childrenPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                        ),
-                        children: [
-                          groupedTrackers(daily: true),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ExpansionTile(
-                        initiallyExpanded: true,
-                        title: const Text('This entry (momentary)'),
-                        childrenPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                        ),
-                        children: [
-                          groupedTrackers(daily: false),
-                        ],
-                      ),
-                    ],
-                  ),
+                  for (final group in groupOptions())
+                    Builder(
+                      builder: (context) {
+                        final groupId = group?.id;
+                        final inGroup = trackersForGroup(groupId);
+                        if (inGroup.isEmpty) return const SizedBox.shrink();
+
+                        final groupName = groupId == null
+                            ? 'Ungrouped'
+                            : (groupsById[groupId]?.name ?? 'Ungrouped');
+
+                        return ExpansionTile(
+                          initiallyExpanded: true,
+                          title: Text(groupName),
+                          childrenPadding: const EdgeInsets.only(
+                            left: 12,
+                            right: 12,
+                            bottom: 12,
+                          ),
+                          children: [
+                            for (final d in inGroup) ...[
+                              trackerInputRow(d: d),
+                              const Divider(height: 1),
+                            ],
+                          ],
+                        );
+                      },
+                    ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
                       onPressed: isSaving
                           ? null
-                          : () => context.read<JournalAddEntryCubit>().save(),
+                          : () => context.read<JournalAddEntryBloc>().add(
+                              const JournalAddEntrySaveRequested(),
+                            ),
                       icon: isSaving
                           ? const SizedBox(
                               width: 18,

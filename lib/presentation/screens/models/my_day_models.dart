@@ -1,5 +1,52 @@
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/my_day.dart' as my_day;
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
+
+enum MyDayPlannedItemType { task, routine }
+
+final class MyDayPlannedItem {
+  const MyDayPlannedItem.task({
+    required Task task,
+    required this.bucket,
+    required this.sortIndex,
+    required this.qualifyingValueId,
+  }) : type = MyDayPlannedItemType.task,
+       id = task.id,
+       task = task,
+       routine = null,
+       routineSnapshot = null,
+       completed = task.occurrence?.isCompleted ?? task.completed;
+
+  const MyDayPlannedItem.routine({
+    required Routine routine,
+    required RoutineCadenceSnapshot snapshot,
+    required this.bucket,
+    required this.sortIndex,
+    required this.qualifyingValueId,
+    required this.completed,
+  }) : type = MyDayPlannedItemType.routine,
+       id = routine.id,
+       task = null,
+       routine = routine,
+       routineSnapshot = snapshot;
+
+  final MyDayPlannedItemType type;
+  final String id;
+  final my_day.MyDayPickBucket bucket;
+  final int sortIndex;
+  final String? qualifyingValueId;
+  final Task? task;
+  final Routine? routine;
+  final RoutineCadenceSnapshot? routineSnapshot;
+  final bool completed;
+
+  String? get valueId {
+    final fromPick = qualifyingValueId;
+    if (fromPick != null && fromPick.isNotEmpty) return fromPick;
+    return task?.effectivePrimaryValueId ?? routine?.valueId;
+  }
+}
 
 final class MyDaySummary {
   const MyDaySummary({required this.doneCount, required this.totalCount});
@@ -11,30 +58,28 @@ final class MyDaySummary {
 final class MyDayViewModel {
   const MyDayViewModel({
     required this.tasks,
+    required this.plannedItems,
     required this.summary,
     required this.mix,
     required this.pinnedTasks,
-    required this.acceptedDue,
-    required this.acceptedStarts,
-    required this.acceptedFocus,
     required this.completedPicks,
     required this.selectedTotalCount,
     required this.todaySelectedTaskIds,
+    required this.todaySelectedRoutineIds,
   });
 
   final List<Task> tasks;
+  final List<MyDayPlannedItem> plannedItems;
   final MyDaySummary summary;
   final MyDayMixVm mix;
 
   final List<Task> pinnedTasks;
-  final List<Task> acceptedDue;
-  final List<Task> acceptedStarts;
-  final List<Task> acceptedFocus;
   final List<Task> completedPicks;
 
   final int selectedTotalCount;
 
   final Set<String> todaySelectedTaskIds;
+  final Set<String> todaySelectedRoutineIds;
 }
 
 final class MyDayMixVm {

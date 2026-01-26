@@ -1,4 +1,4 @@
-# Taskly — BLoC Guidelines
+﻿# Taskly -- BLoC Guidelines
 
 > Audience: developers
 >
@@ -89,7 +89,7 @@ Guidelines:
 
 For recurrence (tasks/projects with RRULEs):
 
-- Do not compute or “guess” occurrence keys (dates) in UI code for writes.
+- Do not compute or "guess" occurrence keys (dates) in UI code for writes.
 - Prefer calling a domain command service that resolves the target occurrence
   (for example "complete next occurrence") and then performs the mutation.
 - If a screen needs to *display* a single representative occurrence in a
@@ -182,7 +182,7 @@ Guidelines:
   - Cons: retains the last event; be mindful when the value is large.
 
 - `shareValue()` (creates a `ValueStream`)
-  - Pros: always has a “current value” concept; convenient for UI/state-like
+  - Pros: always has a "current value" concept; convenient for UI/state-like
     streams.
   - Cons: stronger semantics than you often need; can encourage accidental
     reliance on synchronous `value` access and can keep values alive longer.
@@ -213,3 +213,5 @@ Recommended defaults:
 - Writes create and pass `OperationContext`.
 - Repeated reactive composition is extracted into a presentation query service
   (not duplicated across BLoCs and not pushed into Domain).
+
+

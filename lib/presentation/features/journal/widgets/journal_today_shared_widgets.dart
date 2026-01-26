@@ -117,12 +117,7 @@ class JournalLogCard extends StatelessWidget {
     final timeLabel = DateFormat.jm().format(entry.occurredAt.toLocal());
 
     final mood = _findMood();
-
-    final nonMoodBoolEvents = events
-        .where((e) => e.trackerId != moodTrackerId)
-        .where((e) => e.value is bool)
-        .where((e) => e.value! as bool)
-        .toList(growable: false);
+    final summaryItems = _buildSummaryItems();
 
     final note = entry.journalText?.trim();
 
@@ -195,13 +190,13 @@ class JournalLogCard extends StatelessWidget {
                   style: theme.textTheme.bodyMedium,
                 ),
               ],
-              if (nonMoodBoolEvents.isNotEmpty) ...[
+              if (summaryItems.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final e in nonMoodBoolEvents)
+                    for (final item in summaryItems)
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -213,7 +208,7 @@ class JournalLogCard extends StatelessWidget {
                           border: Border.all(color: border),
                         ),
                         child: Text(
-                          '✓ ${definitionById[e.trackerId]?.name ?? 'Tracker'}',
+                          item,
                           style: theme.textTheme.labelMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -240,5 +235,50 @@ class JournalLogCard extends StatelessWidget {
     }
 
     return null;
+  }
+
+  List<String> _buildSummaryItems() {
+    final candidates = <String>[];
+    final moodId = moodTrackerId;
+
+    for (final e in events) {
+      if (moodId != null && e.trackerId == moodId) continue;
+
+      final name = definitionById[e.trackerId]?.name ?? 'Tracker';
+      final value = e.value;
+
+      if (value is bool) {
+        if (!value) continue;
+        candidates.add('OK $name');
+        continue;
+      }
+
+      if (value is int) {
+        candidates.add('$name: $value');
+        continue;
+      }
+
+      if (value is double) {
+        candidates.add('$name: ${value.toStringAsFixed(1)}');
+        continue;
+      }
+
+      if (value is String) {
+        candidates.add('$name: $value');
+        continue;
+      }
+
+      if (value != null) {
+        candidates.add('$name: $value');
+      }
+    }
+
+    if (candidates.length <= 4) return candidates;
+
+    final remaining = candidates.length - 3;
+    return [
+      ...candidates.take(3),
+      '+$remaining more',
+    ];
   }
 }

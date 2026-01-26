@@ -1,8 +1,8 @@
-# Recurrence + PowerSync Sync Contract (MVP)
+﻿# Recurrence + PowerSync Sync Contract (MVP)
 
 > Audience: developers + architects
 >
-> Scope: the recurrence storage + write semantics + sync constraints for Taskly’s
+> Scope: the recurrence storage + write semantics + sync constraints for Taskly's
 > offline-first (Drift + PowerSync) and Supabase (Postgres + PostgREST + RLS)
 > pipeline.
 >
@@ -17,7 +17,7 @@
 
 ### 1.1 Offline-first + layering
 
-This contract assumes Taskly’s offline-first model and standard layering.
+This contract assumes Taskly's offline-first model and standard layering.
 
 See:
 
@@ -42,7 +42,7 @@ Canonical rule:
 
 Recommended view-safe patterns:
 
-- **Update-then-insert** for “upsert-like” semantics.
+- **Update-then-insert** for "upsert-like" semantics.
 - **Insert-or-ignore** for append-only/idempotent rows.
 
 Reference: `doc/architecture/deep_dives/POWERSYNC_SUPABASE.md`.
@@ -79,7 +79,7 @@ Mutability:
 
 Deletion:
 
-- “Uncomplete” is modeled as hard delete of the matching completion row.
+- "Uncomplete" is modeled as hard delete of the matching completion row.
 
 ### 2.2 `recurrence_exceptions`
 
@@ -113,7 +113,7 @@ Edit/undo semantics:
 ### 3.1 Deterministic IDs
 
 For idempotent occurrence writes, completion/exception rows use deterministic IDs
-(“UUIDv5-like”). The same logical write yields the same `id` across retries.
+("UUIDv5-like"). The same logical write yields the same `id` across retries.
 
 Guidelines:
 
@@ -125,7 +125,7 @@ Guidelines:
 
 ### 3.2 Deterministic ID conflict policy
 
-Treat “same deterministic ID” as “same logical event”.
+Treat "same deterministic ID" as "same logical event".
 
 - Local writes should use view-safe patterns:
   - append-only inserts: `insertOrIgnore`
@@ -151,10 +151,10 @@ Treat “same deterministic ID” as “same logical event”.
 ### 4.3 DB enforcement
 
 - Prefer default `user_id = auth.uid()` on insert and prevent override.
-- Do not add triggers for “completion wins” in MVP; enforce in repository/write
+- Do not add triggers for "completion wins" in MVP; enforce in repository/write
   helper.
 
-## 5) Write operations (domain → data) and collision rules
+## 5) Write operations (domain -> data) and collision rules
 
 ### 5.1 Supported operations (MVP)
 
@@ -167,7 +167,7 @@ Treat “same deterministic ID” as “same logical event”.
 - `UncompleteOccurrence`: delete completion row.
 - `EditCompletionNotes`: update `notes`.
 
-### 5.2 Collision rule (“completion wins”)
+### 5.2 Collision rule ("completion wins")
 
 If a completion exists for `(entity_type, entity_id, original_occurrence_date)`,
 then skip/reschedule writes for that same original date must be rejected/ignored
@@ -176,7 +176,7 @@ and produce a `SyncAnomaly`.
 Rationale:
 
 - Keeps expansion deterministic.
-- Avoids “completed but skipped” contradictions.
+- Avoids "completed but skipped" contradictions.
 
 ## 6) Implementation guidance (PowerSync-safe)
 
@@ -203,7 +203,7 @@ No other code should write directly to recurrence tables.
 
 Do not rely on local unique indexes for exception uniqueness.
 
-- Enforce “one exception per original date” in the write helper:
+- Enforce "one exception per original date" in the write helper:
   - read existing exception for key
   - delete/ignore per policy
 
@@ -221,7 +221,7 @@ Because prod UX does not surface sync conflicts, diagnostics are key.
 Emit a `SyncAnomaly` when:
 
 - deterministic ID conflicts with materially different payload
-- “completion wins” blocks a skip/reschedule
+- "completion wins" blocks a skip/reschedule
 - server rejects a local write that was applied locally
 
 Diagnostics should include:
@@ -265,3 +265,5 @@ Guardrail (recommended):
 - Notes edit updates only `notes`.
 - Local write helper never emits UPSERT SQL (regression test via integration
   assertions around Drift operations, if feasible).
+
+

@@ -62,6 +62,7 @@ class SettingsScreen extends StatelessWidget {
                       _MyDayDueSoonToggle(settings: settings),
                       _MyDayDueWindowSlider(settings: settings),
                       _MyDayShowAvailableToStartToggle(settings: settings),
+                      _MyDayPlanFlowSelector(settings: settings),
                     ],
                   ),
                   _buildSection(
@@ -382,6 +383,43 @@ class _MyDayShowAvailableToStartToggle extends StatelessWidget {
           GlobalSettingsEvent.myDayShowAvailableToStartChanged(enabled),
         );
       },
+    );
+  }
+}
+
+class _MyDayPlanFlowSelector extends StatelessWidget {
+  const _MyDayPlanFlowSelector({required this.settings});
+
+  final GlobalSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: const Text('Plan flow'),
+      subtitle: const Text('Choose the order of Plan My Day steps'),
+      trailing: DropdownButton<MyDayPlanFlow>(
+        value: settings.myDayPlanFlow,
+        items: const [
+          DropdownMenuItem(
+            value: MyDayPlanFlow.valuesFirst,
+            child: Text('Values first'),
+          ),
+          DropdownMenuItem(
+            value: MyDayPlanFlow.routinesFirst,
+            child: Text('Routines first'),
+          ),
+          DropdownMenuItem(
+            value: MyDayPlanFlow.triageFirst,
+            child: Text('Triage first'),
+          ),
+        ],
+        onChanged: (flow) {
+          if (flow == null) return;
+          context.read<GlobalSettingsBloc>().add(
+            GlobalSettingsEvent.myDayPlanFlowChanged(flow),
+          );
+        },
+      ),
     );
   }
 }

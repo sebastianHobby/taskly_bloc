@@ -8,9 +8,11 @@ import 'package:taskly_domain/src/attention/model/attention_rule.dart';
 import 'package:taskly_domain/src/attention/model/attention_rule_runtime_state.dart';
 import 'package:taskly_domain/src/attention/query/attention_query.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
+import 'package:taskly_domain/src/interfaces/project_next_actions_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
 import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/core/model/project.dart';
+import 'package:taskly_domain/src/projects/model/project_next_action.dart';
 import 'package:taskly_domain/src/time/clock.dart';
 import 'package:uuid/uuid.dart';
 
@@ -24,17 +26,20 @@ class AttentionEngine implements AttentionEngineContract {
     required v2.AttentionRepositoryContract attentionRepository,
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
+    required ProjectNextActionsRepositoryContract projectNextActionsRepository,
     required Stream<void> invalidations,
     Clock clock = systemClock,
   }) : _attentionRepository = attentionRepository,
        _taskRepository = taskRepository,
        _projectRepository = projectRepository,
+       _projectNextActionsRepository = projectNextActionsRepository,
        _clock = clock,
        _invalidations = invalidations;
 
   final v2.AttentionRepositoryContract _attentionRepository;
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
+  final ProjectNextActionsRepositoryContract _projectNextActionsRepository;
   final Clock _clock;
   final Stream<void> _invalidations;
 
@@ -62,25 +67,29 @@ class AttentionEngine implements AttentionEngineContract {
       (rules) => rules.where(query.matchesRule).toList(growable: false),
     );
 
-    return Rx.combineLatest4<
+    return Rx.combineLatest5<
           List<AttentionRule>,
           List<Task>,
           List<Project>,
+          List<ProjectNextAction>,
           int,
           ({
             List<AttentionRule> rules,
             List<Task> tasks,
             List<Project> projects,
+            List<ProjectNextAction> projectNextActions,
           })
         >(
           rules$,
           _taskRepository.watchAll(),
           _projectRepository.watchAll(),
+          _projectNextActionsRepository.watchAll(),
           pulse$,
-          (rules, tasks, projects, _) => (
+          (rules, tasks, projects, projectNextActions, _) => (
             rules: rules,
             tasks: tasks,
             projects: projects,
+            projectNextActions: projectNextActions,
           ),
         )
         .asyncMap((inputs) => _evaluate(query, inputs));
@@ -92,6 +101,7 @@ class AttentionEngine implements AttentionEngineContract {
       List<AttentionRule> rules,
       List<Task> tasks,
       List<Project> projects,
+      List<ProjectNextAction> projectNextActions,
     })
     inputs,
   ) async {
@@ -118,6 +128,7 @@ class AttentionEngine implements AttentionEngineContract {
         (
           tasks: inputs.tasks,
           projects: inputs.projects,
+          projectNextActions: inputs.projectNextActions,
           now: now,
         ),
       );
@@ -278,6 +289,11 @@ class AttentionEngine implements AttentionEngineContract {
         'isIdle' => _isProjectIdle(
           project,
           thresholdDays: _readInt(rule.evaluatorParams, 'thresholdDays') ?? 30,
+        ),
+        'missingNextActions' => _isProjectMissingNextActions(
+          project,
+          inputs.tasks,
+          inputs.projectNextActions,
         ),
         _ => false,
       };
@@ -501,6 +517,18 @@ class AttentionEngine implements AttentionEngineContract {
     return project.updatedAt.isBefore(threshold);
   }
 
+  bool _isProjectMissingNextActions(
+    Project project,
+    List<Task> tasks,
+    List<ProjectNextAction> nextActions,
+  ) {
+    final hasOpenTask = tasks.any(
+      (task) => task.projectId == project.id && !task.completed,
+    );
+    if (!hasOpenTask) return false;
+    return !nextActions.any((action) => action.projectId == project.id);
+  }
+
   ({
     DateTime deadline,
     int dueInDays,
@@ -710,6 +738,7 @@ class AttentionEngine implements AttentionEngineContract {
 typedef _EvalInputs = ({
   List<Task> tasks,
   List<Project> projects,
+  List<ProjectNextAction> projectNextActions,
   DateTime now,
 });
 

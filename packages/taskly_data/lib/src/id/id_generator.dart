@@ -117,6 +117,21 @@ class IdGenerator {
   /// Generate random ID for a task snooze event.
   String taskSnoozeEventId() => _uuid.v4();
 
+  /// Generate random ID for a project next action.
+  String projectNextActionId() => _uuid.v4();
+
+  /// Generate random ID for a project anchor state row.
+  String projectAnchorStateId() => _uuid.v4();
+
+  /// Generate random ID for a routine.
+  String routineId() => _uuid.v4();
+
+  /// Generate random ID for a routine completion.
+  String routineCompletionId() => _uuid.v4();
+
+  /// Generate random ID for a routine skip record.
+  String routineSkipId() => _uuid.v4();
+
   // ═══════════════════════════════════════════════════════════════════════════
   // V5 DETERMINISTIC IDs - Natural Key → Same ID
   // ═══════════════════════════════════════════════════════════════════════════
@@ -218,9 +233,13 @@ class IdGenerator {
   }
 
   /// Generate deterministic ID for a My Day pick.
-  /// Natural key: userId + dayId + taskId
-  String myDayPickId({required String dayId, required String taskId}) {
-    return _v5('my_day_pick/$dayId/$taskId');
+  /// Natural key: userId + dayId + targetType + targetId
+  String myDayPickId({
+    required String dayId,
+    required String targetType,
+    required String targetId,
+  }) {
+    return _v5('my_day_pick/$dayId/$targetType/$targetId');
   }
 
   /// Generate deterministic ID for attention rule.
