@@ -534,6 +534,14 @@
     "@valueFormIconHint": {
         "description": "Hint shown when no icon is selected in the value editor"
     },
+    "valueFormIconSearchHint": "Buscar iconos",
+    "@valueFormIconSearchHint": {
+        "description": "Search hint for the icon picker in the value editor"
+    },
+    "valueFormIconNoResults": "No se encontraron iconos.",
+    "@valueFormIconNoResults": {
+        "description": "Empty state label when icon search has no results in the value editor"
+    },
     "valueFormColorLabel": "Color",
     "@valueFormColorLabel": {
         "description": "Label/title for the color picker field in the value editor"
@@ -1959,10 +1967,6 @@
     "@focusModeSectionTitle": {
         "description": "TÃ­tulo de secciÃ³n para selecciÃ³n de modo de enfoque"
     },
-    "recommendedLabel": "Recomendado",
-    "@recommendedLabel": {
-        "description": "Etiqueta genÃ©rica para insignia recomendada"
-    },
     "urgencyThresholdsSection": "Umbrales de Urgencia",
     "@urgencyThresholdsSection": {
         "description": "TÃ­tulo de secciÃ³n para configuraciÃ³n de umbrales de urgencia"
@@ -2180,42 +2184,6 @@
                 "type": "int"
             }
         }
-    },
-    "valueNeedsAttentionBadgeLabel": "Necesita atenciÃ³n",
-    "@valueNeedsAttentionBadgeLabel": {
-        "description": "Badge label shown on a value card when it is the most neglected value."
-    },
-    "valueNeedsAttentionSheetTitle": "Necesita atenciÃ³n",
-    "@valueNeedsAttentionSheetTitle": {
-        "description": "Title for the value needs-attention explanation bottom sheet."
-    },
-    "valueNeedsAttentionSheetBody": "{valueName} es tu valor mÃ¡s descuidado durante los Ãºltimos {days} dÃ­as. Esto compara dÃ³nde fueron tus tareas completadas (Real) con tus prioridades de valores (Objetivo).",
-    "@valueNeedsAttentionSheetBody": {
-        "description": "Explanation text for why a value is marked as needs attention.",
-        "placeholders": {
-            "valueName": {
-                "type": "String"
-            },
-            "days": {
-                "type": "int"
-            }
-        }
-    },
-    "valueNeedsAttentionSheetCounts": "Esperado ~{expectedCount}, completado {actualCount}.",
-    "@valueNeedsAttentionSheetCounts": {
-        "description": "Summary line comparing expected vs actual recent completions.",
-        "placeholders": {
-            "expectedCount": {
-                "type": "int"
-            },
-            "actualCount": {
-                "type": "int"
-            }
-        }
-    },
-    "valueNeedsAttentionSheetOnlyOne": "Solo tu valor #1 mÃ¡s descuidado recibe esta insignia.",
-    "@valueNeedsAttentionSheetOnlyOne": {
-        "description": "Explanation that only one value is badged at a time."
     },
     "pickSmallWinCta": "Elige una pequeÃ±a victoria",
     "@pickSmallWinCta": {

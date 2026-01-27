@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:taskly_domain/src/time/date_only.dart';
 import 'package:taskly_domain/src/preferences/model/sort_preferences.dart';
-import 'package:taskly_domain/src/journal/model/mood_rating.dart';
 import 'package:taskly_domain/src/queries/journal_predicate.dart';
 import 'package:taskly_domain/src/queries/query_filter.dart';
 import 'package:taskly_domain/src/queries/task_predicate.dart'
@@ -37,22 +36,6 @@ class JournalQuery {
   // Factory Methods
   // ========================================================================
 
-  /// Factory: All journal entries (no filtering).
-  factory JournalQuery.all({List<SortCriterion>? sortCriteria}) {
-    return JournalQuery(
-      sortCriteria: sortCriteria ?? _defaultSortCriteria,
-    );
-  }
-
-  /// Factory: Specific entry by ID.
-  factory JournalQuery.byId(String id) {
-    return JournalQuery(
-      filter: QueryFilter<JournalPredicate>(
-        shared: [JournalIdPredicate(id: id)],
-      ),
-    );
-  }
-
   /// Factory: Entries for a specific date.
   factory JournalQuery.forDate(DateTime date) {
     return JournalQuery(
@@ -65,26 +48,6 @@ class JournalQuery {
         ],
       ),
       sortCriteria: _defaultSortCriteria,
-    );
-  }
-
-  /// Factory: Entries within a date range.
-  factory JournalQuery.dateRange({
-    required DateTime startDate,
-    required DateTime endDate,
-    List<SortCriterion>? sortCriteria,
-  }) {
-    return JournalQuery(
-      filter: QueryFilter<JournalPredicate>(
-        shared: [
-          JournalDatePredicate(
-            operator: DateOperator.between,
-            startDate: dateOnly(startDate),
-            endDate: dateOnly(endDate),
-          ),
-        ],
-      ),
-      sortCriteria: sortCriteria ?? _defaultSortCriteria,
     );
   }
 
@@ -101,43 +64,6 @@ class JournalQuery {
           JournalDatePredicate(
             operator: DateOperator.onOrAfter,
             date: startDate,
-          ),
-        ],
-      ),
-      sortCriteria: sortCriteria ?? _defaultSortCriteria,
-    );
-  }
-
-  /// Factory: Entries with specific mood or better.
-  factory JournalQuery.moodAtLeast(
-    MoodOperator moodOperator,
-    int moodValue, {
-    List<SortCriterion>? sortCriteria,
-  }) {
-    return JournalQuery(
-      filter: QueryFilter<JournalPredicate>(
-        shared: [
-          JournalMoodPredicate(
-            operator: moodOperator,
-            value: MoodRating.fromValue(moodValue),
-          ),
-        ],
-      ),
-      sortCriteria: sortCriteria ?? _defaultSortCriteria,
-    );
-  }
-
-  /// Factory: Search by text content.
-  factory JournalQuery.search(
-    String searchTerm, {
-    List<SortCriterion>? sortCriteria,
-  }) {
-    return JournalQuery(
-      filter: QueryFilter<JournalPredicate>(
-        shared: [
-          JournalTextPredicate(
-            operator: TextOperator.contains,
-            value: searchTerm,
           ),
         ],
       ),

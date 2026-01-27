@@ -14,18 +14,11 @@ void main() {
       final inbox = TaskQuery.inbox();
       expect(inbox.filter.shared.whereType<TaskProjectPredicate>(), isNotEmpty);
 
-      final today = TaskQuery.today(now: DateTime(2025, 1, 10));
-      expect(today.filter.shared.whereType<TaskDatePredicate>(), isNotEmpty);
-
-      final forProject = TaskQuery.forProject(projectId: 'p1');
-      expect(forProject.filter.shared.whereType<TaskProjectPredicate>(), isNotEmpty);
-
-      final schedule = TaskQuery.schedule(
-        rangeStart: DateTime(2025, 1, 1),
-        rangeEnd: DateTime(2025, 1, 7),
+      final byProject = TaskQuery.byProject('p1');
+      expect(
+        byProject.filter.shared.whereType<TaskProjectPredicate>(),
+        isNotEmpty,
       );
-      expect(schedule.occurrenceExpansion, isNotNull);
-      expect(schedule.filter.orGroups, hasLength(2));
     });
 
     testSafe('copyWith respects occurrence exclusivity', () async {
@@ -69,15 +62,11 @@ void main() {
 
   group('ProjectQuery', () {
     testSafe('factory methods populate expected predicates', () async {
-      final byId = ProjectQuery.byId('p1');
-      expect(byId.filter.shared.whereType<ProjectIdPredicate>(), isNotEmpty);
-
-      final schedule = ProjectQuery.schedule(
-        rangeStart: DateTime(2025, 1, 1),
-        rangeEnd: DateTime(2025, 1, 2),
+      final incomplete = ProjectQuery.incomplete();
+      expect(
+        incomplete.filter.shared.whereType<ProjectBoolPredicate>(),
+        isNotEmpty,
       );
-      expect(schedule.occurrenceExpansion, isNotNull);
-      expect(schedule.filter.orGroups, hasLength(2));
     });
 
     testSafe('copyWith enforces occurrence exclusivity', () async {
@@ -105,7 +94,7 @@ void main() {
     });
 
     testSafe('serializes and deserializes', () async {
-      final query = ProjectQuery.completed();
+      final query = ProjectQuery.incomplete();
       final json = query.toJson();
       final roundTrip = ProjectQuery.fromJson(json);
 
@@ -116,14 +105,21 @@ void main() {
 
   group('ValueQuery', () {
     testSafe('factory methods populate expected predicates', () async {
-      final byId = ValueQuery.byId('v1');
-      expect(byId.filter.shared.whereType<ValueIdPredicate>(), isNotEmpty);
-
-      final search = ValueQuery.search('health');
-      expect(search.filter.shared.whereType<ValueNamePredicate>(), isNotEmpty);
-
-      final byColor = ValueQuery.byColor('#00ff00');
-      expect(byColor.filter.shared.whereType<ValueColorPredicate>(), isNotEmpty);
+      final query = ValueQuery(
+        filter: const QueryFilter<ValuePredicate>(
+          shared: [
+            ValueIdPredicate(valueId: 'v1'),
+            ValueNamePredicate(
+              value: 'health',
+              operator: StringOperator.contains,
+            ),
+            ValueColorPredicate(colorHex: '#00ff00'),
+          ],
+        ),
+      );
+      expect(query.filter.shared.whereType<ValueIdPredicate>(), isNotEmpty);
+      expect(query.filter.shared.whereType<ValueNamePredicate>(), isNotEmpty);
+      expect(query.filter.shared.whereType<ValueColorPredicate>(), isNotEmpty);
     });
 
     testSafe('addPredicate and copyWith preserve filters', () async {

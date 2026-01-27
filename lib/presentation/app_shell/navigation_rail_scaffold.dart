@@ -117,23 +117,8 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         textAlign: TextAlign.center,
       ),
-      icon: _buildIcon(destination),
-      selectedIcon: _buildIcon(destination, selected: true),
-    );
-  }
-
-  Widget _buildIcon(NavigationDestinationVm dest, {bool selected = false}) {
-    final baseIcon = Icon(selected ? dest.selectedIcon : dest.icon);
-    final badgeStream = dest.badgeStream;
-    if (badgeStream == null) return baseIcon;
-
-    return StreamBuilder<int>(
-      stream: badgeStream,
-      builder: (context, snapshot) {
-        final count = snapshot.data ?? 0;
-        if (count <= 0) return baseIcon;
-        return Badge(label: Text(count.toString()), child: baseIcon);
-      },
+      icon: Icon(destination.icon),
+      selectedIcon: Icon(destination.selectedIcon),
     );
   }
 }

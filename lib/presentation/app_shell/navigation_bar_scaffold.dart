@@ -66,23 +66,8 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
   NavigationDestination _toNavDestination(NavigationDestinationVm dest) {
     return NavigationDestination(
       label: dest.label,
-      icon: _buildIcon(dest),
-      selectedIcon: _buildIcon(dest, selected: true),
-    );
-  }
-
-  Widget _buildIcon(NavigationDestinationVm dest, {bool selected = false}) {
-    final baseIcon = Icon(selected ? dest.selectedIcon : dest.icon);
-    final badgeStream = dest.badgeStream;
-    if (badgeStream == null) return baseIcon;
-
-    return StreamBuilder<int>(
-      stream: badgeStream,
-      builder: (context, snapshot) {
-        final count = snapshot.data ?? 0;
-        if (count <= 0) return baseIcon;
-        return Badge(label: Text(count.toString()), child: baseIcon);
-      },
+      icon: Icon(dest.icon),
+      selectedIcon: Icon(dest.selectedIcon),
     );
   }
 }

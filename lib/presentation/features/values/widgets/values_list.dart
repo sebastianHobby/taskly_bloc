@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_tile_model_mapper.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
@@ -20,6 +21,14 @@ class ValuesListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AppLog.warnThrottledStructured(
+      'values.list.build',
+      const Duration(seconds: 2),
+      'values.list',
+      'render list',
+      fields: <String, Object?>{'count': values.length},
+    );
+
     final selection = context.read<SelectionCubit>();
     selection.updateVisibleEntities(
       values

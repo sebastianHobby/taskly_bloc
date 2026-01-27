@@ -1,9 +1,7 @@
 import 'dart:ui' show lerpDouble;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-@immutable
 class TasklyTokens extends ThemeExtension<TasklyTokens> {
   const TasklyTokens({
     required this.spaceXxs,

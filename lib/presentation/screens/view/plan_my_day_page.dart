@@ -901,9 +901,9 @@ List<TasklyRowSpec> _buildSummaryRows(
           context,
           tasks: triageOrdered,
           selectedTaskIds: selectedTaskIds,
-          enableSnooze: false,
+          enableSnooze: true,
           dayKeyUtc: data.dayKeyUtc,
-          style: TasklyTaskRowStyle.pickerAction,
+          style: TasklyTaskRowStyle.planPick,
           keyPrefix: 'plan-summary-triage',
         ),
       );
@@ -983,9 +983,9 @@ List<TasklyRowSpec> _buildSummaryRows(
           context,
           tasks: suggestedOrdered,
           selectedTaskIds: selectedTaskIds,
-          enableSnooze: false,
+          enableSnooze: true,
           dayKeyUtc: data.dayKeyUtc,
-          style: TasklyTaskRowStyle.pickerAction,
+          style: TasklyTaskRowStyle.planPick,
           keyPrefix: 'plan-summary-values',
         ),
       );

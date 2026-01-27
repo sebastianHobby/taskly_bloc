@@ -58,7 +58,6 @@ TasklyTaskRowData buildTaskRowData(
       .toList(growable: false);
 
   final meta = TasklyEntityMetaData(
-    primaryValue: primaryValueData,
     startDateLabel: resolvedStartDateLabel,
     deadlineDateLabel: effectiveResolvedDeadlineDateLabel,
     isOverdue:

@@ -65,6 +65,18 @@ abstract final class AppLog {
     talker.warning(_format(category, _withFields(message, fields)));
   }
 
+  /// Emits a structured warning at most once per [interval] for a [key].
+  static void warnThrottledStructured(
+    String key,
+    Duration interval,
+    String category,
+    String message, {
+    required Map<String, Object?> fields,
+  }) {
+    if (!_shouldEmit(key, interval)) return;
+    warnStructured(category, message, fields: fields);
+  }
+
   /// Logs an error without a stack trace.
   static void error(String category, String message) {
     talker.error(_format(category, message));

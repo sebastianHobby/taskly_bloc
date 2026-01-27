@@ -21,9 +21,7 @@ import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_blo
 import 'package:taskly_bloc/presentation/features/app/bloc/my_day_prewarm_cubit.dart';
 import 'package:taskly_bloc/presentation/features/app/view/initial_sync_gate_screen.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
-import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
-import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
@@ -213,14 +211,6 @@ class _AuthenticatedApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<NowService>(create: (_) => getIt<NowService>()),
-
-        // TodayBadgeService: Lightweight service for navigation badge count
-        Provider<TodayBadgeService>(
-          create: (_) => TodayBadgeService(
-            taskRepository: getIt<TaskRepositoryContract>(),
-            homeDayService: getIt<HomeDayService>(),
-          ),
-        ),
 
         Provider<TileIntentDispatcher>(
           create: (_) => DefaultTileIntentDispatcher(

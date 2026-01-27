@@ -40,39 +40,19 @@ class AppSeedPalettes {
   /// Focused productivity palette set.
   static const List<ThemePaletteOption> focusedProductivity = [
     ThemePaletteOption(
-      id: 'calm_indigo',
-      name: 'Calm Indigo',
-      seedColor: Color(0xFF4F46E5),
+      id: 'calm_professional',
+      name: 'Calm Professional',
+      seedColor: Color(0xFF6750A4),
     ),
     ThemePaletteOption(
-      id: 'soft_blue',
-      name: 'Soft Blue',
-      seedColor: Color(0xFF3B82F6),
+      id: 'minimalist_slate',
+      name: 'Minimalist Slate',
+      seedColor: Color(0xFF475569),
     ),
     ThemePaletteOption(
-      id: 'mist_teal',
-      name: 'Mist Teal',
-      seedColor: Color(0xFF14B8A6),
-    ),
-    ThemePaletteOption(
-      id: 'sage',
-      name: 'Sage',
-      seedColor: Color(0xFF34D399),
-    ),
-    ThemePaletteOption(
-      id: 'fern',
-      name: 'Fern',
-      seedColor: Color(0xFF4ADE80),
-    ),
-    ThemePaletteOption(
-      id: 'warm_amber',
-      name: 'Warm Amber',
-      seedColor: Color(0xFFFBBF24),
-    ),
-    ThemePaletteOption(
-      id: 'slate',
-      name: 'Slate',
-      seedColor: Color(0xFF94A3B8),
+      id: 'deep_forest',
+      name: 'Deep Forest',
+      seedColor: Color(0xFF064E3B),
     ),
   ];
 }

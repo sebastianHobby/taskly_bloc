@@ -5,6 +5,7 @@ import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/list_bloc_mixin.dart';
 import 'package:taskly_bloc/presentation/shared/utils/sort_utils.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/errors.dart';
@@ -149,6 +150,17 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
     ValueListSubscriptionRequested event,
     Emitter<ValueListState> emit,
   ) async {
+    AppLog.warnThrottledStructured(
+      'values.list.subscribe',
+      const Duration(seconds: 2),
+      'values.list',
+      'subscription requested',
+      fields: <String, Object?>{
+        'pageKey': _pageKey?.toString(),
+        'sort': _sortPreferences.criteria.map((c) => c.field.name).join(','),
+      },
+    );
+
     // Load sort preferences from adapter if available
     if (_settingsRepository != null && _pageKey != null) {
       final savedSort = await _settingsRepository.load(
@@ -164,6 +176,13 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
     emit(createLoadingState());
     try {
       final initialValues = await _valueRepository.getAll();
+      AppLog.warnThrottledStructured(
+        'values.list.initial',
+        const Duration(seconds: 2),
+        'values.list',
+        'initial getAll',
+        fields: <String, Object?>{'count': initialValues.length},
+      );
       emit(createLoadedState(_sortValues(initialValues)));
     } catch (error, stackTrace) {
       emit(createErrorState(error, stackTrace));
@@ -174,7 +193,16 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
 
     await emit.forEach<List<Value>>(
       stream,
-      onData: (values) => createLoadedState(_sortValues(values)),
+      onData: (values) {
+        AppLog.warnThrottledStructured(
+          'values.list.watchAll',
+          const Duration(seconds: 2),
+          'values.list',
+          'watchAll emission',
+          fields: <String, Object?>{'count': values.length},
+        );
+        return createLoadedState(_sortValues(values));
+      },
       onError: createErrorState,
     );
   }

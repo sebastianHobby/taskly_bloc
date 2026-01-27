@@ -177,13 +177,10 @@ class ProjectEntityTile extends StatelessWidget {
                                     ],
                                   ],
                                 ),
-                                _ProjectValueLine(
-                                  primary: model.leadingChip,
-                                  description: model.subtitle,
-                                ),
                                 if (model.taskCount != null) ...[
                                   SizedBox(height: tokens.spaceXs2),
                                   _ProjectMetaRow(
+                                    primary: model.leadingChip,
                                     totalCount: model.taskCount!,
                                     completedCount: model.completedTaskCount,
                                     dueSoonCount: model.dueSoonCount,
@@ -219,6 +216,7 @@ class ProjectEntityTile extends StatelessWidget {
 
 class _ProjectMetaRow extends StatelessWidget {
   const _ProjectMetaRow({
+    required this.primary,
     required this.totalCount,
     required this.completedCount,
     required this.dueSoonCount,
@@ -229,6 +227,7 @@ class _ProjectMetaRow extends StatelessWidget {
     required this.showCompletionRatio,
   });
 
+  final ValueChipData? primary;
   final int totalCount;
   final int? completedCount;
   final int? dueSoonCount;
@@ -250,6 +249,16 @@ class _ProjectMetaRow extends StatelessWidget {
     );
 
     final children = <Widget>[];
+
+    if (primary != null) {
+      children.add(
+        _ValueInlineLabel(
+          data: primary!,
+          maxLabelChars: 18,
+          textColor: scheme.onSurfaceVariant,
+        ),
+      );
+    }
 
     if (showCompletionRatio && completedCount != null) {
       children.add(
@@ -318,55 +327,39 @@ class _ProjectMetaRow extends StatelessWidget {
   }
 }
 
-class _ProjectValueLine extends StatelessWidget {
-  const _ProjectValueLine({
-    required this.primary,
-    required this.description,
+class _ValueInlineLabel extends StatelessWidget {
+  const _ValueInlineLabel({
+    required this.data,
+    required this.maxLabelChars,
+    required this.textColor,
   });
 
-  final ValueChipData? primary;
-  final String? description;
+  final ValueChipData data;
+  final int maxLabelChars;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final primaryValue = primary;
-    final descriptionText = description?.trim();
-    final hasDescription =
-        descriptionText != null && descriptionText.isNotEmpty;
+    final label = ValueTagLayout.formatLabel(
+      data.label,
+      maxChars: maxLabelChars,
+    );
+    if (label == null || label.isEmpty) return const SizedBox.shrink();
 
-    if (primaryValue == null && !hasDescription) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: EdgeInsets.only(top: tokens.spaceXs),
-      child: Row(
-        children: [
-          if (primaryValue != null)
-            ValueTag(
-              data: primaryValue,
-              variant: ValueTagVariant.primary,
-              iconOnly: false,
-              maxLabelChars: 14,
-            ),
-          if (primaryValue != null && hasDescription)
-            SizedBox(width: tokens.spaceSm),
-          if (descriptionText != null && descriptionText.isNotEmpty)
-            Expanded(
-              child: Text(
-                descriptionText,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-        ],
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(data.icon, size: tokens.spaceMd2, color: data.color),
+        SizedBox(width: tokens.spaceXxs2),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: (Theme.of(context).textTheme.labelSmall ?? const TextStyle())
+              .copyWith(color: textColor, fontWeight: FontWeight.w500),
+        ),
+      ],
     );
   }
 }

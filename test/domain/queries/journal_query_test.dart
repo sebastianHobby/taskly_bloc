@@ -34,15 +34,18 @@ void main() {
 
   group('JournalQuery', () {
     testSafe('factory methods set filters', () async {
-      final byId = JournalQuery.byId('j1');
-      expect(byId.hasIdFilter, isTrue);
-
       final forDate = JournalQuery.forDate(DateTime(2025, 1, 10));
       expect(forDate.hasDateFilter, isTrue);
+
+      final recent = JournalQuery.recent(
+        todayDayKeyUtc: DateTime(2025, 1, 10),
+        days: 7,
+      );
+      expect(recent.hasDateFilter, isTrue);
     });
 
     testSafe('serializes and deserializes', () async {
-      final query = JournalQuery.search('focus');
+      final query = JournalQuery.forDate(DateTime(2025, 1, 10));
       final json = query.toJson();
       final roundTrip = JournalQuery.fromJson(json);
 

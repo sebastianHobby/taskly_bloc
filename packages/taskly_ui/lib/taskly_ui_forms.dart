@@ -17,3 +17,6 @@ export 'src/primitives/taskly_form_date_card.dart';
 export 'src/primitives/taskly_form_priority_segmented.dart';
 export 'src/primitives/taskly_form_project_row.dart';
 export 'src/primitives/taskly_form_section_label.dart';
+export 'src/primitives/taskly_form_icon_grid_picker.dart';
+export 'src/primitives/taskly_form_color_palette_picker.dart';
+export 'src/primitives/taskly_form_icon_search_picker.dart';

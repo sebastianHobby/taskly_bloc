@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 /// View model for a navigation destination.
 class NavigationDestinationVm {
@@ -9,7 +9,6 @@ class NavigationDestinationVm {
     required this.icon,
     required this.selectedIcon,
     required this.route,
-    this.badgeStream,
     this.sortOrder = 0,
   });
 
@@ -19,6 +18,5 @@ class NavigationDestinationVm {
   final IconData icon;
   final IconData selectedIcon;
   final String route;
-  final Stream<int>? badgeStream;
   final int sortOrder;
 }

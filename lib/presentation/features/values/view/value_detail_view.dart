@@ -9,6 +9,7 @@ import 'package:taskly_bloc/presentation/features/editors/editor_feedback.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
@@ -139,6 +140,18 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
     }
 
     _syncDraftFromFormValues(formValues);
+
+    AppLog.warnStructured(
+      'values.editor',
+      id == null ? 'submit create' : 'submit update',
+      fields: <String, Object?>{
+        'id': id ?? '<new>',
+        'name': _draft.name,
+        'color': _draft.color,
+        'iconName': _draft.iconName,
+        'priority': _draft.priority.name,
+      },
+    );
 
     final bloc = context.read<ValueDetailBloc>();
     if (id == null) {

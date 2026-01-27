@@ -69,9 +69,33 @@ void main() {
 
       final tasks = await service
           .watchTaskOccurrences(
-            query: TaskQuery.schedule(
-              rangeStart: DateTime(2025, 1, 10),
-              rangeEnd: DateTime(2025, 1, 12),
+            query: TaskQuery(
+              filter: QueryFilter<TaskPredicate>(
+                shared: const [
+                  TaskBoolPredicate(
+                    field: TaskBoolField.completed,
+                    operator: BoolOperator.isFalse,
+                  ),
+                ],
+                orGroups: [
+                  [
+                    TaskDatePredicate(
+                      field: TaskDateField.startDate,
+                      operator: DateOperator.between,
+                      startDate: DateTime(2025, 1, 10),
+                      endDate: DateTime(2025, 1, 12),
+                    ),
+                  ],
+                  [
+                    TaskDatePredicate(
+                      field: TaskDateField.deadlineDate,
+                      operator: DateOperator.between,
+                      startDate: DateTime(2025, 1, 10),
+                      endDate: DateTime(2025, 1, 12),
+                    ),
+                  ],
+                ],
+              ),
             ),
             rangeStartDay: DateTime(2025, 1, 10),
             rangeEndDay: DateTime(2025, 1, 12),

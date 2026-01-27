@@ -17,6 +17,7 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class ProjectDetailPage extends StatelessWidget {
@@ -207,15 +208,13 @@ class _ProjectDetailBody extends StatelessWidget {
       completedTaskCount: completed.length,
       dueSoonCount: dueSoonCount,
     );
-
-    final headerRow = TasklyRowSpec.project(
-      key: 'project-detail-header',
-      data: headerData,
-      preset: isInbox
-          ? const TasklyProjectRowPreset.inbox()
-          : const TasklyProjectRowPreset.standard(),
-      actions: const TasklyProjectRowActions(),
-    );
+    void openEdit() {
+      EditorLauncher.fromGetIt().openProjectEditor(
+        context,
+        projectId: project.id,
+        showDragHandle: true,
+      );
+    }
 
     final selection = context.read<SelectionCubit>();
     final visibleTasks = [
@@ -253,7 +252,11 @@ class _ProjectDetailBody extends StatelessWidget {
         TasklyTokens.of(context).spaceXl,
       ),
       children: [
-        TasklyFeedRenderer.buildRow(headerRow, context: context),
+        _ProjectDetailHeader(
+          data: headerData,
+          isInbox: isInbox,
+          onEditRequested: openEdit,
+        ),
         SizedBox(height: TasklyTokens.of(context).spaceSm),
         if (!isInbox)
           _ProjectNextActionsSection(
@@ -330,13 +333,12 @@ class _ProjectDetailBody extends StatelessWidget {
                 checkboxSemanticLabel: data.checkboxSemanticLabel,
                 labels: data.labels,
                 pinned: data.pinned,
-                primaryValueIconOnly: true,
               );
 
               return TasklyRowSpec.task(
                 key: 'project-next-action-pick-${task.id}',
                 data: rowData,
-                style: const TasklyTaskRowStyle.pickerAction(selected: false),
+                style: const TasklyTaskRowStyle.planPick(selected: false),
                 actions: TasklyTaskRowActions(
                   onToggleSelected: () async {
                     Navigator.of(sheetContext).pop();
@@ -517,6 +519,211 @@ class _ProjectDetailBody extends StatelessWidget {
       ProjectNextActionDraft(taskId: taskId, rank: rank),
     ]..sort((a, b) => a.rank.compareTo(b.rank));
   }
+}
+
+class _ProjectDetailHeader extends StatelessWidget {
+  const _ProjectDetailHeader({
+    required this.data,
+    required this.isInbox,
+    required this.onEditRequested,
+  });
+
+  final TasklyProjectRowData data;
+  final bool isInbox;
+  final VoidCallback onEditRequested;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
+
+    final description = data.subtitle?.trim() ?? '';
+    final hasDescription = description.isNotEmpty;
+
+    final titleStyle =
+        theme.textTheme.headlineSmall ?? theme.textTheme.titleLarge;
+    final descriptionStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: scheme.onSurfaceVariant,
+      height: 1.4,
+    );
+    final metaStyle = theme.textTheme.labelSmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
+
+    final primaryValue = data.leadingChip;
+    final totalCount = data.taskCount;
+    final completedCount = data.completedTaskCount;
+
+    final metaChildren = <Widget>[];
+
+    if (primaryValue != null) {
+      metaChildren.add(
+        _ValueInlineLabel(
+          data: primaryValue,
+          maxLabelChars: 18,
+          textColor: scheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    if (totalCount != null) {
+      final showCompletionRatio = !isInbox && completedCount != null;
+      metaChildren.add(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              showCompletionRatio
+                  ? Icons.check_circle_rounded
+                  : Icons.inbox_outlined,
+              size: 14,
+              color: showCompletionRatio
+                  ? scheme.secondary
+                  : scheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+            SizedBox(width: tokens.spaceXs),
+            Text(
+              showCompletionRatio
+                  ? '$completedCount/$totalCount tasks'
+                  : '$totalCount tasks',
+              style: metaStyle,
+            ),
+          ],
+        ),
+      );
+    }
+
+    final dueSoon = data.dueSoonCount ?? 0;
+    final dueLabel = data.meta.deadlineDateLabel?.trim();
+    final showDue = (dueLabel != null && dueLabel.isNotEmpty) || dueSoon > 0;
+    if (showDue) {
+      final dueColor = (data.meta.isOverdue || data.meta.isDueToday)
+          ? scheme.error
+          : scheme.onSurfaceVariant;
+      metaChildren.add(
+        MetaIconLabel(
+          icon: Icons.flag_rounded,
+          label: (dueLabel != null && dueLabel.isNotEmpty)
+              ? dueLabel
+              : '$dueSoon due soon',
+          color: dueColor,
+          textStyle: metaStyle,
+        ),
+      );
+    }
+
+    if (data.meta.priority != null) {
+      metaChildren.add(PriorityPill(priority: data.meta.priority!));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: onEditRequested,
+          borderRadius: BorderRadius.circular(tokens.radiusMd),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: tokens.spaceXs2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    data.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: titleStyle?.copyWith(
+                      color: scheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                      decoration: data.completed
+                          ? TextDecoration.lineThrough
+                          : null,
+                      decorationColor: scheme.onSurface.withValues(alpha: 0.55),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Edit project',
+                  onPressed: onEditRequested,
+                  icon: const Icon(Icons.edit_rounded),
+                  style: IconButton.styleFrom(
+                    foregroundColor: scheme.onSurfaceVariant,
+                    backgroundColor: scheme.surfaceContainerHighest.withValues(
+                      alpha: tokens.iconButtonBackgroundAlpha,
+                    ),
+                    minimumSize: Size.square(tokens.minTapTargetSize),
+                    padding: EdgeInsets.all(tokens.spaceXs2),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (hasDescription)
+          Padding(
+            padding: EdgeInsets.only(bottom: tokens.spaceSm2),
+            child: Text(
+              description,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: descriptionStyle,
+            ),
+          ),
+        if (metaChildren.isNotEmpty)
+          Wrap(
+            spacing: tokens.spaceSm2,
+            runSpacing: tokens.spaceXs,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: metaChildren,
+          ),
+      ],
+    );
+  }
+}
+
+class _ValueInlineLabel extends StatelessWidget {
+  const _ValueInlineLabel({
+    required this.data,
+    required this.maxLabelChars,
+    required this.textColor,
+  });
+
+  final ValueChipData data;
+  final int maxLabelChars;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final label = _formatLabel(data.label, maxLabelChars);
+    if (label == null || label.isEmpty) return const SizedBox.shrink();
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(data.icon, size: tokens.spaceMd2, color: data.color),
+        SizedBox(width: tokens.spaceXxs2),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: (Theme.of(context).textTheme.labelSmall ?? const TextStyle())
+              .copyWith(color: textColor, fontWeight: FontWeight.w500),
+        ),
+      ],
+    );
+  }
+}
+
+String? _formatLabel(String label, int maxChars) {
+  final trimmed = label.trim();
+  if (trimmed.isEmpty) return null;
+  if (trimmed.length <= maxChars) return trimmed;
+  if (maxChars <= 3) return trimmed.substring(0, maxChars);
+  final keep = maxChars - 3;
+  return '${trimmed.substring(0, keep)}...';
 }
 
 class _ProjectNextActionsSection extends StatefulWidget {
@@ -746,7 +953,6 @@ TasklyRowSpec _buildProjectTaskRow(
     checkboxSemanticLabel: data.checkboxSemanticLabel,
     labels: data.labels,
     pinned: data.pinned,
-    primaryValueIconOnly: true,
   );
 
   final style = selectionState.isSelectionMode

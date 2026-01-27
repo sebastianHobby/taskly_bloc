@@ -6,7 +6,7 @@ import 'package:taskly_domain/src/queries/occurrence_preview.dart';
 import 'package:taskly_domain/src/queries/project_predicate.dart';
 import 'package:taskly_domain/src/queries/query_filter.dart';
 import 'package:taskly_domain/src/queries/task_predicate.dart'
-    show BoolOperator, DateOperator, ValueOperator;
+    show BoolOperator, ValueOperator;
 
 /// Unified query configuration for fetching projects.
 ///
@@ -54,15 +54,6 @@ class ProjectQuery {
   // Factory Methods
   // ========================================================================
 
-  /// Factory: Single project by ID.
-  factory ProjectQuery.byId(String projectId) {
-    return ProjectQuery(
-      filter: QueryFilter<ProjectPredicate>(
-        shared: [ProjectIdPredicate(id: projectId)],
-      ),
-    );
-  }
-
   /// Factory: All projects (no filtering).
   factory ProjectQuery.all({List<SortCriterion>? sortCriteria}) {
     return ProjectQuery(sortCriteria: sortCriteria ?? _defaultSortCriteria);
@@ -76,26 +67,6 @@ class ProjectQuery {
           ProjectBoolPredicate(
             field: ProjectBoolField.completed,
             operator: BoolOperator.isFalse,
-          ),
-        ],
-      ),
-      sortCriteria: sortCriteria ?? _defaultSortCriteria,
-    );
-  }
-
-  /// Factory: Active projects (not completed) - alias for incomplete.
-  factory ProjectQuery.active({List<SortCriterion>? sortCriteria}) {
-    return ProjectQuery.incomplete(sortCriteria: sortCriteria);
-  }
-
-  /// Factory: Completed projects only.
-  factory ProjectQuery.completed({List<SortCriterion>? sortCriteria}) {
-    return ProjectQuery(
-      filter: const QueryFilter<ProjectPredicate>(
-        shared: [
-          ProjectBoolPredicate(
-            field: ProjectBoolField.completed,
-            operator: BoolOperator.isTrue,
           ),
         ],
       ),
@@ -124,49 +95,6 @@ class ProjectQuery {
         ],
       ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,
-    );
-  }
-
-  /// Factory: Schedule view (incomplete projects with dates in range).
-  ///
-  /// Enables occurrence expansion over the range.
-  factory ProjectQuery.schedule({
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-    List<SortCriterion>? sortCriteria,
-  }) {
-    return ProjectQuery(
-      filter: QueryFilter<ProjectPredicate>(
-        shared: const [
-          ProjectBoolPredicate(
-            field: ProjectBoolField.completed,
-            operator: BoolOperator.isFalse,
-          ),
-        ],
-        orGroups: [
-          [
-            ProjectDatePredicate(
-              field: ProjectDateField.startDate,
-              operator: DateOperator.between,
-              startDate: rangeStart,
-              endDate: rangeEnd,
-            ),
-          ],
-          [
-            ProjectDatePredicate(
-              field: ProjectDateField.deadlineDate,
-              operator: DateOperator.between,
-              startDate: rangeStart,
-              endDate: rangeEnd,
-            ),
-          ],
-        ],
-      ),
-      sortCriteria: sortCriteria ?? _defaultSortCriteria,
-      occurrenceExpansion: OccurrenceExpansion(
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ),
     );
   }
 

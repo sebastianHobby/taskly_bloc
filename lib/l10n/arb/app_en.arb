@@ -437,6 +437,14 @@
     "@valueFormIconHint": {
         "description": "Hint shown when no icon is selected in the value editor"
     },
+    "valueFormIconSearchHint": "Search icons",
+    "@valueFormIconSearchHint": {
+        "description": "Search hint for the icon picker in the value editor"
+    },
+    "valueFormIconNoResults": "No icons found.",
+    "@valueFormIconNoResults": {
+        "description": "Empty state label when icon search has no results in the value editor"
+    },
     "valueFormColorLabel": "Color",
     "@valueFormColorLabel": {
         "description": "Label/title for the color picker field in the value editor"
@@ -1888,10 +1896,6 @@
     "@focusModeSectionTitle": {
         "description": "Section title for focus mode selection"
     },
-    "recommendedLabel": "Recommended",
-    "@recommendedLabel": {
-        "description": "Generic label for recommended badge"
-    },
     "urgencyThresholdsSection": "Urgency Thresholds",
     "@urgencyThresholdsSection": {
         "description": "Section title for urgency threshold settings"
@@ -2109,42 +2113,6 @@
                 "type": "int"
             }
         }
-    },
-    "valueNeedsAttentionBadgeLabel": "Needs attention",
-    "@valueNeedsAttentionBadgeLabel": {
-        "description": "Badge label shown on a value card when it is the most neglected value."
-    },
-    "valueNeedsAttentionSheetTitle": "Needs attention",
-    "@valueNeedsAttentionSheetTitle": {
-        "description": "Title for the value needs-attention explanation bottom sheet."
-    },
-    "valueNeedsAttentionSheetBody": "{valueName} is your most neglected value over the last {days} days. This compares where your completed tasks went (Actual) to your value priorities (Target).",
-    "@valueNeedsAttentionSheetBody": {
-        "description": "Explanation text for why a value is marked as needs attention.",
-        "placeholders": {
-            "valueName": {
-                "type": "String"
-            },
-            "days": {
-                "type": "int"
-            }
-        }
-    },
-    "valueNeedsAttentionSheetCounts": "Expected ~{expectedCount}, completed {actualCount}.",
-    "@valueNeedsAttentionSheetCounts": {
-        "description": "Summary line comparing expected vs actual recent completions.",
-        "placeholders": {
-            "expectedCount": {
-                "type": "int"
-            },
-            "actualCount": {
-                "type": "int"
-            }
-        }
-    },
-    "valueNeedsAttentionSheetOnlyOne": "Only your #1 most neglected value gets this badge.",
-    "@valueNeedsAttentionSheetOnlyOne": {
-        "description": "Explanation that only one value is badged at a time."
     },
     "pickSmallWinCta": "Pick a small win",
     "@pickSmallWinCta": {

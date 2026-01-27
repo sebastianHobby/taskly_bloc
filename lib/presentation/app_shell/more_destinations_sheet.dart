@@ -102,7 +102,6 @@ class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        _DestinationBadge(stream: dest.badgeStream),
                         if (isActive) ...[
                           SizedBox(width: tokens.spaceSm),
                           Icon(Icons.check, color: colorScheme.primary),
@@ -117,26 +116,6 @@ class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _DestinationBadge extends StatelessWidget {
-  const _DestinationBadge({required this.stream});
-
-  final Stream<int>? stream;
-
-  @override
-  Widget build(BuildContext context) {
-    if (stream == null) return SizedBox.shrink();
-
-    return StreamBuilder<int>(
-      stream: stream,
-      builder: (context, snapshot) {
-        final count = snapshot.data ?? 0;
-        if (count <= 0) return SizedBox.shrink();
-        return Badge(label: Text(count.toString()));
-      },
     );
   }
 }
