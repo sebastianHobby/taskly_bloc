@@ -215,7 +215,6 @@ sealed class TasklyRowSpec {
     required TasklyTaskRowData data,
     required TasklyTaskRowActions actions,
     TasklyTaskRowStyle style,
-    TasklyRowEmphasis emphasis,
     int depth,
   }) = TasklyTaskRowSpec;
 
@@ -224,7 +223,6 @@ sealed class TasklyRowSpec {
     required TasklyProjectRowData data,
     required TasklyProjectRowActions actions,
     TasklyProjectRowPreset preset,
-    TasklyRowEmphasis emphasis,
     int depth,
   }) = TasklyProjectRowSpec;
 
@@ -239,7 +237,6 @@ sealed class TasklyRowSpec {
     required String key,
     required TasklyRoutineRowData data,
     required TasklyRoutineRowActions actions,
-    TasklyRowEmphasis emphasis,
     int depth,
   }) = TasklyRoutineRowSpec;
 }
@@ -303,7 +300,6 @@ final class TasklyTaskRowSpec extends TasklyRowSpec {
     required this.data,
     required this.actions,
     this.style = const TasklyTaskRowStyle.standard(),
-    this.emphasis = TasklyRowEmphasis.none,
     this.depth = 0,
   });
 
@@ -311,7 +307,6 @@ final class TasklyTaskRowSpec extends TasklyRowSpec {
   final TasklyTaskRowData data;
   final TasklyTaskRowActions actions;
   final TasklyTaskRowStyle style;
-  final TasklyRowEmphasis emphasis;
   final int depth;
 }
 
@@ -321,7 +316,6 @@ final class TasklyProjectRowSpec extends TasklyRowSpec {
     required this.data,
     required this.actions,
     this.preset = const TasklyProjectRowPreset.standard(),
-    this.emphasis = TasklyRowEmphasis.none,
     this.depth = 0,
   });
 
@@ -329,7 +323,6 @@ final class TasklyProjectRowSpec extends TasklyRowSpec {
   final TasklyProjectRowData data;
   final TasklyProjectRowActions actions;
   final TasklyProjectRowPreset preset;
-  final TasklyRowEmphasis emphasis;
   final int depth;
 }
 
@@ -346,8 +339,6 @@ final class TasklyValueRowSpec extends TasklyRowSpec {
   final TasklyValueRowActions actions;
   final TasklyValueRowPreset preset;
 }
-
-enum TasklyRowEmphasis { none, overdue }
 
 enum TasklyBadgeTone { solid, outline, soft }
 
@@ -375,10 +366,6 @@ sealed class TasklyTaskRowStyle {
     required bool selected,
   }) = TasklyTaskRowStyleBulkSelection;
 
-  const factory TasklyTaskRowStyle.pickerAction({
-    required bool selected,
-  }) = TasklyTaskRowStylePickerAction;
-
   const factory TasklyTaskRowStyle.planPick({
     required bool selected,
   }) = TasklyTaskRowStylePlanPick;
@@ -390,12 +377,6 @@ final class TasklyTaskRowStyleStandard extends TasklyTaskRowStyle {
 
 final class TasklyTaskRowStyleBulkSelection extends TasklyTaskRowStyle {
   const TasklyTaskRowStyleBulkSelection({required this.selected});
-
-  final bool selected;
-}
-
-final class TasklyTaskRowStylePickerAction extends TasklyTaskRowStyle {
-  const TasklyTaskRowStylePickerAction({required this.selected});
 
   final bool selected;
 }
@@ -532,7 +513,6 @@ final class TasklyTaskRowData {
     this.checkboxSemanticLabel,
     this.labels,
     this.pinned = false,
-    this.primaryValueIconOnly = false,
   });
 
   final String id;
@@ -546,7 +526,6 @@ final class TasklyTaskRowData {
   final String? checkboxSemanticLabel;
   final TasklyTaskRowLabels? labels;
   final bool pinned;
-  final bool primaryValueIconOnly;
 }
 
 @immutable
@@ -659,14 +638,12 @@ final class TasklyRoutineRowSpec extends TasklyRowSpec {
     required this.key,
     required this.data,
     required this.actions,
-    this.emphasis = TasklyRowEmphasis.none,
     this.depth = 0,
   });
 
   final String key;
   final TasklyRoutineRowData data;
   final TasklyRoutineRowActions actions;
-  final TasklyRowEmphasis emphasis;
   final int depth;
 }
 

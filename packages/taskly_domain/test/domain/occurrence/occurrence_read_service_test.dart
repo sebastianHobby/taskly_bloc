@@ -240,9 +240,33 @@ void main() {
       final rangeStart = DateTime.utc(2026, 1, 1);
       final rangeEnd = DateTime.utc(2026, 1, 3);
 
-      final query = TaskQuery.schedule(
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+      final query = TaskQuery(
+        filter: QueryFilter<TaskPredicate>(
+          shared: const [
+            TaskBoolPredicate(
+              field: TaskBoolField.completed,
+              operator: BoolOperator.isFalse,
+            ),
+          ],
+          orGroups: [
+            [
+              TaskDatePredicate(
+                field: TaskDateField.startDate,
+                operator: DateOperator.between,
+                startDate: rangeStart,
+                endDate: rangeEnd,
+              ),
+            ],
+            [
+              TaskDatePredicate(
+                field: TaskDateField.deadlineDate,
+                operator: DateOperator.between,
+                startDate: rangeStart,
+                endDate: rangeEnd,
+              ),
+            ],
+          ],
+        ),
       );
 
       final stream = service.watchTaskOccurrences(
@@ -293,9 +317,33 @@ void main() {
       final rangeStart = DateTime.utc(2026, 1, 1);
       final rangeEnd = DateTime.utc(2026, 1, 3);
 
-      final query = ProjectQuery.schedule(
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+      final query = ProjectQuery(
+        filter: QueryFilter<ProjectPredicate>(
+          shared: const [
+            ProjectBoolPredicate(
+              field: ProjectBoolField.completed,
+              operator: BoolOperator.isFalse,
+            ),
+          ],
+          orGroups: [
+            [
+              ProjectDatePredicate(
+                field: ProjectDateField.startDate,
+                operator: DateOperator.between,
+                startDate: rangeStart,
+                endDate: rangeEnd,
+              ),
+            ],
+            [
+              ProjectDatePredicate(
+                field: ProjectDateField.deadlineDate,
+                operator: DateOperator.between,
+                startDate: rangeStart,
+                endDate: rangeEnd,
+              ),
+            ],
+          ],
+        ),
       );
 
       final stream = service.watchProjectOccurrences(

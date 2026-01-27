@@ -47,7 +47,6 @@ class TaskRepository implements TaskRepositoryContract {
   // Tier-based shared streams for common query patterns
   // Reduces concurrent queries from 6-7 down to 2-3
   ValueStream<List<Task>>? _sharedInboxStream;
-  final Map<DateTime, ValueStream<List<Task>>> _sharedTodayStreamsByDate = {};
   ValueStream<List<Task>>? _sharedUpcomingStream;
 
   // Generic query-keyed cache for stable, non-date queries.
@@ -119,8 +118,6 @@ class TaskRepository implements TaskRepositoryContract {
     // Route to shared streams for common patterns.
     if (isInboxQuery(normalizedQuery)) {
       return getOrCreateInboxStream(normalizedQuery);
-    } else if (isTodayQuery(normalizedQuery)) {
-      return getOrCreateTodayStream(normalizedQuery);
     } else if (isUpcomingQuery(normalizedQuery)) {
       return getOrCreateUpcomingStream(normalizedQuery);
     }
@@ -1232,28 +1229,6 @@ class TaskRepository implements TaskRepositoryContract {
     return hasNotCompleted && hasNoProject;
   }
 
-  /// Checks if a query matches the today tier.
-  bool isTodayQuery(TaskQuery query) {
-    if (query.filter.orGroups.isNotEmpty) return false;
-    final predicates = query.filter.shared;
-    if (predicates.length != 2) return false;
-
-    final hasNotCompleted = predicates.any(
-      (p) =>
-          p is TaskBoolPredicate &&
-          p.field == TaskBoolField.completed &&
-          p.operator == BoolOperator.isFalse,
-    );
-
-    final hasDeadlineOnOrBefore = predicates.any((p) {
-      if (p is! TaskDatePredicate) return false;
-      return p.field == TaskDateField.deadlineDate &&
-          p.operator == DateOperator.onOrBefore;
-    });
-
-    return hasNotCompleted && hasDeadlineOnOrBefore;
-  }
-
   /// Checks if a query matches the upcoming tier.
   bool isUpcomingQuery(TaskQuery query) {
     if (query.filter.orGroups.isNotEmpty) return false;
@@ -1292,51 +1267,6 @@ class TaskRepository implements TaskRepositoryContract {
       _sharedInboxStream = stream.shareValue();
     }
     return _sharedInboxStream!;
-  }
-
-  DateTime? extractTodayCutoffDate(TaskQuery query) {
-    // TaskQuery.today(now: ...) encodes the cutoff as a date-only predicate.
-    for (final p in query.filter.shared.whereType<TaskDatePredicate>()) {
-      if (p.field == TaskDateField.deadlineDate &&
-          p.operator == DateOperator.onOrBefore) {
-        return p.date;
-      }
-    }
-    return null;
-  }
-
-  /// Gets or creates the shared today stream with tier-based caching.
-  Stream<List<Task>> getOrCreateTodayStream(TaskQuery query) {
-    final todayCutoff = extractTodayCutoffDate(query);
-    if (todayCutoff == null) {
-      // Safety: if we cannot reliably key this stream by day, do not cache it.
-      return buildAndExecuteQuery(query);
-    }
-
-    final cached = _sharedTodayStreamsByDate[todayCutoff];
-    if (cached != null) return cached;
-
-    final stream = buildAndExecuteQuery(query).map((tasks) {
-      AppLog.routineThrottled(
-        'task_repo.today_stream',
-        const Duration(seconds: 10),
-        'data.task_repository',
-        'TODAY stream emitting ${tasks.length} tasks',
-      );
-      return tasks;
-    });
-    final shared = stream.shareValue();
-    _sharedTodayStreamsByDate[todayCutoff] = shared;
-
-    // Prevent unbounded growth (e.g., app stays open for weeks).
-    // Keep only the most recent few days.
-    if (_sharedTodayStreamsByDate.length > 4) {
-      final keys = _sharedTodayStreamsByDate.keys.toList()..sort();
-      final keysToRemove = keys.take(keys.length - 4);
-      keysToRemove.forEach(_sharedTodayStreamsByDate.remove);
-    }
-
-    return shared;
   }
 
   /// Gets or creates the shared upcoming stream with tier-based caching.

@@ -185,6 +185,143 @@ class _InMemoryTaskRepo extends Fake implements TaskRepositoryContract {
   }
 }
 
+class _InMemoryRoutineRepo extends Fake implements RoutineRepositoryContract {
+  _InMemoryRoutineRepo({List<Routine>? seed}) {
+    if (seed != null) _routines.addAll(seed);
+  }
+
+  final List<Routine> _routines = <Routine>[];
+  int _idCounter = 0;
+
+  @override
+  Future<List<Routine>> getAll({bool includeInactive = true}) async {
+    return List<Routine>.from(_routines);
+  }
+
+  @override
+  Future<void> delete(String id, {OperationContext? context}) async {
+    _routines.removeWhere((routine) => routine.id == id);
+  }
+
+  @override
+  Stream<List<Routine>> watchAll({bool includeInactive = true}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Stream<Routine?> watchById(String id) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Routine?> getById(String id) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> create({
+    required String name,
+    required String valueId,
+    required RoutineType routineType,
+    required int targetCount,
+    String? projectId,
+    List<int> scheduleDays = const <int>[],
+    int? minSpacingDays,
+    int? restDayBuffer,
+    List<int> preferredWeeks = const <int>[],
+    int? fixedDayOfMonth,
+    int? fixedWeekday,
+    int? fixedWeekOfMonth,
+    bool isActive = true,
+    DateTime? pausedUntilUtc,
+    OperationContext? context,
+  }) async {
+    final id = 'r${++_idCounter}';
+    _routines.add(
+      Routine(
+        id: id,
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        name: name,
+        valueId: valueId,
+        routineType: routineType,
+        targetCount: targetCount,
+        projectId: projectId,
+        scheduleDays: scheduleDays,
+        minSpacingDays: minSpacingDays,
+        restDayBuffer: restDayBuffer,
+        preferredWeeks: preferredWeeks,
+        fixedDayOfMonth: fixedDayOfMonth,
+        fixedWeekday: fixedWeekday,
+        fixedWeekOfMonth: fixedWeekOfMonth,
+        isActive: isActive,
+        pausedUntilUtc: pausedUntilUtc,
+      ),
+    );
+  }
+
+  @override
+  Future<void> update({
+    required String id,
+    required String name,
+    required String valueId,
+    required RoutineType routineType,
+    required int targetCount,
+    String? projectId,
+    List<int>? scheduleDays,
+    int? minSpacingDays,
+    int? restDayBuffer,
+    List<int>? preferredWeeks,
+    int? fixedDayOfMonth,
+    int? fixedWeekday,
+    int? fixedWeekOfMonth,
+    bool? isActive,
+    DateTime? pausedUntilUtc,
+    OperationContext? context,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Stream<List<RoutineCompletion>> watchCompletions() {
+    throw UnimplementedError();
+  }
+
+  @override
+  Stream<List<RoutineSkip>> watchSkips() {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<RoutineCompletion>> getCompletions() {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<RoutineSkip>> getSkips() {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> recordCompletion({
+    required String routineId,
+    DateTime? completedAtUtc,
+    OperationContext? context,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> recordSkip({
+    required String routineId,
+    required RoutineSkipPeriodType periodType,
+    required DateTime periodKeyUtc,
+    OperationContext? context,
+  }) {
+    throw UnimplementedError();
+  }
+}
+
 class _FixedClock implements Clock {
   _FixedClock(this._nowUtc);
 
@@ -277,10 +414,12 @@ void main() {
       );
 
       final myDayRepo = _RecordingMyDayRepository();
+      final routineRepo = _InMemoryRoutineRepo();
       final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
       final service = TemplateDataService(
         taskRepository: taskRepo,
         projectRepository: projectRepo,
+        routineRepository: routineRepo,
         valueRepository: valueRepo,
         myDayRepository: myDayRepo,
         clock: clock,
@@ -292,15 +431,22 @@ void main() {
       final projects = await projectRepo.getAll();
       final tasks = await taskRepo.getAll();
 
-      expect(values, hasLength(5));
+      expect(values, hasLength(12));
       expect(
         values.map((v) => v.name),
         containsAll(<String>[
           'Life Admin',
+          'Career & Growth',
           'Home & Comfort',
           'Relationships',
           'Health & Energy',
           'Learning & Curiosity',
+          'Finance & Security',
+          'Community',
+          'Creativity',
+          'Mindfulness',
+          'Focus & Clarity',
+          'Adventure',
         ]),
       );
       expect(projects, hasLength(6));

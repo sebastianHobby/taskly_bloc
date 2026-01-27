@@ -30,58 +30,9 @@ class ValueQuery {
   // Factory Methods (convenience constructors)
   // ========================================================================
 
-  /// Factory: Specific value by ID.
-  factory ValueQuery.byId(String id) {
-    return ValueQuery(
-      filter: QueryFilter<ValuePredicate>(
-        shared: [ValueIdPredicate(valueId: id)],
-      ),
-    );
-  }
-
-  /// Factory: Values by multiple IDs.
-  factory ValueQuery.byIds(List<String> ids) {
-    return ValueQuery(
-      filter: QueryFilter<ValuePredicate>(
-        shared: [ValueIdsPredicate(valueIds: ids)],
-      ),
-    );
-  }
-
   /// Factory: All values (no filtering).
   factory ValueQuery.all({List<SortCriterion>? sortCriteria}) {
     return ValueQuery(
-      sortCriteria: sortCriteria ?? _defaultSortCriteria,
-    );
-  }
-
-  /// Factory: Search by name.
-  factory ValueQuery.search(
-    String searchTerm, {
-    List<SortCriterion>? sortCriteria,
-  }) {
-    return ValueQuery(
-      filter: QueryFilter<ValuePredicate>(
-        shared: [
-          ValueNamePredicate(
-            value: searchTerm,
-            operator: StringOperator.contains,
-          ),
-        ],
-      ),
-      sortCriteria: sortCriteria ?? _defaultSortCriteria,
-    );
-  }
-
-  /// Factory: Values by color.
-  factory ValueQuery.byColor(
-    String colorHex, {
-    List<SortCriterion>? sortCriteria,
-  }) {
-    return ValueQuery(
-      filter: QueryFilter<ValuePredicate>(
-        shared: [ValueColorPredicate(colorHex: colorHex)],
-      ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,
     );
   }

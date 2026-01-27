@@ -25,20 +25,16 @@ class TaskEntityTile extends StatelessWidget {
   final TasklyTaskRowActions actions;
 
   bool get _isSelectionStyle =>
-      style is TasklyTaskRowStylePickerAction ||
       style is TasklyTaskRowStylePlanPick ||
       style is TasklyTaskRowStyleBulkSelection;
 
   bool get _isBulkSelectionStyle => style is TasklyTaskRowStyleBulkSelection;
 
-  bool get _isPickerActionStyle => style is TasklyTaskRowStylePickerAction;
-
   bool get _isPlanPickStyle => style is TasklyTaskRowStylePlanPick;
 
-  bool get _isPickerLikeStyle => _isPickerActionStyle || _isPlanPickStyle;
+  bool get _isPickerLikeStyle => _isPlanPickStyle;
 
   bool? get _selected => switch (style) {
-    TasklyTaskRowStylePickerAction(:final selected) => selected,
     TasklyTaskRowStylePlanPick(:final selected) => selected,
     TasklyTaskRowStyleBulkSelection(:final selected) => selected,
     _ => null,
@@ -76,8 +72,6 @@ class TaskEntityTile extends StatelessWidget {
     final showCompletionControl = !_isBulkSelectionStyle && !_isPickerLikeStyle;
 
     final VoidCallback? onTap = switch (style) {
-      TasklyTaskRowStylePickerAction() =>
-        actions.onToggleSelected ?? actions.onTap,
       TasklyTaskRowStylePlanPick() => actions.onToggleSelected ?? actions.onTap,
       TasklyTaskRowStyleBulkSelection() =>
         actions.onToggleSelected ?? actions.onTap,
@@ -221,49 +215,18 @@ class TaskEntityTile extends StatelessWidget {
                               model: model,
                               tokens: tokens,
                               compactPriorityPill: _isPlanPickStyle,
-                              primaryIconOnly: model.primaryValueIconOnly,
                             ),
                           ],
                         ),
                       ),
                       if (_isPickerLikeStyle) ...[
                         SizedBox(width: tokens.spaceSm),
-                        if (_isPlanPickStyle)
-                          _PickerActionCluster(
-                            selected: _selected ?? false,
-                            addTooltip: addTooltipLabel,
-                            snoozeTooltip: model.labels?.snoozeTooltip,
-                            onAddPressed: actions.onToggleSelected,
-                            onSnoozePressed: null,
-                          )
-                        else if (_isPickerActionStyle)
-                          _PickerActionButton(
-                            selected: _selected ?? false,
-                            enabled: actions.onToggleSelected != null,
-                            onPressed: actions.onToggleSelected,
-                          )
-                        if (!_isPlanPickStyle &&
-                            _isPickerLikeStyle &&
-                            actions.onSnoozeRequested != null) ...[
-                          SizedBox(width: tokens.spaceXs2),
-                          TextButton(
-                            onPressed: actions.onSnoozeRequested,
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: tokens.spaceXs2,
-                                vertical: tokens.spaceXs2,
-                              ),
-                              minimumSize: Size(0, tokens.minTapTargetSize),
-                            ),
-                            child: Text(
-                              model.labels?.snoozeTooltip ?? 'Snooze',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: scheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
+                        _PickerActionButton(
+                          selected: _selected ?? false,
+                          enabled: actions.onToggleSelected != null,
+                          onPressed: actions.onToggleSelected,
+                          tooltip: addTooltipLabel,
+                        ),
                       ],
                     ],
                   ),
@@ -320,13 +283,11 @@ class _MetaRow extends StatelessWidget {
     required this.model,
     required this.tokens,
     required this.compactPriorityPill,
-    required this.primaryIconOnly,
   });
 
   final TasklyTaskRowData model;
   final TasklyTokens tokens;
   final bool compactPriorityPill;
-  final bool primaryIconOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -350,11 +311,7 @@ class _MetaRow extends StatelessWidget {
         : null;
 
     final valueLine = hasValues
-        ? _ValueTagLine(
-            primary: primaryValue,
-            secondary: secondaryValue,
-            primaryIconOnly: primaryIconOnly,
-          )
+        ? _ValueTagLine(primary: primaryValue, secondary: secondaryValue)
         : null;
 
     if (!hasValues && !hasMetaLine && !hasBadges) {
@@ -414,12 +371,10 @@ class _ValueTagLine extends StatelessWidget {
   const _ValueTagLine({
     required this.primary,
     required this.secondary,
-    required this.primaryIconOnly,
   });
 
   final ValueChipData? primary;
   final ValueChipData? secondary;
-  final bool primaryIconOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -428,6 +383,7 @@ class _ValueTagLine extends StatelessWidget {
     }
 
     final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
     const primaryMaxChars = 20;
     const secondaryMaxChars = 24;
 
@@ -437,21 +393,56 @@ class _ValueTagLine extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ValueTag(
+        _ValueInlineLabel(
           data: effectivePrimary,
-          variant: ValueTagVariant.primary,
-          iconOnly: primary != null && primaryIconOnly,
           maxLabelChars: primaryMaxChars,
+          textColor: scheme.onSurfaceVariant,
         ),
         if (effectiveSecondary != null) ...[
           SizedBox(width: tokens.spaceXs2),
-          ValueTag(
+          _ValueInlineLabel(
             data: effectiveSecondary,
-            variant: ValueTagVariant.secondary,
-            iconOnly: false,
             maxLabelChars: secondaryMaxChars,
+            textColor: scheme.onSurfaceVariant,
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _ValueInlineLabel extends StatelessWidget {
+  const _ValueInlineLabel({
+    required this.data,
+    required this.maxLabelChars,
+    required this.textColor,
+  });
+
+  final ValueChipData data;
+  final int maxLabelChars;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final label = ValueTagLayout.formatLabel(
+      data.label,
+      maxChars: maxLabelChars,
+    );
+    if (label == null || label.isEmpty) return const SizedBox.shrink();
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(data.icon, size: tokens.spaceMd2, color: data.color),
+        SizedBox(width: tokens.spaceXxs2),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: (Theme.of(context).textTheme.labelSmall ?? const TextStyle())
+              .copyWith(color: textColor, fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }
@@ -726,11 +717,13 @@ class _PickerActionButton extends StatelessWidget {
     required this.selected,
     required this.enabled,
     required this.onPressed,
+    this.tooltip,
   });
 
   final bool selected;
   final bool enabled;
   final VoidCallback? onPressed;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -741,89 +734,13 @@ class _PickerActionButton extends StatelessWidget {
 
     return IconButton(
       onPressed: enabled ? onPressed : null,
+      tooltip: tooltip,
       icon: Icon(selected ? Icons.check_rounded : Icons.add_rounded),
       style: IconButton.styleFrom(
         backgroundColor: bg,
         foregroundColor: fg,
         minimumSize: Size.square(tokens.minTapTargetSize),
         padding: EdgeInsets.all(tokens.spaceXs2),
-      ),
-    );
-  }
-}
-
-class _PickerActionCluster extends StatelessWidget {
-  const _PickerActionCluster({
-    required this.selected,
-    required this.addTooltip,
-    required this.snoozeTooltip,
-    required this.onAddPressed,
-    required this.onSnoozePressed,
-  });
-
-  final bool selected;
-  final String? addTooltip;
-  final String? snoozeTooltip;
-  final VoidCallback? onAddPressed;
-  final VoidCallback? onSnoozePressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final tokens = TasklyTokens.of(context);
-    final bg = scheme.surfaceContainerHighest.withValues(alpha: 0.8);
-    final border = scheme.outlineVariant.withValues(alpha: 0.7);
-    final divider = scheme.outlineVariant.withValues(alpha: 0.55);
-    final addBg = selected ? scheme.primaryContainer : scheme.primary;
-    final addFg = selected ? scheme.primary : scheme.onPrimary;
-    final showSnooze = onSnoozePressed != null;
-
-    final add = IconButton(
-      onPressed: onAddPressed,
-      tooltip: addTooltip,
-      icon: Icon(selected ? Icons.check_rounded : Icons.add_rounded),
-      style: IconButton.styleFrom(
-        backgroundColor: addBg,
-        foregroundColor: addFg,
-        minimumSize: Size.square(tokens.minTapTargetSize),
-        padding: EdgeInsets.all(tokens.spaceXs2),
-      ),
-    );
-
-    final snooze = IconButton(
-      onPressed: onSnoozePressed,
-      tooltip: snoozeTooltip,
-      icon: const Icon(Icons.snooze_rounded),
-      style: IconButton.styleFrom(
-        minimumSize: Size.square(tokens.minTapTargetSize),
-        padding: EdgeInsets.all(tokens.spaceXs2),
-      ),
-    );
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spaceXxs2,
-        vertical: tokens.spaceXxs,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(tokens.radiusLg2),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          add,
-          if (showSnooze) ...[
-            Container(
-              width: 1,
-              height: 22,
-              margin: EdgeInsets.symmetric(horizontal: tokens.spaceXs),
-              color: divider,
-            ),
-            snooze,
-          ],
-        ],
       ),
     );
   }

@@ -307,7 +307,7 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
         .toSet();
 
     final plannedEntries = widget.plannedItems
-        .map((item) => _MyDayListEntry(item: item, showBadge: true))
+        .map((item) => _MyDayListEntry(item: item))
         .toList(growable: false);
 
     final pinnedEntries = widget.pinnedTasks
@@ -320,7 +320,6 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
               sortIndex: -1,
               qualifyingValueId: task.effectivePrimaryValueId,
             ),
-            showBadge: false,
           ),
         )
         .toList(growable: false);
@@ -410,16 +409,12 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
           final routine = item.routine;
           final snapshot = item.routineSnapshot;
           if (routine == null || snapshot == null) continue;
-          final badges = entry.showBadge
-              ? [_badgeForBucket(context, item.bucket)]
-              : const <TasklyBadgeData>[];
           groupedRows.add(
             _buildRoutineRow(
               context,
               routine: routine,
               snapshot: snapshot,
               completed: item.completed,
-              badges: badges,
               depthOffset: 0,
             ),
           );
@@ -428,14 +423,10 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
 
         final task = item.task;
         if (task == null) continue;
-        final badges = entry.showBadge
-            ? [_badgeForBucket(context, item.bucket)]
-            : const <TasklyBadgeData>[];
         groupedRows.add(
           _buildTaskRowSpec(
             context,
             task,
-            badges: badges,
             depthOffset: 0,
           ),
         );
@@ -581,11 +572,9 @@ String _myDayValueKey(String? valueId) {
 final class _MyDayListEntry {
   const _MyDayListEntry({
     required this.item,
-    required this.showBadge,
   });
 
   final MyDayPlannedItem item;
-  final bool showBadge;
 }
 
 class _MyDayValueGroup {
@@ -616,48 +605,11 @@ int _valuePriorityRank(ValuePriority priority) {
   };
 }
 
-TasklyBadgeData _badgeForBucket(
-  BuildContext context,
-  my_day.MyDayPickBucket bucket,
-) {
-  final scheme = Theme.of(context).colorScheme;
-  final l10n = context.l10n;
-
-  return switch (bucket) {
-    my_day.MyDayPickBucket.valueSuggestions => TasklyBadgeData(
-      label: l10n.myDayBadgeValues,
-      color: scheme.primary,
-      tone: TasklyBadgeTone.soft,
-    ),
-    my_day.MyDayPickBucket.routine => TasklyBadgeData(
-      label: l10n.myDayBadgeRoutine,
-      color: scheme.tertiary,
-      tone: TasklyBadgeTone.soft,
-    ),
-    my_day.MyDayPickBucket.due => TasklyBadgeData(
-      label: l10n.myDayBadgeDue,
-      color: scheme.error,
-      tone: TasklyBadgeTone.soft,
-    ),
-    my_day.MyDayPickBucket.starts => TasklyBadgeData(
-      label: l10n.myDayBadgeStarts,
-      color: scheme.secondary,
-      tone: TasklyBadgeTone.soft,
-    ),
-    my_day.MyDayPickBucket.manual => TasklyBadgeData(
-      label: l10n.myDayBadgeManual,
-      color: scheme.onSurfaceVariant,
-      tone: TasklyBadgeTone.outline,
-    ),
-  };
-}
-
 TasklyRowSpec _buildRoutineRow(
   BuildContext context, {
   required Routine routine,
   required RoutineCadenceSnapshot snapshot,
   required bool completed,
-  List<TasklyBadgeData> badges = const <TasklyBadgeData>[],
   int depthOffset = 0,
 }) {
   final data = buildRoutineRowData(
@@ -665,7 +617,6 @@ TasklyRowSpec _buildRoutineRow(
     routine: routine,
     snapshot: snapshot,
     completed: completed,
-    badges: badges,
     labels: buildRoutineListLabels(context),
   );
 
@@ -687,7 +638,6 @@ TasklyRowSpec _buildRoutineRow(
 TasklyRowSpec _buildTaskRowSpec(
   BuildContext context,
   Task task, {
-  List<TasklyBadgeData> badges = const <TasklyBadgeData>[],
   int depthOffset = 0,
 }) {
   final selection = context.read<SelectionCubit>();
@@ -716,7 +666,6 @@ TasklyRowSpec _buildTaskRowSpec(
     meta: data.meta,
     leadingChip: data.leadingChip,
     secondaryChips: data.secondaryChips,
-    badges: badges,
     deemphasized: data.deemphasized,
     checkboxSemanticLabel: data.checkboxSemanticLabel,
     labels: labels,

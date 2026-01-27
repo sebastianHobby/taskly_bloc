@@ -65,10 +65,9 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
     final isCompact = MediaQuery.sizeOf(context).width < 600;
     final isCreating = widget.initialData == null;
 
-    final ValueDraft? createDraft =
-        widget.initialData == null
-            ? (widget.initialDraft ?? ValueDraft.empty())
-            : null;
+    final ValueDraft? createDraft = widget.initialData == null
+        ? (widget.initialDraft ?? ValueDraft.empty())
+        : null;
 
     final initialValues = <String, dynamic>{
       ValueFieldKeys.name.id:
@@ -89,10 +88,6 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
         isDirty && (widget.formKey.currentState?.isValid ?? false);
 
     final sectionGap = isCompact ? 12.0 : 16.0;
-    final denseFieldPadding = EdgeInsets.symmetric(
-      horizontal: isCompact ? 12 : 16,
-      vertical: isCompact ? 10 : 12,
-    );
 
     final headerActionStyle = TextButton.styleFrom(
       textStyle: theme.textTheme.bodyMedium?.copyWith(
@@ -213,30 +208,9 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                 SizedBox(height: TasklyTokens.of(context).spaceSm),
                 FormBuilderIconPicker(
                   name: ValueFieldKeys.iconName.id,
-                  title: l10n.valueFormIconLabel,
-                  hintText: l10n.valueFormIconHint,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: scheme.surfaceContainerLow,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        TasklyTokens.of(context).radiusMd,
-                      ),
-                      borderSide: BorderSide(
-                        color: scheme.outlineVariant,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(
-                        TasklyTokens.of(context).radiusMd,
-                      ),
-                      borderSide: BorderSide(
-                        color: scheme.primary,
-                        width: 1.2,
-                      ),
-                    ),
-                    contentPadding: denseFieldPadding,
-                  ),
+                  searchHintText: l10n.valueFormIconSearchHint,
+                  noIconsFoundLabel: l10n.valueFormIconNoResults,
+                  gridHeight: isCompact ? 200 : 240,
                 ),
                 SizedBox(height: sectionGap),
                 TasklyFormSectionLabel(text: l10n.valueFormColorLabel),
@@ -282,10 +256,9 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                           ],
                           value: field.value?.index,
                           onChanged: (value) {
-                            final priority =
-                                value == null
-                                    ? null
-                                    : ValuePriority.values[value];
+                            final priority = value == null
+                                ? null
+                                : ValuePriority.values[value];
                             field.didChange(priority);
                             markDirty();
                             setState(() {});

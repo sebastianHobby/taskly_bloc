@@ -312,6 +312,18 @@ class ValueRepository implements ValueRepositoryContract {
         // Generate deterministic v5 ID
         final id = idGenerator.valueId(name: name);
 
+        AppLog.warnStructured(
+          'data.value',
+          'create requested',
+          fields: <String, Object?>{
+            'id': id,
+            'name': name,
+            'color': normalizedColor,
+            'iconName': iconName,
+            'priority': priority.name,
+          },
+        );
+
         final psMetadata = encodeCrudMetadata(context);
 
         await _createValue(
@@ -327,6 +339,15 @@ class ValueRepository implements ValueRepositoryContract {
             createdAt: drift_pkg.Value(now),
             updatedAt: drift_pkg.Value(now),
           ),
+        );
+
+        AppLog.warnStructured(
+          'data.value',
+          'create inserted',
+          fields: <String, Object?>{
+            'id': id,
+            'name': name,
+          },
         );
       },
       area: 'data.value',

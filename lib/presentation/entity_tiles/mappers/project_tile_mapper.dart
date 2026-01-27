@@ -51,7 +51,6 @@ TasklyProjectRowData buildProjectRowData(
       completedTaskCount ?? project.completedTaskCount;
 
   final meta = TasklyEntityMetaData(
-    primaryValue: primaryValueData,
     showOnlyDeadlineDate: showOnlyDeadlineDate,
     startDateLabel: resolvedStartDateLabel,
     deadlineDateLabel: resolvedDeadlineDateLabel,

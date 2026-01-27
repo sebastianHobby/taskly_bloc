@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:taskly_domain/my_day.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
+import 'package:taskly_domain/src/interfaces/routine_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/value_repository_contract.dart';
 import 'package:taskly_domain/core/model/value_priority.dart';
@@ -179,17 +180,20 @@ class TemplateDataService {
   TemplateDataService({
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
+    required RoutineRepositoryContract routineRepository,
     required ValueRepositoryContract valueRepository,
     required MyDayRepositoryContract myDayRepository,
     Clock clock = systemClock,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
+       _routineRepository = routineRepository,
        _valueRepository = valueRepository,
        _myDayRepository = myDayRepository,
        _clock = clock;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
+  final RoutineRepositoryContract _routineRepository;
   final ValueRepositoryContract _valueRepository;
   final MyDayRepositoryContract _myDayRepository;
   final Clock _clock;
@@ -215,6 +219,11 @@ class TemplateDataService {
       await _projectRepository.delete(project.id);
     }
 
+    final routines = await _routineRepository.getAll(includeInactive: true);
+    for (final routine in routines) {
+      await _routineRepository.delete(routine.id);
+    }
+
     final values = await _valueRepository.getAll();
     for (final value in values) {
       await _valueRepository.delete(value.id);
@@ -226,33 +235,75 @@ class TemplateDataService {
     const seeds = <_TemplateValueSeed>[
       _TemplateValueSeed(
         name: 'Life Admin',
-        color: '#94A3B8',
+        color: '#3B82F6',
         priority: ValuePriority.high,
         iconName: 'checklist',
       ),
       _TemplateValueSeed(
-        name: 'Home & Comfort',
-        color: '#34D399',
-        priority: ValuePriority.medium,
-        iconName: 'home',
+        name: 'Career & Growth',
+        color: '#10B981',
+        priority: ValuePriority.high,
+        iconName: 'work',
       ),
       _TemplateValueSeed(
         name: 'Relationships',
-        color: '#FB7185',
+        color: '#8B5CF6',
         priority: ValuePriority.medium,
         iconName: 'group',
       ),
       _TemplateValueSeed(
         name: 'Health & Energy',
-        color: '#14B8A6',
+        color: '#F59E0B',
         priority: ValuePriority.high,
         iconName: 'health',
       ),
       _TemplateValueSeed(
-        name: 'Learning & Curiosity',
-        color: '#A78BFA',
+        name: 'Home & Comfort',
+        color: '#EC4899',
+        priority: ValuePriority.medium,
+        iconName: 'home',
+      ),
+      _TemplateValueSeed(
+        name: 'Finance & Security',
+        color: '#06B6D4',
+        priority: ValuePriority.medium,
+        iconName: 'business',
+      ),
+      _TemplateValueSeed(
+        name: 'Community',
+        color: '#14B8A6',
+        priority: ValuePriority.medium,
+        iconName: 'person',
+      ),
+      _TemplateValueSeed(
+        name: 'Creativity',
+        color: '#EF4444',
         priority: ValuePriority.low,
+        iconName: 'rocket',
+      ),
+      _TemplateValueSeed(
+        name: 'Learning & Curiosity',
+        color: '#3B82F6',
+        priority: ValuePriority.medium,
         iconName: 'lightbulb',
+      ),
+      _TemplateValueSeed(
+        name: 'Mindfulness',
+        color: '#10B981',
+        priority: ValuePriority.medium,
+        iconName: 'meditation',
+      ),
+      _TemplateValueSeed(
+        name: 'Focus & Clarity',
+        color: '#8B5CF6',
+        priority: ValuePriority.medium,
+        iconName: 'target',
+      ),
+      _TemplateValueSeed(
+        name: 'Adventure',
+        color: '#F59E0B',
+        priority: ValuePriority.low,
+        iconName: 'flag',
       ),
     ];
 
@@ -319,10 +370,11 @@ class TemplateDataService {
       priority: 1,
       startDate: day(-3),
       deadlineDate: day(7),
-      valueIds: [valueIdByName['Learning & Curiosity']!],
+      valueIds: [valueIdByName['Focus & Clarity']!],
     );
 
     final projectIdByName = await _loadProjectIdByName();
+    final projectPrimaryValueIdById = await _loadProjectPrimaryValueIdById();
 
     final pinnedTaskNames = <String>[];
     final completedTaskNames = <String>[];
@@ -330,6 +382,12 @@ class TemplateDataService {
     for (final seed in _templateTaskSeeds) {
       final projectId = projectIdByName[seed.projectName];
       if (projectId == null) continue;
+
+      final taskValueIds = _sanitizeTaskValueIds(
+        projectId: projectId,
+        valueIds: _valueIdsFor(seed.valueNames, valueIdByName),
+        projectPrimaryValueIdById: projectPrimaryValueIdById,
+      );
 
       await _taskRepository.create(
         name: seed.name,
@@ -339,7 +397,7 @@ class TemplateDataService {
         deadlineDate: seed.deadlineOffset == null
             ? null
             : day(seed.deadlineOffset!),
-        valueIds: _valueIdsFor(seed.valueNames, valueIdByName),
+        valueIds: taskValueIds,
         repeatIcalRrule: seed.repeatIcalRrule,
       );
 
@@ -368,6 +426,19 @@ class TemplateDataService {
       }
     }
     return ids.isEmpty ? null : ids;
+  }
+
+  List<String>? _sanitizeTaskValueIds({
+    required String projectId,
+    required List<String>? valueIds,
+    required Map<String, String?> projectPrimaryValueIdById,
+  }) {
+    if (valueIds == null || valueIds.isEmpty) return null;
+    final primaryValueId = projectPrimaryValueIdById[projectId];
+    if (primaryValueId == null) return valueIds;
+
+    final filtered = valueIds.where((id) => id != primaryValueId).toList();
+    return filtered.isEmpty ? null : filtered;
   }
 
   Future<void> _completeTasksByName(List<String> names) async {
@@ -450,6 +521,11 @@ class TemplateDataService {
     return {for (final p in projects) p.name: p.id};
   }
 
+  Future<Map<String, String?>> _loadProjectPrimaryValueIdById() async {
+    final projects = await _projectRepository.getAll(ProjectQuery.all());
+    return {for (final p in projects) p.id: p.primaryValueId};
+  }
+
   Future<void> _pinTasksByName(List<String> names) async {
     final tasks = await _taskRepository.getAll(TaskQuery.all());
     final idByName = <String, String>{for (final t in tasks) t.name: t.id};
@@ -517,7 +593,7 @@ const _templateTaskSeeds = <_TemplateTaskSeed>[
     startOffset: -7,
     deadlineOffset: -1,
     priority: 3,
-    valueNames: ['Health & Energy'],
+    valueNames: ['Health & Energy', 'Mindfulness'],
     pin: true,
   ),
   _TemplateTaskSeed(
@@ -539,7 +615,7 @@ const _templateTaskSeeds = <_TemplateTaskSeed>[
     projectName: 'Home chores',
     startOffset: -2,
     priority: 3,
-    valueNames: ['Health & Energy'],
+    valueNames: ['Life Admin'],
   ),
   _TemplateTaskSeed(
     name: 'Prep seasonal cleaning plan',
@@ -580,7 +656,7 @@ const _templateTaskSeeds = <_TemplateTaskSeed>[
     startOffset: -5,
     deadlineOffset: 3,
     priority: 1,
-    valueNames: ['Life Admin'],
+    valueNames: ['Community', 'Life Admin'],
   ),
   _TemplateTaskSeed(
     name: 'Draft invite message',
@@ -617,6 +693,7 @@ const _templateTaskSeeds = <_TemplateTaskSeed>[
     deadlineOffset: 4,
     priority: 2,
     repeatIcalRrule: 'FREQ=WEEKLY;BYDAY=MO',
+    valueNames: ['Focus & Clarity'],
     complete: true,
     pin: true,
   ),
@@ -626,29 +703,33 @@ const _templateTaskSeeds = <_TemplateTaskSeed>[
     startOffset: 20,
     deadlineOffset: 25,
     priority: 3,
-    valueNames: ['Home & Comfort'],
+    valueNames: ['Finance & Security'],
   ),
   _TemplateTaskSeed(
     name: 'Create a warm-up checklist',
     projectName: 'Exercise Routines',
     priority: 4,
+    valueNames: ['Mindfulness'],
   ),
   _TemplateTaskSeed(
     name: 'Research a beginner mobility routine',
     projectName: 'Exercise Routines',
     priority: 3,
+    valueNames: ['Learning & Curiosity'],
   ),
   _TemplateTaskSeed(
     name: 'Log progress snapshot',
     projectName: 'Exercise Routines',
     deadlineOffset: 2,
     priority: 3,
+    valueNames: ['Focus & Clarity'],
   ),
   _TemplateTaskSeed(
     name: 'Morning mobility check-in',
     projectName: 'Exercise Routines',
     startOffset: 0,
     repeatIcalRrule: 'FREQ=DAILY',
+    valueNames: ['Mindfulness'],
   ),
   _TemplateTaskSeed(
     name: 'Strength session (biweekly)',
@@ -656,6 +737,7 @@ const _templateTaskSeeds = <_TemplateTaskSeed>[
     startOffset: 5,
     repeatIcalRrule: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=FR',
     priority: 3,
+    valueNames: ['Mindfulness'],
   ),
   _TemplateTaskSeed(
     name: 'Set training reminder',
@@ -668,6 +750,7 @@ const _templateTaskSeeds = <_TemplateTaskSeed>[
     startOffset: 4,
     deadlineOffset: 6,
     priority: 3,
+    valueNames: ['Career & Growth'],
     pin: true,
   ),
   _TemplateTaskSeed(
@@ -676,80 +759,95 @@ const _templateTaskSeeds = <_TemplateTaskSeed>[
     startOffset: 35,
     deadlineOffset: 40,
     priority: 3,
+    valueNames: ['Career & Growth'],
     pin: true,
   ),
   _TemplateTaskSeed(
     name: 'Make flashcards format (template)',
     projectName: 'Learn capital city names',
     priority: 4,
+    valueNames: ['Creativity'],
   ),
   _TemplateTaskSeed(
     name: 'List "hard ones" to revisit',
     projectName: 'Learn capital city names',
     priority: 4,
+    valueNames: ['Focus & Clarity'],
   ),
   _TemplateTaskSeed(
     name: 'Schedule review quiz',
     projectName: 'Learn capital city names',
     deadlineOffset: 12,
     priority: 3,
+    valueNames: ['Focus & Clarity'],
   ),
   _TemplateTaskSeed(
     name: 'Capitals quiz reminder',
     projectName: 'Learn capital city names',
     deadlineOffset: 1,
+    valueNames: ['Focus & Clarity'],
   ),
   _TemplateTaskSeed(
     name: 'Quick review: Europe set 1',
     projectName: 'Learn capital city names',
     startOffset: 8,
     priority: 2,
+    valueNames: ['Adventure'],
   ),
   _TemplateTaskSeed(
     name: 'Create quiz scoring sheet',
     projectName: 'Learn capital city names',
+    valueNames: ['Creativity'],
   ),
   _TemplateTaskSeed(
     name: "Review last week's highlights",
     projectName: 'Weekly Review Prep',
     priority: 3,
+    valueNames: ['Mindfulness'],
   ),
   _TemplateTaskSeed(
     name: 'Collect community wins',
     projectName: 'Weekly Review Prep',
     priority: 3,
+    valueNames: ['Community'],
   ),
   _TemplateTaskSeed(
     name: "Draft next week's focus",
     projectName: 'Weekly Review Prep',
     priority: 3,
+    valueNames: ['Career & Growth'],
   ),
   _TemplateTaskSeed(
     name: 'Summarize lessons learned',
     projectName: 'Weekly Review Prep',
     priority: 3,
+    valueNames: ['Learning & Curiosity'],
   ),
   _TemplateTaskSeed(
     name: 'Update weekly metrics dashboard',
     projectName: 'Weekly Review Prep',
     priority: 3,
+    valueNames: ['Finance & Security'],
   ),
   _TemplateTaskSeed(
     name: 'Plan reflection prompts',
     projectName: 'Weekly Review Prep',
     priority: 3,
+    valueNames: ['Creativity'],
   ),
   _TemplateTaskSeed(
     name: 'Review task backlogs',
     projectName: 'Weekly Review Prep',
     startOffset: -6,
     priority: 2,
+    valueNames: ['Life Admin'],
   ),
   _TemplateTaskSeed(
     name: 'Identify deadline risks',
     projectName: 'Weekly Review Prep',
     deadlineOffset: 2,
     priority: 2,
+    valueNames: ['Finance & Security'],
   ),
 ];
 

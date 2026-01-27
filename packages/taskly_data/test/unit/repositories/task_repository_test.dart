@@ -197,7 +197,7 @@ void main() {
       expect(count, equals(1));
     });
 
-    testSafe('watchAll caches inbox/today/upcoming streams', () async {
+    testSafe('watchAll caches inbox/upcoming streams', () async {
       final db = createAutoClosingDb();
       final repo = TaskRepository(
         driftDb: db,
@@ -210,13 +210,22 @@ void main() {
       final inbox2 = repo.watchAll(TaskQuery.inbox());
       expect(identical(inbox1, inbox2), isTrue);
 
-      final todayQuery = TaskQuery.today(now: DateTime.utc(2025, 1, 1));
-      final today1 = repo.watchAll(todayQuery);
-      final today2 = repo.watchAll(todayQuery);
-      expect(identical(today1, today2), isTrue);
-
-      final upcoming1 = repo.watchAll(TaskQuery.upcoming());
-      final upcoming2 = repo.watchAll(TaskQuery.upcoming());
+      final upcomingQuery = TaskQuery(
+        filter: const QueryFilter<TaskPredicate>(
+          shared: [
+            TaskBoolPredicate(
+              field: TaskBoolField.completed,
+              operator: BoolOperator.isFalse,
+            ),
+            TaskDatePredicate(
+              field: TaskDateField.deadlineDate,
+              operator: DateOperator.isNotNull,
+            ),
+          ],
+        ),
+      );
+      final upcoming1 = repo.watchAll(upcomingQuery);
+      final upcoming2 = repo.watchAll(upcomingQuery);
       expect(identical(upcoming1, upcoming2), isTrue);
     });
 
@@ -287,7 +296,7 @@ void main() {
       expect(tasks.map((t) => t.id).toList(), equals(['t2', 't1']));
     });
 
-    testSafe('recognizes inbox/today/upcoming queries', () async {
+    testSafe('recognizes inbox/upcoming queries', () async {
       final db = createAutoClosingDb();
       final repo = TaskRepository(
         driftDb: db,
@@ -296,12 +305,23 @@ void main() {
         idGenerator: IdGenerator.withUserId('user-1'),
       );
 
-      expect(repo.isInboxQuery(TaskQuery.inbox()), isTrue);
-      expect(
-        repo.isTodayQuery(TaskQuery.today(now: DateTime.utc(2025, 1, 1))),
-        isTrue,
+      final upcomingQuery = TaskQuery(
+        filter: const QueryFilter<TaskPredicate>(
+          shared: [
+            TaskBoolPredicate(
+              field: TaskBoolField.completed,
+              operator: BoolOperator.isFalse,
+            ),
+            TaskDatePredicate(
+              field: TaskDateField.deadlineDate,
+              operator: DateOperator.isNotNull,
+            ),
+          ],
+        ),
       );
-      expect(repo.isUpcomingQuery(TaskQuery.upcoming()), isTrue);
+
+      expect(repo.isInboxQuery(TaskQuery.inbox()), isTrue);
+      expect(repo.isUpcomingQuery(upcomingQuery), isTrue);
     });
 
     testSafe('removeDatePredicates strips date filters', () async {

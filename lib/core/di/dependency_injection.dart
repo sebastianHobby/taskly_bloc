@@ -243,6 +243,7 @@ Future<void> setupDependencies() async {
       () => TemplateDataService(
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
+        routineRepository: getIt<RoutineRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
         myDayRepository: getIt<MyDayRepositoryContract>(),
       ),
