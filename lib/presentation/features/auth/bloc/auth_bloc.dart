@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
@@ -28,7 +26,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
     talker.blocLog('Auth', 'AuthBloc CONSTRUCTOR called');
     on<AuthSubscriptionRequested>(
       _onSubscriptionRequested,
-      transformer: droppable(),
+      transformer: restartable(),
     );
     on<AuthSignInRequested>(_onSignInRequested, transformer: restartable());
     on<AuthSignUpRequested>(_onSignUpRequested, transformer: restartable());
@@ -37,7 +35,6 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       _onPasswordResetRequested,
       transformer: restartable(),
     );
-    on<_AuthStateChanged>(_onAuthStateChanged, transformer: sequential());
     talker.blocLog(
       'Auth',
       'AuthBloc CONSTRUCTOR done, event handlers registered',
@@ -46,7 +43,6 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
 
   final AuthRepositoryContract _authRepository;
   final AppErrorReporter _errorReporter;
-  StreamSubscription<AuthState>? _authSubscription;
 
   OperationContext _newContext({
     required String screen,
@@ -62,18 +58,10 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
     );
   }
 
-  @override
-  Future<void> close() async {
-    await _authSubscription?.cancel();
-    return super.close();
-  }
-
   Future<void> _onSubscriptionRequested(
     AuthSubscriptionRequested event,
     Emitter<AppAuthState> emit,
   ) async {
-    await _authSubscription?.cancel();
-
     // Check for existing session
     final session = _authRepository.currentSession;
     talker.blocLog(
@@ -97,50 +85,47 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       emit(state.copyWith(status: AuthStatus.unauthenticated));
     }
 
-    // Listen to auth state changes (sign in, sign out, token refresh)
-    _authSubscription = _authRepository.watchAuthState().listen(
-      (authState) {
-        add(_AuthStateChanged(authState));
+    await emit.forEach<AuthState>(
+      _authRepository.watchAuthState(),
+      onData: (authState) {
+        talker.blocLog(
+          'Auth',
+          'Auth state changed: event=${authState.event}',
+        );
+        final nextSession = authState.session;
+        if (nextSession != null) {
+          if (state.status == AuthStatus.authenticated &&
+              state.user?.id == nextSession.user.id) {
+            talker.blocLog('Auth', 'Already authenticated, skipping re-auth');
+            return state;
+          }
+          talker.blocLog('Auth', 'Session found, emitting authenticated');
+          return state.copyWith(
+            status: AuthStatus.authenticated,
+            user: nextSession.user,
+            error: null,
+            message: null,
+          );
+        }
+        talker.blocLog(
+          'Auth',
+          'No session in auth state change, emitting unauthenticated',
+        );
+        return state.copyWith(
+          status: AuthStatus.unauthenticated,
+          user: null,
+          error: null,
+          message: null,
+        );
+      },
+      onError: (error, stackTrace) {
+        talker.handle(error, stackTrace, '[AuthBloc] auth stream failed');
+        return state.copyWith(
+          status: AuthStatus.unauthenticated,
+          error: 'Auth stream failed',
+        );
       },
     );
-  }
-
-  Future<void> _onAuthStateChanged(
-    _AuthStateChanged event,
-    Emitter<AppAuthState> emit,
-  ) async {
-    talker.blocLog(
-      'Auth',
-      'Auth state changed: event=${event.authState.event}',
-    );
-    final session = event.authState.session;
-
-    if (session != null) {
-      // Skip if already authenticated with same user (e.g., token refresh)
-      if (state.status == AuthStatus.authenticated &&
-          state.user?.id == session.user.id) {
-        talker.blocLog('Auth', 'Already authenticated, skipping re-auth');
-        return;
-      }
-
-      talker.blocLog('Auth', 'Session found, emitting authenticated');
-      emit(
-        state.copyWith(
-          status: AuthStatus.authenticated,
-          user: session.user,
-        ),
-      );
-    } else {
-      talker.blocLog(
-        'Auth',
-        'No session in auth state change, emitting unauthenticated',
-      );
-      emit(
-        state.copyWith(
-          status: AuthStatus.unauthenticated,
-        ),
-      );
-    }
   }
 
   Future<void> _onSignInRequested(

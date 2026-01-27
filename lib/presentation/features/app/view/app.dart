@@ -28,6 +28,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart'
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_bloc/presentation/shared/sync/sync_anomaly_bloc.dart';
 import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
@@ -214,7 +215,7 @@ class _AuthenticatedApp extends StatelessWidget {
 
         Provider<TileIntentDispatcher>(
           create: (_) => DefaultTileIntentDispatcher(
-            projectRepository: getIt<ProjectRepositoryContract>(),
+            sharedDataService: getIt<SessionSharedDataService>(),
             editorLauncher: EditorLauncher.fromGetIt(),
           ),
         ),

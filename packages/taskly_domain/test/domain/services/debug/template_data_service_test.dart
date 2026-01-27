@@ -430,27 +430,23 @@ void main() {
       final values = await valueRepo.getAll();
       final projects = await projectRepo.getAll();
       final tasks = await taskRepo.getAll();
+      final routines = await routineRepo.getAll();
 
-      expect(values, hasLength(12));
+      expect(values, hasLength(6));
       expect(
         values.map((v) => v.name),
         containsAll(<String>[
           'Life Admin',
-          'Career & Growth',
           'Home & Comfort',
           'Relationships',
           'Health & Energy',
-          'Learning & Curiosity',
           'Finance & Security',
-          'Community',
-          'Creativity',
-          'Mindfulness',
           'Focus & Clarity',
-          'Adventure',
         ]),
       );
-      expect(projects, hasLength(6));
-      expect(tasks, hasLength(31));
+      expect(projects, hasLength(4));
+      expect(tasks, hasLength(30));
+      expect(routines, hasLength(6));
       expect(tasks.where((t) => t.isPinned), hasLength(1));
       expect(
         myDayRepo.clearedDays,

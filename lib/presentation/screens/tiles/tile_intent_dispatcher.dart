@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_domain/analytics.dart';
-import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
@@ -14,6 +13,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
 import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -23,12 +23,12 @@ abstract class TileIntentDispatcher {
 
 final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
   DefaultTileIntentDispatcher({
-    required ProjectRepositoryContract projectRepository,
+    required SessionSharedDataService sharedDataService,
     required EditorLauncher editorLauncher,
-  }) : _projectRepository = projectRepository,
+  }) : _sharedDataService = sharedDataService,
        _editorLauncher = editorLauncher;
 
-  final ProjectRepositoryContract _projectRepository;
+  final SessionSharedDataService _sharedDataService;
   final EditorLauncher _editorLauncher;
 
   @override
@@ -391,7 +391,7 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
       case _MoveToProjectChoice.quickMove:
         await showProjectPickerModal(
           context: context,
-          projectRepository: _projectRepository,
+          sharedDataService: _sharedDataService,
           onSelect: (projectId) async {
             if (!context.mounted) return;
 

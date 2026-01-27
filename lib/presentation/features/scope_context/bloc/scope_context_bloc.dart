@@ -1,6 +1,6 @@
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/queries.dart';
 
@@ -55,8 +55,11 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
        super(const ScopeContextLoading()) {
-    on<ScopeContextStarted>(_onStarted);
-    on<ScopeContextRetryRequested>(_onRetryRequested);
+    on<ScopeContextStarted>(_onStarted, transformer: restartable());
+    on<ScopeContextRetryRequested>(
+      _onRetryRequested,
+      transformer: restartable(),
+    );
 
     add(const ScopeContextStarted());
   }
@@ -65,14 +68,6 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
-
-  StreamSubscription<int>? _taskCountSub;
-  StreamSubscription<int>? _projectCountSub;
-  StreamSubscription<String>? _titleSub;
-
-  String? _title;
-  int? _taskCount;
-  int? _projectCount;
 
   Future<void> _onStarted(
     ScopeContextStarted event,
@@ -90,64 +85,55 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
   }
 
   Future<void> _subscribe(Emitter<ScopeContextState> emit) async {
-    await _taskCountSub?.cancel();
-    await _projectCountSub?.cancel();
-    await _titleSub?.cancel();
-
-    _title = null;
-    _taskCount = null;
-    _projectCount = null;
-
     final taskQuery = _scopeTaskQuery(TaskQuery.incomplete(), _scope);
-    _taskCountSub = _taskRepository
-        .watchAllCount(taskQuery)
-        .listen(
-          (count) {
-            _taskCount = count;
-            _maybeEmitLoaded(emit);
-          },
-          onError: (Object e, StackTrace s) {
-            emit(ScopeContextError(message: e.toString()));
-          },
+    final taskCount$ = _taskRepository.watchAllCount(taskQuery);
+    final title$ = _scopeTitleStream(_scope);
+
+    final Stream<ScopeContextState> combined$ = switch (_scope) {
+      AnytimeValueScope(:final valueId) => () {
+        final projectQuery = ProjectQuery(
+          filter: QueryFilter<ProjectPredicate>(
+            shared: [
+              const ProjectBoolPredicate(
+                field: ProjectBoolField.completed,
+                operator: BoolOperator.isFalse,
+              ),
+              ProjectValuePredicate(
+                operator: ValueOperator.hasAll,
+                valueIds: [valueId],
+              ),
+            ],
+          ),
         );
 
-    if (_scope case AnytimeValueScope(:final valueId)) {
-      final projectQuery = ProjectQuery(
-        filter: QueryFilter<ProjectPredicate>(
-          shared: [
-            const ProjectBoolPredicate(
-              field: ProjectBoolField.completed,
-              operator: BoolOperator.isFalse,
-            ),
-            ProjectValuePredicate(
-              operator: ValueOperator.hasAll,
-              valueIds: [valueId],
-            ),
-          ],
+        final projectCount$ = _projectRepository.watchAllCount(projectQuery);
+
+        return Rx.combineLatest3<String, int, int, ScopeContextState>(
+          title$,
+          taskCount$,
+          projectCount$,
+          (title, taskCount, projectCount) => ScopeContextLoaded(
+            title: title,
+            taskCount: taskCount,
+            projectCount: projectCount,
+          ),
+        );
+      }(),
+      _ => Rx.combineLatest2<String, int, ScopeContextState>(
+        title$,
+        taskCount$,
+        (title, taskCount) => ScopeContextLoaded(
+          title: title,
+          taskCount: taskCount,
         ),
-      );
+      ),
+    };
 
-      _projectCountSub = _projectRepository
-          .watchAllCount(projectQuery)
-          .listen(
-            (count) {
-              _projectCount = count;
-              _maybeEmitLoaded(emit);
-            },
-            onError: (Object e, StackTrace s) {
-              emit(ScopeContextError(message: e.toString()));
-            },
-          );
-    }
-
-    _titleSub = _scopeTitleStream(_scope).listen(
-      (title) {
-        _title = title;
-        _maybeEmitLoaded(emit);
-      },
-      onError: (Object e, StackTrace s) {
-        emit(ScopeContextError(message: e.toString()));
-      },
+    await emit.forEach<ScopeContextState>(
+      combined$,
+      onData: (state) => state,
+      onError: (error, stackTrace) =>
+          ScopeContextError(message: error.toString()),
     );
   }
 
@@ -182,26 +168,4 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
     };
   }
 
-  void _maybeEmitLoaded(Emitter<ScopeContextState> emit) {
-    final title = _title;
-    final taskCount = _taskCount;
-    if (title == null || taskCount == null) return;
-    if (_scope is AnytimeValueScope && _projectCount == null) return;
-
-    emit(
-      ScopeContextLoaded(
-        title: title,
-        taskCount: taskCount,
-        projectCount: _projectCount,
-      ),
-    );
-  }
-
-  @override
-  Future<void> close() async {
-    await _taskCountSub?.cancel();
-    await _projectCountSub?.cancel();
-    await _titleSub?.cancel();
-    return super.close();
-  }
 }

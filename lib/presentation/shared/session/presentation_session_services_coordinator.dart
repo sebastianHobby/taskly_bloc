@@ -4,7 +4,9 @@ import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 
 /// Starts/stops session-hot presentation services.
 ///
@@ -13,15 +15,21 @@ import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_se
 final class PresentationSessionServicesCoordinator {
   PresentationSessionServicesCoordinator({
     required SessionDayKeyService sessionDayKeyService,
+    required SessionStreamCacheManager sessionStreamCacheManager,
+    required SessionSharedDataService sharedDataService,
     required MyDaySessionQueryService myDaySessionQueryService,
     required ScheduledSessionQueryService scheduledSessionQueryService,
     required AnytimeSessionQueryService anytimeSessionQueryService,
   }) : _sessionDayKeyService = sessionDayKeyService,
+       _sessionStreamCacheManager = sessionStreamCacheManager,
+       _sharedDataService = sharedDataService,
        _myDaySessionQueryService = myDaySessionQueryService,
        _scheduledSessionQueryService = scheduledSessionQueryService,
        _anytimeSessionQueryService = anytimeSessionQueryService;
 
   final SessionDayKeyService _sessionDayKeyService;
+  final SessionStreamCacheManager _sessionStreamCacheManager;
+  final SessionSharedDataService _sharedDataService;
   final MyDaySessionQueryService _myDaySessionQueryService;
   final ScheduledSessionQueryService _scheduledSessionQueryService;
   final AnytimeSessionQueryService _anytimeSessionQueryService;
@@ -39,7 +47,9 @@ final class PresentationSessionServicesCoordinator {
 
     try {
       talker.info('[PresentationSession] starting session-hot services');
+      _sessionStreamCacheManager.start();
       _sessionDayKeyService.start();
+      _sharedDataService.preloadDefaults();
       _myDaySessionQueryService.start();
       _scheduledSessionQueryService.start();
       _anytimeSessionQueryService.start();
@@ -66,7 +76,9 @@ final class PresentationSessionServicesCoordinator {
     await _anytimeSessionQueryService.stop();
     await _scheduledSessionQueryService.stop();
     await _myDaySessionQueryService.stop();
+    await _sharedDataService.stop();
     _sessionDayKeyService.stop();
+    await _sessionStreamCacheManager.stop();
 
     _started = false;
     _startInFlight = null;

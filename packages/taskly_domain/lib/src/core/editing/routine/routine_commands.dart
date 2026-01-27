@@ -9,7 +9,6 @@ final class CreateRoutineCommand {
     required this.valueId,
     required this.routineType,
     required this.targetCount,
-    this.projectId,
     this.scheduleDays = const <int>[],
     this.minSpacingDays,
     this.restDayBuffer,
@@ -25,7 +24,6 @@ final class CreateRoutineCommand {
   final String valueId;
   final RoutineType routineType;
   final int targetCount;
-  final String? projectId;
   final List<int> scheduleDays;
   final int? minSpacingDays;
   final int? restDayBuffer;
@@ -45,7 +43,6 @@ final class UpdateRoutineCommand {
     required this.valueId,
     required this.routineType,
     required this.targetCount,
-    this.projectId,
     this.scheduleDays = const <int>[],
     this.minSpacingDays,
     this.restDayBuffer,
@@ -62,7 +59,6 @@ final class UpdateRoutineCommand {
   final String valueId;
   final RoutineType routineType;
   final int targetCount;
-  final String? projectId;
   final List<int> scheduleDays;
   final int? minSpacingDays;
   final int? restDayBuffer;

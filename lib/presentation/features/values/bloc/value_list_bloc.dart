@@ -12,6 +12,7 @@ import 'package:taskly_domain/errors.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 
 part 'value_list_bloc.freezed.dart';
 
@@ -44,6 +45,7 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
   ValueListBloc({
     required ValueRepositoryContract valueRepository,
     required ValueWriteService valueWriteService,
+    required SessionSharedDataService sharedDataService,
     required AppErrorReporter errorReporter,
     SettingsRepositoryContract? settingsRepository,
     PageKey? pageKey,
@@ -52,6 +54,7 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
     ),
   }) : _valueRepository = valueRepository,
        _valueWriteService = valueWriteService,
+       _sharedDataService = sharedDataService,
        _errorReporter = errorReporter,
        _settingsRepository = settingsRepository,
        _pageKey = pageKey,
@@ -67,6 +70,7 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
 
   final ValueRepositoryContract _valueRepository;
   final ValueWriteService _valueWriteService;
+  final SessionSharedDataService _sharedDataService;
   final AppErrorReporter _errorReporter;
   final SettingsRepositoryContract? _settingsRepository;
   final PageKey? _pageKey;
@@ -189,7 +193,7 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
       return;
     }
 
-    final stream = _valueRepository.watchAll();
+    final stream = _sharedDataService.watchValues();
 
     await emit.forEach<List<Value>>(
       stream,

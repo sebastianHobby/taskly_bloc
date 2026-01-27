@@ -4,7 +4,6 @@ part of '../../forms/field_key.dart';
 abstract final class RoutineFieldKeys {
   static const name = FieldKey('routine.name');
   static const valueId = FieldKey('routine.valueId');
-  static const projectId = FieldKey('routine.projectId');
   static const routineType = FieldKey('routine.type');
   static const targetCount = FieldKey('routine.targetCount');
   static const scheduleDays = FieldKey('routine.scheduleDays');

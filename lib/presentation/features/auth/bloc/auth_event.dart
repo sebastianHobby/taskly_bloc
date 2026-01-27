@@ -45,10 +45,3 @@ class AuthPasswordResetRequested extends AuthEvent {
 
   final String email;
 }
-
-/// Internal event when auth state changes from the repository stream.
-class _AuthStateChanged extends AuthEvent {
-  const _AuthStateChanged(this.authState);
-
-  final AuthState authState;
-}

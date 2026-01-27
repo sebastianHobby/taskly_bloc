@@ -26,17 +26,14 @@ final class RoutineRepository implements RoutineRepositoryContract {
       _db.routinesTable,
     )..orderBy([(t) => OrderingTerm(expression: t.name)])).watch();
     final values$ = _db.select(_db.valueTable).watch();
-    final projects$ = _db.select(_db.projectTable).watch();
 
-    return Rx.combineLatest3(routines$, values$, projects$, (
+    return Rx.combineLatest2(routines$, values$, (
       List<RoutinesTableData> routineRows,
       List<ValueTableData> valueRows,
-      List<ProjectTableData> projectRows,
     ) {
       return _mapRoutines(
         routineRows,
         valueRows,
-        projectRows,
         includeInactive: includeInactive,
       );
     });
@@ -48,12 +45,10 @@ final class RoutineRepository implements RoutineRepositoryContract {
       _db.routinesTable,
     )..orderBy([(t) => OrderingTerm(expression: t.name)])).get();
     final valueRows = await _db.select(_db.valueTable).get();
-    final projectRows = await _db.select(_db.projectTable).get();
 
     return _mapRoutines(
       routineRows,
       valueRows,
-      projectRows,
       includeInactive: includeInactive,
     );
   }
@@ -83,7 +78,6 @@ final class RoutineRepository implements RoutineRepositoryContract {
     required String valueId,
     required RoutineType routineType,
     required int targetCount,
-    String? projectId,
     List<int> scheduleDays = const <int>[],
     int? minSpacingDays,
     int? restDayBuffer,
@@ -107,7 +101,6 @@ final class RoutineRepository implements RoutineRepositoryContract {
                 id: _ids.routineId(),
                 name: name,
                 valueId: valueId,
-                projectId: Value(_normalizeId(projectId)),
                 routineType: routineType.storageKey,
                 targetCount: targetCount,
                 scheduleDays: Value(scheduleDays.isEmpty ? null : scheduleDays),
@@ -141,7 +134,6 @@ final class RoutineRepository implements RoutineRepositoryContract {
     required String valueId,
     required RoutineType routineType,
     required int targetCount,
-    String? projectId,
     List<int>? scheduleDays,
     int? minSpacingDays,
     int? restDayBuffer,
@@ -164,7 +156,6 @@ final class RoutineRepository implements RoutineRepositoryContract {
           RoutinesTableCompanion(
             name: Value(name),
             valueId: Value(valueId),
-            projectId: Value(_normalizeId(projectId)),
             routineType: Value(routineType.storageKey),
             targetCount: Value(targetCount),
             scheduleDays: scheduleDays == null
@@ -317,35 +308,19 @@ final class RoutineRepository implements RoutineRepositoryContract {
 
   List<Routine> _mapRoutines(
     List<RoutinesTableData> routineRows,
-    List<ValueTableData> valueRows,
-    List<ProjectTableData> projectRows, {
+    List<ValueTableData> valueRows, {
     required bool includeInactive,
   }) {
     final valuesById = {
       for (final value in valueRows) value.id: valueFromTable(value),
     };
-    final projectsById = {
-      for (final project in projectRows) project.id: projectFromTable(project),
-    };
 
     final routines = <Routine>[];
     for (final row in routineRows) {
       if (!includeInactive && !row.isActive) continue;
-      routines.add(
-        routineFromTable(
-          row,
-          value: valuesById[row.valueId],
-          project: projectsById[row.projectId],
-        ),
-      );
+      routines.add(routineFromTable(row, value: valuesById[row.valueId]));
     }
 
     return routines;
-  }
-
-  String? _normalizeId(String? id) {
-    final normalized = id?.trim();
-    if (normalized == null || normalized.isEmpty) return null;
-    return normalized;
   }
 }

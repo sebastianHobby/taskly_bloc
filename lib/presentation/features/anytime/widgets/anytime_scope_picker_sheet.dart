@@ -4,8 +4,8 @@ import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_scope_picker_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
-import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class AnytimeScopePickerSheet {
@@ -20,8 +20,7 @@ class AnytimeScopePickerSheet {
       builder: (context) {
         return BlocProvider(
           create: (_) => AnytimeScopePickerBloc(
-            valueRepository: getIt<ValueRepositoryContract>(),
-            projectRepository: getIt<ProjectRepositoryContract>(),
+            sharedDataService: getIt<SessionSharedDataService>(),
           ),
           child: _AnytimeScopePickerView(currentScope: currentScope),
         );

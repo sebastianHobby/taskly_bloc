@@ -23,6 +23,7 @@ import 'package:taskly_bloc/presentation/features/settings/bloc/settings_mainten
 import 'package:taskly_bloc/presentation/features/app/bloc/my_day_prewarm_cubit.dart';
 import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
 
@@ -33,6 +34,7 @@ import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_s
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -138,6 +140,19 @@ Future<void> setupDependencies() async {
       () => SessionDayKeyService(
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
+      ),
+    )
+    ..registerLazySingleton<SessionStreamCacheManager>(
+      () => SessionStreamCacheManager(
+        appLifecycleService: getIt<AppLifecycleService>(),
+      ),
+    )
+    ..registerLazySingleton<SessionSharedDataService>(
+      () => SessionSharedDataService(
+        cacheManager: getIt<SessionStreamCacheManager>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        taskRepository: getIt<TaskRepositoryContract>(),
       ),
     )
     ..registerLazySingleton<AttentionTemporalInvalidationService>(
@@ -274,6 +289,7 @@ Future<void> setupDependencies() async {
     ..registerFactory<MyDayGateBloc>(
       () => MyDayGateBloc(
         valueRepository: getIt<ValueRepositoryContract>(),
+        sharedDataService: getIt<SessionSharedDataService>(),
       ),
     )
     ..registerFactory<MyDayPrewarmCubit>(
@@ -300,27 +316,28 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<MyDaySessionQueryService>(
       () => MyDaySessionQueryService(
         queryService: getIt<MyDayQueryService>(),
-        appLifecycleService: getIt<AppLifecycleService>(),
+        cacheManager: getIt<SessionStreamCacheManager>(),
       ),
     )
     ..registerLazySingleton<ScheduledSessionQueryService>(
       () => ScheduledSessionQueryService(
         scheduledOccurrencesService: getIt<ScheduledOccurrencesService>(),
         sessionDayKeyService: getIt<SessionDayKeyService>(),
-        appLifecycleService: getIt<AppLifecycleService>(),
+        cacheManager: getIt<SessionStreamCacheManager>(),
       ),
     )
     ..registerLazySingleton<AnytimeSessionQueryService>(
       () => AnytimeSessionQueryService(
         projectRepository: getIt<ProjectRepositoryContract>(),
-        taskRepository: getIt<TaskRepositoryContract>(),
-        valueRepository: getIt<ValueRepositoryContract>(),
-        appLifecycleService: getIt<AppLifecycleService>(),
+        cacheManager: getIt<SessionStreamCacheManager>(),
+        sharedDataService: getIt<SessionSharedDataService>(),
       ),
     )
     ..registerLazySingleton<PresentationSessionServicesCoordinator>(
       () => PresentationSessionServicesCoordinator(
         sessionDayKeyService: getIt<SessionDayKeyService>(),
+        sessionStreamCacheManager: getIt<SessionStreamCacheManager>(),
+        sharedDataService: getIt<SessionSharedDataService>(),
         myDaySessionQueryService: getIt<MyDaySessionQueryService>(),
         scheduledSessionQueryService: getIt<ScheduledSessionQueryService>(),
         anytimeSessionQueryService: getIt<AnytimeSessionQueryService>(),

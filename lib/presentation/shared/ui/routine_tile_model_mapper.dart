@@ -15,28 +15,9 @@ TasklyRoutineRowData buildRoutineRowData(
   List<TasklyBadgeData> badges = const <TasklyBadgeData>[],
   TasklyRoutineRowLabels? labels,
 }) {
-  final periodType = snapshot.periodType;
-  final baseTargetLabel = periodType == RoutinePeriodType.week
-      ? context.l10n.routineTargetWeekly(snapshot.targetCount)
-      : context.l10n.routineTargetMonthly(snapshot.targetCount);
-
   final remainingLabel = context.l10n.routineRemaining(snapshot.remainingCount);
-
-  final windowLabel = periodType == RoutinePeriodType.week
-      ? _weeklyWindowLabel(context, snapshot)
-      : _monthlyWindowLabel(context, snapshot);
-
-  final cadenceSegments = _cadenceSegments(context, routine);
-  final targetLabel = _joinSegments([...cadenceSegments, baseTargetLabel]);
-  final supportBadges = isCatchUpDay
-      ? [
-          TasklyBadgeData(
-            label: context.l10n.routineCatchUpSupportLine,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            tone: TasklyBadgeTone.soft,
-          ),
-        ]
-      : const <TasklyBadgeData>[];
+  final windowLabel = _windowLabel(context, routine, snapshot);
+  final targetLabel = _cadenceLabel(context, routine);
 
   return TasklyRoutineRowData(
     id: routine.id,
@@ -56,7 +37,7 @@ TasklyRoutineRowData buildRoutineRowData(
     valueChip: routine.value?.toChipData(context),
     selected: selected,
     completed: completed,
-    badges: [...badges, ...supportBadges],
+    badges: badges,
     labels: labels,
   );
 }
@@ -124,24 +105,34 @@ String _monthlyWindowLabel(
   final localizations = MaterialLocalizations.of(context);
   final endDate = snapshot.periodEndUtc.toLocal();
   final endLabel = localizations.formatMediumDate(endDate);
-  return context.l10n.routineWindowMonthlyByDate(
-    endLabel,
-    snapshot.daysLeft,
-  );
+  return context.l10n.routineWindowMonthlyEnds(endLabel);
 }
 
-List<String> _cadenceSegments(BuildContext context, Routine routine) {
+String _cadenceLabel(BuildContext context, Routine routine) {
+  return routine.routineType == RoutineType.weeklyFixed
+      ? context.l10n.routineCadenceScheduledLabel
+      : context.l10n.routineCadenceFlexibleLabel;
+}
+
+String _windowLabel(
+  BuildContext context,
+  Routine routine,
+  RoutineCadenceSnapshot snapshot,
+) {
   if (routine.routineType == RoutineType.weeklyFixed) {
     final scheduleDays = routine.scheduleDays;
     if (scheduleDays.isEmpty) {
-      return [context.l10n.routineCadenceScheduledLabel];
+      return _weeklyWindowLabel(context, snapshot);
     }
-    return [
-      context.l10n.routineCadenceScheduledLabel,
-      _scheduledDaysLabel(context, scheduleDays),
-    ];
+    final daysLabel = _scheduledDaysLabel(context, scheduleDays);
+    return context.l10n.routineWindowScheduledDays(daysLabel);
   }
-  return [context.l10n.routineCadenceFlexibleLabel];
+
+  if (snapshot.periodType == RoutinePeriodType.week) {
+    return _weeklyWindowLabel(context, snapshot);
+  }
+
+  return _monthlyWindowLabel(context, snapshot);
 }
 
 String _scheduledDaysLabel(BuildContext context, List<int> scheduleDays) {
@@ -152,11 +143,4 @@ String _scheduledDaysLabel(BuildContext context, List<int> scheduleDays) {
   return sorted
       .map((day) => formatter.format(DateTime.utc(2024, 1, day)))
       .join('/');
-}
-
-String _joinSegments(List<String> segments) {
-  return segments
-      .map((text) => text.trim())
-      .where((text) => text.isNotEmpty)
-      .join(' \u00b7 ');
 }

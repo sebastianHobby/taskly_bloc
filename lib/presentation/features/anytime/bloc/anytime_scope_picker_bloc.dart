@@ -1,8 +1,8 @@
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
-import 'package:taskly_domain/contracts.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 
 sealed class AnytimeScopePickerEvent {
   const AnytimeScopePickerEvent();
@@ -43,25 +43,19 @@ final class AnytimeScopePickerLoaded extends AnytimeScopePickerState {
 class AnytimeScopePickerBloc
     extends Bloc<AnytimeScopePickerEvent, AnytimeScopePickerState> {
   AnytimeScopePickerBloc({
-    required ValueRepositoryContract valueRepository,
-    required ProjectRepositoryContract projectRepository,
-  }) : _valueRepository = valueRepository,
-       _projectRepository = projectRepository,
+    required SessionSharedDataService sharedDataService,
+  }) : _sharedDataService = sharedDataService,
        super(const AnytimeScopePickerLoading()) {
-    on<AnytimeScopePickerStarted>(_onStarted);
-    on<AnytimeScopePickerRetryRequested>(_onRetryRequested);
+    on<AnytimeScopePickerStarted>(_onStarted, transformer: restartable());
+    on<AnytimeScopePickerRetryRequested>(
+      _onRetryRequested,
+      transformer: restartable(),
+    );
 
     add(const AnytimeScopePickerStarted());
   }
 
-  final ValueRepositoryContract _valueRepository;
-  final ProjectRepositoryContract _projectRepository;
-
-  StreamSubscription<List<Value>>? _valuesSub;
-  StreamSubscription<List<Project>>? _projectsSub;
-
-  List<Value> _latestValues = const <Value>[];
-  List<Project> _latestProjects = const <Project>[];
+  final SessionSharedDataService _sharedDataService;
 
   Future<void> _onStarted(
     AnytimeScopePickerStarted event,
@@ -79,38 +73,26 @@ class AnytimeScopePickerBloc
   }
 
   Future<void> _bind(Emitter<AnytimeScopePickerState> emit) async {
-    await _valuesSub?.cancel();
-    await _projectsSub?.cancel();
-
-    _valuesSub = _valueRepository.watchAll().listen(
-      (values) {
-        _latestValues = values.toList(growable: false)..sort(_compareValues);
-        emit(
-          AnytimeScopePickerLoaded(
-            values: _latestValues,
-            projects: _latestProjects,
-          ),
-        );
-      },
-      onError: (Object error, StackTrace stackTrace) {
-        emit(AnytimeScopePickerError(message: error.toString()));
-      },
+    final values$ = _sharedDataService.watchValues().map(
+      (values) => values.toList(growable: false)..sort(_compareValues),
+    );
+    final projects$ = _sharedDataService.watchAllProjects().map(
+      (projects) => projects.toList(growable: false)..sort(_compareProjects),
     );
 
-    _projectsSub = _projectRepository.watchAll().listen(
-      (projects) {
-        _latestProjects = projects.toList(growable: false)
-          ..sort(_compareProjects);
-        emit(
-          AnytimeScopePickerLoaded(
-            values: _latestValues,
-            projects: _latestProjects,
-          ),
+    final combined$ =
+        Rx.combineLatest2<List<Value>, List<Project>, AnytimeScopePickerState>(
+          values$,
+          projects$,
+          (values, projects) =>
+              AnytimeScopePickerLoaded(values: values, projects: projects),
         );
-      },
-      onError: (Object error, StackTrace stackTrace) {
-        emit(AnytimeScopePickerError(message: error.toString()));
-      },
+
+    await emit.forEach<AnytimeScopePickerState>(
+      combined$,
+      onData: (state) => state,
+      onError: (error, stackTrace) =>
+          AnytimeScopePickerError(message: error.toString()),
     );
   }
 
@@ -145,10 +127,4 @@ class AnytimeScopePickerBloc
     return a.id.compareTo(b.id);
   }
 
-  @override
-  Future<void> close() async {
-    await _valuesSub?.cancel();
-    await _projectsSub?.cancel();
-    return super.close();
-  }
 }

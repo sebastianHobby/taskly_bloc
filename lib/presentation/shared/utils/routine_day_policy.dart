@@ -28,6 +28,8 @@ RoutineDayPolicyResult evaluateRoutineDayPolicy({
   required List<RoutineCompletion> completions,
 }) {
   final today = dateOnly(dayKeyUtc);
+  final createdDay = dateOnly(routine.createdAt);
+  final isCreatedToday = createdDay.isAtSameMomentAs(today);
   final remaining = snapshot.remainingCount;
 
   if (remaining <= 0) {
@@ -38,21 +40,26 @@ RoutineDayPolicyResult evaluateRoutineDayPolicy({
     );
   }
 
+  final scheduleDays = routine.routineType == RoutineType.weeklyFixed
+      ? routine.scheduleDays
+      : const <int>[];
+
   if (routine.routineType == RoutineType.weeklyFixed &&
-      routine.scheduleDays.isNotEmpty) {
+      scheduleDays.isNotEmpty) {
     final lastScheduledDay = _lastScheduledDay(
       today,
-      routine.scheduleDays,
+      scheduleDays,
       snapshot.periodStartUtc,
     );
     final nextScheduledDay = _nextScheduledDay(
       today,
-      routine.scheduleDays,
+      scheduleDays,
       snapshot.periodEndUtc,
     );
-    final isScheduledToday = routine.scheduleDays.contains(today.weekday);
+    final isScheduledToday = scheduleDays.contains(today.weekday);
     final missedLast =
         lastScheduledDay != null &&
+        !lastScheduledDay.isBefore(createdDay) &&
         !_completedOnDay(
           completions,
           routineId: routine.id,
@@ -76,7 +83,7 @@ RoutineDayPolicyResult evaluateRoutineDayPolicy({
   if (isMonthly) {
     return RoutineDayPolicyResult(
       isEligibleToday: true,
-      isCatchUpDay: remaining > snapshot.daysLeft,
+      isCatchUpDay: !isCreatedToday && remaining > snapshot.daysLeft,
       cadenceKind: RoutineCadenceKind.flexible,
     );
   }
@@ -94,75 +101,19 @@ RoutineDayPolicyResult evaluateRoutineDayPolicy({
       : today.difference(lastCompletionDay).inDays;
   final eligibleBySpacing = daysSinceLast >= spacing;
   final isBehind = remaining > snapshot.daysLeft;
+  final isCatchUp = !isCreatedToday && isBehind;
 
-  if (routine.scheduleDays.isEmpty) {
+  if (scheduleDays.isEmpty) {
     return RoutineDayPolicyResult(
       isEligibleToday: isBehind || eligibleBySpacing,
-      isCatchUpDay: isBehind,
-      cadenceKind: RoutineCadenceKind.flexible,
-    );
-  }
-
-  final isSuggestedToday = routine.scheduleDays.contains(today.weekday);
-  if (isSuggestedToday && eligibleBySpacing) {
-    return RoutineDayPolicyResult(
-      isEligibleToday: true,
-      isCatchUpDay: isBehind,
-      cadenceKind: RoutineCadenceKind.flexible,
-    );
-  }
-
-  final lastSuggestedDay = _lastScheduledDay(
-    today,
-    routine.scheduleDays,
-    snapshot.periodStartUtc,
-  );
-  final nextSuggestedDay = _nextScheduledDay(
-    today,
-    routine.scheduleDays,
-    snapshot.periodEndUtc,
-  );
-  final missedLastSuggested =
-      lastSuggestedDay != null &&
-      !_completedOnDay(
-        completions,
-        routineId: routine.id,
-        dayKeyUtc: lastSuggestedDay,
-      );
-  final inCatchUpWindow =
-      lastSuggestedDay != null &&
-      !isSuggestedToday &&
-      missedLastSuggested &&
-      (nextSuggestedDay == null || today.isBefore(nextSuggestedDay));
-  if (inCatchUpWindow) {
-    return RoutineDayPolicyResult(
-      isEligibleToday: true,
-      isCatchUpDay: true,
-      cadenceKind: RoutineCadenceKind.flexible,
-    );
-  }
-
-  final earliestSpacingDay = _earliestSpacingDay(
-    today,
-    lastCompletionDay,
-    spacing,
-  );
-  final nextSuggestedEligibleDay = _nextScheduledDayOnOrAfter(
-    earliestSpacingDay,
-    routine.scheduleDays,
-    snapshot.periodEndUtc,
-  );
-  if (nextSuggestedEligibleDay == null && eligibleBySpacing) {
-    return RoutineDayPolicyResult(
-      isEligibleToday: true,
-      isCatchUpDay: isBehind,
+      isCatchUpDay: isCatchUp,
       cadenceKind: RoutineCadenceKind.flexible,
     );
   }
 
   return RoutineDayPolicyResult(
     isEligibleToday: false,
-    isCatchUpDay: isBehind,
+    isCatchUpDay: isCatchUp,
     cadenceKind: RoutineCadenceKind.flexible,
   );
 }
@@ -223,17 +174,6 @@ bool _completedOnDay(
   );
 }
 
-DateTime _earliestSpacingDay(
-  DateTime today,
-  DateTime? lastCompletionDay,
-  int spacing,
-) {
-  if (lastCompletionDay == null) return today;
-  final candidate = lastCompletionDay.add(Duration(days: spacing));
-  if (candidate.isBefore(today)) return today;
-  return candidate;
-}
-
 DateTime? _lastScheduledDay(
   DateTime today,
   List<int> scheduleDays,
@@ -253,19 +193,6 @@ DateTime? _nextScheduledDay(
   DateTime periodEndUtc,
 ) {
   var cursor = today.add(const Duration(days: 1));
-  while (!cursor.isAfter(periodEndUtc)) {
-    if (scheduleDays.contains(cursor.weekday)) return cursor;
-    cursor = cursor.add(const Duration(days: 1));
-  }
-  return null;
-}
-
-DateTime? _nextScheduledDayOnOrAfter(
-  DateTime start,
-  List<int> scheduleDays,
-  DateTime periodEndUtc,
-) {
-  var cursor = start;
   while (!cursor.isAfter(periodEndUtc)) {
     if (scheduleDays.contains(cursor.weekday)) return cursor;
     cursor = cursor.add(const Duration(days: 1));

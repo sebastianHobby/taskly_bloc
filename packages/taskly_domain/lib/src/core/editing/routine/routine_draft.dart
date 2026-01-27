@@ -7,7 +7,6 @@ final class RoutineDraft {
     required this.valueId,
     required this.routineType,
     required this.targetCount,
-    this.projectId,
     this.scheduleDays = const <int>[],
     this.minSpacingDays,
     this.restDayBuffer,
@@ -34,7 +33,6 @@ final class RoutineDraft {
       valueId: routine.valueId,
       routineType: routine.routineType,
       targetCount: routine.targetCount,
-      projectId: routine.projectId,
       scheduleDays: routine.scheduleDays,
       minSpacingDays: routine.minSpacingDays,
       restDayBuffer: routine.restDayBuffer,
@@ -51,7 +49,6 @@ final class RoutineDraft {
   final String valueId;
   final RoutineType routineType;
   final int targetCount;
-  final String? projectId;
   final List<int> scheduleDays;
   final int? minSpacingDays;
   final int? restDayBuffer;
@@ -67,7 +64,6 @@ final class RoutineDraft {
     String? valueId,
     RoutineType? routineType,
     int? targetCount,
-    String? projectId,
     List<int>? scheduleDays,
     int? minSpacingDays,
     int? restDayBuffer,
@@ -83,7 +79,6 @@ final class RoutineDraft {
       valueId: valueId ?? this.valueId,
       routineType: routineType ?? this.routineType,
       targetCount: targetCount ?? this.targetCount,
-      projectId: projectId ?? this.projectId,
       scheduleDays: scheduleDays ?? this.scheduleDays,
       minSpacingDays: minSpacingDays ?? this.minSpacingDays,
       restDayBuffer: restDayBuffer ?? this.restDayBuffer,

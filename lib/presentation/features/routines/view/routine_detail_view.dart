@@ -19,7 +19,6 @@ import 'package:taskly_ui/taskly_ui_sections.dart';
 class RoutineDetailSheetPage extends StatelessWidget {
   const RoutineDetailSheetPage({
     required this.routineRepository,
-    required this.projectRepository,
     required this.valueRepository,
     required this.routineWriteService,
     this.routineId,
@@ -27,7 +26,6 @@ class RoutineDetailSheetPage extends StatelessWidget {
   });
 
   final RoutineRepositoryContract routineRepository;
-  final ProjectRepositoryContract projectRepository;
   final ValueRepositoryContract valueRepository;
   final RoutineWriteService routineWriteService;
   final String? routineId;
@@ -37,7 +35,6 @@ class RoutineDetailSheetPage extends StatelessWidget {
     return BlocProvider(
       create: (context) => RoutineDetailBloc(
         routineRepository: routineRepository,
-        projectRepository: projectRepository,
         valueRepository: valueRepository,
         routineWriteService: routineWriteService,
         errorReporter: context.read<AppErrorReporter>(),
@@ -92,10 +89,6 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
     final valueId = extractStringValue(
       formValues,
       RoutineFieldKeys.valueId.id,
-    );
-    final projectId = extractNullableStringValue(
-      formValues,
-      RoutineFieldKeys.projectId.id,
     );
     final routineType =
         formValues[RoutineFieldKeys.routineType.id] as RoutineType? ??
@@ -178,7 +171,6 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
     _draft = _draft.copyWith(
       name: name,
       valueId: valueId,
-      projectId: projectId,
       routineType: routineType,
       targetCount: targetCount,
       scheduleDays: scheduleDays,
@@ -208,7 +200,6 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
           command: CreateRoutineCommand(
             name: _draft.name,
             valueId: _draft.valueId,
-            projectId: _draft.projectId,
             routineType: _draft.routineType,
             targetCount: _draft.targetCount,
             scheduleDays: _draft.scheduleDays,
@@ -230,7 +221,6 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
             id: routineId,
             name: _draft.name,
             valueId: _draft.valueId,
-            projectId: _draft.projectId,
             routineType: _draft.routineType,
             targetCount: _draft.targetCount,
             scheduleDays: _draft.scheduleDays,
@@ -316,7 +306,6 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
             _draft = RoutineDraft.empty();
             return RoutineForm(
               formKey: _formKey,
-              availableProjects: success.availableProjects,
               availableValues: success.availableValues,
               initialDraft: _draft,
               onChanged: _syncDraftFromFormValues,
@@ -330,7 +319,6 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
             _draft = RoutineDraft.fromRoutine(success.routine);
             return RoutineForm(
               formKey: _formKey,
-              availableProjects: success.availableProjects,
               availableValues: success.availableValues,
               initialData: success.routine,
               onChanged: _syncDraftFromFormValues,

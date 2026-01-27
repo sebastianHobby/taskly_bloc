@@ -58,7 +58,6 @@ final class RoutineWriteService {
         id: routine.id,
         name: routine.name,
         valueId: routine.valueId,
-        projectId: routine.projectId,
         routineType: routine.routineType,
         targetCount: routine.targetCount,
         scheduleDays: routine.scheduleDays,

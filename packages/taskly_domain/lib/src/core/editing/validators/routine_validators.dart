@@ -74,11 +74,17 @@ final class RoutineValidators {
     List<int> days, {
     required RoutineType routineType,
   }) {
-    if (routineType != RoutineType.weeklyFixed &&
-        routineType != RoutineType.weeklyFlexible) {
+    if (routineType != RoutineType.weeklyFixed) {
       return const [];
     }
-    if (days.isEmpty) return const [];
+    if (days.isEmpty) {
+      if (routineType == RoutineType.weeklyFixed) {
+        return const [
+          ValidationError(code: 'required', messageKey: 'validationRequired'),
+        ];
+      }
+      return const [];
+    }
     final hasInvalid = days.any((d) => d < 1 || d > 7);
     if (hasInvalid) {
       return const [

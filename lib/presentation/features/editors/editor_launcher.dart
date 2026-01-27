@@ -201,7 +201,6 @@ class EditorLauncher {
         return RoutineDetailSheetPage(
           routineId: routineId,
           routineRepository: routineRepository,
-          projectRepository: _projectRepository,
           valueRepository: _valueRepository,
           routineWriteService: routineWriteService,
         );

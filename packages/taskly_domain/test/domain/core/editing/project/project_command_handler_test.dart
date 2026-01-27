@@ -6,6 +6,7 @@ import '../../../../helpers/test_imports.dart';
 import 'package:taskly_domain/src/core/editing/command_result.dart';
 import 'package:taskly_domain/src/core/editing/project/project_command_handler.dart';
 import 'package:taskly_domain/src/core/editing/project/project_commands.dart';
+import 'package:taskly_domain/src/core/editing/validators/project_validators.dart';
 import 'package:taskly_domain/src/forms/field_key.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
@@ -106,7 +107,10 @@ void main() {
     final cmd = CreateProjectCommand(
       name: List.filled(121, 'a').join(),
       completed: false,
-      description: List.filled(201, 'b').join(),
+      description: List.filled(
+        ProjectValidators.maxDescriptionLength + 1,
+        'b',
+      ).join(),
       repeatIcalRrule: List.filled(501, 'c').join(),
       valueIds: const ['v1'],
     );

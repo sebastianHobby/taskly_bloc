@@ -344,10 +344,7 @@ class ValueRepository implements ValueRepositoryContract {
         AppLog.warnStructured(
           'data.value',
           'create inserted',
-          fields: <String, Object?>{
-            'id': id,
-            'name': name,
-          },
+          fields: <String, Object?>{'id': id, 'name': name},
         );
       },
       area: 'data.value',

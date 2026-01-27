@@ -1,4 +1,4 @@
-ï»¿{
+{
     "pinAction": "Pin",
     "unpinAction": "Unpin",
     "selectedCountLabel": "{count} selected",
@@ -1010,7 +1010,7 @@
     "@myDayTimeSensitiveOutsideValuesSubtitle": {
         "description": "Subtitle clarifying the Time sensitive section excludes value suggestions."
     },
-    "myDayTimeSensitiveBannerBoth": "{dueCount} due soon â€¢ {plannedCount} planned outside your suggestions",
+    "myDayTimeSensitiveBannerBoth": "{dueCount} due soon • {plannedCount} planned outside your suggestions",
     "@myDayTimeSensitiveBannerBoth": {
         "description": "Banner title showing due soon and planned counts outside value suggestions.",
         "placeholders": {
@@ -1138,11 +1138,11 @@
             },
             "availablePart": {
                 "type": "String",
-                "example": " Â· 3 available to start"
+                "example": " · 3 available to start"
             }
         }
     },
-    "myDayAvailableToStartCountPart": " Â· {count} available to start",
+    "myDayAvailableToStartCountPart": " · {count} available to start",
     "@myDayAvailableToStartCountPart": {
         "description": "Suffix part appended to the heads-up summary when the 'available to start' lane is enabled.",
         "placeholders": {
@@ -1295,7 +1295,7 @@
     "@myDaySuggestionSettingsBody": {
         "description": "Body text for the suggestion settings sheet in the My Day ritual."
     },
-    "myDayDueSoonWindowLabel": "Due soon window Â· {days} days",
+    "myDayDueSoonWindowLabel": "Due soon window · {days} days",
     "@myDayDueSoonWindowLabel": {
         "description": "Label for the due-soon window slider in the My Day ritual suggestion settings.",
         "placeholders": {
@@ -1343,7 +1343,7 @@
     "@myDaySnoozedSectionTitle": {
         "description": "Section title for snoozed tasks in the My Day ritual."
     },
-    "myDaySnoozedCollapsedTitle": "Snoozed Â· {count}",
+    "myDaySnoozedCollapsedTitle": "Snoozed · {count}",
     "@myDaySnoozedCollapsedTitle": {
         "description": "Collapsed header for the snoozed tasks section in the My Day ritual.",
         "placeholders": {
@@ -1399,7 +1399,7 @@
     "@pickDateButton": {
         "description": "Button/row label that opens a date picker"
     },
-    "focusModeHelperLine": "Mode: {mode} Â· {tagline}",
+    "focusModeHelperLine": "Mode: {mode} · {tagline}",
     "@focusModeHelperLine": {
         "description": "Helper line describing the active focus mode.",
         "placeholders": {
@@ -1413,7 +1413,7 @@
             }
         }
     },
-    "showMoreCountLabel": "Show {count} more Â· {label} ({total})",
+    "showMoreCountLabel": "Show {count} more · {label} ({total})",
     "@showMoreCountLabel": {
         "description": "Label for expanding a list to show more items.",
         "placeholders": {
@@ -2067,7 +2067,7 @@
     "@gapLabel": {
         "description": "Label for gap percentage in value stats"
     },
-    "valueActivityCounts": "{taskCount} tasks Â· {projectCount} projects",
+    "valueActivityCounts": "{taskCount} tasks · {projectCount} projects",
     "@valueActivityCounts": {
         "description": "Activity counts for a value showing tasks and projects",
         "placeholders": {
@@ -2240,7 +2240,7 @@
     "@myDayPlanCardTitle": {
         "description": "Title shown in the My Day plan card when nothing is selected yet."
     },
-    "myDayPlanCardTitleWithPicked": "Plan for today Â· {count}",
+    "myDayPlanCardTitleWithPicked": "Plan for today · {count}",
     "@myDayPlanCardTitleWithPicked": {
         "description": "Title shown in the My Day plan card when items have been selected.",
         "placeholders": {
@@ -2350,11 +2350,11 @@
   "@myDayPlanSubtitle": {
     "description": "Subtitle shown at the top of the My Day ritual wizard when planning."
   },
-    "myDayUpdatePlanSubtitle": "Pick what matters nextâ€”values-led focus plus whatâ€™s due soon.",
+    "myDayUpdatePlanSubtitle": "Pick what matters next—values-led focus plus what’s due soon.",
     "@myDayUpdatePlanSubtitle": {
         "description": "Subtitle shown at the top of the My Day ritual wizard when resuming and no completed picks exist."
     },
-    "myDayUpdatePlanSubtitleWithCompleted": "Pick what matters nextâ€”values-led focus plus whatâ€™s due soon. Completed items are shown below.",
+    "myDayUpdatePlanSubtitleWithCompleted": "Pick what matters next—values-led focus plus what’s due soon. Completed items are shown below.",
     "@myDayUpdatePlanSubtitleWithCompleted": {
         "description": "Subtitle shown at the top of the My Day ritual wizard when resuming and some picks are completed."
     },
@@ -2375,7 +2375,7 @@
     "@myDayClearMyDayLabel": {
         "description": "Bottom bar button label when clearing today's plan (resume flow with zero picks)."
     },
-    "myDayUpdateMyDayLabel": "Update My Day Â· {count}",
+    "myDayUpdateMyDayLabel": "Update My Day · {count}",
     "@myDayUpdateMyDayLabel": {
         "description": "Bottom bar button label when updating today's plan (resume flow).",
         "placeholders": {
@@ -2389,7 +2389,7 @@
     "@myDaySelectItemsToContinueLabel": {
         "description": "Bottom bar label when planning My Day but nothing is selected yet."
     },
-    "myDayContinueToMyDayLabel": "Continue to My Day Â· {count}",
+    "myDayContinueToMyDayLabel": "Continue to My Day · {count}",
     "@myDayContinueToMyDayLabel": {
         "description": "Bottom bar label when planning My Day with some selected items.",
         "placeholders": {
@@ -2469,7 +2469,7 @@
     "@myDayTimePlanSheetTitle": {
         "description": "Title for the bottom sheet opened from the time/plan banner in the My Day ritual."
     },
-    "myDayTimePlanBannerSubtitle": "{dueCount} time-critical Â· {plannedCount} planned",
+    "myDayTimePlanBannerSubtitle": "{dueCount} time-critical · {plannedCount} planned",
     "@myDayTimePlanBannerSubtitle": {
         "description": "Subtitle shown in the time/plan banner and sheet, summarizing counts.",
         "placeholders": {
@@ -2567,7 +2567,7 @@
     "@myDayAddFirstValueLabel": {
         "description": "Label for the values setup requirement row in the My Day suggestions setup card."
     },
-    "myDaySuggestedForYouTitle": "Suggested for you Â· {count}",
+    "myDaySuggestedForYouTitle": "Suggested for you · {count}",
     "@myDaySuggestedForYouTitle": {
         "description": "Section header title for suggested picks in the My Day ritual.",
         "placeholders": {
@@ -2677,7 +2677,7 @@
             }
         }
     },
-    "dotSeparator": " Â· ",
+    "dotSeparator": " · ",
     "@dotSeparator": {
         "description": "Separator used between two short inline labels."
     },
@@ -2964,7 +2964,25 @@
       }
     }
   },
-  "routineWindowMonthlyByDate": "Window ends {endLabel} Â· {daysLeft} days left",
+  "routineWindowScheduledDays": "This week ({daysLabel})",
+  "@routineWindowScheduledDays": {
+    "description": "Window label for weekly scheduled routines; includes the selected days list.",
+    "placeholders": {
+      "daysLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "routineWindowMonthlyEnds": "Window ends {endLabel}",
+  "@routineWindowMonthlyEnds": {
+    "description": "Window label for monthly routines without days-left detail.",
+    "placeholders": {
+      "endLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "routineWindowMonthlyByDate": "Window ends {endLabel} · {daysLeft} days left",
   "@routineWindowMonthlyByDate": {
     "description": "Window label for monthly routines using an end date.",
     "placeholders": {
@@ -3053,18 +3071,6 @@
     "@routineFormValueHint": {
         "description": "Hint text for routine value selection"
     },
-    "routineFormProjectLabel": "Project (optional)",
-    "@routineFormProjectLabel": {
-        "description": "Label for optional routine project selection"
-    },
-    "routineFormProjectHint": "Select a project",
-    "@routineFormProjectHint": {
-        "description": "Hint text for routine project selection"
-    },
-    "routineFormProjectNone": "No project",
-    "@routineFormProjectNone": {
-        "description": "Label for no project option in routine form"
-    },
     "routineFormTypeLabel": "Cadence",
     "@routineFormTypeLabel": {
         "description": "Label for routine cadence selection"
@@ -3073,6 +3079,14 @@
     "@routineTypeWeeklyFlexible": {
         "description": "Label for weekly flexible routine type"
     },
+    "routineTypeWeeklyScheduled": "Weekly (scheduled)",
+    "@routineTypeWeeklyScheduled": {
+        "description": "Label for weekly scheduled routine type"
+    },
+    "routineFormScheduledDaysLabel": "Scheduled days",
+    "@routineFormScheduledDaysLabel": {
+        "description": "Label for selecting scheduled weekdays for weekly scheduled routines."
+    },
     "routineTypeMonthlyFlexible": "Monthly (flexible)",
     "@routineTypeMonthlyFlexible": {
         "description": "Label for monthly flexible routine type"
@@ -3080,10 +3094,6 @@
     "routineFormTargetWeeklyLabel": "Times per week",
     "@routineFormTargetWeeklyLabel": {
         "description": "Label for weekly target count selection"
-    },
-    "routineFormSuggestedDaysLabel": "Suggested days",
-    "@routineFormSuggestedDaysLabel": {
-        "description": "Label for suggested days selection"
     },
     "routineFormTargetMonthlyLabel": "Times per month",
     "@routineFormTargetMonthlyLabel": {
@@ -3138,6 +3148,20 @@
         "description": "Toast message when routine is deleted"
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

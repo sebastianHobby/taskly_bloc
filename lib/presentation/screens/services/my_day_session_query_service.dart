@@ -1,84 +1,34 @@
-import 'dart:async';
-
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_query_service.dart';
-import 'package:taskly_domain/services.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 
 final class MyDaySessionQueryService {
   MyDaySessionQueryService({
     required MyDayQueryService queryService,
-    required AppLifecycleService appLifecycleService,
+    required SessionStreamCacheManager cacheManager,
   }) : _queryService = queryService,
-       _appLifecycleService = appLifecycleService;
+       _cacheManager = cacheManager;
 
   final MyDayQueryService _queryService;
-  final AppLifecycleService _appLifecycleService;
+  final SessionStreamCacheManager _cacheManager;
 
-  BehaviorSubject<MyDayViewModel>? _subject;
+  static const Object _cacheKey = 'session.my_day.view_model';
 
-  StreamSubscription<MyDayViewModel>? _vmSub;
-  StreamSubscription<AppLifecycleEvent>? _lifecycleSub;
-
-  bool _started = false;
-  bool _foreground = true;
-
-  ValueStream<MyDayViewModel> get viewModel {
-    if (!_started) start();
-    _subject ??= BehaviorSubject<MyDayViewModel>();
-    return _subject!;
-  }
+  ValueStream<MyDayViewModel> get viewModel =>
+      _cacheManager.getOrCreate<MyDayViewModel>(
+        key: _cacheKey,
+        source: _queryService.watchMyDayViewModel,
+        pauseOnBackground: true,
+      );
 
   void start() {
-    if (_started) return;
-    _started = true;
-
-    _subject ??= BehaviorSubject<MyDayViewModel>();
-
-    _lifecycleSub = _appLifecycleService.events.listen((event) {
-      switch (event) {
-        case AppLifecycleEvent.resumed:
-          _foreground = true;
-          _resume();
-        case AppLifecycleEvent.inactive:
-        case AppLifecycleEvent.paused:
-        case AppLifecycleEvent.detached:
-          _foreground = false;
-          _pause();
-      }
-    });
-
-    if (_foreground) _resume();
-  }
-
-  Future<void> stop() async {
-    if (!_started) return;
-    _started = false;
-
-    await _lifecycleSub?.cancel();
-    _lifecycleSub = null;
-
-    await _vmSub?.cancel();
-    _vmSub = null;
-
-    await _subject?.close();
-    _subject = null;
-  }
-
-  void _pause() {
-    unawaited(_vmSub?.cancel());
-    _vmSub = null;
-  }
-
-  void _resume() {
-    if (_vmSub != null) return;
-
-    final subject = _subject;
-    if (subject == null || subject.isClosed) return;
-
-    _vmSub = _queryService.watchMyDayViewModel().listen(
-      subject.add,
-      onError: subject.addError,
+    _cacheManager.preload<MyDayViewModel>(
+      key: _cacheKey,
+      source: _queryService.watchMyDayViewModel,
+      pauseOnBackground: true,
     );
   }
+
+  Future<void> stop() => _cacheManager.evict(_cacheKey);
 }

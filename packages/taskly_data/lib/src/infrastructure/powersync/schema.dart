@@ -62,7 +62,6 @@ const schema = Schema([
     Column.text('user_id'),
     Column.text('name'),
     Column.text('value_id'),
-    Column.text('project_id'),
     Column.text('routine_type'),
     Column.integer('target_count'),
     Column.text('schedule_days'),

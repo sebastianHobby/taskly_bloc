@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
+import 'package:taskly_bloc/presentation/shared/utils/rich_text_utils.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 
@@ -40,11 +41,7 @@ TasklyProjectRowData buildProjectRowData(
 
   final primaryValueData = project.primaryValue?.toChipData(context);
 
-  final subtitle = switch (project.description?.trim()) {
-    null => null,
-    '' => null,
-    final v => v,
-  };
+  final subtitle = richTextPreview(project.description);
 
   final effectiveTaskCount = taskCount ?? project.taskCount;
   final effectiveCompletedTaskCount =

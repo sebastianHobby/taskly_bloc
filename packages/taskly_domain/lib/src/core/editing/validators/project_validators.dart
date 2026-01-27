@@ -4,6 +4,8 @@ import 'package:taskly_domain/src/forms/field_key.dart';
 final class ProjectValidators {
   ProjectValidators._();
 
+  static const int maxDescriptionLength = 8000;
+
   static List<ValidationError> name(String? value) {
     final trimmed = (value ?? '').trim();
     if (trimmed.isEmpty) {
@@ -26,7 +28,7 @@ final class ProjectValidators {
   }
 
   static List<ValidationError> description(String? value) {
-    if (value != null && value.length > 200) {
+    if (value != null && value.length > maxDescriptionLength) {
       return const [
         ValidationError(
           code: 'max_length',
