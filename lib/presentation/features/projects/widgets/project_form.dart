@@ -34,7 +34,6 @@ class ProjectForm extends StatefulWidget {
     this.onChanged,
     this.availableValues = const <Value>[],
     this.openToValues = false,
-    this.onDelete,
     this.onTogglePinned,
     this.onClose,
     this.trailingActions = const <Widget>[],
@@ -51,7 +50,6 @@ class ProjectForm extends StatefulWidget {
   /// When true, scrolls to the values section and opens the values alignment
   /// sheet on first build.
   final bool openToValues;
-  final VoidCallback? onDelete;
 
   /// Called when the user toggles pinned state from the header.
   ///
@@ -414,20 +412,6 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       ],
       trailingActions: [
         ...widget.trailingActions,
-        if (widget.initialData != null && widget.onDelete != null)
-          PopupMenuButton<int>(
-            tooltip: l10n.moreOptionsLabel,
-            itemBuilder: (context) => [
-              PopupMenuItem<int>(
-                value: 0,
-                child: Text(
-                  l10n.deleteProjectAction,
-                  style: TextStyle(color: colorScheme.error),
-                ),
-              ),
-            ],
-            onSelected: (_) => widget.onDelete?.call(),
-          ),
         Tooltip(
           message: widget.submitTooltip,
           child: TextButton(

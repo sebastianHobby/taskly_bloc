@@ -276,6 +276,26 @@ Rationale:
 - Keeps BLoCs thin without pushing screen concerns into Domain.
 - Encourages deterministic, cancellation-safe subscription patterns.
 
+### 2.0.2 Session stream cache boundary (strict)
+
+Shared, session-hot data streams (values list, inbox counts, incomplete project
+lists, etc.) are owned by **presentation-level session services** and must not
+be fetched directly by widgets or ad-hoc screen code.
+
+Normative rules:
+
+- Session-scoped shared streams must be created via the **session stream cache
+  manager** (presentation layer).
+- Widgets must not use `StreamBuilder` with repository streams.
+- BLoCs should prefer consuming session-shared streams via a presentation
+  service (e.g., `SessionSharedDataService`) when the data is cross-screen.
+- Session streams should pause on background unless explicitly exempted.
+
+Rationale:
+
+- Prevents duplicated subscriptions and inconsistent caching.
+- Keeps lifecycle/pause behavior consistent across screens.
+
 ### 2.1 UI invariants (strict)
 
 Taskly UI must be consistent, theme-driven, and reusable across screens.

@@ -126,5 +126,4 @@ class AnytimeScopePickerBloc
 
     return a.id.compareTo(b.id);
   }
-
 }

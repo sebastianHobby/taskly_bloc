@@ -96,16 +96,13 @@ final class SessionStreamCacheManager {
   }
 
   void _pauseAll() {
-    for (final entry in _entries.values) {
-      if (!entry.pauseOnBackground) continue;
-      entry.pause();
-    }
+    _entries.values
+        .where((entry) => entry.pauseOnBackground)
+        .forEach((entry) => entry.pause());
   }
 
   void _resumeAll() {
-    for (final entry in _entries.values) {
-      _ensureEntryActive(entry);
-    }
+    _entries.values.forEach(_ensureEntryActive);
   }
 
   void _ensureEntryActive(_CacheEntry<dynamic> entry) {
@@ -118,9 +115,8 @@ final class SessionStreamCacheManager {
 final class _CacheEntry<T> {
   _CacheEntry({
     required Stream<T> Function() source,
-    required bool pauseOnBackground,
+    required this.pauseOnBackground,
   }) : _source = source,
-       pauseOnBackground = pauseOnBackground,
        subject = BehaviorSubject<T>();
 
   final Stream<T> Function() _source;

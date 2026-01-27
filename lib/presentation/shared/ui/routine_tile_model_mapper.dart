@@ -48,15 +48,11 @@ TasklyRoutineRowLabels buildRoutinePlanLabels(
 }) {
   return TasklyRoutineRowLabels(
     primaryActionLabel: context.l10n.routinePrimaryActionLabel,
-    pauseLabel: context.l10n.routinePauseLabel,
-    editLabel: context.l10n.routineEditLabel,
   );
 }
 
 TasklyRoutineRowLabels buildRoutineListLabels(BuildContext context) {
-  return TasklyRoutineRowLabels(
-    editLabel: context.l10n.routineEditLabel,
-  );
+  return const TasklyRoutineRowLabels();
 }
 
 String _statusLabel(

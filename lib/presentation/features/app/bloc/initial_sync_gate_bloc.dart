@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
-import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 
 sealed class InitialSyncGateEvent {
   const InitialSyncGateEvent();
@@ -44,12 +44,10 @@ final class InitialSyncGateBloc
   InitialSyncGateBloc({
     required AuthenticatedAppServicesCoordinator coordinator,
     required InitialSyncService initialSyncService,
-    required TaskRepositoryContract taskRepository,
-    required ValueRepositoryContract valueRepository,
+    required SessionSharedDataService sharedDataService,
   }) : _coordinator = coordinator,
        _initialSyncService = initialSyncService,
-       _taskRepository = taskRepository,
-       _valueRepository = valueRepository,
+       _sharedDataService = sharedDataService,
        super(const InitialSyncGateInProgress(progress: null)) {
     on<InitialSyncGateStarted>(_onStarted);
     on<InitialSyncGateRetryRequested>(_onRetryRequested);
@@ -57,8 +55,7 @@ final class InitialSyncGateBloc
 
   final AuthenticatedAppServicesCoordinator _coordinator;
   final InitialSyncService _initialSyncService;
-  final TaskRepositoryContract _taskRepository;
-  final ValueRepositoryContract _valueRepository;
+  final SessionSharedDataService _sharedDataService;
 
   Future<void> _onStarted(
     InitialSyncGateStarted event,
@@ -127,8 +124,8 @@ final class InitialSyncGateBloc
     if (hasCheckpoint) return false;
 
     final results = await Future.wait<dynamic>([
-      _taskRepository.watchAllCount().first,
-      _valueRepository.getAll(),
+      _sharedDataService.watchAllTaskCount().first,
+      _sharedDataService.watchValues().first,
     ]);
 
     final taskCount = results[0] as int;

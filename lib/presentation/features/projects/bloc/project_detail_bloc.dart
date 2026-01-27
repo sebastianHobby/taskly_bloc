@@ -22,9 +22,6 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
     required String id,
     required bool isPinned,
   }) = _ProjectDetailSetPinned;
-  const factory ProjectDetailEvent.delete({
-    required String id,
-  }) = _ProjectDetailDelete;
 
   const factory ProjectDetailEvent.create({
     required CreateProjectCommand command,
@@ -88,7 +85,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     on<_ProjectDetailCreate>(_onCreate, transformer: droppable());
     on<_ProjectDetailUpdate>(_onUpdate, transformer: droppable());
     on<_ProjectDetailSetPinned>(_onSetPinned, transformer: droppable());
-    on<_ProjectDetailDelete>(_onDelete, transformer: droppable());
     on<_ProjectDetailLoadInitialData>(
       (event, emit) => _onLoadInitialData(emit),
       transformer: restartable(),
@@ -234,31 +230,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
       () => _projectWriteService.update(event.command, context: context),
       context: context,
     );
-  }
-
-  Future<void> _onDelete(
-    _ProjectDetailDelete event,
-    Emitter<ProjectDetailState> emit,
-  ) async {
-    final context = _newContext(
-      intent: 'project_delete_requested',
-      operation: 'projects.delete',
-      entityId: event.id,
-    );
-
-    try {
-      await _projectWriteService.delete(event.id, context: context);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      emit(createOperationSuccessState(EntityOperation.delete));
-    } catch (error, stackTrace) {
-      _reportIfUnexpectedOrUnmapped(
-        error,
-        stackTrace,
-        context: context,
-        message: 'Project delete failed',
-      );
-      emit(createOperationFailureState(_toUiSafeError(error, stackTrace)));
-    }
   }
 
   Future<void> _onCreate(

@@ -37,7 +37,6 @@ class TaskForm extends StatefulWidget {
     this.defaultDeadlineDate,
     this.openToValues = false,
     this.openToProjectPicker = false,
-    this.onDelete,
     this.onTogglePinned,
     this.onClose,
     this.trailingActions = const <Widget>[],
@@ -65,7 +64,6 @@ class TaskForm extends StatefulWidget {
 
   /// When true, scrolls to the project picker and opens the picker dialog.
   final bool openToProjectPicker;
-  final VoidCallback? onDelete;
 
   /// Called when the user toggles pinned state from the header.
   ///
@@ -578,20 +576,6 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       ],
       trailingActions: [
         ...widget.trailingActions,
-        if (widget.initialData != null && widget.onDelete != null)
-          PopupMenuButton<int>(
-            tooltip: l10n.moreOptionsLabel,
-            itemBuilder: (context) => [
-              PopupMenuItem<int>(
-                value: 0,
-                child: Text(
-                  l10n.deleteTaskAction,
-                  style: TextStyle(color: colorScheme.error),
-                ),
-              ),
-            ],
-            onSelected: (_) => widget.onDelete?.call(),
-          ),
         Tooltip(
           message: widget.submitTooltip,
           child: TextButton(

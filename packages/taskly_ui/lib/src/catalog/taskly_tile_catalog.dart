@@ -170,8 +170,6 @@ class TasklyTileCatalog extends StatelessWidget {
           valueChip: valueHealth,
           labels: const TasklyRoutineRowLabels(
             primaryActionLabel: 'Do today',
-            pauseLabel: 'Pause routine',
-            editLabel: 'Edit schedule',
           ),
         ),
         actions: _routineActions,
@@ -399,8 +397,6 @@ final TasklyValueRowActions _valueActions = TasklyValueRowActions(
 final TasklyRoutineRowActions _routineActions = TasklyRoutineRowActions(
   onTap: _noop,
   onPrimaryAction: _noop,
-  onPause: _noop,
-  onEdit: _noop,
 );
 
 void _noop() {}

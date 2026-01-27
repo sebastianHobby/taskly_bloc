@@ -268,8 +268,8 @@ class ValueRepository implements ValueRepositoryContract {
     };
   }
 
-  Future<void> _updateValue(drift.ValueTableCompanion updateCompanion) async {
-    await driftDb.update(driftDb.valueTable).replace(updateCompanion);
+  Future<bool> _updateValue(drift.ValueTableCompanion updateCompanion) {
+    return driftDb.update(driftDb.valueTable).replace(updateCompanion);
   }
 
   Future<int> _deleteValue(drift.ValueTableCompanion deleteCompanion) async {
@@ -378,7 +378,7 @@ class ValueRepository implements ValueRepositoryContract {
         final now = DateTime.now();
 
         final psMetadata = encodeCrudMetadata(context);
-        await _updateValue(
+        final didUpdate = await _updateValue(
           drift.ValueTableCompanion(
             id: drift_pkg.Value(id),
             name: drift_pkg.Value(name),
@@ -392,6 +392,25 @@ class ValueRepository implements ValueRepositoryContract {
                 : drift_pkg.Value(psMetadata),
             updatedAt: drift_pkg.Value(now),
           ),
+        );
+
+        final after = await _getValueById(id);
+        AppLog.warnStructured(
+          'data.value',
+          'update applied',
+          fields: <String, Object?>{
+            'id': id,
+            'didUpdate': didUpdate,
+            'name': name,
+            'color': normalizedColor,
+            'iconName': iconName,
+            'priority': priority?.name,
+            'dbName': after?.name,
+            'dbColor': after?.color,
+            'dbIconName': after?.iconName,
+            'dbPriority': after?.priority?.name,
+            'dbUpdatedAt': after?.updatedAt.toIso8601String(),
+          },
         );
       },
       area: 'data.value',

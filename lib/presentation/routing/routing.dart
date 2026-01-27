@@ -82,6 +82,30 @@ abstract final class Routing {
   static void pushScreenKey(BuildContext context, String screenKey) =>
       GoRouter.of(context).push(screenPath(screenKey));
 
+  static String _settingsSubPath(String subPath) =>
+      '${screenPath('settings')}/$subPath';
+
+  static void pushSettingsAppearance(BuildContext context) =>
+      GoRouter.of(context).push(_settingsSubPath('appearance'));
+
+  static void pushSettingsMyDay(BuildContext context) =>
+      GoRouter.of(context).push(_settingsSubPath('my-day'));
+
+  static void pushSettingsTaskSuggestions(BuildContext context) =>
+      GoRouter.of(context).push(_settingsSubPath('task-suggestions'));
+
+  static void pushSettingsWeeklyReview(BuildContext context) =>
+      GoRouter.of(context).push(_settingsSubPath('weekly-review'));
+
+  static void pushSettingsLanguageRegion(BuildContext context) =>
+      GoRouter.of(context).push(_settingsSubPath('language-region'));
+
+  static void pushSettingsAccount(BuildContext context) =>
+      GoRouter.of(context).push(_settingsSubPath('account'));
+
+  static void pushSettingsDeveloper(BuildContext context) =>
+      GoRouter.of(context).push(_settingsSubPath('developer'));
+
   /// Navigate to screen by key with query parameters.
   ///
   /// Use this for deep links with query parameters.

@@ -63,6 +63,14 @@ render-only.
 Canonical rule: [INVARIANTS.md](INVARIANTS.md) (Presentation
 boundary).
 
+### 3.1 Session-shared streams (presentation)
+
+Some data is shared across multiple screens (values list, inbox counts,
+incomplete projects). These are provided as **session-shared streams** in the
+presentation layer and are kept warm via a session cache manager. Session
+streams pause on background unless explicitly exempted, and screens consume
+them via query/services rather than direct repository subscriptions.
+
 ## 4) Where code goes (feature slice map)
 
 Use this as a quick orientation when adding a new feature or screen. Paths are

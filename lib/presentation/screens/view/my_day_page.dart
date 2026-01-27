@@ -23,6 +23,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
 import 'package:taskly_bloc/presentation/screens/view/plan_my_day_page.dart';
+import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/my_day.dart' as my_day;
 import 'package:taskly_domain/routines.dart';
@@ -100,6 +101,19 @@ class _MyDayPageState extends State<MyDayPage> {
 
           return BlocBuilder<SelectionCubit, SelectionState>(
             builder: (context, selectionState) {
+              final gateBody = BlocBuilder<MyDayGateBloc, MyDayGateState>(
+                builder: (context, gateState) {
+                  if (gateState is MyDayGateLoaded &&
+                      gateState.needsValuesSetup) {
+                    return const MyDayValuesGate();
+                  }
+                  return _MyDayLoadedBody(
+                    today: today,
+                    onOpenPlan: () => _enterPlanMode(context),
+                  );
+                },
+              );
+
               return Scaffold(
                 appBar: selectionState.isSelectionMode
                     ? SelectionAppBar(
@@ -136,10 +150,7 @@ class _MyDayPageState extends State<MyDayPage> {
                           context,
                         ),
                       ),
-                body: _MyDayLoadedBody(
-                  today: today,
-                  onOpenPlan: () => _enterPlanMode(context),
-                ),
+                body: gateBody,
               );
             },
           );
@@ -630,7 +641,6 @@ TasklyRowSpec _buildRoutineRow(
           : () => context.read<MyDayBloc>().add(
               MyDayRoutineCompletionRequested(routineId: routine.id),
             ),
-      onEdit: () => Routing.toRoutineEdit(context, routine.id),
     ),
   );
 }

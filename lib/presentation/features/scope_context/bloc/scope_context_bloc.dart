@@ -167,5 +167,4 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
             .map((value) => value?.name ?? 'Value'),
     };
   }
-
 }

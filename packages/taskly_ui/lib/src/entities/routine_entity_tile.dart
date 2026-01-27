@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+import 'package:taskly_ui/src/models/value_chip_data.dart';
 import 'package:taskly_ui/src/primitives/taskly_badge.dart';
-import 'package:taskly_ui/src/primitives/value_chip_widget.dart';
+import 'package:taskly_ui/src/primitives/value_tag.dart';
 
 class RoutineEntityTile extends StatelessWidget {
   const RoutineEntityTile({
@@ -22,41 +23,31 @@ class RoutineEntityTile extends StatelessWidget {
     final tokens = TasklyTokens.of(context);
 
     final labels = model.labels;
-    final primaryLabel = labels?.primaryActionLabel?.trim();
+    final primaryLabelText = labels?.primaryActionLabel?.trim() ?? '';
     final showPrimary =
-        actions.onPrimaryAction != null &&
-        primaryLabel != null &&
-        primaryLabel.isNotEmpty;
+        actions.onPrimaryAction != null && primaryLabelText.isNotEmpty;
     final badges = model.badges;
     final hasBadges = badges.isNotEmpty;
 
-    final pauseLabel = labels?.pauseLabel?.trim();
-    final editLabel = labels?.editLabel?.trim();
 
-    final menuEntries = <_RoutineMenuEntry>[
-      if (actions.onPause != null && _hasLabel(pauseLabel))
-        _RoutineMenuEntry(
-          label: pauseLabel!,
-          onTap: actions.onPause!,
-        ),
-      if (actions.onEdit != null && _hasLabel(editLabel))
-        _RoutineMenuEntry(
-          label: editLabel!,
-          onTap: actions.onEdit!,
-        ),
-    ];
-    final showMenu = menuEntries.isNotEmpty;
-
-    final statusColor = _statusColor(model.statusTone, scheme);
-    final statusStyle = _statusStyle(model.statusTone);
     final statusLabel = model.statusLabel.trim();
     final showStatus = statusLabel.isNotEmpty;
+    final statusColor = _statusColor(model.statusTone, scheme);
+    final statusStyle = theme.textTheme.labelSmall?.copyWith(
+      color: statusColor,
+      fontWeight: FontWeight.w600,
+    );
 
-    final metaLabel = [
-      model.remainingLabel,
-      model.windowLabel,
-      model.targetLabel,
-    ].map((text) => text.trim()).where((text) => text.isNotEmpty).join(' \u00b7 ');
+    final valueChip = model.valueChip;
+    final metaLabel =
+        [
+              model.remainingLabel,
+              model.windowLabel,
+              model.targetLabel,
+            ]
+            .map((text) => text.trim())
+            .where((text) => text.isNotEmpty)
+            .join(' \u00b7 ');
     final showMeta = metaLabel.isNotEmpty;
 
     final baseOpacity = model.completed ? 0.7 : 1.0;
@@ -115,33 +106,29 @@ class RoutineEntityTile extends StatelessWidget {
                           style: titleStyle,
                         ),
                       ),
-                      if (showStatus) ...[
-                        SizedBox(width: tokens.spaceXs2),
-                        TasklyBadge(
-                          label: statusLabel,
-                          color: statusColor,
-                          style: statusStyle,
-                        ),
-                      ],
-                      if (showMenu) ...[
-                        SizedBox(width: tokens.spaceXs2),
-                        _RoutineMenuButton(entries: menuEntries),
-                      ],
                     ],
                   ),
-                  if (model.valueChip != null || showMeta) ...[
+                  if (valueChip != null || showMeta || showStatus) ...[
                     SizedBox(height: tokens.spaceXs2),
                     Wrap(
                       spacing: tokens.spaceXs2,
                       runSpacing: tokens.spaceXs2,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        if (model.valueChip != null)
-                          ValueChip(
-                            data: model.valueChip!,
-                            maxLabelWidth: 140,
+                        if (valueChip != null)
+                          _ValueInlineLabel(
+                            data: valueChip,
+                            textColor: scheme.onSurfaceVariant,
                           ),
-                        if (showMeta) Text(metaLabel, style: metaStyle),
+                        if (showMeta) ...[
+                          if (valueChip != null) _ValueMetaDot(tokens: tokens),
+                          Text(metaLabel, style: metaStyle),
+                        ],
+                        if (showStatus) ...[
+                          if (valueChip != null || showMeta)
+                            _ValueMetaDot(tokens: tokens),
+                          Text(statusLabel, style: statusStyle),
+                        ],
                       ],
                     ),
                   ],
@@ -166,7 +153,7 @@ class RoutineEntityTile extends StatelessWidget {
                     Align(
                       alignment: Alignment.centerRight,
                       child: _PrimaryActionButton(
-                        label: primaryLabel ?? '',
+                        label: primaryLabelText,
                         selected: isSelected,
                         onPressed: actions.onPrimaryAction,
                       ),
@@ -202,75 +189,22 @@ class _PrimaryActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
-    if (selected) {
-      return FilledButton.icon(
-        onPressed: onPressed,
-        icon: const Icon(Icons.check_rounded, size: 18),
-        label: Text(label),
-        style: FilledButton.styleFrom(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spaceMd,
-            vertical: tokens.spaceXs2,
-          ),
-          minimumSize: Size.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-      );
-    }
+    final scheme = Theme.of(context).colorScheme;
+    final bg = selected ? scheme.primaryContainer : scheme.primary;
+    final fg = selected ? scheme.primary : scheme.onPrimary;
 
-    return OutlinedButton(
+    return IconButton(
       onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spaceMd,
-          vertical: tokens.spaceXs2,
-        ),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      tooltip: label,
+      icon: Icon(selected ? Icons.check_rounded : Icons.add_rounded),
+      style: IconButton.styleFrom(
+        backgroundColor: bg,
+        foregroundColor: fg,
+        minimumSize: Size.square(tokens.minTapTargetSize),
+        padding: EdgeInsets.all(tokens.spaceXs2),
       ),
-      child: Text(label),
     );
   }
-}
-
-class _RoutineMenuEntry {
-  const _RoutineMenuEntry({
-    required this.label,
-    required this.onTap,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-}
-
-class _RoutineMenuButton extends StatelessWidget {
-  const _RoutineMenuButton({required this.entries});
-
-  final List<_RoutineMenuEntry> entries;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    return PopupMenuButton<_RoutineMenuEntry>(
-      onSelected: (entry) => entry.onTap(),
-      tooltip: 'Routine actions',
-      itemBuilder: (context) => entries
-          .map(
-            (entry) => PopupMenuItem<_RoutineMenuEntry>(
-              value: entry,
-              child: Text(entry.label),
-            ),
-          )
-          .toList(growable: false),
-      icon: const Icon(Icons.more_vert_rounded),
-      padding: EdgeInsets.zero,
-      constraints: BoxConstraints(minWidth: tokens.minTapTargetSize),
-    );
-  }
-}
-
-bool _hasLabel(String? value) {
-  return value != null && value.trim().isNotEmpty;
 }
 
 Color _statusColor(TasklyRoutineStatusTone tone, ColorScheme scheme) {
@@ -282,19 +216,65 @@ Color _statusColor(TasklyRoutineStatusTone tone, ColorScheme scheme) {
   };
 }
 
-TasklyBadgeStyle _statusStyle(TasklyRoutineStatusTone tone) {
-  return switch (tone) {
-    TasklyRoutineStatusTone.onPace => TasklyBadgeStyle.softOutline,
-    TasklyRoutineStatusTone.tightWeek => TasklyBadgeStyle.softOutline,
-    TasklyRoutineStatusTone.catchUp => TasklyBadgeStyle.solid,
-    TasklyRoutineStatusTone.restWeek => TasklyBadgeStyle.outline,
-  };
-}
-
 TasklyBadgeStyle _badgeStyle(TasklyBadgeTone tone) {
   return switch (tone) {
     TasklyBadgeTone.solid => TasklyBadgeStyle.solid,
     TasklyBadgeTone.outline => TasklyBadgeStyle.outline,
     TasklyBadgeTone.soft => TasklyBadgeStyle.softOutline,
   };
+}
+
+class _ValueInlineLabel extends StatelessWidget {
+  const _ValueInlineLabel({
+    required this.data,
+    required this.textColor,
+  });
+
+  final ValueChipData data;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    const maxLabelChars = 20;
+    final label = ValueTagLayout.formatLabel(
+      data.label,
+      maxChars: maxLabelChars,
+    );
+    if (label == null || label.isEmpty) return const SizedBox.shrink();
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(data.icon, size: tokens.spaceMd2, color: data.color),
+        SizedBox(width: tokens.spaceXxs2),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: (Theme.of(context).textTheme.labelSmall ?? const TextStyle())
+              .copyWith(color: textColor, fontWeight: FontWeight.w500),
+        ),
+      ],
+    );
+  }
+}
+
+class _ValueMetaDot extends StatelessWidget {
+  const _ValueMetaDot({required this.tokens});
+
+  final TasklyTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: tokens.spaceXxs2,
+      height: tokens.spaceXxs2,
+      decoration: BoxDecoration(
+        color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+        shape: BoxShape.circle,
+      ),
+    );
+  }
 }

@@ -4,10 +4,12 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 
 import 'package:taskly_bloc/presentation/features/routines/model/routine_list_item.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/routine_day_policy.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 
@@ -17,6 +19,8 @@ part 'routine_list_bloc.freezed.dart';
 sealed class RoutineListEvent with _$RoutineListEvent {
   const factory RoutineListEvent.subscriptionRequested() =
       RoutineListSubscriptionRequested;
+  const factory RoutineListEvent.valueFilterChanged({String? valueId}) =
+      RoutineListValueFilterChanged;
 }
 
 @freezed
@@ -25,6 +29,8 @@ sealed class RoutineListState with _$RoutineListState {
   const factory RoutineListState.loading() = RoutineListLoading;
   const factory RoutineListState.loaded({
     required List<RoutineListItem> routines,
+    required List<Value> values,
+    String? selectedValueId,
   }) = RoutineListLoaded;
   const factory RoutineListState.error({
     required Object error,
@@ -37,22 +43,30 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
     required RoutineRepositoryContract routineRepository,
     required SessionDayKeyService sessionDayKeyService,
     required AppErrorReporter errorReporter,
+    required SessionSharedDataService sharedDataService,
     RoutineScheduleService scheduleService = const RoutineScheduleService(),
   }) : _routineRepository = routineRepository,
        _sessionDayKeyService = sessionDayKeyService,
        _errorReporter = errorReporter,
+       _sharedDataService = sharedDataService,
        _scheduleService = scheduleService,
        super(const RoutineListInitial()) {
     on<RoutineListSubscriptionRequested>(
       _onSubscriptionRequested,
       transformer: restartable(),
     );
+    on<RoutineListValueFilterChanged>(_onValueFilterChanged);
   }
 
   final RoutineRepositoryContract _routineRepository;
   final SessionDayKeyService _sessionDayKeyService;
   final AppErrorReporter _errorReporter;
+  final SessionSharedDataService _sharedDataService;
   final RoutineScheduleService _scheduleService;
+
+  List<RoutineListItem> _latestItems = const <RoutineListItem>[];
+  List<Value> _latestValues = const <Value>[];
+  String? _selectedValueId;
 
   Future<void> _onSubscriptionRequested(
     RoutineListSubscriptionRequested event,
@@ -68,14 +82,14 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
           _sessionDayKeyService.todayDayKeyUtc.valueOrNull ??
           await _sessionDayKeyService.todayDayKeyUtc.first;
 
+      final values = await _sharedDataService.watchValues().first;
       emit(
-        RoutineListLoaded(
-          routines: _buildItems(
-            routines: initial,
-            dayKeyUtc: today,
-            completions: completions,
-            skips: skips,
-          ),
+        _buildLoadedState(
+          routines: initial,
+          values: values,
+          dayKeyUtc: today,
+          completions: completions,
+          skips: skips,
         ),
       );
     } catch (error, stackTrace) {
@@ -92,27 +106,29 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
     final completions$ = _routineRepository.watchCompletions();
     final skips$ = _routineRepository.watchSkips();
     final dayKey$ = _sessionDayKeyService.todayDayKeyUtc;
+    final values$ = _sharedDataService.watchValues();
 
     final combined$ =
-        Rx.combineLatest4<
+        Rx.combineLatest5<
           DateTime,
           List<Routine>,
           List<RoutineCompletion>,
           List<RoutineSkip>,
+          List<Value>,
           RoutineListState
         >(
           dayKey$,
           routines$,
           completions$,
           skips$,
-          (dayKey, routines, completions, skips) {
-            return RoutineListLoaded(
-              routines: _buildItems(
-                routines: routines,
-                dayKeyUtc: dayKey,
-                completions: completions,
-                skips: skips,
-              ),
+          values$,
+          (dayKey, routines, completions, skips, values) {
+            return _buildLoadedState(
+              routines: routines,
+              values: values,
+              dayKeyUtc: dayKey,
+              completions: completions,
+              skips: skips,
             );
           },
         );
@@ -128,6 +144,45 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
         );
         return RoutineListError(error: error, stackTrace: stackTrace);
       },
+    );
+  }
+
+  void _onValueFilterChanged(
+    RoutineListValueFilterChanged event,
+    Emitter<RoutineListState> emit,
+  ) {
+    _selectedValueId = event.valueId?.trim().isEmpty ?? true
+        ? null
+        : event.valueId;
+    if (_latestItems.isEmpty && _latestValues.isEmpty) return;
+    emit(
+      RoutineListLoaded(
+        routines: _latestItems,
+        values: _latestValues,
+        selectedValueId: _selectedValueId,
+      ),
+    );
+  }
+
+  RoutineListLoaded _buildLoadedState({
+    required List<Routine> routines,
+    required List<Value> values,
+    required DateTime dayKeyUtc,
+    required List<RoutineCompletion> completions,
+    required List<RoutineSkip> skips,
+  }) {
+    final items = _buildItems(
+      routines: routines,
+      dayKeyUtc: dayKeyUtc,
+      completions: completions,
+      skips: skips,
+    );
+    _latestItems = items;
+    _latestValues = values;
+    return RoutineListLoaded(
+      routines: items,
+      values: values,
+      selectedValueId: _selectedValueId,
     );
   }
 

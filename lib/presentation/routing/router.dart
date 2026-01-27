@@ -25,6 +25,13 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_appearance_page.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_my_day_page.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_task_suggestions_page.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_weekly_review_page.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_language_region_page.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_account_page.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_developer_page.dart';
 import 'package:taskly_bloc/presentation/features/trackers/view/trackers_page.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 
@@ -54,8 +61,8 @@ final router = GoRouter(
         // For non-screen routes (editors/details), keep it null to preserve
         // previous behavior (no nav highlight).
         final segments = state.uri.pathSegments;
-        final candidate = segments.length == 1
-            ? Routing.parseScreenKey(segments.single)
+        final candidate = segments.isNotEmpty
+            ? Routing.parseScreenKey(segments.first)
             : null;
         final activeScreenId =
             (candidate != null && Routing.isSystemScreenKey(candidate))
@@ -321,6 +328,34 @@ final router = GoRouter(
         GoRoute(
           path: Routing.screenPath('settings'),
           builder: (_, __) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: '${Routing.screenPath('settings')}/appearance',
+          builder: (_, __) => const SettingsAppearancePage(),
+        ),
+        GoRoute(
+          path: '${Routing.screenPath('settings')}/my-day',
+          builder: (_, __) => const SettingsMyDayPage(),
+        ),
+        GoRoute(
+          path: '${Routing.screenPath('settings')}/task-suggestions',
+          builder: (_, __) => const SettingsTaskSuggestionsPage(),
+        ),
+        GoRoute(
+          path: '${Routing.screenPath('settings')}/weekly-review',
+          builder: (_, __) => const SettingsWeeklyReviewPage(),
+        ),
+        GoRoute(
+          path: '${Routing.screenPath('settings')}/language-region',
+          builder: (_, __) => const SettingsLanguageRegionPage(),
+        ),
+        GoRoute(
+          path: '${Routing.screenPath('settings')}/account',
+          builder: (_, __) => const SettingsAccountPage(),
+        ),
+        GoRoute(
+          path: '${Routing.screenPath('settings')}/developer',
+          builder: (_, __) => const SettingsDeveloperPage(),
         ),
         GoRoute(
           path: Routing.screenPath('journal_history'),
