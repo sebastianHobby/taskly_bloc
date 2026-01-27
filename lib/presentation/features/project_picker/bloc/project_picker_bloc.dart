@@ -142,5 +142,4 @@ class ProjectPickerBloc extends Bloc<ProjectPickerEvent, ProjectPickerState> {
     if (nameCmp != 0) return nameCmp;
     return a.id.compareTo(b.id);
   }
-
 }

@@ -19,8 +19,8 @@ import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.d
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/allocation_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
-import 'package:taskly_bloc/presentation/features/app/bloc/my_day_prewarm_cubit.dart';
 import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
@@ -29,11 +29,13 @@ import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.
 
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/services/my_day_gate_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_allocation_cache_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -153,6 +155,21 @@ Future<void> setupDependencies() async {
         valueRepository: getIt<ValueRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
         taskRepository: getIt<TaskRepositoryContract>(),
+      ),
+    )
+    ..registerLazySingleton<SessionAllocationCacheService>(
+      () => SessionAllocationCacheService(
+        cacheManager: getIt<SessionStreamCacheManager>(),
+        sessionDayKeyService: getIt<SessionDayKeyService>(),
+        allocationOrchestrator: getIt<AllocationOrchestrator>(),
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        projectNextActionsRepository:
+            getIt<ProjectNextActionsRepositoryContract>(),
+        projectAnchorStateRepository:
+            getIt<ProjectAnchorStateRepositoryContract>(),
+        settingsRepository: getIt<SettingsRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
       ),
     )
     ..registerLazySingleton<AttentionTemporalInvalidationService>(
@@ -288,29 +305,25 @@ Future<void> setupDependencies() async {
     )
     ..registerFactory<MyDayGateBloc>(
       () => MyDayGateBloc(
+        queryService: getIt<MyDayGateQueryService>(),
+      ),
+    )
+    ..registerLazySingleton<MyDayGateQueryService>(
+      () => MyDayGateQueryService(
         valueRepository: getIt<ValueRepositoryContract>(),
         sharedDataService: getIt<SessionSharedDataService>(),
       ),
     )
-    ..registerFactory<MyDayPrewarmCubit>(
-      () => MyDayPrewarmCubit(
-        allocationOrchestrator: getIt<AllocationOrchestrator>(),
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-        valueRepository: getIt<ValueRepositoryContract>(),
-        myDayRepository: getIt<MyDayRepositoryContract>(),
-        dayKeyService: getIt<HomeDayKeyService>(),
-      ),
-    )
     ..registerFactory<MyDayQueryService>(
       () => MyDayQueryService(
-        allocationOrchestrator: getIt<AllocationOrchestrator>(),
         taskRepository: getIt<TaskRepositoryContract>(),
-        valueRepository: getIt<ValueRepositoryContract>(),
         myDayRepository: getIt<MyDayRepositoryContract>(),
         ritualStatusService: getIt<MyDayRitualStatusService>(),
         routineRepository: getIt<RoutineRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
+        allocationCacheService: getIt<SessionAllocationCacheService>(),
+        sharedDataService: getIt<SessionSharedDataService>(),
       ),
     )
     ..registerLazySingleton<MyDaySessionQueryService>(
@@ -338,6 +351,7 @@ Future<void> setupDependencies() async {
         sessionDayKeyService: getIt<SessionDayKeyService>(),
         sessionStreamCacheManager: getIt<SessionStreamCacheManager>(),
         sharedDataService: getIt<SessionSharedDataService>(),
+        allocationCacheService: getIt<SessionAllocationCacheService>(),
         myDaySessionQueryService: getIt<MyDaySessionQueryService>(),
         scheduledSessionQueryService: getIt<ScheduledSessionQueryService>(),
         anytimeSessionQueryService: getIt<AnytimeSessionQueryService>(),
@@ -367,6 +381,11 @@ Future<void> setupDependencies() async {
     ..registerFactory<SettingsMaintenanceCubit>(
       () => SettingsMaintenanceCubit(
         templateDataService: getIt<TemplateDataService>(),
+      ),
+    )
+    ..registerFactory<AllocationSettingsBloc>(
+      () => AllocationSettingsBloc(
+        settingsRepository: getIt<SettingsRepositoryContract>(),
       ),
     );
 }

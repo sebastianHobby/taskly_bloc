@@ -303,10 +303,7 @@ class TemplateDataService {
       priority: 1,
       startDate: day(-7),
       deadlineDate: day(30),
-      valueIds: [
-        valueIdByName['Life Admin']!,
-        valueIdByName['Finance & Security']!,
-      ],
+      valueIds: [valueIdByName['Life Admin']!],
     );
     await _projectRepository.create(
       name: 'Health Stack',

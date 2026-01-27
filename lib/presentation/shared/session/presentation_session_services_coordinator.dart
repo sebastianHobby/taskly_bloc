@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_s
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_allocation_cache_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 
 /// Starts/stops session-hot presentation services.
@@ -17,12 +18,14 @@ final class PresentationSessionServicesCoordinator {
     required SessionDayKeyService sessionDayKeyService,
     required SessionStreamCacheManager sessionStreamCacheManager,
     required SessionSharedDataService sharedDataService,
+    required SessionAllocationCacheService allocationCacheService,
     required MyDaySessionQueryService myDaySessionQueryService,
     required ScheduledSessionQueryService scheduledSessionQueryService,
     required AnytimeSessionQueryService anytimeSessionQueryService,
   }) : _sessionDayKeyService = sessionDayKeyService,
        _sessionStreamCacheManager = sessionStreamCacheManager,
        _sharedDataService = sharedDataService,
+       _allocationCacheService = allocationCacheService,
        _myDaySessionQueryService = myDaySessionQueryService,
        _scheduledSessionQueryService = scheduledSessionQueryService,
        _anytimeSessionQueryService = anytimeSessionQueryService;
@@ -30,6 +33,7 @@ final class PresentationSessionServicesCoordinator {
   final SessionDayKeyService _sessionDayKeyService;
   final SessionStreamCacheManager _sessionStreamCacheManager;
   final SessionSharedDataService _sharedDataService;
+  final SessionAllocationCacheService _allocationCacheService;
   final MyDaySessionQueryService _myDaySessionQueryService;
   final ScheduledSessionQueryService _scheduledSessionQueryService;
   final AnytimeSessionQueryService _anytimeSessionQueryService;
@@ -50,6 +54,7 @@ final class PresentationSessionServicesCoordinator {
       _sessionStreamCacheManager.start();
       _sessionDayKeyService.start();
       _sharedDataService.preloadDefaults();
+      _allocationCacheService.start();
       _myDaySessionQueryService.start();
       _scheduledSessionQueryService.start();
       _anytimeSessionQueryService.start();
@@ -76,6 +81,7 @@ final class PresentationSessionServicesCoordinator {
     await _anytimeSessionQueryService.stop();
     await _scheduledSessionQueryService.stop();
     await _myDaySessionQueryService.stop();
+    await _allocationCacheService.stop();
     await _sharedDataService.stop();
     _sessionDayKeyService.stop();
     await _sessionStreamCacheManager.stop();

@@ -22,9 +22,6 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     required String id,
     required bool isPinned,
   }) = _TaskDetailSetPinned;
-  const factory TaskDetailEvent.delete({
-    required String id,
-  }) = _TaskDetailDelete;
 
   const factory TaskDetailEvent.create({
     required CreateTaskCommand command,
@@ -92,7 +89,6 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     on<_TaskDetailCreate>(_onCreate, transformer: droppable());
     on<_TaskDetailUpdate>(_onUpdate, transformer: droppable());
     on<_TaskDetailSetPinned>(_onSetPinned, transformer: droppable());
-    on<_TaskDetailDelete>(_onDelete, transformer: droppable());
 
     if (autoLoad) {
       if (taskId != null && taskId.isNotEmpty) {
@@ -280,31 +276,6 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
       () => _taskWriteService.update(event.command, context: context),
       context: context,
     );
-  }
-
-  Future<void> _onDelete(
-    _TaskDetailDelete event,
-    Emitter<TaskDetailState> emit,
-  ) async {
-    final context = _newContext(
-      intent: 'task_delete_requested',
-      operation: 'tasks.delete',
-      entityId: event.id,
-    );
-
-    try {
-      await _taskWriteService.delete(event.id, context: context);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      emit(createOperationSuccessState(EntityOperation.delete));
-    } catch (error, stackTrace) {
-      _reportIfUnexpectedOrUnmapped(
-        error,
-        stackTrace,
-        context: context,
-        message: 'Task delete failed',
-      );
-      emit(createOperationFailureState(_toUiSafeError(error, stackTrace)));
-    }
   }
 
   Future<void> _onSetPinned(

@@ -18,7 +18,6 @@ import 'package:taskly_bloc/presentation/features/auth/view/sign_in_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/sign_up_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/forgot_password_view.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
-import 'package:taskly_bloc/presentation/features/app/bloc/my_day_prewarm_cubit.dart';
 import 'package:taskly_bloc/presentation/features/app/view/initial_sync_gate_screen.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
@@ -227,13 +226,8 @@ class _AuthenticatedApp extends StatelessWidget {
             create: (_) => InitialSyncGateBloc(
               coordinator: getIt<AuthenticatedAppServicesCoordinator>(),
               initialSyncService: getIt<InitialSyncService>(),
-              taskRepository: getIt<TaskRepositoryContract>(),
-              valueRepository: getIt<ValueRepositoryContract>(),
+              sharedDataService: getIt<SessionSharedDataService>(),
             )..add(const InitialSyncGateStarted()),
-          ),
-          BlocProvider<MyDayPrewarmCubit>(
-            lazy: false,
-            create: (_) => getIt<MyDayPrewarmCubit>(),
           ),
           BlocProvider<ScreenActionsBloc>(
             create: (context) => ScreenActionsBloc(
@@ -248,67 +242,32 @@ class _AuthenticatedApp extends StatelessWidget {
             create: (_) => SyncAnomalyBloc(source: getIt<SyncAnomalyStream>()),
           ),
         ],
-        child: BlocListener<InitialSyncGateBloc, InitialSyncGateState>(
-          listenWhen: (previous, current) {
-            return previous is! InitialSyncGateReady &&
-                current is InitialSyncGateReady;
-          },
-          listener: (context, state) {
-            unawaited(context.read<MyDayPrewarmCubit>().start());
-          },
-          child: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
-            builder: (context, state) {
-              final settings = state.settings;
+        child: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
+          builder: (context, state) {
+            final settings = state.settings;
+            return BlocBuilder<InitialSyncGateBloc, InitialSyncGateState>(
+              builder: (context, gateState) {
+                final commonLocale = settings.localeCode == null
+                    ? null
+                    : Locale(settings.localeCode!);
 
-              return BlocBuilder<InitialSyncGateBloc, InitialSyncGateState>(
-                builder: (context, gateState) {
-                  final commonLocale = settings.localeCode == null
-                      ? null
-                      : Locale(settings.localeCode!);
+                final commonTheme = AppTheme.lightTheme(
+                  seedColor: state.seedColor,
+                );
+                final commonDarkTheme = AppTheme.darkTheme(
+                  seedColor: state.seedColor,
+                );
 
-                  final commonTheme = AppTheme.lightTheme(
-                    seedColor: state.seedColor,
-                  );
-                  final commonDarkTheme = AppTheme.darkTheme(
-                    seedColor: state.seedColor,
-                  );
+                final shouldBlockOnSync = switch (gateState) {
+                  InitialSyncGateReady() => false,
+                  InitialSyncGateFailure() => true,
+                  InitialSyncGateInProgress(:final progress) =>
+                    !(progress?.hasSynced ?? false) &&
+                        progress?.lastSyncedAt == null,
+                };
 
-                  final shouldBlockOnSync = switch (gateState) {
-                    InitialSyncGateReady() => false,
-                    InitialSyncGateFailure() => true,
-                    InitialSyncGateInProgress(:final progress) =>
-                      !(progress?.hasSynced ?? false) &&
-                          progress?.lastSyncedAt == null,
-                  };
-
-                  if (shouldBlockOnSync) {
-                    return MaterialApp(
-                      scaffoldMessengerKey: App.scaffoldMessengerKey,
-                      theme: commonTheme,
-                      darkTheme: commonDarkTheme,
-                      themeMode: state.flutterThemeMode,
-                      locale: commonLocale,
-                      localizationsDelegates:
-                          AppLocalizations.localizationsDelegates,
-                      supportedLocales: AppLocalizations.supportedLocales,
-                      debugShowCheckedModeBanner: false,
-                      home: MediaQuery(
-                        data: MediaQuery.of(context).copyWith(
-                          textScaler: TextScaler.linear(
-                            settings.textScaleFactor,
-                          ),
-                        ),
-                        child: const InitialSyncGateScreen(),
-                      ),
-                    );
-                  }
-
-                  // Safety: if the gate is already ready on first build
-                  // (fast restore / hot restart), the BlocListener above won't
-                  // fire. start() is idempotent.
-                  unawaited(context.read<MyDayPrewarmCubit>().start());
-
-                  return MaterialApp.router(
+                if (shouldBlockOnSync) {
+                  return MaterialApp(
                     scaffoldMessengerKey: App.scaffoldMessengerKey,
                     theme: commonTheme,
                     darkTheme: commonDarkTheme,
@@ -317,29 +276,49 @@ class _AuthenticatedApp extends StatelessWidget {
                     localizationsDelegates:
                         AppLocalizations.localizationsDelegates,
                     supportedLocales: AppLocalizations.supportedLocales,
-                    routerConfig: router,
                     debugShowCheckedModeBanner: false,
-                    builder: (context, child) {
-                      return _SyncAnomalySnackBarListener(
-                        scaffoldMessengerKey: App.scaffoldMessengerKey,
-                        child: _ScreenActionsFailureSnackBarListener(
-                          scaffoldMessengerKey: App.scaffoldMessengerKey,
-                          child: MediaQuery(
-                            data: MediaQuery.of(context).copyWith(
-                              textScaler: TextScaler.linear(
-                                settings.textScaleFactor,
-                              ),
-                            ),
-                            child: _NotificationsBootstrapper(child: child!),
-                          ),
+                    home: MediaQuery(
+                      data: MediaQuery.of(context).copyWith(
+                        textScaler: TextScaler.linear(
+                          settings.textScaleFactor,
                         ),
-                      );
-                    },
+                      ),
+                      child: const InitialSyncGateScreen(),
+                    ),
                   );
-                },
-              );
-            },
-          ),
+                }
+
+                return MaterialApp.router(
+                  scaffoldMessengerKey: App.scaffoldMessengerKey,
+                  theme: commonTheme,
+                  darkTheme: commonDarkTheme,
+                  themeMode: state.flutterThemeMode,
+                  locale: commonLocale,
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  routerConfig: router,
+                  debugShowCheckedModeBanner: false,
+                  builder: (context, child) {
+                    return _SyncAnomalySnackBarListener(
+                      scaffoldMessengerKey: App.scaffoldMessengerKey,
+                      child: _ScreenActionsFailureSnackBarListener(
+                        scaffoldMessengerKey: App.scaffoldMessengerKey,
+                        child: MediaQuery(
+                          data: MediaQuery.of(context).copyWith(
+                            textScaler: TextScaler.linear(
+                              settings.textScaleFactor,
+                            ),
+                          ),
+                          child: _NotificationsBootstrapper(child: child!),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
         ),
       ),
     );

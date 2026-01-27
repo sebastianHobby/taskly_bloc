@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
@@ -435,16 +439,32 @@ List<TasklyRowSpec> _buildStandardRows(
   return specs;
 }
 
-class _AnytimeValuesAndFiltersRow extends StatelessWidget {
+class _AnytimeValuesAndFiltersRow extends StatefulWidget {
   const _AnytimeValuesAndFiltersRow({required this.scope});
 
   final AnytimeScope? scope;
 
   @override
+  State<_AnytimeValuesAndFiltersRow> createState() =>
+      _AnytimeValuesAndFiltersRowState();
+}
+
+class _AnytimeValuesAndFiltersRowState
+    extends State<_AnytimeValuesAndFiltersRow> {
+  final ScrollController _valueScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _valueScrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
 
-    final selectedValueId = switch (scope) {
+    final selectedValueId = switch (widget.scope) {
       AnytimeValueScope(:final valueId) => valueId,
       _ => null,
     };
@@ -462,44 +482,92 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
               AnytimeFeedLoaded(:final values) => values,
               _ => const <Value>[],
             };
+            final rows = switch (state) {
+              AnytimeFeedLoaded(:final rows) => rows,
+              _ => const <ListRowUiModel>[],
+            };
             final sorted = values.toList(growable: false)..sort(_compareValues);
 
+            final counts = _countProjectsByValue(rows);
             final selectedValue = _findValueById(sorted, selectedValueId);
-            final hasValue = selectedValue != null;
-            final valueLabel = hasValue ? selectedValue.name : 'All';
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _FilterPill(
-                        label: 'Value: $valueLabel',
-                        selected: hasValue,
-                        onTap: () async {
-                          final next = await _showValueFilterSheet(
-                            context,
-                            sorted,
-                            selectedValueId,
-                          );
-                          if (!context.mounted || next == selectedValueId) {
-                            return;
-                          }
-                          if (next == null) {
-                            await GoRouter.of(context).push('/anytime');
-                          } else {
-                            Routing.pushValueAnytime(context, next);
-                          }
-                        },
-                        backgroundColor: scheme.surface,
-                        selectedColor: scheme.surfaceContainerHigh,
-                        textColor: scheme.onSurfaceVariant,
-                        selectedTextColor: scheme.onSurface,
-                        leadingIcon: Icons.expand_more_rounded,
+                ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    dragDevices: const {
+                      PointerDeviceKind.touch,
+                      PointerDeviceKind.mouse,
+                      PointerDeviceKind.trackpad,
+                      PointerDeviceKind.stylus,
+                      PointerDeviceKind.unknown,
+                    },
+                  ),
+                  child: Listener(
+                    onPointerSignal: (signal) {
+                      if (signal is! PointerScrollEvent) return;
+                      if (!_valueScrollController.hasClients) return;
+                      final target =
+                          (_valueScrollController.offset +
+                                  signal.scrollDelta.dy)
+                              .clamp(
+                                0.0,
+                                _valueScrollController.position.maxScrollExtent,
+                              );
+                      _valueScrollController.jumpTo(target);
+                    },
+                    child: SingleChildScrollView(
+                      controller: _valueScrollController,
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: tokens.spaceXs,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _ValueFilterChip(
+                              label: 'All',
+                              count: counts.total,
+                              selected: selectedValue == null,
+                              icon: Icons.filter_list_rounded,
+                              iconColor: scheme.onSurfaceVariant,
+                              onTap: () async {
+                                if (selectedValueId == null) return;
+                                unawaited(HapticFeedback.lightImpact());
+                                await GoRouter.of(context).push('/anytime');
+                              },
+                            ),
+                            for (final value in sorted) ...[
+                              SizedBox(width: tokens.filterRowSpacing),
+                              Builder(
+                                builder: (context) {
+                                  final chip = value.toChipData(context);
+                                  return _ValueFilterChip(
+                                    label: chip.label,
+                                    count: counts.byValueId[value.id],
+                                    selected: value.id == selectedValueId,
+                                    icon: chip.icon,
+                                    iconColor: chip.color,
+                                    tintColor: chip.color,
+                                    onTap: () async {
+                                      if (value.id == selectedValueId) return;
+                                      unawaited(HapticFeedback.lightImpact());
+                                      Routing.pushValueAnytime(
+                                        context,
+                                        value.id,
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
                 SizedBox(height: TasklyTokens.of(context).spaceSm),
@@ -512,65 +580,100 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
   }
 }
 
-class _FilterPill extends StatelessWidget {
-  const _FilterPill({
+class _ValueFilterChip extends StatelessWidget {
+  const _ValueFilterChip({
     required this.label,
     required this.selected,
+    required this.icon,
+    required this.iconColor,
     required this.onTap,
-    required this.backgroundColor,
-    required this.selectedColor,
-    required this.textColor,
-    required this.selectedTextColor,
-    this.leadingIcon,
+    this.tintColor,
+    this.count,
   });
 
   final String label;
+  final int? count;
   final bool selected;
+  final IconData icon;
+  final Color iconColor;
+  final Color? tintColor;
   final VoidCallback onTap;
-  final Color backgroundColor;
-  final Color selectedColor;
-  final Color textColor;
-  final Color selectedTextColor;
-  final IconData? leadingIcon;
 
   @override
   Widget build(BuildContext context) {
-    final chrome = TasklyTokens.of(context);
+    final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final fg = selected ? selectedTextColor : textColor;
-    final bg = selected ? selectedColor : backgroundColor;
 
-    return Padding(
-      padding: EdgeInsets.only(right: chrome.filterRowSpacing),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(chrome.filterPillRadius),
-        onTap: onTap,
-        child: Container(
-          padding: chrome.filterPillPadding,
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(chrome.filterPillRadius),
-            border: Border.all(
-              color: selected
-                  ? scheme.surface.withValues(alpha: 0)
-                  : scheme.outlineVariant.withValues(alpha: 0.6),
+    final baseBg = selected
+        ? scheme.primaryContainer
+        : scheme.surfaceContainerLow;
+    final tintAlpha = selected ? 0.16 : 0.12;
+    final bg = tintColor == null
+        ? baseBg
+        : Color.alphaBlend(tintColor!.withValues(alpha: tintAlpha), baseBg);
+    final fg = selected ? scheme.onSurface : scheme.onSurfaceVariant;
+    final border = selected
+        ? scheme.primary.withValues(alpha: 0.28)
+        : scheme.outlineVariant.withValues(alpha: 0.7);
+
+    final textStyle =
+        Theme.of(context).textTheme.labelSmall ?? const TextStyle(fontSize: 12);
+    const visualHeight = 30.0;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(tokens.radiusPill),
+      onTap: onTap,
+      child: SizedBox(
+        height: tokens.minTapTargetSize,
+        child: Center(
+          child: Container(
+            height: visualHeight,
+            padding: EdgeInsets.symmetric(horizontal: tokens.spaceSm),
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(tokens.radiusPill),
+              border: Border.all(color: border),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (leadingIcon != null) ...[
-                Icon(leadingIcon, size: chrome.filterPillIconSize, color: fg),
-                SizedBox(width: chrome.spaceXs2),
-              ],
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: fg,
-                  fontWeight: FontWeight.w700,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: tokens.filterPillIconSize - 2,
+                  color: iconColor,
                 ),
-              ),
-            ],
+                SizedBox(width: tokens.spaceXxs2),
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: label),
+                      if (count != null && count! > 0)
+                        TextSpan(
+                          text: ' \u00b7 $count',
+                          style: textStyle.copyWith(
+                            color: fg.withValues(alpha: 0.7),
+                            fontWeight: selected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                          ),
+                        ),
+                    ],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textStyle.copyWith(
+                    color: fg,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                  ),
+                ),
+                if (selected) ...[
+                  SizedBox(width: tokens.spaceXxs2),
+                  Icon(Icons.check_rounded, size: 12, color: fg),
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -603,43 +706,24 @@ Value? _findValueById(List<Value> values, String? id) {
   return null;
 }
 
-Future<String?> _showValueFilterSheet(
-  BuildContext context,
-  List<Value> values,
-  String? selectedValueId,
-) {
-  return showModalBottomSheet<String?>(
-    context: context,
-    showDragHandle: true,
-    builder: (context) {
-      final scheme = Theme.of(context).colorScheme;
-      return ListView(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.apps_rounded),
-            title: const Text('All values'),
-            trailing: selectedValueId == null
-                ? Icon(Icons.check_rounded, color: scheme.primary)
-                : null,
-            onTap: () => Navigator.of(context).pop(null),
-          ),
-          const Divider(height: 1),
-          for (final value in values)
-            Builder(
-              builder: (context) {
-                final chip = value.toChipData(context);
-                return ListTile(
-                  leading: Icon(chip.icon, color: chip.color),
-                  title: Text(value.name),
-                  trailing: selectedValueId == value.id
-                      ? Icon(Icons.check_rounded, color: scheme.primary)
-                      : null,
-                  onTap: () => Navigator.of(context).pop(value.id),
-                );
-              },
-            ),
-        ],
-      );
-    },
-  );
+_ValueProjectCounts _countProjectsByValue(List<ListRowUiModel> rows) {
+  var total = 0;
+  final byValueId = <String, int>{};
+  for (final row in rows) {
+    if (row is! ProjectRowUiModel) continue;
+    final project = row.project;
+    if (project == null) continue;
+    total += 1;
+    final valueId = project.primaryValue?.id;
+    if (valueId == null) continue;
+    byValueId[valueId] = (byValueId[valueId] ?? 0) + 1;
+  }
+  return _ValueProjectCounts(total: total, byValueId: byValueId);
+}
+
+class _ValueProjectCounts {
+  const _ValueProjectCounts({required this.total, required this.byValueId});
+
+  final int total;
+  final Map<String, int> byValueId;
 }

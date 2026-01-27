@@ -227,4 +227,9 @@ Guidelines:
 - Screens/BLoCs should depend on session query services or shared session data
   services rather than accessing repositories directly.
 
+Examples of session-shared data:
+- Values list
+- Incomplete projects list
+- Inbox task count
+
 

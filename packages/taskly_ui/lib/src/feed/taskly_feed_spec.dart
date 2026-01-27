@@ -609,13 +609,9 @@ final class TasklyRoutineRowData {
 final class TasklyRoutineRowLabels {
   const TasklyRoutineRowLabels({
     this.primaryActionLabel,
-    this.pauseLabel,
-    this.editLabel,
   });
 
   final String? primaryActionLabel;
-  final String? pauseLabel;
-  final String? editLabel;
 }
 
 @immutable
@@ -623,14 +619,10 @@ final class TasklyRoutineRowActions {
   const TasklyRoutineRowActions({
     this.onTap,
     this.onPrimaryAction,
-    this.onPause,
-    this.onEdit,
   });
 
   final VoidCallback? onTap;
   final VoidCallback? onPrimaryAction;
-  final VoidCallback? onPause;
-  final VoidCallback? onEdit;
 }
 
 final class TasklyRoutineRowSpec extends TasklyRowSpec {

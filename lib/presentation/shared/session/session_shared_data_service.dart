@@ -28,6 +28,7 @@ final class SessionSharedDataService {
   static const Object _projectsAllKey = 'session.projects.all';
   static const Object _projectsIncompleteKey = 'session.projects.incomplete';
   static const Object _inboxCountKey = 'session.tasks.inbox.count';
+  static const Object _tasksAllCountKey = 'session.tasks.all.count';
 
   ValueStream<List<Value>> watchValues() {
     return _cacheManager.getOrCreate<List<Value>>(
@@ -61,6 +62,14 @@ final class SessionSharedDataService {
     );
   }
 
+  ValueStream<int> watchAllTaskCount() {
+    return _cacheManager.getOrCreate<int>(
+      key: _tasksAllCountKey,
+      source: _taskRepository.watchAllCount,
+      pauseOnBackground: true,
+    );
+  }
+
   void preloadDefaults() {
     _cacheManager.preload<List<Value>>(
       key: _valuesKey,
@@ -84,5 +93,6 @@ final class SessionSharedDataService {
     await _cacheManager.evict(_projectsAllKey);
     await _cacheManager.evict(_projectsIncompleteKey);
     await _cacheManager.evict(_inboxCountKey);
+    await _cacheManager.evict(_tasksAllCountKey);
   }
 }

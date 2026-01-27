@@ -59,7 +59,6 @@ class RoutinesListView extends StatelessWidget {
                 ),
                 actions: TasklyRoutineRowActions(
                   onTap: () => onEditRoutine(item.routine.id),
-                  onEdit: () => onEditRoutine(item.routine.id),
                 ),
               ),
           ],
@@ -85,7 +84,6 @@ class RoutinesListView extends StatelessWidget {
                 ),
                 actions: TasklyRoutineRowActions(
                   onTap: () => onEditRoutine(item.routine.id),
-                  onEdit: () => onEditRoutine(item.routine.id),
                 ),
               ),
           ],

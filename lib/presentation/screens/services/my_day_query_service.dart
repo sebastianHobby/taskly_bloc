@@ -5,40 +5,41 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_domain/my_day.dart' show MyDayRitualStatus;
 
 import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
 import 'package:taskly_bloc/presentation/screens/models/my_day_view_model_builder.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_allocation_cache_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 
 final class MyDayQueryService {
   MyDayQueryService({
-    required AllocationOrchestrator allocationOrchestrator,
     required TaskRepositoryContract taskRepository,
-    required ValueRepositoryContract valueRepository,
     required MyDayRepositoryContract myDayRepository,
     required MyDayRitualStatusService ritualStatusService,
     required RoutineRepositoryContract routineRepository,
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
+    required SessionAllocationCacheService allocationCacheService,
+    required SessionSharedDataService sharedDataService,
     MyDayViewModelBuilder viewModelBuilder = const MyDayViewModelBuilder(),
-  }) : _allocationOrchestrator = allocationOrchestrator,
-       _taskRepository = taskRepository,
-       _valueRepository = valueRepository,
+  }) : _taskRepository = taskRepository,
        _myDayRepository = myDayRepository,
        _ritualStatusService = ritualStatusService,
        _routineRepository = routineRepository,
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
+       _allocationCacheService = allocationCacheService,
+       _sharedDataService = sharedDataService,
        _viewModelBuilder = viewModelBuilder;
 
-  final AllocationOrchestrator _allocationOrchestrator;
   final TaskRepositoryContract _taskRepository;
-  final ValueRepositoryContract _valueRepository;
   final MyDayRepositoryContract _myDayRepository;
   final MyDayRitualStatusService _ritualStatusService;
   final RoutineRepositoryContract _routineRepository;
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
+  final SessionAllocationCacheService _allocationCacheService;
+  final SessionSharedDataService _sharedDataService;
   final MyDayViewModelBuilder _viewModelBuilder;
 
   Stream<MyDayViewModel> watchMyDayViewModel() {
@@ -56,11 +57,7 @@ final class MyDayQueryService {
   }
 
   Stream<MyDayViewModel> _watchForDay(DateTime dayKeyUtc) {
-    // Important: `Stream.fromFuture(...)` creates a single-subscription stream.
-    // This method uses `switchMap`, so the inner stream can be re-subscribed
-    // multiple times as inputs change.
-    // Keep the *Future* stable, but create a fresh Stream per subscription.
-    final valuesFuture = _valueRepository.getAll();
+    final values$ = _sharedDataService.watchValues();
 
     final dayPicks$ = Rx.concat([
       Stream.fromFuture(_myDayRepository.loadDay(dayKeyUtc)),
@@ -70,8 +67,6 @@ final class MyDayQueryService {
     return dayPicks$.switchMap((dayPicks) {
       final ritualStatus = _ritualStatusService.fromDayPicks(dayPicks);
       if (dayPicks.ritualCompletedAtUtc != null) {
-        final values$ = Stream.fromFuture(valuesFuture);
-
         final tasks$ = Rx.concat([
           Stream.fromFuture(_taskRepository.getAll(TaskQuery.all())),
           _taskRepository.watchAll(TaskQuery.all()),
@@ -114,31 +109,21 @@ final class MyDayQueryService {
                 routines: routines,
                 routineCompletions: completions,
                 routineSkips: skips,
-              ),
+          ),
         );
       }
 
-      return Stream.fromFuture(
-        _loadAllocationViewModel(ritualStatus: ritualStatus),
+      final allocation$ = _allocationCacheService.watchAllocationSnapshot();
+
+      return Rx.combineLatest2<AllocationResult, List<Value>, MyDayViewModel>(
+        allocation$,
+        values$,
+        (allocation, values) => _viewModelBuilder.fromAllocation(
+          allocation: allocation,
+          values: values,
+          ritualStatus: ritualStatus,
+        ),
       );
     });
-  }
-
-  Future<MyDayViewModel> _loadAllocationViewModel({
-    required MyDayRitualStatus ritualStatus,
-  }) async {
-    final results = await Future.wait([
-      _allocationOrchestrator.getAllocationSnapshot(),
-      _valueRepository.getAll(),
-    ]);
-
-    final allocation = results[0] as AllocationResult;
-    final values = results[1] as List<Value>;
-
-    return _viewModelBuilder.fromAllocation(
-      allocation: allocation,
-      values: values,
-      ritualStatus: ritualStatus,
-    );
   }
 }

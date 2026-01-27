@@ -8,12 +8,10 @@ import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_feedback.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
-import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_form.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
-import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class TaskDetailSheet extends StatefulWidget {
   const TaskDetailSheet({
@@ -258,32 +256,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                   context.read<TaskDetailBloc>().add(
                     TaskDetailEvent.setPinned(id: task.id, isPinned: isPinned),
                   );
-                },
-                onDelete: () async {
-                  final confirmed = await ConfirmationDialog.show(
-                    context,
-                    title: context.l10n.deleteTaskAction,
-                    confirmLabel: context.l10n.deleteLabel,
-                    cancelLabel: context.l10n.cancelLabel,
-                    isDestructive: true,
-                    icon: Icons.delete_outline_rounded,
-                    iconColor: Theme.of(context).colorScheme.error,
-                    iconBackgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.errorContainer.withValues(alpha: 0.3),
-                    content: buildDeleteConfirmationContent(
-                      context,
-                      itemName: task.name,
-                      description: context
-                          .l10n
-                          .deleteConfirmationIrreversibleDescription,
-                    ),
-                  );
-                  if (confirmed && context.mounted) {
-                    context.read<TaskDetailBloc>().add(
-                      TaskDetailEvent.delete(id: task.id),
-                    );
-                  }
                 },
                 trailingActions: _buildDetailActions(
                   context,

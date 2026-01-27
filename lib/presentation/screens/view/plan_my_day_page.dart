@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
@@ -244,17 +243,7 @@ class _PlanValuesStep extends StatelessWidget {
         (gateState as MyDayGateLoaded).needsValuesSetup;
 
     if (needsSetup) {
-      return TasklyFeedRenderer(
-        spec: TasklyFeedSpec.empty(
-          empty: TasklyEmptyStateSpec(
-            icon: Icons.star_border,
-            title: l10n.myDayUnlockSuggestionsTitle,
-            description: l10n.myDayUnlockSuggestionsBody,
-            actionLabel: l10n.myDayStartSetupLabel,
-            onAction: () => Routing.toScreenKey(context, 'values'),
-          ),
-        ),
-      );
+      return const MyDayValuesGate();
     }
 
     if (suggested.isEmpty) {
@@ -334,8 +323,10 @@ class _PlanValuesStep extends StatelessWidget {
               ),
               SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
-                'These suggestions balance your values and recent choices. '
-                'They are meant to be a gentle starting point.',
+                'These suggestions are ranked by the values you’ve set and '
+                'their priorities, so your day reflects who you want to be. '
+                'Recent completions gently shift which tasks rise next, while '
+                'the overall mix stays balanced across values.',
                 style: Theme.of(sheetContext).textTheme.bodyMedium,
               ),
             ],
@@ -688,8 +679,7 @@ String _stepTitle(BuildContext context, PlanMyDayStep step) {
 
 String _stepSubtitle(BuildContext context, PlanMyDayStep step) {
   return switch (step) {
-    PlanMyDayStep.valuesStep =>
-      'Pick tasks aligned to your values - balance what matters.',
+    PlanMyDayStep.valuesStep => 'Suggestions aligned with your values.',
     PlanMyDayStep.routines => 'Choose routines that support your values.',
     PlanMyDayStep.triage => 'Clear the urgent noise first.',
     PlanMyDayStep.summary => 'Confirm what you want to carry into today.',
@@ -787,8 +777,6 @@ TasklyRowSpec _buildRoutineRow(
 
   final labels = TasklyRoutineRowLabels(
     primaryActionLabel: primaryActionLabel,
-    pauseLabel: allowRemove ? null : context.l10n.routinePauseLabel,
-    editLabel: allowRemove ? null : context.l10n.routineEditLabel,
   );
 
   final dataRow = buildRoutineRowData(
@@ -822,16 +810,6 @@ TasklyRowSpec _buildRoutineRow(
                 selected: !allowRemove && !item.selected,
               ),
             ),
-      onPause: allowRemove
-          ? null
-          : () => _showRoutinePauseSheet(
-              context,
-              routine: routine,
-              dayKeyUtc: data.dayKeyUtc,
-            ),
-      onEdit: allowRemove
-          ? null
-          : () => Routing.toRoutineEdit(context, routine.id),
     ),
   );
 }
@@ -878,14 +856,19 @@ List<TasklyRowSpec> _buildSummaryRows(
     rows.add(
       TasklyRowSpec.header(
         key: 'plan-summary-triage-header',
-        title: 'Time-sensitive',
+        title: _stepTitle(context, PlanMyDayStep.triage),
         trailingLabel: triageOrdered.isEmpty ? null : '${triageOrdered.length}',
       ),
     );
     rows.add(
       TasklyRowSpec.subheader(
         key: 'plan-summary-triage-subtitle',
-        title: 'A few due items to clear space.',
+        title: _stepSubtitle(context, PlanMyDayStep.triage),
+      ),
+    );
+    rows.add(
+      TasklyRowSpec.divider(
+        key: 'plan-summary-triage-divider',
       ),
     );
     if (triageOrdered.isEmpty) {
@@ -927,14 +910,19 @@ List<TasklyRowSpec> _buildSummaryRows(
     rows.add(
       TasklyRowSpec.header(
         key: 'plan-summary-routines-header',
-        title: 'Routines',
+        title: _stepTitle(context, PlanMyDayStep.routines),
         trailingLabel: routineRows.isEmpty ? null : '${routineRows.length}',
       ),
     );
     rows.add(
       TasklyRowSpec.subheader(
         key: 'plan-summary-routines-subtitle',
-        title: 'Small routines that move the day forward.',
+        title: _stepSubtitle(context, PlanMyDayStep.routines),
+      ),
+    );
+    rows.add(
+      TasklyRowSpec.divider(
+        key: 'plan-summary-routines-divider',
       ),
     );
     if (routineRows.isEmpty) {
@@ -958,7 +946,7 @@ List<TasklyRowSpec> _buildSummaryRows(
     rows.add(
       TasklyRowSpec.header(
         key: 'plan-summary-values-header',
-        title: 'Values-guided',
+        title: _stepTitle(context, PlanMyDayStep.valuesStep),
         trailingLabel: suggestedOrdered.isEmpty
             ? null
             : '${suggestedOrdered.length}',
@@ -967,7 +955,12 @@ List<TasklyRowSpec> _buildSummaryRows(
     rows.add(
       TasklyRowSpec.subheader(
         key: 'plan-summary-values-subtitle',
-        title: 'Pick what feels most meaningful today.',
+        title: _stepSubtitle(context, PlanMyDayStep.valuesStep),
+      ),
+    );
+    rows.add(
+      TasklyRowSpec.divider(
+        key: 'plan-summary-values-divider',
       ),
     );
     if (suggestedOrdered.isEmpty) {
@@ -1007,90 +1000,6 @@ List<String> _orderedSelectedRoutineIds(PlanMyDayReady data) {
     if (!ordered.contains(routineId)) ordered.add(routineId);
   }
   return ordered;
-}
-
-Future<void> _showRoutinePauseSheet(
-  BuildContext context, {
-  required Routine routine,
-  required DateTime dayKeyUtc,
-}) async {
-  final l10n = context.l10n;
-  final nextWindow = _nextRoutineWindowStart(
-    routineType: routine.routineType,
-    dayKeyUtc: dayKeyUtc,
-  );
-  final formattedDate = MaterialLocalizations.of(
-    context,
-  ).formatMediumDate(nextWindow.toLocal());
-
-  await showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    builder: (sheetContext) {
-      return SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: Text(l10n.routinePauseSheetTitle),
-              subtitle: Text(l10n.routinePauseSheetSubtitle),
-            ),
-            ListTile(
-              leading: const Icon(Icons.pause_circle_outline),
-              title: Text(l10n.routinePauseUntilNextWindow(formattedDate)),
-              onTap: () {
-                Navigator.of(sheetContext).pop();
-                context.read<PlanMyDayBloc>().add(
-                  PlanMyDayPauseRoutineRequested(
-                    routineId: routine.id,
-                    pausedUntilUtc: nextWindow,
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_today_outlined),
-              title: Text(l10n.routinePausePickDate),
-              onTap: () async {
-                final today = dateOnly(dayKeyUtc);
-                final picked = await showDatePicker(
-                  context: sheetContext,
-                  initialDate: today.add(const Duration(days: 1)),
-                  firstDate: today.add(const Duration(days: 1)),
-                  lastDate: DateTime(today.year + 3, today.month, today.day),
-                );
-                if (picked == null || !sheetContext.mounted) return;
-                Navigator.of(sheetContext).pop();
-                context.read<PlanMyDayBloc>().add(
-                  PlanMyDayPauseRoutineRequested(
-                    routineId: routine.id,
-                    pausedUntilUtc: dateOnly(picked),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-DateTime _nextRoutineWindowStart({
-  required RoutineType routineType,
-  required DateTime dayKeyUtc,
-}) {
-  final today = dateOnly(dayKeyUtc);
-  switch (routineType) {
-    case RoutineType.weeklyFixed:
-    case RoutineType.weeklyFlexible:
-      final delta = today.weekday - DateTime.monday;
-      final weekStart = today.subtract(Duration(days: delta));
-      return weekStart.add(const Duration(days: 7));
-    case RoutineType.monthlyFixed:
-    case RoutineType.monthlyFlexible:
-      return DateTime.utc(today.year, today.month + 1);
-  }
 }
 
 Future<void> _showSnoozeSheet(
