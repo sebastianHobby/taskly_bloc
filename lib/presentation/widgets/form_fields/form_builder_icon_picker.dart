@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 final class _RecentIconNames {
   _RecentIconNames._();
@@ -136,6 +137,7 @@ class _IconPickerButton extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final iconData = selected != null ? getIconDataFromName(selected) : null;
+    final tokens = TasklyTokens.of(context);
 
     return InkWell(
       onTap: enabled
@@ -156,19 +158,22 @@ class _IconPickerButton extends StatelessWidget {
               }
             }
           : null,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(tokens.radiusMd),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spaceLg,
+          vertical: tokens.spaceMd,
+        ),
         child: Row(
           children: [
             Container(
-              width: iconSize + 16,
-              height: iconSize + 16,
+              width: iconSize + tokens.spaceLg,
+              height: iconSize + tokens.spaceLg,
               decoration: BoxDecoration(
                 color: iconData != null
                     ? colorScheme.surfaceContainerHighest
                     : colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(tokens.radiusMd),
                 border: iconData != null
                     ? Border.all(color: colorScheme.outlineVariant)
                     : Border.all(color: colorScheme.outlineVariant),
@@ -185,7 +190,7 @@ class _IconPickerButton extends StatelessWidget {
                       color: colorScheme.onSurfaceVariant,
                     ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: tokens.spaceMd),
             Expanded(
               child: Text(
                 iconData != null ? _getIconLabel(selected!) : hintText,
@@ -363,13 +368,19 @@ class _ValueIconPickerSheetState extends State<_ValueIconPickerSheet> {
     final cs = theme.colorScheme;
     final media = MediaQuery.of(context);
     final filteredIcons = _filteredIcons;
+    final tokens = TasklyTokens.of(context);
 
     return SizedBox(
       height: media.size.height * 0.9,
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+            padding: EdgeInsets.fromLTRB(
+              tokens.spaceLg,
+              tokens.spaceSm,
+              tokens.spaceSm,
+              tokens.spaceSm,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -390,7 +401,10 @@ class _ValueIconPickerSheetState extends State<_ValueIconPickerSheet> {
           ),
 
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spaceLg,
+              vertical: tokens.spaceSm,
+            ),
             child: TextField(
               controller: _controller,
               decoration: InputDecoration(
@@ -411,7 +425,7 @@ class _ValueIconPickerSheetState extends State<_ValueIconPickerSheet> {
                 filled: true,
                 fillColor: cs.surfaceContainerLow,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(tokens.radiusMd),
                   borderSide: BorderSide.none,
                 ),
               ),
@@ -419,11 +433,11 @@ class _ValueIconPickerSheetState extends State<_ValueIconPickerSheet> {
             ),
           ),
 
-          const SizedBox(height: 10),
+          SizedBox(height: tokens.spaceMd),
 
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: tokens.spaceLg),
             child: Row(
               children: [
                 FilterChip(
@@ -431,10 +445,10 @@ class _ValueIconPickerSheetState extends State<_ValueIconPickerSheet> {
                   selected: _selectedCategory == null,
                   onSelected: (_) => setState(() => _selectedCategory = null),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: tokens.spaceSm),
                 ...defaultIconCategories.map(
                   (cat) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
+                    padding: EdgeInsets.only(right: tokens.spaceSm),
                     child: FilterChip(
                       label: Text(cat.label),
                       selected: _selectedCategory == cat.name,
@@ -450,7 +464,7 @@ class _ValueIconPickerSheetState extends State<_ValueIconPickerSheet> {
             ),
           ),
 
-          const SizedBox(height: 10),
+          SizedBox(height: tokens.spaceMd),
 
           Expanded(
             child: _query.trim().isEmpty && _selectedCategory == null
@@ -500,7 +514,12 @@ class _IconSectionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceSm,
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceLg,
+      ),
       children: [
         _IconSection(
           title: suggestedLabel,
@@ -508,19 +527,20 @@ class _IconSectionsList extends StatelessWidget {
           selectedIcon: selectedIcon,
         ),
         if (recent.isNotEmpty) ...[
-          const SizedBox(height: 16),
+          SizedBox(height: TasklyTokens.of(context).spaceMd),
           _IconSection(
             title: recentLabel,
             icons: recent,
             selectedIcon: selectedIcon,
           ),
         ],
-        const SizedBox(height: 16),
+        SizedBox(height: TasklyTokens.of(context).spaceMd),
         _IconGrid(
           icons: all,
           selectedIcon: selectedIcon,
           emptyLabel: noIconsFoundLabel,
           title: allLabel,
+          shrinkWrap: true,
         ),
       ],
     );
@@ -542,8 +562,9 @@ class _IconSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
-    if (icons.isEmpty) return const SizedBox.shrink();
+    if (icons.isEmpty) return SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,7 +576,7 @@ class _IconSection extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: tokens.spaceSm),
         _IconGrid(
           icons: icons,
           selectedIcon: selectedIcon,
@@ -586,13 +607,14 @@ class _IconGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
     final crossAxisCount = MediaQuery.sizeOf(context).width < 480 ? 6 : 8;
 
     if (icons.isEmpty) {
-      if (emptyLabel.isEmpty) return const SizedBox.shrink();
+      if (emptyLabel.isEmpty) return SizedBox.shrink();
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(tokens.spaceLg),
           child: Text(
             emptyLabel,
             style: theme.textTheme.bodyMedium?.copyWith(
@@ -609,8 +631,8 @@ class _IconGrid extends StatelessWidget {
       physics: shrinkWrap ? const NeverScrollableScrollPhysics() : null,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
+        mainAxisSpacing: tokens.spaceSm2,
+        crossAxisSpacing: tokens.spaceSm2,
       ),
       itemCount: icons.length,
       itemBuilder: (context, index) {
@@ -620,13 +642,13 @@ class _IconGrid extends StatelessWidget {
           message: icon.label,
           child: Material(
             color: selected ? cs.primaryContainer : cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
             child: InkWell(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(tokens.radiusMd),
               onTap: () => Navigator.of(context).pop(icon.name),
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(tokens.radiusMd),
                   border: Border.all(
                     color: selected ? cs.primary : cs.outlineVariant,
                     width: selected ? 2 : 1,
@@ -656,7 +678,7 @@ class _IconGrid extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: tokens.spaceSm),
         SizedBox(
           height: shrinkWrap ? null : double.infinity,
           child: grid,

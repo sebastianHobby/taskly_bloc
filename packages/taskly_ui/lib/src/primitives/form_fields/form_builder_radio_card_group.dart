@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 /// A generic radio card group for FormBuilder.
 ///
 /// Displays options as selectable cards with icons, titles, and descriptions.
@@ -55,6 +57,8 @@ class FormBuilderRadioCardGroup<T> extends StatelessWidget {
       '(taskly_ui does not hardcode user-facing strings).',
     );
 
+    final tokens = TasklyTokens.of(context);
+
     return FormBuilderField<T>(
       name: name,
       initialValue: initialValue,
@@ -67,7 +71,7 @@ class FormBuilderRadioCardGroup<T> extends StatelessWidget {
             final isRecommended = option.value == recommendedValue;
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.only(bottom: tokens.spaceSm),
               child: _RadioCard<T>(
                 option: option,
                 isSelected: isSelected,
@@ -142,11 +146,12 @@ class _RadioCard<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Card(
       elevation: isSelected ? 4 : 1,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
         side: BorderSide(
           color: isSelected ? colorScheme.primary : colorScheme.outline,
           width: isSelected ? 2 : 1,
@@ -154,9 +159,9 @@ class _RadioCard<T> extends StatelessWidget {
       ),
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(tokens.spaceLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -165,7 +170,7 @@ class _RadioCard<T> extends StatelessWidget {
                   if (option.emoji != null)
                     Text(
                       option.emoji!,
-                      style: const TextStyle(fontSize: 24),
+                      style: theme.textTheme.headlineSmall,
                     )
                   else
                     Icon(
@@ -174,7 +179,7 @@ class _RadioCard<T> extends StatelessWidget {
                           ? colorScheme.primary
                           : colorScheme.onSurfaceVariant,
                     ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: tokens.spaceMd),
                   Expanded(
                     child: Text(
                       option.title,
@@ -197,7 +202,7 @@ class _RadioCard<T> extends StatelessWidget {
                     ),
                   if (isSelected)
                     Padding(
-                      padding: const EdgeInsets.only(left: 8),
+                      padding: EdgeInsets.only(left: tokens.spaceSm),
                       child: Icon(
                         Icons.check_circle,
                         color: colorScheme.primary,
@@ -206,7 +211,7 @@ class _RadioCard<T> extends StatelessWidget {
                 ],
               ),
               if (option.description != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: tokens.spaceSm),
                 Text(
                   option.description!,
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -215,21 +220,21 @@ class _RadioCard<T> extends StatelessWidget {
                 ),
               ],
               if (option.warningText != null && isSelected) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: tokens.spaceSm),
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(tokens.spaceSm),
                   decoration: BoxDecoration(
                     color: colorScheme.errorContainer.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(tokens.radiusSm),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.warning_amber_rounded,
-                        size: 16,
+                        size: tokens.spaceLg,
                         color: colorScheme.error,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: tokens.spaceSm),
                       Expanded(
                         child: Text(
                           option.warningText!,
@@ -243,7 +248,7 @@ class _RadioCard<T> extends StatelessWidget {
                 ),
               ],
               if (option.expandedContent != null && isSelected) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: tokens.spaceMd),
                 option.expandedContent!,
               ],
             ],

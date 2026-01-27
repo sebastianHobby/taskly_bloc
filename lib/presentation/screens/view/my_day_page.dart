@@ -18,7 +18,6 @@ import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
-import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
@@ -31,6 +30,7 @@ import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 enum _MyDayMode { execute, plan }
 
@@ -186,7 +186,12 @@ class _MyDayLoadedBody extends StatelessWidget {
             SafeArea(
               bottom: false,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                padding: EdgeInsets.fromLTRB(
+                  TasklyTokens.of(context).spaceLg,
+                  TasklyTokens.of(context).spaceXs2,
+                  TasklyTokens.of(context).spaceLg,
+                  0,
+                ),
                 children: [
                   if (reviewReady) ...[
                     _WeeklyReviewBanner(
@@ -197,7 +202,7 @@ class _MyDayLoadedBody extends StatelessWidget {
                       onSettings: () =>
                           Routing.toScreenKey(context, 'settings'),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                   ],
                   _MyDayHeaderRow(
                     today: today,
@@ -205,7 +210,7 @@ class _MyDayLoadedBody extends StatelessWidget {
                     showPlanned: showPlanned,
                     onUpdatePlan: onOpenPlan,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   _MyDayTaskList(
                     today: today,
                     plannedItems: plannedItems,
@@ -257,7 +262,9 @@ class _MyDayHeaderRow extends StatelessWidget {
             TextButton(
               onPressed: onUpdatePlan,
               style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: EdgeInsets.symmetric(
+                  horizontal: TasklyTokens.of(context).spaceLg,
+                ),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 textStyle: theme.textTheme.labelLarge?.copyWith(
@@ -289,16 +296,6 @@ class _MyDayTaskList extends StatefulWidget {
 }
 
 class _MyDayTaskListState extends State<_MyDayTaskList> {
-  final Set<String> _collapsedValueKeys = <String>{};
-
-  void _toggleValueCollapsed(String key) {
-    setState(() {
-      if (!_collapsedValueKeys.add(key)) {
-        _collapsedValueKeys.remove(key);
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final selection = context.read<SelectionCubit>();
@@ -377,31 +374,6 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
     final groupedRows = <TasklyRowSpec>[];
 
     for (final group in groups) {
-      final key = _myDayValueKey(group.valueId);
-      final value = group.value;
-      final chip =
-          value?.toChipData(context) ?? _myDayMissingValueChip(context);
-      final valueName = value?.name.trim();
-      final headerTitle = (valueName?.isNotEmpty ?? false)
-          ? valueName!
-          : context.l10n.valueMissingLabel;
-      final priorityLabel = _valuePriorityLabel(context, value?.priority);
-      final countLabel = group.entries.length.toString();
-      final isCollapsed = _collapsedValueKeys.contains(key);
-
-      groupedRows.add(
-        TasklyRowSpec.valueHeader(
-          key: 'myday-value-$key',
-          depth: 0,
-          title: headerTitle,
-          leadingChip: chip,
-          trailingLabel: countLabel,
-          priorityLabel: priorityLabel,
-          isCollapsed: isCollapsed,
-          onToggleCollapsed: () => _toggleValueCollapsed(key),
-        ),
-      );
-
       final routineEntries =
           group.entries
               .where((entry) => entry.item.type == MyDayPlannedItemType.routine)
@@ -448,7 +420,7 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
               snapshot: snapshot,
               completed: item.completed,
               badges: badges,
-              depthOffset: 1,
+              depthOffset: 0,
             ),
           );
           continue;
@@ -464,7 +436,7 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
             context,
             task,
             badges: badges,
-            depthOffset: 1,
+            depthOffset: 0,
           ),
         );
       }
@@ -488,7 +460,7 @@ class _MyDayErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -497,7 +469,7 @@ class _MyDayErrorState extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
             Text(
               'Your tasks are safe. Please try again.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -505,7 +477,7 @@ class _MyDayErrorState extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
             FilledButton(
               onPressed: onRetry,
               child: const Text('Retry'),
@@ -534,19 +506,24 @@ class _WeeklyReviewBanner extends StatelessWidget {
 
     return Material(
       color: scheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         onTap: onReview,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+          padding: EdgeInsets.fromLTRB(
+            TasklyTokens.of(context).spaceMd,
+            TasklyTokens.of(context).spaceSm2,
+            TasklyTokens.of(context).spaceSm2,
+            TasklyTokens.of(context).spaceSm2,
+          ),
           child: Row(
             children: [
               Icon(
                 Icons.auto_awesome,
                 color: scheme.primary,
               ),
-              const SizedBox(width: 10),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Expanded(
                 child: Text(
                   'Weekly review is ready. Take 3 minutes to reset.',
@@ -555,7 +532,7 @@ class _WeeklyReviewBanner extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               TextButton(
                 onPressed: onSettings,
                 child: Text(l10n.settingsTitle),
@@ -599,27 +576,6 @@ String _myDayValueKey(String? valueId) {
   final trimmed = valueId?.trim();
   if (trimmed == null || trimmed.isEmpty) return '_myday_value_none';
   return trimmed;
-}
-
-ValueChipData _myDayMissingValueChip(BuildContext context) {
-  final scheme = Theme.of(context).colorScheme;
-  final l10n = context.l10n;
-
-  return ValueChipData(
-    label: l10n.valueMissingLabel,
-    color: scheme.primary,
-    icon: Icons.star_border,
-    semanticLabel: l10n.valueMissingLabel,
-  );
-}
-
-String? _valuePriorityLabel(BuildContext context, ValuePriority? priority) {
-  return switch (priority) {
-    ValuePriority.high => context.l10n.valuePriorityHighLabel,
-    ValuePriority.medium => context.l10n.valuePriorityMediumLabel,
-    ValuePriority.low => context.l10n.valuePriorityLowLabel,
-    null => null,
-  };
 }
 
 final class _MyDayListEntry {

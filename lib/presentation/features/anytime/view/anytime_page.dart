@@ -9,16 +9,16 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
-import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
+import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
-import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_feed_bloc.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_screen_bloc.dart';
@@ -124,7 +124,7 @@ class _AnytimeViewState extends State<_AnytimeView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final chrome = TasklyChromeTheme.of(context);
+    final chrome = TasklyTokens.of(context);
     final iconButtonStyle = IconButton.styleFrom(
       backgroundColor: scheme.surfaceContainerHighest.withValues(
         alpha: chrome.iconButtonBackgroundAlpha,
@@ -151,17 +151,6 @@ class _AnytimeViewState extends State<_AnytimeView> {
           listener: (context, state) {
             context.read<AnytimeFeedBloc>().add(
               AnytimeFeedInboxCollapsedChanged(collapsed: state.inboxCollapsed),
-            );
-          },
-        ),
-        BlocListener<AnytimeScreenBloc, AnytimeScreenState>(
-          listenWhen: (prev, next) =>
-              !_sameSet(prev.collapsedValueIds, next.collapsedValueIds),
-          listener: (context, state) {
-            context.read<AnytimeFeedBloc>().add(
-              AnytimeFeedValueCollapsedChanged(
-                collapsedValueIds: state.collapsedValueIds,
-              ),
             );
           },
         ),
@@ -220,7 +209,9 @@ class _AnytimeViewState extends State<_AnytimeView> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const Text('Anytime'),
-                              const SizedBox(height: 2),
+                              SizedBox(
+                                height: TasklyTokens.of(context).spaceSm,
+                              ),
                               Text(
                                 "Plan what's next",
                                 style: theme.textTheme.labelMedium?.copyWith(
@@ -269,9 +260,7 @@ class _AnytimeViewState extends State<_AnytimeView> {
                 ),
                 Expanded(
                   child: BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
-                    buildWhen: (p, n) =>
-                        p.searchQuery != n.searchQuery ||
-                        !_sameSet(p.collapsedValueIds, n.collapsedValueIds),
+                    buildWhen: (p, n) => p.searchQuery != n.searchQuery,
                     builder: (context, screenState) {
                       return BlocBuilder<AnytimeFeedBloc, AnytimeFeedState>(
                         builder: (context, state) {
@@ -303,7 +292,6 @@ class _AnytimeViewState extends State<_AnytimeView> {
                                   rows: _buildStandardRows(
                                     context,
                                     rows,
-                                    screenState.collapsedValueIds,
                                   ),
                                 ),
                               );
@@ -313,7 +301,9 @@ class _AnytimeViewState extends State<_AnytimeView> {
 
                           return TasklyFeedRenderer(
                             spec: spec,
-                            padding: AppSpacing.screenHorizontal,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: chrome.spaceLg,
+                            ),
                           );
                         },
                       );
@@ -374,31 +364,9 @@ TasklyEmptyStateSpec _buildEmptySpec(
   );
 }
 
-ValueChipData _missingValueChip(BuildContext context) {
-  final scheme = Theme.of(context).colorScheme;
-  final l10n = context.l10n;
-
-  return ValueChipData(
-    label: l10n.valueMissingLabel,
-    color: scheme.primary,
-    icon: Icons.star_border,
-    semanticLabel: l10n.valueMissingLabel,
-  );
-}
-
-String? _valuePriorityLabel(BuildContext context, ValuePriority? priority) {
-  return switch (priority) {
-    ValuePriority.high => context.l10n.valuePriorityHighLabel,
-    ValuePriority.medium => context.l10n.valuePriorityMediumLabel,
-    ValuePriority.low => context.l10n.valuePriorityLowLabel,
-    null => null,
-  };
-}
-
 List<TasklyRowSpec> _buildStandardRows(
   BuildContext context,
   List<ListRowUiModel> rows,
-  Set<String> collapsedValueIds,
 ) {
   final selection = context.read<SelectionCubit>();
 
@@ -425,37 +393,6 @@ List<TasklyRowSpec> _buildStandardRows(
   final specs = <TasklyRowSpec>[];
 
   for (final row in rows) {
-    if (row is ValueHeaderRowUiModel) {
-      final chip = row.value?.toChipData(context) ?? _missingValueChip(context);
-      final valueName = row.value?.name.trim();
-      final title = (valueName?.isNotEmpty ?? false)
-          ? valueName!
-          : row.title.isNotEmpty
-          ? row.title
-          : context.l10n.valueMissingLabel;
-      final priorityLabel = _valuePriorityLabel(context, row.priority);
-      final countLabel = row.activeCount > 0 ? '${row.activeCount}' : null;
-      final isCollapsed = collapsedValueIds.contains(row.valueKey);
-
-      specs.add(
-        TasklyRowSpec.valueHeader(
-          key: row.rowKey,
-          depth: row.depth,
-          title: title,
-          leadingChip: chip,
-          trailingLabel: countLabel,
-          priorityLabel: priorityLabel,
-          isCollapsed: isCollapsed,
-          onToggleCollapsed: () {
-            context.read<AnytimeScreenBloc>().add(
-              AnytimeValueHeaderToggled(valueKey: row.valueKey),
-            );
-          },
-        ),
-      );
-      continue;
-    }
-
     if (row is! ProjectRowUiModel) continue;
 
     final data = row.project == null
@@ -488,7 +425,7 @@ List<TasklyRowSpec> _buildStandardRows(
     specs.add(
       TasklyRowSpec.project(
         key: row.rowKey,
-        depth: row.depth + 1,
+        depth: row.depth,
         data: data,
         preset: preset,
         actions: actions,
@@ -497,12 +434,6 @@ List<TasklyRowSpec> _buildStandardRows(
   }
 
   return specs;
-}
-
-bool _sameSet(Set<String> a, Set<String> b) {
-  if (identical(a, b)) return true;
-  if (a.length != b.length) return false;
-  return a.containsAll(b);
 }
 
 class _AnytimeValuesAndFiltersRow extends StatelessWidget {
@@ -567,7 +498,7 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
               ],
             );
           },
@@ -600,7 +531,7 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chrome = TasklyChromeTheme.of(context);
+    final chrome = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
     final fg = selected ? selectedTextColor : textColor;
     final bg = selected ? selectedColor : backgroundColor;
@@ -626,11 +557,14 @@ class _FilterPill extends StatelessWidget {
             children: [
               if (leadingIcon != null) ...[
                 Icon(leadingIcon, size: chrome.filterPillIconSize, color: fg),
-                const SizedBox(width: 6),
+                SizedBox(width: chrome.spaceXs2),
               ],
               Text(
                 label,
-                style: chrome.filterPillTextStyle.copyWith(color: fg),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: fg,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),

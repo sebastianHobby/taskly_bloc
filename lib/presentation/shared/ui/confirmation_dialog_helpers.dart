@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Builds the delete confirmation content with a highlighted item name.
 Widget buildDeleteConfirmationContent(
@@ -41,7 +42,7 @@ Widget buildDeleteConfirmationContent(
         ),
       ),
       if (description != null) ...[
-        const SizedBox(height: 12),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         Text(
           description,
           textAlign: TextAlign.center,

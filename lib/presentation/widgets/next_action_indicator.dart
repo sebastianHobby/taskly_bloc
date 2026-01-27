@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// A visual indicator showing that a task is marked as a "Next Action".
 ///
@@ -26,29 +27,30 @@ class NextActionIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     final iconSize = switch (size) {
-      NextActionIndicatorSize.small => 14.0,
-      NextActionIndicatorSize.medium => 18.0,
-      NextActionIndicatorSize.large => 22.0,
+      NextActionIndicatorSize.small => tokens.spaceMd2,
+      NextActionIndicatorSize.medium => tokens.spaceLg2,
+      NextActionIndicatorSize.large => tokens.spaceXl - tokens.spaceXxs,
     };
 
     final padding = switch (size) {
-      NextActionIndicatorSize.small => const EdgeInsets.all(4),
-      NextActionIndicatorSize.medium => const EdgeInsets.all(6),
-      NextActionIndicatorSize.large => const EdgeInsets.all(8),
+      NextActionIndicatorSize.small => EdgeInsets.all(tokens.spaceXs),
+      NextActionIndicatorSize.medium => EdgeInsets.all(tokens.spaceXs2),
+      NextActionIndicatorSize.large => EdgeInsets.all(tokens.spaceSm),
     };
 
     return Tooltip(
       message: context.l10n.nextActionsTitle,
       child: InkWell(
         onTap: showInfoOnTap ? () => _showInfoDialog(context) : null,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(tokens.radiusSm),
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
             color: colorScheme.primaryContainer.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(tokens.radiusSm),
             border: Border.all(
               color: colorScheme.primary.withValues(alpha: 0.3),
             ),
@@ -93,12 +95,13 @@ class _NextActionInfoDialog extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
+    final tokens = TasklyTokens.of(context);
 
     return AlertDialog(
       icon: Icon(
         Icons.push_pin,
         color: colorScheme.primary,
-        size: 32,
+        size: tokens.spaceXxl,
       ),
       title: Text(l10n.nextActionsTitle),
       content: Column(
@@ -109,17 +112,17 @@ class _NextActionInfoDialog extends StatelessWidget {
             'This task is marked as a Next Action.',
             style: theme.textTheme.bodyLarge,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: tokens.spaceLg),
           _InfoRow(
             icon: Icons.star_outline,
             text: 'Next Actions appear in your daily focus list',
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: tokens.spaceSm),
           _InfoRow(
             icon: Icons.priority_high,
             text: 'They override the automatic allocation algorithm',
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: tokens.spaceSm),
           _InfoRow(
             icon: Icons.sort,
             text: 'Sorted by deadline (most urgent first)',
@@ -154,16 +157,17 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
           icon,
-          size: 18,
+          size: tokens.spaceLg2,
           color: colorScheme.primary,
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: tokens.spaceMd),
         Expanded(
           child: Text(
             text,

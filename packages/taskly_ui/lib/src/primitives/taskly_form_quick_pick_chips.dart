@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/forms/taskly_form_preset.dart';
 import 'package:taskly_ui/src/primitives/taskly_form_row_group.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 @immutable
 class TasklyFormQuickPickItem {
@@ -29,20 +30,21 @@ class TasklyFormQuickPickChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return TasklyFormRowGroup(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: tokens.spaceSm,
+      runSpacing: tokens.spaceSm,
       children: [
         for (final item in items)
           Material(
             color: item.emphasized
                 ? scheme.surfaceContainerHigh
                 : scheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(tokens.radiusPill),
             child: InkWell(
               onTap: item.onTap,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(tokens.radiusPill),
               child: Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: preset.chip.padding.horizontal / 2,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Settings control that lets users pick an accent seed color from a curated
 /// set, with a live preview.
@@ -31,21 +32,26 @@ class AccentPaletteGallery extends StatelessWidget {
     final selectedScheme = (selected ?? palettes.first).schemeFor(brightness);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceSm,
+        TasklyTokens.of(context).spaceLg,
+        0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 4),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           _PalettePreviewCard(colorScheme: selectedScheme),
-          const SizedBox(height: 12),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           LayoutBuilder(
             builder: (context, constraints) {
               final width = constraints.maxWidth;
@@ -94,7 +100,7 @@ class _PalettePreviewCard extends StatelessWidget {
       child: Card(
         margin: EdgeInsets.zero,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -105,7 +111,9 @@ class _PalettePreviewCard extends StatelessWidget {
                     height: 28,
                     decoration: BoxDecoration(
                       color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(
+                        TasklyTokens.of(context).radiusMd,
+                      ),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
@@ -114,7 +122,7 @@ class _PalettePreviewCard extends StatelessWidget {
                       color: colorScheme.onPrimaryContainer,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Expanded(
                     child: Text(
                       'Preview',
@@ -127,12 +135,14 @@ class _PalettePreviewCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Card(
                 margin: EdgeInsets.zero,
                 child: ListTile(
                   dense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: TasklyTokens.of(context).spaceLg,
+                  ),
                   leading: CircleAvatar(
                     radius: 12,
                     backgroundColor: colorScheme.secondaryContainer,
@@ -150,7 +160,7 @@ class _PalettePreviewCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -199,17 +209,19 @@ class _PaletteCard extends StatelessWidget {
 
     return Material(
       color: scheme.surface,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(
+              TasklyTokens.of(context).radiusMd,
+            ),
             border: Border.all(color: borderColor, width: borderWidth),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -261,7 +273,7 @@ class _SwatchesRow extends StatelessWidget {
       children: [
         for (final color in swatches)
           Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: EdgeInsets.only(bottom: TasklyTokens.of(context).spaceSm),
             child: Container(
               width: 14,
               height: 14,

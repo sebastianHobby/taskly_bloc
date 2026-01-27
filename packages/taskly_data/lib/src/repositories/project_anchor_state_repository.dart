@@ -65,17 +65,19 @@ final class ProjectAnchorStateRepository
           for (final projectId in ids) {
             final anchorId = idByProjectId[projectId]!;
 
-            await _db.into(_db.projectAnchorStateTable).insert(
-              ProjectAnchorStateTableCompanion.insert(
-                id: anchorId,
-                projectId: projectId,
-                lastAnchoredAt: anchoredAtUtc,
-                createdAt: Value(now),
-                updatedAt: Value(now),
-                psMetadata: Value(psMetadata),
-              ),
-              mode: InsertMode.insertOrIgnore,
-            );
+            await _db
+                .into(_db.projectAnchorStateTable)
+                .insert(
+                  ProjectAnchorStateTableCompanion.insert(
+                    id: anchorId,
+                    projectId: projectId,
+                    lastAnchoredAt: anchoredAtUtc,
+                    createdAt: Value(now),
+                    updatedAt: Value(now),
+                    psMetadata: Value(psMetadata),
+                  ),
+                  mode: InsertMode.insertOrIgnore,
+                );
 
             await (_db.update(
               _db.projectAnchorStateTable,

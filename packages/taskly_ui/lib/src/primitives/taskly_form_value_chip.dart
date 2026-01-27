@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/forms/taskly_form_preset.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 @immutable
 class TasklyFormValueChipModel {
@@ -36,6 +37,7 @@ class TasklyFormValueChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
     final color = model.color.withValues(alpha: 0.95);
 
     final bg = isSelected
@@ -68,7 +70,7 @@ class TasklyFormValueChip extends StatelessWidget {
                 borderColor: borderColor,
                 size: preset.iconSize + 2,
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: tokens.spaceXs2),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 180),
                 child: Text(
@@ -83,7 +85,7 @@ class TasklyFormValueChip extends StatelessWidget {
                 ),
               ),
               if (isSelected) ...[
-                const SizedBox(width: 6),
+                SizedBox(width: tokens.spaceXs2),
                 Icon(
                   Icons.check,
                   size: preset.iconSize,

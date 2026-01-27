@@ -12,12 +12,12 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
-import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class ProjectDetailPage extends StatelessWidget {
   const ProjectDetailPage({
@@ -75,7 +75,7 @@ class _ProjectDetailView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chrome = TasklyChromeTheme.of(context);
+    final chrome = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
     final iconButtonStyle = IconButton.styleFrom(
       backgroundColor: scheme.surfaceContainerHighest.withValues(
@@ -246,10 +246,15 @@ class _ProjectDetailBody extends StatelessWidget {
     ];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceSm,
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceXl,
+      ),
       children: [
         TasklyFeedRenderer.buildRow(headerRow, context: context),
-        const SizedBox(height: 12),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         if (!isInbox)
           _ProjectNextActionsSection(
             entries: nextActionEntries,
@@ -270,7 +275,7 @@ class _ProjectDetailBody extends StatelessWidget {
               entries: entries,
             ),
           ),
-        if (!isInbox) const SizedBox(height: 12),
+        if (!isInbox) SizedBox(height: TasklyTokens.of(context).spaceSm),
         TasklyFeedRenderer.buildSection(
           TasklySectionSpec.standardList(id: 'project-detail', rows: rows),
         ),
@@ -362,7 +367,12 @@ class _ProjectDetailBody extends StatelessWidget {
         return SafeArea(
           child: ListView(
             shrinkWrap: true,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+            padding: EdgeInsets.fromLTRB(
+              TasklyTokens.of(context).spaceLg,
+              0,
+              TasklyTokens.of(context).spaceLg,
+              TasklyTokens.of(context).spaceXl,
+            ),
             children: [
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -371,7 +381,9 @@ class _ProjectDetailBody extends StatelessWidget {
               ),
               if (rows.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(top: 12),
+                  padding: EdgeInsets.only(
+                    bottom: TasklyTokens.of(context).spaceSm,
+                  ),
                   child: Text(
                     l10n.projectNextActionsEmptyLabel,
                     style: Theme.of(sheetContext).textTheme.bodyMedium
@@ -385,7 +397,7 @@ class _ProjectDetailBody extends StatelessWidget {
               else
                 for (final row in rows) ...[
                   TasklyFeedRenderer.buildRow(row, context: sheetContext),
-                  const SizedBox(height: 8),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                 ],
             ],
           ),
@@ -643,7 +655,10 @@ class _ProjectNextActionsSectionState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(left: 4, top: 16),
+                  padding: EdgeInsets.only(
+                    left: TasklyTokens.of(context).spaceXs,
+                    top: TasklyTokens.of(context).spaceLg,
+                  ),
                   child: ReorderableDragStartListener(
                     index: index,
                     child: Icon(
@@ -652,7 +667,7 @@ class _ProjectNextActionsSectionState
                     ),
                   ),
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: TasklyTokens.of(context).spaceSm),
                 Expanded(child: row),
               ],
             ),
@@ -665,7 +680,7 @@ class _ProjectNextActionsSectionState
       children: [
         TasklyFeedRenderer.buildRow(header, context: context),
         TasklyFeedRenderer.buildRow(pickerRow, context: context),
-        const SizedBox(height: 6),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         if (rows.isEmpty)
           TasklyFeedRenderer.buildRow(
             TasklyRowSpec.subheader(

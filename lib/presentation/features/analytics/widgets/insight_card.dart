@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class InsightCard extends StatelessWidget {
   const InsightCard({
@@ -19,16 +20,16 @@ class InsightCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   _buildInsightIcon(context),
-                  const SizedBox(width: 12),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,7 +40,7 @@ class InsightCard extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
                         Text(
                           _getInsightTypeLabel(),
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -58,12 +59,12 @@ class InsightCard extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
                 insight.description,
                 style: theme.textTheme.bodyMedium,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Row(
                 children: [
                   if (insight.confidence != null) ...[
@@ -72,21 +73,21 @@ class InsightCard extends StatelessWidget {
                       size: 14,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
                       '${(insight.confidence! * 100).toStringAsFixed(0)}% confidence',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                   ],
                   Icon(
                     Icons.calendar_today,
                     size: 14,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Text(
                     _formatDateRange(),
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -110,7 +111,7 @@ class InsightCard extends StatelessWidget {
       height: 48,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
       ),
       child: Icon(
         _getInsightIcon(),

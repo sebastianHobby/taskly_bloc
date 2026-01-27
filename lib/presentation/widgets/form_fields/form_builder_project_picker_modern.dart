@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// A modern dropdown field for selecting projects with consistent styling.
 ///
@@ -39,6 +40,7 @@ class FormBuilderProjectPickerModern extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     final options = <DropdownMenuItem<String>>[
       if (allowNoProject)
@@ -49,10 +51,10 @@ class FormBuilderProjectPickerModern extends StatelessWidget {
               Container(
                 width: 24,
                 height: 24,
-                margin: const EdgeInsets.only(right: 12),
+                margin: EdgeInsets.only(right: tokens.spaceMd),
                 decoration: BoxDecoration(
                   color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(tokens.radiusSm),
                 ),
                 child: Icon(
                   Icons.folder_off_outlined,
@@ -77,10 +79,10 @@ class FormBuilderProjectPickerModern extends StatelessWidget {
               Container(
                 width: 24,
                 height: 24,
-                margin: const EdgeInsets.only(right: 12),
+                margin: EdgeInsets.only(right: tokens.spaceMd),
                 decoration: BoxDecoration(
                   color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(tokens.radiusSm),
                 ),
                 child: Icon(
                   Icons.folder,
@@ -97,7 +99,7 @@ class FormBuilderProjectPickerModern extends StatelessWidget {
               ),
               if (project.completed)
                 Container(
-                  margin: const EdgeInsets.only(left: 8),
+                  margin: EdgeInsets.only(left: tokens.spaceSm),
                   child: Icon(
                     Icons.check_circle,
                     size: 16,
@@ -111,9 +113,9 @@ class FormBuilderProjectPickerModern extends StatelessWidget {
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 8,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceLg,
+        vertical: tokens.spaceSm,
       ),
       child: FormBuilderDropdown<String>(
         name: name,
@@ -131,41 +133,41 @@ class FormBuilderProjectPickerModern extends StatelessWidget {
           filled: true,
           fillColor: colorScheme.surfaceContainerLow,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
             borderSide: BorderSide(
               color: colorScheme.outline.withValues(alpha: 0.3),
             ),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
             borderSide: BorderSide(
               color: colorScheme.outline.withValues(alpha: 0.3),
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
             borderSide: BorderSide(
               color: colorScheme.primary,
               width: 2,
             ),
           ),
           errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
             borderSide: BorderSide(
               color: colorScheme.error,
               width: 2,
             ),
           ),
           focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
             borderSide: BorderSide(
               color: colorScheme.error,
               width: 2,
             ),
           ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: tokens.spaceLg,
+            vertical: tokens.spaceMd,
           ),
         ),
       ),

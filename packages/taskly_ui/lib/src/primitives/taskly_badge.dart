@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 enum TasklyBadgeStyle {
   solid,
@@ -23,6 +24,8 @@ class TasklyBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final textTheme = Theme.of(context).textTheme;
     final bool hasFill = style != TasklyBadgeStyle.outline;
     final bool hasBorder = style != TasklyBadgeStyle.solid;
 
@@ -39,10 +42,13 @@ class TasklyBadge extends StatelessWidget {
     };
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceSm,
+        vertical: tokens.spaceXs,
+      ),
       decoration: BoxDecoration(
         color: hasFill ? color.withValues(alpha: fillOpacity) : null,
-        borderRadius: borderRadius ?? BorderRadius.circular(99),
+        borderRadius: borderRadius ?? BorderRadius.circular(tokens.radiusPill),
         border: hasBorder
             ? Border.all(color: color.withValues(alpha: borderOpacity))
             : null,
@@ -52,14 +58,13 @@ class TasklyBadge extends StatelessWidget {
         children: [
           if (icon != null) ...[
             Icon(icon, size: 12, color: color),
-            const SizedBox(width: 4),
+            SizedBox(width: tokens.spaceXs),
           ],
           Text(
             label,
-            style: TextStyle(
+            style: textTheme.labelSmall?.copyWith(
               color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

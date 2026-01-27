@@ -40,6 +40,11 @@ Entity rows expose three kinds of inputs:
     pinned, primaryValueIconOnly)
   - keeps these facts explicit rather than re-introducing ad-hoc knobs
 
+Implementation note:
+
+- Visual layout (spacing, radii, elevation) must be driven by `TasklyTokens`,
+  not widget-level constants.
+
 ## 3) Guidance
 
 This is a descriptive guide. The canonical rules live in:

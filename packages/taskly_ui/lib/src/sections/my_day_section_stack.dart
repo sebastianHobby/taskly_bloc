@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/feed/taskly_feed_renderer.dart';
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 final class TasklyMyDayEmptyState {
   const TasklyMyDayEmptyState({
@@ -140,6 +141,7 @@ class TasklyMyDaySectionStack extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
     final pinned = this.pinned;
     final pinnedConfig = pinned;
     final timeSensitive = this.timeSensitive;
@@ -155,9 +157,9 @@ class TasklyMyDaySectionStack extends StatelessWidget {
 
     void addDivider() {
       sections.addAll([
-        const SizedBox(height: 12),
+        SizedBox(height: tokens.spaceMd),
         Divider(color: cs.outlineVariant.withOpacity(0.35), height: 1),
-        const SizedBox(height: 12),
+        SizedBox(height: tokens.spaceMd),
       ]);
     }
 
@@ -227,7 +229,7 @@ class TasklyMyDaySectionStack extends StatelessWidget {
           onToggleExpanded: timeSensitive.onToggleExpanded,
         ),
         if (timeSensitive.expanded) ...[
-          const SizedBox(height: 6),
+          SizedBox(height: tokens.spaceXs2),
           _Subsection(
             title: timeSensitive.due.title,
             icon: timeSensitive.due.icon,
@@ -240,7 +242,7 @@ class TasklyMyDaySectionStack extends StatelessWidget {
             showEmpty: timeSensitive.due.showEmpty,
             countLine: timeSensitive.due.countLine,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: tokens.spaceSm2),
           _Subsection(
             title: timeSensitive.planned.title,
             icon: timeSensitive.planned.icon,
@@ -315,7 +317,8 @@ class _SectionHeader extends StatelessWidget {
     final cs = theme.colorScheme;
     final hasSubtitle = subtitle != null && subtitle!.trim().isNotEmpty;
     final actionOnSubtitle = hasSubtitle && action != null;
-    const subtitleIndent = 22.0;
+    final tokens = TasklyTokens.of(context);
+    final subtitleIndent = tokens.spaceXl;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,17 +328,17 @@ class _SectionHeader extends StatelessWidget {
             if (icon != null) ...[
               if (iconBadge)
                 Container(
-                  width: 26,
-                  height: 26,
+                  width: tokens.spaceXl,
+                  height: tokens.spaceXl,
                   decoration: BoxDecoration(
                     color: cs.primaryContainer.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(tokens.radiusPill),
                   ),
-                  child: Icon(icon, size: 16, color: cs.primary),
+                  child: Icon(icon, size: tokens.spaceLg, color: cs.primary),
                 )
               else
-                Icon(icon, size: 16, color: cs.primary),
-              const SizedBox(width: 8),
+                Icon(icon, size: tokens.spaceLg, color: cs.primary),
+              SizedBox(width: tokens.spaceSm),
             ],
             Expanded(
               child: Text(
@@ -347,10 +350,13 @@ class _SectionHeader extends StatelessWidget {
             ),
             if (showCount)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spaceXs2,
+                  vertical: tokens.spaceXxs,
+                ),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHighest.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(tokens.radiusPill),
                 ),
                 child: Text(
                   '$count',
@@ -361,7 +367,7 @@ class _SectionHeader extends StatelessWidget {
                 ),
               ),
             if (!actionOnSubtitle && action != null) ...[
-              const SizedBox(width: 8),
+              SizedBox(width: tokens.spaceSm),
               action!,
             ],
             IconButton(
@@ -371,7 +377,7 @@ class _SectionHeader extends StatelessWidget {
           ],
         ),
         if (hasSubtitle) ...[
-          const SizedBox(height: 2),
+          SizedBox(height: tokens.spaceXxs),
           Padding(
             padding: EdgeInsets.only(left: icon == null ? 0 : subtitleIndent),
             child: Row(
@@ -386,7 +392,7 @@ class _SectionHeader extends StatelessWidget {
                   ),
                 ),
                 if (actionOnSubtitle) ...[
-                  const SizedBox(width: 8),
+                  SizedBox(width: tokens.spaceSm),
                   action!,
                 ],
               ],
@@ -411,6 +417,7 @@ class _SectionBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
     if (list.rows.isEmpty && !showEmpty) {
       return const SizedBox.shrink();
     }
@@ -418,7 +425,7 @@ class _SectionBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 6),
+        SizedBox(height: tokens.spaceXs2),
         if (list.rows.isEmpty)
           _EmptyPanel(
             title: emptyState.title,
@@ -466,6 +473,7 @@ class _Subsection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     if (list.rows.isEmpty && !showEmpty) {
       return const SizedBox.shrink();
@@ -475,7 +483,12 @@ class _Subsection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          padding: EdgeInsets.fromLTRB(
+            tokens.sectionPaddingH,
+            tokens.spaceSm2,
+            tokens.sectionPaddingH,
+            tokens.spaceXs2,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -499,7 +512,7 @@ class _Subsection extends StatelessWidget {
                       color: cs.onSurfaceVariant.withOpacity(0.6),
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: tokens.spaceXs),
                   IconButton(
                     onPressed: onToggleExpanded,
                     icon: Icon(
@@ -509,7 +522,7 @@ class _Subsection extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: tokens.spaceXs2),
               Container(
                 height: 1,
                 color: cs.outlineVariant.withOpacity(0.45),
@@ -525,7 +538,7 @@ class _Subsection extends StatelessWidget {
             otherLabel: countLine!.otherLabel,
             onTapOther: countLine!.onTapOther,
           ),
-        if (expanded && countLine != null) const SizedBox(height: 8),
+        if (expanded && countLine != null) SizedBox(height: tokens.spaceSm),
         if (expanded)
           if (list.rows.isEmpty)
             _EmptyPanel(
@@ -568,6 +581,7 @@ class _CountsLine extends StatelessWidget {
 
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     final baseStyle = theme.textTheme.bodySmall?.copyWith(
       color: cs.onSurfaceVariant,
@@ -593,16 +607,16 @@ class _CountsLine extends StatelessWidget {
                 type: MaterialType.transparency,
                 child: InkWell(
                   onTap: onTapOther,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(tokens.radiusPill),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       color: cs.primaryContainer.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(tokens.radiusPill),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: tokens.spaceSm,
+                        vertical: tokens.spaceXxs,
                       ),
                       child: Text(
                         '$otherCount $otherLabel',
@@ -632,25 +646,36 @@ class _EmptyPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        tokens.spaceXs2,
+        tokens.sectionPaddingH,
+        tokens.spaceXs2,
+      ),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        padding: EdgeInsets.fromLTRB(
+          tokens.spaceMd,
+          tokens.spaceSm2,
+          tokens.spaceMd,
+          tokens.spaceSm2,
+        ),
         decoration: BoxDecoration(
           color: cs.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(tokens.radiusMd),
           border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
         ),
         child: Row(
           children: [
             Icon(
               Icons.inbox_outlined,
-              size: 18,
+              size: tokens.spaceLg2,
               color: cs.onSurfaceVariant,
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: tokens.spaceSm2),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -663,7 +688,7 @@ class _EmptyPanel extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: tokens.spaceXxs),
                   Text(
                     description,
                     maxLines: 2,

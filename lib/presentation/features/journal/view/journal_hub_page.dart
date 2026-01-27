@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalHubPage extends StatefulWidget {
   const JournalHubPage({
@@ -64,9 +65,13 @@ class _JournalHubPageState extends State<JournalHubPage> {
       appBar: AppBar(
         title: InkWell(
           onTap: _pickDay,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(
+            TasklyTokens.of(context).radiusMd,
+          ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            padding: EdgeInsets.symmetric(
+              horizontal: TasklyTokens.of(context).spaceLg,
+            ),
             child: Text(dateLabel),
           ),
         ),

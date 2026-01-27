@@ -4,24 +4,25 @@ import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 import 'package:taskly_ui/src/sections/empty_state_widget.dart';
 import 'package:taskly_ui/src/sections/feed_body.dart';
 import 'package:taskly_ui/src/sections/value_distribution_section.dart';
-import 'package:taskly_ui/src/feed/taskly_feed_theme.dart';
-import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
-import 'package:taskly_ui/src/tiles/project_entity_tile.dart';
-import 'package:taskly_ui/src/tiles/routine_entity_tile.dart';
-import 'package:taskly_ui/src/tiles/task_entity_tile.dart';
-import 'package:taskly_ui/src/tiles/value_entity_tile.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+import 'package:taskly_ui/src/entities/project_entity_tile.dart';
+import 'package:taskly_ui/src/entities/routine_entity_tile.dart';
+import 'package:taskly_ui/src/entities/task_entity_tile.dart';
+import 'package:taskly_ui/src/entities/value_entity_tile.dart';
 
 class TasklyFeedRenderer extends StatelessWidget {
   const TasklyFeedRenderer({
     required this.spec,
     this.controller,
     this.padding,
+    this.entityRowPadding,
     super.key,
   });
 
   final TasklyFeedSpec spec;
   final ScrollController? controller;
   final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? entityRowPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -51,17 +52,20 @@ class TasklyFeedRenderer extends StatelessWidget {
       TasklyFeedContent(:final sections) => FeedBody.child(
         child: Builder(
           builder: (context) {
-            final feedTheme = TasklyFeedTheme.of(context);
+            final tokens = TasklyTokens.of(context);
             return ListView.builder(
               controller: controller,
               padding: padding,
               itemCount: sections.length,
               itemBuilder: (context, index) {
                 final section = sections[index];
-                final content = TasklyFeedRenderer.buildSection(section);
+                final content = TasklyFeedRenderer.buildSection(
+                  section,
+                  entityRowPadding: entityRowPadding,
+                );
                 if (index == sections.length - 1) return content;
                 return Padding(
-                  padding: EdgeInsets.only(bottom: feedTheme.sectionSpacing),
+                  padding: EdgeInsets.only(bottom: tokens.feedSectionSpacing),
                   child: content,
                 );
               },
@@ -72,12 +76,16 @@ class TasklyFeedRenderer extends StatelessWidget {
     };
   }
 
-  static Widget buildSection(TasklySectionSpec section) {
+  static Widget buildSection(
+    TasklySectionSpec section, {
+    EdgeInsetsGeometry? entityRowPadding,
+  }) {
     return switch (section) {
       TasklyStandardListSectionSpec(:final rows) => _RowList(
         rows: rows,
         emptyLabel: null,
         onAddRequested: null,
+        entityRowPadding: entityRowPadding,
       ),
       TasklyValueDistributionSectionSpec(
         :final title,
@@ -102,6 +110,7 @@ class TasklyFeedRenderer extends StatelessWidget {
           rows: rows,
           emptyLabel: emptyLabel,
           onAddRequested: onAddRequested,
+          entityRowPadding: entityRowPadding,
         ),
       TasklyScheduledOverdueSectionSpec(
         :final title,
@@ -122,19 +131,23 @@ class TasklyFeedRenderer extends StatelessWidget {
           actionLabel: actionLabel,
           actionTooltip: actionTooltip,
           onActionPressed: onActionPressed,
+          entityRowPadding: entityRowPadding,
         ),
     };
   }
 
-  static Widget buildRow(TasklyRowSpec row, {BuildContext? context}) {
-    final feedTheme = context == null ? null : TasklyFeedTheme.of(context);
-    final rowIndent = feedTheme?.rowIndent ?? 10;
+  static Widget buildRow(
+    TasklyRowSpec row, {
+    BuildContext? context,
+    EdgeInsetsGeometry? entityRowPadding,
+  }) {
+    final tokens = context == null ? null : TasklyTokens.of(context);
+    final rowIndent = tokens?.feedRowIndent ?? 10;
     final child = switch (row) {
       TasklyHeaderRowSpec() => _HeaderRow(row: row),
       TasklySubheaderRowSpec() => _SubheaderRow(row: row),
       TasklyDividerRowSpec() => _DividerRow(),
       TasklyInlineActionRowSpec() => _InlineActionRow(row: row),
-      TasklyValueHeaderRowSpec() => _ValueHeaderRow(row: row),
       TasklyTaskRowSpec() => _TaskRow(row: row),
       TasklyProjectRowSpec() => _ProjectRow(row: row),
       TasklyValueRowSpec() => _ValueRow(row: row),
@@ -146,7 +159,6 @@ class TasklyFeedRenderer extends StatelessWidget {
       TasklySubheaderRowSpec(:final key) => key,
       TasklyDividerRowSpec(:final key) => key,
       TasklyInlineActionRowSpec(:final key) => key,
-      TasklyValueHeaderRowSpec(:final key) => key,
       TasklyTaskRowSpec(:final key) => key,
       TasklyProjectRowSpec(:final key) => key,
       TasklyValueRowSpec(:final key) => key,
@@ -158,7 +170,6 @@ class TasklyFeedRenderer extends StatelessWidget {
       TasklySubheaderRowSpec(:final depth) => depth,
       TasklyDividerRowSpec(:final depth) => depth,
       TasklyInlineActionRowSpec(:final depth) => depth,
-      TasklyValueHeaderRowSpec(:final depth) => depth,
       TasklyTaskRowSpec(:final depth) => depth,
       TasklyProjectRowSpec(:final depth) => depth,
       TasklyValueRowSpec() => 0,
@@ -172,7 +183,25 @@ class TasklyFeedRenderer extends StatelessWidget {
             child: child,
           );
 
-    return KeyedSubtree(key: ValueKey(key), child: indented);
+    final rowPadding = entityRowPadding;
+    final shouldPad =
+        rowPadding != null &&
+        switch (row) {
+          TasklyTaskRowSpec() => true,
+          TasklyProjectRowSpec() => true,
+          TasklyValueRowSpec() => true,
+          TasklyRoutineRowSpec() => true,
+          _ => false,
+        };
+
+    final padded = shouldPad
+        ? Padding(
+            padding: rowPadding,
+            child: indented,
+          )
+        : indented;
+
+    return KeyedSubtree(key: ValueKey(key), child: padded);
   }
 }
 
@@ -181,11 +210,13 @@ class _RowList extends StatelessWidget {
     required this.rows,
     required this.emptyLabel,
     required this.onAddRequested,
+    this.entityRowPadding,
   });
 
   final List<TasklyRowSpec> rows;
   final String? emptyLabel;
   final VoidCallback? onAddRequested;
+  final EdgeInsetsGeometry? entityRowPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -196,11 +227,11 @@ class _RowList extends StatelessWidget {
       );
     }
 
-    final hasValueHeaders = rows.any((row) => row is TasklyValueHeaderRowSpec);
-
-    final children = hasValueHeaders
-        ? _buildValueGroups(context, rows)
-        : _buildFlatRows(context, rows);
+    final children = _buildFlatRows(
+      context,
+      rows,
+      entityRowPadding: entityRowPadding,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -209,17 +240,27 @@ class _RowList extends StatelessWidget {
   }
 }
 
-List<Widget> _buildFlatRows(BuildContext context, List<TasklyRowSpec> rows) {
+List<Widget> _buildFlatRows(
+  BuildContext context,
+  List<TasklyRowSpec> rows, {
+  EdgeInsetsGeometry? entityRowPadding,
+}) {
   final children = <Widget>[];
-  final feedTheme = TasklyFeedTheme.of(context);
+  final tokens = TasklyTokens.of(context);
   for (var i = 0; i < rows.length; i += 1) {
     final row = rows[i];
-    children.add(TasklyFeedRenderer.buildRow(row, context: context));
+    children.add(
+      TasklyFeedRenderer.buildRow(
+        row,
+        context: context,
+        entityRowPadding: entityRowPadding,
+      ),
+    );
 
     final isLast = i == rows.length - 1;
     if (isLast) continue;
 
-    final spacing = _spacingAfter(row, feedTheme);
+    final spacing = _spacingAfter(row, tokens);
     if (spacing > 0) {
       children.add(SizedBox(height: spacing));
     }
@@ -227,54 +268,16 @@ List<Widget> _buildFlatRows(BuildContext context, List<TasklyRowSpec> rows) {
   return children;
 }
 
-List<Widget> _buildValueGroups(
-  BuildContext context,
-  List<TasklyRowSpec> rows,
-) {
-  final groups = <Widget>[];
-  TasklyValueHeaderRowSpec? activeHeader;
-  final buffer = <TasklyRowSpec>[];
-
-  void flush() {
-    if (activeHeader == null) return;
-    groups.add(
-      _ValueGroupSection(
-        header: activeHeader,
-        rows: List<TasklyRowSpec>.from(buffer),
-      ),
-    );
-    buffer.clear();
-  }
-
-  for (final row in rows) {
-    if (row is TasklyValueHeaderRowSpec) {
-      flush();
-      activeHeader = row;
-      continue;
-    }
-    if (activeHeader == null) {
-      groups.add(TasklyFeedRenderer.buildRow(row, context: context));
-      continue;
-    }
-    buffer.add(row);
-  }
-
-  flush();
-
-  return groups;
-}
-
-double _spacingAfter(TasklyRowSpec row, TasklyFeedTheme feedTheme) {
+double _spacingAfter(TasklyRowSpec row, TasklyTokens tokens) {
   return switch (row) {
     TasklyHeaderRowSpec() => 0,
     TasklySubheaderRowSpec() => 0,
     TasklyDividerRowSpec() => 0,
-    TasklyInlineActionRowSpec() => feedTheme.entityRowSpacing,
-    TasklyValueHeaderRowSpec() => feedTheme.entityRowSpacing,
-    TasklyTaskRowSpec() => feedTheme.entityRowSpacing,
-    TasklyProjectRowSpec() => feedTheme.entityRowSpacing,
-    TasklyValueRowSpec() => feedTheme.entityRowSpacing,
-    TasklyRoutineRowSpec() => feedTheme.entityRowSpacing,
+    TasklyInlineActionRowSpec() => tokens.feedEntityRowSpacing,
+    TasklyTaskRowSpec() => tokens.feedEntityRowSpacing,
+    TasklyProjectRowSpec() => tokens.feedEntityRowSpacing,
+    TasklyValueRowSpec() => tokens.feedEntityRowSpacing,
+    TasklyRoutineRowSpec() => tokens.feedEntityRowSpacing,
   };
 }
 
@@ -287,6 +290,7 @@ class _HeaderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     final titleStyle = theme.textTheme.titleMedium?.copyWith(
       color: scheme.onSurface,
@@ -306,10 +310,10 @@ class _HeaderRow extends StatelessWidget {
             if (row.leadingIcon != null) ...[
               Icon(
                 row.leadingIcon,
-                size: 18,
+                size: tokens.spaceLg2,
                 color: scheme.onSurfaceVariant,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: tokens.spaceSm),
             ],
             Expanded(
               child: Text(
@@ -321,13 +325,17 @@ class _HeaderRow extends StatelessWidget {
             ),
             if (row.trailingLabel != null) ...[
               Text(row.trailingLabel!, style: trailingStyle),
-              const SizedBox(width: 8),
+              SizedBox(width: tokens.spaceSm),
             ],
             if (row.trailingIcon != null)
-              Icon(row.trailingIcon, size: 18, color: scheme.onSurfaceVariant),
+              Icon(
+                row.trailingIcon,
+                size: tokens.spaceLg2,
+                color: scheme.onSurfaceVariant,
+              ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: tokens.spaceSm),
         Container(
           height: 1,
           color: scheme.outlineVariant.withValues(alpha: 0.55),
@@ -336,11 +344,16 @@ class _HeaderRow extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        tokens.spaceMd,
+        tokens.sectionPaddingH,
+        tokens.spaceXs2,
+      ),
       child: row.onTap == null
           ? content
           : InkWell(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(tokens.radiusSm),
               onTap: row.onTap,
               child: content,
             ),
@@ -357,6 +370,7 @@ class _SubheaderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     final titleStyle = theme.textTheme.labelSmall?.copyWith(
       color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
@@ -364,7 +378,12 @@ class _SubheaderRow extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        tokens.spaceSm2,
+        tokens.sectionPaddingH,
+        tokens.spaceXs2,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -374,7 +393,7 @@ class _SubheaderRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: tokens.spaceXs2),
           Container(
             height: 1,
             color: scheme.outlineVariant.withValues(alpha: 0.45),
@@ -389,9 +408,10 @@ class _DividerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
     return Container(
       height: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: tokens.sectionPaddingH),
       color: scheme.outlineVariant.withValues(alpha: 0.55),
     );
   }
@@ -404,165 +424,15 @@ class _InlineActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: tokens.sectionPaddingH),
       child: Align(
         alignment: Alignment.centerLeft,
         child: TextButton(
           onPressed: row.onTap,
           child: Text(row.label),
         ),
-      ),
-    );
-  }
-}
-
-class _ValueHeaderRow extends StatelessWidget {
-  const _ValueHeaderRow({required this.row});
-
-  final TasklyValueHeaderRowSpec row;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final tokens = TasklyEntityTileTheme.of(context);
-
-    final chip = row.leadingChip;
-    final priorityLabel = row.priorityLabel?.trim();
-
-    final accentColor = chip?.color ?? scheme.primary;
-    final iconData = chip?.icon ?? Icons.star_rounded;
-    final backgroundOpacity = theme.brightness == Brightness.dark ? 0.2 : 0.12;
-    final title = row.title.trim().toUpperCase();
-    final priorityText = priorityLabel == null || priorityLabel.isEmpty
-        ? null
-        : priorityLabel.toUpperCase();
-
-    final content = DecoratedBox(
-      decoration: BoxDecoration(
-        color: accentColor.withValues(alpha: backgroundOpacity),
-      ),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(tokens.sectionPaddingH, 6, 10, 6),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: scheme.surface,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Icon(iconData, size: 18, color: accentColor),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                title,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: accentColor,
-                  letterSpacing: 0.4,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (priorityText != null) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  priorityText,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: accentColor,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-            ],
-            Icon(
-              row.isCollapsed
-                  ? Icons.expand_more_rounded
-                  : Icons.expand_less_rounded,
-              size: 16,
-              color: accentColor.withValues(alpha: 0.8),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final fullWidth = constraints.maxWidth + tokens.sectionPaddingH * 2;
-          return Align(
-            alignment: Alignment.center,
-            child: SizedBox(
-              width: fullWidth,
-              child: InkWell(
-                onTap: row.onToggleCollapsed,
-                child: content,
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _ValueGroupSection extends StatelessWidget {
-  const _ValueGroupSection({
-    required this.header,
-    required this.rows,
-  });
-
-  final TasklyValueHeaderRowSpec header;
-  final List<TasklyRowSpec> rows;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyEntityTileTheme.of(context);
-    final hasRows = rows.isNotEmpty;
-    final children = <Widget>[
-      _ValueHeaderRow(row: header),
-    ];
-
-    if (hasRows && !header.isCollapsed) {
-      children.add(const SizedBox(height: 8));
-      children.add(
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            tokens.sectionPaddingH + 12,
-            0,
-            tokens.sectionPaddingH,
-            8,
-          ),
-          child: Column(
-            children: _buildFlatRows(context, rows),
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: children,
       ),
     );
   }
@@ -590,95 +460,10 @@ class _ProjectRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (row.preset) {
-      TasklyProjectRowPresetGroupHeader(:final expanded) =>
-        _ProjectGroupHeaderRow(
-          data: row.data,
-          actions: row.actions,
-          expanded: expanded,
-        ),
-      _ => ProjectEntityTile(
-        model: row.data,
-        preset: row.preset,
-        actions: row.actions,
-      ),
-    };
-  }
-}
-
-class _ProjectGroupHeaderRow extends StatelessWidget {
-  const _ProjectGroupHeaderRow({
-    required this.data,
-    required this.actions,
-    required this.expanded,
-  });
-
-  final TasklyProjectRowData data;
-  final TasklyProjectRowActions actions;
-  final bool expanded;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    final onTap = actions.onToggleExpanded ?? actions.onTap;
-
-    final trailingLabel = data.groupTrailingLabel?.trim();
-    final hasTrailingLabel = trailingLabel != null && trailingLabel.isNotEmpty;
-
-    final icon = data.groupLeadingIcon ?? Icons.folder_outlined;
-
-    final canExpand = actions.onToggleExpanded != null;
-    final trailingIcon = canExpand
-        ? (expanded ? Icons.expand_less : Icons.expand_more)
-        : Icons.chevron_right;
-
-    final row = Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: scheme.onSurfaceVariant),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                data.title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.2,
-                ),
-              ),
-            ),
-            if (hasTrailingLabel) ...[
-              Text(
-                trailingLabel,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.72),
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.2,
-                ),
-              ),
-              const SizedBox(width: 8),
-            ],
-            Icon(
-              trailingIcon,
-              size: 18,
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (onTap == null) return row;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: onTap,
-      child: row,
+    return ProjectEntityTile(
+      model: row.data,
+      preset: row.preset,
+      actions: row.actions,
     );
   }
 }
@@ -719,6 +504,7 @@ class _ScheduledDaySection extends StatelessWidget {
     required this.rows,
     required this.emptyLabel,
     required this.onAddRequested,
+    this.entityRowPadding,
   });
 
   final String title;
@@ -726,13 +512,14 @@ class _ScheduledDaySection extends StatelessWidget {
   final List<TasklyRowSpec> rows;
   final String? emptyLabel;
   final VoidCallback? onAddRequested;
+  final EdgeInsetsGeometry? entityRowPadding;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final tokens = TasklyEntityTileTheme.of(context);
-    final feedTheme = TasklyFeedTheme.of(context);
+    final textTheme = theme.textTheme;
+    final tokens = TasklyTokens.of(context);
 
     final effectiveCount = countLabel?.trim();
     final hasCount = effectiveCount != null && effectiveCount.isNotEmpty;
@@ -748,7 +535,12 @@ class _ScheduledDaySection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
+            padding: EdgeInsets.fromLTRB(
+              tokens.spaceXs,
+              0,
+              tokens.spaceXs,
+              tokens.spaceXs2,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -758,7 +550,7 @@ class _ScheduledDaySection extends StatelessWidget {
                       Flexible(
                         child: Text(
                           title,
-                          style: feedTheme.scheduledDayTitle.copyWith(
+                          style: textTheme.titleMedium?.copyWith(
                             color: scheme.onSurface,
                           ),
                           maxLines: 1,
@@ -771,7 +563,7 @@ class _ScheduledDaySection extends StatelessWidget {
                 if (hasCount)
                   Text(
                     effectiveCount,
-                    style: feedTheme.scheduledDayCount.copyWith(
+                    style: textTheme.labelSmall?.copyWith(
                       color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
                     ),
                   ),
@@ -783,11 +575,12 @@ class _ScheduledDaySection extends StatelessWidget {
             thickness: 1,
             color: scheme.outlineVariant.withValues(alpha: 0.6),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: tokens.spaceSm2),
           _RowList(
             rows: rows,
             emptyLabel: emptyLabel,
             onAddRequested: onAddRequested,
+            entityRowPadding: entityRowPadding,
           ),
         ],
       ),
@@ -805,20 +598,26 @@ class _EmptyRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Material(
       color: scheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(tokens.radiusMd2),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        padding: EdgeInsets.fromLTRB(
+          tokens.spaceMd,
+          tokens.spaceSm2,
+          tokens.spaceMd,
+          tokens.spaceSm2,
+        ),
         child: Row(
           children: [
             Icon(
               Icons.inbox_outlined,
-              size: 18,
+              size: tokens.spaceLg2,
               color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: tokens.spaceSm),
             Expanded(
               child: Text(
                 label,
@@ -833,15 +632,14 @@ class _EmptyRow extends StatelessWidget {
             if (onAddRequested != null)
               TextButton.icon(
                 onPressed: onAddRequested,
-                icon: const Icon(Icons.add_rounded, size: 18),
+                icon: Icon(Icons.add_rounded, size: tokens.spaceLg2),
                 label: const Text('Add'),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spaceSm2,
+                    vertical: tokens.spaceXs2,
                   ),
-                  minimumSize: const Size(0, 36),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: Size(0, tokens.minTapTargetSize),
                 ),
               ),
           ],
@@ -861,6 +659,7 @@ class _ScheduledOverdueSection extends StatelessWidget {
     required this.actionLabel,
     required this.actionTooltip,
     required this.onActionPressed,
+    this.entityRowPadding,
   });
 
   final String title;
@@ -871,22 +670,23 @@ class _ScheduledOverdueSection extends StatelessWidget {
   final String? actionLabel;
   final String? actionTooltip;
   final VoidCallback? onActionPressed;
+  final EdgeInsetsGeometry? entityRowPadding;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final tokens = TasklyEntityTileTheme.of(context);
-    final feedTheme = TasklyFeedTheme.of(context);
+    final textTheme = theme.textTheme;
+    final tokens = TasklyTokens.of(context);
 
     final visibleRows = isCollapsed ? rows.take(3).toList() : rows;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
         tokens.sectionPaddingH,
-        8,
+        tokens.spaceSm,
         tokens.sectionPaddingH,
-        8,
+        tokens.spaceSm,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -894,7 +694,12 @@ class _ScheduledOverdueSection extends StatelessWidget {
           InkWell(
             onTap: onToggleCollapsed,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
+              padding: EdgeInsets.fromLTRB(
+                tokens.spaceXs,
+                tokens.spaceXs2,
+                tokens.spaceXs,
+                tokens.spaceXs2,
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -909,11 +714,11 @@ class _ScheduledOverdueSection extends StatelessWidget {
                   ),
                   Text(
                     countLabel,
-                    style: feedTheme.scheduledOverdueCount.copyWith(
+                    style: textTheme.labelSmall?.copyWith(
                       color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
                     ),
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: tokens.spaceXs2),
                   Icon(
                     isCollapsed
                         ? Icons.expand_more_rounded
@@ -926,7 +731,7 @@ class _ScheduledOverdueSection extends StatelessWidget {
           ),
           if (!isCollapsed || rows.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.only(bottom: tokens.spaceSm),
               child: visibleRows.isEmpty
                   ? Text(
                       'Nothing overdue',
@@ -939,6 +744,7 @@ class _ScheduledOverdueSection extends StatelessWidget {
                       rows: visibleRows,
                       emptyLabel: null,
                       onAddRequested: null,
+                      entityRowPadding: entityRowPadding,
                     ),
             ),
         ],

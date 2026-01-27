@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/forms/taskly_form_preset.dart';
 import 'package:taskly_ui/src/primitives/taskly_form_action_row.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 class TasklyFormPickerShell extends StatelessWidget {
   const TasklyFormPickerShell({
@@ -26,9 +27,10 @@ class TasklyFormPickerShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = TasklyTokens.of(context);
 
     return Padding(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(tokens.spaceXl),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -37,9 +39,9 @@ class TasklyFormPickerShell extends StatelessWidget {
             title,
             style: theme.textTheme.headlineSmall,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: tokens.spaceXl),
           body,
-          const SizedBox(height: 24),
+          SizedBox(height: tokens.spaceXl),
           TasklyFormActionRow(
             cancelLabel: cancelLabel,
             confirmLabel: confirmLabel,

@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 enum ChartType { bar, pie, horizontalBar }
 
@@ -21,7 +22,7 @@ class DistributionChart extends StatelessWidget {
     if (distribution.isEmpty) {
       return Card(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
           child: Center(
             child: Text(
               'No data available',
@@ -36,7 +37,7 @@ class DistributionChart extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -48,7 +49,7 @@ class DistributionChart extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
             ],
             SizedBox(
               height: 200,
@@ -94,7 +95,7 @@ class DistributionChart extends StatelessWidget {
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                if (value.toInt() >= entries.length) return const SizedBox();
+                if (value.toInt() >= entries.length) return SizedBox();
                 return Text(
                   entries[value.toInt()].key,
                   style: theme.textTheme.bodySmall,
@@ -117,7 +118,7 @@ class DistributionChart extends StatelessWidget {
                     toY: e.value.value.toDouble(),
                     color: theme.colorScheme.primary,
                     width: 20,
-                    borderRadius: const BorderRadius.vertical(
+                    borderRadius: BorderRadius.vertical(
                       top: Radius.circular(4),
                     ),
                   ),

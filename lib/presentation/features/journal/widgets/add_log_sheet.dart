@@ -7,6 +7,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class AddLogSheet extends StatelessWidget {
   const AddLogSheet._({
@@ -212,7 +213,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(d.name, style: theme.textTheme.titleSmall),
-                const SizedBox(height: 6),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 Row(
                   children: [
                     IconButton(
@@ -248,7 +249,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(d.name, style: theme.textTheme.titleSmall),
-                    const SizedBox(height: 8),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     if (choices.isEmpty)
                       Text(
                         'No options',
@@ -285,7 +286,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
         }
 
         return Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -315,15 +316,17 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 if (isLoading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: TasklyTokens.of(context).spaceLg,
+                    ),
                     child: Center(child: CircularProgressIndicator()),
                   )
                 else ...[
                   Text('Mood', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   _MoodScalePicker(
                     value: state.mood,
                     enabled: !isSaving,
@@ -331,7 +334,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                         .read<JournalAddEntryBloc>()
                         .add(JournalAddEntryMoodChanged(value)),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   TextField(
                     controller: _noteController,
                     maxLines: 3,
@@ -344,15 +347,15 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                       JournalAddEntryNoteChanged(v),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Text('Trackers', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   for (final group in groupOptions())
                     Builder(
                       builder: (context) {
                         final groupId = group?.id;
                         final inGroup = trackersForGroup(groupId);
-                        if (inGroup.isEmpty) return const SizedBox.shrink();
+                        if (inGroup.isEmpty) return SizedBox.shrink();
 
                         final groupName = groupId == null
                             ? 'Ungrouped'
@@ -361,10 +364,10 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                         return ExpansionTile(
                           initiallyExpanded: true,
                           title: Text(groupName),
-                          childrenPadding: const EdgeInsets.only(
-                            left: 12,
-                            right: 12,
-                            bottom: 12,
+                          childrenPadding: EdgeInsets.only(
+                            left: TasklyTokens.of(context).spaceLg,
+                            right: TasklyTokens.of(context).spaceLg,
+                            bottom: TasklyTokens.of(context).spaceSm,
                           ),
                           children: [
                             for (final d in inGroup) ...[
@@ -375,7 +378,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                         );
                       },
                     ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
@@ -385,7 +388,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                               const JournalAddEntrySaveRequested(),
                             ),
                       icon: isSaving
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
@@ -394,7 +397,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                       label: const Text('Save'),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                 ],
               ],
             ),
@@ -465,13 +468,17 @@ class _MoodOptionButton extends StatelessWidget {
       label: 'Mood: ${mood.label}',
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         child: Container(
           width: 64,
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: EdgeInsets.symmetric(
+            horizontal: TasklyTokens.of(context).spaceLg,
+          ),
           decoration: BoxDecoration(
             color: bg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(
+              TasklyTokens.of(context).radiusMd,
+            ),
             border: Border.fromBorderSide(border),
           ),
           child: Column(
@@ -484,7 +491,7 @@ class _MoodOptionButton extends StatelessWidget {
                   color: enabled ? null : theme.disabledColor,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
                 '${mood.value}',
                 style: theme.textTheme.labelSmall?.copyWith(

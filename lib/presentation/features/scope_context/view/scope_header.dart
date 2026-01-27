@@ -5,6 +5,7 @@ import 'package:taskly_domain/contracts.dart';
 
 import 'package:taskly_bloc/presentation/features/scope_context/bloc/scope_context_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class ScopeHeader extends StatelessWidget {
   const ScopeHeader({
@@ -36,9 +37,16 @@ class _ScopeHeaderView extends StatelessWidget {
     return BlocBuilder<ScopeContextBloc, ScopeContextState>(
       builder: (context, state) {
         return switch (state) {
-          ScopeContextLoading() => const SizedBox(height: 64),
+          ScopeContextLoading() => SizedBox(
+            height: TasklyTokens.of(context).spaceXxl * 2,
+          ),
           ScopeContextError(:final message) => Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            padding: EdgeInsets.fromLTRB(
+              TasklyTokens.of(context).spaceLg,
+              TasklyTokens.of(context).spaceMd,
+              TasklyTokens.of(context).spaceLg,
+              0,
+            ),
             child: Text(
               message,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -50,12 +58,17 @@ class _ScopeHeaderView extends StatelessWidget {
             :final projectCount,
           ) =>
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: EdgeInsets.fromLTRB(
+                TasklyTokens.of(context).spaceLg,
+                TasklyTokens.of(context).spaceMd,
+                TasklyTokens.of(context).spaceLg,
+                0,
+              ),
               child: Card(
                 elevation: 0,
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
                   child: Row(
                     children: [
                       Expanded(
@@ -68,7 +81,7 @@ class _ScopeHeaderView extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: TasklyTokens.of(context).spaceSm),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
@@ -108,11 +121,14 @@ class _MetricChip extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         border: Border.all(color: cs.outlineVariant),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: EdgeInsets.symmetric(
+          horizontal: TasklyTokens.of(context).spaceLg,
+          vertical: TasklyTokens.of(context).spaceSm,
+        ),
         child: Text(
           '$label: $value',
           style: Theme.of(context).textTheme.labelMedium,

@@ -4,6 +4,7 @@ import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/ui/sparkline_painter.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Modal showing detailed statistics for a value.
 class ValueDetailModal extends StatelessWidget {
@@ -43,21 +44,25 @@ class ValueDetailModal extends StatelessWidget {
         return Container(
           decoration: BoxDecoration(
             color: colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
           ),
           child: ListView(
             controller: scrollController,
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
             children: [
               // Handle
               Center(
                 child: Container(
                   width: 40,
                   height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
+                  margin: EdgeInsets.only(
+                    bottom: TasklyTokens.of(context).spaceSm,
+                  ),
                   decoration: BoxDecoration(
                     color: colorScheme.onSurfaceVariant.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(
+                      TasklyTokens.of(context).radiusMd,
+                    ),
                   ),
                 ),
               ),
@@ -76,25 +81,25 @@ class ValueDetailModal extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Text(
                     value.name,
                     style: theme.textTheme.headlineSmall,
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
 
               // Large trend chart
               _LargeTrendChart(
                 data: stats.weeklyTrend,
                 weeks: stats.weeklyTrend.length,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
 
               // Stats grid
               _StatsGrid(stats: stats),
-              const SizedBox(height: 24),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
 
               // Activity breakdown
               _ActivitySection(stats: stats, l10n: l10n),
@@ -122,10 +127,10 @@ class _LargeTrendChart extends StatelessWidget {
 
     return Container(
       height: 150,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,7 +142,7 @@ class _LargeTrendChart extends StatelessWidget {
               color: colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           Expanded(
             child: data.isEmpty || data.every((v) => v == 0)
                 ? Center(
@@ -211,11 +216,13 @@ class _GridItem extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
+      margin: EdgeInsets.symmetric(
+        horizontal: TasklyTokens.of(context).spaceLg,
+      ),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
       ),
       child: Column(
         children: [
@@ -226,7 +233,7 @@ class _GridItem extends StatelessWidget {
               color: colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           Text(
             value,
             style: theme.textTheme.headlineSmall,
@@ -257,7 +264,7 @@ class _ActivitySection extends StatelessWidget {
           l10n.activitySectionTitle,
           style: theme.textTheme.titleMedium,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         ListTile(
           leading: const Icon(Icons.task_alt),
           title: Text(l10n.activeTasksCount(stats.taskCount)),

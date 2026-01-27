@@ -11,32 +11,6 @@ sealed class ListRowUiModel {
   final int depth;
 }
 
-final class ValueHeaderRowUiModel extends ListRowUiModel {
-  const ValueHeaderRowUiModel({
-    required super.rowKey,
-    required super.depth,
-    required this.title,
-    required this.valueId,
-    required this.priority,
-    required this.value,
-    required this.activeCount,
-    required this.isCollapsed,
-    required this.valueKey,
-    this.isTappableToScope = false,
-  });
-
-  final String title;
-  final String? valueId;
-  final ValuePriority? priority;
-  final Value? value;
-  final int activeCount;
-  final bool isCollapsed;
-
-  /// Whether the UI should treat this header as tappable to scope navigation.
-  final bool isTappableToScope;
-  final String valueKey;
-}
-
 final class ProjectHeaderRowUiModel extends ListRowUiModel {
   const ProjectHeaderRowUiModel({
     required super.rowKey,

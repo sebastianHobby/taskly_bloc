@@ -9,6 +9,7 @@ import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// A user-friendly widget for configuring recurring dates using RRULE format.
 ///
@@ -206,10 +207,11 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
+    final tokens = TasklyTokens.of(context);
 
     return TasklyFormSheet(
       title: l10n.recurrenceTitle,
-      preset: TasklyFormPreset.standard,
+      preset: TasklyFormPreset.standard(TasklyTokens.of(context)),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -248,7 +250,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
           ),
 
           if (_frequency != RecurrenceFrequency.none) ...[
-            const SizedBox(height: 24),
+            SizedBox(height: tokens.spaceXl),
 
             // Interval
             Row(
@@ -257,7 +259,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                   'Every',
                   style: theme.textTheme.titleMedium,
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: tokens.spaceLg),
                 SizedBox(
                   width: 80,
                   child: TextFormField(
@@ -267,12 +269,12 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                       FilteringTextInputFormatter.digitsOnly,
                       LengthLimitingTextInputFormatter(3),
                     ],
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       isDense: true,
                       border: OutlineInputBorder(),
                       contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                        horizontal: tokens.spaceMd,
+                        vertical: tokens.spaceSm,
                       ),
                     ),
                     onChanged: (value) {
@@ -301,7 +303,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                     },
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: tokens.spaceMd),
                 Expanded(
                   child: Text(
                     '${_frequency.label}${_interval > 1 ? 's' : ''}',
@@ -315,15 +317,15 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
 
             // Weekly: Day selector
             if (_frequency == RecurrenceFrequency.weekly) ...[
-              const SizedBox(height: 16),
+              SizedBox(height: tokens.spaceLg),
               Text(
                 'On days',
                 style: theme.textTheme.titleMedium,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: tokens.spaceMd),
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: tokens.spaceSm,
+                runSpacing: tokens.spaceSm,
                 children: [
                   for (final day in [
                     DateTime.monday,
@@ -353,16 +355,16 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
               ),
             ],
 
-            const SizedBox(height: 24),
+            SizedBox(height: tokens.spaceXl),
             const Divider(),
-            const SizedBox(height: 16),
+            SizedBox(height: tokens.spaceLg),
 
             // End condition
             Text(
               'Ends',
               style: theme.textTheme.titleMedium,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: tokens.spaceMd),
 
             RadioListTile<EndCondition>(
               title: const Text('Never'),
@@ -384,7 +386,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
               title: Row(
                 children: [
                   const Text('After'),
-                  const SizedBox(width: 16),
+                  SizedBox(width: tokens.spaceLg),
                   SizedBox(
                     width: 80,
                     child: TextFormField(
@@ -394,13 +396,13 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(4),
                       ],
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         isDense: true,
                         suffix: Text('times'),
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                          horizontal: tokens.spaceMd,
+                          vertical: tokens.spaceSm,
                         ),
                       ),
                       onChanged: (value) {
@@ -451,7 +453,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
               title: Row(
                 children: [
                   const Text('On'),
-                  const SizedBox(width: 16),
+                  SizedBox(width: tokens.spaceLg),
                   TextButton.icon(
                     onPressed: () async {
                       final date = await showDatePicker(
@@ -469,7 +471,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                         });
                       }
                     },
-                    icon: const Icon(Icons.calendar_today, size: 16),
+                    icon: Icon(Icons.calendar_today, size: tokens.spaceLg),
                     label: Text(
                       _until != null
                           ? '${_until!.day}/${_until!.month}/${_until!.year}'
@@ -501,7 +503,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
             ),
           ],
 
-          const SizedBox(height: 24),
+          SizedBox(height: tokens.spaceXl),
 
           if (_frequency != RecurrenceFrequency.none) ...[
             SwitchListTile.adaptive(
@@ -516,25 +518,25 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
               title: Text(l10n.recurrenceSeriesEndedLabel),
               contentPadding: EdgeInsets.zero,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: tokens.spaceXl),
           ],
 
           // Summary
           if (_frequency != RecurrenceFrequency.none)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(tokens.spaceLg),
               decoration: BoxDecoration(
                 color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(tokens.radiusMd),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.repeat,
                     color: colorScheme.primary,
-                    size: 20,
+                    size: tokens.spaceLg3,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: tokens.spaceMd),
                   Expanded(
                     child: Text(
                       _getSummary(),
@@ -547,7 +549,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
               ),
             ),
 
-          const SizedBox(height: 24),
+          SizedBox(height: tokens.spaceXl),
 
           // Action buttons
           TasklyFormActionRow(

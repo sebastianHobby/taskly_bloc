@@ -8,6 +8,7 @@ import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalHistoryPage extends StatelessWidget {
   const JournalHistoryPage({super.key});
@@ -46,7 +47,9 @@ class _HistoryList extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: TasklyTokens.of(context).spaceLg,
+      ),
       itemCount: days.length,
       itemBuilder: (context, index) {
         final day = days[index];
@@ -66,12 +69,15 @@ class _DaySection extends StatelessWidget {
     final dateLabel = DateFormat.yMMMEd().format(summary.day.toLocal());
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: TasklyTokens.of(context).spaceLg,
+        vertical: TasklyTokens.of(context).spaceSm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(dateLabel, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           TasklyJournalDailySummarySection(
             moodEmoji: _moodEmoji(summary.moodAverage),
             moodLabel: _moodLabel(summary.moodAverage),
@@ -95,10 +101,12 @@ class _DaySection extends StatelessWidget {
                   )
                 : null,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           for (final entry in summary.entries)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.only(
+                bottom: TasklyTokens.of(context).spaceSm,
+              ),
               child: JournalLogCard(
                 entry: entry,
                 events:

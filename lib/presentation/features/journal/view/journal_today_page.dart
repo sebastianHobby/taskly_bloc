@@ -9,6 +9,7 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalTodayPage extends StatefulWidget {
   const JournalTodayPage({required this.day, super.key});
@@ -49,7 +50,12 @@ class _JournalTodayPageState extends State<JournalTodayPage> {
               :final dailySummaryTotalCount,
             ) =>
               ListView(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 16),
+                padding: EdgeInsets.fromLTRB(
+                  TasklyTokens.of(context).spaceMd,
+                  TasklyTokens.of(context).spaceMd,
+                  TasklyTokens.of(context).spaceMd,
+                  TasklyTokens.of(context).spaceLg,
+                ),
                 children: [
                   _DailySummaryHeader(
                     isExpanded: _showDailyDetails,
@@ -57,7 +63,7 @@ class _JournalTodayPageState extends State<JournalTodayPage> {
                       _showDailyDetails = !_showDailyDetails;
                     }),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   TasklyJournalDailySummarySection(
                     moodEmoji: _moodEmoji(moodAverage),
                     moodLabel: _moodLabel(moodAverage),
@@ -85,7 +91,7 @@ class _JournalTodayPageState extends State<JournalTodayPage> {
                           )
                         : null,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   _EntriesHeader(
                     showAdd: entries.isEmpty,
                     onAddLog: () => AddLogSheet.show(
@@ -93,7 +99,7 @@ class _JournalTodayPageState extends State<JournalTodayPage> {
                       selectedDayLocal: day,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   _Timeline(
                     entries: entries,
                     eventsByEntryId: eventsByEntryId,
@@ -194,7 +200,7 @@ class _Timeline extends StatelessWidget {
       children: [
         for (final entry in entries)
           Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: EdgeInsets.only(bottom: TasklyTokens.of(context).spaceSm),
             child: JournalLogCard(
               entry: entry,
               events: eventsByEntryId[entry.id] ?? const <TrackerEvent>[],
@@ -217,7 +223,7 @@ class _ErrorState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
         child: Text(message),
       ),
     );

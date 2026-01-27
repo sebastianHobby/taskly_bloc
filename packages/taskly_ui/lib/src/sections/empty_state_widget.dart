@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 /// A reusable empty state widget that displays an icon, title, and optional
 /// description with a call-to-action button.
@@ -116,16 +117,17 @@ class EmptyStateWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(tokens.spaceXxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: iconSize + 32,
-              height: iconSize + 32,
+              width: iconSize + tokens.spaceXxl,
+              height: iconSize + tokens.spaceXxl,
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest.withValues(
                   alpha: 0.5,
@@ -138,7 +140,7 @@ class EmptyStateWidget extends StatelessWidget {
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: tokens.spaceXl),
             Text(
               title,
               style: theme.textTheme.titleLarge?.copyWith(
@@ -148,7 +150,7 @@ class EmptyStateWidget extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             if (description != null) ...[
-              const SizedBox(height: 8),
+              SizedBox(height: tokens.spaceSm),
               Text(
                 description!,
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -158,7 +160,7 @@ class EmptyStateWidget extends StatelessWidget {
               ),
             ],
             if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 24),
+              SizedBox(height: tokens.spaceXl),
               FilledButton.tonal(
                 onPressed: onAction,
                 child: Text(actionLabel!),

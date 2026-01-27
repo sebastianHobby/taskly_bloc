@@ -97,8 +97,7 @@ Routines step summary lines are intentionally not shown.
   remaining counts.
 - Completed routines remain visible in the My Day list for the day (completed
   state).
-- My Day groups routine rows under their value headers (no separate routine
-  section).
+- My Day lists routines and tasks inline (no value headers).
 
 #### Routines list (backlog)
 

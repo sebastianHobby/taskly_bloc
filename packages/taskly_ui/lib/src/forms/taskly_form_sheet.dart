@@ -1,26 +1,28 @@
 import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/forms/taskly_form_preset.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 class TasklyFormSheet extends StatelessWidget {
   const TasklyFormSheet({
     required this.child,
     required this.preset,
     this.title,
-    this.padding = const EdgeInsets.all(24),
+    this.padding,
     super.key,
   });
 
   final String? title;
   final Widget child;
   final TasklyFormPreset preset;
-  final EdgeInsets padding;
+  final EdgeInsets? padding;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = TasklyTokens.of(context);
     return Padding(
-      padding: padding,
+      padding: padding ?? EdgeInsets.all(tokens.spaceXl),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -30,7 +32,7 @@ class TasklyFormSheet extends StatelessWidget {
               title!,
               style: theme.textTheme.headlineSmall,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: tokens.spaceXl),
           ],
           child,
         ],

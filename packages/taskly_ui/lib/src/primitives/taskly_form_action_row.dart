@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 class TasklyFormActionRow extends StatelessWidget {
   const TasklyFormActionRow({
     required this.cancelLabel,
@@ -16,6 +18,7 @@ class TasklyFormActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -23,7 +26,7 @@ class TasklyFormActionRow extends StatelessWidget {
           onPressed: onCancel,
           child: Text(cancelLabel),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: tokens.spaceSm),
         FilledButton(
           onPressed: onConfirm,
           child: Text(confirmLabel),

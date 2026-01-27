@@ -4,6 +4,7 @@ import 'package:taskly_bloc/presentation/features/routines/model/routine_list_it
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class RoutinesListView extends StatelessWidget {
   const RoutinesListView({
@@ -17,6 +18,7 @@ class RoutinesListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
     final scheduled = <RoutineListItem>[];
     final flexible = <RoutineListItem>[];
 
@@ -93,6 +95,9 @@ class RoutinesListView extends StatelessWidget {
     return TasklyFeedRenderer(
       spec: TasklyFeedSpec.content(
         sections: sections,
+      ),
+      entityRowPadding: EdgeInsets.symmetric(
+        horizontal: tokens.sectionPaddingH,
       ),
     );
   }

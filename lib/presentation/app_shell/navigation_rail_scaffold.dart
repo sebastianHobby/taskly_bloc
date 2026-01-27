@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// A scaffold with responsive navigation that adapts to screen size.
 ///
@@ -24,6 +25,7 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isExtended = screenWidth >= Breakpoints.medium;
+    final tokens = TasklyTokens.of(context);
 
     final selectedIndex = _selectedIndex(destinations);
 
@@ -47,8 +49,8 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
                         : NavigationRailLabelType.all,
                     leading: isExtended
                         ? Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 8,
+                            padding: EdgeInsets.symmetric(
+                              vertical: tokens.spaceSm,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -60,7 +62,7 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
                                   ).colorScheme.primary,
                                   size: 28,
                                 ),
-                                const SizedBox(width: 12),
+                                SizedBox(width: tokens.spaceMd),
                                 Text(
                                   'Taskly',
                                   style: Theme.of(context).textTheme.titleLarge
@@ -75,7 +77,7 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
                             ),
                           )
                         : Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
+                            padding: EdgeInsets.only(bottom: tokens.spaceSm),
                             child: Icon(
                               Icons.check_circle_outline,
                               color: Theme.of(context).colorScheme.primary,

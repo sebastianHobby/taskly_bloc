@@ -164,7 +164,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
           initial: () => const Center(child: CircularProgressIndicator()),
           loadInProgress: () =>
               const Center(child: CircularProgressIndicator()),
-          inlineActionSuccess: (_) => const SizedBox.shrink(),
+          inlineActionSuccess: (_) => SizedBox.shrink(),
           initialDataLoadSuccess: (availableValues) {
             void syncDraft(Map<String, dynamic> values) {
               final name = extractStringValue(values, ProjectFieldKeys.name.id);
@@ -391,9 +391,9 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
               onClose: () => unawaited(closeEditor(context)),
             );
           },
-          operationSuccess: (_) => const SizedBox.shrink(),
-          operationFailure: (_) => const SizedBox.shrink(),
-          validationFailure: (_) => const SizedBox.shrink(),
+          operationSuccess: (_) => SizedBox.shrink(),
+          operationFailure: (_) => SizedBox.shrink(),
+          validationFailure: (_) => SizedBox.shrink(),
         );
       },
     );

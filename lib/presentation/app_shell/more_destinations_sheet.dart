@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 Future<String?> showMoreDestinationsSheet({
   required BuildContext context,
@@ -37,6 +38,7 @@ class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     final filtered = widget.destinations
         .where((d) {
@@ -48,7 +50,12 @@ class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        padding: EdgeInsets.fromLTRB(
+          tokens.sectionPaddingH,
+          tokens.spaceSm,
+          tokens.sectionPaddingH,
+          tokens.spaceLg,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -69,7 +76,7 @@ class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: tokens.spaceSm),
             TextField(
               onChanged: (v) => setState(() => _query = v),
               decoration: const InputDecoration(
@@ -77,7 +84,7 @@ class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
                 hintText: 'Search destinations',
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: tokens.spaceMd),
             Flexible(
               child: ListView.separated(
                 shrinkWrap: true,
@@ -97,7 +104,7 @@ class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
                       children: [
                         _DestinationBadge(stream: dest.badgeStream),
                         if (isActive) ...[
-                          const SizedBox(width: 8),
+                          SizedBox(width: tokens.spaceSm),
                           Icon(Icons.check, color: colorScheme.primary),
                         ],
                       ],
@@ -121,13 +128,13 @@ class _DestinationBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (stream == null) return const SizedBox.shrink();
+    if (stream == null) return SizedBox.shrink();
 
     return StreamBuilder<int>(
       stream: stream,
       builder: (context, snapshot) {
         final count = snapshot.data ?? 0;
-        if (count <= 0) return const SizedBox.shrink();
+        if (count <= 0) return SizedBox.shrink();
         return Badge(label: Text(count.toString()));
       },
     );

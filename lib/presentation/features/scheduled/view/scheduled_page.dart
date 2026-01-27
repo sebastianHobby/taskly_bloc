@@ -17,10 +17,10 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart'
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
-import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class ScheduledPage extends StatelessWidget {
   const ScheduledPage({super.key, this.scope = const GlobalScheduledScope()});
@@ -271,7 +271,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
               appBar: AppBar(
                 centerTitle: true,
                 title: const Text('Schedule'),
-                toolbarHeight: TasklyChromeTheme.of(
+                toolbarHeight: TasklyTokens.of(
                   context,
                 ).scheduledAppBarHeight,
                 leading: _CircleIconButton(
@@ -297,7 +297,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
               appBar: AppBar(
                 centerTitle: true,
                 title: const Text('Schedule'),
-                toolbarHeight: TasklyChromeTheme.of(
+                toolbarHeight: TasklyTokens.of(
                   context,
                 ).scheduledAppBarHeight,
                 leading: _CircleIconButton(
@@ -457,7 +457,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   ? '1 task'
                   : '${overdueRows.length} tasks');
 
-        final feedTokens = TasklyEntityTileTheme.of(context);
+        final feedTokens = TasklyTokens.of(context);
 
         return Scaffold(
           appBar: selectionState.isSelectionMode
@@ -465,7 +465,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
               : AppBar(
                   centerTitle: true,
                   title: const Text('Schedule'),
-                  toolbarHeight: TasklyChromeTheme.of(
+                  toolbarHeight: TasklyTokens.of(
                     context,
                   ).scheduledAppBarHeight,
                   leading: _CircleIconButton(
@@ -593,7 +593,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
 
                     return Padding(
                       padding: EdgeInsets.only(
-                        bottom: TasklyChromeTheme.of(
+                        bottom: TasklyTokens.of(
                           context,
                         ).scheduledDaySectionSpacing,
                       ),
@@ -759,7 +759,7 @@ class _CircleIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final chrome = TasklyChromeTheme.of(context);
+    final chrome = TasklyTokens.of(context);
     return IconButton(
       icon: Icon(icon),
       onPressed: onPressed,

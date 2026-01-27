@@ -8,6 +8,7 @@ import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_color_
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// A modern form for creating or editing values.
 ///
@@ -54,18 +55,20 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
   @override
   VoidCallback? get onClose => widget.onClose;
 
+  final _scrollController = ScrollController();
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final scheme = Theme.of(context).colorScheme;
-
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final isCompact = MediaQuery.sizeOf(context).width < 600;
-
     final isCreating = widget.initialData == null;
 
-    final ValueDraft? createDraft = widget.initialData == null
-        ? (widget.initialDraft ?? ValueDraft.empty())
-        : null;
+    final ValueDraft? createDraft =
+        widget.initialData == null
+            ? (widget.initialDraft ?? ValueDraft.empty())
+            : null;
 
     final initialValues = <String, dynamic>{
       ValueFieldKeys.name.id:
@@ -85,27 +88,84 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
     final submitEnabled =
         isDirty && (widget.formKey.currentState?.isValid ?? false);
 
+    final sectionGap = isCompact ? 12.0 : 16.0;
     final denseFieldPadding = EdgeInsets.symmetric(
       horizontal: isCompact ? 12 : 16,
       vertical: isCompact ? 10 : 12,
     );
 
-    final sectionGap = isCompact ? 12.0 : 16.0;
+    final headerActionStyle = TextButton.styleFrom(
+      textStyle: theme.textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
+    );
+
+    final headerTitle = Text(
+      isCreating ? l10n.createValueOption : l10n.editValue,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
+    );
 
     return FormShell(
       onSubmit: widget.onSubmit,
       submitTooltip: widget.submitTooltip,
       submitIcon: isCreating ? Icons.add : Icons.check,
       submitEnabled: submitEnabled,
-      showHeaderSubmit: true,
+      showHeaderSubmit: false,
       showFooterSubmit: false,
-      closeOnLeft: true,
-      onDelete: widget.initialData != null ? widget.onDelete : null,
+      closeOnLeft: false,
+      onDelete: null,
       deleteTooltip: l10n.deleteValue,
-      onClose: widget.onClose != null ? handleClose : null,
+      onClose: null,
       closeTooltip: l10n.closeLabel,
+      scrollController: _scrollController,
+      headerTitle: headerTitle,
+      centerHeaderTitle: true,
+      leadingActions: [
+        if (widget.onClose != null)
+          TextButton(
+            onPressed: handleClose,
+            style: headerActionStyle,
+            child: Text(l10n.cancelLabel),
+          ),
+      ],
+      trailingActions: [
+        if (widget.initialData != null && widget.onDelete != null)
+          PopupMenuButton<int>(
+            tooltip: l10n.moreOptionsLabel,
+            itemBuilder: (context) => [
+              PopupMenuItem<int>(
+                value: 0,
+                child: Text(
+                  l10n.deleteValue,
+                  style: TextStyle(color: scheme.error),
+                ),
+              ),
+            ],
+            onSelected: (_) => widget.onDelete?.call(),
+          ),
+        Tooltip(
+          message: widget.submitTooltip,
+          child: TextButton(
+            onPressed: submitEnabled ? widget.onSubmit : null,
+            style: headerActionStyle.copyWith(
+              foregroundColor: WidgetStateProperty.resolveWith<Color?>(
+                (states) => states.contains(WidgetState.disabled)
+                    ? scheme.onSurfaceVariant
+                    : scheme.primary,
+              ),
+            ),
+            child: Text(l10n.saveLabel),
+          ),
+        ),
+      ],
       child: Padding(
-        padding: EdgeInsets.only(bottom: isCompact ? 16 : 24),
+        padding: EdgeInsets.only(
+          bottom: isCompact
+              ? TasklyTokens.of(context).spaceLg
+              : TasklyTokens.of(context).spaceXl,
+        ),
         child: FormBuilder(
           key: widget.formKey,
           initialValue: initialValues,
@@ -118,64 +178,73 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
               widget.onChanged?.call(values);
             }
           },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _LiveValuePreviewCard(isCompact: isCompact),
-              ),
-              SizedBox(height: sectionGap),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: FormBuilderTextField(
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: TasklyTokens.of(context).spaceLg,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
+                FormBuilderTextField(
                   name: ValueFieldKeys.name.id,
-                  textCapitalization: TextCapitalization.words,
+                  textCapitalization: TextCapitalization.sentences,
                   textInputAction: TextInputAction.next,
                   maxLength: ValueForm.maxNameLength,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
-                  decoration: InputDecoration(
-                    hintText: l10n.valueFormNameHint,
-                    filled: true,
-                    fillColor: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerLow,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 1.5,
+                  decoration:
+                      const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: '',
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ).copyWith(
+                        hintText: l10n.valueFormNameHint,
                       ),
-                    ),
-                    contentPadding: denseFieldPadding,
-                  ),
                   validator: toFormBuilderValidator<String>(
                     ValueValidators.name,
                     context,
                   ),
                 ),
-              ),
-              SizedBox(height: sectionGap),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: FormBuilderIconPicker(
+                SizedBox(height: sectionGap),
+                TasklyFormSectionLabel(text: l10n.valueFormIconLabel),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
+                FormBuilderIconPicker(
                   name: ValueFieldKeys.iconName.id,
                   title: l10n.valueFormIconLabel,
                   hintText: l10n.valueFormIconHint,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: scheme.surfaceContainerLow,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        TasklyTokens.of(context).radiusMd,
+                      ),
+                      borderSide: BorderSide(
+                        color: scheme.outlineVariant,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        TasklyTokens.of(context).radiusMd,
+                      ),
+                      borderSide: BorderSide(
+                        color: scheme.primary,
+                        width: 1.2,
+                      ),
+                    ),
+                    contentPadding: denseFieldPadding,
+                  ),
                 ),
-              ),
-              SizedBox(height: sectionGap),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: FormBuilderColorPicker(
+                SizedBox(height: sectionGap),
+                TasklyFormSectionLabel(text: l10n.valueFormColorLabel),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
+                FormBuilderColorPicker(
                   name: ValueFieldKeys.colour.id,
                   title: l10n.valueFormColorLabel,
+                  showLabel: false,
                   compact: true,
                   validator: toFormBuilderValidator<Color>(
                     (value) => ValueValidators.color(
@@ -184,165 +253,58 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                     context,
                   ),
                 ),
-              ),
-              SizedBox(height: sectionGap),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TasklyFormSectionLabel(text: l10n.priorityLabel),
-                    const SizedBox(height: 8),
-                    FormBuilderField<ValuePriority?>(
-                      name: ValueFieldKeys.priority.id,
-                      builder: (field) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            TasklyFormPrioritySegmented(
-                              segments: [
-                                TasklyFormPrioritySegment(
-                                  label: l10n.valuePriorityLowLabel,
-                                  value: ValuePriority.low.index,
-                                  selectedColor: scheme.onSurfaceVariant,
-                                ),
-                                TasklyFormPrioritySegment(
-                                  label: l10n.valuePriorityMediumLabel,
-                                  value: ValuePriority.medium.index,
-                                  selectedColor: scheme.primary,
-                                ),
-                                TasklyFormPrioritySegment(
-                                  label: l10n.valuePriorityHighLabel,
-                                  value: ValuePriority.high.index,
-                                  selectedColor: scheme.secondary,
-                                ),
-                              ],
-                              value: field.value?.index,
-                              onChanged: (value) {
-                                final priority = value == null
-                                    ? null
-                                    : ValuePriority.values[value];
-                                field.didChange(priority);
-                                markDirty();
-                                setState(() {});
-                              },
+                SizedBox(height: sectionGap),
+                TasklyFormSectionLabel(text: l10n.priorityLabel),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
+                FormBuilderField<ValuePriority?>(
+                  name: ValueFieldKeys.priority.id,
+                  builder: (field) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TasklyFormPrioritySegmented(
+                          segments: [
+                            TasklyFormPrioritySegment(
+                              label: l10n.valuePriorityLowLabel,
+                              value: ValuePriority.low.index,
+                              selectedColor: scheme.onSurfaceVariant,
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              l10n.valuePriorityHelper,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: scheme.onSurfaceVariant,
-                                  ),
+                            TasklyFormPrioritySegment(
+                              label: l10n.valuePriorityMediumLabel,
+                              value: ValuePriority.medium.index,
+                              selectedColor: scheme.primary,
+                            ),
+                            TasklyFormPrioritySegment(
+                              label: l10n.valuePriorityHighLabel,
+                              value: ValuePriority.high.index,
+                              selectedColor: scheme.secondary,
                             ),
                           ],
-                        );
-                      },
-                    ),
-                  ],
+                          value: field.value?.index,
+                          onChanged: (value) {
+                            final priority =
+                                value == null
+                                    ? null
+                                    : ValuePriority.values[value];
+                            field.didChange(priority);
+                            markDirty();
+                            setState(() {});
+                          },
+                        ),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
+                        Text(
+                          l10n.valuePriorityHelper,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LiveValuePreviewCard extends StatelessWidget {
-  const _LiveValuePreviewCard({required this.isCompact});
-
-  final bool isCompact;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final l10n = context.l10n;
-
-    final form = FormBuilder.of(context);
-    final values = form?.instantValue ?? const <String, dynamic>{};
-
-    final rawName = values[ValueFieldKeys.name.id] as String?;
-    final name = (rawName ?? '').trim().isEmpty
-        ? l10n.valueFormNameHint
-        : rawName!.trim();
-
-    final color = (values[ValueFieldKeys.colour.id] as Color?) ?? cs.primary;
-
-    final iconName = values[ValueFieldKeys.iconName.id] as String?;
-    final iconData =
-        FormBuilderIconPicker.getIconData(iconName) ?? Icons.star_rounded;
-
-    final onColor =
-        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-        ? cs.surface
-        : cs.onSurface;
-
-    final cardPadding = isCompact
-        ? const EdgeInsets.all(14)
-        : const EdgeInsets.all(18);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outlineVariant),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color.withValues(alpha: 0.22),
-            cs.surfaceContainerLow,
-          ],
-        ),
-      ),
-      child: Padding(
-        padding: cardPadding,
-        child: Row(
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.95),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.35),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Icon(iconData, color: onColor, size: 26),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    l10n.valueFormPreviewLabel,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );

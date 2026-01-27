@@ -16,6 +16,7 @@ import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Settings screen for global app configuration.
 ///
@@ -88,7 +89,7 @@ class SettingsScreen extends StatelessWidget {
                     context: context,
                     title: 'Customization',
                     children: [
-                      const SizedBox.shrink(),
+                      SizedBox.shrink(),
                     ],
                   ),
                   if (kDebugMode)
@@ -109,7 +110,7 @@ class SettingsScreen extends StatelessWidget {
                       _SignOutItem(),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                 ],
               ),
             );
@@ -128,7 +129,12 @@ class SettingsScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+          padding: EdgeInsets.fromLTRB(
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceXl,
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceSm,
+          ),
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -248,7 +254,12 @@ class _TextSizeSlider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceSm,
+        TasklyTokens.of(context).spaceLg,
+        0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -321,7 +332,12 @@ class _MyDayDueWindowSlider extends StatelessWidget {
         : 'Enable "Show triage" to include deadline-based tasks.';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceSm,
+        TasklyTokens.of(context).spaceLg,
+        0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -541,7 +557,12 @@ class _WeeklyReviewSchedule extends StatelessWidget {
                 },
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          padding: EdgeInsets.fromLTRB(
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceXs,
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceSm,
+          ),
           child: Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
@@ -682,7 +703,12 @@ class _WeeklyReviewValuesSummary extends StatelessWidget {
           },
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          padding: EdgeInsets.fromLTRB(
+            TasklyTokens.of(context).spaceLg,
+            0,
+            TasklyTokens.of(context).spaceLg,
+            0,
+          ),
           child: Opacity(
             opacity: enabled ? 1 : 0.5,
             child: IgnorePointer(
@@ -718,7 +744,7 @@ class _WeeklyReviewValuesSummary extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Row(
                     children: [
                       Expanded(
@@ -779,7 +805,12 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
           },
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          padding: EdgeInsets.fromLTRB(
+            TasklyTokens.of(context).spaceLg,
+            0,
+            TasklyTokens.of(context).spaceLg,
+            0,
+          ),
           child: Opacity(
             opacity: enabled ? 1 : 0.5,
             child: IgnorePointer(
@@ -1036,7 +1067,7 @@ class _AccountInfo extends StatelessWidget {
       builder: (context, state) {
         final user = state.user;
         if (user == null) {
-          return const SizedBox.shrink();
+          return SizedBox.shrink();
         }
 
         final email = user.email;
@@ -1101,7 +1132,10 @@ class _SignOutItem extends StatelessWidget {
         );
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: TasklyTokens.of(context).spaceLg,
+          vertical: TasklyTokens.of(context).spaceSm,
+        ),
         child: OutlinedButton.icon(
           onPressed: () => _performSignOut(context),
           icon: const Icon(Icons.logout_rounded),

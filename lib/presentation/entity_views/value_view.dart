@@ -5,6 +5,7 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_bloc/presentation/shared/ui/sparkline_painter.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 enum ValueViewVariant {
   standard,
@@ -114,20 +115,23 @@ class ValueView extends StatelessWidget {
           );
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: EdgeInsets.symmetric(
+        horizontal: TasklyTokens.of(context).spaceLg,
+        vertical: TasklyTokens.of(context).spaceSm,
+      ),
       elevation: 0,
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         side: BorderSide(
           color: colorScheme.outlineVariant.withOpacity(0.6),
         ),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -136,7 +140,7 @@ class ValueView extends StatelessWidget {
                 color: valueColor,
                 size: 44,
               ),
-              const SizedBox(width: 12),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,7 +149,7 @@ class ValueView extends StatelessWidget {
                       children: [
                         if (titlePrefix != null) ...[
                           titlePrefix!,
-                          const SizedBox(width: 8),
+                          SizedBox(height: TasklyTokens.of(context).spaceSm),
                         ],
                         Expanded(
                           child: Text(
@@ -162,7 +166,7 @@ class ValueView extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     if (stats == null)
                       Text(
                         l10n.loadingTitle,
@@ -176,7 +180,7 @@ class ValueView extends StatelessWidget {
                         value: primaryLabel ?? '',
                         colorScheme: colorScheme,
                       ),
-                      const SizedBox(height: 6),
+                      SizedBox(height: TasklyTokens.of(context).spaceSm),
                       _MyValuesCountRow(
                         label: 'Secondary',
                         value: secondaryLabel ?? '',
@@ -204,21 +208,24 @@ class ValueView extends StatelessWidget {
     );
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: EdgeInsets.symmetric(
+        horizontal: TasklyTokens.of(context).spaceLg,
+        vertical: TasklyTokens.of(context).spaceSm,
+      ),
       color: valueColor.withOpacity(0.15),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context, theme, colorScheme),
-              const SizedBox(height: 12),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               if (valueStats != null) ...[
                 _StatsRow(stats: valueStats, colorScheme: colorScheme),
-                const SizedBox(height: 8),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 _SparklineWithSpacing(
                   data: valueStats.weeklyTrend,
                   colorScheme: colorScheme,
@@ -260,13 +267,19 @@ class ValueView extends StatelessWidget {
     final indicatorColor = valueColor.withOpacity(0.9);
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      margin: EdgeInsets.symmetric(
+        horizontal: TasklyTokens.of(context).spaceLg,
+        vertical: TasklyTokens.of(context).spaceSm,
+      ),
       color: valueColor.withOpacity(0.15),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: EdgeInsets.symmetric(
+            horizontal: TasklyTokens.of(context).spaceLg,
+            vertical: TasklyTokens.of(context).spaceSm,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -288,10 +301,10 @@ class ValueView extends StatelessWidget {
                       color: colorScheme.onSurfaceVariant,
                       size: 20,
                     ),
-                  const SizedBox(width: 6),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   if (titlePrefix != null) ...[
                     titlePrefix!,
-                    const SizedBox(width: 6),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                   ],
                   if (rank != null) ...[
                     Text(
@@ -301,7 +314,7 @@ class ValueView extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                   ],
                   Container(
                     width: 12,
@@ -311,7 +324,7 @@ class ValueView extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Expanded(
                     child: Text(
                       value.name,
@@ -327,13 +340,13 @@ class ValueView extends StatelessWidget {
                       value: '${valueStats.targetPercent.toStringAsFixed(0)}%',
                       colorScheme: colorScheme,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     _CompactStatChip(
                       label: l10n.actualLabel,
                       value: '${valueStats.actualPercent.toStringAsFixed(0)}%',
                       colorScheme: colorScheme,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     _CompactGapIndicator(
                       stats: valueStats,
                       colorScheme: colorScheme,
@@ -342,7 +355,10 @@ class ValueView extends StatelessWidget {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 32, top: 2),
+                padding: EdgeInsets.only(
+                  left: TasklyTokens.of(context).spaceXxl,
+                  top: TasklyTokens.of(context).spaceXxs,
+                ),
                 child: valueStats != null
                     ? Text(
                         l10n.valueActivityCounts(
@@ -395,7 +411,7 @@ class ValueView extends StatelessWidget {
             color: valueColor,
             size: 32,
           ),
-        const SizedBox(width: 8),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         if (rank != null) ...[
           Text(
             '$rank.',
@@ -403,7 +419,7 @@ class ValueView extends StatelessWidget {
               color: colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
         ],
         if (showDragHandle && rank != null) ...[
           _ValueIconAvatar(
@@ -411,12 +427,12 @@ class ValueView extends StatelessWidget {
             color: valueColor,
             size: 32,
           ),
-          const SizedBox(width: 10),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
         ] else
-          const SizedBox(width: 2),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
         if (titlePrefix != null) ...[
           titlePrefix!,
-          const SizedBox(width: 6),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
         ],
         Expanded(
           child: Text(
@@ -514,12 +530,15 @@ class _CompactGapIndicator extends StatelessWidget {
         : colorScheme.onSurfaceVariant;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: EdgeInsets.symmetric(
+        horizontal: TasklyTokens.of(context).spaceLg,
+        vertical: TasklyTokens.of(context).spaceSm,
+      ),
       decoration: BoxDecoration(
         color: stats.isSignificantGap
             ? gapColor.withOpacity(0.1)
             : colorScheme.surface.withValues(alpha: 0),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -535,7 +554,7 @@ class _CompactGapIndicator extends StatelessWidget {
             ),
           ),
           if (stats.isSignificantGap) ...[
-            const SizedBox(width: 2),
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
             Icon(Icons.warning_amber, size: 12, color: gapColor),
           ],
         ],
@@ -609,20 +628,25 @@ class _StatsRow extends StatelessWidget {
           value: '${stats.targetPercent.toStringAsFixed(0)}%',
           colorScheme: colorScheme,
         ),
-        const SizedBox(width: 8),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         _StatChip(
           label: l10n.actualLabel,
           value: '${stats.actualPercent.toStringAsFixed(0)}%',
           colorScheme: colorScheme,
         ),
-        const SizedBox(width: 8),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: EdgeInsets.symmetric(
+            horizontal: TasklyTokens.of(context).spaceLg,
+            vertical: TasklyTokens.of(context).spaceSm,
+          ),
           decoration: BoxDecoration(
             color: stats.isSignificantGap
                 ? gapColor.withOpacity(0.1)
                 : colorScheme.surface.withValues(alpha: 0),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(
+              TasklyTokens.of(context).radiusMd,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -637,7 +661,7 @@ class _StatsRow extends StatelessWidget {
                 ),
               ),
               if (stats.isSignificantGap) ...[
-                const SizedBox(width: 4),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 Icon(
                   Icons.warning_amber,
                   size: 16,
@@ -702,14 +726,14 @@ class _SparklineWithSpacing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!hasData) {
-      return const SizedBox.shrink();
+      return SizedBox.shrink();
     }
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         _Sparkline(data: data, colorScheme: colorScheme),
-        const SizedBox(height: 8),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
       ],
     );
   }
@@ -729,7 +753,7 @@ class _Sparkline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!hasData) {
-      return const SizedBox.shrink();
+      return SizedBox.shrink();
     }
 
     return SizedBox(

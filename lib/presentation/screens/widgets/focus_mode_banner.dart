@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/allocation.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Banner showing the currently selected focus mode.
 ///
@@ -18,11 +19,17 @@ class FocusModeBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
     final semanticsLabel =
         'Current focus mode: ${focusMode.displayName}. ${focusMode.tagline}';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: EdgeInsets.fromLTRB(
+        tokens.spaceLg,
+        tokens.spaceMd,
+        tokens.spaceLg,
+        tokens.spaceSm,
+      ),
       child: Semantics(
         container: true,
         label: semanticsLabel,
@@ -31,20 +38,20 @@ class FocusModeBanner extends StatelessWidget {
           message: 'Open Focus Setup',
           child: Material(
             color: cs.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
             child: InkWell(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(tokens.radiusMd),
               onTap: onTap,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spaceLg,
+                  vertical: tokens.spaceMd,
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     _FocusModeIcon(focusMode: focusMode),
-                    const SizedBox(width: 10),
+                    SizedBox(width: tokens.spaceSm),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,7 +65,7 @@ class FocusModeBanner extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 2),
+                          SizedBox(height: TasklyTokens.of(context).spaceSm),
                           Text(
                             focusMode.tagline,
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -70,7 +77,7 @@ class FocusModeBanner extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: tokens.spaceSm),
                     Icon(
                       Icons.chevron_right,
                       size: 18,

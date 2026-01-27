@@ -14,7 +14,6 @@ class TasklyFormSectionLabel extends StatelessWidget {
     final labelStyle = theme.textTheme.labelSmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
       fontWeight: FontWeight.w700,
-      letterSpacing: 1.2,
     );
 
     return Text(

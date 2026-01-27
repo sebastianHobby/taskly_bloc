@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class AppLoadingContent extends StatelessWidget {
   const AppLoadingContent({
@@ -21,38 +22,39 @@ class AppLoadingContent extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final resolvedIcon = icon ?? Icons.sync;
     final label = progressLabel;
+    final tokens = TasklyTokens.of(context);
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 420),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(tokens.spaceXl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               resolvedIcon,
-              size: 40,
+              size: tokens.spaceXxl + tokens.spaceSm,
               color: colorScheme.primary,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: tokens.spaceLg),
             Text(
               title,
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: tokens.spaceSm),
             Text(
               subtitle,
               style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: tokens.spaceXl),
             if (progressValue != null)
               LinearProgressIndicator(value: progressValue)
             else
               const LinearProgressIndicator(),
             if (label != null) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: tokens.spaceMd),
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodyMedium,

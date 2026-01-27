@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 import 'package:taskly_ui/src/primitives/modal_chrome_scope.dart';
 
 /// A composable shell for modal forms with consistent styling.
@@ -136,6 +137,7 @@ class FormShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     final modalChrome = ModalChromeScope.maybeOf(context);
     final isCompact = MediaQuery.sizeOf(context).width < 600;
@@ -199,7 +201,7 @@ class FormShell extends StatelessWidget {
         : Row(
             children: [
               ...resolvedLeadingActions,
-              const SizedBox(width: 12),
+              SizedBox(width: tokens.spaceMd),
               headerTitle!,
               const Spacer(),
               ...resolvedTrailingActions,
@@ -217,17 +219,22 @@ class FormShell extends StatelessWidget {
           if (resolvedShowHandleBar)
             Container(
               width: handleBarWidth,
-              height: 4,
-              margin: const EdgeInsets.only(top: 12),
+              height: tokens.spaceXs,
+              margin: EdgeInsets.only(top: tokens.spaceMd),
               decoration: BoxDecoration(
                 color: colorScheme.outline.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(tokens.radiusXxs),
               ),
             ),
 
           // Action buttons row
           Container(
-            padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+            padding: EdgeInsets.fromLTRB(
+              tokens.spaceSm,
+              tokens.spaceXs,
+              tokens.spaceSm,
+              0,
+            ),
             child: headerContent,
           ),
 
@@ -235,14 +242,19 @@ class FormShell extends StatelessWidget {
           Flexible(
             child: SingleChildScrollView(
               controller: scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: tokens.spaceLg3),
               child: child,
             ),
           ),
 
           if (showFooterSubmit)
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              padding: EdgeInsets.fromLTRB(
+                tokens.spaceLg3,
+                tokens.spaceMd,
+                tokens.spaceLg3,
+                tokens.spaceLg3,
+              ),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 boxShadow: [

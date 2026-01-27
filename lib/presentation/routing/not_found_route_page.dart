@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class NotFoundRoutePage extends StatelessWidget {
   const NotFoundRoutePage({
@@ -30,7 +31,7 @@ class NotFoundRoutePage extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
       child: TasklyFeedRenderer(
         spec: TasklyFeedSpec.empty(
           empty: TasklyEmptyStateSpec(

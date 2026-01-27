@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Splash screen shown while determining authentication state.
 ///
@@ -12,6 +13,7 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Scaffold(
       body: Center(
@@ -23,7 +25,7 @@ class SplashScreen extends StatelessWidget {
               size: 80,
               color: colorScheme.primary,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: tokens.spaceXl),
             Text(
               'Taskly',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -31,10 +33,10 @@ class SplashScreen extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: tokens.spaceXxl),
             SizedBox(
-              width: 24,
-              height: 24,
+              width: tokens.spaceXl,
+              height: tokens.spaceXl,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: colorScheme.primary,

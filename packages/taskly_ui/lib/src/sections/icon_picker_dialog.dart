@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 /// A dialog for selecting an icon with search and category filtering.
 ///
@@ -98,6 +99,7 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
     final filteredIcons = _filteredIcons;
 
     return Dialog(
@@ -111,7 +113,7 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(tokens.spaceLg),
               child: Row(
                 children: [
                   Text(
@@ -129,7 +131,7 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
 
             // Search bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: tokens.spaceLg),
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
@@ -151,12 +153,12 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
               ),
             ),
 
-            const SizedBox(height: 8),
+            SizedBox(height: tokens.spaceSm),
 
             // Category chips
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: tokens.spaceLg),
               child: Row(
                 children: [
                   FilterChip(
@@ -164,10 +166,10 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
                     selected: _selectedCategory == null,
                     onSelected: (_) => setState(() => _selectedCategory = null),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: tokens.spaceSm),
                   ...widget.icons.map(
                     (category) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: EdgeInsets.only(right: tokens.spaceSm),
                       child: FilterChip(
                         label: Text(category.label),
                         selected: _selectedCategory == category.name,
@@ -184,7 +186,7 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
               ),
             ),
 
-            const SizedBox(height: 8),
+            SizedBox(height: tokens.spaceSm),
             const Divider(height: 1),
 
             // Icon grid
@@ -199,7 +201,7 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
                             size: 48,
                             color: colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: tokens.spaceSm),
                           Text(
                             widget.noIconsFoundLabel,
                             style: theme.textTheme.bodyLarge?.copyWith(
@@ -210,7 +212,7 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
                       ),
                     )
                   : GridView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: EdgeInsets.all(tokens.spaceLg),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 5,
@@ -228,13 +230,19 @@ class _IconPickerDialogState extends State<IconPickerDialog> {
                             color: isSelected
                                 ? colorScheme.primaryContainer
                                 : colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(
+                              tokens.radiusSm,
+                            ),
                             child: InkWell(
                               onTap: () => Navigator.of(context).pop(icon.name),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(
+                                tokens.radiusSm,
+                              ),
                               child: Container(
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(
+                                    tokens.radiusSm,
+                                  ),
                                   border: isSelected
                                       ? Border.all(
                                           color: colorScheme.primary,

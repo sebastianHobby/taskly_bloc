@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/forms/taskly_form_preset.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 /// A chip widget for displaying and editing recurrence rules.
 ///
@@ -36,6 +37,7 @@ class TasklyFormRecurrenceChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     final resolvedHasValue = hasValue && (valueLabel?.isNotEmpty ?? false);
     final canClear = resolvedHasValue && onClear != null;
@@ -67,7 +69,7 @@ class TasklyFormRecurrenceChip extends StatelessWidget {
           : null,
       onDeleted: canClear ? onClear : null,
       onPressed: onTap,
-      labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+      labelPadding: EdgeInsets.symmetric(horizontal: tokens.spaceXs2),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(preset.borderRadius),
       ),

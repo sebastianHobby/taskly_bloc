@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Sign up view with custom form using AuthBloc.
 class SignUpView extends StatefulWidget {
@@ -67,7 +68,7 @@ class _SignUpViewState extends State<SignUpView> {
         },
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
               child: Form(
@@ -81,19 +82,23 @@ class _SignUpViewState extends State<SignUpView> {
                       size: 80,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
                       'Create Account',
                       style: Theme.of(context).textTheme.displaySmall,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
                       'Sign up to start managing your tasks',
                       style: Theme.of(context).textTheme.bodyLarge,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 48),
+                    SizedBox(
+                      height:
+                          TasklyTokens.of(context).spaceXxl +
+                          TasklyTokens.of(context).spaceLg,
+                    ),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -115,7 +120,7 @@ class _SignUpViewState extends State<SignUpView> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
@@ -149,7 +154,7 @@ class _SignUpViewState extends State<SignUpView> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     TextFormField(
                       controller: _confirmPasswordController,
                       obscureText: _obscureConfirmPassword,
@@ -185,15 +190,17 @@ class _SignUpViewState extends State<SignUpView> {
                       },
                       onFieldSubmitted: (_) => _handleSignUp(),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     BlocBuilder<AuthBloc, AppAuthState>(
                       builder: (context, state) {
                         return FilledButton(
                           onPressed: state.isLoading ? null : _handleSignUp,
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(
+                              TasklyTokens.of(context).spaceLg,
+                            ),
                             child: state.isLoading
-                                ? const SizedBox(
+                                ? SizedBox(
                                     height: 20,
                                     width: 20,
                                     child: CircularProgressIndicator(
@@ -205,7 +212,7 @@ class _SignUpViewState extends State<SignUpView> {
                         );
                       },
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

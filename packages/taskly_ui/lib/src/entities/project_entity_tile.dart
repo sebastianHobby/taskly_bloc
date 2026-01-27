@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 import 'package:taskly_ui/src/models/value_chip_data.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 import 'package:taskly_ui/src/primitives/meta_badges.dart';
-import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
-import 'package:taskly_ui/src/primitives/value_chip_widget.dart';
+import 'package:taskly_ui/src/primitives/value_tag.dart';
 
 /// Canonical Project tile aligned to Stitch mockups.
 ///
@@ -14,7 +14,6 @@ class ProjectEntityTile extends StatelessWidget {
     required this.model,
     this.preset = const TasklyProjectRowPreset.standard(),
     this.actions = const TasklyProjectRowActions(),
-    this.leadingAccentColor,
     super.key,
   });
 
@@ -22,9 +21,6 @@ class ProjectEntityTile extends StatelessWidget {
 
   final TasklyProjectRowPreset preset;
   final TasklyProjectRowActions actions;
-
-  /// Optional left-edge accent (used to subtly emphasize urgency).
-  final Color? leadingAccentColor;
 
   bool? get _selected => switch (preset) {
     TasklyProjectRowPresetBulkSelection(:final selected) => selected,
@@ -45,17 +41,14 @@ class ProjectEntityTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final tokens = TasklyEntityTileTheme.of(context);
+    final tokens = TasklyTokens.of(context);
     final isReadOnlyHeader =
         !_isInbox &&
         actions.onTap == null &&
         actions.onLongPress == null &&
         actions.onToggleSelected == null;
 
-    final effectiveCompact = MediaQuery.sizeOf(context).width < 420;
-    final padding = effectiveCompact
-        ? const EdgeInsets.all(16)
-        : tokens.projectPadding;
+    final padding = tokens.projectPadding;
 
     final pinnedPrefix = model.pinned ? const _PinnedGlyph() : null;
 
@@ -73,12 +66,12 @@ class ProjectEntityTile extends StatelessWidget {
 
     final card = DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.cardSurfaceColor,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(tokens.projectRadius),
-        border: Border.all(color: tokens.cardBorderColor),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
         boxShadow: [
           BoxShadow(
-            color: tokens.cardShadowColor,
+            color: scheme.shadow.withValues(alpha: 0.05),
             blurRadius: tokens.cardShadowBlur,
             offset: tokens.cardShadowOffset,
           ),
@@ -93,19 +86,9 @@ class ProjectEntityTile extends StatelessWidget {
             onLongPress: actions.onLongPress,
             child: Stack(
               children: [
-                if (leadingAccentColor != null)
-                  Positioned.fill(
-                    left: 0,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Container(width: 4, color: leadingAccentColor),
-                    ),
-                  ),
                 Padding(
                   padding: padding.copyWith(
-                    left: (leadingAccentColor == null)
-                        ? padding.left
-                        : (padding.left + 2),
+                    left: padding.left,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,13 +98,13 @@ class ProjectEntityTile extends StatelessWidget {
                         children: [
                           if (_isInbox) ...[
                             _InboxGlyph(tokens: tokens),
-                            const SizedBox(width: 12),
+                            SizedBox(width: tokens.spaceMd),
                           ] else ...[
                             _ProgressRing(
                               progress: _progress ?? 0.0,
                               tokens: tokens,
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: tokens.spaceMd),
                           ],
                           Expanded(
                             child: Column(
@@ -132,10 +115,12 @@ class ProjectEntityTile extends StatelessWidget {
                                   children: [
                                     if (titlePrefix != null) ...[
                                       Padding(
-                                        padding: const EdgeInsets.only(top: 2),
+                                        padding: EdgeInsets.only(
+                                          top: tokens.spaceXxs,
+                                        ),
                                         child: titlePrefix,
                                       ),
-                                      const SizedBox(width: 6),
+                                      SizedBox(width: tokens.spaceXs2),
                                     ],
                                     Expanded(
                                       child: Text(
@@ -144,9 +129,13 @@ class ProjectEntityTile extends StatelessWidget {
                                         overflow: TextOverflow.ellipsis,
                                         style:
                                             (isReadOnlyHeader
-                                                    ? tokens.projectHeaderTitle
-                                                    : tokens.projectTitle)
-                                                .copyWith(
+                                                    ? theme
+                                                          .textTheme
+                                                          .headlineSmall
+                                                    : theme
+                                                          .textTheme
+                                                          .titleMedium)
+                                                ?.copyWith(
                                                   color: scheme.onSurface,
                                                   decoration: model.completed
                                                       ? TextDecoration
@@ -161,7 +150,7 @@ class ProjectEntityTile extends StatelessWidget {
                                       ),
                                     ),
                                     if (_selected != null) ...[
-                                      const SizedBox(width: 6),
+                                      SizedBox(width: tokens.spaceXs2),
                                       IconButton(
                                         tooltip: (_selected ?? false)
                                             ? 'Deselect'
@@ -177,29 +166,23 @@ class ProjectEntityTile extends StatelessWidget {
                                               : scheme.onSurfaceVariant,
                                         ),
                                         style: IconButton.styleFrom(
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                          minimumSize: const Size(40, 40),
-                                          padding: const EdgeInsets.all(8),
+                                          minimumSize: Size.square(
+                                            tokens.minTapTargetSize,
+                                          ),
+                                          padding: EdgeInsets.all(
+                                            tokens.spaceSm,
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ],
                                 ),
-                                if (model.subtitle != null &&
-                                    model.subtitle!.trim().isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    model.subtitle!.trim(),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: tokens.subtitle.copyWith(
-                                      color: scheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
+                                _ProjectValueLine(
+                                  primary: model.leadingChip,
+                                  description: model.subtitle,
+                                ),
                                 if (model.taskCount != null) ...[
-                                  const SizedBox(height: 6),
+                                  SizedBox(height: tokens.spaceXs2),
                                   _ProjectMetaRow(
                                     totalCount: model.taskCount!,
                                     completedCount: model.completedTaskCount,
@@ -208,7 +191,6 @@ class ProjectEntityTile extends StatelessWidget {
                                     isOverdue: model.meta.isOverdue,
                                     isDueToday: model.meta.isDueToday,
                                     priority: model.meta.priority,
-                                    leadingChip: model.leadingChip,
                                     showCompletionRatio: !_isInbox,
                                   ),
                                 ],
@@ -244,7 +226,6 @@ class _ProjectMetaRow extends StatelessWidget {
     required this.isOverdue,
     required this.isDueToday,
     required this.priority,
-    required this.leadingChip,
     required this.showCompletionRatio,
   });
 
@@ -255,23 +236,20 @@ class _ProjectMetaRow extends StatelessWidget {
   final bool isOverdue;
   final bool isDueToday;
   final int? priority;
-  final ValueChipData? leadingChip;
   final bool showCompletionRatio;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final tokens = TasklyEntityTileTheme.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
-    final textStyle = tokens.metaValue.copyWith(
+    final textStyle = theme.textTheme.labelSmall?.copyWith(
       color: scheme.onSurfaceVariant,
+      fontWeight: FontWeight.w700,
     );
 
     final children = <Widget>[];
-
-    if (leadingChip != null) {
-      children.add(ValueChip(data: leadingChip!));
-    }
 
     if (showCompletionRatio && completedCount != null) {
       children.add(
@@ -283,7 +261,7 @@ class _ProjectMetaRow extends StatelessWidget {
               size: 14,
               color: scheme.secondary,
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: tokens.spaceXs),
             Text('$completedCount/$totalCount tasks', style: textStyle),
           ],
         ),
@@ -302,7 +280,7 @@ class _ProjectMetaRow extends StatelessWidget {
                   ? scheme.secondary
                   : scheme.onSurfaceVariant.withValues(alpha: 0.8),
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: tokens.spaceXs),
             Text('$totalCount tasks', style: textStyle),
           ],
         ),
@@ -332,10 +310,63 @@ class _ProjectMetaRow extends StatelessWidget {
     }
 
     return Wrap(
-      spacing: 10,
-      runSpacing: 4,
+      spacing: tokens.spaceSm2,
+      runSpacing: tokens.spaceXs,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: children,
+    );
+  }
+}
+
+class _ProjectValueLine extends StatelessWidget {
+  const _ProjectValueLine({
+    required this.primary,
+    required this.description,
+  });
+
+  final ValueChipData? primary;
+  final String? description;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final primaryValue = primary;
+    final descriptionText = description?.trim();
+    final hasDescription =
+        descriptionText != null && descriptionText.isNotEmpty;
+
+    if (primaryValue == null && !hasDescription) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(top: tokens.spaceXs),
+      child: Row(
+        children: [
+          if (primaryValue != null)
+            ValueTag(
+              data: primaryValue,
+              variant: ValueTagVariant.primary,
+              iconOnly: false,
+              maxLabelChars: 14,
+            ),
+          if (primaryValue != null && hasDescription)
+            SizedBox(width: tokens.spaceSm),
+          if (descriptionText != null && descriptionText.isNotEmpty)
+            Expanded(
+              child: Text(
+                descriptionText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -344,40 +375,40 @@ class _ProgressRing extends StatelessWidget {
   const _ProgressRing({required this.progress, required this.tokens});
 
   final double progress;
-  final TasklyEntityTileTheme tokens;
+  final TasklyTokens tokens;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final percent = (progress * 100).round();
 
     return SizedBox(
-      width: 28,
-      height: 28,
+      width: tokens.progressRingSizeSmall,
+      height: tokens.progressRingSizeSmall,
       child: Stack(
         alignment: Alignment.center,
         children: [
           CircularProgressIndicator(
             value: 1,
-            strokeWidth: 2,
+            strokeWidth: tokens.progressRingStrokeSmall,
             valueColor: AlwaysStoppedAnimation<Color>(
-              tokens.progressTrackColor,
+              scheme.surfaceContainerHighest,
             ),
           ),
           CircularProgressIndicator(
             value: progress,
-            strokeWidth: 2,
+            strokeWidth: tokens.progressRingStrokeSmall,
             strokeCap: StrokeCap.round,
             backgroundColor: scheme.surface.withValues(alpha: 0),
             valueColor: AlwaysStoppedAnimation<Color>(
-              tokens.progressFillColor,
+              scheme.primary,
             ),
           ),
           Text(
             '$percent%',
-            style: tokens.metaValue.copyWith(
+            style: theme.textTheme.labelSmall?.copyWith(
               color: scheme.onSurfaceVariant,
-              fontSize: 10,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -390,7 +421,7 @@ class _ProgressRing extends StatelessWidget {
 class _InboxGlyph extends StatelessWidget {
   const _InboxGlyph({required this.tokens});
 
-  final TasklyEntityTileTheme tokens;
+  final TasklyTokens tokens;
 
   @override
   Widget build(BuildContext context) {

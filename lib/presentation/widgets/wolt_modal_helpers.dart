@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Helper to centralize modal usage for detail sheets.
 ///
@@ -75,8 +76,10 @@ Future<T?> _showAsBottomSheet<T>({
     isDismissible: barrierDismissible,
     useSafeArea: useSafeArea,
     backgroundColor: Theme.of(context).colorScheme.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(TasklyTokens.of(context).radiusLg),
+      ),
     ),
     builder: (modalContext) {
       return SafeArea(
@@ -116,11 +119,12 @@ Future<T?> _showAsDialog<T>({
     builder: (dialogContext) {
       final screenHeight = MediaQuery.sizeOf(dialogContext).height;
       final maxHeight = screenHeight * maxHeightFactor;
+      final tokens = TasklyTokens.of(dialogContext);
 
       return Dialog(
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(tokens.radiusLg),
         ),
         child: ConstrainedBox(
           constraints: BoxConstraints(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// A form field for selecting task priority (1-4).
 class FormBuilderPriorityPicker extends FormBuilderFieldDecoration<int?> {
@@ -17,6 +18,7 @@ class FormBuilderPriorityPicker extends FormBuilderFieldDecoration<int?> {
   }) : super(
          builder: (FormFieldState<int?> field) {
            final scheme = Theme.of(field.context).colorScheme;
+           final tokens = TasklyTokens.of(field.context);
            return InputDecorator(
              decoration: decoration,
              child: Row(
@@ -27,21 +29,21 @@ class FormBuilderPriorityPicker extends FormBuilderFieldDecoration<int?> {
                    isSelected: field.value == 1,
                    onTap: () => field.didChange(field.value == 1 ? null : 1),
                  ),
-                 const SizedBox(width: 8),
+                 SizedBox(width: tokens.spaceSm),
                  _PriorityChip(
                    label: 'P2',
                    color: scheme.tertiary,
                    isSelected: field.value == 2,
                    onTap: () => field.didChange(field.value == 2 ? null : 2),
                  ),
-                 const SizedBox(width: 8),
+                 SizedBox(width: tokens.spaceSm),
                  _PriorityChip(
                    label: 'P3',
                    color: scheme.primary,
                    isSelected: field.value == 3,
                    onTap: () => field.didChange(field.value == 3 ? null : 3),
                  ),
-                 const SizedBox(width: 8),
+                 SizedBox(width: tokens.spaceSm),
                  _PriorityChip(
                    label: 'P4',
                    color: scheme.outline,
@@ -73,6 +75,7 @@ class _PriorityChip extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return FilterChip(
       label: Text(label),
@@ -93,7 +96,7 @@ class _PriorityChip extends StatelessWidget {
             : theme.colorScheme.outline.withValues(alpha: 0.3),
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(tokens.radiusSm),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 /// A generic confirmation dialog with optional destructive styling.
 class ConfirmationDialog extends StatelessWidget {
@@ -56,11 +57,12 @@ class ConfirmationDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     final dialogIcon = icon == null
         ? null
         : Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(tokens.spaceLg),
             decoration: BoxDecoration(
               color: iconBackgroundColor,
               shape: BoxShape.circle,
@@ -99,7 +101,12 @@ class ConfirmationDialog extends StatelessWidget {
         ),
       ],
       actionsAlignment: MainAxisAlignment.spaceEvenly,
-      actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      actionsPadding: EdgeInsets.fromLTRB(
+        tokens.spaceXl,
+        0,
+        tokens.spaceXl,
+        tokens.spaceXl,
+      ),
     );
   }
 }

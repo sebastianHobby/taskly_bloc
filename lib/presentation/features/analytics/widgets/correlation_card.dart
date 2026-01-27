@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class CorrelationCard extends StatelessWidget {
   const CorrelationCard({
@@ -17,16 +18,16 @@ class CorrelationCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   _buildCorrelationIndicator(context),
-                  const SizedBox(width: 12),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,7 +38,7 @@ class CorrelationCard extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
                         Text(
                           _getStrengthLabel(),
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -50,13 +51,13 @@ class CorrelationCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
                 correlation.insight ?? '',
                 style: theme.textTheme.bodyMedium,
               ),
               if (correlation.differencePercent != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 Row(
                   children: [
                     Icon(
@@ -68,7 +69,7 @@ class CorrelationCard extends StatelessWidget {
                           ? theme.colorScheme.tertiary
                           : theme.colorScheme.error,
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
                       '${correlation.differencePercent!.abs().toStringAsFixed(0)}% difference',
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -78,7 +79,7 @@ class CorrelationCard extends StatelessWidget {
                   ],
                 ),
               ],
-              const SizedBox(height: 8),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
                 'Sample size: ${correlation.sampleSize} days',
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -87,12 +88,12 @@ class CorrelationCard extends StatelessWidget {
               ),
               // Show statistical significance if available
               if (correlation.statisticalSignificance != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 _buildSignificanceInfo(context),
               ],
               // Show performance metrics if available
               if (correlation.performanceMetrics != null) ...[
-                const SizedBox(height: 4),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 _buildPerformanceInfo(context),
               ],
             ],
@@ -110,7 +111,7 @@ class CorrelationCard extends StatelessWidget {
       height: 60,
       decoration: BoxDecoration(
         color: _getStrengthColor(context).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -169,7 +170,7 @@ class CorrelationCard extends StatelessWidget {
               ? theme.colorScheme.tertiary
               : theme.colorScheme.onSurfaceVariant,
         ),
-        const SizedBox(width: 4),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         Text(
           sig.isSignificant
               ? 'Statistically significant (p=${sig.pValue.toStringAsFixed(3)})'

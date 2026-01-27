@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_library_cubit.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalTrackersPage extends StatelessWidget {
   const JournalTrackersPage({super.key});
@@ -112,7 +113,7 @@ class _ManageLibraryView extends StatelessWidget {
                         ),
                         textInputAction: TextInputAction.next,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: TasklyTokens.of(context).spaceSm),
                       DropdownButtonFormField<TrackerGroup?>(
                         value: selected,
                         decoration: const InputDecoration(
@@ -270,10 +271,15 @@ class _ManageLibraryView extends StatelessWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+        padding: EdgeInsets.fromLTRB(
+          TasklyTokens.of(context).spaceMd,
+          TasklyTokens.of(context).spaceMd,
+          TasklyTokens.of(context).spaceMd,
+          TasklyTokens.of(context).spaceXl,
+        ),
         children: [
           Text('Groups', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           Card(
             child: Column(
               children: [
@@ -341,15 +347,15 @@ class _ManageLibraryView extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           Text('Trackers', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           for (final group in groupOptions())
             Builder(
               builder: (context) {
                 final groupId = group?.id;
                 final inGroup = trackersForGroup(groupId);
-                if (inGroup.isEmpty) return const SizedBox.shrink();
+                if (inGroup.isEmpty) return SizedBox.shrink();
 
                 return Card(
                   child: ExpansionTile(
@@ -382,7 +388,7 @@ class _ManageLibraryView extends StatelessWidget {
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.fromLTRB(
+                                  padding: EdgeInsets.fromLTRB(
                                     16,
                                     0,
                                     16,
@@ -420,7 +426,11 @@ class _ManageLibraryView extends StatelessWidget {
                                                         ),
                                             ),
                                       ),
-                                      const SizedBox(width: 8),
+                                      SizedBox(
+                                        height: TasklyTokens.of(
+                                          context,
+                                        ).spaceSm,
+                                      ),
                                       IconButton(
                                         tooltip: 'Move up',
                                         onPressed: isSaving
@@ -464,7 +474,7 @@ class _ManageLibraryView extends StatelessWidget {
                 );
               },
             ),
-          const SizedBox(height: 24),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
         ],
       ),
     );

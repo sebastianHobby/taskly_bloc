@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 /// A reusable error state widget that displays an error icon, message,
 /// and optional retry action.
@@ -74,16 +75,17 @@ class ErrorStateWidget extends StatelessWidget {
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(tokens.spaceXxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: iconSize + 32,
-              height: iconSize + 32,
+              width: iconSize + tokens.spaceXxl,
+              height: iconSize + tokens.spaceXxl,
               decoration: BoxDecoration(
                 color: colorScheme.errorContainer.withValues(alpha: 0.3),
                 shape: BoxShape.circle,
@@ -94,7 +96,7 @@ class ErrorStateWidget extends StatelessWidget {
                 color: colorScheme.error,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: tokens.spaceXl),
             Text(
               message,
               style: theme.textTheme.bodyLarge?.copyWith(
@@ -103,14 +105,14 @@ class ErrorStateWidget extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             if (onRetry != null) ...[
-              const SizedBox(height: 24),
+              SizedBox(height: tokens.spaceXl),
               FilledButton.tonal(
                 onPressed: onRetry,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(Icons.refresh, size: 18),
-                    const SizedBox(width: 8),
+                    SizedBox(width: tokens.spaceSm),
                     Text(retryLabel!),
                   ],
                 ),

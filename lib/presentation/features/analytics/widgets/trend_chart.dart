@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class TrendChart extends StatelessWidget {
   const TrendChart({
@@ -23,7 +24,7 @@ class TrendChart extends StatelessWidget {
     if (data.points.isEmpty) {
       return Card(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
           child: Center(
             child: Text(
               'No data available',
@@ -38,7 +39,7 @@ class TrendChart extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -50,7 +51,7 @@ class TrendChart extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
             ],
             SizedBox(
               height: 200,
@@ -75,7 +76,7 @@ class TrendChart extends StatelessWidget {
                         reservedSize: 30,
                         getTitlesWidget: (value, meta) {
                           if (value.toInt() >= data.points.length) {
-                            return const SizedBox();
+                            return SizedBox();
                           }
                           final point = data.points[value.toInt()];
                           final label = _formatDate(

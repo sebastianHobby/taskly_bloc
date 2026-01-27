@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 /// A reusable section header widget for organizing form fields.
 ///
 /// Displays an icon and title with consistent styling for form sections.
@@ -27,13 +29,14 @@ class FormSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = TasklyTokens.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: tokens.spaceSm),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: theme.colorScheme.primary),
-          const SizedBox(width: 8),
+          Icon(icon, size: tokens.spaceLg3, color: theme.colorScheme.primary),
+          SizedBox(width: tokens.spaceSm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
