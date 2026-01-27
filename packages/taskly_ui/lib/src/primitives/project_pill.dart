@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 /// A compact pill for showing a task's project in meta lines.
 ///
@@ -44,6 +45,7 @@ class ProjectPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     // Background stays neutral; only the icon gets a semantic tint.
     final backgroundColor = scheme.surfaceContainerHigh;
@@ -54,10 +56,13 @@ class ProjectPill extends StatelessWidget {
     final pill = ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spaceSm,
+          vertical: tokens.spaceXxs,
+        ),
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(tokens.radiusPill),
           border: Border.all(
             color: scheme.outlineVariant.withValues(alpha: 0.65),
           ),
@@ -70,7 +75,7 @@ class ProjectPill extends StatelessWidget {
               size: 12,
               color: iconColor,
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: tokens.spaceXs),
             Expanded(
               child: Text(
                 projectName,
@@ -79,8 +84,6 @@ class ProjectPill extends StatelessWidget {
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: textColor,
                   fontWeight: FontWeight.w600,
-                  fontSize: 11,
-                  height: 1.15,
                 ),
               ),
             ),
@@ -93,7 +96,7 @@ class ProjectPill extends StatelessWidget {
         ? pill
         : InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(tokens.radiusPill),
             child: pill,
           );
 

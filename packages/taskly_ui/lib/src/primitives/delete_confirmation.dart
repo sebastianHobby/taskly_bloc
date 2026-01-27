@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 /// Shows a snackbar after a deletion.
 ///
 /// Returns a [ScaffoldFeatureController] that can be used to dismiss the
@@ -11,6 +13,7 @@ SnackBar buildDeleteSnackBar({
 }) {
   final theme = Theme.of(context);
   final colorScheme = theme.colorScheme;
+  final tokens = TasklyTokens.of(context);
 
   return SnackBar(
     content: Row(
@@ -18,9 +21,9 @@ SnackBar buildDeleteSnackBar({
         Icon(
           Icons.delete_outline_rounded,
           color: colorScheme.onInverseSurface,
-          size: 20,
+          size: tokens.spaceLg3,
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: tokens.spaceMd),
         Expanded(
           child: Text(message),
         ),
@@ -29,7 +32,7 @@ SnackBar buildDeleteSnackBar({
     duration: duration,
     behavior: SnackBarBehavior.floating,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(tokens.radiusMd),
     ),
   );
 }

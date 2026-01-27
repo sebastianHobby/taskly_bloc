@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 /// A modern toggle field for completion status with visual state indicators.
 ///
 /// Features:
@@ -48,11 +50,12 @@ class FormBuilderCompletionToggleModern extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 8,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.sectionPaddingH,
+        vertical: tokens.spaceSm,
       ),
       child: FormBuilderSwitch(
         name: name,
@@ -62,15 +65,15 @@ class FormBuilderCompletionToggleModern extends StatelessWidget {
         title: Row(
           children: [
             Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.all(8),
+              margin: EdgeInsets.only(right: tokens.spaceMd),
+              padding: EdgeInsets.all(tokens.spaceSm),
               decoration: BoxDecoration(
                 color: iconBackgroundColor,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(tokens.radiusSm),
               ),
               child: Icon(
                 icon,
-                size: 20,
+                size: tokens.spaceLg3,
                 color: iconColor,
               ),
             ),
@@ -82,7 +85,7 @@ class FormBuilderCompletionToggleModern extends StatelessWidget {
                     title,
                     style: theme.textTheme.titleSmall,
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: tokens.spaceXxs),
                   Text(
                     subtitle,
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -96,19 +99,19 @@ class FormBuilderCompletionToggleModern extends StatelessWidget {
         ),
         decoration: InputDecoration(
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
             borderSide: BorderSide(
               color: colorScheme.outline.withValues(alpha: 0.3),
             ),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
             borderSide: BorderSide(
               color: colorScheme.outline.withValues(alpha: 0.3),
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
             borderSide: BorderSide(
               color: colorScheme.primary,
               width: 2,
@@ -116,9 +119,9 @@ class FormBuilderCompletionToggleModern extends StatelessWidget {
           ),
           filled: true,
           fillColor: colorScheme.surfaceContainerLow,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
+          contentPadding: EdgeInsets.symmetric(
+            horizontal: tokens.spaceLg,
+            vertical: tokens.spaceMd,
           ),
         ),
         activeColor: colorScheme.primary,

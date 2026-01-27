@@ -3,6 +3,7 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 enum ValuesAlignmentTarget {
   primary,
@@ -201,6 +202,7 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final tokens = TasklyTokens.of(context);
 
     final title =
         widget.title ??
@@ -225,23 +227,23 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        bottom: 16 + MediaQuery.viewInsetsOf(context).bottom,
-        top: 8,
+        left: tokens.sectionPaddingH,
+        right: tokens.sectionPaddingH,
+        bottom: tokens.spaceLg + MediaQuery.viewInsetsOf(context).bottom,
+        top: tokens.spaceSm,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(title, style: theme.textTheme.titleLarge),
-          const SizedBox(height: 8),
+          SizedBox(height: tokens.spaceSm),
           if (widget.inheritedValueLabel != null) ...[
             Text(
               l10n.taskProjectValueRow(widget.inheritedValueLabel!.trim()),
               style: theme.textTheme.bodySmall,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: tokens.spaceXs),
           ],
           Text(helperText, style: theme.textTheme.bodySmall),
           if (widget.target == ValuesAlignmentTarget.secondary && hasSecondary)
@@ -252,7 +254,7 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
                 child: Text(l10n.valuesSecondaryClearAction),
               ),
             ),
-          const SizedBox(height: 8),
+          SizedBox(height: tokens.spaceSm),
 
           Flexible(
             child: ListView(
@@ -289,7 +291,7 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
             ),
           ),
 
-          const SizedBox(height: 12),
+          SizedBox(height: tokens.spaceMd),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -297,7 +299,7 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(l10n.cancelLabel),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: tokens.spaceSm),
               FilledButton(
                 onPressed: canSave
                     ? () {
@@ -457,16 +459,20 @@ class _ValueSelectionTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
     final fg = disabled ? scheme.onSurfaceVariant : color;
     final bg = disabled
         ? scheme.surfaceContainerLow
         : color.withValues(alpha: 0.16);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceSm2,
+        vertical: tokens.spaceXs,
+      ),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(tokens.radiusPill),
         border: Border.all(
           color: fg.withValues(alpha: 0.4),
         ),

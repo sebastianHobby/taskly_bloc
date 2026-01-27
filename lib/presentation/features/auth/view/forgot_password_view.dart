@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Forgot password view using Supabase Auth UI.
 class ForgotPasswordView extends StatelessWidget {
@@ -33,7 +34,7 @@ class ForgotPasswordView extends StatelessWidget {
         },
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
               child: Column(
@@ -45,19 +46,23 @@ class ForgotPasswordView extends StatelessWidget {
                     size: 80,
                     color: Theme.of(context).colorScheme.primary,
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Text(
                     'Reset Password',
                     style: Theme.of(context).textTheme.displaySmall,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Text(
                     'Enter your email to receive a password reset link',
                     style: Theme.of(context).textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 48),
+                  SizedBox(
+                    height:
+                        TasklyTokens.of(context).spaceXxl +
+                        TasklyTokens.of(context).spaceLg,
+                  ),
                   SupaResetPassword(
                     onSuccess: (response) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -83,7 +88,7 @@ class ForgotPasswordView extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

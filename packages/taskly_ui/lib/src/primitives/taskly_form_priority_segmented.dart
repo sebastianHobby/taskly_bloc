@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 @immutable
 class TasklyFormPrioritySegment {
   const TasklyFormPrioritySegment({
@@ -28,12 +30,13 @@ class TasklyFormPrioritySegmented extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.all(tokens.spaceXs),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
       ),
       child: Row(
         children: [
@@ -70,18 +73,19 @@ class _Segment extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
     final color = selected
         ? (selectedColor ?? scheme.primary)
         : scheme.onSurfaceVariant;
 
     return Material(
       color: selected ? scheme.surface : Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(tokens.radiusSm),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(tokens.radiusSm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: EdgeInsets.symmetric(vertical: tokens.spaceSm),
           child: Text(
             label,
             textAlign: TextAlign.center,

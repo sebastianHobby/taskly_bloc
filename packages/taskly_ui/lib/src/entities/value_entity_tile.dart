@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 /// Canonical Value ("My Values") entity tile.
 ///
@@ -50,6 +51,7 @@ class _StandardListRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Container(
       key: Key('value-${model.id}'),
@@ -68,7 +70,7 @@ class _StandardListRow extends StatelessWidget {
             : (actions.onToggleSelected ?? actions.onTap),
         onLongPress: actions.onLongPress,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: EdgeInsets.symmetric(vertical: tokens.spaceMd),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -77,7 +79,7 @@ class _StandardListRow extends StatelessWidget {
                 color: model.accentColor,
                 size: 44,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: tokens.spaceMd),
               Expanded(
                 child: Text(
                   model.title,
@@ -88,7 +90,7 @@ class _StandardListRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: tokens.spaceSm),
               SizedBox(
                 width: 56,
                 child: Align(
@@ -151,6 +153,7 @@ class _BulkSelectIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
     return IconButton(
       tooltip: selected ? 'Deselect' : 'Select',
       onPressed: onPressed,
@@ -161,9 +164,8 @@ class _BulkSelectIcon extends StatelessWidget {
         color: selected ? scheme.primary : scheme.onSurfaceVariant,
       ),
       style: IconButton.styleFrom(
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        minimumSize: const Size(44, 44),
-        padding: const EdgeInsets.all(10),
+        minimumSize: Size.square(tokens.minTapTargetSize),
+        padding: EdgeInsets.all(tokens.spaceSm2),
       ),
     );
   }

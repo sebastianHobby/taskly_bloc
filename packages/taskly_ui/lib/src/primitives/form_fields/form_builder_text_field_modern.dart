@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 /// A modern text field with consistent styling and Material 3 design.
 ///
 /// Features:
@@ -54,11 +56,12 @@ class FormBuilderTextFieldModern extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: _getHorizontalPadding(),
-        vertical: _getVerticalPadding(),
+        horizontal: _getHorizontalPadding(tokens),
+        vertical: _getVerticalPadding(tokens),
       ),
       child: FormBuilderTextField(
         name: name,
@@ -81,12 +84,12 @@ class FormBuilderTextFieldModern extends StatelessWidget {
           suffixIcon: suffixIcon,
           filled: true,
           fillColor: _getFillColor(colorScheme),
-          border: _getBorder(colorScheme),
-          enabledBorder: _getBorder(colorScheme),
-          focusedBorder: _getFocusedBorder(colorScheme),
-          errorBorder: _getErrorBorder(colorScheme),
-          focusedErrorBorder: _getErrorBorder(colorScheme),
-          contentPadding: _getContentPadding(),
+          border: _getBorder(colorScheme, tokens),
+          enabledBorder: _getBorder(colorScheme, tokens),
+          focusedBorder: _getFocusedBorder(colorScheme, tokens),
+          errorBorder: _getErrorBorder(colorScheme, tokens),
+          focusedErrorBorder: _getErrorBorder(colorScheme, tokens),
+          contentPadding: _getContentPadding(tokens),
           counterText: maxLength != null ? '' : null,
           floatingLabelBehavior: fieldType == ModernFieldType.title
               ? FloatingLabelBehavior.never
@@ -96,19 +99,19 @@ class FormBuilderTextFieldModern extends StatelessWidget {
     );
   }
 
-  double _getHorizontalPadding() {
+  double _getHorizontalPadding(TasklyTokens tokens) {
     return switch (fieldType) {
-      ModernFieldType.title => 24.0,
-      ModernFieldType.description => 24.0,
-      ModernFieldType.standard => 16.0,
+      ModernFieldType.title => tokens.spaceXl,
+      ModernFieldType.description => tokens.spaceXl,
+      ModernFieldType.standard => tokens.spaceLg,
     };
   }
 
-  double _getVerticalPadding() {
+  double _getVerticalPadding(TasklyTokens tokens) {
     return switch (fieldType) {
-      ModernFieldType.title => 8.0,
-      ModernFieldType.description => 12.0,
-      ModernFieldType.standard => 8.0,
+      ModernFieldType.title => tokens.spaceSm,
+      ModernFieldType.description => tokens.spaceMd,
+      ModernFieldType.standard => tokens.spaceSm,
     };
   }
 
@@ -130,20 +133,20 @@ class FormBuilderTextFieldModern extends StatelessWidget {
     };
   }
 
-  OutlineInputBorder _getBorder(ColorScheme colorScheme) {
+  OutlineInputBorder _getBorder(ColorScheme colorScheme, TasklyTokens tokens) {
     return switch (fieldType) {
       ModernFieldType.title => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
         borderSide: BorderSide.none,
       ),
       ModernFieldType.description => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(tokens.radiusLg),
         borderSide: BorderSide(
           color: colorScheme.outline.withValues(alpha: 0.3),
         ),
       ),
       ModernFieldType.standard => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
         borderSide: BorderSide(
           color: colorScheme.outline.withValues(alpha: 0.3),
         ),
@@ -151,23 +154,26 @@ class FormBuilderTextFieldModern extends StatelessWidget {
     };
   }
 
-  OutlineInputBorder _getFocusedBorder(ColorScheme colorScheme) {
+  OutlineInputBorder _getFocusedBorder(
+    ColorScheme colorScheme,
+    TasklyTokens tokens,
+  ) {
     return switch (fieldType) {
       ModernFieldType.title => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
         borderSide: BorderSide(
           color: colorScheme.primary.withValues(alpha: 0.3),
         ),
       ),
       ModernFieldType.description => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(tokens.radiusLg),
         borderSide: BorderSide(
           color: colorScheme.primary,
           width: 2,
         ),
       ),
       ModernFieldType.standard => OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
         borderSide: BorderSide(
           color: colorScheme.primary,
           width: 2,
@@ -176,10 +182,15 @@ class FormBuilderTextFieldModern extends StatelessWidget {
     };
   }
 
-  OutlineInputBorder _getErrorBorder(ColorScheme colorScheme) {
+  OutlineInputBorder _getErrorBorder(
+    ColorScheme colorScheme,
+    TasklyTokens tokens,
+  ) {
     return OutlineInputBorder(
       borderRadius: BorderRadius.circular(
-        fieldType == ModernFieldType.description ? 16 : 12,
+        fieldType == ModernFieldType.description
+            ? tokens.radiusLg
+            : tokens.radiusMd,
       ),
       borderSide: BorderSide(
         color: colorScheme.error,
@@ -188,19 +199,19 @@ class FormBuilderTextFieldModern extends StatelessWidget {
     );
   }
 
-  EdgeInsetsGeometry _getContentPadding() {
+  EdgeInsetsGeometry _getContentPadding(TasklyTokens tokens) {
     return switch (fieldType) {
-      ModernFieldType.title => const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 20,
+      ModernFieldType.title => EdgeInsets.symmetric(
+        horizontal: tokens.spaceLg,
+        vertical: tokens.spaceLg3,
       ),
-      ModernFieldType.description => const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 16,
+      ModernFieldType.description => EdgeInsets.symmetric(
+        horizontal: tokens.spaceLg,
+        vertical: tokens.spaceLg,
       ),
-      ModernFieldType.standard => const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 16,
+      ModernFieldType.standard => EdgeInsets.symmetric(
+        horizontal: tokens.spaceLg,
+        vertical: tokens.spaceLg,
       ),
     };
   }

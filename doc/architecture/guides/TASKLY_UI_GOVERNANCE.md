@@ -11,6 +11,13 @@ Taskly follows a UI ownership rule:
 - The app owns only **Screens/Templates**.
 - All **Primitives / Entities / Sections** live in `packages/taskly_ui`.
 
+Taskly also follows a **tokenized UI** model:
+
+- `TasklyTokens` is the single source of truth for spacing, radii, elevation,
+  motion, and tap-target sizing.
+- Typography comes from `ThemeData.textTheme` (or a thin wrapper derived from
+  it). Avoid widget-level typography overrides.
+
 This guide is descriptive. The canonical rules live in:
 
 - [../INVARIANTS.md](../INVARIANTS.md#22-ui-composition-model-4-tier-strict)
@@ -64,6 +71,7 @@ When changing `taskly_ui` entities/sections:
 
 - Remove unused options and unused callback wiring.
 - Avoid option creep: do not add new flags for one-off screen needs.
+ - Prefer token-driven layout and spacing instead of per-widget constants.
 
 ### 5.1 Presets, not config
 

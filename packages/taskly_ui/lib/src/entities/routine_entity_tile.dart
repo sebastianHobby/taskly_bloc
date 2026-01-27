@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 import 'package:taskly_ui/src/primitives/taskly_badge.dart';
 import 'package:taskly_ui/src/primitives/value_chip_widget.dart';
-import 'package:taskly_ui/src/tiles/entity_tile_theme.dart';
 
 class RoutineEntityTile extends StatelessWidget {
   const RoutineEntityTile({
@@ -19,7 +19,7 @@ class RoutineEntityTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final tokens = TasklyEntityTileTheme.of(context);
+    final tokens = TasklyTokens.of(context);
 
     final labels = model.labels;
     final primaryLabel = labels?.primaryActionLabel?.trim();
@@ -30,28 +30,10 @@ class RoutineEntityTile extends StatelessWidget {
     final badges = model.badges;
     final hasBadges = badges.isNotEmpty;
 
-    final notTodayLabel = labels?.notTodayLabel?.trim();
-    final laterThisWeekLabel = labels?.laterThisWeekLabel?.trim();
-    final skipPeriodLabel = labels?.skipPeriodLabel?.trim();
     final pauseLabel = labels?.pauseLabel?.trim();
     final editLabel = labels?.editLabel?.trim();
 
     final menuEntries = <_RoutineMenuEntry>[
-      if (actions.onNotToday != null && _hasLabel(notTodayLabel))
-        _RoutineMenuEntry(
-          label: notTodayLabel!,
-          onTap: actions.onNotToday!,
-        ),
-      if (actions.onLaterThisWeek != null && _hasLabel(laterThisWeekLabel))
-        _RoutineMenuEntry(
-          label: laterThisWeekLabel!,
-          onTap: actions.onLaterThisWeek!,
-        ),
-      if (actions.onSkipPeriod != null && _hasLabel(skipPeriodLabel))
-        _RoutineMenuEntry(
-          label: skipPeriodLabel!,
-          onTap: actions.onSkipPeriod!,
-        ),
       if (actions.onPause != null && _hasLabel(pauseLabel))
         _RoutineMenuEntry(
           label: pauseLabel!,
@@ -75,7 +57,7 @@ class RoutineEntityTile extends StatelessWidget {
       model.windowLabel,
     ].map((text) => text.trim()).where((text) => text.isNotEmpty).join(' · ');
 
-    final titleStyle = tokens.taskTitle.copyWith(
+    final titleStyle = theme.textTheme.titleSmall?.copyWith(
       fontWeight: FontWeight.w700,
       color: model.completed ? scheme.onSurfaceVariant : scheme.onSurface,
       decoration: model.completed
@@ -87,19 +69,16 @@ class RoutineEntityTile extends StatelessWidget {
         ? scheme.primaryContainer.withValues(alpha: 0.18)
         : Colors.transparent;
 
-    final tileSurface = Color.alphaBlend(
-      surfaceTint,
-      tokens.cardSurfaceColor,
-    );
+    final tileSurface = Color.alphaBlend(surfaceTint, scheme.surface);
 
     final tile = DecoratedBox(
       decoration: BoxDecoration(
         color: tileSurface,
         borderRadius: BorderRadius.circular(tokens.taskRadius),
-        border: Border.all(color: tokens.cardBorderColor),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
         boxShadow: [
           BoxShadow(
-            color: tokens.cardShadowColor,
+            color: scheme.shadow.withValues(alpha: 0.05),
             blurRadius: tokens.cardShadowBlur,
             offset: tokens.cardShadowOffset,
           ),
@@ -129,7 +108,7 @@ class RoutineEntityTile extends StatelessWidget {
                                 size: 16,
                                 color: scheme.primary,
                               ),
-                              const SizedBox(width: 6),
+                              SizedBox(width: tokens.spaceXs2),
                             ],
                             Expanded(
                               child: Text(
@@ -140,7 +119,7 @@ class RoutineEntityTile extends StatelessWidget {
                               ),
                             ),
                             if (statusLabel.isNotEmpty) ...[
-                              const SizedBox(width: 8),
+                              SizedBox(width: tokens.spaceSm),
                               TasklyBadge(
                                 label: statusLabel,
                                 color: statusColor,
@@ -150,7 +129,7 @@ class RoutineEntityTile extends StatelessWidget {
                           ],
                         ),
                         if (model.valueChip != null) ...[
-                          const SizedBox(height: 8),
+                          SizedBox(height: tokens.spaceSm),
                           ValueChip(
                             data: model.valueChip!,
                             iconOnly: false,
@@ -158,7 +137,7 @@ class RoutineEntityTile extends StatelessWidget {
                           ),
                         ],
                         if (metaLabel.isNotEmpty) ...[
-                          const SizedBox(height: 8),
+                          SizedBox(height: tokens.spaceSm),
                           Text(
                             metaLabel,
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -168,10 +147,10 @@ class RoutineEntityTile extends StatelessWidget {
                           ),
                         ],
                         if (hasBadges) ...[
-                          const SizedBox(height: 8),
+                          SizedBox(height: tokens.spaceSm),
                           Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
+                            spacing: tokens.spaceXs2,
+                            runSpacing: tokens.spaceXs2,
                             children: [
                               for (final badge in badges)
                                 TasklyBadge(
@@ -191,7 +170,7 @@ class RoutineEntityTile extends StatelessWidget {
                     ),
                   ),
                   if (showPrimary || showMenu) ...[
-                    const SizedBox(width: 12),
+                    SizedBox(width: tokens.spaceMd),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
@@ -199,12 +178,11 @@ class RoutineEntityTile extends StatelessWidget {
                           FilledButton(
                             onPressed: actions.onPrimaryAction,
                             style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: tokens.spaceMd,
+                                vertical: tokens.spaceSm,
                               ),
-                              minimumSize: const Size(0, 36),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              minimumSize: Size(0, tokens.minTapTargetSize),
                               textStyle: theme.textTheme.labelLarge?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
@@ -212,7 +190,7 @@ class RoutineEntityTile extends StatelessWidget {
                             child: Text(primaryLabel),
                           ),
                         if (showMenu) ...[
-                          if (showPrimary) const SizedBox(height: 4),
+                          if (showPrimary) SizedBox(height: tokens.spaceXs),
                           _RoutineMenuButton(
                             entries: menuEntries,
                           ),

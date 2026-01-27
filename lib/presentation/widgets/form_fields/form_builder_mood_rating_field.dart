@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// FormBuilder field for selecting a mood rating
 class FormBuilderMoodRatingField
@@ -28,6 +29,7 @@ class FormBuilderMoodRatingField
            final theme = Theme.of(state.context);
            final colorScheme = theme.colorScheme;
            final widget = state.widget;
+           final tokens = TasklyTokens.of(state.context);
 
            return InputDecorator(
              decoration: state.decoration,
@@ -45,11 +47,11 @@ class FormBuilderMoodRatingField
                        onTap: state.enabled
                            ? () => state.didChange(mood)
                            : null,
-                       borderRadius: BorderRadius.circular(12),
+                       borderRadius: BorderRadius.circular(tokens.radiusMd),
                        child: Container(
-                         padding: const EdgeInsets.symmetric(
-                           vertical: 12,
-                           horizontal: 8,
+                         padding: EdgeInsets.symmetric(
+                           horizontal: tokens.spaceSm,
+                           vertical: tokens.spaceMd,
                          ),
                          decoration: BoxDecoration(
                            color: isSelected
@@ -66,7 +68,7 @@ class FormBuilderMoodRatingField
                                  : theme.dividerColor,
                              width: 2,
                            ),
-                           borderRadius: BorderRadius.circular(12),
+                           borderRadius: BorderRadius.circular(tokens.radiusMd),
                          ),
                          child: Column(
                            mainAxisSize: MainAxisSize.min,
@@ -81,7 +83,7 @@ class FormBuilderMoodRatingField
                                ),
                              ),
                              if (widget.showLabels) ...[
-                               const SizedBox(height: 4),
+                               SizedBox(height: tokens.spaceXs),
                                Text(
                                  mood.label,
                                  style: theme.textTheme.bodySmall?.copyWith(

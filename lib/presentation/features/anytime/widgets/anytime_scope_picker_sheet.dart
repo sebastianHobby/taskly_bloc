@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_scope_pic
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class AnytimeScopePickerSheet {
   static Future<AnytimeScope?> show(
@@ -52,6 +53,7 @@ class _AnytimeScopePickerViewState extends State<_AnytimeScopePickerView> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final currentScope = widget.currentScope;
+    final tokens = TasklyTokens.of(context);
 
     final currentValueId = switch (currentScope) {
       AnytimeValueScope(:final valueId) => valueId,
@@ -68,10 +70,10 @@ class _AnytimeScopePickerViewState extends State<_AnytimeScopePickerView> {
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 8,
-          bottom: 16 + MediaQuery.of(context).viewInsets.bottom,
+          left: tokens.spaceLg,
+          top: tokens.spaceMd,
+          right: tokens.spaceLg,
+          bottom: tokens.spaceXl + MediaQuery.of(context).viewInsets.bottom,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -92,7 +94,7 @@ class _AnytimeScopePickerViewState extends State<_AnytimeScopePickerView> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
@@ -101,7 +103,7 @@ class _AnytimeScopePickerViewState extends State<_AnytimeScopePickerView> {
               ),
               onChanged: (_) => setState(() {}),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
             Expanded(
               child:
                   BlocBuilder<AnytimeScopePickerBloc, AnytimeScopePickerState>(
@@ -157,7 +159,7 @@ class _ErrorView extends StatelessWidget {
           style: TextStyle(color: Theme.of(context).colorScheme.error),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         OutlinedButton(
           onPressed: onRetry,
           child: Text(l10n.retryButton),
@@ -212,12 +214,12 @@ class _LoadedView extends StatelessWidget {
           onTap: () => Navigator.of(context).pop<AnytimeScope?>(null),
         ),
         if (!hasMatches) ...[
-          const SizedBox(height: 12),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           _InlineEmptyMessage(
             title: l10n.anytimeScopePickerNoMatchesTitle,
             body: l10n.anytimeScopePickerNoMatchesBody,
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
         ],
         _SectionHeader(l10n.valuesTitle),
         if (q.isEmpty && values.isEmpty)
@@ -235,7 +237,7 @@ class _LoadedView extends StatelessWidget {
                 AnytimeScope.value(valueId: v.id),
               ),
             ),
-        const SizedBox(height: 8),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         _SectionHeader(l10n.projectsTitle),
         if (q.isEmpty && projects.isEmpty)
           _InlineEmptyMessage(
@@ -266,8 +268,14 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: EdgeInsets.fromLTRB(
+        tokens.spaceLg,
+        tokens.spaceSm,
+        tokens.spaceLg,
+        tokens.spaceXs,
+      ),
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleSmall,
@@ -284,13 +292,19 @@ class _InlineEmptyMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: EdgeInsets.fromLTRB(
+        tokens.spaceLg,
+        tokens.spaceSm,
+        tokens.spaceLg,
+        tokens.spaceSm,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 4),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           Text(body, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),

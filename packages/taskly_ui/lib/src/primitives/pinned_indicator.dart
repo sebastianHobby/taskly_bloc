@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 /// A compact visual indicator that an entity is pinned.
 class PinnedIndicator extends StatelessWidget {
   const PinnedIndicator({
@@ -15,14 +17,15 @@ class PinnedIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Tooltip(
       message: tooltip,
       child: Container(
-        padding: const EdgeInsets.all(4),
+        padding: EdgeInsets.all(tokens.spaceXs),
         decoration: BoxDecoration(
           color: colorScheme.primaryContainer.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(tokens.radiusSm),
           border: Border.all(
             color: colorScheme.primary.withValues(alpha: 0.3),
           ),

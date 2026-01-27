@@ -1,16 +1,20 @@
 import 'package:flutter/widgets.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 @immutable
 class TasklyFormPreset {
   const TasklyFormPreset({
     required this.chip,
   });
 
-  final TasklyFormChipPreset chip;
+  factory TasklyFormPreset.standard(TasklyTokens tokens) {
+    return TasklyFormPreset(
+      chip: TasklyFormChipPreset.standard(tokens),
+    );
+  }
 
-  static const standard = TasklyFormPreset(
-    chip: TasklyFormChipPreset.standard,
-  );
+  final TasklyFormChipPreset chip;
 }
 
 @immutable
@@ -24,19 +28,24 @@ class TasklyFormChipPreset {
     required this.minHeight,
   });
 
+  factory TasklyFormChipPreset.standard(TasklyTokens tokens) {
+    return TasklyFormChipPreset(
+      borderRadius: tokens.radiusPill,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceMd2,
+        vertical: tokens.spaceSm,
+      ),
+      iconSize: tokens.spaceLg2,
+      clearIconSize: tokens.spaceLg,
+      clearHitPadding: tokens.spaceXs2,
+      minHeight: tokens.spaceXl + tokens.spaceMd,
+    );
+  }
+
   final double borderRadius;
   final EdgeInsets padding;
   final double iconSize;
   final double clearIconSize;
   final double clearHitPadding;
   final double minHeight;
-
-  static const standard = TasklyFormChipPreset(
-    borderRadius: 999,
-    padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-    iconSize: 18,
-    clearIconSize: 16,
-    clearHitPadding: 6,
-    minHeight: 36,
-  );
 }

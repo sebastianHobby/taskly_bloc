@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/app_loading_screen.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class InitialSyncGateScreen extends StatelessWidget {
   const InitialSyncGateScreen({super.key});
@@ -28,23 +29,27 @@ class InitialSyncGateScreen extends StatelessWidget {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: EdgeInsets.all(
+                      TasklyTokens.of(context).spaceXl,
+                    ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const SizedBox(height: 12),
+                        SizedBox(height: TasklyTokens.of(context).spaceMd),
                         Icon(
                           Icons.sync_problem,
-                          size: 40,
+                          size:
+                              TasklyTokens.of(context).spaceXxl +
+                              TasklyTokens.of(context).spaceSm,
                           color: Theme.of(context).colorScheme.error,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: TasklyTokens.of(context).spaceLg),
                         Text(
                           message,
                           style: Theme.of(context).textTheme.bodyMedium,
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: TasklyTokens.of(context).spaceLg),
                         FilledButton(
                           onPressed: () {
                             context.read<InitialSyncGateBloc>().add(

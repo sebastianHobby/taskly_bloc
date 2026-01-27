@@ -8,6 +8,7 @@ import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_projec
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class RoutineForm extends StatefulWidget {
   const RoutineForm({
@@ -77,7 +78,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final isCreating = widget.initialData == null;
-    const preset = TasklyFormPreset.standard;
+    final preset = TasklyFormPreset.standard(TasklyTokens.of(context));
 
     final RoutineDraft? draft = widget.initialData == null
         ? (widget.initialDraft ?? RoutineDraft.empty())
@@ -184,7 +185,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
         ),
       ],
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: EdgeInsets.only(bottom: TasklyTokens.of(context).spaceSm),
         child: FormBuilder(
           key: widget.formKey,
           initialValue: initialValues,
@@ -200,7 +201,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 12),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               FormBuilderTextField(
                 name: RoutineFieldKeys.name.id,
                 style: theme.textTheme.headlineSmall?.copyWith(
@@ -223,7 +224,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                   context,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               FormBuilderDropdown<String>(
                 name: RoutineFieldKeys.valueId.id,
                 items: [
@@ -239,7 +240,9 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                   filled: true,
                   fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      TasklyTokens.of(context).radiusMd,
+                    ),
                     borderSide: BorderSide.none,
                   ),
                 ),
@@ -248,7 +251,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                   context,
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               FormBuilderProjectPickerModern(
                 name: RoutineFieldKeys.projectId.id,
                 availableProjects: widget.availableProjects,
@@ -257,9 +260,9 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                 allowNoProject: true,
                 noProjectText: l10n.routineFormProjectNone,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               TasklyFormSectionLabel(text: l10n.routineFormTypeLabel),
-              const SizedBox(height: 8),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               FormBuilderField<RoutineType>(
                 name: RoutineFieldKeys.routineType.id,
                 builder: (field) {
@@ -288,7 +291,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                   );
                 },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               if (_currentType == RoutineType.weeklyFlexible) ...[
                 _TargetCountField(
                   name: RoutineFieldKeys.targetCount.id,
@@ -296,11 +299,11 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                   options: const [1, 2, 3, 4, 5, 6, 7],
                   routineType: _currentType,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 TasklyFormSectionLabel(
                   text: l10n.routineFormSuggestedDaysLabel,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 _MultiSelectWeekdaysField(
                   name: RoutineFieldKeys.scheduleDays.id,
                   preset: preset,
@@ -312,7 +315,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                     context,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
               ],
               if (_currentType == RoutineType.monthlyFlexible) ...[
                 _TargetCountField(
@@ -321,11 +324,11 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                   options: const [1, 2, 3, 4],
                   routineType: _currentType,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 TasklyFormSectionLabel(
                   text: l10n.routineFormPreferredWeeksLabel,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 _MultiSelectWeeksField(
                   name: RoutineFieldKeys.preferredWeeks.id,
                   preset: preset,
@@ -337,7 +340,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                     context,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
               ],
               FormBuilderSwitch(
                 name: RoutineFieldKeys.isActive.id,
@@ -408,7 +411,9 @@ class _TargetCountField extends StatelessWidget {
         filled: true,
         fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(
+            TasklyTokens.of(context).radiusMd,
+          ),
           borderSide: BorderSide.none,
         ),
       ),
@@ -473,7 +478,7 @@ class _MultiSelectWeekdaysField extends StatelessWidget {
           children: [
             TasklyFormQuickPickChips(items: chips, preset: preset),
             if (field.errorText != null) ...[
-              const SizedBox(height: 6),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
                 field.errorText!,
                 style: TextStyle(
@@ -541,7 +546,7 @@ class _MultiSelectWeeksField extends StatelessWidget {
           children: [
             TasklyFormQuickPickChips(items: chips, preset: preset),
             if (field.errorText != null) ...[
-              const SizedBox(height: 6),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
                 field.errorText!,
                 style: TextStyle(

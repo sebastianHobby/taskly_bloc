@@ -1,6 +1,8 @@
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 /// Reusable color picker field using flex_color_picker.
 ///
 /// Displays the current color as a button with the color swatch.
@@ -40,6 +42,7 @@ class ColorPickerField extends StatelessWidget {
   Widget build(BuildContext context) {
     final displayName =
         colorNameBuilder?.call(color) ?? _defaultColorLabel(color);
+    final tokens = TasklyTokens.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,34 +53,34 @@ class ColorPickerField extends StatelessWidget {
             label!,
             style: Theme.of(context).textTheme.titleSmall,
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: tokens.spaceSm),
         ],
         InkWell(
           onTap: enabled ? () => _showColorPicker(context) : null,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(tokens.radiusSm),
           child: Container(
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: tokens.minTapTargetSize + tokens.spaceSm,
+            padding: EdgeInsets.symmetric(horizontal: tokens.spaceMd),
             decoration: BoxDecoration(
               border: Border.all(
                 color: Theme.of(context).colorScheme.outline,
               ),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(tokens.radiusSm),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: tokens.spaceXxl,
+                  height: tokens.spaceXxl,
                   decoration: BoxDecoration(
                     color: color,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(tokens.radiusXs),
                     border: Border.all(
                       color: Theme.of(context).colorScheme.outline,
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: tokens.spaceMd),
                 Text(
                   displayName,
                   style: Theme.of(context).textTheme.bodyLarge,

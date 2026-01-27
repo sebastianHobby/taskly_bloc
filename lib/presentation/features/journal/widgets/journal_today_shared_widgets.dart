@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalTodayEntriesSection extends StatelessWidget {
   const JournalTodayEntriesSection({
@@ -23,6 +24,7 @@ class JournalTodayEntriesSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = TasklyTokens.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,13 +35,13 @@ class JournalTodayEntriesSection extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         if (entries.isEmpty)
           JournalTodayEmptyState(onAddLog: onAddLog)
         else
           ...entries.map(
             (entry) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.only(bottom: tokens.spaceSm),
               child: JournalLogCard(
                 entry: entry,
                 events: eventsByEntryId[entry.id] ?? const <TrackerEvent>[],
@@ -62,13 +64,14 @@ class JournalTodayEmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = TasklyTokens.of(context);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(tokens.spaceLg),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
       ),
       child: Row(
         children: [
@@ -76,7 +79,7 @@ class JournalTodayEmptyState extends StatelessWidget {
             Icons.auto_stories_outlined,
             color: theme.colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: tokens.spaceSm),
           Expanded(
             child: Text(
               'No logs yet today.',
@@ -115,6 +118,7 @@ class JournalLogCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final timeLabel = DateFormat.jm().format(entry.occurredAt.toLocal());
+    final tokens = TasklyTokens.of(context);
 
     final mood = _findMood();
     final summaryItems = _buildSummaryItems();
@@ -128,27 +132,27 @@ class JournalLogCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
         border: Border.all(color: border),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(tokens.spaceLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spaceSm,
+                      vertical: tokens.spaceXs,
                     ),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(tokens.radiusMd),
                     ),
                     child: Text(
                       timeLabel,
@@ -162,13 +166,13 @@ class JournalLogCard extends StatelessWidget {
                     Tooltip(
                       message: mood.label,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: tokens.spaceSm,
+                          vertical: tokens.spaceXs,
                         ),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(tokens.radiusMd),
                         ),
                         child: Text(
                           '${mood.emoji} ${mood.value}',
@@ -182,7 +186,7 @@ class JournalLogCard extends StatelessWidget {
                 ],
               ),
               if (note != null && note.isNotEmpty) ...[
-                const SizedBox(height: 10),
+                SizedBox(height: tokens.spaceSm),
                 Text(
                   note,
                   maxLines: 2,
@@ -191,20 +195,20 @@ class JournalLogCard extends StatelessWidget {
                 ),
               ],
               if (summaryItems.isNotEmpty) ...[
-                const SizedBox(height: 10),
+                SizedBox(height: tokens.spaceSm),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: tokens.spaceSm,
+                  runSpacing: tokens.spaceSm,
                   children: [
                     for (final item in summaryItems)
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: tokens.spaceSm,
+                          vertical: tokens.spaceXs,
                         ),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(tokens.radiusMd),
                           border: Border.all(color: border),
                         ),
                         child: Text(

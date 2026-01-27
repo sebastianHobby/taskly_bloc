@@ -34,12 +34,6 @@ final class AnytimeFeedInboxCollapsedChanged extends AnytimeFeedEvent {
   final bool collapsed;
 }
 
-final class AnytimeFeedValueCollapsedChanged extends AnytimeFeedEvent {
-  const AnytimeFeedValueCollapsedChanged({required this.collapsedValueIds});
-
-  final Set<String> collapsedValueIds;
-}
-
 sealed class AnytimeFeedState {
   const AnytimeFeedState();
 }
@@ -78,7 +72,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     );
     on<AnytimeFeedSearchQueryChanged>(_onSearchQueryChanged);
     on<AnytimeFeedInboxCollapsedChanged>(_onInboxCollapsedChanged);
-    on<AnytimeFeedValueCollapsedChanged>(_onValueCollapsedChanged);
 
     add(const AnytimeFeedStarted());
   }
@@ -88,7 +81,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
   List<Project> _latestProjects = const <Project>[];
   int? _inboxTaskCount;
-  List<Value> _latestValues = const <Value>[];
   String _searchQuery = '';
   final AnytimeSortOrder _sortOrder = AnytimeSortOrder.dueSoonest;
 
@@ -122,20 +114,12 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     _emitRows(emit);
   }
 
-  void _onValueCollapsedChanged(
-    AnytimeFeedValueCollapsedChanged event,
-    Emitter<AnytimeFeedState> emit,
-  ) {
-    _emitRows(emit);
-  }
-
   Future<void> _bind(Emitter<AnytimeFeedState> emit) async {
     await emit.onEach<AnytimeProjectsSnapshot>(
       _queryService.watchProjects(scope: _scope),
       onData: (snapshot) {
         _latestProjects = snapshot.projects;
         _inboxTaskCount = snapshot.inboxTaskCount;
-        _latestValues = snapshot.values;
         _emitRows(emit);
       },
       onError: (error, stackTrace) {
@@ -146,7 +130,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
   void _emitRows(Emitter<AnytimeFeedState> emit) {
     try {
-      final rows = _mapToRows(_latestProjects, _latestValues);
+      final rows = _mapToRows(_latestProjects);
       emit(
         AnytimeFeedLoaded(
           rows: rows,
@@ -158,94 +142,30 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     }
   }
 
-  List<ListRowUiModel> _mapToRows(
-    List<Project> projects,
-    List<Value> values,
-  ) {
+  List<ListRowUiModel> _mapToRows(List<Project> projects) {
     final aggregates = _aggregateProjects(projects);
     final filtered = aggregates.where(_matchesFilters).toList(growable: false)
-      ..sort(_compareProjectGroups);
-
-    final valueGroups = <String, _ValueGroup>{};
-
-    void ensureGroup(String key, Value? value) {
-      valueGroups.putIfAbsent(
-        key,
-        () => _ValueGroup(valueId: value?.id, value: value),
-      );
-    }
-
-    for (final value in values) {
-      ensureGroup(_valueGroupKey(value.id), value);
-    }
-
-    for (final aggregate in filtered) {
-      final value = aggregate.project?.primaryValue;
-      final key = _valueGroupKey(value?.id);
-      ensureGroup(key, value);
-      valueGroups[key]!.projects.add(aggregate);
-    }
-
-    final scope = _scope;
-    final showEmptyValues = scope == null;
-    final groupsToShow =
-        valueGroups.values
-            .where((group) {
-              if (showEmptyValues) return true;
-              if (group.projects.isNotEmpty) return true;
-              if (scope is AnytimeValueScope) {
-                return group.valueId == scope.valueId;
-              }
-              if (scope is AnytimeProjectScope) {
-                return false;
-              }
-              return false;
-            })
-            .toList(growable: false)
-          ..sort(_compareValueGroups);
+      ..sort(_compareProjectGroupsWithValues);
 
     final rows = <ListRowUiModel>[];
 
-    for (final group in groupsToShow) {
-      final valueKey = _valueGroupKey(group.valueId);
+    for (final aggregate in filtered) {
       rows.add(
-        ValueHeaderRowUiModel(
+        ProjectRowUiModel(
           rowKey: RowKey.v1(
             screen: 'anytime',
-            rowType: 'value',
+            rowType: 'project',
             params: <String, String>{
-              'value': valueKey,
+              'project': aggregate.projectRef.stableKey,
             },
           ),
           depth: 0,
-          title: group.value?.name ?? '',
-          valueId: group.valueId,
-          priority: group.value?.priority,
-          value: group.value,
-          activeCount: group.projects.length,
-          isCollapsed: false,
-          valueKey: valueKey,
+          project: aggregate.project,
+          taskCount: aggregate.taskCount,
+          completedTaskCount: aggregate.completedTaskCount,
+          dueSoonCount: aggregate.dueSoonCount,
         ),
       );
-
-      for (final aggregate in group.projects) {
-        rows.add(
-          ProjectRowUiModel(
-            rowKey: RowKey.v1(
-              screen: 'anytime',
-              rowType: 'project',
-              params: <String, String>{
-                'project': aggregate.projectRef.stableKey,
-              },
-            ),
-            depth: 1,
-            project: aggregate.project,
-            taskCount: aggregate.taskCount,
-            completedTaskCount: aggregate.completedTaskCount,
-            dueSoonCount: aggregate.dueSoonCount,
-          ),
-        );
-      }
     }
 
     return rows;
@@ -318,6 +238,24 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       b.projectRef.projectId ?? '',
     );
   }
+
+  int _compareProjectGroupsWithValues(
+    _ProjectAggregate a,
+    _ProjectAggregate b,
+  ) {
+    final aValue = a.project?.primaryValue;
+    final bValue = b.project?.primaryValue;
+    final rankA = _valuePriorityRank(aValue?.priority ?? ValuePriority.medium);
+    final rankB = _valuePriorityRank(bValue?.priority ?? ValuePriority.medium);
+    if (rankA != rankB) return rankA.compareTo(rankB);
+
+    final aValueName = (aValue?.name ?? '').toLowerCase();
+    final bValueName = (bValue?.name ?? '').toLowerCase();
+    final byValueName = aValueName.compareTo(bValueName);
+    if (byValueName != 0) return byValueName;
+
+    return _compareProjectGroups(a, b);
+  }
 }
 
 class _ProjectAggregate {
@@ -355,32 +293,6 @@ class _ProjectAggregate {
       AnytimeSortOrder.dueLatest => latestDeadlineUtc ?? earliestDeadlineUtc,
     };
   }
-}
-
-class _ValueGroup {
-  _ValueGroup({
-    required this.valueId,
-    required this.value,
-  });
-
-  final String? valueId;
-  final Value? value;
-  final List<_ProjectAggregate> projects = <_ProjectAggregate>[];
-}
-
-String _valueGroupKey(String? valueId) {
-  final trimmed = valueId?.trim();
-  if (trimmed == null || trimmed.isEmpty) return '_anytime_value_none';
-  return trimmed;
-}
-
-int _compareValueGroups(_ValueGroup a, _ValueGroup b) {
-  final rankA = _valuePriorityRank(a.value?.priority ?? ValuePriority.medium);
-  final rankB = _valuePriorityRank(b.value?.priority ?? ValuePriority.medium);
-  if (rankA != rankB) return rankA.compareTo(rankB);
-  final aName = (a.value?.name ?? '').toLowerCase();
-  final bName = (b.value?.name ?? '').toLowerCase();
-  return aName.compareTo(bName);
 }
 
 int _valuePriorityRank(ValuePriority priority) {

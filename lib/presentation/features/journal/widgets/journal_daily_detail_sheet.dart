@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/features/journal/bloc/journal_daily_edi
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalDailyDetailSheet extends StatelessWidget {
   const JournalDailyDetailSheet._({
@@ -173,7 +174,7 @@ class JournalDailyDetailSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(d.name, style: theme.textTheme.titleSmall),
-                const SizedBox(height: 6),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 Row(
                   children: [
                     IconButton(
@@ -205,7 +206,7 @@ class JournalDailyDetailSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(d.name, style: theme.textTheme.titleSmall),
-                    const SizedBox(height: 8),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     if (choices.isEmpty)
                       Text(
                         'No options',
@@ -242,7 +243,7 @@ class JournalDailyDetailSheet extends StatelessWidget {
         }
 
         return Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -261,10 +262,12 @@ class JournalDailyDetailSheet extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 if (isLoading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: TasklyTokens.of(context).spaceLg,
+                    ),
                     child: Center(child: CircularProgressIndicator()),
                   )
                 else ...[
@@ -273,15 +276,15 @@ class JournalDailyDetailSheet extends StatelessWidget {
                       builder: (context) {
                         final groupId = group?.id;
                         final inGroup = trackersForGroup(groupId);
-                        if (inGroup.isEmpty) return const SizedBox.shrink();
+                        if (inGroup.isEmpty) return SizedBox.shrink();
 
                         return ExpansionTile(
                           initiallyExpanded: true,
                           title: Text(groupLabel(group)),
-                          childrenPadding: const EdgeInsets.only(
-                            left: 12,
-                            right: 12,
-                            bottom: 12,
+                          childrenPadding: EdgeInsets.only(
+                            left: TasklyTokens.of(context).spaceLg,
+                            right: TasklyTokens.of(context).spaceLg,
+                            bottom: TasklyTokens.of(context).spaceSm,
                           ),
                           children: [
                             for (final d in inGroup) ...[
@@ -292,7 +295,7 @@ class JournalDailyDetailSheet extends StatelessWidget {
                         );
                       },
                     ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                 ],
               ],
             ),

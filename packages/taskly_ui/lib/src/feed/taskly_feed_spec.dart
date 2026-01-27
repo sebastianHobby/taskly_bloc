@@ -210,17 +210,6 @@ sealed class TasklyRowSpec {
     int depth,
   }) = TasklyInlineActionRowSpec;
 
-  const factory TasklyRowSpec.valueHeader({
-    required String key,
-    required String title,
-    required ValueChipData? leadingChip,
-    required String? trailingLabel,
-    required bool isCollapsed,
-    required VoidCallback onToggleCollapsed,
-    String? priorityLabel,
-    int depth,
-  }) = TasklyValueHeaderRowSpec;
-
   const factory TasklyRowSpec.task({
     required String key,
     required TasklyTaskRowData data,
@@ -308,28 +297,6 @@ final class TasklyInlineActionRowSpec extends TasklyRowSpec {
   final int depth;
 }
 
-final class TasklyValueHeaderRowSpec extends TasklyRowSpec {
-  const TasklyValueHeaderRowSpec({
-    required this.key,
-    required this.title,
-    required this.leadingChip,
-    required this.trailingLabel,
-    required this.isCollapsed,
-    required this.onToggleCollapsed,
-    this.priorityLabel,
-    this.depth = 0,
-  });
-
-  final String key;
-  final String title;
-  final ValueChipData? leadingChip;
-  final String? trailingLabel;
-  final String? priorityLabel;
-  final bool isCollapsed;
-  final VoidCallback onToggleCollapsed;
-  final int depth;
-}
-
 final class TasklyTaskRowSpec extends TasklyRowSpec {
   const TasklyTaskRowSpec({
     required this.key,
@@ -408,10 +375,6 @@ sealed class TasklyTaskRowStyle {
     required bool selected,
   }) = TasklyTaskRowStyleBulkSelection;
 
-  const factory TasklyTaskRowStyle.picker({
-    required bool selected,
-  }) = TasklyTaskRowStylePicker;
-
   const factory TasklyTaskRowStyle.pickerAction({
     required bool selected,
   }) = TasklyTaskRowStylePickerAction;
@@ -419,9 +382,6 @@ sealed class TasklyTaskRowStyle {
   const factory TasklyTaskRowStyle.planPick({
     required bool selected,
   }) = TasklyTaskRowStylePlanPick;
-
-  const factory TasklyTaskRowStyle.pinnedToggle() =
-      TasklyTaskRowStylePinnedToggle;
 }
 
 final class TasklyTaskRowStyleStandard extends TasklyTaskRowStyle {
@@ -430,12 +390,6 @@ final class TasklyTaskRowStyleStandard extends TasklyTaskRowStyle {
 
 final class TasklyTaskRowStyleBulkSelection extends TasklyTaskRowStyle {
   const TasklyTaskRowStyleBulkSelection({required this.selected});
-
-  final bool selected;
-}
-
-final class TasklyTaskRowStylePicker extends TasklyTaskRowStyle {
-  const TasklyTaskRowStylePicker({required this.selected});
 
   final bool selected;
 }
@@ -452,17 +406,12 @@ final class TasklyTaskRowStylePlanPick extends TasklyTaskRowStyle {
   final bool selected;
 }
 
-final class TasklyTaskRowStylePinnedToggle extends TasklyTaskRowStyle {
-  const TasklyTaskRowStylePinnedToggle();
-}
-
 @immutable
 final class TasklyTaskRowActions {
   const TasklyTaskRowActions({
     this.onTap,
     this.onToggleCompletion,
     this.onToggleSelected,
-    this.onTogglePinned,
     this.onSnoozeRequested,
     this.onLongPress,
   });
@@ -470,7 +419,6 @@ final class TasklyTaskRowActions {
   final VoidCallback? onTap;
   final ValueChanged<bool?>? onToggleCompletion;
   final VoidCallback? onToggleSelected;
-  final ValueChanged<bool>? onTogglePinned;
   final VoidCallback? onSnoozeRequested;
   final VoidCallback? onLongPress;
 }
@@ -486,10 +434,6 @@ sealed class TasklyProjectRowPreset {
   const factory TasklyProjectRowPreset.bulkSelection({
     required bool selected,
   }) = TasklyProjectRowPresetBulkSelection;
-
-  const factory TasklyProjectRowPreset.groupHeader({
-    required bool expanded,
-  }) = TasklyProjectRowPresetGroupHeader;
 }
 
 final class TasklyProjectRowPresetStandard extends TasklyProjectRowPreset {
@@ -506,25 +450,17 @@ final class TasklyProjectRowPresetBulkSelection extends TasklyProjectRowPreset {
   final bool selected;
 }
 
-final class TasklyProjectRowPresetGroupHeader extends TasklyProjectRowPreset {
-  const TasklyProjectRowPresetGroupHeader({required this.expanded});
-
-  final bool expanded;
-}
-
 @immutable
 final class TasklyProjectRowActions {
   const TasklyProjectRowActions({
     this.onTap,
     this.onToggleSelected,
     this.onLongPress,
-    this.onToggleExpanded,
   });
 
   final VoidCallback? onTap;
   final VoidCallback? onToggleSelected;
   final VoidCallback? onLongPress;
-  final VoidCallback? onToggleExpanded;
 }
 
 sealed class TasklyValueRowPreset {
@@ -563,7 +499,6 @@ final class TasklyValueRowActions {
 @immutable
 final class TasklyEntityMetaData {
   const TasklyEntityMetaData({
-    this.primaryValue,
     this.startDateLabel,
     this.deadlineDateLabel,
     this.showOnlyDeadlineDate = false,
@@ -571,8 +506,6 @@ final class TasklyEntityMetaData {
     this.isDueToday = false,
     this.priority,
   });
-
-  final ValueChipData? primaryValue;
 
   final String? startDateLabel;
   final String? deadlineDateLabel;
@@ -619,26 +552,16 @@ final class TasklyTaskRowData {
 @immutable
 final class TasklyTaskRowLabels {
   const TasklyTaskRowLabels({
-    this.completedStatusLabel,
     this.pinnedSemanticLabel,
     this.snoozeTooltip,
     this.selectionPillLabel,
     this.selectionPillSelectedLabel,
-    this.pinLabel,
-    this.pinnedLabel,
-    this.bulkSelectTooltip,
-    this.bulkDeselectTooltip,
   });
 
-  final String? completedStatusLabel;
   final String? pinnedSemanticLabel;
   final String? snoozeTooltip;
   final String? selectionPillLabel;
   final String? selectionPillSelectedLabel;
-  final String? pinLabel;
-  final String? pinnedLabel;
-  final String? bulkSelectTooltip;
-  final String? bulkDeselectTooltip;
 }
 
 @immutable
@@ -655,8 +578,6 @@ final class TasklyProjectRowData {
     this.leadingChip,
     this.subtitle,
     this.deemphasized = false,
-    this.groupLeadingIcon,
-    this.groupTrailingLabel,
   });
 
   final String id;
@@ -670,8 +591,6 @@ final class TasklyProjectRowData {
   final ValueChipData? leadingChip;
   final String? subtitle;
   final bool deemphasized;
-  final IconData? groupLeadingIcon;
-  final String? groupTrailingLabel;
 }
 
 enum TasklyRoutineStatusTone { onPace, tightWeek, catchUp, restWeek }
@@ -711,17 +630,11 @@ final class TasklyRoutineRowData {
 final class TasklyRoutineRowLabels {
   const TasklyRoutineRowLabels({
     this.primaryActionLabel,
-    this.notTodayLabel,
-    this.laterThisWeekLabel,
-    this.skipPeriodLabel,
     this.pauseLabel,
     this.editLabel,
   });
 
   final String? primaryActionLabel;
-  final String? notTodayLabel;
-  final String? laterThisWeekLabel;
-  final String? skipPeriodLabel;
   final String? pauseLabel;
   final String? editLabel;
 }
@@ -731,18 +644,12 @@ final class TasklyRoutineRowActions {
   const TasklyRoutineRowActions({
     this.onTap,
     this.onPrimaryAction,
-    this.onNotToday,
-    this.onLaterThisWeek,
-    this.onSkipPeriod,
     this.onPause,
     this.onEdit,
   });
 
   final VoidCallback? onTap;
   final VoidCallback? onPrimaryAction;
-  final VoidCallback? onNotToday;
-  final VoidCallback? onLaterThisWeek;
-  final VoidCallback? onSkipPeriod;
   final VoidCallback? onPause;
   final VoidCallback? onEdit;
 }
@@ -783,18 +690,10 @@ final class TasklyValueRowData {
     required this.title,
     required this.icon,
     required this.accentColor,
-    this.firstLineLabel,
-    this.firstLineValue,
-    this.secondLineLabel,
-    this.secondLineValue,
   });
 
   final String id;
   final String title;
   final IconData icon;
   final Color accentColor;
-  final String? firstLineLabel;
-  final String? firstLineValue;
-  final String? secondLineLabel;
-  final String? secondLineValue;
 }

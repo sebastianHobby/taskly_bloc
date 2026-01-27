@@ -276,166 +276,45 @@ Rationale:
 - Keeps BLoCs thin without pushing screen concerns into Domain.
 - Encourages deterministic, cancellation-safe subscription patterns.
 
-### 2.1 Shared UI extraction: `packages/taskly_ui` (strict)
+### 2.1 UI invariants (strict)
 
-Reusable UI components (widgets and small UI helpers) must live in
-`packages/taskly_ui`.
-
-Normative rules:
-
-- `taskly_ui` must remain **pure UI**: no BLoCs/Cubits, no repositories/services,
-  no use-cases, no DI, and no stream subscriptions.
-- `taskly_ui` must not perform **app routing** or import app routing
-  (`go_router`, `Routing`, etc.). "Navigation" here means pushing app routes
-  (for example, `GoRouter` or `Navigator` route pushes), not presenting
-  UI-only overlays like dialogs or bottom sheets.
-- `taskly_ui` must not depend on **app intent/action infrastructure**:
-  - forbidden: app-owned orchestration/dispatch types (for example
-    `TileIntentDispatcher`), overflow action catalogs, app analytics/logging
-    dispatch, or any other "do something in the app" coordination layer.
-- Reusable UI must follow **data in / events out** APIs (props + callbacks).
-- App code must not deep-import `taskly_ui` internals (`package:taskly_ui/src/...`).
-  Import only public entrypoints under `packages/taskly_ui/lib/`:
-  - `package:taskly_ui/taskly_ui_feed.dart`
-  - `package:taskly_ui/taskly_ui_sections.dart`
-  - `package:taskly_ui/taskly_ui_models.dart`
-  - `package:taskly_ui/taskly_ui_forms.dart`
-
-Allowed exceptions (narrow):
-
-- Ephemeral UI-only state that is inherently screen-local (controllers, focus
-  nodes, animations, scroll controllers).
-- Any non-screen UI (primitive/entity/section) that is app-owned is an
-  **architecture exception** and requires explicit user approval.
-
-### 2.1.1 Form UI boundary (FormBuilder) (strict)
-
-When using `flutter_form_builder`, keep a strict separation between form logic
-and form UI so `taskly_ui` remains pure UI.
+Taskly UI must be consistent, theme-driven, and reusable across screens.
 
 Normative rules:
 
-- **Form logic** (state, validation rules, submit orchestration) must live in
-  the **presentation layer** (feature BLoC/ViewModel + screen).
-- **Form UI wrappers** (inputs, layout, styling) may live in `taskly_ui` **only
-  as thin, data-in / events-out adapters** around FormBuilder widgets.
-- `taskly_ui` **must not** include DI, domain models, navigation, async
-  services, or form submission logic.
-- **Domain rules** may expose validators as **pure functions** when needed, but
-  presentation owns wiring and error messaging.
-- **Form validation must use domain validator helpers** (e.g. `*Validators`)
-  for all field validation. UI validators should be thin adapters that map
-  domain errors to localized strings; do not re-encode business rules in UI.
+- **Tokens are SSOT** for spacing, radii, elevation, motion, and tap-target
+  sizing. Avoid hard-coded layout constants in shared UI; if a token does not
+  exist, a small component-local constant is allowed but must be promoted to a
+  token once reused or reviewed.
+- **Typography is SSOT** via `ThemeData.textTheme` (or a thin semantic wrapper
+  derived from it). UI must not set ad-hoc `fontSize` or `letterSpacing` in
+  widgets.
+- **Colors are theme-driven**: use `ThemeData.colorScheme` and `TasklyTokens`
+  semantic colors only. Do not hardcode colors in widgets.
+- **Tap targets** must be >= 40dp. `MaterialTapTargetSize.shrinkWrap` is not
+  allowed in shared UI.
+- **Entity rows are canonical**: Task/Project/Value/Routine rows must render
+  through the feed schema + renderer with styles/presets. Screen-local entity
+  widgets are not allowed.
+- **4-tier ownership**: primitives/entities/sections live in `taskly_ui`;
+  screens/templates live in app presentation. App screens may only compose
+  shared UI, not define new primitives/entities/sections.
+- **Pure UI boundary**: `taskly_ui` is render-only (no BLoC/DI/services,
+  routing, or analytics). Data in / events out only.
+- **Public API hygiene**: no deep imports from `package:taskly_ui/src/...`.
+- **Catalog visibility**: all entity row styles/presets appear in
+  `TasklyTileCatalog`.
+- **Text scaling**: UI must respect system text scaling (no forced scaling).
 
-Rationale:
+### 2.1.1 Form UI boundary (strict)
 
-- Keeps Domain pure and platform-agnostic.
-- Prevents `taskly_ui` from becoming stateful/business-aware.
-- Centralizes styling without leaking orchestration into UI packages.
+- Form logic (state/validation/submit) lives in presentation.
+- Form UI wrappers may live in `taskly_ui` as thin adapters only.
+- Domain validators are pure functions; UI maps errors to localized strings.
 
-See: [doc/architecture/README.md](README.md)
+### 2.2 `taskly_ui` shared surface governance (strict)
 
-See also: [guides/BLOC_GUIDELINES.md](guides/BLOC_GUIDELINES.md)
-
-### 2.1.2 Entity rows are style-driven (strict)
-
-Taskly's canonical Task/Project/Value "entity rows" are shared UI and must be
-consumed using the **style, not config** pattern.
-
-Normative rules:
-
-- App code must consume entity rows via the feed schema + renderer:
-  - `package:taskly_ui/taskly_ui_feed.dart`
-  - Entity tiles are **not** a public API; the renderer owns them.
-
-- Entity rows must not be configured via one-off visual knobs.
-  - The app supplies a **style** (`*RowStyle`) that describes the supported
-    tile layout.
-  - The app supplies **actions** (`*RowActions`) and the renderer derives
-    affordances from callback presence.
-  - Semantic facts (for example "pinned" or "primary value icon only") must
-    flow through row data fields (for example `TasklyTaskRowData.pinned`) rather
-    than ad-hoc knobs.
-
-- `taskly_ui` remains pure UI.
-  - Styles and actions are UI-level types.
-  - Any routing, writes, overflow menu orchestration, analytics, etc. remain in
-    the app's presentation layer. `taskly_ui` only raises callbacks.
-
-### 2.2 UI composition model (4-tier) (strict)
-
-All UI in Taskly must follow a consistent composition vocabulary so shared UI
-stays reusable and feature screens remain easy to reason about.
-
-Normative rules:
-
-- All reusable UI must be expressed using the **4-tier model**:
-  - **Primitives**: tiny, style-driven building blocks (buttons, chips,
-    spacing, text styles). No domain meaning.
-  - **Entities**: UI for a single domain concept (for example, a "Task row"
-    visual), still **render-only** with callbacks.
-  - **Sections**: composed blocks that group primitives/entities into a
-    reusable chunk (empty/error sections, list headers, etc.). Must remain
-    presentation-agnostic (no routing/state).
-  - **Screens/Templates**: full pages and flows (routing, BLoC wiring, effects,
-    feature-specific orchestration). These live in the app presentation layer.
-
-- Code placement is strict:
-  - The **app owns only Screens/Templates**.
-  - All **Primitives / Entities / Sections** live in `packages/taskly_ui`.
-  - **Screens/Templates** must live in the app presentation layer (for example
-    under `lib/presentation/`). They must not live in `packages/taskly_ui`.
-
-#### 2.2.A Screen-only ownership rule (strict)
-
-To keep shared UI consistent and avoid "shadow design systems" in app code:
-
-- Screens/Templates must not introduce new **Primitives / Entities / Sections**
-  in app code, even if they are used only once.
-- Screens/Templates may use **private, file-local widgets** for layout-only
-  composition (spacing, ordering, small `Column`/`Row` helpers) as long as they
-  do not introduce new visual tokens, reusable component APIs, or new semantics.
-- In particular, do not create screen-local widgets that represent:
-  - a reusable "section" block (headers + lists + empty/error states),
-  - a reusable "entity" presentation (for example, a Task/Project tile),
-  - a new primitive-style building block (chips, buttons, badges, etc.).
-- If a screen needs a new section/entity/primitive, it must be created in
-  `packages/taskly_ui` and then composed from the screen.
-
-Rationale:
-
-- Prevents duplication and drift in look-and-feel across screens.
-- Keeps review simple: new UI building blocks go to `taskly_ui`.
-
-- Shared UI APIs must be **data in / events out**:
-  - render from immutable inputs (props/view-models)
-  - report user intent only via callbacks
-  - no app side-effects (no writes, no app-route navigation)
-
-- `taskly_ui` must remain pure UI (see 2.1): no BLoCs/Cubits, repositories,
-  services/use-cases, DI wiring, or stream subscriptions; no app routing or
-  route pushes.
-
-- `taskly_ui` source layout must reflect the 4-tier taxonomy:
-  - `packages/taskly_ui/lib/src/primitives/`
-  - `packages/taskly_ui/lib/src/entities/`
-  - `packages/taskly_ui/lib/src/sections/`
-  - `packages/taskly_ui/lib/src/feed/` (feed schema + renderer)
-  - (Reserved) `packages/taskly_ui/lib/src/templates/` for layout-only
-    scaffolding that remains routing/state-free.
-
-Allowed exceptions (narrow):
-
-- Ephemeral UI-only state that is inherently screen-local (controllers, focus
-  nodes, animations, scroll controllers).
-- Any non-screen UI (primitive/entity/section) that is app-owned is an
-  **architecture exception** and requires explicit user approval (see 2.2.1).
-
-### 2.2.1 `taskly_ui` shared surface governance (strict)
-
-Changes to `packages/taskly_ui` are governed differently depending on whether
-they change the shared public surface (API + default visuals/behavior) or are
-internal-only.
+Changes to `packages/taskly_ui` are governed by shared-surface rules.
 
 See also: [guides/TASKLY_UI_GOVERNANCE.md](guides/TASKLY_UI_GOVERNANCE.md)
 
@@ -465,12 +344,6 @@ The following may proceed without explicit user approval:
 - Bugfixes that restore intended behavior without changing defaults.
 - Performance improvements with no user-visible behavior changes.
 
-#### Opt-in behavior changes via presets (strict)
-
-Behavior changes may be opt-in via a new preset or explicit parameter when
-appropriate, but approval is governed by the shared UI change notification
-rule above.
-
 #### Configuration hygiene (required)
 
 When changing or refactoring `taskly_ui` entities/sections:
@@ -478,67 +351,6 @@ When changing or refactoring `taskly_ui` entities/sections:
 - Remove unused options, dead plumbing, and unused callback wiring.
 - Avoid "option creep": do not add new configuration flags to cover one-off
   screen needs; prefer creating a new, well-named variant model when required.
-
-### 2.3 Entity views/tiles are side-effect free (strict)
-
-Entity views and tile builder code must remain **render-only** adapters.
-
-Normative rules:
-
-- Code under `lib/presentation/entity_views/` and `lib/presentation/screens/tiles/`
-  must not resolve app services via DI.
-  - In particular, tiles must not resolve `EntityActionService` via `getIt`.
-- Code under these folders must not show SnackBars or other user-feedback
-  side-effects directly.
-  - SnackBars belong in screen/BLoC orchestration, not tiles.
-
-Rationale:
-
-- Keeps tile UI reusable and predictable.
-- Centralizes side-effects (routing, writes, transient UI feedback) in the
-  screen layer where lifecycle and policy are explicit.
-
-Guardrail:
-
-- Script: [tool/usm_tile_action_guardrail.dart](../../tool/usm_tile_action_guardrail.dart)
-
-## 2.4 UI theming and token usage (strict)
-
-UI must be fully theme-driven and consistent across screens.
-
-Normative rules:
-
-- All UI colors must come from Material `ThemeData.colorScheme` or a
-  `ThemeExtension`. Do not hardcode colors in widgets.
-- Theme creation must respect user-selected theme/seed colors. Do not override
-  `ColorScheme` with fixed palettes once a user choice is provided; only use
-  app defaults when no user selection exists.
-- All UI text sizes must come from `ThemeData.textTheme` or a `ThemeExtension`.
-  Do not set ad-hoc `fontSize` in widgets.
-- Spacing, radii, and elevations must come from theme tokens for shared or
-  reusable UI (`ThemeExtension` tokens or centralized app tokens such as
-  `AppSpacing` / `AppRadius`). Screen-local layout glue may use small constants
-  when it does not define a reusable pattern.
-- UI must respect user text scaling. Do not force `TextScaler.noScaling` or set
-  `textScaleFactor` to a fixed value.
-- Tap targets must meet platform accessibility guidance. Default to
-  `kMinInteractiveDimension` unless a design-approved compact token is defined
-  in theme extensions, and never go below 40dp.
-
-## 2.5 Entity tile styles and catalog (strict)
-
-Entity tiles must be rendered via **explicit styles**, not ad-hoc
-combinations of flags or custom layout tweaks.
-
-Normative rules:
-
-- Task/Project/Value tiles must be constructed using the documented variants
-  defined in `taskly_ui` (for example `TasklyTaskRowStyle.*`,
-  `TasklyProjectRowPreset.*`, `TasklyValueRowPreset.*`).
-- App code must not invent new tile styles through custom flags or screen-local
-  widget overrides.
-- Every style must be represented in the shared catalog widget
-  (`TasklyTileCatalog`) so the full visual surface is auditable in one place.
 
 ## 2.6 Routing and side-effects boundary (strict)
 

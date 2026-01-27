@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 /// A modern color picker field for FormBuilder using flex_color_picker.
 ///
 /// Features:
@@ -69,6 +71,7 @@ class FormBuilderColorPickerModern extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     assert(
       !isRequired || requiredErrorText != null || validator != null,
@@ -79,7 +82,10 @@ class FormBuilderColorPickerModern extends StatelessWidget {
     return Padding(
       padding: compact
           ? EdgeInsets.zero
-          : const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          : EdgeInsets.symmetric(
+              horizontal: tokens.sectionPaddingH,
+              vertical: tokens.spaceSm,
+            ),
       child: FormBuilderField<Color>(
         name: name,
         initialValue: initialValue ?? colorScheme.primary,
@@ -108,7 +114,7 @@ class FormBuilderColorPickerModern extends StatelessWidget {
             children: [
               if (showLabel && label != null)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.only(bottom: tokens.spaceSm),
                   child: Text(
                     label!,
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -118,7 +124,7 @@ class FormBuilderColorPickerModern extends StatelessWidget {
                 ),
               if (hint != null)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.only(bottom: tokens.spaceSm),
                   child: Text(
                     hint!,
                     style: theme.textTheme.bodySmall?.copyWith(
@@ -128,8 +134,8 @@ class FormBuilderColorPickerModern extends StatelessWidget {
                 ),
               ActionChip(
                 avatar: Container(
-                  width: 24,
-                  height: 24,
+                  width: tokens.spaceXl,
+                  height: tokens.spaceXl,
                   decoration: BoxDecoration(
                     color: currentColor,
                     shape: BoxShape.circle,
@@ -152,7 +158,10 @@ class FormBuilderColorPickerModern extends StatelessWidget {
               ),
               if (field.hasError)
                 Padding(
-                  padding: const EdgeInsets.only(top: 4, left: 12),
+                  padding: EdgeInsets.only(
+                    top: tokens.spaceXs,
+                    left: tokens.spaceMd,
+                  ),
                   child: Text(
                     field.errorText ?? '',
                     style: theme.textTheme.bodySmall?.copyWith(

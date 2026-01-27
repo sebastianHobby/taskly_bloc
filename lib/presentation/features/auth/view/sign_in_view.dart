@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Sign in view with custom form using AuthBloc.
 class SignInView extends StatefulWidget {
@@ -51,7 +52,7 @@ class _SignInViewState extends State<SignInView> {
         },
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
               child: Form(
@@ -65,19 +66,23 @@ class _SignInViewState extends State<SignInView> {
                       size: 80,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
                       'Welcome to Taskly',
                       style: Theme.of(context).textTheme.displaySmall,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
                       'Sign in to manage your tasks',
                       style: Theme.of(context).textTheme.bodyLarge,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 48),
+                    SizedBox(
+                      height:
+                          TasklyTokens.of(context).spaceXxl +
+                          TasklyTokens.of(context).spaceLg,
+                    ),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -99,7 +104,7 @@ class _SignInViewState extends State<SignInView> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: _obscurePassword,
@@ -131,15 +136,17 @@ class _SignInViewState extends State<SignInView> {
                       },
                       onFieldSubmitted: (_) => _handleSignIn(),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     BlocBuilder<AuthBloc, AppAuthState>(
                       builder: (context, state) {
                         return FilledButton(
                           onPressed: state.isLoading ? null : _handleSignIn,
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(
+                              TasklyTokens.of(context).spaceLg,
+                            ),
                             child: state.isLoading
-                                ? const SizedBox(
+                                ? SizedBox(
                                     height: 20,
                                     width: 20,
                                     child: CircularProgressIndicator(
@@ -151,7 +158,7 @@ class _SignInViewState extends State<SignInView> {
                         );
                       },
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Wrap(
                       alignment: WrapAlignment.center,
                       crossAxisAlignment: WrapCrossAlignment.center,

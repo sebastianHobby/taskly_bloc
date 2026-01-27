@@ -10,6 +10,7 @@ import 'package:taskly_bloc/bootstrap/logging_bootstrap.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_core/env.dart';
 import 'package:taskly_core/logging.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
   bootstrapLogging();
@@ -71,11 +72,12 @@ class _BootstrapFailureApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
     return MaterialApp(
       home: Scaffold(
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(tokens.spaceLg),
             child: SingleChildScrollView(
               child: SelectionArea(
                 child: Text(

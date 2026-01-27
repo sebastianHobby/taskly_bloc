@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 /// A compact chip showing a date or indicator.
 ///
 /// Displays an icon and label with consistent styling used for
@@ -90,22 +92,26 @@ class DateChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = TasklyTokens.of(context);
 
     return Container(
       padding: backgroundColor != null
-          ? const EdgeInsets.symmetric(horizontal: 6, vertical: 2)
+          ? EdgeInsets.symmetric(
+              horizontal: tokens.spaceXs2,
+              vertical: tokens.spaceXxs,
+            )
           : EdgeInsets.zero,
       decoration: backgroundColor != null
           ? BoxDecoration(
               color: backgroundColor,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(tokens.radiusXs),
             )
           : null,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: tokens.spaceMd2, color: color),
+          SizedBox(width: tokens.spaceXs),
           Flexible(
             child: Text(
               label,

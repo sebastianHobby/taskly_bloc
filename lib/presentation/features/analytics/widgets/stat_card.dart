@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class StatCard extends StatelessWidget {
   const StatCard({
@@ -17,9 +18,9 @@ class StatCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -38,7 +39,7 @@ class StatCard extends StatelessWidget {
                   if (stat.trend != null) _buildTrendIndicator(context),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
                 stat.formattedValue ?? stat.value.toString(),
                 style: theme.textTheme.headlineMedium?.copyWith(
@@ -47,7 +48,7 @@ class StatCard extends StatelessWidget {
                 ),
               ),
               if (stat.description != null) ...[
-                const SizedBox(height: 4),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
                 Text(
                   stat.description!,
                   style: theme.textTheme.bodySmall?.copyWith(

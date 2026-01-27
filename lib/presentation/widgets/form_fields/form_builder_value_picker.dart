@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// A multi-select picker for selecting one or more Values.
 ///
@@ -30,9 +31,13 @@ class FormBuilderValuePicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceLg,
+        vertical: tokens.spaceSm,
+      ),
       child: FormBuilderField<List<String>>(
         name: name,
         enabled: enabled,
@@ -136,7 +141,7 @@ class FormBuilderValuePicker extends StatelessWidget {
 
           return InkWell(
             onTap: openPicker,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
             child: InputDecorator(
               decoration: InputDecoration(
                 labelText: label,
@@ -146,32 +151,32 @@ class FormBuilderValuePicker extends StatelessWidget {
                 filled: true,
                 fillColor: colorScheme.surfaceContainerLow,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(tokens.radiusMd),
                   borderSide: BorderSide(
                     color: colorScheme.outline.withValues(alpha: 0.3),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(tokens.radiusMd),
                   borderSide: BorderSide(
                     color: colorScheme.outline.withValues(alpha: 0.3),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(tokens.radiusMd),
                   borderSide: BorderSide(color: colorScheme.primary, width: 2),
                 ),
                 errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(tokens.radiusMd),
                   borderSide: BorderSide(color: colorScheme.error, width: 2),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(tokens.radiusMd),
                   borderSide: BorderSide(color: colorScheme.error, width: 2),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: tokens.spaceLg,
+                  vertical: tokens.spaceSm,
                 ),
               ),
               child: selectedValues.isEmpty
@@ -182,8 +187,8 @@ class FormBuilderValuePicker extends StatelessWidget {
                       ),
                     )
                   : Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                      spacing: tokens.spaceSm,
+                      runSpacing: tokens.spaceSm,
                       children: [
                         for (final value in selectedValues)
                           InputChip(

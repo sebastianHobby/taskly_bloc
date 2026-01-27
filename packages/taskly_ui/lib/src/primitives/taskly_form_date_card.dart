@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 @immutable
 class TasklyFormDateRow {
   const TasklyFormDateRow({
@@ -34,11 +36,12 @@ class TasklyFormDateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Material(
       color: scheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(tokens.radiusLg),
         side: BorderSide(color: scheme.outlineVariant),
       ),
       child: Column(
@@ -66,6 +69,7 @@ class _DateRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
     final hasValue =
         row.hasValue && row.valueLabel != null && row.valueLabel!.isNotEmpty;
     final trailingLabel = hasValue ? row.valueLabel! : row.placeholderLabel;
@@ -77,15 +81,18 @@ class _DateRow extends StatelessWidget {
     return InkWell(
       onTap: row.onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spaceMd2,
+          vertical: tokens.spaceMd,
+        ),
         child: Row(
           children: [
             Icon(
               row.icon,
-              size: 18,
+              size: tokens.spaceLg2,
               color: scheme.onSurfaceVariant,
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: tokens.spaceSm2),
             Expanded(
               child: Text(
                 row.label,
@@ -102,15 +109,15 @@ class _DateRow extends StatelessWidget {
               ),
             ),
             if (canClear) ...[
-              const SizedBox(width: 4),
+              SizedBox(width: tokens.spaceXs),
               IconButton(
                 onPressed: row.onClear,
                 icon: const Icon(Icons.close_rounded),
-                iconSize: 18,
+                iconSize: tokens.spaceLg2,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 32,
-                  minHeight: 32,
+                constraints: BoxConstraints(
+                  minWidth: tokens.spaceXxl,
+                  minHeight: tokens.spaceXxl,
                 ),
               ),
             ],

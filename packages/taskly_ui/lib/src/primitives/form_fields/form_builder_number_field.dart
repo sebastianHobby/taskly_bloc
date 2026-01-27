@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 /// A compact number input field for FormBuilder.
 ///
 /// Provides a consistent number input experience with:
@@ -118,6 +120,7 @@ class _FormBuilderNumberFieldState extends State<FormBuilderNumberField> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     assert(
       widget.min == null || widget.minErrorTextBuilder != null,
@@ -158,7 +161,7 @@ class _FormBuilderNumberFieldState extends State<FormBuilderNumberField> {
             : RegExp(allowSigned ? r'[-\d]' : r'\d');
 
         return SizedBox(
-          width: widget.compact ? 80 : null,
+          width: widget.compact ? tokens.valueItemWidth + tokens.spaceSm : null,
           child: TextField(
             controller: _controller,
             enabled: widget.enabled,
@@ -179,18 +182,30 @@ class _FormBuilderNumberFieldState extends State<FormBuilderNumberField> {
               fillColor: colorScheme.surfaceContainerLow,
               isDense: widget.compact,
               contentPadding: widget.compact
-                  ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
-                  : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ? EdgeInsets.symmetric(
+                      horizontal: tokens.spaceMd,
+                      vertical: tokens.spaceSm,
+                    )
+                  : EdgeInsets.symmetric(
+                      horizontal: tokens.spaceLg,
+                      vertical: tokens.spaceMd,
+                    ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),
+                borderRadius: BorderRadius.circular(
+                  widget.compact ? tokens.radiusSm : tokens.radiusMd,
+                ),
                 borderSide: BorderSide.none,
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),
+                borderRadius: BorderRadius.circular(
+                  widget.compact ? tokens.radiusSm : tokens.radiusMd,
+                ),
                 borderSide: BorderSide.none,
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(widget.compact ? 8 : 12),
+                borderRadius: BorderRadius.circular(
+                  widget.compact ? tokens.radiusSm : tokens.radiusMd,
+                ),
                 borderSide: BorderSide(
                   color: colorScheme.primary,
                   width: 1.5,

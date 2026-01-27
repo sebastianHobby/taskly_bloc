@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 @immutable
 class TasklyJournalDailySummaryItem {
@@ -38,6 +39,7 @@ class TasklyJournalDailySummarySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = TasklyTokens.of(context);
     final actionButtons = <Widget>[
       if (onSeeAll != null)
         TextButton(
@@ -52,10 +54,10 @@ class TasklyJournalDailySummarySection extends StatelessWidget {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(tokens.spaceMd2),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(tokens.radiusLg),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,11 +66,11 @@ class TasklyJournalDailySummarySection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: tokens.progressRingSize,
+                height: tokens.progressRingSize,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(tokens.radiusMd2),
                 ),
                 alignment: Alignment.center,
                 child: Text(
@@ -76,7 +78,7 @@ class TasklyJournalDailySummarySection extends StatelessWidget {
                   style: theme.textTheme.titleLarge,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: tokens.spaceMd),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +89,7 @@ class TasklyJournalDailySummarySection extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: tokens.spaceXxs),
                     Text(
                       entryCountLabel,
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -99,15 +101,15 @@ class TasklyJournalDailySummarySection extends StatelessWidget {
               ),
               if (actionButtons.isNotEmpty)
                 Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
+                  spacing: tokens.spaceXs,
+                  runSpacing: tokens.spaceXs,
                   alignment: WrapAlignment.end,
                   children: actionButtons,
                 ),
             ],
           ),
           if (showItems) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: tokens.spaceMd),
             if (items.isEmpty)
               Text(
                 emptyItemsLabel,
@@ -117,8 +119,8 @@ class TasklyJournalDailySummarySection extends StatelessWidget {
               )
             else
               Wrap(
-                spacing: 8,
-                runSpacing: 8,
+                spacing: tokens.spaceSm,
+                runSpacing: tokens.spaceSm,
                 children: [
                   for (final item in items)
                     _SummaryChip(
@@ -149,13 +151,17 @@ class _SummaryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = TasklyTokens.of(context);
     final border = theme.colorScheme.outlineVariant;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceSm2,
+        vertical: tokens.spaceXs2,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(tokens.radiusPill),
         border: Border.all(color: border),
       ),
       child: Row(
@@ -167,7 +173,7 @@ class _SummaryChip extends StatelessWidget {
               size: 14,
               color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: tokens.spaceXs),
           ],
           Text(
             '$label: $value',

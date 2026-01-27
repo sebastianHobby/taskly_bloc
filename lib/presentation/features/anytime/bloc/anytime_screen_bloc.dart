@@ -79,12 +79,6 @@ final class AnytimeProjectHeaderTapped extends AnytimeScreenEvent {
   final ProjectGroupingRef projectRef;
 }
 
-final class AnytimeValueHeaderToggled extends AnytimeScreenEvent {
-  const AnytimeValueHeaderToggled({required this.valueKey});
-
-  final String valueKey;
-}
-
 final class AnytimeEffectHandled extends AnytimeScreenEvent {
   const AnytimeEffectHandled();
 }
@@ -93,7 +87,6 @@ sealed class AnytimeScreenState {
   const AnytimeScreenState({
     required this.focusOnly,
     required this.inboxCollapsed,
-    required this.collapsedValueIds,
     required this.searchQuery,
     required this.sortOrder,
     this.effect,
@@ -103,9 +96,6 @@ sealed class AnytimeScreenState {
 
   /// Whether the global Inbox section in Anytime is collapsed.
   final bool inboxCollapsed;
-
-  /// Collapsed value section keys in Anytime.
-  final Set<String> collapsedValueIds;
 
   /// Ephemeral search query for the current route/scope.
   final String searchQuery;
@@ -118,7 +108,6 @@ final class AnytimeScreenReady extends AnytimeScreenState {
   const AnytimeScreenReady({
     required super.focusOnly,
     required super.inboxCollapsed,
-    required super.collapsedValueIds,
     required super.searchQuery,
     required super.sortOrder,
     super.effect,
@@ -132,7 +121,6 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
         const AnytimeScreenReady(
           focusOnly: false,
           inboxCollapsed: false,
-          collapsedValueIds: <String>{},
           searchQuery: '',
           sortOrder: AnytimeSortOrder.dueSoonest,
         ),
@@ -142,7 +130,6 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
         AnytimeScreenReady(
           focusOnly: !state.focusOnly,
           inboxCollapsed: state.inboxCollapsed,
-          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
           sortOrder: state.sortOrder,
         ),
@@ -153,7 +140,6 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
         AnytimeScreenReady(
           focusOnly: event.enabled,
           inboxCollapsed: state.inboxCollapsed,
-          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
           sortOrder: state.sortOrder,
         ),
@@ -165,7 +151,6 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
         AnytimeScreenReady(
           focusOnly: state.focusOnly,
           inboxCollapsed: state.inboxCollapsed,
-          collapsedValueIds: state.collapsedValueIds,
           searchQuery: event.query,
           sortOrder: state.sortOrder,
         ),
@@ -177,7 +162,6 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
         AnytimeScreenReady(
           focusOnly: state.focusOnly,
           inboxCollapsed: state.inboxCollapsed,
-          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
           sortOrder: event.order,
         ),
@@ -190,7 +174,6 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
         AnytimeScreenReady(
           focusOnly: state.focusOnly,
           inboxCollapsed: state.inboxCollapsed,
-          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
           sortOrder: state.sortOrder,
           effect: AnytimeNavigateToTaskNew(
@@ -206,7 +189,6 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
         AnytimeScreenReady(
           focusOnly: state.focusOnly,
           inboxCollapsed: state.inboxCollapsed,
-          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
           sortOrder: state.sortOrder,
           effect: AnytimeOpenProjectNew(
@@ -223,7 +205,6 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
         AnytimeScreenReady(
           focusOnly: state.focusOnly,
           inboxCollapsed: state.inboxCollapsed,
-          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
           sortOrder: state.sortOrder,
           effect: AnytimeNavigateToTaskEdit(taskId: id),
@@ -238,7 +219,6 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
             AnytimeScreenReady(
               focusOnly: state.focusOnly,
               inboxCollapsed: !state.inboxCollapsed,
-              collapsedValueIds: state.collapsedValueIds,
               searchQuery: state.searchQuery,
               sortOrder: state.sortOrder,
             ),
@@ -250,7 +230,6 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
             AnytimeScreenReady(
               focusOnly: state.focusOnly,
               inboxCollapsed: state.inboxCollapsed,
-              collapsedValueIds: state.collapsedValueIds,
               searchQuery: state.searchQuery,
               sortOrder: state.sortOrder,
               effect: AnytimeNavigateToProjectAnytime(projectId: id),
@@ -259,33 +238,12 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
       }
     });
 
-    on<AnytimeValueHeaderToggled>((event, emit) {
-      final key = event.valueKey.trim();
-      if (key.isEmpty) return;
-
-      final next = Set<String>.from(state.collapsedValueIds);
-      if (!next.add(key)) {
-        next.remove(key);
-      }
-
-      emit(
-        AnytimeScreenReady(
-          focusOnly: state.focusOnly,
-          inboxCollapsed: state.inboxCollapsed,
-          collapsedValueIds: next,
-          searchQuery: state.searchQuery,
-          sortOrder: state.sortOrder,
-        ),
-      );
-    });
-
     on<AnytimeEffectHandled>((event, emit) {
       if (state.effect == null) return;
       emit(
         AnytimeScreenReady(
           focusOnly: state.focusOnly,
           inboxCollapsed: state.inboxCollapsed,
-          collapsedValueIds: state.collapsedValueIds,
           searchQuery: state.searchQuery,
           sortOrder: state.sortOrder,
         ),

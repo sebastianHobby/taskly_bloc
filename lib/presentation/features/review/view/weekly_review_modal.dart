@@ -11,6 +11,7 @@ import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/settings.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 Future<void> showWeeklyReviewModal(
   BuildContext context, {
@@ -135,7 +136,12 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
         return Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+              padding: EdgeInsets.fromLTRB(
+                TasklyTokens.of(context).spaceLg,
+                TasklyTokens.of(context).spaceXs2,
+                TasklyTokens.of(context).spaceLg,
+                TasklyTokens.of(context).spaceXs2,
+              ),
               child: Row(
                 children: [
                   Expanded(
@@ -164,7 +170,12 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              padding: EdgeInsets.fromLTRB(
+                TasklyTokens.of(context).spaceLg,
+                TasklyTokens.of(context).spaceSm,
+                TasklyTokens.of(context).spaceLg,
+                TasklyTokens.of(context).spaceLg,
+              ),
               child: Row(
                 children: [
                   if (_pageIndex > 0)
@@ -213,20 +224,25 @@ class _ValuesSnapshotPage extends StatelessWidget {
         : 'No completed tasks yet.';
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceXs,
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceXl,
+      ),
       children: [
         Text(
           'Values Snapshot',
           style: theme.textTheme.titleLarge,
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         Text(
           'How your completed work aligned with what matters.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         if (summary?.hasData ?? false) ...[
           Text(
             'Last ${config.valuesWindowWeeks} weeks',
@@ -235,29 +251,29 @@ class _ValuesSnapshotPage extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           _RingsRow(rings: summary?.rings ?? const []),
-          const SizedBox(height: 12),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
         ],
         Text(
           insight,
           style: theme.textTheme.bodyMedium,
         ),
-        const SizedBox(height: 18),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         Text(
           'Value Wins',
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         Text(
           'Small moments that added up.',
           style: theme.textTheme.bodySmall?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         if (wins.isEmpty)
           Text(
             'No value wins yet.',
@@ -268,11 +284,13 @@ class _ValuesSnapshotPage extends StatelessWidget {
         else
           ...wins.map(
             (win) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.only(
+                bottom: TasklyTokens.of(context).spaceSm,
+              ),
               child: Row(
                 children: [
                   const Icon(Icons.star_rounded, size: 18),
-                  const SizedBox(width: 8),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Expanded(
                     child: Text(
                       '${win.valueName} - ${win.completionCount} completions',
@@ -296,7 +314,7 @@ class _RingsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (rings.isEmpty) {
-      return const SizedBox.shrink();
+      return SizedBox.shrink();
     }
 
     return SingleChildScrollView(
@@ -305,7 +323,9 @@ class _RingsRow extends StatelessWidget {
         children: rings
             .map(
               (ring) => Padding(
-                padding: const EdgeInsets.only(right: 12),
+                padding: EdgeInsets.only(
+                  bottom: TasklyTokens.of(context).spaceSm,
+                ),
                 child: _ValueRing(ring: ring),
               ),
             )
@@ -352,7 +372,7 @@ class _ValueRing extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         SizedBox(
           width: 72,
           child: Text(
@@ -379,20 +399,25 @@ class _MaintenancePage extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceXs,
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceXl,
+      ),
       children: [
         Text(
           'Maintenance Check',
           style: theme.textTheme.titleLarge,
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         Text(
           'A short list to keep things from building up.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         for (final section in sections) ...[
           Text(
             section.title,
@@ -400,10 +425,12 @@ class _MaintenancePage extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           if (section.items.isEmpty)
             Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: EdgeInsets.only(
+                bottom: TasklyTokens.of(context).spaceSm,
+              ),
               child: Text(
                 section.emptyMessage,
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -414,11 +441,13 @@ class _MaintenancePage extends StatelessWidget {
           else
             ...section.items.map(
               (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: EdgeInsets.only(
+                  bottom: TasklyTokens.of(context).spaceSm,
+                ),
                 child: _MaintenanceItem(item: item),
               ),
             ),
-          const SizedBox(height: 4),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
         ],
       ],
     );
@@ -436,10 +465,10 @@ class _MaintenanceItem extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         border: Border.all(color: scheme.outlineVariant.withOpacity(0.6)),
       ),
       child: Column(
@@ -451,7 +480,7 @@ class _MaintenanceItem extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           Text(
             item.description,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -474,18 +503,20 @@ class _CompletionPage extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: EdgeInsets.symmetric(
+          horizontal: TasklyTokens.of(context).spaceLg,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.check_circle_outline, size: 48, color: scheme.primary),
-            const SizedBox(height: 12),
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
             Text(
               "You're done.",
               style: theme.textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
             Text(
               'Clear, calm, and ready to go.',
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -493,7 +524,7 @@ class _CompletionPage extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
             Text(
               'Run again anytime.',
               style: theme.textTheme.bodySmall?.copyWith(
@@ -526,12 +557,12 @@ class _ReviewError extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
             FilledButton(
               onPressed: onRetry,
               child: const Text('Retry'),

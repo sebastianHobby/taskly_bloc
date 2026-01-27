@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 /// Direction for the swipe to delete gesture.
 enum SwipeDirection {
   /// Swipe left to right (start to end).
@@ -110,16 +112,17 @@ class SwipeToDelete extends StatelessWidget {
     ColorScheme colorScheme, {
     required bool isStartToEnd,
   }) {
+    final tokens = TasklyTokens.of(context);
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      margin: EdgeInsets.symmetric(vertical: tokens.spaceXs),
       decoration: BoxDecoration(
         color: colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
       ),
       alignment: isStartToEnd ? Alignment.centerLeft : Alignment.centerRight,
       padding: EdgeInsets.only(
-        left: isStartToEnd ? 24 : 0,
-        right: isStartToEnd ? 0 : 24,
+        left: isStartToEnd ? tokens.spaceXl : 0,
+        right: isStartToEnd ? 0 : tokens.spaceXl,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -127,9 +130,9 @@ class SwipeToDelete extends StatelessWidget {
           Icon(
             Icons.delete_outline_rounded,
             color: colorScheme.onErrorContainer,
-            size: 24,
+            size: tokens.spaceXl,
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: tokens.spaceSm),
           Text(
             deleteLabel,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(

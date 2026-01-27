@@ -174,7 +174,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
           initial: () => const Center(child: CircularProgressIndicator()),
           loadInProgress: () =>
               const Center(child: CircularProgressIndicator()),
-          inlineActionSuccess: (_) => const SizedBox.shrink(),
+          inlineActionSuccess: (_) => SizedBox.shrink(),
           initialDataLoadSuccess: (availableProjects, availableValues) =>
               TaskForm(
                 formKey: _formKey,
@@ -301,9 +301,9 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 openToProjectPicker: widget.openToProjectPicker,
                 onClose: () => unawaited(closeEditor(context)),
               ),
-          operationSuccess: (_) => const SizedBox.shrink(),
-          operationFailure: (_) => const SizedBox.shrink(),
-          validationFailure: (_) => const SizedBox.shrink(),
+          operationSuccess: (_) => SizedBox.shrink(),
+          operationFailure: (_) => SizedBox.shrink(),
+          validationFailure: (_) => SizedBox.shrink(),
         );
       },
     );

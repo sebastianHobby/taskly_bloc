@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 import 'package:taskly_ui/src/primitives/value_chip.dart';
 
 enum ValueChipVariant { solid, outlined }
@@ -39,6 +40,7 @@ class ValueChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
     final color = data.color;
     final iconData = data.icon;
 
@@ -52,23 +54,23 @@ class ValueChip extends StatelessWidget {
     final chip = Container(
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(tokens.radiusPill),
         border: Border.all(color: borderColor, width: 1),
       ),
       padding: EdgeInsets.symmetric(
-        horizontal: iconOnly ? 6 : 8,
-        vertical: 4,
+        horizontal: iconOnly ? tokens.spaceXs2 : tokens.spaceSm,
+        vertical: tokens.spaceXs,
       ),
-      constraints: const BoxConstraints(minHeight: 22),
+      constraints: BoxConstraints(minHeight: tokens.minTapTargetSize),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(iconData, size: 14, color: color.withValues(alpha: 0.8)),
           if (!iconOnly) ...[
-            const SizedBox(width: 6),
+            SizedBox(width: tokens.spaceXs2),
             Flexible(
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 1),
+                padding: EdgeInsets.only(bottom: tokens.spaceXxs),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: maxLabelWidth),
                   child: Text(
@@ -76,9 +78,6 @@ class ValueChip extends StatelessWidget {
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: textColor,
                       fontWeight: FontWeight.w600,
-                      fontSize: 11,
-                      height: 1.1,
-                      letterSpacing: 0.2,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

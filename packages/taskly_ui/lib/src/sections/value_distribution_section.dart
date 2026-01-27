@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 class ValueDistributionSection extends StatelessWidget {
   const ValueDistributionSection({
@@ -18,6 +19,7 @@ class ValueDistributionSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     final effectiveEntries = entries
         .where((entry) => entry.count > 0)
@@ -30,31 +32,31 @@ class ValueDistributionSection extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 6, 0, 16),
+      padding: EdgeInsets.fromLTRB(0, tokens.spaceXs2, 0, tokens.spaceLg),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: scheme.surface,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(tokens.radiusLg2),
           border: Border.all(
             color: scheme.outlineVariant.withValues(alpha: 0.5),
           ),
           boxShadow: [
             BoxShadow(
               color: scheme.shadow.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              blurRadius: tokens.spaceMd,
+              offset: Offset(0, tokens.spaceXs),
             ),
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.all(tokens.spaceLg2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _HeaderRow(title: title, totalLabel: totalLabel),
-              const SizedBox(height: 12),
+              SizedBox(height: tokens.spaceMd),
               _SegmentBar(entries: sortedEntries),
-              const SizedBox(height: 12),
+              SizedBox(height: tokens.spaceMd),
               _EntryLegend(entries: sortedEntries),
             ],
           ),
@@ -77,6 +79,7 @@ class _HeaderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Row(
       children: [
@@ -90,10 +93,13 @@ class _HeaderRow extends StatelessWidget {
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spaceSm,
+            vertical: tokens.spaceXs,
+          ),
           decoration: BoxDecoration(
             color: scheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(tokens.radiusPill),
           ),
           child: Text(
             totalLabel,
@@ -118,11 +124,12 @@ class _SegmentBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(tokens.radiusPill),
       child: SizedBox(
-        height: 10,
+        height: tokens.spaceSm2,
         child: Row(
           children: [
             for (final entry in entries)
@@ -154,6 +161,7 @@ class _EntryLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
     final textColor = scheme.onSurfaceVariant;
 
     final visible = entries.take(4).toList(growable: false);
@@ -169,8 +177,12 @@ class _EntryLegend extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(entry.value.icon, size: 18, color: entry.value.color),
-                    const SizedBox(width: 4),
+                    Icon(
+                      entry.value.icon,
+                      size: tokens.spaceLg2,
+                      color: entry.value.color,
+                    ),
+                    SizedBox(width: tokens.spaceXs),
                     Text(
                       entry.count.toString(),
                       style: theme.textTheme.labelLarge?.copyWith(
@@ -180,7 +192,7 @@ class _EntryLegend extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: tokens.spaceXs),
                 Text(
                   entry.value.label,
                   maxLines: 1,
@@ -216,20 +228,23 @@ class _MoreValuesPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Padding(
-      padding: const EdgeInsets.only(left: 8),
+      padding: EdgeInsets.only(left: tokens.spaceSm),
       child: OutlinedButton(
         onPressed: () => _showAllValues(context),
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          minimumSize: const Size(0, 40),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spaceMd,
+            vertical: tokens.spaceSm2,
+          ),
+          minimumSize: Size(0, tokens.minTapTargetSize),
           side: BorderSide(
             color: scheme.outlineVariant.withValues(alpha: 0.6),
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(tokens.radiusPill),
           ),
         ),
         child: Text(

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/project_picker/bloc/project_picker_bloc.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 typedef ProjectPickerOnSelect = Future<void> Function(String? projectId);
 
@@ -144,9 +145,14 @@ class _ProjectPickerBodyState extends State<_ProjectPickerBody> {
     final l10n = context.l10n;
 
     final header = widget.isDialog
-        ? const SizedBox.shrink()
+        ? SizedBox.shrink()
         : Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            padding: EdgeInsets.fromLTRB(
+              TasklyTokens.of(context).spaceLg,
+              TasklyTokens.of(context).spaceSm,
+              TasklyTokens.of(context).spaceLg,
+              0,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -169,7 +175,12 @@ class _ProjectPickerBodyState extends State<_ProjectPickerBody> {
       children: [
         header,
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          padding: EdgeInsets.fromLTRB(
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceSm,
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceSm,
+          ),
           child: TextField(
             enabled: !_isSubmitting,
             onChanged: (value) => context.read<ProjectPickerBloc>().add(
@@ -185,7 +196,12 @@ class _ProjectPickerBodyState extends State<_ProjectPickerBody> {
         ),
         if (_selectionError != null)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            padding: EdgeInsets.fromLTRB(
+              TasklyTokens.of(context).spaceLg,
+              0,
+              TasklyTokens.of(context).spaceLg,
+              TasklyTokens.of(context).spaceSm,
+            ),
             child: MaterialBanner(
               content: Text(l10n.genericErrorFallback),
               leading: const Icon(Icons.error_outline),
@@ -208,7 +224,12 @@ class _ProjectPickerBodyState extends State<_ProjectPickerBody> {
                 children: [
                   if (state.hasLoadError)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                      padding: EdgeInsets.fromLTRB(
+                        TasklyTokens.of(context).spaceLg,
+                        0,
+                        TasklyTokens.of(context).spaceLg,
+                        TasklyTokens.of(context).spaceSm,
+                      ),
                       child: MaterialBanner(
                         content: Text(l10n.genericErrorFallback),
                         leading: const Icon(Icons.wifi_off_outlined),
@@ -231,7 +252,9 @@ class _ProjectPickerBodyState extends State<_ProjectPickerBody> {
                       ),
                       (_, final projects) when projects.isEmpty => Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(24),
+                          padding: EdgeInsets.all(
+                            TasklyTokens.of(context).spaceLg,
+                          ),
                           child: Text(
                             l10n.projectPickerNoMatchingProjects,
                             textAlign: TextAlign.center,
@@ -269,7 +292,7 @@ class _ProjectPickerBodyState extends State<_ProjectPickerBody> {
             },
           ),
         ),
-        if (kIsWeb) const SizedBox(height: 8),
+        if (kIsWeb) SizedBox(height: TasklyTokens.of(context).spaceSm),
       ],
     );
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 class TasklyFormProjectRow extends StatelessWidget {
   const TasklyFormProjectRow({
     required this.label,
@@ -17,35 +19,39 @@ class TasklyFormProjectRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
     final textColor = hasValue ? scheme.onSurface : scheme.onSurfaceVariant;
 
     return Material(
       color: scheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(tokens.radiusMd2),
         side: BorderSide(color: scheme.outlineVariant),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(tokens.radiusMd2),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spaceMd2,
+            vertical: tokens.spaceMd,
+          ),
           child: Row(
             children: [
               Container(
-                width: 28,
-                height: 28,
+                width: tokens.spaceXl + tokens.spaceXs,
+                height: tokens.spaceXl + tokens.spaceXs,
                 decoration: BoxDecoration(
                   color: scheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(tokens.radiusSm),
                 ),
                 child: Icon(
                   icon,
-                  size: 16,
+                  size: tokens.spaceLg,
                   color: scheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: tokens.spaceMd),
               Expanded(
                 child: Text(
                   label,

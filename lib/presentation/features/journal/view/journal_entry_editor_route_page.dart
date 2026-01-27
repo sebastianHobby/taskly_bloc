@@ -7,6 +7,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_bloc.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalEntryEditorRoutePage extends StatefulWidget {
   const JournalEntryEditorRoutePage({
@@ -197,7 +198,7 @@ class _JournalEntryEditorRoutePageState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(d.name, style: theme.textTheme.titleSmall),
-                  const SizedBox(height: 6),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Row(
                     children: [
                       IconButton(
@@ -233,7 +234,7 @@ class _JournalEntryEditorRoutePageState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(d.name, style: theme.textTheme.titleSmall),
-                      const SizedBox(height: 8),
+                      SizedBox(height: TasklyTokens.of(context).spaceSm),
                       if (choices.isEmpty)
                         Text(
                           'No options',
@@ -275,7 +276,12 @@ class _JournalEntryEditorRoutePageState
             ),
             bottomNavigationBar: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                padding: EdgeInsets.fromLTRB(
+                  TasklyTokens.of(context).spaceLg,
+                  TasklyTokens.of(context).spaceSm2,
+                  TasklyTokens.of(context).spaceLg,
+                  TasklyTokens.of(context).spaceLg,
+                ),
                 child: FilledButton.icon(
                   onPressed: canSave
                       ? () => context.read<JournalEntryEditorBloc>().add(
@@ -283,7 +289,7 @@ class _JournalEntryEditorRoutePageState
                         )
                       : null,
                   icon: isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
@@ -299,10 +305,16 @@ class _JournalEntryEditorRoutePageState
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : ListView(
-                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 120),
+                      padding: EdgeInsets.fromLTRB(
+                        TasklyTokens.of(context).spaceMd,
+                        TasklyTokens.of(context).spaceMd,
+                        TasklyTokens.of(context).spaceMd,
+                        TasklyTokens.of(context).spaceXxl * 3 +
+                            TasklyTokens.of(context).spaceXl,
+                      ),
                       children: [
                         Text('Mood', style: theme.textTheme.titleMedium),
-                        const SizedBox(height: 8),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
                         _MoodScalePicker(
                           value: state.mood,
                           enabled: !isSaving,
@@ -310,7 +322,7 @@ class _JournalEntryEditorRoutePageState
                               .read<JournalEntryEditorBloc>()
                               .add(JournalEntryEditorMoodChanged(m)),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
                         TextField(
                           controller: _noteController,
                           onChanged: (v) => context
@@ -323,32 +335,32 @@ class _JournalEntryEditorRoutePageState
                             border: OutlineInputBorder(),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
                         Text('Right now', style: theme.textTheme.titleMedium),
-                        const SizedBox(height: 4),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
                         Text(
                           'Log things that happened with this entry.',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
                         for (final group in groupOptions())
                           Builder(
                             builder: (context) {
                               final groupId = group?.id;
                               final inGroup = trackersForGroup(groupId);
                               if (inGroup.isEmpty) {
-                                return const SizedBox.shrink();
+                                return SizedBox.shrink();
                               }
 
                               return ExpansionTile(
                                 initiallyExpanded: true,
                                 title: Text(groupLabel(group)),
-                                childrenPadding: const EdgeInsets.only(
-                                  left: 12,
-                                  right: 12,
-                                  bottom: 12,
+                                childrenPadding: EdgeInsets.only(
+                                  left: TasklyTokens.of(context).spaceLg,
+                                  right: TasklyTokens.of(context).spaceLg,
+                                  bottom: TasklyTokens.of(context).spaceSm,
                                 ),
                                 children: [
                                   for (final d in inGroup) ...[
@@ -359,9 +371,9 @@ class _JournalEntryEditorRoutePageState
                               );
                             },
                           ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
                         Text('All-day', style: theme.textTheme.titleMedium),
-                        const SizedBox(height: 4),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
                         Text(
                           'Totals or habits that apply to the whole day.',
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -438,13 +450,17 @@ class _MoodOptionButton extends StatelessWidget {
       label: 'Mood: ${mood.label}',
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         child: Container(
           width: 64,
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: EdgeInsets.symmetric(
+            horizontal: TasklyTokens.of(context).spaceLg,
+          ),
           decoration: BoxDecoration(
             color: bg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(
+              TasklyTokens.of(context).radiusMd,
+            ),
             border: Border.fromBorderSide(border),
           ),
           child: Column(
@@ -457,7 +473,7 @@ class _MoodOptionButton extends StatelessWidget {
                   color: enabled ? null : theme.disabledColor,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
                 '${mood.value}',
                 style: theme.textTheme.labelSmall?.copyWith(

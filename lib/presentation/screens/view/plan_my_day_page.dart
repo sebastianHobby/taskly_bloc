@@ -12,6 +12,7 @@ import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class PlanMyDayPage extends StatelessWidget {
   const PlanMyDayPage({
@@ -152,7 +153,12 @@ class _PlanWizard extends StatelessWidget {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          padding: EdgeInsets.fromLTRB(
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceSm,
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceSm,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -162,7 +168,7 @@ class _PlanWizard extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
                 stepSubtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -273,7 +279,12 @@ class _PlanValuesStep extends StatelessWidget {
     );
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceMd,
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceXl,
+      ),
       children: [
         Align(
           alignment: Alignment.centerLeft,
@@ -282,13 +293,16 @@ class _PlanValuesStep extends StatelessWidget {
             icon: const Icon(Icons.info_outline, size: 18),
             label: const Text('Why suggested'),
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: EdgeInsets.symmetric(
+                horizontal: TasklyTokens.of(context).spaceLg,
+                vertical: TasklyTokens.of(context).spaceSm,
+              ),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
         TasklyFeedRenderer.buildSection(
           TasklySectionSpec.standardList(
             id: 'plan-values',
@@ -307,13 +321,18 @@ class _PlanValuesStep extends StatelessWidget {
         return SafeArea(
           child: ListView(
             shrinkWrap: true,
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            padding: EdgeInsets.fromLTRB(
+              TasklyTokens.of(context).spaceLg,
+              TasklyTokens.of(context).spaceSm,
+              TasklyTokens.of(context).spaceLg,
+              TasklyTokens.of(context).spaceXl,
+            ),
             children: [
               const Text(
                 'Why suggested',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
                 'These suggestions balance your values and recent choices. '
                 'They are meant to be a gentle starting point.',
@@ -424,7 +443,12 @@ class _PlanRoutinesStepState extends State<_PlanRoutinesStep> {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceMd,
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceXl,
+      ),
       children: [
         TasklyFeedRenderer.buildSection(
           TasklySectionSpec.standardList(
@@ -515,7 +539,12 @@ class _PlanTriageStepState extends State<_PlanTriageStep> {
     ];
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceMd,
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceXl,
+      ),
       children: [
         TasklyFeedRenderer.buildSection(
           TasklySectionSpec.standardList(
@@ -549,7 +578,12 @@ class _PlanSummaryStep extends StatelessWidget {
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceMd,
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceXl,
+      ),
       children: [
         TasklyFeedRenderer.buildSection(
           TasklySectionSpec.standardList(
@@ -586,7 +620,12 @@ class _PlanBottomBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+        padding: EdgeInsets.fromLTRB(
+          TasklyTokens.of(context).spaceLg,
+          TasklyTokens.of(context).spaceSm2,
+          TasklyTokens.of(context).spaceLg,
+          TasklyTokens.of(context).spaceLg,
+        ),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           border: Border(
@@ -607,7 +646,7 @@ class _PlanBottomBar extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
             FilledButton(
               onPressed: !primaryEnabled
                   ? null
@@ -624,7 +663,9 @@ class _PlanBottomBar extends StatelessWidget {
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(48),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(
+                    TasklyTokens.of(context).radiusMd,
+                  ),
                 ),
               ),
               child: Text(primaryLabel),

@@ -13,6 +13,7 @@ import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
@@ -194,7 +195,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
             CustomSingleChildLayout(
               delegate: _AnchoredDialogLayoutDelegate(
                 anchor: anchor,
-                margin: const EdgeInsets.all(8),
+                margin: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
                 maxWidth: maxWidth,
                 maxHeight: maxHeight,
               ),
@@ -202,7 +203,9 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                 elevation: 6,
                 color: theme.colorScheme.surface,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(
+                    TasklyTokens.of(context).radiusMd,
+                  ),
                   side: BorderSide(
                     color: theme.colorScheme.outlineVariant.withValues(
                       alpha: 0.6,
@@ -435,7 +438,11 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
         ),
       ],
       child: Padding(
-        padding: EdgeInsets.only(bottom: isCompact ? 16 : 24),
+        padding: EdgeInsets.only(
+          bottom: isCompact
+              ? TasklyTokens.of(context).spaceLg
+              : TasklyTokens.of(context).spaceXl,
+        ),
         child: FormBuilder(
           key: widget.formKey,
           initialValue: initialValues,
@@ -459,13 +466,15 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 12),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (!isCreating)
                     Padding(
-                      padding: const EdgeInsets.only(top: 10),
+                      padding: EdgeInsets.only(
+                        bottom: TasklyTokens.of(context).spaceSm,
+                      ),
                       child: FormBuilderField<bool>(
                         name: ProjectFieldKeys.completed.id,
                         builder: (field) {
@@ -479,14 +488,17 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                                 markDirty();
                               },
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(
+                                  TasklyTokens.of(context).radiusSm,
+                                ),
                               ),
                             ),
                           );
                         },
                       ),
                     ),
-                  if (!isCreating) const SizedBox(width: 8),
+                  if (!isCreating)
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Expanded(
                     child: FormBuilderTextField(
                       name: ProjectFieldKeys.name.id,
@@ -516,7 +528,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
               if (isCreating)
                 FormBuilderField<bool>(
                   name: ProjectFieldKeys.completed.id,
-                  builder: (_) => const SizedBox.shrink(),
+                  builder: (_) => SizedBox.shrink(),
                 ),
 
               SizedBox(height: sectionGap),
@@ -527,14 +539,14 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TasklyFormSectionLabel(text: l10n.projectValueTitle),
-                  const SizedBox(height: 4),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Text(
                     l10n.projectValueHelper,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   TasklyFormRowGroup(
                     children: [
                       FormBuilderField<List<String>>(
@@ -612,7 +624,9 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                                           open(ValuesAlignmentTarget.primary),
                                       isSelected: primary != null,
                                       isPrimary: true,
-                                      preset: TasklyFormPreset.standard.chip,
+                                      preset: TasklyFormChipPreset.standard(
+                                        TasklyTokens.of(context),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -630,9 +644,11 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                           .currentState
                           ?.fields[ProjectFieldKeys.valueIds.id]
                           ?.errorText;
-                      if (errorText == null) return const SizedBox.shrink();
+                      if (errorText == null) return SizedBox.shrink();
                       return Padding(
-                        padding: const EdgeInsets.only(top: 8),
+                        padding: EdgeInsets.only(
+                          bottom: TasklyTokens.of(context).spaceSm,
+                        ),
                         child: Text(
                           errorText,
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -848,7 +864,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                   ),
                   SizedBox(height: sectionGap),
                   TasklyFormSectionLabel(text: l10n.priorityLabel),
-                  const SizedBox(height: 8),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
                   FormBuilderField<int?>(
                     name: ProjectFieldKeys.priority.id,
                     builder: (field) {
@@ -895,13 +911,17 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                       filled: true,
                       fillColor: colorScheme.surfaceContainerLow,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(
+                          TasklyTokens.of(context).radiusMd,
+                        ),
                         borderSide: BorderSide(
                           color: colorScheme.outlineVariant,
                         ),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(
+                          TasklyTokens.of(context).radiusMd,
+                        ),
                         borderSide: BorderSide(
                           color: colorScheme.primary,
                           width: 1.2,
@@ -917,25 +937,25 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                   SizedBox(height: sectionGap),
                   FormBuilderField<DateTime?>(
                     name: ProjectFieldKeys.startDate.id,
-                    builder: (_) => const SizedBox.shrink(),
+                    builder: (_) => SizedBox.shrink(),
                   ),
                   FormBuilderField<DateTime?>(
                     name: ProjectFieldKeys.deadlineDate.id,
-                    builder: (_) => const SizedBox.shrink(),
+                    builder: (_) => SizedBox.shrink(),
                   ),
                   FormBuilderField<String?>(
                     name: ProjectFieldKeys.repeatIcalRrule.id,
-                    builder: (_) => const SizedBox.shrink(),
+                    builder: (_) => SizedBox.shrink(),
                   ),
 
                   // Hidden recurrence flags fields (set by the picker)
                   FormBuilderField<bool>(
                     name: ProjectFieldKeys.repeatFromCompletion.id,
-                    builder: (_) => const SizedBox.shrink(),
+                    builder: (_) => SizedBox.shrink(),
                   ),
                   FormBuilderField<bool>(
                     name: ProjectFieldKeys.seriesEnded.id,
-                    builder: (_) => const SizedBox.shrink(),
+                    builder: (_) => SizedBox.shrink(),
                   ),
                 ],
               ),
@@ -1052,7 +1072,7 @@ class _ProjectDatePickerPanelState extends State<_ProjectDatePickerPanel> {
     final nextWeek = today.add(const Duration(days: 7));
 
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1061,9 +1081,9 @@ class _ProjectDatePickerPanelState extends State<_ProjectDatePickerPanel> {
             widget.title,
             style: Theme.of(context).textTheme.titleSmall,
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           TasklyFormQuickPickChips(
-            preset: TasklyFormPreset.standard,
+            preset: TasklyFormPreset.standard(TasklyTokens.of(context)),
             items: [
               TasklyFormQuickPickItem(
                 label: l10n.dateToday,
@@ -1092,11 +1112,13 @@ class _ProjectDatePickerPanelState extends State<_ProjectDatePickerPanel> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           DecoratedBox(
             decoration: BoxDecoration(
               color: scheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(
+                TasklyTokens.of(context).radiusMd,
+              ),
               border: Border.all(
                 color: scheme.outlineVariant.withValues(alpha: 0.6),
               ),
@@ -1113,7 +1135,7 @@ class _ProjectDatePickerPanelState extends State<_ProjectDatePickerPanel> {
               },
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
           TextButton(
             onPressed: () => Navigator.of(context).pop(
               const _NullableDateDecision.keep(),

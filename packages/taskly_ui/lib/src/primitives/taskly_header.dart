@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+
 class TasklyHeader extends StatelessWidget {
   const TasklyHeader({
     required this.title,
@@ -18,19 +20,24 @@ class TasklyHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
 
     return Row(
       children: [
         if (icon != null) ...[
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(tokens.spaceSm),
             decoration: BoxDecoration(
               color: colorScheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(tokens.radiusSm),
             ),
-            child: Icon(icon, color: colorScheme.primary, size: 20),
+            child: Icon(
+              icon,
+              color: colorScheme.primary,
+              size: tokens.spaceLg3,
+            ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: tokens.spaceMd),
         ],
         Expanded(
           child: Column(
