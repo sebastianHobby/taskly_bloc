@@ -1,12 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
-import 'package:taskly_domain/services.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 
 @immutable
 final class AnytimeProjectsSnapshot {
@@ -24,100 +23,55 @@ final class AnytimeProjectsSnapshot {
 final class AnytimeSessionQueryService {
   AnytimeSessionQueryService({
     required ProjectRepositoryContract projectRepository,
-    required TaskRepositoryContract taskRepository,
-    required ValueRepositoryContract valueRepository,
-    required AppLifecycleService appLifecycleService,
+    required SessionStreamCacheManager cacheManager,
+    required SessionSharedDataService sharedDataService,
   }) : _projectRepository = projectRepository,
-       _taskRepository = taskRepository,
-       _valueRepository = valueRepository,
-       _appLifecycleService = appLifecycleService;
+       _cacheManager = cacheManager,
+       _sharedDataService = sharedDataService;
 
   final ProjectRepositoryContract _projectRepository;
-  final TaskRepositoryContract _taskRepository;
-  final ValueRepositoryContract _valueRepository;
-  final AppLifecycleService _appLifecycleService;
-
-  final Map<_ScopeKey, _ScopeEntry> _scopes = <_ScopeKey, _ScopeEntry>{};
-
-  StreamSubscription<AppLifecycleEvent>? _lifecycleSub;
-  bool _started = false;
-  bool _foreground = true;
+  final SessionStreamCacheManager _cacheManager;
+  final SessionSharedDataService _sharedDataService;
+  final Set<_ScopeKey> _knownScopes = <_ScopeKey>{};
 
   void start() {
-    if (_started) return;
-    _started = true;
-
     // Prewarm global scope for instant Anytime tab load.
-    _ensureScope(null);
-
-    _lifecycleSub = _appLifecycleService.events.listen((event) {
-      switch (event) {
-        case AppLifecycleEvent.resumed:
-          _foreground = true;
-          _resumeAll();
-        case AppLifecycleEvent.inactive:
-        case AppLifecycleEvent.paused:
-        case AppLifecycleEvent.detached:
-          _foreground = false;
-          _pauseAll();
-      }
-    });
-
-    if (_foreground) _resumeAll();
+    _preloadScope(null);
   }
 
   Future<void> stop() async {
-    if (!_started) return;
-    _started = false;
-
-    await _lifecycleSub?.cancel();
-    _lifecycleSub = null;
-
-    await Future.wait<void>(_scopes.values.map((e) => e.dispose()));
-
-    _scopes.clear();
+    final keys = _knownScopes.toList(growable: false);
+    _knownScopes.clear();
+    for (final key in keys) {
+      await _cacheManager.evict(key);
+    }
   }
 
   ValueStream<AnytimeProjectsSnapshot> watchProjects({AnytimeScope? scope}) {
-    if (!_started) start();
-    final entry = _ensureScope(scope);
-    if (_started && _foreground) {
-      _resumeScope(scope);
-    }
-    return entry.subject;
-  }
-
-  _ScopeEntry _ensureScope(AnytimeScope? scope) {
     final key = _ScopeKey.fromScope(scope);
-    return _scopes.putIfAbsent(key, () {
-      final subject = BehaviorSubject<AnytimeProjectsSnapshot>();
-      return _ScopeEntry(scope: scope, subject: subject);
-    });
+    _knownScopes.add(key);
+    return _cacheManager.getOrCreate<AnytimeProjectsSnapshot>(
+      key: key,
+      source: () => _buildScopeStream(scope),
+      pauseOnBackground: true,
+    );
   }
 
-  void _pauseAll() {
-    for (final entry in _scopes.values) {
-      unawaited(entry.subscription?.cancel());
-      entry.subscription = null;
-    }
-  }
-
-  void _resumeAll() {
-    for (final entry in _scopes.values) {
-      _resumeScope(entry.scope);
-    }
-  }
-
-  void _resumeScope(AnytimeScope? scope) {
+  void _preloadScope(AnytimeScope? scope) {
     final key = _ScopeKey.fromScope(scope);
-    final entry = _scopes[key];
-    if (entry == null) return;
-    if (entry.subscription != null) return;
+    _knownScopes.add(key);
+    _cacheManager.preload<AnytimeProjectsSnapshot>(
+      key: key,
+      source: () => _buildScopeStream(scope),
+      pauseOnBackground: true,
+    );
+  }
 
+  Stream<AnytimeProjectsSnapshot> _buildScopeStream(AnytimeScope? scope) {
     final projects$ = _projectsForScope(scope);
-    final values$ = _valueRepository.watchAll();
+    final values$ = _sharedDataService.watchValues();
 
-    final combined$ = switch (scope) {
+    return switch (scope) {
       null =>
         Rx.combineLatest3<
           List<Project>,
@@ -126,7 +80,7 @@ final class AnytimeSessionQueryService {
           AnytimeProjectsSnapshot
         >(
           projects$,
-          _taskRepository.watchAllCount(TaskQuery.inbox()),
+          _sharedDataService.watchInboxTaskCount(),
           values$,
           (projects, inboxTaskCount, values) => AnytimeProjectsSnapshot(
             projects: projects,
@@ -145,11 +99,6 @@ final class AnytimeSessionQueryService {
           ),
         ),
     };
-
-    entry.subscription = combined$.listen(
-      entry.subject.add,
-      onError: entry.subject.addError,
-    );
   }
 
   Stream<List<Project>> _projectsForScope(AnytimeScope? scope) {
@@ -159,7 +108,7 @@ final class AnytimeSessionQueryService {
     );
 
     return switch (scope) {
-      null => _projectRepository.watchAll(ProjectQuery.incomplete()),
+      null => _sharedDataService.watchIncompleteProjects(),
       AnytimeProjectScope(:final projectId) =>
         _projectRepository
             .watchById(projectId)
@@ -170,25 +119,6 @@ final class AnytimeSessionQueryService {
         ]),
       ),
     };
-  }
-}
-
-final class _ScopeEntry {
-  _ScopeEntry({
-    required this.scope,
-    required this.subject,
-  });
-
-  final AnytimeScope? scope;
-  final BehaviorSubject<AnytimeProjectsSnapshot> subject;
-
-  /// Owned by this entry; cancelled in [dispose].
-  StreamSubscription<AnytimeProjectsSnapshot>? subscription;
-
-  Future<void> dispose() async {
-    await subscription?.cancel();
-    subscription = null;
-    await subject.close();
   }
 }
 

@@ -25,7 +25,6 @@ final class RoutineCommandHandler {
     await _routineRepository.create(
       name: command.name.trim(),
       valueId: command.valueId,
-      projectId: command.projectId,
       routineType: command.routineType,
       targetCount: command.targetCount,
       scheduleDays: command.scheduleDays,
@@ -54,7 +53,6 @@ final class RoutineCommandHandler {
       id: command.id,
       name: command.name.trim(),
       valueId: command.valueId,
-      projectId: command.projectId,
       routineType: command.routineType,
       targetCount: command.targetCount,
       scheduleDays: command.scheduleDays,

@@ -524,10 +524,6 @@ class RoutinesTable extends Table {
   TextColumn get valueId => text()
       .named('value_id')
       .references(ValueTable, #id, onDelete: KeyAction.cascade)();
-  TextColumn get projectId => text()
-      .nullable()
-      .named('project_id')
-      .references(ProjectTable, #id, onDelete: KeyAction.setNull)();
 
   TextColumn get routineType => text().named('routine_type')();
   IntColumn get targetCount => integer().named('target_count')();

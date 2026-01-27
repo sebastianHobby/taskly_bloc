@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_ui/src/foundations/icons/taskly_symbol_icons.dart';
+import 'package:taskly_ui/src/foundations/icons/taskly_symbol_icon.dart';
 import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 /// Inline icon picker with search-only UX.

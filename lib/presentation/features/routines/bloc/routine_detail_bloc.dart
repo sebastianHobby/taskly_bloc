@@ -40,11 +40,9 @@ sealed class RoutineDetailState with _$RoutineDetailState {
   const factory RoutineDetailState.loadInProgress() =
       RoutineDetailLoadInProgress;
   const factory RoutineDetailState.initialDataLoadSuccess({
-    required List<Project> availableProjects,
     required List<Value> availableValues,
   }) = RoutineDetailInitialDataLoadSuccess;
   const factory RoutineDetailState.loadSuccess({
-    required List<Project> availableProjects,
     required List<Value> availableValues,
     required Routine routine,
   }) = RoutineDetailLoadSuccess;
@@ -63,13 +61,11 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
     with DetailBlocMixin<RoutineDetailEvent, RoutineDetailState, Routine> {
   RoutineDetailBloc({
     required RoutineRepositoryContract routineRepository,
-    required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
     required RoutineWriteService routineWriteService,
     required AppErrorReporter errorReporter,
     String? routineId,
   }) : _routineRepository = routineRepository,
-       _projectRepository = projectRepository,
        _valueRepository = valueRepository,
        _routineWriteService = routineWriteService,
        _errorReporter = errorReporter,
@@ -91,7 +87,6 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
   }
 
   final RoutineRepositoryContract _routineRepository;
-  final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
   final RoutineWriteService _routineWriteService;
   final AppErrorReporter _errorReporter;
@@ -176,15 +171,9 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
   ) async {
     emit(const RoutineDetailState.loadInProgress());
     try {
-      final results = await Future.wait([
-        _projectRepository.getAll(),
-        _valueRepository.getAll(),
-      ]);
-      final projects = (results[0] as List<Project>?) ?? const <Project>[];
-      final values = (results[1] as List<Value>?) ?? const <Value>[];
+      final values = await _valueRepository.getAll();
       emit(
         RoutineDetailState.initialDataLoadSuccess(
-          availableProjects: projects,
           availableValues: values,
         ),
       );
@@ -207,13 +196,11 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
     emit(const RoutineDetailState.loadInProgress());
     try {
       final results = await Future.wait([
-        _projectRepository.getAll(),
         _valueRepository.getAll(),
         _routineRepository.getById(event.routineId),
       ]);
-      final projects = (results[0] as List<Project>?) ?? const <Project>[];
-      final values = (results[1] as List<Value>?) ?? const <Value>[];
-      final routine = results[2] as Routine?;
+      final values = (results[0] as List<Value>?) ?? const <Value>[];
+      final routine = results[1] as Routine?;
       if (routine == null) {
         emit(
           RoutineDetailState.operationFailure(
@@ -227,7 +214,6 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
 
       emit(
         RoutineDetailState.loadSuccess(
-          availableProjects: projects,
           availableValues: values,
           routine: routine,
         ),

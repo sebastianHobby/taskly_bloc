@@ -1,6 +1,5 @@
-import 'dart:async';
-
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -138,8 +137,18 @@ class WeeklyReviewState {
   }
 }
 
-class WeeklyReviewCubit extends Cubit<WeeklyReviewState> {
-  WeeklyReviewCubit({
+sealed class WeeklyReviewEvent {
+  const WeeklyReviewEvent();
+}
+
+final class WeeklyReviewRequested extends WeeklyReviewEvent {
+  const WeeklyReviewRequested(this.config);
+
+  final WeeklyReviewConfig config;
+}
+
+class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
+  WeeklyReviewBloc({
     required AnalyticsService analyticsService,
     required AttentionEngineContract attentionEngine,
     required ValueRepositoryContract valueRepository,
@@ -150,16 +159,22 @@ class WeeklyReviewCubit extends Cubit<WeeklyReviewState> {
        _valueRepository = valueRepository,
        _taskRepository = taskRepository,
        _nowService = nowService,
-       super(const WeeklyReviewState());
+       super(const WeeklyReviewState()) {
+    on<WeeklyReviewRequested>(_onRequested, transformer: restartable());
+  }
 
   final AnalyticsService _analyticsService;
   final AttentionEngineContract _attentionEngine;
   final ValueRepositoryContract _valueRepository;
   final TaskRepositoryContract _taskRepository;
   final NowService _nowService;
-  StreamSubscription<List<AttentionItem>>? _maintenanceSub;
 
-  Future<void> load(WeeklyReviewConfig config) async {
+  Future<void> _onRequested(
+    WeeklyReviewRequested event,
+    Emitter<WeeklyReviewState> emit,
+  ) async {
+    final config = event.config;
+
     emit(state.copyWith(status: WeeklyReviewStatus.loading));
 
     try {
@@ -170,7 +185,7 @@ class WeeklyReviewCubit extends Cubit<WeeklyReviewState> {
           ? await _buildValueWins(config)
           : const <WeeklyReviewValueWin>[];
 
-      if (isClosed) return;
+      if (emit.isDone) return;
 
       final initialSections = config.maintenanceEnabled
           ? await _buildInitialMaintenanceSections(config)
@@ -186,29 +201,25 @@ class WeeklyReviewCubit extends Cubit<WeeklyReviewState> {
         ),
       );
 
-      await _maintenanceSub?.cancel();
       if (!config.maintenanceEnabled) return;
 
-      _maintenanceSub = _attentionEngine
+      final maintenance$ = _attentionEngine
           .watch(const AttentionQuery(buckets: {AttentionBucket.action}))
-          .listen(
-            (items) {
-              if (isClosed) return;
-              final sections = _buildMaintenanceSections(items, config);
-              emit(state.copyWith(maintenanceSections: sections));
-            },
-            onError: (Object error, StackTrace _) {
-              if (isClosed) return;
-              emit(
-                state.copyWith(
-                  status: WeeklyReviewStatus.failure,
-                  errorMessage: '$error',
-                ),
-              );
-            },
-          );
+          .map((items) {
+            final sections = _buildMaintenanceSections(items, config);
+            return state.copyWith(maintenanceSections: sections);
+          });
+
+      await emit.forEach<WeeklyReviewState>(
+        maintenance$,
+        onData: (next) => next,
+        onError: (error, stackTrace) => state.copyWith(
+          status: WeeklyReviewStatus.failure,
+          errorMessage: '$error',
+        ),
+      );
     } catch (e) {
-      if (isClosed) return;
+      if (emit.isDone) return;
       emit(
         state.copyWith(
           status: WeeklyReviewStatus.failure,
@@ -216,12 +227,6 @@ class WeeklyReviewCubit extends Cubit<WeeklyReviewState> {
         ),
       );
     }
-  }
-
-  @override
-  Future<void> close() {
-    _maintenanceSub?.cancel();
-    return super.close();
   }
 
   Future<WeeklyReviewValuesSummary> _buildValuesSummary(

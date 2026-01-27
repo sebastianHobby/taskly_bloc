@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_domain/src/core/model/project.dart';
 import 'package:taskly_domain/src/core/model/value.dart';
 import 'package:taskly_domain/src/routines/model/routine_type.dart';
 
@@ -13,7 +12,6 @@ class Routine {
     required this.valueId,
     required this.routineType,
     required this.targetCount,
-    this.projectId,
     this.scheduleDays = const <int>[],
     this.minSpacingDays,
     this.restDayBuffer,
@@ -24,7 +22,6 @@ class Routine {
     this.isActive = true,
     this.pausedUntil,
     this.value,
-    this.project,
   });
 
   final String id;
@@ -32,7 +29,6 @@ class Routine {
   final DateTime updatedAt;
   final String name;
   final String valueId;
-  final String? projectId;
   final RoutineType routineType;
   final int targetCount;
 
@@ -61,7 +57,6 @@ class Routine {
   final DateTime? pausedUntil;
 
   final Value? value;
-  final Project? project;
 
   bool isPausedOn(DateTime dayKeyUtc) {
     final paused = pausedUntil;
@@ -75,7 +70,6 @@ class Routine {
     DateTime? updatedAt,
     String? name,
     String? valueId,
-    String? projectId,
     RoutineType? routineType,
     int? targetCount,
     List<int>? scheduleDays,
@@ -88,7 +82,6 @@ class Routine {
     bool? isActive,
     DateTime? pausedUntil,
     Value? value,
-    Project? project,
   }) {
     return Routine(
       id: id ?? this.id,
@@ -96,7 +89,6 @@ class Routine {
       updatedAt: updatedAt ?? this.updatedAt,
       name: name ?? this.name,
       valueId: valueId ?? this.valueId,
-      projectId: projectId ?? this.projectId,
       routineType: routineType ?? this.routineType,
       targetCount: targetCount ?? this.targetCount,
       scheduleDays: scheduleDays ?? this.scheduleDays,
@@ -109,7 +101,6 @@ class Routine {
       isActive: isActive ?? this.isActive,
       pausedUntil: pausedUntil ?? this.pausedUntil,
       value: value ?? this.value,
-      project: project ?? this.project,
     );
   }
 }

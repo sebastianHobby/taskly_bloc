@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:fleather/fleather.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 // import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_tag_picker.dart'; // Removed
 import 'package:taskly_bloc/presentation/shared/utils/date_display_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
+import 'package:taskly_bloc/presentation/shared/utils/rich_text_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rrule_label_utils.dart';
 import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
 import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
@@ -325,9 +327,12 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       for (final v in widget.availableValues) v.id: v,
     };
 
+    final normalizedDescription = serializeParchmentDocument(
+      parseParchmentDocument(widget.initialData?.description),
+    );
     final initialValues = <String, dynamic>{
       ProjectFieldKeys.name.id: widget.initialData?.name.trim() ?? '',
-      ProjectFieldKeys.description.id: widget.initialData?.description ?? '',
+      ProjectFieldKeys.description.id: normalizedDescription,
       ProjectFieldKeys.completed.id: widget.initialData?.completed ?? false,
       ProjectFieldKeys.startDate.id: widget.initialData?.startDate,
       ProjectFieldKeys.deadlineDate.id: widget.initialData?.deadlineDate,
@@ -343,6 +348,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
           widget.initialData?.repeatFromCompletion ?? false,
       ProjectFieldKeys.seriesEnded.id: widget.initialData?.seriesEnded ?? false,
     };
+    final initialDescription = normalizedDescription;
 
     final submitEnabled =
         isDirty && (widget.formKey.currentState?.isValid ?? false);
@@ -901,34 +907,12 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                     },
                   ),
                   SizedBox(height: sectionGap),
-                  FormBuilderTextField(
+                  _ProjectNotesField(
                     name: ProjectFieldKeys.description.id,
-                    textInputAction: TextInputAction.newline,
-                    maxLines: isCompact ? 3 : 4,
-                    minLines: isCompact ? 2 : 3,
-                    decoration: InputDecoration(
-                      hintText: l10n.projectFormDescriptionHint,
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerLow,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          TasklyTokens.of(context).radiusMd,
-                        ),
-                        borderSide: BorderSide(
-                          color: colorScheme.outlineVariant,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                          TasklyTokens.of(context).radiusMd,
-                        ),
-                        borderSide: BorderSide(
-                          color: colorScheme.primary,
-                          width: 1.2,
-                        ),
-                      ),
-                      contentPadding: denseFieldPadding,
-                    ),
+                    initialValue: initialDescription,
+                    hintText: l10n.projectFormDescriptionHint,
+                    isCompact: isCompact,
+                    contentPadding: denseFieldPadding,
                     validator: toFormBuilderValidator<String>(
                       ProjectValidators.description,
                       context,
@@ -963,6 +947,170 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ProjectNotesField extends StatefulWidget {
+  const _ProjectNotesField({
+    required this.name,
+    required this.initialValue,
+    required this.hintText,
+    required this.isCompact,
+    required this.contentPadding,
+    required this.validator,
+  });
+
+  final String name;
+  final String initialValue;
+  final String hintText;
+  final bool isCompact;
+  final EdgeInsets contentPadding;
+  final FormFieldValidator<String>? validator;
+
+  @override
+  State<_ProjectNotesField> createState() => _ProjectNotesFieldState();
+}
+
+class _ProjectNotesFieldState extends State<_ProjectNotesField> {
+  late FleatherController _controller;
+  final FocusNode _focusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
+  FormFieldState<String?>? _fieldState;
+  bool _isEmpty = true;
+  bool _syncing = false;
+  String? _lastSerialized;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = FleatherController(
+      document: parseParchmentDocument(widget.initialValue),
+    );
+    _lastSerialized = serializeParchmentDocument(_controller.document);
+    _isEmpty = _controller.document.toPlainText().trim().isEmpty;
+    _controller.addListener(_handleDocumentChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProjectNotesField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialValue != widget.initialValue) {
+      _replaceDocument(widget.initialValue);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_handleDocumentChanged);
+    _controller.dispose();
+    _focusNode.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handleDocumentChanged() {
+    if (_syncing) return;
+    final serialized = serializeParchmentDocument(_controller.document);
+    if (serialized != _lastSerialized) {
+      _lastSerialized = serialized;
+      _fieldState?.didChange(serialized);
+    }
+    final emptyNow = _controller.document.toPlainText().trim().isEmpty;
+    if (emptyNow != _isEmpty && mounted) {
+      setState(() {
+        _isEmpty = emptyNow;
+      });
+    }
+  }
+
+  void _replaceDocument(String? raw) {
+    if (raw == _lastSerialized) return;
+
+    _syncing = true;
+    _controller.removeListener(_handleDocumentChanged);
+    _controller.dispose();
+    _controller = FleatherController(
+      document: parseParchmentDocument(raw),
+    );
+    _lastSerialized = serializeParchmentDocument(_controller.document);
+    _isEmpty = _controller.document.toPlainText().trim().isEmpty;
+    _controller.addListener(_handleDocumentChanged);
+    _syncing = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final editorHeight = widget.isCompact ? 160.0 : 200.0;
+
+    return FormBuilderField<String?>(
+      name: widget.name,
+      initialValue: widget.initialValue,
+      validator: widget.validator,
+      builder: (field) {
+        _fieldState = field;
+        if (field.value != _lastSerialized) {
+          _replaceDocument(field.value);
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FleatherToolbar.basic(
+              controller: _controller,
+              hideStrikeThrough: true,
+              hideBackgroundColor: true,
+              hideInlineCode: true,
+              hideIndentation: true,
+              hideCodeBlock: true,
+              hideHorizontalRule: true,
+              hideDirection: true,
+              hideAlignment: true,
+            ),
+            SizedBox(height: tokens.spaceSm),
+            Container(
+              height: editorHeight,
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(tokens.radiusMd),
+                border: Border.all(color: scheme.outlineVariant),
+              ),
+              child: Stack(
+                children: [
+                  FleatherEditor(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    scrollController: _scrollController,
+                    padding: widget.contentPadding,
+                  ),
+                  if (_isEmpty)
+                    IgnorePointer(
+                      child: Padding(
+                        padding: widget.contentPadding,
+                        child: Text(
+                          widget.hintText,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: scheme.onSurfaceVariant),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (field.errorText != null) ...[
+              SizedBox(height: tokens.spaceSm),
+              Text(
+                field.errorText!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: scheme.error,
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }

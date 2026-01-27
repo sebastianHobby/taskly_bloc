@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/project_picker/bloc/project_picker_bloc.dart';
-import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 typedef ProjectPickerOnSelect = Future<void> Function(String? projectId);
 
 Future<void> showProjectPickerModal({
   required BuildContext context,
-  required ProjectRepositoryContract projectRepository,
+  required SessionSharedDataService sharedDataService,
   required ProjectPickerOnSelect onSelect,
 }) async {
   final media = MediaQuery.of(context);
@@ -30,7 +30,7 @@ Future<void> showProjectPickerModal({
           child: SizedBox(
             height: height,
             child: _ProjectPickerScaffold(
-              projectRepository: projectRepository,
+              sharedDataService: sharedDataService,
               onSelect: onSelect,
               isDialog: false,
             ),
@@ -48,7 +48,7 @@ Future<void> showProjectPickerModal({
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520, maxHeight: 720),
           child: _ProjectPickerScaffold(
-            projectRepository: projectRepository,
+            sharedDataService: sharedDataService,
             onSelect: onSelect,
             isDialog: true,
           ),
@@ -60,12 +60,12 @@ Future<void> showProjectPickerModal({
 
 class _ProjectPickerScaffold extends StatelessWidget {
   const _ProjectPickerScaffold({
-    required this.projectRepository,
+    required this.sharedDataService,
     required this.onSelect,
     required this.isDialog,
   });
 
-  final ProjectRepositoryContract projectRepository;
+  final SessionSharedDataService sharedDataService;
   final ProjectPickerOnSelect onSelect;
   final bool isDialog;
 
@@ -77,7 +77,7 @@ class _ProjectPickerScaffold extends StatelessWidget {
       padding: EdgeInsets.only(bottom: bottomInset),
       child: BlocProvider<ProjectPickerBloc>(
         create: (_) =>
-            ProjectPickerBloc(projectRepository: projectRepository)
+            ProjectPickerBloc(sharedDataService: sharedDataService)
               ..add(const ProjectPickerStarted()),
         child: _ProjectPickerBody(onSelect: onSelect, isDialog: isDialog),
       ),

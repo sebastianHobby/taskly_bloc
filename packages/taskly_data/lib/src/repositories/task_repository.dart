@@ -11,6 +11,7 @@ import 'package:taskly_data/src/repositories/mappers/task_predicate_mapper.dart'
 import 'package:taskly_data/src/repositories/query_stream_cache.dart';
 import 'package:taskly_data/src/repositories/repository_exceptions.dart';
 import 'package:taskly_data/src/repositories/repository_helpers.dart';
+import 'package:taskly_data/src/repositories/stream_cache_policy.dart';
 
 class _OccurrenceRangeKey {
   const _OccurrenceRangeKey({required this.rangeStart, required this.rangeEnd});
@@ -123,7 +124,7 @@ class TaskRepository implements TaskRepositoryContract {
     }
 
     // Conservative policy: don't cache date-based queries by default.
-    if (normalizedQuery.hasDateFilter) {
+    if (!shouldCacheByDefault(hasDateFilter: normalizedQuery.hasDateFilter)) {
       return buildAndExecuteQuery(normalizedQuery);
     }
 

@@ -8,6 +8,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/features/project_picker/view/project_picker_modal.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
 
@@ -240,7 +241,7 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     await showProjectPickerModal(
       context: context,
-      projectRepository: getIt<ProjectRepositoryContract>(),
+      sharedDataService: getIt<SessionSharedDataService>(),
       onSelect: (projectId) async {
         didSelect = true;
         targetProjectId = projectId;

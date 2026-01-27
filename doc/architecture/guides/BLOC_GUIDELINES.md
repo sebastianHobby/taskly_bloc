@@ -214,4 +214,17 @@ Recommended defaults:
 - Repeated reactive composition is extracted into a presentation query service
   (not duplicated across BLoCs and not pushed into Domain).
 
+## 2.5 Session-level streams and preloading
+
+Some data is shared across many screens (values list, inbox counts, incomplete
+projects). For these, prefer **session-level caching** in the presentation
+layer over per-screen subscriptions.
+
+Guidelines:
+- Use the session stream cache manager for shared streams.
+- Preload only stable, cross-screen data (avoid ad-hoc filters or date ranges).
+- Pause cached streams on background to reduce DB churn.
+- Screens/BLoCs should depend on session query services or shared session data
+  services rather than accessing repositories directly.
+
 

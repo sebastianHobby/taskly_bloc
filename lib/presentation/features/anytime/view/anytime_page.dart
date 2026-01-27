@@ -15,7 +15,6 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart'
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_domain/analytics.dart';
-import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -444,7 +443,6 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final valueRepository = getIt<ValueRepositoryContract>();
 
     final selectedValueId = switch (scope) {
       AnytimeValueScope(:final valueId) => valueId,
@@ -454,10 +452,16 @@ class _AnytimeValuesAndFiltersRow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        StreamBuilder<List<Value>>(
-          stream: valueRepository.watchAll(),
-          builder: (context, snapshot) {
-            final values = snapshot.data ?? const <Value>[];
+        BlocBuilder<AnytimeFeedBloc, AnytimeFeedState>(
+          buildWhen: (prev, next) =>
+              prev is! AnytimeFeedLoaded ||
+              next is! AnytimeFeedLoaded ||
+              prev.values != next.values,
+          builder: (context, state) {
+            final values = switch (state) {
+              AnytimeFeedLoaded(:final values) => values,
+              _ => const <Value>[],
+            };
             final sorted = values.toList(growable: false)..sort(_compareValues);
 
             final selectedValue = _findValueById(sorted, selectedValueId);

@@ -95,18 +95,13 @@ ProjectAnchorState projectAnchorStateFromTable(
   );
 }
 
-Routine routineFromTable(
-  drift.RoutinesTableData t, {
-  Value? value,
-  Project? project,
-}) {
+Routine routineFromTable(drift.RoutinesTableData t, {Value? value}) {
   return Routine(
     id: t.id,
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
     name: t.name,
     valueId: t.valueId,
-    projectId: t.projectId,
     routineType: RoutineTypeStorageKey.fromStorageKey(t.routineType),
     targetCount: t.targetCount,
     scheduleDays: t.scheduleDays ?? const <int>[],
@@ -119,7 +114,6 @@ Routine routineFromTable(
     isActive: t.isActive,
     pausedUntil: t.pausedUntil,
     value: value,
-    project: project,
   );
 }
 

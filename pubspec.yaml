@@ -15,6 +15,7 @@ dependencies:
   drift_flutter: ^0.2.8
   drift_sqlite_async: ^0.2.6
   fl_chart: ^1.1.1
+  fleather: ^1.26.0
   flex_color_picker: ^3.6.0
   flutter:
     sdk: flutter

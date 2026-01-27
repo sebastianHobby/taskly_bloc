@@ -1,9 +1,9 @@
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 
 sealed class MyDayGateState {
   const MyDayGateState();
@@ -32,28 +32,50 @@ final class MyDayGateError extends MyDayGateState {
   final String message;
 }
 
-class MyDayGateBloc extends Cubit<MyDayGateState> {
+sealed class MyDayGateEvent {
+  const MyDayGateEvent();
+}
+
+final class MyDayGateStarted extends MyDayGateEvent {
+  const MyDayGateStarted();
+}
+
+final class MyDayGateRetryRequested extends MyDayGateEvent {
+  const MyDayGateRetryRequested();
+}
+
+class MyDayGateBloc extends Bloc<MyDayGateEvent, MyDayGateState> {
   MyDayGateBloc({
     required ValueRepositoryContract valueRepository,
+    required SessionSharedDataService sharedDataService,
   }) : _valueRepository = valueRepository,
+       _sharedDataService = sharedDataService,
        super(const MyDayGateLoading()) {
-    _subscribe();
+    on<MyDayGateStarted>(_onStarted, transformer: restartable());
+    on<MyDayGateRetryRequested>(_onRetryRequested, transformer: restartable());
+
+    add(const MyDayGateStarted());
   }
 
   final ValueRepositoryContract _valueRepository;
+  final SessionSharedDataService _sharedDataService;
 
-  StreamSubscription<List<Value>>? _valuesSub;
-
-  List<Value>? _latestValues;
-
-  @override
-  Future<void> close() async {
-    await _valuesSub?.cancel();
-    _valuesSub = null;
-    return super.close();
+  Future<void> _onStarted(
+    MyDayGateStarted event,
+    Emitter<MyDayGateState> emit,
+  ) async {
+    await _subscribe(emit);
   }
 
-  void _subscribe() {
+  Future<void> _onRetryRequested(
+    MyDayGateRetryRequested event,
+    Emitter<MyDayGateState> emit,
+  ) async {
+    emit(const MyDayGateLoading());
+    await _subscribe(emit);
+  }
+
+  Future<void> _subscribe(Emitter<MyDayGateState> emit) async {
     // Use a real DB snapshot to avoid showing "Add Values" when values exist
     // but the watch stream is delayed or never emits.
     //
@@ -62,37 +84,25 @@ class MyDayGateBloc extends Cubit<MyDayGateState> {
     // ownership in the presentation layer.
     final Stream<List<Value>> values$ = (() async* {
       yield await _valueRepository.getAll();
-      yield* _valueRepository.watchAll();
+      yield* _sharedDataService.watchValues();
     })();
 
-    void emitIfReady() {
-      final values = _latestValues;
-      if (values == null) return;
-      final needsValuesSetup = values.isEmpty;
-
-      final ctaLabel = needsValuesSetup ? 'Add Values' : 'Continue';
-
-      final ctaIcon = needsValuesSetup
-          ? Icons.favorite_outline
-          : Icons.arrow_forward;
-
-      emit(
-        MyDayGateLoaded(
+    await emit.forEach<List<Value>>(
+      values$,
+      onData: (values) {
+        final needsValuesSetup = values.isEmpty;
+        final ctaLabel = needsValuesSetup ? 'Add Values' : 'Continue';
+        final ctaIcon = needsValuesSetup
+            ? Icons.favorite_outline
+            : Icons.arrow_forward;
+        return MyDayGateLoaded(
           needsValuesSetup: needsValuesSetup,
           ctaLabel: ctaLabel,
           ctaIcon: ctaIcon,
-        ),
-      );
-    }
-
-    _valuesSub = values$.listen(
-      (List<Value> values) {
-        _latestValues = values;
-        emitIfReady();
+        );
       },
-      onError: (Object e) {
-        emit(MyDayGateError('Failed to load My Day prerequisites: $e'));
-      },
+      onError: (error, stackTrace) =>
+          MyDayGateError('Failed to load My Day prerequisites: $error'),
     );
   }
 }

@@ -1,8 +1,7 @@
-import 'dart:async';
-
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 
 sealed class ProjectPickerEvent {
   const ProjectPickerEvent();
@@ -62,17 +61,18 @@ final class ProjectPickerState {
 }
 
 class ProjectPickerBloc extends Bloc<ProjectPickerEvent, ProjectPickerState> {
-  ProjectPickerBloc({required ProjectRepositoryContract projectRepository})
-    : _projectRepository = projectRepository,
+  ProjectPickerBloc({required SessionSharedDataService sharedDataService})
+    : _sharedDataService = sharedDataService,
       super(const ProjectPickerState.initial()) {
-    on<ProjectPickerStarted>(_onStarted);
+    on<ProjectPickerStarted>(_onStarted, transformer: restartable());
     on<ProjectPickerSearchChanged>(_onSearchChanged);
-    on<ProjectPickerRetryRequested>(_onRetryRequested);
+    on<ProjectPickerRetryRequested>(
+      _onRetryRequested,
+      transformer: restartable(),
+    );
   }
 
-  final ProjectRepositoryContract _projectRepository;
-
-  StreamSubscription<List<Project>>? _subscription;
+  final SessionSharedDataService _sharedDataService;
 
   Future<void> _onStarted(
     ProjectPickerStarted event,
@@ -92,30 +92,26 @@ class ProjectPickerBloc extends Bloc<ProjectPickerEvent, ProjectPickerState> {
     Emitter<ProjectPickerState> emit, {
     required bool showLoading,
   }) async {
-    await _subscription?.cancel();
-
     if (showLoading) {
       emit(state.copyWith(isLoading: true, hasLoadError: false));
     } else {
       emit(state.copyWith(hasLoadError: false));
     }
 
-    _subscription = _projectRepository.watchAll().listen(
-      (projects) {
+    await emit.forEach<List<Project>>(
+      _sharedDataService.watchAllProjects(),
+      onData: (projects) {
         final sorted = projects.toList()..sort(_compareProjects);
         final visible = _applyQuery(sorted, state.query);
-        emit(
-          state.copyWith(
-            isLoading: false,
-            hasLoadError: false,
-            allProjects: sorted,
-            visibleProjects: visible,
-          ),
+        return state.copyWith(
+          isLoading: false,
+          hasLoadError: false,
+          allProjects: sorted,
+          visibleProjects: visible,
         );
       },
-      onError: (_) {
-        emit(state.copyWith(isLoading: false, hasLoadError: true));
-      },
+      onError: (error, stackTrace) =>
+          state.copyWith(isLoading: false, hasLoadError: true),
     );
   }
 
@@ -147,9 +143,4 @@ class ProjectPickerBloc extends Bloc<ProjectPickerEvent, ProjectPickerState> {
     return a.id.compareTo(b.id);
   }
 
-  @override
-  Future<void> close() async {
-    await _subscription?.cancel();
-    return super.close();
-  }
 }

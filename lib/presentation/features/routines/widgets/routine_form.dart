@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
-import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_project_picker_modern.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
@@ -13,7 +13,6 @@ import 'package:taskly_ui/taskly_ui_tokens.dart';
 class RoutineForm extends StatefulWidget {
   const RoutineForm({
     required this.formKey,
-    required this.availableProjects,
     required this.availableValues,
     required this.onSubmit,
     required this.submitTooltip,
@@ -26,7 +25,6 @@ class RoutineForm extends StatefulWidget {
   });
 
   final GlobalKey<FormBuilderState> formKey;
-  final List<Project> availableProjects;
   final List<Value> availableValues;
   final VoidCallback onSubmit;
   final String submitTooltip;
@@ -57,7 +55,6 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
         draft?.routineType ??
         RoutineType.weeklyFlexible;
     _currentType = switch (rawType) {
-      RoutineType.weeklyFixed => RoutineType.weeklyFlexible,
       RoutineType.monthlyFixed => RoutineType.monthlyFlexible,
       _ => rawType,
     };
@@ -71,6 +68,34 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
     setState(() {
       _currentType = next;
     });
+    if (next == RoutineType.weeklyFixed) {
+      final days =
+          (widget
+                  .formKey
+                  .currentState
+                  ?.fields[RoutineFieldKeys.scheduleDays.id]
+                  ?.value
+              as List<int>?) ??
+          const <int>[];
+      final count = days.isEmpty ? null : days.length;
+      widget.formKey.currentState?.fields[RoutineFieldKeys.targetCount.id]
+          ?.didChange(count);
+    } else {
+      widget.formKey.currentState?.fields[RoutineFieldKeys.scheduleDays.id]
+          ?.didChange(const <int>[]);
+    }
+    _markDirtySafely();
+  }
+
+  void _markDirtySafely() {
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        markDirty();
+      });
+      return;
+    }
     markDirty();
   }
 
@@ -84,18 +109,25 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
         ? (widget.initialDraft ?? RoutineDraft.empty())
         : null;
 
+    final scheduleDays =
+        widget.initialData?.scheduleDays ?? draft?.scheduleDays ?? <int>[];
+    final initialTargetCount =
+        widget.initialData?.targetCount ?? draft?.targetCount;
+    final resolvedScheduleDays = _currentType == RoutineType.weeklyFixed
+        ? scheduleDays
+        : <int>[];
+    final resolvedTargetCount = _currentType == RoutineType.weeklyFixed
+        ? (scheduleDays.isNotEmpty ? scheduleDays.length : initialTargetCount)
+        : initialTargetCount;
+
     final initialValues = <String, dynamic>{
       RoutineFieldKeys.name.id:
           widget.initialData?.name.trim() ?? draft?.name.trim() ?? '',
       RoutineFieldKeys.valueId.id:
           widget.initialData?.valueId ?? draft?.valueId ?? '',
-      RoutineFieldKeys.projectId.id:
-          widget.initialData?.projectId ?? draft?.projectId ?? '',
       RoutineFieldKeys.routineType.id: _currentType,
-      RoutineFieldKeys.targetCount.id:
-          widget.initialData?.targetCount ?? draft?.targetCount,
-      RoutineFieldKeys.scheduleDays.id:
-          widget.initialData?.scheduleDays ?? draft?.scheduleDays ?? <int>[],
+      RoutineFieldKeys.targetCount.id: resolvedTargetCount,
+      RoutineFieldKeys.scheduleDays.id: resolvedScheduleDays,
       RoutineFieldKeys.minSpacingDays.id:
           widget.initialData?.minSpacingDays ?? draft?.minSpacingDays,
       RoutineFieldKeys.restDayBuffer.id:
@@ -191,8 +223,16 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
           initialValue: initialValues,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           onChanged: () {
-            markDirty();
-            setState(() {});
+            _markDirtySafely();
+            if (SchedulerBinding.instance.schedulerPhase ==
+                SchedulerPhase.persistentCallbacks) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                setState(() {});
+              });
+            } else {
+              setState(() {});
+            }
             final values = widget.formKey.currentState?.value;
             if (values != null) {
               widget.onChanged?.call(values);
@@ -252,15 +292,6 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                 ),
               ),
               SizedBox(height: TasklyTokens.of(context).spaceSm),
-              FormBuilderProjectPickerModern(
-                name: RoutineFieldKeys.projectId.id,
-                availableProjects: widget.availableProjects,
-                label: l10n.routineFormProjectLabel,
-                hint: l10n.routineFormProjectHint,
-                allowNoProject: true,
-                noProjectText: l10n.routineFormProjectNone,
-              ),
-              SizedBox(height: TasklyTokens.of(context).spaceSm),
               TasklyFormSectionLabel(text: l10n.routineFormTypeLabel),
               SizedBox(height: TasklyTokens.of(context).spaceSm),
               FormBuilderField<RoutineType>(
@@ -271,6 +302,14 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
+                      _RoutineTypeChip(
+                        label: l10n.routineTypeWeeklyScheduled,
+                        selected: current == RoutineType.weeklyFixed,
+                        onTap: () => _onRoutineTypeChanged(
+                          field,
+                          RoutineType.weeklyFixed,
+                        ),
+                      ),
                       _RoutineTypeChip(
                         label: l10n.routineTypeWeeklyFlexible,
                         selected: current == RoutineType.weeklyFlexible,
@@ -292,16 +331,9 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                 },
               ),
               SizedBox(height: TasklyTokens.of(context).spaceSm),
-              if (_currentType == RoutineType.weeklyFlexible) ...[
-                _TargetCountField(
-                  name: RoutineFieldKeys.targetCount.id,
-                  label: l10n.routineFormTargetWeeklyLabel,
-                  options: const [1, 2, 3, 4, 5, 6, 7],
-                  routineType: _currentType,
-                ),
-                SizedBox(height: TasklyTokens.of(context).spaceSm),
+              if (_currentType == RoutineType.weeklyFixed) ...[
                 TasklyFormSectionLabel(
-                  text: l10n.routineFormSuggestedDaysLabel,
+                  text: l10n.routineFormScheduledDaysLabel,
                 ),
                 SizedBox(height: TasklyTokens.of(context).spaceSm),
                 _MultiSelectWeekdaysField(
@@ -314,6 +346,36 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                     ),
                     context,
                   ),
+                  onChanged: (value) {
+                    final count = value.isEmpty ? null : value.length;
+                    final fieldState = widget
+                        .formKey
+                        .currentState
+                        ?.fields[RoutineFieldKeys.targetCount.id];
+                    if (fieldState?.value != count) {
+                      fieldState?.didChange(count);
+                    }
+                  },
+                ),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
+                FormBuilderField<int>(
+                  name: RoutineFieldKeys.targetCount.id,
+                  builder: (_) => const SizedBox.shrink(),
+                  validator: toFormBuilderValidator<int>(
+                    (value) => RoutineValidators.targetCount(
+                      value,
+                      routineType: _currentType,
+                    ),
+                    context,
+                  ),
+                ),
+              ],
+              if (_currentType == RoutineType.weeklyFlexible) ...[
+                _TargetCountField(
+                  name: RoutineFieldKeys.targetCount.id,
+                  label: l10n.routineFormTargetWeeklyLabel,
+                  options: const [1, 2, 3, 4, 5, 6, 7],
+                  routineType: _currentType,
                 ),
                 SizedBox(height: TasklyTokens.of(context).spaceSm),
               ],
@@ -433,11 +495,13 @@ class _MultiSelectWeekdaysField extends StatelessWidget {
     required this.name,
     required this.preset,
     this.validator,
+    this.onChanged,
   });
 
   final String name;
   final TasklyFormPreset preset;
   final String? Function(List<int>?)? validator;
+  final ValueChanged<List<int>>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -468,6 +532,7 @@ class _MultiSelectWeekdaysField extends StatelessWidget {
                 }
                 final sorted = updated.toList()..sort();
                 field.didChange(sorted);
+                onChanged?.call(sorted);
               },
             ),
           );

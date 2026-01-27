@@ -10,6 +10,7 @@ import 'package:taskly_data/src/repositories/mappers/project_predicate_mapper.da
 import 'package:taskly_data/src/repositories/query_stream_cache.dart';
 import 'package:taskly_data/src/repositories/repository_exceptions.dart';
 import 'package:taskly_data/src/repositories/repository_helpers.dart';
+import 'package:taskly_data/src/repositories/stream_cache_policy.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
 class ProjectRepository implements ProjectRepositoryContract {
@@ -259,7 +260,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     }
 
     // Conservative policy: don't cache date-based queries by default.
-    if (query.hasDateFilter) {
+    if (!shouldCacheByDefault(hasDateFilter: query.hasDateFilter)) {
       final join = _projectWithRelatedJoin(filter: query.filter);
       final base = join.joined.watch().map((rows) {
         return ProjectAggregation.fromRows(

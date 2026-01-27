@@ -46,10 +46,12 @@ final class AnytimeFeedLoaded extends AnytimeFeedState {
   const AnytimeFeedLoaded({
     required this.rows,
     required this.inboxTaskCount,
+    required this.values,
   });
 
   final List<ListRowUiModel> rows;
   final int inboxTaskCount;
+  final List<Value> values;
 }
 
 final class AnytimeFeedError extends AnytimeFeedState {
@@ -81,6 +83,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
   List<Project> _latestProjects = const <Project>[];
   int? _inboxTaskCount;
+  List<Value> _latestValues = const <Value>[];
   String _searchQuery = '';
   final AnytimeSortOrder _sortOrder = AnytimeSortOrder.dueSoonest;
 
@@ -120,6 +123,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
       onData: (snapshot) {
         _latestProjects = snapshot.projects;
         _inboxTaskCount = snapshot.inboxTaskCount;
+        _latestValues = snapshot.values;
         _emitRows(emit);
       },
       onError: (error, stackTrace) {
@@ -135,6 +139,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
         AnytimeFeedLoaded(
           rows: rows,
           inboxTaskCount: _inboxTaskCount ?? 0,
+          values: _latestValues,
         ),
       );
     } catch (e) {

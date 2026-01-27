@@ -30,13 +30,13 @@ Future<void> showWeeklyReviewModal(
       return SizedBox(
         height: height,
         child: BlocProvider(
-          create: (_) => WeeklyReviewCubit(
+          create: (_) => WeeklyReviewBloc(
             analyticsService: getIt<AnalyticsService>(),
             attentionEngine: getIt<AttentionEngineContract>(),
             valueRepository: getIt<ValueRepositoryContract>(),
             taskRepository: getIt<TaskRepositoryContract>(),
             nowService: getIt<NowService>(),
-          )..load(config),
+          )..add(WeeklyReviewRequested(config)),
           child: _WeeklyReviewModal(
             config: config,
             parentContext: parentContext,
@@ -104,7 +104,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return BlocBuilder<WeeklyReviewCubit, WeeklyReviewState>(
+    return BlocBuilder<WeeklyReviewBloc, WeeklyReviewState>(
       builder: (context, state) {
         if (state.status == WeeklyReviewStatus.loading) {
           return _ReviewLoading();
@@ -112,8 +112,8 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
         if (state.status == WeeklyReviewStatus.failure) {
           return _ReviewError(
             message: state.errorMessage ?? 'Failed to load review.',
-            onRetry: () => context.read<WeeklyReviewCubit>().load(
-              widget.config,
+            onRetry: () => context.read<WeeklyReviewBloc>().add(
+              WeeklyReviewRequested(widget.config),
             ),
           );
         }

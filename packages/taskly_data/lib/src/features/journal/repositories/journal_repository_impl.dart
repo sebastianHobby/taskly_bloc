@@ -6,6 +6,8 @@ import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/repositories/mappers/journal_predicate_mapper.dart';
 import 'package:taskly_data/src/repositories/mixins/query_builder_mixin.dart';
+import 'package:taskly_data/src/repositories/query_stream_cache.dart';
+import 'package:taskly_data/src/repositories/stream_cache_policy.dart';
 import 'package:taskly_domain/taskly_domain.dart' hide Value;
 
 class JournalRepositoryImpl
@@ -24,6 +26,8 @@ class JournalRepositoryImpl
   final Clock clock;
 
   final JournalPredicateMapper _predicateMapper;
+  final QueryStreamCache<JournalQuery, List<JournalEntry>>
+  _sharedWatchAllCache = QueryStreamCache(maxEntries: 16);
 
   @override
   Stream<List<JournalEntry>> watchJournalEntries({DateRange? range}) {
@@ -46,16 +50,24 @@ class JournalRepositoryImpl
   Stream<List<JournalEntry>> watchJournalEntriesByQuery(
     JournalQuery journalQuery,
   ) {
-    final query = _database.select(_database.journalEntries);
+    Stream<List<JournalEntry>> build() {
+      final query = _database.select(_database.journalEntries);
 
-    final whereExpr = _whereExpressionFromFilter(journalQuery.filter);
-    if (whereExpr != null) {
-      query.where((tbl) => whereExpr);
+      final whereExpr = _whereExpressionFromFilter(journalQuery.filter);
+      if (whereExpr != null) {
+        query.where((tbl) => whereExpr);
+      }
+
+      query.orderBy([(e) => OrderingTerm.desc(e.entryDate)]);
+
+      return query.watch().map((rows) => rows.map(_mapToJournalEntry).toList());
     }
 
-    query.orderBy([(e) => OrderingTerm.desc(e.entryDate)]);
+    if (!shouldCacheByDefault(hasDateFilter: journalQuery.hasDateFilter)) {
+      return build();
+    }
 
-    return query.watch().map((rows) => rows.map(_mapToJournalEntry).toList());
+    return _sharedWatchAllCache.getOrCreate(journalQuery, build);
   }
 
   Expression<bool>? _whereExpressionFromFilter(

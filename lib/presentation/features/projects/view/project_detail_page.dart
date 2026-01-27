@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fleather/fleather.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
@@ -11,6 +12,7 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/utils/rich_text_utils.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -254,6 +256,7 @@ class _ProjectDetailBody extends StatelessWidget {
       children: [
         _ProjectDetailHeader(
           data: headerData,
+          description: project.description,
           isInbox: isInbox,
           onEditRequested: openEdit,
         ),
@@ -524,11 +527,13 @@ class _ProjectDetailBody extends StatelessWidget {
 class _ProjectDetailHeader extends StatelessWidget {
   const _ProjectDetailHeader({
     required this.data,
+    required this.description,
     required this.isInbox,
     required this.onEditRequested,
   });
 
   final TasklyProjectRowData data;
+  final String? description;
   final bool isInbox;
   final VoidCallback onEditRequested;
 
@@ -538,15 +543,8 @@ class _ProjectDetailHeader extends StatelessWidget {
     final scheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
 
-    final description = data.subtitle?.trim() ?? '';
-    final hasDescription = description.isNotEmpty;
-
     final titleStyle =
         theme.textTheme.headlineSmall ?? theme.textTheme.titleLarge;
-    final descriptionStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: scheme.onSurfaceVariant,
-      height: 1.4,
-    );
     final metaStyle = theme.textTheme.labelSmall?.copyWith(
       color: scheme.onSurfaceVariant,
       fontWeight: FontWeight.w600,
@@ -661,16 +659,6 @@ class _ProjectDetailHeader extends StatelessWidget {
             ),
           ),
         ),
-        if (hasDescription)
-          Padding(
-            padding: EdgeInsets.only(bottom: tokens.spaceSm2),
-            child: Text(
-              description,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: descriptionStyle,
-            ),
-          ),
         if (metaChildren.isNotEmpty)
           Wrap(
             spacing: tokens.spaceSm2,
@@ -678,7 +666,71 @@ class _ProjectDetailHeader extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: metaChildren,
           ),
+        if (richTextHasContent(description)) ...[
+          SizedBox(height: tokens.spaceSm),
+          _ProjectNotesView(rawNotes: description),
+        ],
       ],
+    );
+  }
+}
+
+class _ProjectNotesView extends StatefulWidget {
+  const _ProjectNotesView({required this.rawNotes});
+
+  final String? rawNotes;
+
+  @override
+  State<_ProjectNotesView> createState() => _ProjectNotesViewState();
+}
+
+class _ProjectNotesViewState extends State<_ProjectNotesView> {
+  late FleatherController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = FleatherController(
+      document: parseParchmentDocument(widget.rawNotes),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProjectNotesView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.rawNotes != widget.rawNotes) {
+      _controller.dispose();
+      _controller = FleatherController(
+        document: parseParchmentDocument(widget.rawNotes),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: EdgeInsets.all(tokens.spaceSm),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: FleatherEditor(
+        controller: _controller,
+        readOnly: true,
+        showCursor: false,
+        padding: EdgeInsets.zero,
+        scrollable: false,
+      ),
     );
   }
 }

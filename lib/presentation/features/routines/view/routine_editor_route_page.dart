@@ -44,7 +44,6 @@ class _RoutineEditorFullPage extends StatelessWidget {
         child: RoutineDetailSheetPage(
           routineId: routineId,
           routineRepository: getIt<RoutineRepositoryContract>(),
-          projectRepository: getIt<ProjectRepositoryContract>(),
           valueRepository: getIt<ValueRepositoryContract>(),
           routineWriteService: getIt<RoutineWriteService>(),
         ),

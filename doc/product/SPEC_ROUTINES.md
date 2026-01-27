@@ -18,7 +18,7 @@ The allocation engine must not output routines as suggestions.
 - Show routines when they are eligible for today with clear target and
   remaining info.
 - Keep UX calm and supportive (no prompts or warnings).
-- Allow routines without projects (value is required).
+- Routines are linked to values only (value is required).
 - Keep routines out of Scheduled view.
 - Report routine analytics separately from task stats.
 - Show routine picks in the My Day list for today (distinct look vs tasks).
@@ -27,7 +27,6 @@ The allocation engine must not output routines as suggestions.
 
 - Do not turn routines into alerts or deadline warnings.
 - Do not add prompts or banners outside Plan My Day.
-- Do not require routines to belong to projects.
 
 ## UX Overview
 
@@ -223,7 +222,7 @@ Behavior:
 Use dedicated routine tables (already created in Supabase schema).
 
 Tables:
-- routines: id, name, value_id (required), project_id (optional), type,
+- routines: id, name, value_id (required), type,
   target_count, schedule_days, min_spacing_days, preferred_weeks,
   is_active, created_at, updated_at
 - routine_completions: routine_id, completed_at, created_at
@@ -258,7 +257,6 @@ Pick behavior:
 
 - Skipped week: remaining cleared, status becomes "Rest week"
 - Paused routine: hidden until resumed
-- Routine without project: allowed, value required
 - "Not today": hidden until next day
 - "Later this week": hidden until next recommended day
 

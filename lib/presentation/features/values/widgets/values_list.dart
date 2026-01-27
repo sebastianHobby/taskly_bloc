@@ -8,6 +8,7 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class ValuesListView extends StatelessWidget {
   const ValuesListView({
@@ -30,6 +31,7 @@ class ValuesListView extends StatelessWidget {
     );
 
     final selection = context.read<SelectionCubit>();
+    final tokens = TasklyTokens.of(context);
     selection.updateVisibleEntities(
       values
           .map(
@@ -87,6 +89,9 @@ class ValuesListView extends StatelessWidget {
             rows: rows,
           ),
         ],
+      ),
+      entityRowPadding: EdgeInsets.symmetric(
+        horizontal: tokens.sectionPaddingH,
       ),
     );
   }

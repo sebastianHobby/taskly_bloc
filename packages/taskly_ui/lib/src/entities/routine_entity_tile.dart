@@ -50,26 +50,35 @@ class RoutineEntityTile extends StatelessWidget {
     final statusColor = _statusColor(model.statusTone, scheme);
     final statusStyle = _statusStyle(model.statusTone);
     final statusLabel = model.statusLabel.trim();
+    final showStatus = statusLabel.isNotEmpty;
 
     final metaLabel = [
-      model.targetLabel,
       model.remainingLabel,
       model.windowLabel,
-    ].map((text) => text.trim()).where((text) => text.isNotEmpty).join(' · ');
+      model.targetLabel,
+    ].map((text) => text.trim()).where((text) => text.isNotEmpty).join(' \u00b7 ');
+    final showMeta = metaLabel.isNotEmpty;
+
+    final baseOpacity = model.completed ? 0.7 : 1.0;
+    final opacity = baseOpacity.clamp(0.0, 1.0);
+
+    final isSelected = model.selected || model.completed;
+    final selectedTint = scheme.primaryContainer.withValues(alpha: 0.16);
+    final tileSurface = isSelected
+        ? Color.alphaBlend(selectedTint, scheme.surface)
+        : scheme.surface;
 
     final titleStyle = theme.textTheme.titleSmall?.copyWith(
+      color: scheme.onSurface,
+      decoration: model.completed ? TextDecoration.lineThrough : null,
+      decorationColor: scheme.onSurface.withValues(alpha: 0.55),
       fontWeight: FontWeight.w700,
-      color: model.completed ? scheme.onSurfaceVariant : scheme.onSurface,
-      decoration: model.completed
-          ? TextDecoration.lineThrough
-          : TextDecoration.none,
     );
 
-    final surfaceTint = model.selected
-        ? scheme.primaryContainer.withValues(alpha: 0.18)
-        : Colors.transparent;
-
-    final tileSurface = Color.alphaBlend(surfaceTint, scheme.surface);
+    final metaStyle = theme.textTheme.labelSmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
 
     final tile = DecoratedBox(
       decoration: BoxDecoration(
@@ -92,110 +101,75 @@ class RoutineEntityTile extends StatelessWidget {
             onTap: actions.onTap,
             child: Padding(
               padding: tokens.taskPadding,
-              child: Row(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (model.completed) ...[
-                              Icon(
-                                Icons.check_circle_rounded,
-                                size: 16,
-                                color: scheme.primary,
-                              ),
-                              SizedBox(width: tokens.spaceXs2),
-                            ],
-                            Expanded(
-                              child: Text(
-                                model.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: titleStyle,
-                              ),
-                            ),
-                            if (statusLabel.isNotEmpty) ...[
-                              SizedBox(width: tokens.spaceSm),
-                              TasklyBadge(
-                                label: statusLabel,
-                                color: statusColor,
-                                style: statusStyle,
-                              ),
-                            ],
-                          ],
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          model.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: titleStyle,
                         ),
-                        if (model.valueChip != null) ...[
-                          SizedBox(height: tokens.spaceSm),
+                      ),
+                      if (showStatus) ...[
+                        SizedBox(width: tokens.spaceXs2),
+                        TasklyBadge(
+                          label: statusLabel,
+                          color: statusColor,
+                          style: statusStyle,
+                        ),
+                      ],
+                      if (showMenu) ...[
+                        SizedBox(width: tokens.spaceXs2),
+                        _RoutineMenuButton(entries: menuEntries),
+                      ],
+                    ],
+                  ),
+                  if (model.valueChip != null || showMeta) ...[
+                    SizedBox(height: tokens.spaceXs2),
+                    Wrap(
+                      spacing: tokens.spaceXs2,
+                      runSpacing: tokens.spaceXs2,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (model.valueChip != null)
                           ValueChip(
                             data: model.valueChip!,
-                            iconOnly: false,
                             maxLabelWidth: 140,
                           ),
-                        ],
-                        if (metaLabel.isNotEmpty) ...[
-                          SizedBox(height: tokens.spaceSm),
-                          Text(
-                            metaLabel,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                        if (hasBadges) ...[
-                          SizedBox(height: tokens.spaceSm),
-                          Wrap(
-                            spacing: tokens.spaceXs2,
-                            runSpacing: tokens.spaceXs2,
-                            children: [
-                              for (final badge in badges)
-                                TasklyBadge(
-                                  label: badge.label,
-                                  icon: badge.icon,
-                                  color: badge.color,
-                                  style: badge.tone == TasklyBadgeTone.solid
-                                      ? TasklyBadgeStyle.solid
-                                      : badge.tone == TasklyBadgeTone.outline
-                                      ? TasklyBadgeStyle.outline
-                                      : TasklyBadgeStyle.softOutline,
-                                ),
-                            ],
-                          ),
-                        ],
+                        if (showMeta) Text(metaLabel, style: metaStyle),
                       ],
                     ),
-                  ),
-                  if (showPrimary || showMenu) ...[
-                    SizedBox(width: tokens.spaceMd),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                  ],
+                  if (hasBadges) ...[
+                    SizedBox(height: tokens.spaceXs2),
+                    Wrap(
+                      spacing: tokens.spaceXs2,
+                      runSpacing: tokens.spaceXs2,
                       children: [
-                        if (showPrimary)
-                          FilledButton(
-                            onPressed: actions.onPrimaryAction,
-                            style: FilledButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: tokens.spaceMd,
-                                vertical: tokens.spaceSm,
-                              ),
-                              minimumSize: Size(0, tokens.minTapTargetSize),
-                              textStyle: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            child: Text(primaryLabel),
+                        for (final badge in badges)
+                          TasklyBadge(
+                            label: badge.label,
+                            icon: badge.icon,
+                            color: badge.color,
+                            style: _badgeStyle(badge.tone),
                           ),
-                        if (showMenu) ...[
-                          if (showPrimary) SizedBox(height: tokens.spaceXs),
-                          _RoutineMenuButton(
-                            entries: menuEntries,
-                          ),
-                        ],
                       ],
+                    ),
+                  ],
+                  if (showPrimary) ...[
+                    SizedBox(height: tokens.spaceSm),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: _PrimaryActionButton(
+                        label: primaryLabel ?? '',
+                        selected: isSelected,
+                        onPressed: actions.onPrimaryAction,
+                      ),
                     ),
                   ],
                 ],
@@ -206,39 +180,60 @@ class RoutineEntityTile extends StatelessWidget {
       ),
     );
 
-    final baseOpacity = model.completed ? 0.75 : 1.0;
     return Opacity(
       key: Key('routine-${model.id}'),
-      opacity: baseOpacity,
+      opacity: opacity,
       child: tile,
     );
   }
 }
 
-bool _hasLabel(String? label) {
-  final trimmed = label?.trim();
-  return trimmed != null && trimmed.isNotEmpty;
+class _PrimaryActionButton extends StatelessWidget {
+  const _PrimaryActionButton({
+    required this.label,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    if (selected) {
+      return FilledButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.check_rounded, size: 18),
+        label: Text(label),
+        style: FilledButton.styleFrom(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spaceMd,
+            vertical: tokens.spaceXs2,
+          ),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      );
+    }
+
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spaceMd,
+          vertical: tokens.spaceXs2,
+        ),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(label),
+    );
+  }
 }
 
-Color _statusColor(TasklyRoutineStatusTone tone, ColorScheme scheme) {
-  return switch (tone) {
-    TasklyRoutineStatusTone.onPace => scheme.primary,
-    TasklyRoutineStatusTone.tightWeek => scheme.tertiary,
-    TasklyRoutineStatusTone.catchUp => scheme.error,
-    TasklyRoutineStatusTone.restWeek => scheme.onSurfaceVariant,
-  };
-}
-
-TasklyBadgeStyle _statusStyle(TasklyRoutineStatusTone tone) {
-  return switch (tone) {
-    TasklyRoutineStatusTone.onPace => TasklyBadgeStyle.softOutline,
-    TasklyRoutineStatusTone.tightWeek => TasklyBadgeStyle.softOutline,
-    TasklyRoutineStatusTone.catchUp => TasklyBadgeStyle.solid,
-    TasklyRoutineStatusTone.restWeek => TasklyBadgeStyle.outline,
-  };
-}
-
-final class _RoutineMenuEntry {
+class _RoutineMenuEntry {
   const _RoutineMenuEntry({
     required this.label,
     required this.onTap,
@@ -255,18 +250,51 @@ class _RoutineMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
     return PopupMenuButton<_RoutineMenuEntry>(
-      icon: const Icon(Icons.more_horiz_rounded, size: 20),
       onSelected: (entry) => entry.onTap(),
-      itemBuilder: (context) {
-        return [
-          for (final entry in entries)
-            PopupMenuItem<_RoutineMenuEntry>(
+      tooltip: 'Routine actions',
+      itemBuilder: (context) => entries
+          .map(
+            (entry) => PopupMenuItem<_RoutineMenuEntry>(
               value: entry,
               child: Text(entry.label),
             ),
-        ];
-      },
+          )
+          .toList(growable: false),
+      icon: const Icon(Icons.more_vert_rounded),
+      padding: EdgeInsets.zero,
+      constraints: BoxConstraints(minWidth: tokens.minTapTargetSize),
     );
   }
+}
+
+bool _hasLabel(String? value) {
+  return value != null && value.trim().isNotEmpty;
+}
+
+Color _statusColor(TasklyRoutineStatusTone tone, ColorScheme scheme) {
+  return switch (tone) {
+    TasklyRoutineStatusTone.onPace => scheme.tertiary,
+    TasklyRoutineStatusTone.tightWeek => scheme.secondary,
+    TasklyRoutineStatusTone.catchUp => scheme.error,
+    TasklyRoutineStatusTone.restWeek => scheme.onSurfaceVariant,
+  };
+}
+
+TasklyBadgeStyle _statusStyle(TasklyRoutineStatusTone tone) {
+  return switch (tone) {
+    TasklyRoutineStatusTone.onPace => TasklyBadgeStyle.softOutline,
+    TasklyRoutineStatusTone.tightWeek => TasklyBadgeStyle.softOutline,
+    TasklyRoutineStatusTone.catchUp => TasklyBadgeStyle.solid,
+    TasklyRoutineStatusTone.restWeek => TasklyBadgeStyle.outline,
+  };
+}
+
+TasklyBadgeStyle _badgeStyle(TasklyBadgeTone tone) {
+  return switch (tone) {
+    TasklyBadgeTone.solid => TasklyBadgeStyle.solid,
+    TasklyBadgeTone.outline => TasklyBadgeStyle.outline,
+    TasklyBadgeTone.soft => TasklyBadgeStyle.softOutline,
+  };
 }

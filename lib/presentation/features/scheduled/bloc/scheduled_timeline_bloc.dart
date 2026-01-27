@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
@@ -9,19 +10,6 @@ import 'package:taskly_domain/services.dart';
 
 sealed class ScheduledTimelineEvent {
   const ScheduledTimelineEvent();
-}
-
-final class _ScheduledTimelineOccurrencesUpdated
-    extends ScheduledTimelineEvent {
-  const _ScheduledTimelineOccurrencesUpdated({required this.result});
-
-  final ScheduledOccurrencesResult result;
-}
-
-final class _ScheduledTimelineWatchFailed extends ScheduledTimelineEvent {
-  const _ScheduledTimelineWatchFailed({required this.message});
-
-  final String message;
 }
 
 final class ScheduledTimelineStarted extends ScheduledTimelineEvent {
@@ -117,9 +105,7 @@ final class ScheduledTimelineBloc
        _sessionDayKeyService = sessionDayKeyService,
        _nowService = nowService,
        super(const ScheduledTimelineLoading()) {
-    on<ScheduledTimelineStarted>(_onStarted);
-    on<_ScheduledTimelineOccurrencesUpdated>(_onOccurrencesUpdated);
-    on<_ScheduledTimelineWatchFailed>(_onWatchFailed);
+    on<ScheduledTimelineStarted>(_onStarted, transformer: restartable());
     on<ScheduledTimelineVisibleDayChanged>(_onVisibleDayChanged);
     on<ScheduledTimelineDayJumpRequested>(_onDayJumpRequested);
     on<ScheduledTimelineOverdueCollapsedToggled>(_onOverdueCollapsedToggled);
@@ -135,7 +121,6 @@ final class ScheduledTimelineBloc
 
   final BehaviorSubject<_RangeWindow> _rangeWindow =
       BehaviorSubject<_RangeWindow>();
-  StreamSubscription<ScheduledOccurrencesResult>? _watchSub;
 
   bool _overdueCollapsed = false;
   int _scrollToDaySignal = 0;
@@ -150,7 +135,6 @@ final class ScheduledTimelineBloc
 
   @override
   Future<void> close() async {
-    await _watchSub?.cancel();
     await _rangeWindow.close();
     return super.close();
   }
@@ -185,80 +169,62 @@ final class ScheduledTimelineBloc
 
       _rangeWindow.add(_initialWindowForToday(_latestTodayLocal!));
 
-      await _watchSub?.cancel();
-      _watchSub =
-          Rx.combineLatest2<DateTime, _RangeWindow, _QueryParams>(
-                _sessionDayKeyService.todayDayKeyUtc,
-                _rangeWindow.distinct(),
-                (todayDayKeyUtc, window) => _QueryParams(
-                  todayUtc: todayDayKeyUtc,
-                  startUtc: _toUtcDay(window.startDay),
-                  endUtc: _toUtcDay(window.endDay),
-                ),
-              )
-              .switchMap(
-                (p) => _occurrencesService.watchScheduledOccurrences(
-                  rangeStartDay: p.startUtc,
-                  rangeEndDay: p.endUtc,
-                  todayDayKeyUtc: p.todayUtc,
-                  scope: scope,
-                ),
-              )
-              .listen(
-                (result) {
-                  if (isClosed) return;
-                  add(_ScheduledTimelineOccurrencesUpdated(result: result));
-                },
-                onError: (Object e, StackTrace _) {
-                  if (isClosed) return;
-                  add(_ScheduledTimelineWatchFailed(message: e.toString()));
-                },
-              );
+      final params$ = Rx.combineLatest2<DateTime, _RangeWindow, _QueryParams>(
+        _sessionDayKeyService.todayDayKeyUtc,
+        _rangeWindow.distinct(),
+        (todayDayKeyUtc, window) => _QueryParams(
+          todayUtc: todayDayKeyUtc,
+          startUtc: _toUtcDay(window.startDay),
+          endUtc: _toUtcDay(window.endDay),
+        ),
+      );
+
+      final occurrences$ = params$.switchMap(
+        (p) => _occurrencesService.watchScheduledOccurrences(
+          rangeStartDay: p.startUtc,
+          rangeEndDay: p.endUtc,
+          todayDayKeyUtc: p.todayUtc,
+          scope: scope,
+        ),
+      );
+
+      await emit.forEach<ScheduledOccurrencesResult>(
+        occurrences$,
+        onData: (result) {
+          _latestResult = result;
+          _latestTodayUtc = _sessionDayKeyService.todayDayKeyUtc.valueOrNull;
+          _latestTodayLocal = _latestTodayUtc == null
+              ? _latestTodayLocal
+              : _toLocalDay(_latestTodayUtc!);
+          return _buildLoadedState() ?? state;
+        },
+        onError: (error, stackTrace) =>
+            ScheduledTimelineError(message: error.toString()),
+      );
     } catch (e) {
       emit(ScheduledTimelineError(message: e.toString()));
     }
   }
 
-  void _onOccurrencesUpdated(
-    _ScheduledTimelineOccurrencesUpdated event,
-    Emitter<ScheduledTimelineState> emit,
-  ) {
-    _latestResult = event.result;
-    _latestTodayUtc = _sessionDayKeyService.todayDayKeyUtc.valueOrNull;
-    _latestTodayLocal = _latestTodayUtc == null
-        ? _latestTodayLocal
-        : _toLocalDay(_latestTodayUtc!);
-    _emitLoaded(emit);
-  }
-
-  void _onWatchFailed(
-    _ScheduledTimelineWatchFailed event,
-    Emitter<ScheduledTimelineState> emit,
-  ) {
-    emit(ScheduledTimelineError(message: event.message));
-  }
-
-  void _emitLoaded(Emitter<ScheduledTimelineState> emit) {
+  ScheduledTimelineState? _buildLoadedState() {
     final result = _latestResult;
     final todayLocal = _latestTodayLocal;
     final window = _rangeWindow.valueOrNull;
-    if (result == null || todayLocal == null || window == null) return;
+    if (result == null || todayLocal == null || window == null) return null;
 
     final activeMonth =
         _activeMonth ?? DateTime(todayLocal.year, todayLocal.month, 1);
 
-    emit(
-      ScheduledTimelineLoaded(
-        today: todayLocal,
-        rangeStartDay: window.startDay,
-        rangeEndDay: window.endDay,
-        activeMonth: activeMonth,
-        occurrences: result.occurrences,
-        overdue: result.overdue,
-        overdueCollapsed: _overdueCollapsed,
-        scrollToDaySignal: _scrollToDaySignal,
-        scrollTargetDay: _scrollTargetDay,
-      ),
+    return ScheduledTimelineLoaded(
+      today: todayLocal,
+      rangeStartDay: window.startDay,
+      rangeEndDay: window.endDay,
+      activeMonth: activeMonth,
+      occurrences: result.occurrences,
+      overdue: result.overdue,
+      overdueCollapsed: _overdueCollapsed,
+      scrollToDaySignal: _scrollToDaySignal,
+      scrollTargetDay: _scrollTargetDay,
     );
   }
 
@@ -282,7 +248,8 @@ final class ScheduledTimelineBloc
       }
     }
 
-    _emitLoaded(emit);
+    final next = _buildLoadedState();
+    if (next != null) emit(next);
   }
 
   Future<void> _onDayJumpRequested(
@@ -308,7 +275,8 @@ final class ScheduledTimelineBloc
     _scrollTargetDay = targetDay;
     _scrollToDaySignal++;
 
-    _emitLoaded(emit);
+    final next = _buildLoadedState();
+    if (next != null) emit(next);
   }
 
   Future<void> _onOverdueCollapsedToggled(
@@ -316,7 +284,8 @@ final class ScheduledTimelineBloc
     Emitter<ScheduledTimelineState> emit,
   ) async {
     _overdueCollapsed = !_overdueCollapsed;
-    _emitLoaded(emit);
+    final next = _buildLoadedState();
+    if (next != null) emit(next);
   }
 
   Future<void> _onScrollEffectHandled(
@@ -325,7 +294,8 @@ final class ScheduledTimelineBloc
   ) async {
     if (_scrollTargetDay == null) return;
     _scrollTargetDay = null;
-    _emitLoaded(emit);
+    final next = _buildLoadedState();
+    if (next != null) emit(next);
   }
 
   static DateTime _toLocalDay(DateTime day) =>
