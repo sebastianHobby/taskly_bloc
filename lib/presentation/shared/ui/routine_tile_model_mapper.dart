@@ -13,7 +13,7 @@ TasklyRoutineRowData buildRoutineRowData(
   required RoutineCadenceSnapshot snapshot,
   bool selected = false,
   bool completed = false,
-  bool isCatchUpDay = false,
+  bool highlightCompleted = true,
   bool showProgress = false,
   bool showScheduleRow = false,
   DateTime? dayKeyUtc,
@@ -50,73 +50,27 @@ TasklyRoutineRowData buildRoutineRowData(
       status: snapshot.status,
     );
   }
-  final effectiveShowSchedule = scheduleRow != null;
-
-  final statusLabel = (effectiveShowProgress || effectiveShowSchedule)
-      ? ''
-      : _statusLabel(
-          context,
-          snapshot.status,
-          isCatchUpDay: isCatchUpDay,
-        );
-
-  final statusTone = _statusTone(
-    snapshot.status,
-    isCatchUpDay: isCatchUpDay,
-  );
-
   return TasklyRoutineRowData(
     id: routine.id,
     title: routine.name,
     targetLabel: targetLabel,
     remainingLabel: remainingLabel,
     windowLabel: windowLabel,
-    statusLabel: statusLabel,
-    statusTone: statusTone,
     progress: progressData,
     scheduleRow: scheduleRow,
     valueChip: routine.value?.toChipData(context),
     selected: selected,
     completed: completed,
+    highlightCompleted: highlightCompleted,
     badges: badges,
     labels: labels,
   );
 }
 
-TasklyRoutineRowLabels buildRoutinePlanLabels(
-  BuildContext context, {
-  String? skipPeriodLabel,
-}) {
+TasklyRoutineRowLabels buildRoutineExecutionLabels(BuildContext context) {
   return TasklyRoutineRowLabels(
-    primaryActionLabel: context.l10n.routinePrimaryActionLabel,
+    primaryActionLabel: context.l10n.myDayDoTodayAction,
   );
-}
-
-TasklyRoutineRowLabels buildRoutineListLabels(BuildContext context) {
-  return const TasklyRoutineRowLabels();
-}
-
-String _statusLabel(
-  BuildContext context,
-  RoutineStatus status, {
-  required bool isCatchUpDay,
-}) {
-  if (isCatchUpDay) return context.l10n.routineStatusCatchUp;
-  return switch (status) {
-    RoutineStatus.restWeek => context.l10n.routineStatusRestWeek,
-    _ => context.l10n.routineStatusOnPace,
-  };
-}
-
-TasklyRoutineStatusTone _statusTone(
-  RoutineStatus status, {
-  required bool isCatchUpDay,
-}) {
-  if (isCatchUpDay) return TasklyRoutineStatusTone.catchUp;
-  return switch (status) {
-    RoutineStatus.restWeek => TasklyRoutineStatusTone.restWeek,
-    _ => TasklyRoutineStatusTone.onPace,
-  };
 }
 
 String _weeklyWindowLabel(
@@ -195,6 +149,7 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
   required RoutineStatus status,
 }) {
   final today = dateOnly(dayKeyUtc);
+  final createdDay = dateOnly(routine.createdAt);
   final scheduleDays = routine.scheduleDays.toSet();
 
   final completionDays = <DateTime>{};
@@ -210,6 +165,7 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
 
   for (var i = 0; i < 7; i++) {
     final day = weekStart.add(Duration(days: i));
+    final isBeforeCreation = day.isBefore(createdDay);
     final isScheduled = scheduleDays.contains(day.weekday);
     final isToday = day.isAtSameMomentAs(today);
     final label = _dayLetter(context, day);
@@ -222,7 +178,10 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
       }
     }
 
-    if (isScheduled && day.isBefore(today) && !completionDays.contains(day)) {
+    if (!isBeforeCreation &&
+        isScheduled &&
+        day.isBefore(today) &&
+        !completionDays.contains(day)) {
       missedScheduled = true;
     }
 

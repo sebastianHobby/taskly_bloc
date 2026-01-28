@@ -13,7 +13,7 @@ import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_sc
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
-import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
@@ -45,7 +45,7 @@ class AnytimePage extends StatelessWidget {
             scope: scope,
           ),
         ),
-        BlocProvider(create: (_) => SelectionCubit()),
+        BlocProvider(create: (_) => SelectionBloc()),
       ],
       child: _AnytimeView(scope: scope),
     );
@@ -184,7 +184,7 @@ class _AnytimeViewState extends State<_AnytimeView> {
           },
         ),
       ],
-      child: BlocBuilder<SelectionCubit, SelectionState>(
+      child: BlocBuilder<SelectionBloc, SelectionState>(
         builder: (context, selectionState) {
           return Scaffold(
             appBar: selectionState.isSelectionMode
@@ -371,7 +371,7 @@ List<TasklyRowSpec> _buildStandardRows(
   BuildContext context,
   List<ListRowUiModel> rows,
 ) {
-  final selection = context.read<SelectionCubit>();
+  final selection = context.read<SelectionBloc>();
 
   final projectRowCache = rows.whereType<ProjectRowUiModel>().toList(
     growable: false,

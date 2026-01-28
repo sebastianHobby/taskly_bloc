@@ -120,7 +120,7 @@ void main() {
       nowUtc: nowUtc,
       todayDayKeyUtc: todayDayKeyUtc,
     );
-    expect(completionRate.formattedValue, '40%');
+    expect(completionRate.value, 40);
 
     final stale = calculator.calculate(
       tasks: tasks,
@@ -129,7 +129,7 @@ void main() {
       todayDayKeyUtc: todayDayKeyUtc,
     );
     expect(stale.value, 1);
-    expect(stale.description, contains('14+ days'));
+    expect(stale.metadata['staleThresholdDays'], 14);
 
     final overdue = calculator.calculate(
       tasks: tasks,
@@ -145,7 +145,7 @@ void main() {
       nowUtc: nowUtc,
       todayDayKeyUtc: todayDayKeyUtc,
     );
-    expect(avgDays.formattedValue, '1.5 days');
+    expect(avgDays.value, 1.5);
   });
 
   testSafe(
@@ -253,7 +253,7 @@ void main() {
         todayDayKeyUtc: todayDayKeyUtc,
         range: null,
       );
-      expect(velocityNoRange.formattedValue, '0 tasks/week');
+      expect(velocityNoRange.value, 0);
 
       final zeroDayRange = DateRange(start: weekStart, end: weekStart);
       final velocityZeroWeeks = calculator.calculate(
@@ -263,7 +263,7 @@ void main() {
         todayDayKeyUtc: todayDayKeyUtc,
         range: zeroDayRange,
       );
-      expect(velocityZeroWeeks.formattedValue, '3 tasks/week');
+      expect(velocityZeroWeeks.value, 3);
 
       final twoWeekRange = DateRange(
         start: weekStart,
@@ -276,7 +276,7 @@ void main() {
         todayDayKeyUtc: todayDayKeyUtc,
         range: twoWeekRange,
       );
-      expect(velocityTwoWeeks.formattedValue, '1.5 tasks/week');
+      expect(velocityTwoWeeks.value, 1.5);
     },
   );
 

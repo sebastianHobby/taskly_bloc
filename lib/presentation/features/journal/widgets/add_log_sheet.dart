@@ -21,8 +21,7 @@ class AddLogSheet extends StatelessWidget {
     Set<String> preselectedTrackerIds = const <String>{},
   }) async {
     final now = context.read<NowService>().nowLocal();
-    final day =
-        selectedDayLocal ?? DateTime(now.year, now.month, now.day);
+    final day = selectedDayLocal ?? DateTime(now.year, now.month, now.day);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -205,7 +204,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
               max: max,
               step: step,
               enabled: !isSaving,
-              onChanged: (v) => setValue(v),
+              onChanged: setValue,
               onClear: () => setValue(null),
             );
           }

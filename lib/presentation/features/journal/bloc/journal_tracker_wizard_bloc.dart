@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -88,13 +89,15 @@ final class JournalTrackerWizardChoiceAdded extends JournalTrackerWizardEvent {
   final String label;
 }
 
-final class JournalTrackerWizardChoiceRemoved extends JournalTrackerWizardEvent {
+final class JournalTrackerWizardChoiceRemoved
+    extends JournalTrackerWizardEvent {
   const JournalTrackerWizardChoiceRemoved(this.index);
 
   final int index;
 }
 
-final class JournalTrackerWizardChoiceUpdated extends JournalTrackerWizardEvent {
+final class JournalTrackerWizardChoiceUpdated
+    extends JournalTrackerWizardEvent {
   const JournalTrackerWizardChoiceUpdated({
     required this.index,
     required this.label,
@@ -104,7 +107,8 @@ final class JournalTrackerWizardChoiceUpdated extends JournalTrackerWizardEvent 
   final String label;
 }
 
-final class JournalTrackerWizardSaveRequested extends JournalTrackerWizardEvent {
+final class JournalTrackerWizardSaveRequested
+    extends JournalTrackerWizardEvent {
   const JournalTrackerWizardSaveRequested();
 }
 
@@ -350,21 +354,36 @@ class JournalTrackerWizardBloc
     JournalTrackerWizardStepChanged event,
     Emitter<JournalTrackerWizardState> emit,
   ) {
-    emit(state.copyWith(step: event.step, status: const JournalTrackerWizardIdle()));
+    emit(
+      state.copyWith(
+        step: event.step,
+        status: const JournalTrackerWizardIdle(),
+      ),
+    );
   }
 
   void _onNameChanged(
     JournalTrackerWizardNameChanged event,
     Emitter<JournalTrackerWizardState> emit,
   ) {
-    emit(state.copyWith(name: event.name, status: const JournalTrackerWizardIdle()));
+    emit(
+      state.copyWith(
+        name: event.name,
+        status: const JournalTrackerWizardIdle(),
+      ),
+    );
   }
 
   void _onGroupChanged(
     JournalTrackerWizardGroupChanged event,
     Emitter<JournalTrackerWizardState> emit,
   ) {
-    emit(state.copyWith(groupId: event.groupId, status: const JournalTrackerWizardIdle()));
+    emit(
+      state.copyWith(
+        groupId: event.groupId,
+        status: const JournalTrackerWizardIdle(),
+      ),
+    );
   }
 
   void _onScopeChanged(
@@ -384,7 +403,12 @@ class JournalTrackerWizardBloc
     JournalTrackerWizardMeasurementChanged event,
     Emitter<JournalTrackerWizardState> emit,
   ) {
-    emit(state.copyWith(measurement: event.measurement, status: const JournalTrackerWizardIdle()));
+    emit(
+      state.copyWith(
+        measurement: event.measurement,
+        status: const JournalTrackerWizardIdle(),
+      ),
+    );
   }
 
   void _onRatingConfigChanged(
@@ -423,7 +447,12 @@ class JournalTrackerWizardBloc
     final label = event.label.trim();
     if (label.isEmpty) return;
     final next = [...state.choiceLabels, label];
-    emit(state.copyWith(choiceLabels: next, status: const JournalTrackerWizardIdle()));
+    emit(
+      state.copyWith(
+        choiceLabels: next,
+        status: const JournalTrackerWizardIdle(),
+      ),
+    );
   }
 
   void _onChoiceRemoved(
@@ -433,7 +462,12 @@ class JournalTrackerWizardBloc
     final next = [...state.choiceLabels];
     if (event.index < 0 || event.index >= next.length) return;
     next.removeAt(event.index);
-    emit(state.copyWith(choiceLabels: next, status: const JournalTrackerWizardIdle()));
+    emit(
+      state.copyWith(
+        choiceLabels: next,
+        status: const JournalTrackerWizardIdle(),
+      ),
+    );
   }
 
   void _onChoiceUpdated(
@@ -443,7 +477,12 @@ class JournalTrackerWizardBloc
     final next = [...state.choiceLabels];
     if (event.index < 0 || event.index >= next.length) return;
     next[event.index] = event.label;
-    emit(state.copyWith(choiceLabels: next, status: const JournalTrackerWizardIdle()));
+    emit(
+      state.copyWith(
+        choiceLabels: next,
+        status: const JournalTrackerWizardIdle(),
+      ),
+    );
   }
 
   Future<void> _onSaveRequested(
@@ -452,40 +491,67 @@ class JournalTrackerWizardBloc
   ) async {
     final name = state.name.trim();
     if (name.isEmpty) {
-      emit(state.copyWith(status: const JournalTrackerWizardError('Name is required.')));
+      emit(
+        state.copyWith(
+          status: const JournalTrackerWizardError('Name is required.'),
+        ),
+      );
       return;
     }
 
     final scope = state.scope;
     if (scope == null) {
-      emit(state.copyWith(status: const JournalTrackerWizardError('Choose a scope.')));
+      emit(
+        state.copyWith(
+          status: const JournalTrackerWizardError('Choose a scope.'),
+        ),
+      );
       return;
     }
 
     final measurement = state.measurement;
     if (measurement == null) {
-      emit(state.copyWith(status: const JournalTrackerWizardError('Choose a measurement type.')));
+      emit(
+        state.copyWith(
+          status: const JournalTrackerWizardError('Choose a measurement type.'),
+        ),
+      );
       return;
     }
 
     if (measurement == JournalTrackerMeasurementType.rating) {
       if (state.ratingMin >= state.ratingMax || state.ratingStep <= 0) {
-        emit(state.copyWith(status: const JournalTrackerWizardError('Check rating range.')));
+        emit(
+          state.copyWith(
+            status: const JournalTrackerWizardError('Check rating range.'),
+          ),
+        );
         return;
       }
     }
 
     if (measurement == JournalTrackerMeasurementType.quantity) {
       if (state.quantityStep <= 0) {
-        emit(state.copyWith(status: const JournalTrackerWizardError('Step must be > 0.')));
+        emit(
+          state.copyWith(
+            status: const JournalTrackerWizardError('Step must be > 0.'),
+          ),
+        );
         return;
       }
     }
 
     if (measurement == JournalTrackerMeasurementType.choice) {
-      final trimmed = state.choiceLabels.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      final trimmed = state.choiceLabels
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
       if (trimmed.isEmpty) {
-        emit(state.copyWith(status: const JournalTrackerWizardError('Add at least one option.')));
+        emit(
+          state.copyWith(
+            status: const JournalTrackerWizardError('Add at least one option.'),
+          ),
+        );
         return;
       }
     }
@@ -504,10 +570,9 @@ class JournalTrackerWizardBloc
     try {
       final now = _nowUtc();
       final defs = await _repository.watchTrackerDefinitions().first;
-      final groupDefs = defs
-          .where((d) => (d.groupId ?? '') == (state.groupId ?? ''))
-          .toList()
-        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      final groupDefs =
+          defs.where((d) => (d.groupId ?? '') == (state.groupId ?? '')).toList()
+            ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
       final scopeValue = switch (scope) {
         JournalTrackerScopeOption.day => 'day',
@@ -574,7 +639,8 @@ class JournalTrackerWizardBloc
           isOutcome: false,
           isInsightEnabled: false,
           higherIsBetter: null,
-          unitKind: measurement == JournalTrackerMeasurementType.quantity &&
+          unitKind:
+              measurement == JournalTrackerMeasurementType.quantity &&
                   state.quantityUnit.trim().isNotEmpty
               ? state.quantityUnit.trim()
               : null,
@@ -648,8 +714,8 @@ class JournalTrackerWizardBloc
   String _choiceKeyFromLabel(String label) {
     final normalized = label
         .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'_+'), '_')
+        .replaceAll(RegExp('[^a-z0-9]+'), '_')
+        .replaceAll(RegExp('_+'), '_')
         .replaceAll(RegExp(r'^_|_$'), '');
     return normalized.isEmpty ? 'option' : normalized;
   }

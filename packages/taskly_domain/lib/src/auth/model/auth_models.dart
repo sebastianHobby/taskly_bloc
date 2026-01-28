@@ -1,5 +1,3 @@
-library;
-
 /// Domain-facing authentication event kinds.
 enum AuthEventKind {
   initialSession,

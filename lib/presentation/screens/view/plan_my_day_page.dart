@@ -271,17 +271,15 @@ class _PlanValuesStep extends StatelessWidget {
       children: [
         Row(
           children: [
-            TextButton.icon(
-              onPressed: () => _showWhySuggestedSheet(context),
-              icon: const Icon(Icons.info_outline, size: 18),
-              label: const Text('Why suggested'),
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.symmetric(
-                  horizontal: TasklyTokens.of(context).spaceLg,
-                  vertical: TasklyTokens.of(context).spaceSm,
-                ),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            Tooltip(
+              message:
+                  'Suggestions are ranked by your values and priorities. '
+                  'Recent completions shift what rises next.',
+              triggerMode: TooltipTriggerMode.tap,
+              child: IconButton(
+                tooltip: l10n.myDayWhySuggestedSemanticLabel,
+                onPressed: () {},
+                icon: const Icon(Icons.info_outline),
               ),
             ),
             const Spacer(),
@@ -301,40 +299,6 @@ class _PlanValuesStep extends StatelessWidget {
           SizedBox(height: TasklyTokens.of(context).spaceLg),
         ],
       ],
-    );
-  }
-
-  Future<void> _showWhySuggestedSheet(BuildContext context) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            padding: EdgeInsets.fromLTRB(
-              TasklyTokens.of(context).spaceLg,
-              TasklyTokens.of(context).spaceSm,
-              TasklyTokens.of(context).spaceLg,
-              TasklyTokens.of(context).spaceXl,
-            ),
-            children: [
-              const Text(
-                'Why suggested',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              SizedBox(height: TasklyTokens.of(context).spaceSm),
-              Text(
-                "These suggestions are ranked by the values you've set and "
-                'their priorities, so your day reflects who you want to be. '
-                'Recent completions gently shift which tasks rise next, while '
-                'the overall mix stays balanced across values.',
-                style: Theme.of(sheetContext).textTheme.bodyMedium,
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -410,15 +374,8 @@ class _ValueSuggestionCard extends StatelessWidget {
         .length;
     final allSelected = totalCount > 0 && selectedCount == totalCount;
 
-    final priorityLabel = _priorityLabel(value.priority);
     final countLabel = _taskCountLabel(totalCount);
-
-    final badgeColor = group.attentionNeeded ? scheme.error : scheme.primary;
-    final badgeLabel = group.attentionNeeded ? 'Attention needed' : 'Balanced';
-
-    final helperText = group.attentionNeeded
-        ? "Fewer task completions lately compared with this value's priority."
-        : 'Task completions here are keeping pace with its priority.';
+    final needsAttention = group.attentionNeeded;
 
     return Container(
       decoration: BoxDecoration(
@@ -439,7 +396,7 @@ class _ValueSuggestionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 _ValueIconAvatar(
                   icon: value.iconName ?? 'star',
@@ -447,25 +404,32 @@ class _ValueSuggestionCard extends StatelessWidget {
                 ),
                 SizedBox(width: tokens.spaceSm2),
                 Expanded(
-                  child: Text(
-                    value.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          value.name,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: tokens.spaceSm),
+                      _PriorityDot(
+                        color: _priorityColor(scheme, value.priority),
+                      ),
+                      SizedBox(width: tokens.spaceXs2),
+                      Text(
+                        countLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                _StatusBadge(
-                  label: badgeLabel,
-                  color: badgeColor,
-                ),
-                if (group.attentionNeeded) ...[
-                  SizedBox(width: tokens.spaceXs2),
-                  IconButton(
-                    tooltip: 'Why attention needed',
-                    onPressed: () => _showAttentionInfoSheet(context),
-                    icon: const Icon(Icons.info_outline, size: 18),
-                  ),
-                ],
                 IconButton(
                   onPressed: () => context.read<PlanMyDayBloc>().add(
                     PlanMyDayValueToggleExpanded(group.valueId),
@@ -478,46 +442,69 @@ class _ValueSuggestionCard extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: tokens.spaceXs2),
-            Row(
-              children: [
-                _PriorityDot(color: _priorityColor(scheme, value.priority)),
-                SizedBox(width: tokens.spaceXs2),
-                Text(
-                  priorityLabel,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
+            if (needsAttention) ...[
+              SizedBox(height: tokens.spaceXs2),
+              Row(
+                children: [
+                  Icon(
+                    Icons.priority_high_rounded,
+                    size: tokens.spaceSm,
+                    color: scheme.error,
                   ),
-                ),
-                SizedBox(width: tokens.spaceXs2),
-                Text(
-                  '\u00b7 $countLabel',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
+                  SizedBox(width: tokens.spaceXs2),
+                  Text(
+                    'Needs attention',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: scheme.error,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            SizedBox(height: tokens.spaceXs2),
-            Text(
-              helperText,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
+                  SizedBox(width: tokens.spaceXs2),
+                  Tooltip(
+                    message: "Completions are behind this value's priority.",
+                    triggerMode: TooltipTriggerMode.tap,
+                    child: Icon(
+                      Icons.info_outline,
+                      size: tokens.spaceSm,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
-            ),
+            ],
             SizedBox(height: tokens.spaceSm),
             Row(
               children: [
-                TextButton(
-                  onPressed: totalCount == 0
-                      ? null
-                      : () => context.read<PlanMyDayBloc>().add(
-                          PlanMyDayValueToggleAll(group.valueId),
-                        ),
-                  child: Text(allSelected ? 'Remove all' : 'Add all'),
+                ToggleButtons(
+                  borderRadius: BorderRadius.circular(tokens.radiusMd),
+                  isSelected: [!allSelected, allSelected],
+                  onPressed: (index) {
+                    if (totalCount == 0) return;
+                    final bloc = context.read<PlanMyDayBloc>();
+                    if (index == 0) {
+                      if (allSelected) return;
+                      bloc.add(PlanMyDayValueAddAll(group.valueId));
+                      return;
+                    }
+                    if (selectedCount == 0) return;
+                    bloc.add(PlanMyDayValueClearAll(group.valueId));
+                  },
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: tokens.spaceMd,
+                        vertical: tokens.spaceXs,
+                      ),
+                      child: const Text('Add all'),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: tokens.spaceMd,
+                        vertical: tokens.spaceXs,
+                      ),
+                      child: const Text('Clear'),
+                    ),
+                  ],
                 ),
                 if (selectedCount > 0) ...[
                   SizedBox(width: tokens.spaceSm),
@@ -566,14 +553,6 @@ class _ValueSuggestionCard extends StatelessWidget {
     );
   }
 
-  String _priorityLabel(ValuePriority priority) {
-    return switch (priority) {
-      ValuePriority.high => 'High priority',
-      ValuePriority.medium => 'Medium priority',
-      ValuePriority.low => 'Low priority',
-    };
-  }
-
   String _taskCountLabel(int count) {
     return count == 1 ? '1 task' : ' tasks';
   }
@@ -584,38 +563,6 @@ class _ValueSuggestionCard extends StatelessWidget {
       ValuePriority.medium => scheme.tertiary,
       ValuePriority.low => scheme.onSurfaceVariant.withOpacity(0.6),
     };
-  }
-
-  Future<void> _showAttentionInfoSheet(BuildContext context) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            padding: EdgeInsets.fromLTRB(
-              TasklyTokens.of(context).spaceLg,
-              TasklyTokens.of(context).spaceSm,
-              TasklyTokens.of(context).spaceLg,
-              TasklyTokens.of(context).spaceXl,
-            ),
-            children: [
-              const Text(
-                'Attention needed',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              SizedBox(height: TasklyTokens.of(context).spaceSm),
-              Text(
-                'We compare recent task completions to your value priorities. '
-                'This value is running behind, so it is getting extra attention.',
-                style: Theme.of(sheetContext).textTheme.bodyMedium,
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 }
 
@@ -633,40 +580,6 @@ class _PriorityDot extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-      ),
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({
-    required this.label,
-    required this.color,
-  });
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final textStyle = Theme.of(context).textTheme.labelSmall;
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spaceSm,
-        vertical: tokens.spaceXs,
-      ),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(tokens.radiusPill),
-        border: Border.all(color: color.withOpacity(0.45)),
-      ),
-      child: Text(
-        label,
-        style: textStyle?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
       ),
     );
   }
@@ -1040,10 +953,10 @@ String _stepTitle(BuildContext context, PlanMyDayStep step) {
 
 String _stepSubtitle(BuildContext context, PlanMyDayStep step) {
   return switch (step) {
-    PlanMyDayStep.valuesStep => 'Suggestions aligned with your values.',
-    PlanMyDayStep.routines => 'Choose routines that support your values.',
-    PlanMyDayStep.triage => 'Clear the urgent noise first.',
-    PlanMyDayStep.summary => 'Confirm what you want to carry into today.',
+    PlanMyDayStep.valuesStep => 'Then choose value-aligned suggestions.',
+    PlanMyDayStep.routines => 'Add optional routines for today.',
+    PlanMyDayStep.triage => "Start with what's time-sensitive.",
+    PlanMyDayStep.summary => "Confirm today's plan.",
   };
 }
 
@@ -1149,7 +1062,6 @@ TasklyRowSpec _buildRoutineRow(
     snapshot: item.snapshot,
     selected: item.selected,
     completed: item.completedToday,
-    isCatchUpDay: item.isCatchUpDay,
     showProgress:
         routine.routineType == RoutineType.weeklyFlexible ||
         routine.routineType == RoutineType.monthlyFlexible,

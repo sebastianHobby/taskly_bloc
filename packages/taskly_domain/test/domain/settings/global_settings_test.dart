@@ -59,6 +59,11 @@ void main() {
       myDayShowRoutines: false,
       myDayCountTriagePicksAgainstValueQuotas: false,
       myDayCountRoutinePicksAgainstValueQuotas: false,
+      maintenanceDeadlineRiskDueWithinDays: 99,
+      maintenanceDeadlineRiskMinUnscheduledCount: 0,
+      maintenanceTaskStaleThresholdDays: 0,
+      maintenanceProjectIdleThresholdDays: 200,
+      maintenanceMissingNextActionsMinOpenTasks: 42,
       textScaleFactor: 0.9,
       onboardingCompleted: true,
     );
@@ -76,6 +81,26 @@ void main() {
     expect(decoded.myDayShowRoutines, isFalse);
     expect(decoded.myDayCountTriagePicksAgainstValueQuotas, isFalse);
     expect(decoded.myDayCountRoutinePicksAgainstValueQuotas, isFalse);
+    expect(
+      decoded.maintenanceDeadlineRiskDueWithinDays,
+      GlobalSettings.maintenanceDeadlineRiskDueWithinDaysMax,
+    );
+    expect(
+      decoded.maintenanceDeadlineRiskMinUnscheduledCount,
+      GlobalSettings.maintenanceDeadlineRiskMinUnscheduledCountMin,
+    );
+    expect(
+      decoded.maintenanceTaskStaleThresholdDays,
+      GlobalSettings.maintenanceStaleThresholdDaysMin,
+    );
+    expect(
+      decoded.maintenanceProjectIdleThresholdDays,
+      GlobalSettings.maintenanceStaleThresholdDaysMax,
+    );
+    expect(
+      decoded.maintenanceMissingNextActionsMinOpenTasks,
+      GlobalSettings.maintenanceMissingNextActionsMinOpenTasksMax,
+    );
     expect(decoded.textScaleFactor, 0.9);
     expect(decoded.onboardingCompleted, isTrue);
   });

@@ -4,7 +4,7 @@ import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
-import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_library_cubit.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_library_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -13,13 +13,13 @@ class JournalTrackersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<JournalManageLibraryCubit>(
-      create: (context) => JournalManageLibraryCubit(
+    return BlocProvider<JournalManageLibraryBloc>(
+      create: (context) => JournalManageLibraryBloc(
         repository: context.read<JournalRepositoryContract>(),
         errorReporter: context.read<AppErrorReporter>(),
         nowUtc: context.read<NowService>().nowUtc,
       ),
-      child: BlocConsumer<JournalManageLibraryCubit, JournalManageLibraryState>(
+      child: BlocConsumer<JournalManageLibraryBloc, JournalManageLibraryState>(
         listenWhen: (prev, next) {
           final p = prev is JournalManageLibraryLoaded ? prev.status : null;
           final n = next is JournalManageLibraryLoaded ? next.status : null;
@@ -179,7 +179,8 @@ class _ManageLibraryView extends StatelessWidget {
                 left: TasklyTokens.of(context).spaceLg,
                 right: TasklyTokens.of(context).spaceLg,
                 top: TasklyTokens.of(context).spaceLg,
-                bottom: MediaQuery.viewInsetsOf(context).bottom +
+                bottom:
+                    MediaQuery.viewInsetsOf(context).bottom +
                     TasklyTokens.of(context).spaceLg,
               ),
               child: Column(
@@ -196,8 +197,7 @@ class _ManageLibraryView extends StatelessWidget {
                     autofocus: true,
                     decoration: const InputDecoration(labelText: 'Name'),
                     textInputAction: TextInputAction.done,
-                    onSubmitted: (value) =>
-                        Navigator.of(context).pop(value),
+                    onSubmitted: (value) => Navigator.of(context).pop(value),
                   ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Row(
@@ -236,7 +236,7 @@ class _ManageLibraryView extends StatelessWidget {
                     final name = await showCreateGroupDialog();
                     if (name == null) return;
                     if (!context.mounted) return;
-                    await context.read<JournalManageLibraryCubit>().createGroup(
+                    await context.read<JournalManageLibraryBloc>().createGroup(
                       name,
                     );
                   },
@@ -280,7 +280,7 @@ class _ManageLibraryView extends StatelessWidget {
                             onPressed: isSaving
                                 ? null
                                 : () => context
-                                      .read<JournalManageLibraryCubit>()
+                                      .read<JournalManageLibraryBloc>()
                                       .reorderGroups(
                                         groupId: g.id,
                                         direction: -1,
@@ -292,7 +292,7 @@ class _ManageLibraryView extends StatelessWidget {
                             onPressed: isSaving
                                 ? null
                                 : () => context
-                                      .read<JournalManageLibraryCubit>()
+                                      .read<JournalManageLibraryBloc>()
                                       .reorderGroups(
                                         groupId: g.id,
                                         direction: 1,
@@ -308,7 +308,7 @@ class _ManageLibraryView extends StatelessWidget {
                                     if (name == null) return;
                                     if (!context.mounted) return;
                                     await context
-                                        .read<JournalManageLibraryCubit>()
+                                        .read<JournalManageLibraryBloc>()
                                         .renameGroup(group: g, name: name);
                                   },
                             icon: const Icon(Icons.edit_outlined),
@@ -318,7 +318,7 @@ class _ManageLibraryView extends StatelessWidget {
                             onPressed: isSaving
                                 ? null
                                 : () => context
-                                      .read<JournalManageLibraryCubit>()
+                                      .read<JournalManageLibraryBloc>()
                                       .deleteGroup(g),
                             icon: const Icon(Icons.delete_outline),
                           ),
@@ -365,7 +365,7 @@ class _ManageLibraryView extends StatelessWidget {
                                             ? null
                                             : (v) => context
                                                   .read<
-                                                    JournalManageLibraryCubit
+                                                    JournalManageLibraryBloc
                                                   >()
                                                   .setTrackerActive(
                                                     def: d,
@@ -379,13 +379,13 @@ class _ManageLibraryView extends StatelessWidget {
                                             : () async {
                                                 final name =
                                                     await showRenameTrackerBottomSheet(
-                                                  d.name,
-                                                );
+                                                      d.name,
+                                                    );
                                                 if (name == null) return;
                                                 if (!context.mounted) return;
                                                 await context
                                                     .read<
-                                                      JournalManageLibraryCubit
+                                                      JournalManageLibraryBloc
                                                     >()
                                                     .renameTracker(
                                                       def: d,
@@ -428,7 +428,7 @@ class _ManageLibraryView extends StatelessWidget {
                                                   ? null
                                                   : (v) => context
                                                         .read<
-                                                          JournalManageLibraryCubit
+                                                          JournalManageLibraryBloc
                                                         >()
                                                         .moveTrackerToGroup(
                                                           def: d,
@@ -447,7 +447,7 @@ class _ManageLibraryView extends StatelessWidget {
                                             ? null
                                             : () => context
                                                   .read<
-                                                    JournalManageLibraryCubit
+                                                    JournalManageLibraryBloc
                                                   >()
                                                   .reorderTrackersWithinGroup(
                                                     trackerId: d.id,
@@ -462,7 +462,7 @@ class _ManageLibraryView extends StatelessWidget {
                                             ? null
                                             : () => context
                                                   .read<
-                                                    JournalManageLibraryCubit
+                                                    JournalManageLibraryBloc
                                                   >()
                                                   .reorderTrackersWithinGroup(
                                                     trackerId: d.id,

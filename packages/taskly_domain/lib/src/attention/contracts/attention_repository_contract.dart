@@ -20,11 +20,16 @@ abstract class AttentionRepositoryContract {
   Future<AttentionRule?> getRuleByKey(String ruleKey);
 
   Future<void> upsertRule(AttentionRule rule);
-  Future<void> updateRuleActive(String ruleId, bool active);
+  Future<void> updateRuleActive(
+    String ruleId,
+    bool active, {
+    OperationContext? context,
+  });
   Future<void> updateRuleEvaluatorParams(
     String ruleId,
-    Map<String, dynamic> evaluatorParams,
-  );
+    Map<String, dynamic> evaluatorParams, {
+    OperationContext? context,
+  });
   Future<void> updateRuleSeverity(String ruleId, AttentionSeverity severity);
   Future<void> deleteRule(String ruleId);
 

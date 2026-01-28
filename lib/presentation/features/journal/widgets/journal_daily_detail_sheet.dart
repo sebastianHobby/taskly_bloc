@@ -24,7 +24,7 @@ class JournalDailyDetailSheet extends StatelessWidget {
       useSafeArea: true,
       builder: (context) {
         return BlocProvider<JournalDailyEditBloc>(
-            create: (context) =>
+          create: (context) =>
               JournalDailyEditBloc(
                 repository: context.read<JournalRepositoryContract>(),
                 errorReporter: context.read<AppErrorReporter>(),
@@ -179,7 +179,6 @@ class JournalDailyDetailSheet extends StatelessWidget {
                 final delta = v - intValue;
                 if (delta != 0) addDelta(delta);
               },
-              onClear: () => setValue(null),
             );
           }
 

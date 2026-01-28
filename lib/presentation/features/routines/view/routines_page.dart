@@ -14,10 +14,12 @@ import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.d
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -40,6 +42,8 @@ class RoutinesPage extends StatelessWidget {
         sessionDayKeyService: context.read<SessionDayKeyService>(),
         errorReporter: context.read<AppErrorReporter>(),
         sharedDataService: context.read<SessionSharedDataService>(),
+        routineWriteService: context.read<RoutineWriteService>(),
+        nowService: context.read<NowService>(),
       )..add(const RoutineListEvent.subscriptionRequested()),
       child: Builder(
         builder: (context) {
@@ -97,6 +101,9 @@ class RoutinesPage extends StatelessWidget {
                       values: values,
                       selectedValueId: selectedValueId,
                       onEditRoutine: (id) => _editRoutine(context, id),
+                      onLogRoutine: (id) => context.read<RoutineListBloc>().add(
+                        RoutineListEvent.logRequested(routineId: id),
+                      ),
                       onValueSelected: (valueId) {
                         context.read<RoutineListBloc>().add(
                           RoutineListEvent.valueFilterChanged(valueId: valueId),
@@ -119,6 +126,7 @@ class _RoutinesFilterLayout extends StatelessWidget {
     required this.values,
     required this.selectedValueId,
     required this.onEditRoutine,
+    required this.onLogRoutine,
     required this.onValueSelected,
   });
 
@@ -126,6 +134,7 @@ class _RoutinesFilterLayout extends StatelessWidget {
   final List<Value> values;
   final String? selectedValueId;
   final ValueChanged<String> onEditRoutine;
+  final ValueChanged<String> onLogRoutine;
   final ValueChanged<String?> onValueSelected;
 
   @override
@@ -146,6 +155,7 @@ class _RoutinesFilterLayout extends StatelessWidget {
           child: RoutinesListView(
             items: filtered,
             onEditRoutine: onEditRoutine,
+            onLogRoutine: onLogRoutine,
           ),
         ),
       ],

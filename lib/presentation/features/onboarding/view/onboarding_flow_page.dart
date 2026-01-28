@@ -1166,8 +1166,6 @@ class _RoutineSampleTile extends StatelessWidget {
         targetLabel: '3x/week',
         remainingLabel: '2 left',
         windowLabel: '4 days left',
-        statusLabel: 'On track',
-        statusTone: TasklyRoutineStatusTone.onPace,
         valueChip: ValueChipData(
           label: 'Health',
           icon: Icons.favorite_rounded,

@@ -76,8 +76,7 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
           if (step == 2) {
             if (state.measurement == null) return false;
             if (state.measurement == JournalTrackerMeasurementType.choice) {
-              return state.choiceLabels
-                  .any((label) => label.trim().isNotEmpty);
+              return state.choiceLabels.any((label) => label.trim().isNotEmpty);
             }
             return true;
           }
@@ -95,22 +94,22 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                       Navigator.of(context).pop();
                       return;
                     }
-                    context
-                        .read<JournalTrackerWizardBloc>()
-                        .add(JournalTrackerWizardStepChanged(step - 1));
+                    context.read<JournalTrackerWizardBloc>().add(
+                      JournalTrackerWizardStepChanged(step - 1),
+                    );
                   },
             onStepContinue: isSaving
                 ? null
                 : () {
                     if (!canContinue()) return;
                     if (step < 2) {
-                      context
-                          .read<JournalTrackerWizardBloc>()
-                          .add(JournalTrackerWizardStepChanged(step + 1));
+                      context.read<JournalTrackerWizardBloc>().add(
+                        JournalTrackerWizardStepChanged(step + 1),
+                      );
                     } else {
-                      context
-                          .read<JournalTrackerWizardBloc>()
-                          .add(const JournalTrackerWizardSaveRequested());
+                      context.read<JournalTrackerWizardBloc>().add(
+                        const JournalTrackerWizardSaveRequested(),
+                      );
                     }
                   },
             controlsBuilder: (context, details) {
@@ -193,9 +192,8 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                       groupValue: state.scope,
                       onChanged: isSaving
                           ? null
-                          : (value) => context
-                                .read<JournalTrackerWizardBloc>()
-                                .add(
+                          : (value) =>
+                                context.read<JournalTrackerWizardBloc>().add(
                                   JournalTrackerWizardScopeChanged(value!),
                                 ),
                       title: const Text('Daily total'),
@@ -208,9 +206,8 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                       groupValue: state.scope,
                       onChanged: isSaving
                           ? null
-                          : (value) => context
-                                .read<JournalTrackerWizardBloc>()
-                                .add(
+                          : (value) =>
+                                context.read<JournalTrackerWizardBloc>().add(
                                   JournalTrackerWizardScopeChanged(value!),
                                 ),
                       title: const Text('Momentary'),
@@ -223,9 +220,8 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                       groupValue: state.scope,
                       onChanged: isSaving
                           ? null
-                          : (value) => context
-                                .read<JournalTrackerWizardBloc>()
-                                .add(
+                          : (value) =>
+                                context.read<JournalTrackerWizardBloc>().add(
                                   JournalTrackerWizardScopeChanged(value!),
                                 ),
                       title: const Text('Sleep / night'),
@@ -250,13 +246,11 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                           JournalTrackerMeasurementType.toggle,
                       onTap: isSaving
                           ? null
-                          : () => context
-                                .read<JournalTrackerWizardBloc>()
-                                .add(
-                                  const JournalTrackerWizardMeasurementChanged(
-                                    JournalTrackerMeasurementType.toggle,
-                                  ),
-                                ),
+                          : () => context.read<JournalTrackerWizardBloc>().add(
+                              const JournalTrackerWizardMeasurementChanged(
+                                JournalTrackerMeasurementType.toggle,
+                              ),
+                            ),
                     ),
                     _MeasurementOption(
                       title: 'Rating',
@@ -266,13 +260,11 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                           JournalTrackerMeasurementType.rating,
                       onTap: isSaving
                           ? null
-                          : () => context
-                                .read<JournalTrackerWizardBloc>()
-                                .add(
-                                  const JournalTrackerWizardMeasurementChanged(
-                                    JournalTrackerMeasurementType.rating,
-                                  ),
-                                ),
+                          : () => context.read<JournalTrackerWizardBloc>().add(
+                              const JournalTrackerWizardMeasurementChanged(
+                                JournalTrackerMeasurementType.rating,
+                              ),
+                            ),
                     ),
                     _MeasurementOption(
                       title: 'Quantity',
@@ -284,30 +276,25 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                           JournalTrackerMeasurementType.quantity,
                       onTap: isSaving
                           ? null
-                          : () => context
-                                .read<JournalTrackerWizardBloc>()
-                                .add(
-                                  const JournalTrackerWizardMeasurementChanged(
-                                    JournalTrackerMeasurementType.quantity,
-                                  ),
-                                ),
+                          : () => context.read<JournalTrackerWizardBloc>().add(
+                              const JournalTrackerWizardMeasurementChanged(
+                                JournalTrackerMeasurementType.quantity,
+                              ),
+                            ),
                     ),
                     _MeasurementOption(
                       title: 'Choice',
-                      subtitle:
-                          'Stats compare outcomes by option (per event).',
+                      subtitle: 'Stats compare outcomes by option (per event).',
                       selected:
                           state.measurement ==
                           JournalTrackerMeasurementType.choice,
                       onTap: isSaving
                           ? null
-                          : () => context
-                                .read<JournalTrackerWizardBloc>()
-                                .add(
-                                  const JournalTrackerWizardMeasurementChanged(
-                                    JournalTrackerMeasurementType.choice,
-                                  ),
-                                ),
+                          : () => context.read<JournalTrackerWizardBloc>().add(
+                              const JournalTrackerWizardMeasurementChanged(
+                                JournalTrackerMeasurementType.choice,
+                              ),
+                            ),
                     ),
                     SizedBox(height: tokens.spaceSm),
                     if (state.measurement ==
@@ -317,9 +304,8 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                         max: state.ratingMax,
                         step: state.ratingStep,
                         enabled: !isSaving,
-                        onChanged: (min, max, step) => context
-                            .read<JournalTrackerWizardBloc>()
-                            .add(
+                        onChanged: (min, max, step) =>
+                            context.read<JournalTrackerWizardBloc>().add(
                               JournalTrackerWizardRatingConfigChanged(
                                 min: min,
                                 max: max,
@@ -335,9 +321,8 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                         max: state.quantityMax,
                         step: state.quantityStep,
                         enabled: !isSaving,
-                        onChanged: (unit, min, max, step) => context
-                            .read<JournalTrackerWizardBloc>()
-                            .add(
+                        onChanged: (unit, min, max, step) =>
+                            context.read<JournalTrackerWizardBloc>().add(
                               JournalTrackerWizardQuantityConfigChanged(
                                 unit: unit,
                                 min: min,
@@ -358,9 +343,8 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                         onRemove: (index) => context
                             .read<JournalTrackerWizardBloc>()
                             .add(JournalTrackerWizardChoiceRemoved(index)),
-                        onUpdate: (index, label) => context
-                            .read<JournalTrackerWizardBloc>()
-                            .add(
+                        onUpdate: (index, label) =>
+                            context.read<JournalTrackerWizardBloc>().add(
                               JournalTrackerWizardChoiceUpdated(
                                 index: index,
                                 label: label,
@@ -433,19 +417,19 @@ class _RatingConfigForm extends StatelessWidget {
           label: 'Min',
           value: min,
           enabled: enabled,
-          onChanged: (value) => onChanged(value, max, step),
+          onChanged: (value) => onChanged(value ?? min, max, step),
         ),
         _NumberField(
           label: 'Max',
           value: max,
           enabled: enabled,
-          onChanged: (value) => onChanged(min, value, step),
+          onChanged: (value) => onChanged(min, value ?? max, step),
         ),
         _NumberField(
           label: 'Step',
           value: step,
           enabled: enabled,
-          onChanged: (value) => onChanged(min, max, value),
+          onChanged: (value) => onChanged(min, max, value ?? step),
         ),
       ],
     );
@@ -474,6 +458,7 @@ class _QuantityConfigForm extends StatelessWidget {
     return Column(
       children: [
         TextField(
+          controller: TextEditingController(text: unit),
           decoration: const InputDecoration(labelText: 'Unit (optional)'),
           enabled: enabled,
           onChanged: (value) => onChanged(value, min, max, step),
@@ -494,7 +479,7 @@ class _QuantityConfigForm extends StatelessWidget {
           label: 'Step',
           value: step,
           enabled: enabled,
-          onChanged: (value) => onChanged(unit, min, max, value),
+          onChanged: (value) => onChanged(unit, min, max, value ?? step),
         ),
       ],
     );

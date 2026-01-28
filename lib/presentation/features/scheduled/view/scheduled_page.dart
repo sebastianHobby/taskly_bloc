@@ -11,7 +11,7 @@ import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
-import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
@@ -44,7 +44,7 @@ class ScheduledPage extends StatelessWidget {
             scope: scope,
           ),
         ),
-        BlocProvider(create: (_) => SelectionCubit()),
+        BlocProvider(create: (_) => SelectionBloc()),
       ],
       child: _ScheduledTimelineView(scope: scope),
     );
@@ -362,9 +362,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
       (occurrencesByDay[d] ??= <ScheduledOccurrence>[]).add(o);
     }
 
-    return BlocBuilder<SelectionCubit, SelectionState>(
+    return BlocBuilder<SelectionBloc, SelectionState>(
       builder: (context, selectionState) {
-        final selection = context.read<SelectionCubit>();
+        final selection = context.read<SelectionBloc>();
 
         final visibleEntities = <SelectionEntityMeta>[];
 
@@ -632,7 +632,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     ScheduledOccurrence occurrence, {
     required SelectionState selectionState,
   }) {
-    final selection = context.read<SelectionCubit>();
+    final selection = context.read<SelectionBloc>();
 
     if (occurrence.isTask && occurrence.task != null) {
       final task = occurrence.task!;

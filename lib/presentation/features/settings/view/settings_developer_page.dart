@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
-import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/services.dart';
@@ -15,8 +15,8 @@ class SettingsDeveloperPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<SettingsMaintenanceCubit>(
-      create: (context) => SettingsMaintenanceCubit(
+    return BlocProvider<SettingsMaintenanceBloc>(
+      create: (context) => SettingsMaintenanceBloc(
         templateDataService: context.read<TemplateDataService>(),
       ),
       child: Scaffold(
@@ -87,7 +87,7 @@ class _GenerateTemplateDataItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<SettingsMaintenanceCubit, SettingsMaintenanceState>(
+    return BlocListener<SettingsMaintenanceBloc, SettingsMaintenanceState>(
       listenWhen: (prev, next) =>
           prev.status.runtimeType != next.status.runtimeType,
       listener: (context, state) {
@@ -169,6 +169,6 @@ class _GenerateTemplateDataItem extends StatelessWidget {
     );
 
     if (!(confirmed ?? false) || !context.mounted) return;
-    await context.read<SettingsMaintenanceCubit>().generateTemplateData();
+    await context.read<SettingsMaintenanceBloc>().generateTemplateData();
   }
 }

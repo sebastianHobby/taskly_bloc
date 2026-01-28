@@ -10,8 +10,8 @@ class DateDisplayUtils {
   /// Checks if the given due date is overdue (before today).
   static bool isOverdue(
     DateTime? deadline, {
-    bool isCompleted = false,
     required DateTime now,
+    bool isCompleted = false,
   }) {
     if (deadline == null || isCompleted) return false;
     final today = DateTime(now.year, now.month, now.day);
@@ -22,8 +22,8 @@ class DateDisplayUtils {
   /// Checks if the given due date is today.
   static bool isDueToday(
     DateTime? deadline, {
-    bool isCompleted = false,
     required DateTime now,
+    bool isCompleted = false,
   }) {
     if (deadline == null || isCompleted) return false;
     final today = DateTime(now.year, now.month, now.day);
@@ -34,9 +34,9 @@ class DateDisplayUtils {
   /// Checks if the given due date is within the next few days.
   static bool isDueSoon(
     DateTime? deadline, {
+    required DateTime now,
     bool isCompleted = false,
     int withinDays = 3,
-    required DateTime now,
   }) {
     if (deadline == null || isCompleted) return false;
     final today = DateTime(now.year, now.month, now.day);

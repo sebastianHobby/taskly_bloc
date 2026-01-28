@@ -16,7 +16,12 @@ class WeeklyReviewConfig {
     required this.showDeadlineRisk,
     required this.showDueSoonUnderControl,
     required this.showStaleItems,
+    required this.taskStaleThresholdDays,
+    required this.projectIdleThresholdDays,
+    required this.deadlineRiskDueWithinDays,
+    required this.deadlineRiskMinUnscheduledCount,
     required this.showMissingNextActions,
+    required this.missingNextActionsMinOpenTasks,
     required this.showFrequentSnoozed,
   });
 
@@ -29,7 +34,14 @@ class WeeklyReviewConfig {
       showDeadlineRisk: settings.maintenanceDeadlineRiskEnabled,
       showDueSoonUnderControl: settings.maintenanceDueSoonEnabled,
       showStaleItems: settings.maintenanceStaleEnabled,
+      taskStaleThresholdDays: settings.maintenanceTaskStaleThresholdDays,
+      projectIdleThresholdDays: settings.maintenanceProjectIdleThresholdDays,
+      deadlineRiskDueWithinDays: settings.maintenanceDeadlineRiskDueWithinDays,
+      deadlineRiskMinUnscheduledCount:
+          settings.maintenanceDeadlineRiskMinUnscheduledCount,
       showMissingNextActions: settings.maintenanceMissingNextActionsEnabled,
+      missingNextActionsMinOpenTasks:
+          settings.maintenanceMissingNextActionsMinOpenTasks,
       showFrequentSnoozed: settings.maintenanceFrequentSnoozedEnabled,
     );
   }
@@ -41,7 +53,12 @@ class WeeklyReviewConfig {
   final bool showDeadlineRisk;
   final bool showDueSoonUnderControl;
   final bool showStaleItems;
+  final int taskStaleThresholdDays;
+  final int projectIdleThresholdDays;
+  final int deadlineRiskDueWithinDays;
+  final int deadlineRiskMinUnscheduledCount;
   final bool showMissingNextActions;
+  final int missingNextActionsMinOpenTasks;
   final bool showFrequentSnoozed;
 }
 
@@ -358,7 +375,9 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
           id: 'stale-items',
           title: 'Stale Tasks & Projects',
           emptyMessage: 'No stale items right now.',
-          items: staleItems.map(_mapStaleItem).toList(growable: false),
+          items: staleItems
+              .map((item) => _mapStaleItem(item, config))
+              .toList(growable: false),
         ),
       );
     }
@@ -514,16 +533,23 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     );
   }
 
-  WeeklyReviewMaintenanceItem _mapStaleItem(AttentionItem item) {
+  WeeklyReviewMaintenanceItem _mapStaleItem(
+    AttentionItem item,
+    WeeklyReviewConfig config,
+  ) {
     final name =
         item.metadata?['task_name'] as String? ??
         item.metadata?['project_name'] as String? ??
         item.metadata?['entity_display_name'] as String? ??
         'Item';
 
+    final thresholdDays = item.ruleKey == 'problem_task_stale'
+        ? config.taskStaleThresholdDays
+        : config.projectIdleThresholdDays;
+
     return WeeklyReviewMaintenanceItem(
       title: name,
-      description: 'No activity in 30 days.',
+      description: 'No activity in $thresholdDays days.',
     );
   }
 

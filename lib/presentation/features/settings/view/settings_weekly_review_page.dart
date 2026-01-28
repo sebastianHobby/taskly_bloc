@@ -361,6 +361,11 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = settings.maintenanceEnabled;
+    final showDeadlineParams =
+        enabled && settings.maintenanceDeadlineRiskEnabled;
+    final showStaleParams = enabled && settings.maintenanceStaleEnabled;
+    final showMissingNextActionsParams =
+        enabled && settings.maintenanceMissingNextActionsEnabled;
 
     return Column(
       children: [
@@ -398,6 +403,47 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
                       );
                     },
                   ),
+                  if (showDeadlineParams)
+                    _RuleParamsSection(
+                      children: [
+                        _RuleSlider(
+                          label: 'Due within',
+                          value: settings.maintenanceDeadlineRiskDueWithinDays,
+                          min: GlobalSettings
+                              .maintenanceDeadlineRiskDueWithinDaysMin,
+                          max: GlobalSettings
+                              .maintenanceDeadlineRiskDueWithinDaysMax,
+                          valueLabel:
+                              '${settings.maintenanceDeadlineRiskDueWithinDays} days',
+                          onChanged: (value) {
+                            context.read<GlobalSettingsBloc>().add(
+                              GlobalSettingsEvent.maintenanceDeadlineRiskDueWithinDaysChanged(
+                                value,
+                              ),
+                            );
+                          },
+                        ),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
+                        _RuleSlider(
+                          label: 'Unscheduled tasks',
+                          value: settings
+                              .maintenanceDeadlineRiskMinUnscheduledCount,
+                          min: GlobalSettings
+                              .maintenanceDeadlineRiskMinUnscheduledCountMin,
+                          max: GlobalSettings
+                              .maintenanceDeadlineRiskMinUnscheduledCountMax,
+                          valueLabel:
+                              '${settings.maintenanceDeadlineRiskMinUnscheduledCount} tasks',
+                          onChanged: (value) {
+                            context.read<GlobalSettingsBloc>().add(
+                              GlobalSettingsEvent.maintenanceDeadlineRiskMinUnscheduledCountChanged(
+                                value,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   SwitchListTile.adaptive(
                     title: const Text('Due soon (under control)'),
                     value: settings.maintenanceDueSoonEnabled,
@@ -416,6 +462,42 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
                       );
                     },
                   ),
+                  if (showStaleParams)
+                    _RuleParamsSection(
+                      children: [
+                        _RuleSlider(
+                          label: 'Task stale after',
+                          value: settings.maintenanceTaskStaleThresholdDays,
+                          min: GlobalSettings.maintenanceStaleThresholdDaysMin,
+                          max: GlobalSettings.maintenanceStaleThresholdDaysMax,
+                          valueLabel:
+                              '${settings.maintenanceTaskStaleThresholdDays} days',
+                          onChanged: (value) {
+                            context.read<GlobalSettingsBloc>().add(
+                              GlobalSettingsEvent.maintenanceTaskStaleThresholdDaysChanged(
+                                value,
+                              ),
+                            );
+                          },
+                        ),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
+                        _RuleSlider(
+                          label: 'Project idle after',
+                          value: settings.maintenanceProjectIdleThresholdDays,
+                          min: GlobalSettings.maintenanceStaleThresholdDaysMin,
+                          max: GlobalSettings.maintenanceStaleThresholdDaysMax,
+                          valueLabel:
+                              '${settings.maintenanceProjectIdleThresholdDays} days',
+                          onChanged: (value) {
+                            context.read<GlobalSettingsBloc>().add(
+                              GlobalSettingsEvent.maintenanceProjectIdleThresholdDaysChanged(
+                                value,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   SwitchListTile.adaptive(
                     title: const Text('Missing next actions'),
                     value: settings.maintenanceMissingNextActionsEnabled,
@@ -427,6 +509,29 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
                       );
                     },
                   ),
+                  if (showMissingNextActionsParams)
+                    _RuleParamsSection(
+                      children: [
+                        _RuleSlider(
+                          label: 'Minimum open tasks',
+                          value: settings
+                              .maintenanceMissingNextActionsMinOpenTasks,
+                          min: GlobalSettings
+                              .maintenanceMissingNextActionsMinOpenTasksMin,
+                          max: GlobalSettings
+                              .maintenanceMissingNextActionsMinOpenTasksMax,
+                          valueLabel:
+                              '${settings.maintenanceMissingNextActionsMinOpenTasks} tasks',
+                          onChanged: (value) {
+                            context.read<GlobalSettingsBloc>().add(
+                              GlobalSettingsEvent.maintenanceMissingNextActionsMinOpenTasksChanged(
+                                value,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   SwitchListTile.adaptive(
                     title: const Text('Frequently snoozed tasks'),
                     value: settings.maintenanceFrequentSnoozedEnabled,
@@ -442,6 +547,77 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RuleParamsSection extends StatelessWidget {
+  const _RuleParamsSection({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        0,
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceSm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+}
+
+class _RuleSlider extends StatelessWidget {
+  const _RuleSlider({
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.valueLabel,
+    required this.onChanged,
+  });
+
+  final String label;
+  final int value;
+  final int min;
+  final int max;
+  final String valueLabel;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            Text(
+              valueLabel,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ],
+        ),
+        Slider(
+          value: value.clamp(min, max).toDouble(),
+          min: min.toDouble(),
+          max: max.toDouble(),
+          divisions: max - min,
+          label: valueLabel,
+          onChanged: (next) => onChanged(next.round()),
         ),
       ],
     );

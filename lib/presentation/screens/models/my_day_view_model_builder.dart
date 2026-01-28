@@ -7,7 +7,6 @@ import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 
 import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
-import 'package:taskly_bloc/presentation/shared/utils/routine_day_policy.dart';
 
 final class MyDayViewModelBuilder {
   const MyDayViewModelBuilder();
@@ -63,10 +62,9 @@ final class MyDayViewModelBuilder {
           completions: routineCompletions,
           skips: routineSkips,
         );
-        final policy = evaluateRoutineDayPolicy(
+        final completionsInPeriod = _completionsForPeriod(
           routine: routine,
           snapshot: snapshot,
-          dayKeyUtc: dayPicks.dayKeyUtc,
           completions: routineCompletions,
         );
         final completedToday = routineCompletions.any(
@@ -80,11 +78,11 @@ final class MyDayViewModelBuilder {
           MyDayPlannedItem.routine(
             routine: routine,
             routineSnapshot: snapshot,
+            completionsInPeriod: completionsInPeriod,
             bucket: pick.bucket,
             sortIndex: pick.sortIndex,
             qualifyingValueId: pick.qualifyingValueId ?? routine.valueId,
             completed: completedToday,
-            isCatchUpDay: policy.isCatchUpDay,
           ),
         );
         continue;
@@ -165,6 +163,25 @@ final class MyDayViewModelBuilder {
       todaySelectedTaskIds: todaySelectedTaskIds,
       todaySelectedRoutineIds: selectedRoutineIds,
     );
+  }
+
+  List<RoutineCompletion> _completionsForPeriod({
+    required Routine routine,
+    required RoutineCadenceSnapshot snapshot,
+    required List<RoutineCompletion> completions,
+  }) {
+    final periodStart = dateOnly(snapshot.periodStartUtc);
+    final periodEnd = dateOnly(snapshot.periodEndUtc);
+    final filtered = <RoutineCompletion>[];
+
+    for (final completion in completions) {
+      if (completion.routineId != routine.id) continue;
+      final day = dateOnly(completion.completedAtUtc);
+      if (day.isBefore(periodStart) || day.isAfter(periodEnd)) continue;
+      filtered.add(completion);
+    }
+
+    return filtered;
   }
 
   MyDayViewModel _buildViewModel({

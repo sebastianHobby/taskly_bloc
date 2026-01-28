@@ -37,6 +37,7 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'routines',
       'journal',
       'values',
+      'statistics',
       'settings',
     ];
 
@@ -47,6 +48,7 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'routines': 'Routines',
       'journal': 'Journal',
       'values': 'Values',
+      'statistics': 'Stats',
       'settings': 'Settings',
     };
 
@@ -57,6 +59,7 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'journal': 3,
       'routines': 4,
       'values': 5,
+      'statistics': 6,
       'settings': 100,
     };
 

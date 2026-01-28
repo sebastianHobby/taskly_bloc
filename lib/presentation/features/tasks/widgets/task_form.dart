@@ -481,6 +481,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     final colorScheme = theme.colorScheme;
     final isCompact = _isCompact(context);
     final isCreating = widget.initialData == null;
+    final now = context.read<NowService>().nowLocal();
 
     final availableValuesById = <String, Value>{
       for (final v in widget.availableValues) v.id: v,

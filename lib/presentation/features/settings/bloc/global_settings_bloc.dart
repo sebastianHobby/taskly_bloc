@@ -118,6 +118,16 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
     bool enabled,
   ) = GlobalSettingsMaintenanceDeadlineRiskChanged;
 
+  /// User adjusted deadline risk due-within days.
+  const factory GlobalSettingsEvent.maintenanceDeadlineRiskDueWithinDaysChanged(
+    int days,
+  ) = GlobalSettingsMaintenanceDeadlineRiskDueWithinDaysChanged;
+
+  /// User adjusted deadline risk minimum unscheduled task count.
+  const factory GlobalSettingsEvent.maintenanceDeadlineRiskMinUnscheduledCountChanged(
+    int count,
+  ) = GlobalSettingsMaintenanceDeadlineRiskMinUnscheduledCountChanged;
+
   /// User toggled due soon maintenance.
   const factory GlobalSettingsEvent.maintenanceDueSoonChanged(bool enabled) =
       GlobalSettingsMaintenanceDueSoonChanged;
@@ -125,6 +135,16 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
   /// User toggled stale items maintenance.
   const factory GlobalSettingsEvent.maintenanceStaleChanged(bool enabled) =
       GlobalSettingsMaintenanceStaleChanged;
+
+  /// User adjusted task stale threshold days.
+  const factory GlobalSettingsEvent.maintenanceTaskStaleThresholdDaysChanged(
+    int days,
+  ) = GlobalSettingsMaintenanceTaskStaleThresholdDaysChanged;
+
+  /// User adjusted project idle threshold days.
+  const factory GlobalSettingsEvent.maintenanceProjectIdleThresholdDaysChanged(
+    int days,
+  ) = GlobalSettingsMaintenanceProjectIdleThresholdDaysChanged;
 
   /// User toggled frequent snoozed maintenance.
   const factory GlobalSettingsEvent.maintenanceFrequentSnoozedChanged(
@@ -135,6 +155,11 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
   const factory GlobalSettingsEvent.maintenanceMissingNextActionsChanged(
     bool enabled,
   ) = GlobalSettingsMaintenanceMissingNextActionsChanged;
+
+  /// User adjusted missing next actions minimum open tasks.
+  const factory GlobalSettingsEvent.maintenanceMissingNextActionsMinOpenTasksChanged(
+    int count,
+  ) = GlobalSettingsMaintenanceMissingNextActionsMinOpenTasksChanged;
 
   /// User completed weekly review.
   const factory GlobalSettingsEvent.weeklyReviewCompleted(
@@ -190,6 +215,7 @@ sealed class GlobalSettingsState with _$GlobalSettingsState {
 ///   lazy: false,
 ///   create: (_) => GlobalSettingsBloc(
 ///     settingsRepository: getIt<SettingsRepositoryContract>(),
+///     attentionRepository: getIt<AttentionRepositoryContract>(),
 ///   )..add(const GlobalSettingsEvent.started()),
 /// )
 /// ```
@@ -209,9 +235,11 @@ class GlobalSettingsBloc
     extends Bloc<GlobalSettingsEvent, GlobalSettingsState> {
   GlobalSettingsBloc({
     required SettingsRepositoryContract settingsRepository,
+    required AttentionRepositoryContract attentionRepository,
     required NowService nowService,
     required AppErrorReporter errorReporter,
   }) : _settingsRepository = settingsRepository,
+       _attentionRepository = attentionRepository,
        _nowService = nowService,
        _errorReporter = errorReporter,
        super(const GlobalSettingsState()) {
@@ -293,6 +321,14 @@ class GlobalSettingsBloc
       _onMaintenanceDeadlineRiskChanged,
       transformer: sequential(),
     );
+    on<GlobalSettingsMaintenanceDeadlineRiskDueWithinDaysChanged>(
+      _onMaintenanceDeadlineRiskDueWithinDaysChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMaintenanceDeadlineRiskMinUnscheduledCountChanged>(
+      _onMaintenanceDeadlineRiskMinUnscheduledCountChanged,
+      transformer: sequential(),
+    );
     on<GlobalSettingsMaintenanceDueSoonChanged>(
       _onMaintenanceDueSoonChanged,
       transformer: sequential(),
@@ -301,12 +337,24 @@ class GlobalSettingsBloc
       _onMaintenanceStaleChanged,
       transformer: sequential(),
     );
+    on<GlobalSettingsMaintenanceTaskStaleThresholdDaysChanged>(
+      _onMaintenanceTaskStaleThresholdDaysChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMaintenanceProjectIdleThresholdDaysChanged>(
+      _onMaintenanceProjectIdleThresholdDaysChanged,
+      transformer: sequential(),
+    );
     on<GlobalSettingsMaintenanceFrequentSnoozedChanged>(
       _onMaintenanceFrequentSnoozedChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsMaintenanceMissingNextActionsChanged>(
       _onMaintenanceMissingNextActionsChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMaintenanceMissingNextActionsMinOpenTasksChanged>(
+      _onMaintenanceMissingNextActionsMinOpenTasksChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsWeeklyReviewCompleted>(
@@ -324,6 +372,7 @@ class GlobalSettingsBloc
   }
 
   final SettingsRepositoryContract _settingsRepository;
+  final AttentionRepositoryContract _attentionRepository;
   final NowService _nowService;
   final AppErrorReporter _errorReporter;
   final OperationContextFactory _contextFactory =
@@ -861,10 +910,64 @@ class GlobalSettingsBloc
     final updated = state.settings.copyWith(
       maintenanceDeadlineRiskEnabled: event.enabled,
     );
-    await _persistSettings(
-      updated,
+    final context = _newContext(
       intent: 'settings_maintenance_deadline_risk_changed',
+      operation: 'settings.save.global',
       extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+    await _persistSettingsWithContext(updated, context: context);
+    await _updateAttentionRuleActive(
+      'problem_project_deadline_risk',
+      event.enabled,
+      context: context,
+    );
+  }
+
+  Future<void> _onMaintenanceDeadlineRiskDueWithinDaysChanged(
+    GlobalSettingsMaintenanceDeadlineRiskDueWithinDaysChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final clamped = event.days.clamp(
+      GlobalSettings.maintenanceDeadlineRiskDueWithinDaysMin,
+      GlobalSettings.maintenanceDeadlineRiskDueWithinDaysMax,
+    );
+    final updated = state.settings.copyWith(
+      maintenanceDeadlineRiskDueWithinDays: clamped,
+    );
+    final context = _newContext(
+      intent: 'settings_maintenance_deadline_risk_due_within_days_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'days': clamped},
+    );
+    await _persistSettingsWithContext(updated, context: context);
+    await _updateAttentionRuleParams(
+      'problem_project_deadline_risk',
+      <String, Object?>{'dueWithinDays': clamped},
+      context: context,
+    );
+  }
+
+  Future<void> _onMaintenanceDeadlineRiskMinUnscheduledCountChanged(
+    GlobalSettingsMaintenanceDeadlineRiskMinUnscheduledCountChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final clamped = event.count.clamp(
+      GlobalSettings.maintenanceDeadlineRiskMinUnscheduledCountMin,
+      GlobalSettings.maintenanceDeadlineRiskMinUnscheduledCountMax,
+    );
+    final updated = state.settings.copyWith(
+      maintenanceDeadlineRiskMinUnscheduledCount: clamped,
+    );
+    final context = _newContext(
+      intent: 'settings_maintenance_deadline_risk_min_unscheduled_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'count': clamped},
+    );
+    await _persistSettingsWithContext(updated, context: context);
+    await _updateAttentionRuleParams(
+      'problem_project_deadline_risk',
+      <String, Object?>{'minUnscheduledCount': clamped},
+      context: context,
     );
   }
 
@@ -889,10 +992,69 @@ class GlobalSettingsBloc
     final updated = state.settings.copyWith(
       maintenanceStaleEnabled: event.enabled,
     );
-    await _persistSettings(
-      updated,
+    final context = _newContext(
       intent: 'settings_maintenance_stale_changed',
+      operation: 'settings.save.global',
       extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+    await _persistSettingsWithContext(updated, context: context);
+    await _updateAttentionRuleActive(
+      'problem_task_stale',
+      event.enabled,
+      context: context,
+    );
+    await _updateAttentionRuleActive(
+      'problem_project_idle',
+      event.enabled,
+      context: context,
+    );
+  }
+
+  Future<void> _onMaintenanceTaskStaleThresholdDaysChanged(
+    GlobalSettingsMaintenanceTaskStaleThresholdDaysChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final clamped = event.days.clamp(
+      GlobalSettings.maintenanceStaleThresholdDaysMin,
+      GlobalSettings.maintenanceStaleThresholdDaysMax,
+    );
+    final updated = state.settings.copyWith(
+      maintenanceTaskStaleThresholdDays: clamped,
+    );
+    final context = _newContext(
+      intent: 'settings_maintenance_task_stale_threshold_days_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'days': clamped},
+    );
+    await _persistSettingsWithContext(updated, context: context);
+    await _updateAttentionRuleParams(
+      'problem_task_stale',
+      <String, Object?>{'thresholdDays': clamped},
+      context: context,
+    );
+  }
+
+  Future<void> _onMaintenanceProjectIdleThresholdDaysChanged(
+    GlobalSettingsMaintenanceProjectIdleThresholdDaysChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final clamped = event.days.clamp(
+      GlobalSettings.maintenanceStaleThresholdDaysMin,
+      GlobalSettings.maintenanceStaleThresholdDaysMax,
+    );
+    final updated = state.settings.copyWith(
+      maintenanceProjectIdleThresholdDays: clamped,
+    );
+    final context = _newContext(
+      intent: 'settings_maintenance_project_idle_threshold_days_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'days': clamped},
+    );
+    await _persistSettingsWithContext(updated, context: context);
+    await _updateAttentionRuleParams(
+      'problem_project_idle',
+      <String, Object?>{'thresholdDays': clamped},
+      context: context,
     );
   }
 
@@ -917,10 +1079,41 @@ class GlobalSettingsBloc
     final updated = state.settings.copyWith(
       maintenanceMissingNextActionsEnabled: event.enabled,
     );
-    await _persistSettings(
-      updated,
+    final context = _newContext(
       intent: 'settings_maintenance_missing_next_actions_changed',
+      operation: 'settings.save.global',
       extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+    await _persistSettingsWithContext(updated, context: context);
+    await _updateAttentionRuleActive(
+      'problem_project_missing_next_actions',
+      event.enabled,
+      context: context,
+    );
+  }
+
+  Future<void> _onMaintenanceMissingNextActionsMinOpenTasksChanged(
+    GlobalSettingsMaintenanceMissingNextActionsMinOpenTasksChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final clamped = event.count.clamp(
+      GlobalSettings.maintenanceMissingNextActionsMinOpenTasksMin,
+      GlobalSettings.maintenanceMissingNextActionsMinOpenTasksMax,
+    );
+    final updated = state.settings.copyWith(
+      maintenanceMissingNextActionsMinOpenTasks: clamped,
+    );
+    final context = _newContext(
+      intent:
+          'settings_maintenance_missing_next_actions_min_open_tasks_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'count': clamped},
+    );
+    await _persistSettingsWithContext(updated, context: context);
+    await _updateAttentionRuleParams(
+      'problem_project_missing_next_actions',
+      <String, Object?>{'minOpenTasks': clamped},
+      context: context,
     );
   }
 
@@ -940,6 +1133,97 @@ class GlobalSettingsBloc
     );
   }
 
+  Future<void> _updateAttentionRuleActive(
+    String ruleKey,
+    bool active, {
+    required OperationContext context,
+  }) async {
+    try {
+      final rule = await _attentionRepository.getRuleByKey(ruleKey);
+      if (rule == null) {
+        talker.warning(
+          '[GlobalSettingsBloc] Missing attention rule for key: $ruleKey',
+        );
+        return;
+      }
+
+      final ruleContext = context.copyWith(
+        operation: 'attention.rule.update_active',
+        extraFields: <String, Object?>{
+          ...context.extraFields,
+          'ruleKey': ruleKey,
+          'active': active,
+        },
+      );
+
+      await _attentionRepository.updateRuleActive(
+        rule.id,
+        active,
+        context: ruleContext,
+      );
+    } catch (e, st) {
+      talker.error(
+        '[settings.global] Attention rule active update FAILED',
+        e,
+        st,
+      );
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[GlobalSettingsBloc] attention rule active update failed',
+      );
+    }
+  }
+
+  Future<void> _updateAttentionRuleParams(
+    String ruleKey,
+    Map<String, Object?> updates, {
+    required OperationContext context,
+  }) async {
+    try {
+      final rule = await _attentionRepository.getRuleByKey(ruleKey);
+      if (rule == null) {
+        talker.warning(
+          '[GlobalSettingsBloc] Missing attention rule for key: $ruleKey',
+        );
+        return;
+      }
+
+      final merged = Map<String, dynamic>.from(rule.evaluatorParams);
+      for (final entry in updates.entries) {
+        merged[entry.key] = entry.value;
+      }
+
+      final ruleContext = context.copyWith(
+        operation: 'attention.rule.update_params',
+        extraFields: <String, Object?>{
+          ...context.extraFields,
+          'ruleKey': ruleKey,
+          ...updates,
+        },
+      );
+
+      await _attentionRepository.updateRuleEvaluatorParams(
+        rule.id,
+        merged,
+        context: ruleContext,
+      );
+    } catch (e, st) {
+      talker.error(
+        '[settings.global] Attention rule params update FAILED',
+        e,
+        st,
+      );
+      _reportIfUnexpectedOrUnmapped(
+        e,
+        st,
+        context: context,
+        message: '[GlobalSettingsBloc] attention rule params update failed',
+      );
+    }
+  }
+
   Future<void> _persistSettings(
     GlobalSettings updated, {
     required String intent,
@@ -950,6 +1234,13 @@ class GlobalSettingsBloc
       operation: 'settings.save.global',
       extraFields: extraFields,
     );
+    await _persistSettingsWithContext(updated, context: context);
+  }
+
+  Future<void> _persistSettingsWithContext(
+    GlobalSettings updated, {
+    required OperationContext context,
+  }) async {
     try {
       await _settingsRepository.save(
         SettingsKey.global,

@@ -10,11 +10,13 @@ class RoutinesListView extends StatelessWidget {
   const RoutinesListView({
     required this.items,
     required this.onEditRoutine,
+    required this.onLogRoutine,
     super.key,
   });
 
   final List<RoutineListItem> items;
   final ValueChanged<String> onEditRoutine;
+  final ValueChanged<String> onLogRoutine;
 
   @override
   Widget build(BuildContext context) {
@@ -54,19 +56,19 @@ class RoutinesListView extends StatelessWidget {
                   context,
                   routine: item.routine,
                   snapshot: item.snapshot,
-                  isCatchUpDay: item.isCatchUpDay,
                   showScheduleRow:
                       item.routine.routineType == RoutineType.weeklyFixed,
                   showProgress:
                       item.routine.routineType == RoutineType.weeklyFlexible ||
                       item.routine.routineType == RoutineType.monthlyFlexible,
+                  highlightCompleted: false,
                   dayKeyUtc: item.dayKeyUtc,
                   completionsInPeriod: item.completionsInPeriod,
-                  labels: buildRoutinePlanLabels(context),
+                  labels: buildRoutineExecutionLabels(context),
                 ),
                 actions: TasklyRoutineRowActions(
                   onTap: () => onEditRoutine(item.routine.id),
-                  onPrimaryAction: () => onEditRoutine(item.routine.id),
+                  onPrimaryAction: () => onLogRoutine(item.routine.id),
                 ),
               ),
           ],
@@ -87,19 +89,19 @@ class RoutinesListView extends StatelessWidget {
                   context,
                   routine: item.routine,
                   snapshot: item.snapshot,
-                  isCatchUpDay: item.isCatchUpDay,
                   showScheduleRow:
                       item.routine.routineType == RoutineType.weeklyFixed,
                   showProgress:
                       item.routine.routineType == RoutineType.weeklyFlexible ||
                       item.routine.routineType == RoutineType.monthlyFlexible,
+                  highlightCompleted: false,
                   dayKeyUtc: item.dayKeyUtc,
                   completionsInPeriod: item.completionsInPeriod,
-                  labels: buildRoutinePlanLabels(context),
+                  labels: buildRoutineExecutionLabels(context),
                 ),
                 actions: TasklyRoutineRowActions(
                   onTap: () => onEditRoutine(item.routine.id),
-                  onPrimaryAction: () => onEditRoutine(item.routine.id),
+                  onPrimaryAction: () => onLogRoutine(item.routine.id),
                 ),
               ),
           ],

@@ -33,25 +33,42 @@ class TaskStatsCalculator {
         : tasks;
 
     return switch (statType) {
-      TaskStatType.totalCount => _calculateTotalCount(relevantTasks),
-      TaskStatType.completedCount => _calculateCompletedCount(relevantTasks),
-      TaskStatType.completionRate => _calculateCompletionRate(relevantTasks),
+      TaskStatType.totalCount => _calculateTotalCount(
+        statType,
+        relevantTasks,
+      ),
+      TaskStatType.completedCount => _calculateCompletedCount(
+        statType,
+        relevantTasks,
+      ),
+      TaskStatType.completionRate => _calculateCompletionRate(
+        statType,
+        relevantTasks,
+      ),
       TaskStatType.staleCount => _calculateStaleCount(
+        statType,
         relevantTasks,
         nowUtc: nowUtc,
       ),
       TaskStatType.overdueCount => _calculateOverdueCount(
+        statType,
         relevantTasks,
         todayDayKeyUtc: todayDayKeyUtc,
       ),
       TaskStatType.avgDaysToComplete => _calculateAvgDaysToComplete(
+        statType,
         relevantTasks,
       ),
       TaskStatType.completedThisWeek => _calculateCompletedThisWeek(
+        statType,
         relevantTasks,
         todayDayKeyUtc: todayDayKeyUtc,
       ),
-      TaskStatType.velocity => _calculateVelocity(relevantTasks, range),
+      TaskStatType.velocity => _calculateVelocity(
+        statType,
+        relevantTasks,
+        range,
+      ),
     };
   }
 
@@ -71,45 +88,42 @@ class TaskStatsCalculator {
     return false;
   }
 
-  StatResult _calculateTotalCount(List<Task> tasks) {
+  StatResult _calculateTotalCount(TaskStatType statType, List<Task> tasks) {
     return StatResult(
-      label: 'Total Tasks',
+      statType: statType,
       value: tasks.length,
-      formattedValue: '${tasks.length}',
     );
   }
 
-  StatResult _calculateCompletedCount(List<Task> tasks) {
+  StatResult _calculateCompletedCount(TaskStatType statType, List<Task> tasks) {
     final completed = tasks.where((t) => t.completed).length;
     return StatResult(
-      label: 'Completed',
+      statType: statType,
       value: completed,
-      formattedValue: '$completed',
       severity: StatSeverity.positive,
     );
   }
 
-  StatResult _calculateCompletionRate(List<Task> tasks) {
+  StatResult _calculateCompletionRate(
+    TaskStatType statType,
+    List<Task> tasks,
+  ) {
     if (tasks.isEmpty) {
-      return const StatResult(
-        label: 'Completion Rate',
-        value: 0,
-        formattedValue: '0%',
-      );
+      return StatResult(statType: statType, value: 0);
     }
 
     final completed = tasks.where((t) => t.completed).length;
     final rate = completed / tasks.length * 100;
 
     return StatResult(
-      label: 'Completion Rate',
+      statType: statType,
       value: rate,
-      formattedValue: '${rate.toStringAsFixed(0)}%',
       severity: rate >= 70 ? StatSeverity.positive : StatSeverity.normal,
     );
   }
 
   StatResult _calculateStaleCount(
+    TaskStatType statType,
     List<Task> tasks, {
     required DateTime nowUtc,
   }) {
@@ -122,15 +136,15 @@ class TaskStatsCalculator {
     }).length;
 
     return StatResult(
-      label: 'Stale Tasks',
+      statType: statType,
       value: stale,
-      formattedValue: '$stale',
-      description: 'No activity for $staleThresholdDays+ days',
       severity: stale > 0 ? StatSeverity.warning : StatSeverity.normal,
+      metadata: <String, Object?>{'staleThresholdDays': staleThresholdDays},
     );
   }
 
   StatResult _calculateOverdueCount(
+    TaskStatType statType,
     List<Task> tasks, {
     required DateTime todayDayKeyUtc,
   }) {
@@ -141,24 +155,22 @@ class TaskStatsCalculator {
     }).length;
 
     return StatResult(
-      label: 'Overdue',
+      statType: statType,
       value: overdue,
-      formattedValue: '$overdue',
       severity: overdue > 0 ? StatSeverity.warning : StatSeverity.normal,
     );
   }
 
-  StatResult _calculateAvgDaysToComplete(List<Task> tasks) {
+  StatResult _calculateAvgDaysToComplete(
+    TaskStatType statType,
+    List<Task> tasks,
+  ) {
     final completedTasks = tasks
         .where((t) => t.completed && t.occurrence?.completedAt != null)
         .toList();
 
     if (completedTasks.isEmpty) {
-      return const StatResult(
-        label: 'Avg Days to Complete',
-        value: 0,
-        formattedValue: 'N/A',
-      );
+      return StatResult(statType: statType, value: 0);
     }
 
     final totalDays = completedTasks.fold<int>(0, (sum, task) {
@@ -170,13 +182,13 @@ class TaskStatsCalculator {
     final avg = totalDays / completedTasks.length;
 
     return StatResult(
-      label: 'Avg Days to Complete',
+      statType: statType,
       value: avg,
-      formattedValue: '${avg.toStringAsFixed(1)} days',
     );
   }
 
   StatResult _calculateCompletedThisWeek(
+    TaskStatType statType,
     List<Task> tasks, {
     required DateTime todayDayKeyUtc,
   }) {
@@ -194,39 +206,36 @@ class TaskStatsCalculator {
     }).length;
 
     return StatResult(
-      label: 'Completed This Week',
+      statType: statType,
       value: completed,
-      formattedValue: '$completed',
       severity: StatSeverity.positive,
     );
   }
 
-  StatResult _calculateVelocity(List<Task> tasks, DateRange? range) {
+  StatResult _calculateVelocity(
+    TaskStatType statType,
+    List<Task> tasks,
+    DateRange? range,
+  ) {
     final completedTasks = tasks.where((t) => t.completed).toList();
 
     if (completedTasks.isEmpty || range == null) {
-      return const StatResult(
-        label: 'Velocity',
-        value: 0,
-        formattedValue: '0 tasks/week',
-      );
+      return StatResult(statType: statType, value: 0);
     }
 
     final weeks = range.daysDifference / 7;
     if (weeks == 0) {
       return StatResult(
-        label: 'Velocity',
+        statType: statType,
         value: completedTasks.length,
-        formattedValue: '${completedTasks.length} tasks/week',
       );
     }
 
     final velocity = completedTasks.length / weeks;
 
     return StatResult(
-      label: 'Velocity',
+      statType: statType,
       value: velocity,
-      formattedValue: '${velocity.toStringAsFixed(1)} tasks/week',
     );
   }
 

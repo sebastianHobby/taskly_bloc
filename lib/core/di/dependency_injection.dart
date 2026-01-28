@@ -21,7 +21,7 @@ import 'package:taskly_bloc/core/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/allocation_settings_bloc.dart';
-import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_bloc.dart';
 import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
@@ -133,7 +133,7 @@ Future<void> setupDependencies() async {
     )
     ..registerLazySingleton<AppLifecycleService>(AppLifecycleService.new)
     ..registerLazySingleton<AppLifecycleEvents>(
-      () => getIt<AppLifecycleService>(),
+      getIt.get<AppLifecycleService>,
     )
     ..registerLazySingleton<TemporalTriggerService>(
       () => TemporalTriggerService(
@@ -382,8 +382,8 @@ Future<void> setupDependencies() async {
         nowService: getIt<NowService>(),
       ),
     )
-    ..registerFactory<SettingsMaintenanceCubit>(
-      () => SettingsMaintenanceCubit(
+    ..registerFactory<SettingsMaintenanceBloc>(
+      () => SettingsMaintenanceBloc(
         templateDataService: getIt<TemplateDataService>(),
       ),
     )

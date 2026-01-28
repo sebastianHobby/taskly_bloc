@@ -18,6 +18,7 @@ import 'package:taskly_bloc/presentation/features/routines/view/routines_page.da
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/values_page.dart';
+import 'package:taskly_bloc/presentation/features/statistics/view/statistics_dashboard_page.dart';
 import 'package:taskly_bloc/presentation/features/anytime/view/anytime_page.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_domain/taskly_domain.dart'
@@ -345,6 +346,10 @@ GoRouter createRouter({required bool forceOnboarding}) {
           GoRoute(
             path: Routing.screenPath('values'),
             builder: (_, __) => const ValuesPage(),
+          ),
+          GoRoute(
+            path: Routing.screenPath('statistics'),
+            builder: (_, __) => const StatisticsDashboardPage(),
           ),
           GoRoute(
             path: Routing.screenPath('settings'),

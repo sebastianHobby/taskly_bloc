@@ -449,6 +449,12 @@ sealed class TasklyValueRowPreset {
 
   const factory TasklyValueRowPreset.standard() = TasklyValueRowPresetStandard;
 
+  const factory TasklyValueRowPreset.hero() = TasklyValueRowPresetHero;
+
+  const factory TasklyValueRowPreset.heroSelection({
+    required bool selected,
+  }) = TasklyValueRowPresetHeroSelection;
+
   const factory TasklyValueRowPreset.bulkSelection({
     required bool selected,
   }) = TasklyValueRowPresetBulkSelection;
@@ -456,6 +462,16 @@ sealed class TasklyValueRowPreset {
 
 final class TasklyValueRowPresetStandard extends TasklyValueRowPreset {
   const TasklyValueRowPresetStandard();
+}
+
+final class TasklyValueRowPresetHero extends TasklyValueRowPreset {
+  const TasklyValueRowPresetHero();
+}
+
+final class TasklyValueRowPresetHeroSelection extends TasklyValueRowPreset {
+  const TasklyValueRowPresetHeroSelection({required this.selected});
+
+  final bool selected;
 }
 
 final class TasklyValueRowPresetBulkSelection extends TasklyValueRowPreset {
@@ -572,8 +588,6 @@ final class TasklyProjectRowData {
   final bool deemphasized;
 }
 
-enum TasklyRoutineStatusTone { onPace, tightWeek, catchUp, restWeek }
-
 @immutable
 final class TasklyRoutineRowData {
   const TasklyRoutineRowData({
@@ -582,13 +596,12 @@ final class TasklyRoutineRowData {
     required this.targetLabel,
     required this.remainingLabel,
     required this.windowLabel,
-    required this.statusLabel,
-    required this.statusTone,
     this.progress,
     this.scheduleRow,
     this.valueChip,
     this.selected = false,
     this.completed = false,
+    this.highlightCompleted = true,
     this.badges = const <TasklyBadgeData>[],
     this.labels,
   });
@@ -598,13 +611,12 @@ final class TasklyRoutineRowData {
   final String targetLabel;
   final String remainingLabel;
   final String windowLabel;
-  final String statusLabel;
-  final TasklyRoutineStatusTone statusTone;
   final TasklyRoutineProgressData? progress;
   final TasklyRoutineScheduleRowData? scheduleRow;
   final ValueChipData? valueChip;
   final bool selected;
   final bool completed;
+  final bool highlightCompleted;
   final List<TasklyBadgeData> badges;
   final TasklyRoutineRowLabels? labels;
 }
@@ -711,10 +723,35 @@ final class TasklyValueRowData {
     required this.title,
     required this.icon,
     required this.accentColor,
+    this.priorityLabel,
+    this.priorityDotColor,
+    this.primaryStatLabel,
+    this.primaryStatSubLabel,
+    this.emptyStatTitle,
+    this.emptyStatSubtitle,
+    this.metrics = const <TasklyValueRowMetric>[],
   });
 
   final String id;
   final String title;
   final IconData icon;
   final Color accentColor;
+  final String? priorityLabel;
+  final Color? priorityDotColor;
+  final String? primaryStatLabel;
+  final String? primaryStatSubLabel;
+  final String? emptyStatTitle;
+  final String? emptyStatSubtitle;
+  final List<TasklyValueRowMetric> metrics;
+}
+
+@immutable
+final class TasklyValueRowMetric {
+  const TasklyValueRowMetric({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
 }

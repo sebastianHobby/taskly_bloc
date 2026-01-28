@@ -57,6 +57,7 @@ abstract final class Routing {
     'routines',
     'journal',
     'values',
+    'statistics',
     'settings',
   };
 

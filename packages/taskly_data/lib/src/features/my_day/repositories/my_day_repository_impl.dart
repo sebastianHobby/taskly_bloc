@@ -1,11 +1,12 @@
 import 'package:drift/drift.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/infrastructure/powersync/crud_metadata.dart';
 import 'package:taskly_domain/my_day.dart' as domain;
 import 'package:taskly_domain/telemetry.dart';
-import 'package:taskly_domain/time.dart' show Clock, systemClock, dateOnly;
+import 'package:taskly_domain/time.dart' show Clock, dateOnly, systemClock;
 
 final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
   MyDayRepositoryImpl({
@@ -284,14 +285,21 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
     final dayUtc = dateOnly(dayKeyUtc);
     final dayId = _ids.myDayDayId(dayUtc: dayUtc);
 
-    await _db.transaction(() async {
-      await (_db.delete(
-        _db.myDayPicksTable,
-      )..where((t) => t.dayId.equals(dayId))).go();
+    await FailureGuard.run(
+      () async {
+        await _db.transaction(() async {
+          await (_db.delete(
+            _db.myDayPicksTable,
+          )..where((t) => t.dayId.equals(dayId))).go();
 
-      await (_db.delete(
-        _db.myDayDaysTable,
-      )..where((t) => t.id.equals(dayId))).go();
-    });
+          await (_db.delete(
+            _db.myDayDaysTable,
+          )..where((t) => t.id.equals(dayId))).go();
+        });
+      },
+      area: 'data.my_day',
+      opName: 'clearDay',
+      context: context,
+    );
   }
 }
