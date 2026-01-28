@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_host_page.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routine_detail_view.dart';
@@ -22,7 +22,7 @@ class RoutineEditorRoutePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EditorHostPage(
-      openModal: (context) => EditorLauncher.fromGetIt().openRoutineEditor(
+      openModal: (context) => context.read<EditorLauncher>().openRoutineEditor(
         context,
         routineId: routineId,
         showDragHandle: true,
@@ -43,9 +43,9 @@ class _RoutineEditorFullPage extends StatelessWidget {
       body: SafeArea(
         child: RoutineDetailSheetPage(
           routineId: routineId,
-          routineRepository: getIt<RoutineRepositoryContract>(),
-          valueRepository: getIt<ValueRepositoryContract>(),
-          routineWriteService: getIt<RoutineWriteService>(),
+          routineRepository: context.read<RoutineRepositoryContract>(),
+          valueRepository: context.read<ValueRepositoryContract>(),
+          routineWriteService: context.read<RoutineWriteService>(),
         ),
       ),
     );

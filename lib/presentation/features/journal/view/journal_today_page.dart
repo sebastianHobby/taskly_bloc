@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_daily_detail_sheet.dart';
@@ -29,8 +28,8 @@ class _JournalTodayPageState extends State<JournalTodayPage> {
 
     return BlocProvider<JournalTodayBloc>(
       key: ValueKey<DateTime>(DateTime(day.year, day.month, day.day)),
-      create: (_) => JournalTodayBloc(
-        repository: getIt<JournalRepositoryContract>(),
+      create: (context) => JournalTodayBloc(
+        repository: context.read<JournalRepositoryContract>(),
         selectedDay: day,
       )..add(JournalTodayStarted(selectedDay: day)),
       child: BlocBuilder<JournalTodayBloc, JournalTodayState>(

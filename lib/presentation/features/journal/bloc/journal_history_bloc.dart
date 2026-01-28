@@ -16,24 +16,37 @@ final class JournalHistoryStarted extends JournalHistoryEvent {
   const JournalHistoryStarted();
 }
 
+final class JournalHistoryFiltersChanged extends JournalHistoryEvent {
+  const JournalHistoryFiltersChanged(this.filters);
+
+  final JournalHistoryFilters filters;
+}
+
 sealed class JournalHistoryState {
   const JournalHistoryState();
 }
 
 final class JournalHistoryLoading extends JournalHistoryState {
-  const JournalHistoryLoading();
+  const JournalHistoryLoading(this.filters);
+
+  final JournalHistoryFilters filters;
 }
 
 final class JournalHistoryLoaded extends JournalHistoryState {
-  const JournalHistoryLoaded(this.days);
+  const JournalHistoryLoaded({
+    required this.days,
+    required this.filters,
+  });
 
   final List<JournalHistoryDaySummary> days;
+  final JournalHistoryFilters filters;
 }
 
 final class JournalHistoryError extends JournalHistoryState {
-  const JournalHistoryError(this.message);
+  const JournalHistoryError(this.message, this.filters);
 
   final String message;
+  final JournalHistoryFilters filters;
 }
 
 class JournalHistoryBloc
@@ -43,8 +56,9 @@ class JournalHistoryBloc
     required HomeDayKeyService dayKeyService,
   }) : _repository = repository,
        _dayKeyService = dayKeyService,
-       super(const JournalHistoryLoading()) {
+       super(JournalHistoryLoading(JournalHistoryFilters.initial())) {
     on<JournalHistoryStarted>(_onStarted, transformer: restartable());
+    on<JournalHistoryFiltersChanged>(_onFiltersChanged, transformer: restartable());
   }
 
   final JournalRepositoryContract _repository;
@@ -54,21 +68,32 @@ class JournalHistoryBloc
     JournalHistoryStarted event,
     Emitter<JournalHistoryState> emit,
   ) async {
+    await _onFiltersChanged(
+      JournalHistoryFiltersChanged(JournalHistoryFilters.initial()),
+      emit,
+    );
+  }
+
+  Future<void> _onFiltersChanged(
+    JournalHistoryFiltersChanged event,
+    Emitter<JournalHistoryState> emit,
+  ) async {
+    final filters = event.filters;
+    emit(JournalHistoryLoading(filters));
+
     final todayDayKeyUtc = _dayKeyService.todayDayKeyUtc();
-    final startUtc = todayDayKeyUtc.subtract(const Duration(days: 29));
-    final endUtc = todayDayKeyUtc
+    final range = _buildDateRange(filters, todayDayKeyUtc: todayDayKeyUtc);
+    final endInclusive = range.end
         .add(const Duration(days: 1))
         .subtract(const Duration(microseconds: 1));
 
     final defs$ = _repository.watchTrackerDefinitions();
     final entries$ = _repository.watchJournalEntriesByQuery(
-      JournalQuery.recent(days: 30, todayDayKeyUtc: todayDayKeyUtc),
+      _buildQuery(filters, todayDayKeyUtc: todayDayKeyUtc),
     );
-    final dayState$ = _repository.watchTrackerStateDay(
-      range: DateRange(start: startUtc, end: todayDayKeyUtc),
-    );
+    final dayState$ = _repository.watchTrackerStateDay(range: range);
     final events$ = _repository.watchTrackerEvents(
-      range: DateRange(start: startUtc, end: endUtc),
+      range: DateRange(start: range.start, end: endInclusive),
       anchorType: 'entry',
     );
 
@@ -85,19 +110,83 @@ class JournalHistoryBloc
         dayState$,
         events$,
         (defs, entries, dayStates, events) {
-          final days = _buildDaySummaries(
+          var days = _buildDaySummaries(
             defs: defs,
             entries: entries,
             dayStates: dayStates,
             events: events,
           );
-          return JournalHistoryLoaded(days);
+
+          final moodMin = filters.moodMinValue;
+          if (moodMin != null) {
+            days = days
+                .where(
+                  (d) => d.moodAverage != null && d.moodAverage! >= moodMin,
+                )
+                .toList(growable: false);
+          }
+
+          return JournalHistoryLoaded(days: days, filters: filters);
         },
       ),
       onData: emit.call,
       onError: (Object e, StackTrace _) {
-        emit(JournalHistoryError('Failed to load history: $e'));
+        emit(JournalHistoryError('Failed to load history: $e', filters));
       },
+    );
+  }
+
+  JournalQuery _buildQuery(
+    JournalHistoryFilters filters, {
+    required DateTime todayDayKeyUtc,
+  }) {
+    final predicates = <JournalPredicate>[];
+
+    final search = filters.searchText.trim();
+    if (search.isNotEmpty) {
+      predicates.add(
+        JournalTextPredicate(
+          operator: TextOperator.contains,
+          value: search,
+        ),
+      );
+    }
+
+    final dateRange = filters.dateRange;
+    if (dateRange != null) {
+      predicates.add(
+        JournalDatePredicate(
+          operator: DateOperator.between,
+          startDate: dateOnly(dateRange.start),
+          endDate: dateOnly(dateRange.end),
+        ),
+      );
+    } else {
+      predicates.add(
+        JournalDatePredicate(
+          operator: DateOperator.onOrAfter,
+          date: todayDayKeyUtc.subtract(const Duration(days: 29)),
+        ),
+      );
+    }
+
+    return JournalQuery(
+      filter: QueryFilter<JournalPredicate>(shared: predicates),
+    );
+  }
+
+  DateRange _buildDateRange(
+    JournalHistoryFilters filters, {
+    required DateTime todayDayKeyUtc,
+  }) {
+    final dateRange = filters.dateRange;
+    if (dateRange == null) {
+      final startUtc = todayDayKeyUtc.subtract(const Duration(days: 29));
+      return DateRange(start: startUtc, end: todayDayKeyUtc);
+    }
+    return DateRange(
+      start: dateOnly(dateRange.start),
+      end: dateOnly(dateRange.end),
     );
   }
 
@@ -238,4 +327,35 @@ final class JournalDailySummaryItem {
 
   final String label;
   final String value;
+}
+
+final class JournalHistoryFilters {
+  const JournalHistoryFilters({
+    required this.searchText,
+    required this.dateRange,
+    required this.moodMinValue,
+  });
+
+  factory JournalHistoryFilters.initial() =>
+      const JournalHistoryFilters(
+        searchText: '',
+        dateRange: null,
+        moodMinValue: null,
+      );
+
+  final String searchText;
+  final DateTimeRange? dateRange;
+  final int? moodMinValue;
+
+  JournalHistoryFilters copyWith({
+    String? searchText,
+    DateTimeRange? dateRange,
+    int? moodMinValue,
+  }) {
+    return JournalHistoryFilters(
+      searchText: searchText ?? this.searchText,
+      dateRange: dateRange ?? this.dateRange,
+      moodMinValue: moodMinValue ?? this.moodMinValue,
+    );
+  }
 }

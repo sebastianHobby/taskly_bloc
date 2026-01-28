@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:taskly_core/logging.dart';
-import 'package:taskly_domain/src/services/time/app_lifecycle_service.dart';
+import 'package:taskly_domain/src/services/time/app_lifecycle_events.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/time/clock.dart';
 
@@ -32,14 +32,14 @@ class HomeDayBoundaryCrossed extends TemporalTriggerEvent {
 class TemporalTriggerService {
   TemporalTriggerService({
     required HomeDayKeyService dayKeyService,
-    required AppLifecycleService lifecycleService,
+    required AppLifecycleEvents lifecycleService,
     Clock clock = systemClock,
   }) : _dayKeyService = dayKeyService,
        _lifecycleService = lifecycleService,
        _clock = clock;
 
   final HomeDayKeyService _dayKeyService;
-  final AppLifecycleService _lifecycleService;
+  final AppLifecycleEvents _lifecycleService;
   final Clock _clock;
 
   final StreamController<TemporalTriggerEvent> _eventsController =

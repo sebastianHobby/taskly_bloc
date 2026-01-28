@@ -33,32 +33,32 @@ See: [../INVARIANTS.md](../INVARIANTS.md#2-presentation-boundary-bloc-only)
 
 ### Attention bounded context (single entrypoint)
 - Bounded-context entrypoint (barrel exports):
-  - [lib/domain/attention/attention.dart](../../lib/domain/attention/attention.dart)
+  - [packages/taskly_domain/lib/src/attention/attention.dart](../../../packages/taskly_domain/lib/src/attention/attention.dart)
 
 Key subfolders:
-- Contracts: [lib/domain/attention/contracts/](../../lib/domain/attention/contracts/)
-- Engine: [lib/domain/attention/engine/](../../lib/domain/attention/engine/)
-- Models: [lib/domain/attention/model/](../../lib/domain/attention/model/)
-- Query: [lib/domain/attention/query/](../../lib/domain/attention/query/)
+- Contracts: [packages/taskly_domain/lib/src/attention/contracts/](../../../packages/taskly_domain/lib/src/attention/contracts/)
+- Engine: [packages/taskly_domain/lib/src/attention/engine/](../../../packages/taskly_domain/lib/src/attention/engine/)
+- Models: [packages/taskly_domain/lib/src/attention/model/](../../../packages/taskly_domain/lib/src/attention/model/)
+- Query: [packages/taskly_domain/lib/src/attention/query/](../../../packages/taskly_domain/lib/src/attention/query/)
 
 Key files:
-- [lib/domain/attention/model/attention_rule.dart](../../lib/domain/attention/model/attention_rule.dart)
-- [lib/domain/attention/model/attention_item.dart](../../lib/domain/attention/model/attention_item.dart)
-- [lib/domain/attention/model/attention_resolution.dart](../../lib/domain/attention/model/attention_resolution.dart)
-- [lib/domain/attention/model/attention_rule_runtime_state.dart](../../lib/domain/attention/model/attention_rule_runtime_state.dart)
-- [lib/domain/attention/system_attention_rules.dart](../../lib/domain/attention/system_attention_rules.dart)
-- [lib/domain/attention/engine/attention_engine.dart](../../lib/domain/attention/engine/attention_engine.dart)
+- [packages/taskly_domain/lib/src/attention/model/attention_rule.dart](../../../packages/taskly_domain/lib/src/attention/model/attention_rule.dart)
+- [packages/taskly_domain/lib/src/attention/model/attention_item.dart](../../../packages/taskly_domain/lib/src/attention/model/attention_item.dart)
+- [packages/taskly_domain/lib/src/attention/model/attention_resolution.dart](../../../packages/taskly_domain/lib/src/attention/model/attention_resolution.dart)
+- [packages/taskly_domain/lib/src/attention/model/attention_rule_runtime_state.dart](../../../packages/taskly_domain/lib/src/attention/model/attention_rule_runtime_state.dart)
+- [packages/taskly_domain/lib/src/attention/system_attention_rules.dart](../../../packages/taskly_domain/lib/src/attention/system_attention_rules.dart)
+- [packages/taskly_domain/lib/src/attention/engine/attention_engine.dart](../../../packages/taskly_domain/lib/src/attention/engine/attention_engine.dart)
 
 ### Domain services (time-based invalidations)
-- [lib/domain/services/attention/attention_temporal_invalidation_service.dart](../../lib/domain/services/attention/attention_temporal_invalidation_service.dart)
+- [packages/taskly_domain/lib/src/services/attention/attention_temporal_invalidation_service.dart](../../../packages/taskly_domain/lib/src/services/attention/attention_temporal_invalidation_service.dart)
 
 ### Data layer (persistence + seeding)
 - Repository impl:
-  - [lib/data/attention/repositories/attention_repository_v2.dart](../../lib/data/attention/repositories/attention_repository_v2.dart)
+  - [packages/taskly_data/lib/src/attention/repositories/attention_repository_v2.dart](../../../packages/taskly_data/lib/src/attention/repositories/attention_repository_v2.dart)
 - Drift tables (generated):
-  - [lib/data/infrastructure/drift/features/attention_tables.drift.dart](../../lib/data/infrastructure/drift/features/attention_tables.drift.dart)
+  - [packages/taskly_data/lib/src/infrastructure/drift/features/attention_tables.drift.dart](../../../packages/taskly_data/lib/src/infrastructure/drift/features/attention_tables.drift.dart)
 - Seeder:
-  - [lib/data/attention/maintenance/attention_seeder.dart](../../lib/data/attention/maintenance/attention_seeder.dart)
+  - [packages/taskly_data/lib/src/attention/maintenance/attention_seeder.dart](../../../packages/taskly_data/lib/src/attention/maintenance/attention_seeder.dart)
 
 ### Screen integration
 
@@ -67,8 +67,8 @@ Attention is consumed by presentation-layer BLoCs, which subscribe to
 
 ### Presentation (review flow)
 - Weekly review modal + BLoC:
-  - [lib/presentation/features/review/view/weekly_review_modal.dart](../../lib/presentation/features/review/view/weekly_review_modal.dart)
-  - [lib/presentation/features/review/bloc/weekly_review_cubit.dart](../../lib/presentation/features/review/bloc/weekly_review_cubit.dart)
+  - [lib/presentation/features/review/view/weekly_review_modal.dart](../../../lib/presentation/features/review/view/weekly_review_modal.dart)
+  - [lib/presentation/features/review/bloc/weekly_review_cubit.dart](../../../lib/presentation/features/review/bloc/weekly_review_cubit.dart)
 
 ---
 
@@ -296,22 +296,22 @@ Responsibilities:
 
 The Drift implementation is:
 
-- [lib/data/attention/repositories/attention_repository_v2.dart](../../lib/data/attention/repositories/attention_repository_v2.dart)
+- [packages/taskly_data/lib/src/attention/repositories/attention_repository_v2.dart](../../../packages/taskly_data/lib/src/attention/repositories/attention_repository_v2.dart)
 
 ### 4.6 System Defaults (Templates + Seeding)
 
 The system defaults live in code as templates:
 
-- [lib/domain/attention/system_attention_rules.dart](../../lib/domain/attention/system_attention_rules.dart)
+- [packages/taskly_domain/lib/src/attention/system_attention_rules.dart](../../../packages/taskly_domain/lib/src/attention/system_attention_rules.dart)
 
 and can be seeded into the database using:
 
-- [lib/data/attention/maintenance/attention_seeder.dart](../../lib/data/attention/maintenance/attention_seeder.dart)
+- [packages/taskly_data/lib/src/attention/maintenance/attention_seeder.dart](../../../packages/taskly_data/lib/src/attention/maintenance/attention_seeder.dart)
 
 Important nuance in the current repo state:
 
 - `AttentionSeeder.ensureSeeded()` is invoked from post-auth maintenance:
-  [lib/data/infrastructure/powersync/api_connector.dart](../../lib/data/infrastructure/powersync/api_connector.dart)
+  [packages/taskly_data/lib/src/infrastructure/powersync/api_connector.dart](../../../packages/taskly_data/lib/src/infrastructure/powersync/api_connector.dart)
   (`runPostAuthMaintenance`).
 
 ---
@@ -363,7 +363,7 @@ it gets surfaced automatically in the Issues Summary section.
 ### 6.1 Add a new system rule template
 
 In
-[lib/domain/attention/system_attention_rules.dart](../../lib/domain/attention/system_attention_rules.dart)
+[packages/taskly_domain/lib/src/attention/system_attention_rules.dart](../../../packages/taskly_domain/lib/src/attention/system_attention_rules.dart)
 add a template:
 
 ```dart
@@ -394,7 +394,7 @@ and include it in `SystemAttentionRules.all`.
 ### 6.2 Implement the predicate in `AttentionEngine`
 
 In
-[lib/domain/attention/engine/attention_engine.dart](../../lib/domain/attention/engine/attention_engine.dart)
+[packages/taskly_domain/lib/src/attention/engine/attention_engine.dart](../../../packages/taskly_domain/lib/src/attention/engine/attention_engine.dart)
 extend `_evaluateTaskPredicate(...)`:
 
 ```dart
@@ -417,7 +417,7 @@ the fields that should cause resurfacing (e.g., `blockedReason`, `updatedAt`).
 
 System templates are already seeded from post-auth maintenance via
 `AttentionSeeder.ensureSeeded()` (see
-[lib/data/infrastructure/powersync/api_connector.dart](../../lib/data/infrastructure/powersync/api_connector.dart)
+[packages/taskly_data/lib/src/infrastructure/powersync/api_connector.dart](../../../packages/taskly_data/lib/src/infrastructure/powersync/api_connector.dart)
 `runPostAuthMaintenance`). After adding a new template, it will be inserted on
 the next post-auth maintenance run.
 
@@ -498,3 +498,6 @@ refresh.
 ---
 
 See also: [SUGGESTED_PICKS.md](SUGGESTED_PICKS.md) for how suggested picks integrate with My Day.
+
+
+

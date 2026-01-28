@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/review/bloc/weekly_review_cubit.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
@@ -30,12 +29,12 @@ Future<void> showWeeklyReviewModal(
       return SizedBox(
         height: height,
         child: BlocProvider(
-          create: (_) => WeeklyReviewBloc(
-            analyticsService: getIt<AnalyticsService>(),
-            attentionEngine: getIt<AttentionEngineContract>(),
-            valueRepository: getIt<ValueRepositoryContract>(),
-            taskRepository: getIt<TaskRepositoryContract>(),
-            nowService: getIt<NowService>(),
+          create: (context) => WeeklyReviewBloc(
+            analyticsService: context.read<AnalyticsService>(),
+            attentionEngine: context.read<AttentionEngineContract>(),
+            valueRepository: context.read<ValueRepositoryContract>(),
+            taskRepository: context.read<TaskRepositoryContract>(),
+            nowService: context.read<NowService>(),
           )..add(WeeklyReviewRequested(config)),
           child: _WeeklyReviewModal(
             config: config,
@@ -87,7 +86,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   }
 
   void _finishReview() {
-    final nowUtc = getIt<NowService>().nowUtc();
+    final nowUtc = context.read<NowService>().nowUtc();
     context.read<GlobalSettingsBloc>().add(
       GlobalSettingsEvent.weeklyReviewCompleted(nowUtc),
     );
@@ -343,7 +342,7 @@ class _ValueRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final accent = ColorUtils.fromHexWithThemeFallback(
+    final accent = ColorUtils.valueColorForTheme(
       context,
       ring.value.color,
     );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
@@ -32,16 +31,16 @@ class ScheduledPage extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => ScheduledScreenBloc(
-            taskWriteService: getIt(),
-            projectWriteService: getIt(),
+          create: (context) => ScheduledScreenBloc(
+            taskWriteService: context.read<TaskWriteService>(),
+            projectWriteService: context.read<ProjectWriteService>(),
           ),
         ),
         BlocProvider(
-          create: (_) => ScheduledTimelineBloc(
-            occurrencesService: getIt(),
-            sessionDayKeyService: getIt(),
-            nowService: getIt(),
+          create: (context) => ScheduledTimelineBloc(
+            occurrencesService: context.read<ScheduledOccurrencesService>(),
+            sessionDayKeyService: context.read<SessionDayKeyService>(),
+            nowService: context.read<NowService>(),
             scope: scope,
           ),
         ),
@@ -116,8 +115,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
   }
 
   DateTime _fallbackTodayLocal() {
-    final todayUtc = getIt<SessionDayKeyService>().todayDayKeyUtc.valueOrNull;
-    final base = (todayUtc ?? getIt<NowService>().nowUtc()).toLocal();
+    final todayUtc =
+        context.read<SessionDayKeyService>().todayDayKeyUtc.valueOrNull;
+    final base = (todayUtc ?? context.read<NowService>().nowUtc()).toLocal();
     return DateTime(base.year, base.month, base.day);
   }
 
@@ -173,14 +173,14 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
 
             switch (effect) {
               case ScheduledOpenTaskNew(:final defaultDeadlineDay):
-                await EditorLauncher.fromGetIt().openTaskEditor(
+                await context.read<EditorLauncher>().openTaskEditor(
                   context,
                   taskId: null,
                   defaultDeadlineDate: defaultDeadlineDay,
                   showDragHandle: true,
                 );
               case ScheduledOpenProjectNew():
-                await EditorLauncher.fromGetIt().openProjectEditor(
+                await context.read<EditorLauncher>().openProjectEditor(
                   context,
                   projectId: null,
                   showDragHandle: true,

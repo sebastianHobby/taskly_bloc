@@ -25,13 +25,16 @@ class RoutineEntityTile extends StatelessWidget {
     final labels = model.labels;
     final primaryLabelText = labels?.primaryActionLabel?.trim() ?? '';
     final showPrimary =
-        actions.onPrimaryAction != null && primaryLabelText.isNotEmpty;
+        primaryLabelText.isNotEmpty &&
+        (actions.onPrimaryAction != null || model.completed);
     final badges = model.badges;
     final hasBadges = badges.isNotEmpty;
 
-
     final statusLabel = model.statusLabel.trim();
-    final showStatus = statusLabel.isNotEmpty;
+    final showProgress = model.progress != null;
+    final showScheduleRow = model.scheduleRow != null;
+    final showStatus =
+        statusLabel.isNotEmpty && !showProgress && !showScheduleRow;
     final statusColor = _statusColor(model.statusTone, scheme);
     final statusStyle = theme.textTheme.labelSmall?.copyWith(
       color: statusColor,
@@ -48,7 +51,7 @@ class RoutineEntityTile extends StatelessWidget {
             .map((text) => text.trim())
             .where((text) => text.isNotEmpty)
             .join(' \u00b7 ');
-    final showMeta = metaLabel.isNotEmpty;
+    final showMeta = metaLabel.isNotEmpty && !showProgress && !showScheduleRow;
 
     final baseOpacity = model.completed ? 0.7 : 1.0;
     final opacity = baseOpacity.clamp(0.0, 1.0);
@@ -92,71 +95,87 @@ class RoutineEntityTile extends StatelessWidget {
             onTap: actions.onTap,
             child: Padding(
               padding: tokens.taskPadding,
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
                           model.title,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: titleStyle,
                         ),
-                      ),
-                    ],
-                  ),
-                  if (valueChip != null || showMeta || showStatus) ...[
-                    SizedBox(height: tokens.spaceXs2),
-                    Wrap(
-                      spacing: tokens.spaceXs2,
-                      runSpacing: tokens.spaceXs2,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        if (valueChip != null)
+                        if (!showProgress &&
+                            !showScheduleRow &&
+                            (valueChip != null || showMeta || showStatus)) ...[
+                          SizedBox(height: tokens.spaceXs2),
+                          Wrap(
+                            spacing: tokens.spaceXs2,
+                            runSpacing: tokens.spaceXs2,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              if (valueChip != null)
+                                _ValueInlineLabel(
+                                  data: valueChip,
+                                  textColor: scheme.onSurfaceVariant,
+                                ),
+                              if (showMeta) ...[
+                                if (valueChip != null)
+                                  _ValueMetaDot(tokens: tokens),
+                                Text(metaLabel, style: metaStyle),
+                              ],
+                              if (showStatus) ...[
+                                if (valueChip != null || showMeta)
+                                  _ValueMetaDot(tokens: tokens),
+                                Text(statusLabel, style: statusStyle),
+                              ],
+                            ],
+                          ),
+                        ],
+                        if ((showProgress || showScheduleRow) &&
+                            valueChip != null) ...[
+                          SizedBox(height: tokens.spaceXs2),
                           _ValueInlineLabel(
                             data: valueChip,
                             textColor: scheme.onSurfaceVariant,
                           ),
-                        if (showMeta) ...[
-                          if (valueChip != null) _ValueMetaDot(tokens: tokens),
-                          Text(metaLabel, style: metaStyle),
                         ],
-                        if (showStatus) ...[
-                          if (valueChip != null || showMeta)
-                            _ValueMetaDot(tokens: tokens),
-                          Text(statusLabel, style: statusStyle),
+                        if (showProgress && model.progress != null) ...[
+                          SizedBox(height: tokens.spaceSm2),
+                          _RoutineProgressRow(data: model.progress!),
                         ],
-                      ],
-                    ),
-                  ],
-                  if (hasBadges) ...[
-                    SizedBox(height: tokens.spaceXs2),
-                    Wrap(
-                      spacing: tokens.spaceXs2,
-                      runSpacing: tokens.spaceXs2,
-                      children: [
-                        for (final badge in badges)
-                          TasklyBadge(
-                            label: badge.label,
-                            icon: badge.icon,
-                            color: badge.color,
-                            style: _badgeStyle(badge.tone),
+                        if (showScheduleRow && model.scheduleRow != null) ...[
+                          SizedBox(height: tokens.spaceSm2),
+                          _RoutineScheduleRow(data: model.scheduleRow!),
+                        ],
+                        if (hasBadges) ...[
+                          SizedBox(height: tokens.spaceXs2),
+                          Wrap(
+                            spacing: tokens.spaceXs2,
+                            runSpacing: tokens.spaceXs2,
+                            children: [
+                              for (final badge in badges)
+                                TasklyBadge(
+                                  label: badge.label,
+                                  icon: badge.icon,
+                                  color: badge.color,
+                                  style: _badgeStyle(badge.tone),
+                                ),
+                            ],
                           ),
+                        ],
                       ],
                     ),
-                  ],
+                  ),
                   if (showPrimary) ...[
-                    SizedBox(height: tokens.spaceSm),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: _PrimaryActionButton(
-                        label: primaryLabelText,
-                        selected: isSelected,
-                        onPressed: actions.onPrimaryAction,
-                      ),
+                    SizedBox(width: tokens.spaceSm),
+                    _PrimaryActionButton(
+                      label: primaryLabelText,
+                      completed: model.completed,
+                      onPressed: actions.onPrimaryAction,
                     ),
                   ],
                 ],
@@ -178,30 +197,46 @@ class RoutineEntityTile extends StatelessWidget {
 class _PrimaryActionButton extends StatelessWidget {
   const _PrimaryActionButton({
     required this.label,
-    required this.selected,
+    required this.completed,
     required this.onPressed,
   });
 
   final String label;
-  final bool selected;
+  final bool completed;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final bg = selected ? scheme.primaryContainer : scheme.primary;
-    final fg = selected ? scheme.primary : scheme.onPrimary;
+    final isDone = completed && onPressed == null;
+    final bg = isDone ? scheme.primaryContainer : Colors.transparent;
+    final fg = isDone ? scheme.primary : scheme.onSurfaceVariant;
+    final borderColor = isDone
+        ? scheme.primaryContainer
+        : scheme.outlineVariant.withValues(alpha: 0.8);
 
-    return IconButton(
+    return TextButton(
       onPressed: onPressed,
-      tooltip: label,
-      icon: Icon(selected ? Icons.check_rounded : Icons.add_rounded),
-      style: IconButton.styleFrom(
+      style: TextButton.styleFrom(
         backgroundColor: bg,
         foregroundColor: fg,
-        minimumSize: Size.square(tokens.minTapTargetSize),
-        padding: EdgeInsets.all(tokens.spaceXs2),
+        minimumSize: Size(tokens.minTapTargetSize + tokens.spaceLg, 40),
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spaceMd,
+          vertical: tokens.spaceXs2,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.radiusMd),
+          side: BorderSide(color: borderColor),
+        ),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: fg,
+        ),
       ),
     );
   }
@@ -274,6 +309,224 @@ class _ValueMetaDot extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
         shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+
+class _RoutineProgressRow extends StatelessWidget {
+  const _RoutineProgressRow({required this.data});
+
+  final TasklyRoutineProgressData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    const progressWidth = 72.0;
+    final barHeight = tokens.spaceXs2;
+    final progressColor = scheme.primary;
+    final trackColor = scheme.surfaceVariant.withValues(alpha: 0.6);
+
+    final progressLabel = '${data.completedCount}/${data.targetCount}';
+    final windowLabel = data.windowLabel.trim();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: progressWidth,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(tokens.radiusPill),
+            child: SizedBox(
+              height: barHeight,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(color: trackColor),
+                  ),
+                  FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: data.progressRatio.clamp(0.0, 1.0),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(color: progressColor),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: tokens.spaceSm),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: progressLabel),
+                if (windowLabel.isNotEmpty)
+                  TextSpan(text: ' \u00b7 $windowLabel'),
+              ],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: textTheme.labelSmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RoutineScheduleRow extends StatelessWidget {
+  const _RoutineScheduleRow({required this.data});
+
+  final TasklyRoutineScheduleRowData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final iconSpacing = tokens.spaceXxs2;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (data.icons.isNotEmpty) ...[
+          Wrap(
+            spacing: iconSpacing,
+            runSpacing: iconSpacing,
+            children: [
+              for (final icon in data.icons) _ScheduleStatusIcon(type: icon),
+            ],
+          ),
+          SizedBox(width: tokens.spaceSm),
+        ],
+        Expanded(
+          child: Wrap(
+            spacing: tokens.spaceXxs2,
+            runSpacing: tokens.spaceXxs2,
+            children: [
+              for (final day in data.days)
+                _ScheduleDayPill(
+                  day: day,
+                  onSurface: scheme.onSurface,
+                  onSurfaceVariant: scheme.onSurfaceVariant,
+                  outline: scheme.outlineVariant,
+                  accent: scheme.primary,
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ScheduleStatusIcon extends StatelessWidget {
+  const _ScheduleStatusIcon({required this.type});
+
+  final TasklyRoutineScheduleIcon type;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+
+    final size = tokens.spaceLg2;
+    final iconSize = tokens.spaceMd;
+    final borderRadius = tokens.radiusPill;
+
+    Color borderColor;
+    Color foreground;
+    Color background;
+    IconData icon;
+
+    switch (type) {
+      case TasklyRoutineScheduleIcon.loggedScheduled:
+        borderColor = scheme.primary.withValues(alpha: 0.6);
+        foreground = scheme.onPrimary;
+        background = scheme.primary;
+        icon = Icons.check_rounded;
+      case TasklyRoutineScheduleIcon.loggedUnscheduled:
+        borderColor = scheme.primary.withValues(alpha: 0.8);
+        foreground = scheme.primary;
+        background = Colors.transparent;
+        icon = Icons.check_rounded;
+      case TasklyRoutineScheduleIcon.missedScheduled:
+        borderColor = scheme.error.withValues(alpha: 0.6);
+        foreground = scheme.error;
+        background = scheme.errorContainer.withValues(alpha: 0.3);
+        icon = Icons.remove_rounded;
+    }
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: background,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, size: iconSize, color: foreground),
+    );
+  }
+}
+
+class _ScheduleDayPill extends StatelessWidget {
+  const _ScheduleDayPill({
+    required this.day,
+    required this.onSurface,
+    required this.onSurfaceVariant,
+    required this.outline,
+    required this.accent,
+  });
+
+  final TasklyRoutineScheduleDay day;
+  final Color onSurface;
+  final Color onSurfaceVariant;
+  final Color outline;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final size = tokens.spaceLg2;
+    final isScheduled = day.isScheduled;
+    final isToday = day.isToday;
+
+    final borderColor = isScheduled
+        ? outline.withValues(alpha: 0.8)
+        : outline.withValues(alpha: 0.5);
+    final textColor = isScheduled
+        ? onSurface
+        : onSurfaceVariant.withValues(alpha: 0.6);
+    final background = isToday
+        ? accent.withValues(alpha: 0.12)
+        : Colors.transparent;
+
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(tokens.radiusPill),
+        border: Border.all(color: borderColor),
+      ),
+      child: Text(
+        day.label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: textColor,
+          fontWeight: isScheduled ? FontWeight.w700 : FontWeight.w500,
+          height: 1,
+        ),
       ),
     );
   }

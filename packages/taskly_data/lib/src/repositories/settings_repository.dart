@@ -6,6 +6,7 @@ import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_domain/taskly_domain.dart' hide Value;
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 /// Repository for managing application settings via [SettingsKey].
 ///
@@ -20,9 +21,13 @@ import 'package:taskly_domain/taskly_domain.dart' hide Value;
 /// Debounces the user profile stream to reduce PowerSync CDC "bounce" where an
 /// older snapshot may briefly appear after a local save.
 class SettingsRepository implements SettingsRepositoryContract {
-  SettingsRepository({required this.driftDb});
+  SettingsRepository({
+    required this.driftDb,
+    Clock clock = systemClock,
+  }) : _clock = clock;
 
   final AppDatabase driftDb;
+  final Clock _clock;
 
   // Diagnostics for detecting PowerSync CDC "sync bounce".
   //
@@ -64,7 +69,7 @@ class SettingsRepository implements SettingsRepositoryContract {
   }) async {
     return FailureGuard.run(
       () async {
-        final saveStartTime = DateTime.now();
+        final saveStartTime = _clock.nowUtc();
         final profile = await _ensureProfile();
         final overrides = _parseOverrides(
           profile.settingsOverrides,
@@ -74,8 +79,8 @@ class SettingsRepository implements SettingsRepositoryContract {
         final updated = _upsertOverride(key, value, overrides);
         await _writeOverrides(profileId: profile.id, overrides: updated);
 
-        final driftWriteTime = DateTime.now();
-        _lastSaveCompletedAtUtc = driftWriteTime.toUtc();
+        final driftWriteTime = _clock.nowUtc();
+        _lastSaveCompletedAtUtc = driftWriteTime;
         talker.repositoryLog(
           'Settings',
           'save<$T>: key=$key complete in '
@@ -108,7 +113,7 @@ class SettingsRepository implements SettingsRepositoryContract {
 
         final savedRecently =
             _lastSaveCompletedAtUtc != null &&
-            DateTime.now().toUtc().difference(_lastSaveCompletedAtUtc!) <
+            _clock.nowUtc().difference(_lastSaveCompletedAtUtc!) <
                 const Duration(seconds: 10);
 
         if (regressed && savedRecently) {
@@ -178,7 +183,7 @@ class SettingsRepository implements SettingsRepositoryContract {
     required String profileId,
     required Map<String, dynamic> repaired,
   }) {
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = _clock.nowUtc();
     final last = _lastRepairAttemptAtUtc;
     if (last != null && nowUtc.difference(last) < const Duration(seconds: 2)) {
       return;
@@ -201,7 +206,7 @@ class SettingsRepository implements SettingsRepositoryContract {
     required Object? repairedFrom,
     required String reason,
   }) {
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = _clock.nowUtc();
     final updated = Map<String, dynamic>.from(overrides);
     final existing = updated[_repairsKey];
     final repairs = existing is Map<String, dynamic>
@@ -242,7 +247,7 @@ class SettingsRepository implements SettingsRepositoryContract {
       return existing;
     }
 
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = _clock.nowUtc();
     await driftDb
         .into(driftDb.userProfileTable)
         .insert(
@@ -269,7 +274,7 @@ class SettingsRepository implements SettingsRepositoryContract {
     required String profileId,
     required Map<String, dynamic> overrides,
   }) async {
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = _clock.nowUtc();
     final companion = UserProfileTableCompanion(
       settingsOverrides: Value(jsonEncode(overrides)),
       updatedAt: Value(nowUtc),

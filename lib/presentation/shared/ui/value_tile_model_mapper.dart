@@ -7,7 +7,7 @@ import 'package:taskly_ui/taskly_ui_feed.dart';
 /// Maps a domain [Value] into UI-only [TasklyValueRowData].
 extension ValueTileModelMapper on Value {
   TasklyValueRowData toRowData(BuildContext context) {
-    final accentColor = ColorUtils.fromHexWithThemeFallback(context, color);
+    final accentColor = ColorUtils.valueColorForTheme(context, color);
     final iconData = getIconDataFromName(iconName) ?? Icons.star;
 
     return TasklyValueRowData(

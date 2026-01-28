@@ -59,7 +59,7 @@ final class ProjectAnchorStateRepository
               projectId: projectId,
             ),
         };
-        final psMetadata = encodeCrudMetadata(context);
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         await _db.transaction(() async {
           for (final projectId in ids) {

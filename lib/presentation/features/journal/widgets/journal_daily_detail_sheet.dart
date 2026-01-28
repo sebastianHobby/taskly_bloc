@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_daily_edit_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/tracker_input_widgets.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalDailyDetailSheet extends StatelessWidget {
@@ -24,11 +24,11 @@ class JournalDailyDetailSheet extends StatelessWidget {
       useSafeArea: true,
       builder: (context) {
         return BlocProvider<JournalDailyEditBloc>(
-          create: (context) =>
+            create: (context) =>
               JournalDailyEditBloc(
-                repository: getIt<JournalRepositoryContract>(),
+                repository: context.read<JournalRepositoryContract>(),
                 errorReporter: context.read<AppErrorReporter>(),
-                nowUtc: getIt<NowService>().nowUtc,
+                nowUtc: context.read<NowService>().nowUtc,
               )..add(
                 JournalDailyEditStarted(selectedDayLocal: selectedDayLocal),
               ),
@@ -170,25 +170,16 @@ class JournalDailyDetailSheet extends StatelessWidget {
               _ => 0,
             };
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(d.name, style: theme.textTheme.titleSmall),
-                SizedBox(height: TasklyTokens.of(context).spaceSm),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: disabled ? null : () => addDelta(-step),
-                      icon: const Icon(Icons.remove),
-                    ),
-                    Text('$intValue', style: theme.textTheme.titleMedium),
-                    IconButton(
-                      onPressed: disabled ? null : () => addDelta(step),
-                      icon: const Icon(Icons.add),
-                    ),
-                  ],
-                ),
-              ],
+            return TrackerQuantityInput(
+              label: d.name,
+              value: intValue,
+              step: step,
+              enabled: !disabled,
+              onChanged: (v) {
+                final delta = v - intValue;
+                if (delta != 0) addDelta(delta);
+              },
+              onClear: () => setValue(null),
             );
           }
 
@@ -215,19 +206,11 @@ class JournalDailyDetailSheet extends StatelessWidget {
                         ),
                       )
                     else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final c in choices)
-                            ChoiceChip(
-                              label: Text(c.label),
-                              selected: selectedKey == c.choiceKey,
-                              onSelected: disabled
-                                  ? null
-                                  : (_) => setValue(c.choiceKey),
-                            ),
-                        ],
+                      TrackerChoiceInput(
+                        choices: choices,
+                        selectedKey: selectedKey,
+                        enabled: !disabled,
+                        onSelected: setValue,
                       ),
                   ],
                 );

@@ -2,6 +2,7 @@ import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_domain/src/services/values/effective_values.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/time.dart';
 
@@ -27,6 +28,8 @@ final class TaskSuggestionSnapshot {
     required this.availableToStartNotSuggested,
     required this.snoozed,
     required this.requiresValueSetup,
+    required this.neglectDeficits,
+    this.spotlightTaskId,
   });
 
   final DateTime dayKeyUtc;
@@ -35,6 +38,8 @@ final class TaskSuggestionSnapshot {
   final List<Task> availableToStartNotSuggested;
   final List<Task> snoozed;
   final bool requiresValueSetup;
+  final Map<String, double> neglectDeficits;
+  final String? spotlightTaskId;
 }
 
 final class TaskSuggestionService {
@@ -53,11 +58,17 @@ final class TaskSuggestionService {
   final HomeDayKeyService _dayKeyService;
   final Clock _clock;
 
+  static const double _spotlightDeficitThreshold = 0.20;
+  static const double _attentionDeficitThreshold = 0.20;
+  static const int _showMoreIncrement = 3;
+  static const int _poolExtraCount = _showMoreIncrement * 2;
+
   Future<TaskSuggestionSnapshot> getSnapshot({
     required int dueWindowDays,
     required bool includeDueSoon,
     required bool includeAvailableToStart,
     required int batchCount,
+    int? suggestedTargetCount,
     List<Task>? tasksOverride,
     Map<String, int> routineSelectionsByValue = const {},
     DateTime? nowUtc,
@@ -74,15 +85,36 @@ final class TaskSuggestionService {
         .where((t) => !snoozedIds.contains(t.id) && !t.isPinned)
         .toList(growable: false);
 
-    final allocation = await _allocationOrchestrator.getSuggestedSnapshot(
-      batchCount: batchCount,
-      nowUtc: resolvedNowUtc,
-      routineSelectionsByValue: routineSelectionsByValue,
-    );
+    final allocation = suggestedTargetCount != null && suggestedTargetCount > 0
+        ? await _allocationOrchestrator.getSuggestedSnapshotForTargetCount(
+            suggestedTaskTarget: suggestedTargetCount,
+            nowUtc: resolvedNowUtc,
+            routineSelectionsByValue: routineSelectionsByValue,
+          )
+        : await _allocationOrchestrator.getSuggestedSnapshot(
+            batchCount: batchCount,
+            nowUtc: resolvedNowUtc,
+            routineSelectionsByValue: routineSelectionsByValue,
+          );
 
-    final suggested = _buildSuggested(
+    final baseSuggested = _buildSuggested(
       allocation,
       excludedIds: snoozedIds,
+    );
+    final spotlightValueId = _spotlightValueId(allocation);
+    final orderedSuggested = _applySpotlightOrder(
+      baseSuggested,
+      spotlightValueId: spotlightValueId,
+    );
+    final rankedSuggested = _applyRanks(orderedSuggested);
+    final pooledSuggested = _applyPerValuePools(
+      rankedSuggested,
+      deficits: allocation.reasoning.neglectDeficits,
+    );
+    final suggested = _applyRanks(pooledSuggested);
+    final spotlightTaskId = _spotlightTaskId(
+      suggested,
+      spotlightValueId: spotlightValueId,
     );
     final suggestedIds = suggested.map((s) => s.task.id).toSet();
 
@@ -110,6 +142,8 @@ final class TaskSuggestionService {
       availableToStartNotSuggested: availableToStartNotSuggested,
       snoozed: snoozed,
       requiresValueSetup: allocation.requiresValueSetup,
+      neglectDeficits: allocation.reasoning.neglectDeficits,
+      spotlightTaskId: spotlightTaskId,
     );
   }
 
@@ -144,6 +178,118 @@ final class TaskSuggestionService {
     }
 
     return suggested;
+  }
+
+  List<SuggestedTask> _applySpotlightOrder(
+    List<SuggestedTask> suggested, {
+    required String? spotlightValueId,
+  }) {
+    if (spotlightValueId == null || suggested.isEmpty) return suggested;
+
+    final index = suggested.indexWhere(
+      (entry) => entry.qualifyingValueId == spotlightValueId,
+    );
+    if (index <= 0) return suggested;
+
+    final reordered = [...suggested];
+    final spotlightTask = reordered.removeAt(index);
+    reordered.insert(0, spotlightTask);
+    return reordered;
+  }
+
+  List<SuggestedTask> _applyRanks(List<SuggestedTask> suggested) {
+    return [
+      for (var i = 0; i < suggested.length; i++)
+        SuggestedTask(
+          task: suggested[i].task,
+          rank: i + 1,
+          qualifyingValueId: suggested[i].qualifyingValueId,
+          reasonCodes: suggested[i].reasonCodes,
+        ),
+    ];
+  }
+
+  List<SuggestedTask> _applyPerValuePools(
+    List<SuggestedTask> suggested, {
+    required Map<String, double> deficits,
+  }) {
+    if (suggested.isEmpty) return suggested;
+
+    final poolLimits = <String, int>{};
+    for (final entry in suggested) {
+      final valueId = _qualifyingValueId(entry);
+      if (valueId == null) continue;
+      if (poolLimits.containsKey(valueId)) continue;
+      final value = _resolveValue(entry.task, valueId);
+      if (value == null) continue;
+      final deficit = deficits[valueId] ?? 0.0;
+      final attentionNeeded = deficit >= _attentionDeficitThreshold;
+      final defaultVisible = _defaultVisibleCount(
+        value.priority,
+        attentionNeeded: attentionNeeded,
+      );
+      poolLimits[valueId] = defaultVisible + _poolExtraCount;
+    }
+
+    if (poolLimits.isEmpty) return suggested;
+
+    final pooled = <SuggestedTask>[];
+    final counts = <String, int>{};
+    for (final entry in suggested) {
+      final valueId = _qualifyingValueId(entry);
+      if (valueId == null) continue;
+      final limit = poolLimits[valueId];
+      if (limit == null || limit <= 0) continue;
+      final nextCount = (counts[valueId] ?? 0) + 1;
+      if (nextCount > limit) continue;
+      counts[valueId] = nextCount;
+      pooled.add(entry);
+    }
+
+    return pooled;
+  }
+
+  int _defaultVisibleCount(
+    ValuePriority priority, {
+    required bool attentionNeeded,
+  }) {
+    return switch (priority) {
+      ValuePriority.high => attentionNeeded ? 4 : 3,
+      ValuePriority.medium => attentionNeeded ? 3 : 2,
+      ValuePriority.low => attentionNeeded ? 2 : 1,
+    };
+  }
+
+  String? _qualifyingValueId(SuggestedTask entry) {
+    final raw = entry.qualifyingValueId?.trim();
+    if (raw == null || raw.isEmpty) return entry.task.effectivePrimaryValueId;
+    return raw;
+  }
+
+  Value? _resolveValue(Task task, String valueId) {
+    for (final value in task.effectiveValues) {
+      if (value.id == valueId) return value;
+    }
+    return null;
+  }
+
+  String? _spotlightValueId(AllocationResult allocation) {
+    final topNeglectScore = allocation.reasoning.topNeglectScore ?? 0.0;
+    if (topNeglectScore < _spotlightDeficitThreshold) return null;
+    return allocation.reasoning.topNeglectValueId;
+  }
+
+  String? _spotlightTaskId(
+    List<SuggestedTask> suggested, {
+    required String? spotlightValueId,
+  }) {
+    if (spotlightValueId == null || suggested.isEmpty) return null;
+    for (final entry in suggested) {
+      if (entry.qualifyingValueId == spotlightValueId) {
+        return entry.task.id;
+      }
+    }
+    return null;
   }
 
   List<Task> _filterDueSoon(

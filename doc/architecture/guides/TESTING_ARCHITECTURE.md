@@ -45,18 +45,10 @@ All non-negotiable rules live in:
 
 ## 4) Taxonomy: where tests live (directory contract)
 
-This contract is intended to keep tests discoverable and enforceable.
+This contract is intended to keep tests discoverable and enforceable. The
+canonical table lives in:
 
-| Directory | Primary tags | IO policy | Typical scope |
-| --- | --- | --- | --- |
-| `test/core/**` | `unit` | hermetic | cross-cutting pure logic |
-| `test/domain/**` | `unit` | hermetic | domain rules, reducers, mapping |
-| `test/presentation/**` | `widget` (or `unit` for pure BLoC/state) | hermetic | widget composition + BLoC wiring |
-| `test/data/**` | `repository` / `integration` | local DB only | repository behavior against real DB |
-| `test/integration/**` | `integration` | local DB only | multi-component flows without network |
-| `test/integration_test/**` | `pipeline` | local stack only | local Supabase/PowerSync pipeline |
-| `test/contracts/**` | `unit` | hermetic | shared expectations across impls |
-| `test/diagnosis/**` | `diagnosis` (optional) | varies | repros/investigations (not default) |
+- [../INVARIANTS.md](../INVARIANTS.md#34-testing-taxonomy-directory-contract-strict)
 
 Notes:
 

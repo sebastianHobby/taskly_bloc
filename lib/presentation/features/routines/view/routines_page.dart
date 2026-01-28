@@ -4,7 +4,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/routines/bloc/routine_list_bloc.dart';
@@ -37,10 +36,10 @@ class RoutinesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<RoutineListBloc>(
       create: (context) => RoutineListBloc(
-        routineRepository: getIt<RoutineRepositoryContract>(),
-        sessionDayKeyService: getIt<SessionDayKeyService>(),
+        routineRepository: context.read<RoutineRepositoryContract>(),
+        sessionDayKeyService: context.read<SessionDayKeyService>(),
         errorReporter: context.read<AppErrorReporter>(),
-        sharedDataService: getIt<SessionSharedDataService>(),
+        sharedDataService: context.read<SessionSharedDataService>(),
       )..add(const RoutineListEvent.subscriptionRequested()),
       child: Builder(
         builder: (context) {

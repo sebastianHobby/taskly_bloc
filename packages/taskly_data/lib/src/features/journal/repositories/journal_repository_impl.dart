@@ -402,7 +402,7 @@ class JournalRepositoryImpl
         final trimmed = groupId.trim();
         if (trimmed.isEmpty) return;
 
-        final nowUtc = DateTime.now().toUtc();
+        final nowUtc = clock.nowUtc();
 
         await (_database.update(
           _database.trackerGroups,
@@ -574,7 +574,7 @@ class JournalRepositoryImpl
         final trimmed = trackerId.trim();
         if (trimmed.isEmpty) return;
 
-        final nowUtc = DateTime.now().toUtc();
+        final nowUtc = clock.nowUtc();
 
         await _database.transaction(() async {
           // Soft delete the definition row (keeps it for sync/auditing).

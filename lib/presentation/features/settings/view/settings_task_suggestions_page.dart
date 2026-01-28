@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/allocation_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 import 'package:taskly_domain/allocation.dart';
+import 'package:taskly_domain/contracts.dart';
 
 class SettingsTaskSuggestionsPage extends StatelessWidget {
   const SettingsTaskSuggestionsPage({super.key});
@@ -12,8 +12,9 @@ class SettingsTaskSuggestionsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<AllocationSettingsBloc>(
-      create: (_) =>
-          getIt<AllocationSettingsBloc>()..add(const AllocationSettingsStarted()),
+      create: (context) => AllocationSettingsBloc(
+        settingsRepository: context.read<SettingsRepositoryContract>(),
+      )..add(const AllocationSettingsStarted()),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Task Suggestions'),

@@ -254,6 +254,10 @@ abstract final class Routing {
     GoRouter.of(context).push('/journal/entry/$entryId/edit');
   }
 
+  static void toJournalTrackerWizard(BuildContext context) {
+    GoRouter.of(context).push('/journal/trackers/new');
+  }
+
   /// Get onTap callback for entity navigation.
   static VoidCallback onTapEntity(
     BuildContext context,

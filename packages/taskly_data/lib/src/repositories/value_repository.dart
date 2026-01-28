@@ -11,11 +11,17 @@ import 'package:taskly_data/src/repositories/query_stream_cache.dart';
 import 'package:taskly_data/src/repositories/repository_exceptions.dart';
 import 'package:taskly_data/src/mappers/drift_to_domain.dart';
 import 'package:taskly_domain/taskly_domain.dart';
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 class ValueRepository implements ValueRepositoryContract {
-  ValueRepository({required this.driftDb, required this.idGenerator});
+  ValueRepository({
+    required this.driftDb,
+    required this.idGenerator,
+    Clock clock = systemClock,
+  }) : _clock = clock;
   final drift.AppDatabase driftDb;
   final IdGenerator idGenerator;
+  final Clock _clock;
 
   final QueryStreamCache<ValueQuery, List<Value>> _sharedWatchAllCache =
       QueryStreamCache(maxEntries: 16);
@@ -305,7 +311,7 @@ class ValueRepository implements ValueRepositoryContract {
         talker.debug(
           '[ValueRepository] create: name="$name", priority=$priority',
         );
-        final now = DateTime.now();
+        final now = _clock.nowUtc();
 
         final normalizedColor = _normalizeColorOrThrow(color);
 
@@ -324,7 +330,7 @@ class ValueRepository implements ValueRepositoryContract {
           },
         );
 
-        final psMetadata = encodeCrudMetadata(context);
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         await _createValue(
           drift.ValueTableCompanion(
@@ -375,9 +381,9 @@ class ValueRepository implements ValueRepositoryContract {
 
         final normalizedColor = _normalizeColorOrThrow(color);
 
-        final now = DateTime.now();
+        final now = _clock.nowUtc();
 
-        final psMetadata = encodeCrudMetadata(context);
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
         final didUpdate = await _updateValue(
           drift.ValueTableCompanion(
             id: drift_pkg.Value(id),

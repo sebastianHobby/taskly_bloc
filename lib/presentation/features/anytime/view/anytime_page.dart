@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
@@ -41,8 +40,8 @@ class AnytimePage extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => AnytimeScreenBloc(scope: scope)),
         BlocProvider(
-          create: (_) => AnytimeFeedBloc(
-            queryService: getIt<AnytimeSessionQueryService>(),
+          create: (context) => AnytimeFeedBloc(
+            queryService: context.read<AnytimeSessionQueryService>(),
             scope: scope,
           ),
         ),
@@ -102,7 +101,7 @@ class _AnytimeViewState extends State<_AnytimeView> {
     String? defaultProjectId,
     String? defaultValueId,
   }) {
-    return EditorLauncher.fromGetIt().openTaskEditor(
+    return context.read<EditorLauncher>().openTaskEditor(
       context,
       taskId: null,
       defaultProjectId: defaultProjectId,
@@ -115,7 +114,7 @@ class _AnytimeViewState extends State<_AnytimeView> {
     BuildContext context, {
     required bool openToValues,
   }) {
-    return EditorLauncher.fromGetIt().openProjectEditor(
+    return context.read<EditorLauncher>().openProjectEditor(
       context,
       projectId: null,
       openToValues: openToValues,
@@ -358,11 +357,12 @@ TasklyEmptyStateSpec _buildEmptySpec(
 
   return TasklyEmptyStateSpec(
     icon: Icons.inbox_outlined,
-    title: 'No projects yet',
-    description: 'Create a project to start planning.',
-    actionLabel: 'Create project',
+    title: 'Add your first task or project',
+    description:
+        "This is your project backlog. My Day pulls today's plan from here.",
+    actionLabel: 'Add task',
     onAction: () => context.read<AnytimeScreenBloc>().add(
-      const AnytimeCreateProjectRequested(),
+      const AnytimeCreateTaskRequested(),
     ),
   );
 }

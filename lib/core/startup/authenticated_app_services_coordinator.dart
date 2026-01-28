@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/data_stack.dart';
 import 'package:taskly_domain/taskly_domain.dart';
+import 'package:taskly_bloc/core/services/time/app_lifecycle_service.dart';
 
 /// Starts and stops the set of services that should only run once a user is
 /// authenticated.

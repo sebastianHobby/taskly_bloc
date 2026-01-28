@@ -1,4 +1,4 @@
-﻿# 	askly_ui -- Style, Not Config
+﻿# taskly_ui -- Style, Not Config
 
 > Audience: developers
 >
@@ -20,7 +20,7 @@ Historically, these differences were expressed with knobs (badges, trailing
 specs, variants). That approach scales poorly: each screen becomes a mini
 renderer and shared UI drifts.
 
-Styles keep a single canonical renderer in 	askly_ui.
+Styles keep a single canonical renderer in taskly_ui.
 
 ## 2) The pattern
 
@@ -54,15 +54,15 @@ This is a descriptive guide. The canonical rules live in:
 
 Practical guidance when extending entity rows:
 
-- Avoid adding new visual configuration knobs (for example adges, 	railing,
-  generic ariant flags) to satisfy one-off screen needs.
+- Avoid adding new visual configuration knobs (for example badges, trailing
+  specs, generic variant flags) to satisfy one-off screen needs.
 - Prefer adding a new style when multiple consumers need a distinct layout.
 - Prefer deriving UI affordances from callback presence:
   - show picker actions only when onToggleSelected exists
   - enable completion only when onToggleCompletion exists
 - Avoid widget injection parameters on entity rows.
   - if an extension point is unavoidable, keep it narrow and semantically named
-    (e.g. 	itlePrefix) rather than exposing full custom builders.
+    (e.g. titlePrefix) rather than exposing full custom builders.
 
 ## 4) Catalog requirement
 
@@ -74,4 +74,5 @@ its visual surface is visible in one place.
 Prefer consuming shared UI via the feed entrypoint:
 
 - package:taskly_ui/taskly_ui_feed.dart
+
 

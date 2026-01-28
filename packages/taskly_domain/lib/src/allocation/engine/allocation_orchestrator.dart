@@ -59,6 +59,9 @@ class AllocationOrchestrator {
   final HomeDayKeyService _dayKeyService;
   final Clock _clock;
 
+  static const int _neglectLookbackDays = 14;
+  static const double _neglectSmoothingAlpha = 0.20;
+
   /// Compute a single allocation snapshot (pinned + allocated tasks).
   ///
   /// This intentionally does **not** keep a live stream subscription.
@@ -155,6 +158,66 @@ class AllocationOrchestrator {
       allocationConfig: allocationConfig,
       nowUtc: resolvedNowUtc,
       todayDayKeyUtc: todayUtc,
+      anchorCountOverride: anchorCountOverride,
+      routineSelectionsByValue: routineSelectionsByValue,
+    );
+  }
+
+  /// Compute an allocation snapshot sized to a suggested task target.
+  ///
+  /// This is used when callers want a predictable pool size without relying on
+  /// batch multiplication.
+  Future<AllocationResult> getSuggestedSnapshotForTargetCount({
+    required int suggestedTaskTarget,
+    DateTime? nowUtc,
+    Map<String, int> routineSelectionsByValue = const {},
+  }) async {
+    final resolvedNowUtc = nowUtc ?? _clock.nowUtc();
+    final todayUtc = _dayKeyService.todayDayKeyUtc(nowUtc: resolvedNowUtc);
+
+    AppLog.routine(
+      'domain.allocation',
+      'getSuggestedSnapshotForTargetCount: '
+          'nowUtc=${resolvedNowUtc.toIso8601String()} '
+          'todayUtc=${todayUtc.toIso8601String()} '
+          'target=$suggestedTaskTarget',
+    );
+
+    final results = await Future.wait([
+      _taskRepository.getAll(TaskQuery.incomplete()),
+      _projectRepository.getAll(),
+      _projectNextActionsRepository.getAll(),
+      _projectAnchorStateRepository.getAll(),
+      _settingsRepository.load(SettingsKey.allocation),
+    ]);
+
+    final tasks = results[0] as List<Task>;
+    final projects = results[1] as List<Project>;
+    final projectNextActions = results[2] as List<ProjectNextAction>;
+    final projectAnchorStates = results[3] as List<ProjectAnchorState>;
+    final allocationConfig = results[4] as AllocationConfig;
+
+    final strategy = allocationConfig.strategySettings;
+    final tasksPerAnchorMax = strategy.tasksPerAnchorMax.clamp(1, 50);
+    final freeSlots = strategy.freeSlots.clamp(0, 10);
+    final target = suggestedTaskTarget.clamp(0, 500);
+
+    final anchorCountOverride = target <= 0
+        ? 0
+        : math.max(
+            1,
+            ((target - freeSlots).clamp(0, target) / tasksPerAnchorMax).ceil(),
+          );
+
+    return _computeAllocation(
+      tasks: tasks,
+      projects: projects,
+      projectNextActions: projectNextActions,
+      projectAnchorStates: projectAnchorStates,
+      allocationConfig: allocationConfig,
+      nowUtc: resolvedNowUtc,
+      todayDayKeyUtc: todayUtc,
+      maxTasksOverride: target,
       anchorCountOverride: anchorCountOverride,
       routineSelectionsByValue: routineSelectionsByValue,
     );
@@ -351,18 +414,22 @@ class AllocationOrchestrator {
 
     // Fetch recent completions by value if value balancing is enabled.
     final settings = allocationConfig.strategySettings;
-    Map<String, int> completionsByValue = const {};
+    Map<String, double> completionsByValue = const {};
     if (settings.enableNeglectWeighting) {
-      completionsByValue = await _analyticsService.getRecentCompletionsByValue(
-        days: 14,
+      final dailyCompletions = await _analyticsService
+          .getDailyCompletionsByValue(days: _neglectLookbackDays);
+      final smoothedCompletions = _smoothCompletionsByValue(
+        dailyCompletions: dailyCompletions,
+        valueIds: categories.keys,
+        days: _neglectLookbackDays,
       );
 
-      final totalCompletions = completionsByValue.values.fold<int>(
+      final totalCompletions = smoothedCompletions.values.fold<double>(
         0,
         (sum, v) => sum + v,
       );
-      if (totalCompletions <= 0) {
-        completionsByValue = const {};
+      if (totalCompletions > 0) {
+        completionsByValue = smoothedCompletions;
       }
     }
 
@@ -454,5 +521,35 @@ class AllocationOrchestrator {
       projectId: task.projectId,
       repeatIcalRrule: task.repeatIcalRrule,
     );
+  }
+
+  Map<String, double> _smoothCompletionsByValue({
+    required Map<String, List<int>> dailyCompletions,
+    required Iterable<String> valueIds,
+    required int days,
+  }) {
+    final smoothed = <String, double>{};
+
+    for (final valueId in valueIds) {
+      final raw = dailyCompletions[valueId] ?? const <int>[];
+      final normalized = raw.length >= days
+          ? raw.sublist(raw.length - days)
+          : [
+              ...List.filled(days - raw.length, 0),
+              ...raw,
+            ];
+
+      double? ema;
+      for (final count in normalized) {
+        final current = count.toDouble();
+        ema = ema == null
+            ? current
+            : (_neglectSmoothingAlpha * current) +
+                  ((1 - _neglectSmoothingAlpha) * ema);
+      }
+      smoothed[valueId] = ema ?? 0.0;
+    }
+
+    return smoothed;
   }
 }

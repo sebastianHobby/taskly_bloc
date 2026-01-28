@@ -12,6 +12,7 @@ import 'package:taskly_data/src/repositories/query_stream_cache.dart';
 import 'package:taskly_data/src/repositories/repository_exceptions.dart';
 import 'package:taskly_data/src/repositories/repository_helpers.dart';
 import 'package:taskly_data/src/repositories/stream_cache_policy.dart';
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 class _OccurrenceRangeKey {
   const _OccurrenceRangeKey({required this.rangeStart, required this.rangeEnd});
@@ -37,13 +38,16 @@ class TaskRepository implements TaskRepositoryContract {
     required this.occurrenceExpander,
     required this.occurrenceWriteHelper,
     required this.idGenerator,
-  }) : _predicateMapper = TaskPredicateMapper(driftDb: driftDb);
+    Clock clock = systemClock,
+  }) : _predicateMapper = TaskPredicateMapper(driftDb: driftDb),
+       _clock = clock;
 
   final AppDatabase driftDb;
   final OccurrenceStreamExpanderContract occurrenceExpander;
   final OccurrenceWriteHelperContract occurrenceWriteHelper;
   final IdGenerator idGenerator;
   final TaskPredicateMapper _predicateMapper;
+  final Clock _clock;
 
   // Tier-based shared streams for common query patterns
   // Reduces concurrent queries from 6-7 down to 2-3
@@ -411,7 +415,7 @@ class TaskRepository implements TaskRepositoryContract {
         talker.debug(
           '[TaskRepository] create: name="$name", projectId=$normalizedProjectId',
         );
-        final now = DateTime.now();
+        final now = _clock.nowUtc();
         final id = idGenerator.taskId();
 
         final normalizedStartDate = dateOnlyOrNull(startDate);
@@ -440,7 +444,7 @@ class TaskRepository implements TaskRepositoryContract {
             ? normalizedValueIds[1]
             : null;
 
-        final psMetadata = encodeCrudMetadata(context);
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         await driftDb.transaction(() async {
           await driftDb
@@ -516,7 +520,7 @@ class TaskRepository implements TaskRepositoryContract {
           throw RepositoryNotFoundException('No task found to update');
         }
 
-        final now = DateTime.now();
+        final now = _clock.nowUtc();
 
         final normalizedStartDate = dateOnlyOrNull(startDate);
         final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
@@ -552,7 +556,7 @@ class TaskRepository implements TaskRepositoryContract {
             : (normalizedValueIds.length > 1 ? normalizedValueIds[1] : null);
         final clearOverrides = normalizedProjectId == null;
 
-        final psMetadata = encodeCrudMetadata(context);
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         await driftDb.transaction(() async {
           await driftDb
@@ -631,8 +635,8 @@ class TaskRepository implements TaskRepositoryContract {
     return FailureGuard.run(
       () async {
         final normalizedDeadline = dateOnlyOrNull(deadlineDate);
-        final now = DateTime.now();
-        final psMetadata = encodeCrudMetadata(context);
+        final now = _clock.nowUtc();
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         return driftDb.transaction(() async {
           final existingIds =
@@ -683,7 +687,7 @@ class TaskRepository implements TaskRepositoryContract {
     await FailureGuard.run(
       () async {
         talker.debug('[TaskRepository] setPinned: id=$id, isPinned=$isPinned');
-        final psMetadata = encodeCrudMetadata(context);
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
         await (driftDb.update(
           driftDb.taskTable,
         )..where((t) => t.id.equals(id))).write(
@@ -692,7 +696,7 @@ class TaskRepository implements TaskRepositoryContract {
             psMetadata: psMetadata == null
                 ? const drift_pkg.Value<String?>.absent()
                 : drift_pkg.Value(psMetadata),
-            updatedAt: drift_pkg.Value(DateTime.now()),
+            updatedAt: drift_pkg.Value(_clock.nowUtc()),
           ),
         );
       },
@@ -715,8 +719,8 @@ class TaskRepository implements TaskRepositoryContract {
         );
 
         final normalized = untilUtc?.toUtc();
-        final psMetadata = encodeCrudMetadata(context);
-        final now = DateTime.now();
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
+        final now = _clock.nowUtc();
 
         await driftDb.transaction(() async {
           await (driftDb.update(
@@ -803,8 +807,8 @@ class TaskRepository implements TaskRepositoryContract {
     await FailureGuard.run(
       () async {
         talker.debug('[TaskRepository] delete: id=$id');
-        final now = DateTime.now();
-        final psMetadata = encodeCrudMetadata(context);
+        final now = _clock.nowUtc();
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         await driftDb.transaction(() async {
           await _removeNextActionForTask(

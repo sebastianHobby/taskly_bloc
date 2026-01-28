@@ -5,6 +5,7 @@
 library;
 
 export 'allocation.dart';
+export 'auth.dart';
 export 'analytics.dart';
 export 'attention.dart';
 export 'contracts.dart';

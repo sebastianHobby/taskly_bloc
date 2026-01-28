@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_today_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
@@ -34,7 +33,7 @@ class _JournalHubPageState extends State<JournalHubPage> {
   @override
   void initState() {
     super.initState();
-    _selectedDay = getIt<NowService>().nowLocal();
+    _selectedDay = context.read<NowService>().nowLocal();
   }
 
   Future<void> _pickDay() async {

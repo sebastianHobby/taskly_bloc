@@ -55,10 +55,18 @@ class RoutinesListView extends StatelessWidget {
                   routine: item.routine,
                   snapshot: item.snapshot,
                   isCatchUpDay: item.isCatchUpDay,
-                  labels: buildRoutineListLabels(context),
+                  showScheduleRow:
+                      item.routine.routineType == RoutineType.weeklyFixed,
+                  showProgress:
+                      item.routine.routineType == RoutineType.weeklyFlexible ||
+                      item.routine.routineType == RoutineType.monthlyFlexible,
+                  dayKeyUtc: item.dayKeyUtc,
+                  completionsInPeriod: item.completionsInPeriod,
+                  labels: buildRoutinePlanLabels(context),
                 ),
                 actions: TasklyRoutineRowActions(
                   onTap: () => onEditRoutine(item.routine.id),
+                  onPrimaryAction: () => onEditRoutine(item.routine.id),
                 ),
               ),
           ],
@@ -80,10 +88,18 @@ class RoutinesListView extends StatelessWidget {
                   routine: item.routine,
                   snapshot: item.snapshot,
                   isCatchUpDay: item.isCatchUpDay,
-                  labels: buildRoutineListLabels(context),
+                  showScheduleRow:
+                      item.routine.routineType == RoutineType.weeklyFixed,
+                  showProgress:
+                      item.routine.routineType == RoutineType.weeklyFlexible ||
+                      item.routine.routineType == RoutineType.monthlyFlexible,
+                  dayKeyUtc: item.dayKeyUtc,
+                  completionsInPeriod: item.completionsInPeriod,
+                  labels: buildRoutinePlanLabels(context),
                 ),
                 actions: TasklyRoutineRowActions(
                   onTap: () => onEditRoutine(item.routine.id),
+                  onPrimaryAction: () => onEditRoutine(item.routine.id),
                 ),
               ),
           ],

@@ -76,6 +76,7 @@ final class JournalEntryEditorState {
   const JournalEntryEditorState({
     required this.status,
     required this.entryId,
+    required this.selectedDayLocal,
     required this.groups,
     required this.trackers,
     required this.definitionById,
@@ -83,6 +84,7 @@ final class JournalEntryEditorState {
     required this.mood,
     required this.note,
     required this.entryValues,
+    required this.dailySummaryItems,
     required this.isDirty,
   });
 
@@ -90,6 +92,7 @@ final class JournalEntryEditorState {
     return JournalEntryEditorState(
       status: const JournalEntryEditorLoading(),
       entryId: entryId,
+      selectedDayLocal: DateTime(2000),
       groups: const <TrackerGroup>[],
       trackers: const <TrackerDefinition>[],
       definitionById: const <String, TrackerDefinition>{},
@@ -97,12 +100,14 @@ final class JournalEntryEditorState {
       mood: null,
       note: '',
       entryValues: const <String, Object?>{},
+      dailySummaryItems: const <JournalDailySummaryItem>[],
       isDirty: false,
     );
   }
 
   final JournalEntryEditorStatus status;
   final String? entryId;
+  final DateTime selectedDayLocal;
   final List<TrackerGroup> groups;
   final List<TrackerDefinition> trackers;
   final Map<String, TrackerDefinition> definitionById;
@@ -110,6 +115,7 @@ final class JournalEntryEditorState {
   final MoodRating? mood;
   final String note;
   final Map<String, Object?> entryValues;
+  final List<JournalDailySummaryItem> dailySummaryItems;
   final bool isDirty;
 
   bool get isEditingExisting => entryId != null && entryId!.trim().isNotEmpty;
@@ -117,6 +123,7 @@ final class JournalEntryEditorState {
   JournalEntryEditorState copyWith({
     JournalEntryEditorStatus? status,
     String? entryId,
+    DateTime? selectedDayLocal,
     List<TrackerGroup>? groups,
     List<TrackerDefinition>? trackers,
     Map<String, TrackerDefinition>? definitionById,
@@ -124,11 +131,13 @@ final class JournalEntryEditorState {
     MoodRating? mood,
     String? note,
     Map<String, Object?>? entryValues,
+    List<JournalDailySummaryItem>? dailySummaryItems,
     bool? isDirty,
   }) {
     return JournalEntryEditorState(
       status: status ?? this.status,
       entryId: entryId ?? this.entryId,
+      selectedDayLocal: selectedDayLocal ?? this.selectedDayLocal,
       groups: groups ?? this.groups,
       trackers: trackers ?? this.trackers,
       definitionById: definitionById ?? this.definitionById,
@@ -136,6 +145,7 @@ final class JournalEntryEditorState {
       mood: mood ?? this.mood,
       note: note ?? this.note,
       entryValues: entryValues ?? this.entryValues,
+      dailySummaryItems: dailySummaryItems ?? this.dailySummaryItems,
       isDirty: isDirty ?? this.isDirty,
     );
   }
@@ -226,90 +236,61 @@ class JournalEntryEditorBloc
     return scope == 'day' || scope == 'daily' || scope == 'sleep_night';
   }
 
+  List<JournalDailySummaryItem> _buildDailySummaryItems({
+    required List<TrackerDefinition> defs,
+    required List<TrackerStateDay> dayStates,
+  }) {
+    final dailyDefs =
+        defs
+            .where((d) => d.isActive && d.deletedAt == null)
+            .where(_isDailyScope)
+            .toList(growable: false)
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+    final dayStateByTrackerId = {
+      for (final s in dayStates) s.trackerId: s,
+    };
+
+    final items = <JournalDailySummaryItem>[];
+    for (final d in dailyDefs) {
+      final value = dayStateByTrackerId[d.id]?.value;
+      if (value == null) continue;
+      final formatted = _formatSummaryValue(value);
+      if (formatted == null) continue;
+      items.add(JournalDailySummaryItem(label: d.name, value: formatted));
+      if (items.length == 2) break;
+    }
+
+    return items;
+  }
+
+  String? _formatSummaryValue(Object value) {
+    return switch (value) {
+      final bool v => v ? 'Yes' : null,
+      final int v => v.toString(),
+      final double v => v.toStringAsFixed(1),
+      final String v => v,
+      _ => value.toString(),
+    };
+  }
+
   JournalEntry? _initialEntry;
   MoodRating? _initialMood;
   String _initialNote = '';
   Map<String, Object?> _initialEntryValues = const <String, Object?>{};
+  DateTime _selectedDayLocal = DateTime(2000);
 
   Future<void> _onStarted(
     JournalEntryEditorStarted event,
     Emitter<JournalEntryEditorState> emit,
   ) async {
-    final defs$ = _repository.watchTrackerDefinitions().startWith(
-      const <TrackerDefinition>[],
+    final nowLocal = _nowUtc().toLocal();
+    _selectedDayLocal = DateTime(
+      nowLocal.year,
+      nowLocal.month,
+      nowLocal.day,
     );
-    final groups$ = _repository.watchTrackerGroups().startWith(
-      const <TrackerGroup>[],
-    );
-
-    final combined$ =
-        Rx.combineLatest2<
-          List<TrackerDefinition>,
-          List<TrackerGroup>,
-          ({List<TrackerDefinition> defs, List<TrackerGroup> groups})
-        >(defs$, groups$, (defs, groups) => (defs: defs, groups: groups));
-
-    unawaited(
-      emit.forEach(
-        combined$,
-        onData: (data) {
-          final groups =
-              data.groups.where((g) => g.isActive).toList(growable: false)
-                ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
-          final trackers =
-              data.defs
-                  .where((d) => d.isActive && d.deletedAt == null)
-                  .where((d) => !_isDailyScope(d))
-                  .where((d) => d.systemKey != 'mood')
-                  .toList(growable: false)
-                ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
-          String? moodTrackerId;
-          for (final d in data.defs) {
-            if (d.systemKey == 'mood') {
-              moodTrackerId = d.id;
-              break;
-            }
-          }
-
-          final definitionById = {
-            for (final d in data.defs) d.id: d,
-          };
-
-          return state.copyWith(
-            status: const JournalEntryEditorIdle(),
-            groups: groups,
-            trackers: trackers,
-            definitionById: definitionById,
-            moodTrackerId: moodTrackerId,
-          );
-        },
-        onError: (Object e, StackTrace st) {
-          final context = _newContext(
-            intent: 'trackers_stream_error',
-            operation: 'journal.watchTrackerDefinitions+groups',
-            entryId: state.entryId,
-          );
-
-          _reportIfUnexpectedOrUnmapped(
-            e,
-            st,
-            context: context,
-            message: '[JournalEntryEditorBloc] trackers stream error',
-          );
-
-          return state.copyWith(
-            status: JournalEntryEditorError(
-              _uiMessageFor(
-                e,
-                fallback: 'Failed to load trackers. Please try again.',
-              ),
-            ),
-          );
-        },
-      ),
-    );
+    emit(state.copyWith(selectedDayLocal: _selectedDayLocal));
 
     try {
       final entryId = _entryId;
@@ -353,6 +334,101 @@ class JournalEntryEditorBloc
         ),
       );
     }
+
+    final defs$ = _repository.watchTrackerDefinitions().startWith(
+      const <TrackerDefinition>[],
+    );
+    final groups$ = _repository.watchTrackerGroups().startWith(
+      const <TrackerGroup>[],
+    );
+    final dayUtc = dateOnly(_selectedDayLocal);
+    final dayState$ = _repository
+        .watchTrackerStateDay(
+          range: DateRange(start: dayUtc, end: dayUtc),
+        )
+        .startWith(const <TrackerStateDay>[]);
+
+    final combined$ =
+        Rx.combineLatest3<
+          List<TrackerDefinition>,
+          List<TrackerGroup>,
+          List<TrackerStateDay>,
+          ({
+            List<TrackerDefinition> defs,
+            List<TrackerGroup> groups,
+            List<TrackerStateDay> dayStates,
+          })
+        >(defs$, groups$, dayState$, (defs, groups, dayStates) {
+          return (defs: defs, groups: groups, dayStates: dayStates);
+        });
+
+    unawaited(
+      emit.forEach(
+        combined$,
+        onData: (data) {
+          final groups =
+              data.groups.where((g) => g.isActive).toList(growable: false)
+                ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+          final trackers =
+              data.defs
+                  .where((d) => d.isActive && d.deletedAt == null)
+                  .where((d) => !_isDailyScope(d))
+                  .where((d) => d.systemKey != 'mood')
+                  .toList(growable: false)
+                ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+          String? moodTrackerId;
+          for (final d in data.defs) {
+            if (d.systemKey == 'mood') {
+              moodTrackerId = d.id;
+              break;
+            }
+          }
+
+          final definitionById = {
+            for (final d in data.defs) d.id: d,
+          };
+
+          final dailySummaryItems = _buildDailySummaryItems(
+            defs: data.defs,
+            dayStates: data.dayStates,
+          );
+
+          return state.copyWith(
+            status: const JournalEntryEditorIdle(),
+            groups: groups,
+            trackers: trackers,
+            definitionById: definitionById,
+            moodTrackerId: moodTrackerId,
+            dailySummaryItems: dailySummaryItems,
+          );
+        },
+        onError: (Object e, StackTrace st) {
+          final context = _newContext(
+            intent: 'trackers_stream_error',
+            operation: 'journal.watchTrackerDefinitions+groups+stateDay',
+            entryId: state.entryId,
+          );
+
+          _reportIfUnexpectedOrUnmapped(
+            e,
+            st,
+            context: context,
+            message: '[JournalEntryEditorBloc] trackers stream error',
+          );
+
+          return state.copyWith(
+            status: JournalEntryEditorError(
+              _uiMessageFor(
+                e,
+                fallback: 'Failed to load trackers. Please try again.',
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   void _onMoodChanged(
@@ -524,6 +600,11 @@ class JournalEntryEditorBloc
     }
 
     _initialEntry = entry;
+    _selectedDayLocal = DateTime(
+      entry.localDate.year,
+      entry.localDate.month,
+      entry.localDate.day,
+    );
 
     final defs = await _repository.watchTrackerDefinitions().first;
     String? moodTrackerId;
@@ -566,6 +647,7 @@ class JournalEntryEditorBloc
       mood: mood,
       note: entry.journalText ?? '',
       entryValues: values,
+      selectedDayLocal: _selectedDayLocal,
       status: const JournalEntryEditorIdle(),
       isDirty: false,
     );
@@ -614,4 +696,11 @@ class JournalEntryEditorBloc
       return const <TrackerDefinitionChoice>[];
     }
   }
+}
+
+final class JournalDailySummaryItem {
+  const JournalDailySummaryItem({required this.label, required this.value});
+
+  final String label;
+  final String value;
 }

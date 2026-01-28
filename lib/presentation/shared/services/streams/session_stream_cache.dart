@@ -10,10 +10,10 @@ import 'package:taskly_domain/services.dart';
 /// - Sources are re-subscribed on resume.
 final class SessionStreamCacheManager {
   SessionStreamCacheManager({
-    required AppLifecycleService appLifecycleService,
+    required AppLifecycleEvents appLifecycleService,
   }) : _appLifecycleService = appLifecycleService;
 
-  final AppLifecycleService _appLifecycleService;
+  final AppLifecycleEvents _appLifecycleService;
   final Map<Object, _CacheEntry<dynamic>> _entries = <Object, _CacheEntry>{};
 
   StreamSubscription<AppLifecycleEvent>? _lifecycleSub;

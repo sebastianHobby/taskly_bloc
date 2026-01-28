@@ -102,13 +102,13 @@ Important ownership rule:
 
 ### Client: Drift + PowerSync
 - PowerSync connector (auth + upload pipeline):
-  - [lib/data/infrastructure/powersync/api_connector.dart](../../lib/data/infrastructure/powersync/api_connector.dart)
+  - [packages/taskly_data/lib/src/infrastructure/powersync/api_connector.dart](../../../packages/taskly_data/lib/src/infrastructure/powersync/api_connector.dart)
 - Local PowerSync schema (client-side tables/columns):
-  - [lib/data/infrastructure/powersync/schema.dart](../../lib/data/infrastructure/powersync/schema.dart)
+  - [packages/taskly_data/lib/src/infrastructure/powersync/schema.dart](../../../packages/taskly_data/lib/src/infrastructure/powersync/schema.dart)
 - Upload-time JSON normalization (PowerSync TEXT -> PostgREST json/jsonb/arrays):
-  - [lib/data/infrastructure/powersync/upload_data_normalizer.dart](../../lib/data/infrastructure/powersync/upload_data_normalizer.dart)
+  - [packages/taskly_data/lib/src/infrastructure/powersync/upload_data_normalizer.dart](../../../packages/taskly_data/lib/src/infrastructure/powersync/upload_data_normalizer.dart)
 - DI wiring: PowerSync DB <-> Drift `AppDatabase`:
-  - [lib/core/di/dependency_injection.dart](../../lib/core/di/dependency_injection.dart)
+  - [lib/core/di/dependency_injection.dart](../../../lib/core/di/dependency_injection.dart)
 
 ### Server (local dev): PowerSync service
 - Docker Compose stack:
@@ -209,8 +209,8 @@ The app opens the PowerSync database first, then wraps it with Drift:
 - Drift uses `SqliteAsyncDriftConnection(syncDb)` as its database connection
 
 Entry points:
-- [lib/core/di/dependency_injection.dart](../../lib/core/di/dependency_injection.dart)
-- [lib/data/infrastructure/powersync/api_connector.dart](../../lib/data/infrastructure/powersync/api_connector.dart)
+- [lib/core/di/dependency_injection.dart](../../../lib/core/di/dependency_injection.dart)
+- [packages/taskly_data/lib/src/infrastructure/powersync/api_connector.dart](../../../packages/taskly_data/lib/src/infrastructure/powersync/api_connector.dart)
 
 High-level sequence:
 
@@ -252,8 +252,8 @@ Data ownership note:
   when the PostgREST request is executed, and should not be set/overridden by the app.
 
 Key code:
-- [lib/data/infrastructure/powersync/api_connector.dart](../../lib/data/infrastructure/powersync/api_connector.dart)
-- [lib/data/infrastructure/powersync/upload_data_normalizer.dart](../../lib/data/infrastructure/powersync/upload_data_normalizer.dart)
+- [packages/taskly_data/lib/src/infrastructure/powersync/api_connector.dart](../../../packages/taskly_data/lib/src/infrastructure/powersync/api_connector.dart)
+- [packages/taskly_data/lib/src/infrastructure/powersync/upload_data_normalizer.dart](../../../packages/taskly_data/lib/src/infrastructure/powersync/upload_data_normalizer.dart)
 
 ### 4.3 Download flow (Supabase -> local)
 
@@ -380,3 +380,6 @@ Cloud (`supabase db pull`) before starting the local stack.
 
 This is the default in CI so pipeline-tagged tests run against a fully local
 stack that matches prod schema.
+
+
+

@@ -10,7 +10,7 @@ import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 
-class _FakeLifecycleService extends Fake implements AppLifecycleService {
+class _FakeLifecycleService extends Fake implements AppLifecycleEvents {
   _FakeLifecycleService(this._controller);
 
   final StreamController<AppLifecycleEvent> _controller;

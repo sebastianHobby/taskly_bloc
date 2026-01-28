@@ -210,12 +210,109 @@ class _AuthenticatedApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider<AuthRepositoryContract>(
+          create: (_) => getIt<AuthRepositoryContract>(),
+        ),
         Provider<NowService>(create: (_) => getIt<NowService>()),
+        Provider<HomeDayService>(create: (_) => getIt<HomeDayService>()),
+        Provider<HomeDayKeyService>(create: (_) => getIt<HomeDayKeyService>()),
+        Provider<TemporalTriggerService>(
+          create: (_) => getIt<TemporalTriggerService>(),
+        ),
+        Provider<SessionDayKeyService>(
+          create: (_) => getIt<SessionDayKeyService>(),
+        ),
+        Provider<SessionSharedDataService>(
+          create: (_) => getIt<SessionSharedDataService>(),
+        ),
+        Provider<MyDayRepositoryContract>(
+          create: (_) => getIt<MyDayRepositoryContract>(),
+        ),
+        Provider<TaskSuggestionService>(
+          create: (_) => getIt<TaskSuggestionService>(),
+        ),
+        Provider<MyDaySessionQueryService>(
+          create: (_) => getIt<MyDaySessionQueryService>(),
+        ),
+        Provider<MyDayGateQueryService>(
+          create: (_) => getIt<MyDayGateQueryService>(),
+        ),
+        Provider<AnytimeSessionQueryService>(
+          create: (_) => getIt<AnytimeSessionQueryService>(),
+        ),
+        Provider<ScheduledOccurrencesService>(
+          create: (_) => getIt<ScheduledOccurrencesService>(),
+        ),
+        Provider<OccurrenceReadService>(
+          create: (_) => getIt<OccurrenceReadService>(),
+        ),
+        Provider<AnalyticsService>(create: (_) => getIt<AnalyticsService>()),
+        Provider<AttentionEngineContract>(
+          create: (_) => getIt<AttentionEngineContract>(),
+        ),
+        Provider<TemplateDataService>(
+          create: (_) => getIt<TemplateDataService>(),
+        ),
+        Provider<SettingsRepositoryContract>(
+          create: (_) => getIt<SettingsRepositoryContract>(),
+        ),
+        Provider<TaskRepositoryContract>(
+          create: (_) => getIt<TaskRepositoryContract>(),
+        ),
+        Provider<ProjectRepositoryContract>(
+          create: (_) => getIt<ProjectRepositoryContract>(),
+        ),
+        Provider<ProjectNextActionsRepositoryContract>(
+          create: (_) => getIt<ProjectNextActionsRepositoryContract>(),
+        ),
+        Provider<ProjectAnchorStateRepositoryContract>(
+          create: (_) => getIt<ProjectAnchorStateRepositoryContract>(),
+        ),
+        Provider<ValueRepositoryContract>(
+          create: (_) => getIt<ValueRepositoryContract>(),
+        ),
+        Provider<RoutineRepositoryContract>(
+          create: (_) => getIt<RoutineRepositoryContract>(),
+        ),
+        Provider<JournalRepositoryContract>(
+          create: (_) => getIt<JournalRepositoryContract>(),
+        ),
+        Provider<AuthenticatedAppServicesCoordinator>(
+          create: (_) => getIt<AuthenticatedAppServicesCoordinator>(),
+        ),
+        Provider<PresentationSessionServicesCoordinator>(
+          create: (_) => getIt<PresentationSessionServicesCoordinator>(),
+        ),
+        Provider<InitialSyncService>(create: (_) => getIt<InitialSyncService>()),
+        Provider<PendingNotificationsProcessor>(
+          create: (_) => getIt<PendingNotificationsProcessor>(),
+        ),
+        Provider<SyncAnomalyStream>(create: (_) => getIt<SyncAnomalyStream>()),
+        Provider<TaskWriteService>(create: (_) => getIt<TaskWriteService>()),
+        Provider<ProjectWriteService>(
+          create: (_) => getIt<ProjectWriteService>(),
+        ),
+        Provider<ValueWriteService>(create: (_) => getIt<ValueWriteService>()),
+        Provider<RoutineWriteService>(
+          create: (_) => getIt<RoutineWriteService>(),
+        ),
+        Provider<EditorLauncher>(
+          create: (_) => EditorLauncher(
+            taskRepository: getIt<TaskRepositoryContract>(),
+            projectRepository: getIt<ProjectRepositoryContract>(),
+            valueRepository: getIt<ValueRepositoryContract>(),
+            routineRepository: getIt<RoutineRepositoryContract>(),
+            taskWriteService: getIt<TaskWriteService>(),
+            projectWriteService: getIt<ProjectWriteService>(),
+            valueWriteService: getIt<ValueWriteService>(),
+            routineWriteService: getIt<RoutineWriteService>(),
+          ),
+        ),
 
         Provider<TileIntentDispatcher>(
-          create: (_) => DefaultTileIntentDispatcher(
-            sharedDataService: getIt<SessionSharedDataService>(),
-            editorLauncher: EditorLauncher.fromGetIt(),
+          create: (context) => DefaultTileIntentDispatcher(
+            sharedDataService: context.read<SessionSharedDataService>(),
+            editorLauncher: context.read<EditorLauncher>(),
           ),
         ),
       ],
@@ -223,23 +320,25 @@ class _AuthenticatedApp extends StatelessWidget {
         providers: [
           BlocProvider<InitialSyncGateBloc>(
             lazy: false,
-            create: (_) => InitialSyncGateBloc(
-              coordinator: getIt<AuthenticatedAppServicesCoordinator>(),
-              initialSyncService: getIt<InitialSyncService>(),
-              sharedDataService: getIt<SessionSharedDataService>(),
+            create: (context) => InitialSyncGateBloc(
+              coordinator: context.read<AuthenticatedAppServicesCoordinator>(),
+              initialSyncService: context.read<InitialSyncService>(),
+              sharedDataService: context.read<SessionSharedDataService>(),
             )..add(const InitialSyncGateStarted()),
           ),
           BlocProvider<ScreenActionsBloc>(
             create: (context) => ScreenActionsBloc(
-              taskWriteService: getIt<TaskWriteService>(),
-              projectWriteService: getIt<ProjectWriteService>(),
-              valueWriteService: getIt<ValueWriteService>(),
+              taskWriteService: context.read<TaskWriteService>(),
+              projectWriteService: context.read<ProjectWriteService>(),
+              valueWriteService: context.read<ValueWriteService>(),
               errorReporter: context.read<AppErrorReporter>(),
             ),
           ),
           BlocProvider<SyncAnomalyBloc>(
             lazy: false,
-            create: (_) => SyncAnomalyBloc(source: getIt<SyncAnomalyStream>()),
+            create: (context) => SyncAnomalyBloc(
+              source: context.read<SyncAnomalyStream>(),
+            ),
           ),
         ],
         child: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
@@ -297,7 +396,9 @@ class _AuthenticatedApp extends StatelessWidget {
                   localizationsDelegates:
                       AppLocalizations.localizationsDelegates,
                   supportedLocales: AppLocalizations.supportedLocales,
-                  routerConfig: router,
+                  routerConfig: createRouter(
+                    forceOnboarding: !state.settings.onboardingCompleted,
+                  ),
                   debugShowCheckedModeBanner: false,
                   builder: (context, child) {
                     return _SyncAnomalySnackBarListener(
@@ -412,7 +513,7 @@ class _ScreenActionsFailureSnackBarListenerState
           entityId: state.entityId,
         );
 
-        final now = getIt<NowService>().nowLocal();
+        final now = context.read<NowService>().nowLocal();
         final lastAt = _lastShownAt[dedupeKey];
         if (lastAt != null && now.difference(lastAt).inMilliseconds < 2000) {
           return;
@@ -497,7 +598,7 @@ class _NotificationsBootstrapperState
     if (kIsWeb) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      getIt<PendingNotificationsProcessor>().start();
+      context.read<PendingNotificationsProcessor>().start();
     });
   }
 

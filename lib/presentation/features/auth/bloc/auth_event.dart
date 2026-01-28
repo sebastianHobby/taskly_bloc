@@ -1,7 +1,5 @@
 part of 'auth_bloc.dart';
 
-// Note: AuthState here refers to Supabase's AuthState from supabase_flutter
-
 /// Events for authentication state management
 sealed class AuthEvent {
   const AuthEvent();

@@ -43,9 +43,9 @@ class _AccountInfo extends StatelessWidget {
 
         final email = user.email;
         final displayName =
-            user.userMetadata?['display_name'] as String? ??
-            user.userMetadata?['full_name'] as String? ??
-            user.userMetadata?['name'] as String?;
+            user.metadata?['display_name'] as String? ??
+            user.metadata?['full_name'] as String? ??
+            user.metadata?['name'] as String?;
 
         return ListTile(
           leading: CircleAvatar(

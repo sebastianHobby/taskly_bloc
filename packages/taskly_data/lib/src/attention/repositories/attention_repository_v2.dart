@@ -10,14 +10,20 @@ import 'package:taskly_domain/attention.dart' as domain_resolution;
 import 'package:taskly_domain/attention.dart' as domain_rule;
 import 'package:taskly_domain/attention.dart' as domain_runtime;
 import 'package:taskly_domain/telemetry.dart';
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 /// Drift-based repository for the new attention bounded context.
 ///
 /// This is not wired into the UI yet (Phase 05 cutover).
 class AttentionRepositoryV2 implements AttentionRepositoryContract {
-  AttentionRepositoryV2({required AppDatabase db}) : _db = db;
+  AttentionRepositoryV2({
+    required AppDatabase db,
+    Clock clock = systemClock,
+  }) : _db = db,
+       _clock = clock;
 
   final AppDatabase _db;
+  final Clock _clock;
 
   // ==========================================================================
   // Rules
@@ -329,7 +335,7 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
       createdAt: forUpdate
           ? const Value<DateTime>.absent()
           : Value(rule.createdAt),
-      updatedAt: Value(DateTime.now()),
+      updatedAt: Value(_clock.nowUtc()),
     );
   }
 
@@ -404,7 +410,7 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
       createdAt: forUpdate
           ? const Value<DateTime>.absent()
           : Value(state.createdAt),
-      updatedAt: Value(DateTime.now()),
+      updatedAt: Value(_clock.nowUtc()),
     );
   }
 

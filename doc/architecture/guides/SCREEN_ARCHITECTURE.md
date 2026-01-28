@@ -22,6 +22,13 @@ Routing should be **explicit** and deep-link friendly.
   `/scheduled`) and feature routes (e.g. `/settings/...`).
 - Avoid convention-based catch-all routes that map arbitrary segments to a
   dynamic screen composition system.
+- See [NAVIGATION_AND_SCREEN_KEYS.md](NAVIGATION_AND_SCREEN_KEYS.md) for
+  screen-key conventions and app shell behavior.
+
+Naming note:
+- The Anytime screen is implemented under the historical system screen key
+  `someday`, but the canonical route path is `/anytime` (see
+  `doc/product/SCREEN_PURPOSE_CONCEPTS.md`).
 
 ## 3) Screen Composition Pattern
 
@@ -81,7 +88,8 @@ Recommended reuse mechanisms:
 - Shared UI components in `packages/taskly_ui` (pure UI only)
 - Prefer extracting non-trivial reusable UI blocks into `packages/taskly_ui`
   instead of creating app-owned primitives/entities/sections.
-- Shared domain services/use-cases under `lib/domain/...` (or extracted packages)
+- Shared domain services/use-cases under `packages/taskly_domain/lib/src/...`
+  (or app-specific domain in `lib/domain/...` when present)
 - Presentation query services when reuse is screen-shaped (reactive composition,
   sectioning, pagination mechanics) but not business semantics.
 - Shared repositories/contracts and implementations

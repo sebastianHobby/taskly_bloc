@@ -352,7 +352,7 @@ class _SelectableValueTile extends StatelessWidget {
         isInheritedPrimary ||
         (target == ValuesAlignmentTarget.secondary && isPrimary);
     final iconData = getIconDataFromName(value.iconName) ?? Icons.star;
-    final color = ColorUtils.fromHexWithThemeFallback(context, value.color);
+    final color = ColorUtils.valueColorForTheme(context, value.color);
     final selectionLabel = isPrimary
         ? primaryShortLabel
         : isSecondary

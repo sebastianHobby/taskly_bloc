@@ -6,8 +6,11 @@ import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
+import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
+import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
@@ -235,7 +238,7 @@ class _PlanValuesStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final suggested = data.suggested;
+    final groups = data.valueSuggestionGroups;
     final l10n = context.l10n;
     final needsSetup =
         data.requiresValueSetup &&
@@ -246,7 +249,7 @@ class _PlanValuesStep extends StatelessWidget {
       return const MyDayValuesGate();
     }
 
-    if (suggested.isEmpty) {
+    if (groups.isEmpty) {
       return TasklyFeedRenderer(
         spec: TasklyFeedSpec.empty(
           empty: TasklyEmptyStateSpec(
@@ -258,15 +261,6 @@ class _PlanValuesStep extends StatelessWidget {
       );
     }
 
-    final rows = _buildTaskRows(
-      context,
-      tasks: suggested,
-      selectedTaskIds: data.selectedTaskIds,
-      enableSnooze: true,
-      dayKeyUtc: data.dayKeyUtc,
-      style: TasklyTaskRowStyle.planPick,
-    );
-
     return ListView(
       padding: EdgeInsets.fromLTRB(
         TasklyTokens.of(context).spaceLg,
@@ -275,29 +269,37 @@ class _PlanValuesStep extends StatelessWidget {
         TasklyTokens.of(context).spaceXl,
       ),
       children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => _showWhySuggestedSheet(context),
-            icon: const Icon(Icons.info_outline, size: 18),
-            label: const Text('Why suggested'),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.symmetric(
-                horizontal: TasklyTokens.of(context).spaceLg,
-                vertical: TasklyTokens.of(context).spaceSm,
+        Row(
+          children: [
+            TextButton.icon(
+              onPressed: () => _showWhySuggestedSheet(context),
+              icon: const Icon(Icons.info_outline, size: 18),
+              label: const Text('Why suggested'),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(
+                  horizontal: TasklyTokens.of(context).spaceLg,
+                  vertical: TasklyTokens.of(context).spaceSm,
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-          ),
+            const Spacer(),
+            IconButton(
+              tooltip: 'Sort',
+              onPressed: () => _showSortSheet(context),
+              icon: const Icon(Icons.sort_rounded),
+            ),
+          ],
         ),
         SizedBox(height: TasklyTokens.of(context).spaceSm),
-        TasklyFeedRenderer.buildSection(
-          TasklySectionSpec.standardList(
-            id: 'plan-values',
-            rows: rows,
+        for (final group in groups) ...[
+          _ValueSuggestionCard(
+            data: data,
+            group: group,
           ),
-        ),
+          SizedBox(height: TasklyTokens.of(context).spaceLg),
+        ],
       ],
     );
   }
@@ -323,7 +325,7 @@ class _PlanValuesStep extends StatelessWidget {
               ),
               SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
-                'These suggestions are ranked by the values you’ve set and '
+                "These suggestions are ranked by the values you've set and "
                 'their priorities, so your day reflects who you want to be. '
                 'Recent completions gently shift which tasks rise next, while '
                 'the overall mix stays balanced across values.',
@@ -333,6 +335,365 @@ class _PlanValuesStep extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _showSortSheet(BuildContext context) async {
+    final currentSort = data.valueSort;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text(
+                  'Sort suggestions',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              for (final option in PlanMyDayValueSort.values)
+                RadioListTile<PlanMyDayValueSort>(
+                  value: option,
+                  groupValue: currentSort,
+                  title: Text(_sortLabel(option)),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    context.read<PlanMyDayBloc>().add(
+                      PlanMyDayValueSortChanged(value),
+                    );
+                    Navigator.of(sheetContext).pop();
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _sortLabel(PlanMyDayValueSort sort) {
+    return switch (sort) {
+      PlanMyDayValueSort.attentionFirst => 'Attention first',
+      PlanMyDayValueSort.priorityFirst => 'Priority first',
+      PlanMyDayValueSort.mostSuggested => 'Most suggested',
+      PlanMyDayValueSort.alphabetical => 'A-Z',
+    };
+  }
+}
+
+class _ValueSuggestionCard extends StatelessWidget {
+  const _ValueSuggestionCard({
+    required this.data,
+    required this.group,
+  });
+
+  final PlanMyDayReady data;
+  final PlanMyDayValueSuggestionGroup group;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
+
+    final value = group.value;
+    final totalCount = group.totalCount;
+    final visibleCount = group.visibleCount.clamp(0, totalCount);
+    final remaining = (totalCount - visibleCount).clamp(0, totalCount);
+    final tasks = group.tasks.take(visibleCount).toList(growable: false);
+
+    final selectedCount = group.tasks
+        .where((task) => data.selectedTaskIds.contains(task.id))
+        .length;
+    final allSelected = totalCount > 0 && selectedCount == totalCount;
+
+    final priorityLabel = _priorityLabel(value.priority);
+    final countLabel = _taskCountLabel(totalCount);
+
+    final badgeColor = group.attentionNeeded ? scheme.error : scheme.primary;
+    final badgeLabel = group.attentionNeeded ? 'Attention needed' : 'Balanced';
+
+    final helperText = group.attentionNeeded
+        ? "Fewer task completions lately compared with this value's priority."
+        : 'Task completions here are keeping pace with its priority.';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(tokens.radiusLg),
+        border: Border.all(color: scheme.outlineVariant.withOpacity(0.6)),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.shadow.withOpacity(0.06),
+            blurRadius: tokens.cardShadowBlur,
+            offset: tokens.cardShadowOffset,
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spaceLg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ValueIconAvatar(
+                  icon: value.iconName ?? 'star',
+                  colorHex: value.color,
+                ),
+                SizedBox(width: tokens.spaceSm2),
+                Expanded(
+                  child: Text(
+                    value.name,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                _StatusBadge(
+                  label: badgeLabel,
+                  color: badgeColor,
+                ),
+                if (group.attentionNeeded) ...[
+                  SizedBox(width: tokens.spaceXs2),
+                  IconButton(
+                    tooltip: 'Why attention needed',
+                    onPressed: () => _showAttentionInfoSheet(context),
+                    icon: const Icon(Icons.info_outline, size: 18),
+                  ),
+                ],
+                IconButton(
+                  onPressed: () => context.read<PlanMyDayBloc>().add(
+                    PlanMyDayValueToggleExpanded(group.valueId),
+                  ),
+                  icon: Icon(
+                    group.expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: tokens.spaceXs2),
+            Row(
+              children: [
+                _PriorityDot(color: _priorityColor(scheme, value.priority)),
+                SizedBox(width: tokens.spaceXs2),
+                Text(
+                  priorityLabel,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(width: tokens.spaceXs2),
+                Text(
+                  '\u00b7 $countLabel',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: tokens.spaceXs2),
+            Text(
+              helperText,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: tokens.spaceSm),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: totalCount == 0
+                      ? null
+                      : () => context.read<PlanMyDayBloc>().add(
+                          PlanMyDayValueToggleAll(group.valueId),
+                        ),
+                  child: Text(allSelected ? 'Remove all' : 'Add all'),
+                ),
+                if (selectedCount > 0) ...[
+                  SizedBox(width: tokens.spaceSm),
+                  Text(
+                    ' selected',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (group.expanded) ...[
+              if (tasks.isNotEmpty)
+                TasklyFeedRenderer.buildSection(
+                  TasklySectionSpec.standardList(
+                    id: 'plan-values-',
+                    rows: _buildTaskRows(
+                      context,
+                      tasks: tasks,
+                      selectedTaskIds: data.selectedTaskIds,
+                      enableSnooze: true,
+                      dayKeyUtc: data.dayKeyUtc,
+                      style: TasklyTaskRowStyle.planPick,
+                      keyPrefix: 'plan-task-',
+                    ),
+                  ),
+                ),
+              if (remaining > 0) ...[
+                SizedBox(height: tokens.spaceSm),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () => context.read<PlanMyDayBloc>().add(
+                      PlanMyDayValueShowMore(group.valueId),
+                    ),
+                    child: Text('Show more ()'),
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _priorityLabel(ValuePriority priority) {
+    return switch (priority) {
+      ValuePriority.high => 'High priority',
+      ValuePriority.medium => 'Medium priority',
+      ValuePriority.low => 'Low priority',
+    };
+  }
+
+  String _taskCountLabel(int count) {
+    return count == 1 ? '1 task' : ' tasks';
+  }
+
+  Color _priorityColor(ColorScheme scheme, ValuePriority priority) {
+    return switch (priority) {
+      ValuePriority.high => scheme.error,
+      ValuePriority.medium => scheme.tertiary,
+      ValuePriority.low => scheme.onSurfaceVariant.withOpacity(0.6),
+    };
+  }
+
+  Future<void> _showAttentionInfoSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            padding: EdgeInsets.fromLTRB(
+              TasklyTokens.of(context).spaceLg,
+              TasklyTokens.of(context).spaceSm,
+              TasklyTokens.of(context).spaceLg,
+              TasklyTokens.of(context).spaceXl,
+            ),
+            children: [
+              const Text(
+                'Attention needed',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
+              Text(
+                'We compare recent task completions to your value priorities. '
+                'This value is running behind, so it is getting extra attention.',
+                style: Theme.of(sheetContext).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PriorityDot extends StatelessWidget {
+  const _PriorityDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = TasklyTokens.of(context).spaceXs2;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({
+    required this.label,
+    required this.color,
+  });
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final textStyle = Theme.of(context).textTheme.labelSmall;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceSm,
+        vertical: tokens.spaceXs,
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(tokens.radiusPill),
+        border: Border.all(color: color.withOpacity(0.45)),
+      ),
+      child: Text(
+        label,
+        style: textStyle?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _ValueIconAvatar extends StatelessWidget {
+  const _ValueIconAvatar({
+    required this.icon,
+    required this.colorHex,
+  });
+
+  final String icon;
+  final String? colorHex;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final color = ColorUtils.valueColorForTheme(context, colorHex);
+    final iconData = getIconDataFromName(icon) ?? Icons.star;
+    return Container(
+      width: tokens.spaceXl,
+      height: tokens.spaceXl,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.16),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(iconData, color: color, size: tokens.spaceLg),
     );
   }
 }
@@ -775,8 +1136,11 @@ TasklyRowSpec _buildRoutineRow(
           ),
         ];
 
+  final actionLabel = item.completedToday
+      ? context.l10n.doneLabel
+      : primaryActionLabel;
   final labels = TasklyRoutineRowLabels(
-    primaryActionLabel: primaryActionLabel,
+    primaryActionLabel: actionLabel,
   );
 
   final dataRow = buildRoutineRowData(
@@ -786,6 +1150,12 @@ TasklyRowSpec _buildRoutineRow(
     selected: item.selected,
     completed: item.completedToday,
     isCatchUpDay: item.isCatchUpDay,
+    showProgress:
+        routine.routineType == RoutineType.weeklyFlexible ||
+        routine.routineType == RoutineType.monthlyFlexible,
+    showScheduleRow: routine.routineType == RoutineType.weeklyFixed,
+    dayKeyUtc: data.dayKeyUtc,
+    completionsInPeriod: item.completionsInPeriod,
     badges: badges,
     labels: labels,
   );

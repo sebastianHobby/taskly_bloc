@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/journal_daily_detail_sheet.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/tracker_input_widgets.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalEntryEditorRoutePage extends StatefulWidget {
@@ -44,11 +45,11 @@ class _JournalEntryEditorRoutePageState
   Widget build(BuildContext context) {
     return BlocProvider<JournalEntryEditorBloc>(
       create: (context) => JournalEntryEditorBloc(
-        repository: getIt<JournalRepositoryContract>(),
+        repository: context.read<JournalRepositoryContract>(),
         errorReporter: context.read<AppErrorReporter>(),
         entryId: widget.entryId,
         preselectedTrackerIds: widget.preselectedTrackerIds,
-        nowUtc: getIt<NowService>().nowUtc,
+        nowUtc: context.read<NowService>().nowUtc,
       )..add(const JournalEntryEditorStarted()),
       child: BlocConsumer<JournalEntryEditorBloc, JournalEntryEditorState>(
         listenWhen: (prev, next) =>
@@ -187,36 +188,15 @@ class _JournalEntryEditorRoutePageState
                 _ => 0,
               };
 
-              int clamp(int v) {
-                var out = v;
-                if (min != null) out = out < min ? min : out;
-                if (max != null) out = out > max ? max : out;
-                return out;
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(d.name, style: theme.textTheme.titleSmall),
-                  SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: isSaving
-                            ? null
-                            : () => setValue(clamp(intValue - step)),
-                        icon: const Icon(Icons.remove),
-                      ),
-                      Text('$intValue', style: theme.textTheme.titleMedium),
-                      IconButton(
-                        onPressed: isSaving
-                            ? null
-                            : () => setValue(clamp(intValue + step)),
-                        icon: const Icon(Icons.add),
-                      ),
-                    ],
-                  ),
-                ],
+              return TrackerQuantityInput(
+                label: d.name,
+                value: intValue,
+                min: min,
+                max: max,
+                step: step,
+                enabled: !isSaving,
+                onChanged: (v) => setValue(v),
+                onClear: () => setValue(null),
               );
             }
 
@@ -243,19 +223,11 @@ class _JournalEntryEditorRoutePageState
                           ),
                         )
                       else
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final c in choices)
-                              ChoiceChip(
-                                label: Text(c.label),
-                                selected: selectedKey == c.choiceKey,
-                                onSelected: isSaving
-                                    ? null
-                                    : (_) => setValue(c.choiceKey),
-                              ),
-                          ],
+                        TrackerChoiceInput(
+                          choices: choices,
+                          selectedKey: selectedKey,
+                          enabled: !isSaving,
+                          onSelected: setValue,
                         ),
                     ],
                   );
@@ -372,12 +344,13 @@ class _JournalEntryEditorRoutePageState
                             },
                           ),
                         SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        Text('All-day', style: theme.textTheme.titleMedium),
-                        SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        Text(
-                          'Totals or habits that apply to the whole day.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                        _AllDaySummarySection(
+                          items: state.dailySummaryItems,
+                          selectedDayLocal: state.selectedDayLocal,
+                          onShowMore: () => JournalDailyDetailSheet.show(
+                            context: context,
+                            selectedDayLocal: state.selectedDayLocal,
+                            readOnly: false,
                           ),
                         ),
                       ],
@@ -499,4 +472,65 @@ Color _getMoodColor(MoodRating mood, ColorScheme colorScheme) {
     MoodRating.good => colorScheme.tertiary,
     MoodRating.excellent => colorScheme.primary,
   };
+}
+
+class _AllDaySummarySection extends StatelessWidget {
+  const _AllDaySummarySection({
+    required this.items,
+    required this.selectedDayLocal,
+    required this.onShowMore,
+  });
+
+  final List<JournalDailySummaryItem> items;
+  final DateTime selectedDayLocal;
+  final VoidCallback onShowMore;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = TasklyTokens.of(context);
+    final hasItems = items.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('All-day', style: theme.textTheme.titleMedium),
+        SizedBox(height: tokens.spaceSm),
+        if (!hasItems)
+          Text(
+            'No daily totals yet.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        else
+          Column(
+            children: [
+              for (final item in items)
+                Padding(
+                  padding: EdgeInsets.only(bottom: tokens.spaceXs),
+                  child: Row(
+                    children: [
+                      Expanded(child: Text(item.label)),
+                      Text(
+                        item.value,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: onShowMore,
+            child: const Text('Show all'),
+          ),
+        ),
+      ],
+    );
+  }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_scope_picker_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
@@ -19,8 +18,8 @@ class AnytimeScopePickerSheet {
       showDragHandle: true,
       builder: (context) {
         return BlocProvider(
-          create: (_) => AnytimeScopePickerBloc(
-            sharedDataService: getIt<SessionSharedDataService>(),
+          create: (context) => AnytimeScopePickerBloc(
+            sharedDataService: context.read<SessionSharedDataService>(),
           ),
           child: _AnytimeScopePickerView(currentScope: currentScope),
         );

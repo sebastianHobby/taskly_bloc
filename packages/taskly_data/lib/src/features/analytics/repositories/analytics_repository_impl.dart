@@ -5,11 +5,17 @@ import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_domain/taskly_domain.dart' hide Value;
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
-  AnalyticsRepositoryImpl(this._database, this._idGenerator);
+  AnalyticsRepositoryImpl(
+    this._database,
+    this._idGenerator, {
+    Clock clock = systemClock,
+  }) : _clock = clock;
   final AppDatabase _database;
   final IdGenerator _idGenerator;
+  final Clock _clock;
 
   static const _unknownType = 'unknown';
 
@@ -234,16 +240,16 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
                 targetType: Value(targetType),
                 targetId: Value(targetId),
                 periodStart: Value(
-                  DateTime.now().subtract(const Duration(days: 30)),
+                  _clock.nowUtc().subtract(const Duration(days: 30)),
                 ),
-                periodEnd: Value(DateTime.now()),
+                periodEnd: Value(_clock.nowUtc()),
                 coefficient: Value(correlation.coefficient),
                 sampleSize: Value(correlation.sampleSize ?? 0),
                 strength: Value(correlation.strength.name),
                 insight: Value(correlation.insight ?? ''),
                 valueWithSource: Value(correlation.valueWithSource),
                 valueWithoutSource: Value(correlation.valueWithoutSource),
-                computedAt: Value(DateTime.now()),
+                computedAt: Value(_clock.nowUtc()),
                 statisticalSignificance: Value(significanceMap),
                 performanceMetrics: Value(performanceMap),
               ),
@@ -292,16 +298,16 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
                 targetType: Value(targetType),
                 targetId: Value(targetId),
                 periodStart: Value(
-                  DateTime.now().subtract(const Duration(days: 30)),
+                  _clock.nowUtc().subtract(const Duration(days: 30)),
                 ),
-                periodEnd: Value(DateTime.now()),
+                periodEnd: Value(_clock.nowUtc()),
                 coefficient: Value(correlation.coefficient),
                 sampleSize: Value(correlation.sampleSize ?? 0),
                 strength: Value(correlation.strength.name),
                 insight: Value(correlation.insight ?? ''),
                 valueWithSource: Value(correlation.valueWithSource),
                 valueWithoutSource: Value(correlation.valueWithoutSource),
-                computedAt: Value(DateTime.now()),
+                computedAt: Value(_clock.nowUtc()),
                 statisticalSignificance: Value(significanceMap),
                 performanceMetrics: Value(performanceMap),
               ),

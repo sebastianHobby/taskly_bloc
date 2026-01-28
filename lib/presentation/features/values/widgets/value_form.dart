@@ -44,7 +44,7 @@ class ValueForm extends StatefulWidget {
   /// If null, no close button is shown.
   final VoidCallback? onClose;
 
-  static const _defaultColorHex = '#000000';
+  static const _defaultColorHex = ColorUtils.valueBlueId;
   static const int maxNameLength = ValueValidators.maxNameLength;
 
   @override
@@ -72,7 +72,8 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
     final initialValues = <String, dynamic>{
       ValueFieldKeys.name.id:
           widget.initialData?.name.trim() ?? createDraft?.name.trim() ?? '',
-      ValueFieldKeys.colour.id: ColorUtils.fromHex(
+      ValueFieldKeys.colour.id: ColorUtils.valueColorForTheme(
+        context,
         widget.initialData?.color ??
             createDraft?.color ??
             ValueForm._defaultColorHex,

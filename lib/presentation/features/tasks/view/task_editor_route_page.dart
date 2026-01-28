@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
@@ -34,7 +33,7 @@ class TaskEditorRoutePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EditorHostPage(
-      openModal: (context) => EditorLauncher.fromGetIt().openTaskEditor(
+      openModal: (context) => context.read<EditorLauncher>().openTaskEditor(
         context,
         taskId: taskId,
         defaultProjectId: defaultProjectId,
@@ -63,10 +62,10 @@ class _TaskEditorFullPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final taskRepository = getIt<TaskRepositoryContract>();
-    final projectRepository = getIt<ProjectRepositoryContract>();
-    final valueRepository = getIt<ValueRepositoryContract>();
-    final taskWriteService = getIt<TaskWriteService>();
+    final taskRepository = context.read<TaskRepositoryContract>();
+    final projectRepository = context.read<ProjectRepositoryContract>();
+    final valueRepository = context.read<ValueRepositoryContract>();
+    final taskWriteService = context.read<TaskWriteService>();
 
     return Scaffold(
       body: SafeArea(

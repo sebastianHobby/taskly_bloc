@@ -2232,7 +2232,7 @@
     "@myDayTitle": {
         "description": "Title for the My Day screen"
     },
-    "myDayUpdatePlanTitle": "Plan my day",
+    "myDayUpdatePlanTitle": "Plan today",
     "@myDayUpdatePlanTitle": {
         "description": "Title/label used for updating today's plan in My Day."
     },
@@ -2286,7 +2286,7 @@
     "@myDayPlanOverdueDueTitle": {
         "description": "Section title for overdue and due tasks in the My Day ritual."
     },
-  "myDayPlanTitle": "Plan my day",
+  "myDayPlanTitle": "Today's plan",
   "@myDayPlanTitle": {
     "description": "Title shown at the top of the My Day ritual wizard when planning."
   },
@@ -2346,7 +2346,7 @@
   "@myDayRemoveAction": {
     "description": "Action label to remove an item from the summary list."
   },
-  "myDayPlanSubtitle": "Pick what matters, then check what's waiting.",
+  "myDayPlanSubtitle": "Start with time-sensitive items, then add routines and values.",
   "@myDayPlanSubtitle": {
     "description": "Subtitle shown at the top of the My Day ritual wizard when planning."
   },
@@ -2375,7 +2375,7 @@
     "@myDayClearMyDayLabel": {
         "description": "Bottom bar button label when clearing today's plan (resume flow with zero picks)."
     },
-    "myDayUpdateMyDayLabel": "Update My Day · {count}",
+    "myDayUpdateMyDayLabel": "Update today's plan · {count}",
     "@myDayUpdateMyDayLabel": {
         "description": "Bottom bar button label when updating today's plan (resume flow).",
         "placeholders": {
@@ -3070,6 +3070,10 @@
     "routineFormValueHint": "Select a value",
     "@routineFormValueHint": {
         "description": "Hint text for routine value selection"
+    },
+    "myDaySubtitleChosenForToday": "Chosen for today",
+    "@myDaySubtitleChosenForToday": {
+        "description": "Subtitle shown under the My Day title."
     },
     "routineFormTypeLabel": "Cadence",
     "@routineFormTypeLabel": {

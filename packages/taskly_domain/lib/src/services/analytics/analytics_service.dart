@@ -91,6 +91,14 @@ abstract class AnalyticsService {
   /// - Otherwise inherited project values (when present)
   Future<Map<String, int>> getRecentCompletionsByValue({required int days});
 
+  /// Returns daily completion counts per value over the last [days] days.
+  ///
+  /// Each list contains [days] entries, oldest to newest (inclusive).
+  /// Value attribution uses the task's effective values.
+  Future<Map<String, List<int>>> getDailyCompletionsByValue({
+    required int days,
+  });
+
   /// Returns the total number of completions in the last [days] days.
   ///
   /// Used to determine if Reflector mode has sufficient history.

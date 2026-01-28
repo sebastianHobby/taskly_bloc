@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_host_page.dart';
@@ -25,7 +25,7 @@ class ValueEditorRoutePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EditorHostPage(
-      openModal: (context) => EditorLauncher.fromGetIt().openValueEditor(
+      openModal: (context) => context.read<EditorLauncher>().openValueEditor(
         context,
         valueId: valueId,
         showDragHandle: true,
@@ -42,8 +42,8 @@ class _ValueEditorFullPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final valueRepository = getIt<ValueRepositoryContract>();
-    final valueWriteService = getIt<ValueWriteService>();
+    final valueRepository = context.read<ValueRepositoryContract>();
+    final valueWriteService = context.read<ValueWriteService>();
 
     return Scaffold(
       body: SafeArea(

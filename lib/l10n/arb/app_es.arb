@@ -2357,7 +2357,7 @@
         }
     },
     "myDayTitle": "Mi dÃ­a",
-    "myDayUpdatePlanTitle": "Planificar mi d\u00eda",
+    "myDayUpdatePlanTitle": "Planificar hoy",
     "@myDayUpdatePlanTitle": {
         "description": "TÃ­tulo/etiqueta usada para actualizar el plan de hoy en Mi dÃ­a."
     },
@@ -2411,11 +2411,11 @@
     "@myDayPlanOverdueDueTitle": {
         "description": "TÃ­tulo de secciÃ³n para tareas vencidas y por vencer en el ritual de Mi dÃ­a."
     },
-    "myDayPlanTitle": "Planificar mi d\u00eda",
+    "myDayPlanTitle": "El plan de hoy",
     "@myDayPlanTitle": {
         "description": "TÃ­tulo mostrado en la parte superior del asistente del ritual de Mi dÃ­a al planificar."
     },
-    "myDayPlanSubtitle": "Elige lo que importa y luego revisa lo que est\u00e1 esperando.",
+    "myDayPlanSubtitle": "Empieza por lo urgente, luego suma rutinas y valores.",
     "@myDayPlanSubtitle": {
         "description": "SubtÃ­tulo mostrado en la parte superior del asistente del ritual de Mi dÃ­a al planificar."
     },
@@ -2443,7 +2443,7 @@
     "@myDayClearMyDayLabel": {
         "description": "Etiqueta del botÃ³n inferior para borrar el plan de hoy (flujo de reanudar con cero selecciones)."
     },
-    "myDayUpdateMyDayLabel": "Actualizar Mi dÃ­a Â· {count}",
+    "myDayUpdateMyDayLabel": "Actualizar el plan de hoy · {count}",
     "@myDayUpdateMyDayLabel": {
         "description": "Etiqueta del botÃ³n inferior para actualizar el plan de hoy (flujo de reanudar).",
         "placeholders": {
@@ -2963,6 +2963,10 @@
     "routineTypeWeeklyFlexible": "Semanal (flexible)",
     "@routineTypeWeeklyFlexible": {
         "description": "Etiqueta para tipo de rutina semanal flexible"
+    },
+    "myDaySubtitleChosenForToday": "Elegido para hoy",
+    "@myDaySubtitleChosenForToday": {
+        "description": "Subtitulo mostrado debajo del titulo de My Day."
     },
     "routineTypeWeeklyScheduled": "Semanal (programada)",
     "@routineTypeWeeklyScheduled": {
