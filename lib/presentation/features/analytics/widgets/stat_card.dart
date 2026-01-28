@@ -14,6 +14,7 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final presentation = StatPresentation.fromStat(stat);
 
     return Card(
       child: InkWell(
@@ -30,7 +31,7 @@ class StatCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      stat.label,
+                      presentation.label,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -41,16 +42,16 @@ class StatCard extends StatelessWidget {
               ),
               SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
-                stat.formattedValue ?? stat.value.toString(),
+                presentation.valueText,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   color: _getSeverityColor(context),
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (stat.description != null) ...[
+              if (presentation.description != null) ...[
                 SizedBox(height: TasklyTokens.of(context).spaceSm),
                 Text(
-                  stat.description!,
+                  presentation.description!,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -91,5 +92,64 @@ class StatCard extends StatelessWidget {
       StatSeverity.critical => Theme.of(context).colorScheme.error,
       StatSeverity.positive => Theme.of(context).colorScheme.tertiary,
     };
+  }
+}
+
+class StatPresentation {
+  const StatPresentation({
+    required this.label,
+    required this.valueText,
+    this.description,
+  });
+
+  factory StatPresentation.fromStat(StatResult stat) {
+    final value = stat.value;
+    return switch (stat.statType) {
+      TaskStatType.totalCount => StatPresentation(
+        label: 'Total Tasks',
+        valueText: value.toStringAsFixed(0),
+      ),
+      TaskStatType.completedCount => StatPresentation(
+        label: 'Completed',
+        valueText: value.toStringAsFixed(0),
+      ),
+      TaskStatType.completionRate => StatPresentation(
+        label: 'Completion Rate',
+        valueText: '${value.toStringAsFixed(0)}%',
+      ),
+      TaskStatType.staleCount => StatPresentation(
+        label: 'Stale Tasks',
+        valueText: value.toStringAsFixed(0),
+        description: _staleDescription(stat.metadata),
+      ),
+      TaskStatType.overdueCount => StatPresentation(
+        label: 'Overdue',
+        valueText: value.toStringAsFixed(0),
+      ),
+      TaskStatType.avgDaysToComplete => StatPresentation(
+        label: 'Avg Days to Complete',
+        valueText: value == 0 ? 'N/A' : '${value.toStringAsFixed(1)} days',
+      ),
+      TaskStatType.completedThisWeek => StatPresentation(
+        label: 'Completed This Week',
+        valueText: value.toStringAsFixed(0),
+      ),
+      TaskStatType.velocity => StatPresentation(
+        label: 'Velocity',
+        valueText: '${value.toStringAsFixed(1)} tasks/week',
+      ),
+    };
+  }
+
+  final String label;
+  final String valueText;
+  final String? description;
+
+  static String? _staleDescription(Map<String, Object?> metadata) {
+    final threshold = metadata['staleThresholdDays'];
+    if (threshold is int) {
+      return 'No activity for $threshold+ days';
+    }
+    return null;
   }
 }

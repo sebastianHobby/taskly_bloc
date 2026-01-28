@@ -1156,7 +1156,7 @@
     "@myDayChooseAction": {
         "description": "Action label used for value-aligned options in the My Day ritual (S1)."
     },
-    "myDayDoTodayAction": "Do today",
+  "myDayDoTodayAction": "Log today",
     "@myDayDoTodayAction": {
         "description": "Action label used to commit a waiting task to today in the My Day ritual (S1)."
     },

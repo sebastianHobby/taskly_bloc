@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/features/project_picker/view/project_picker_modal.dart';
-import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/taskly_domain.dart';
@@ -26,13 +26,13 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SelectionCubit, SelectionState>(
+    return BlocBuilder<SelectionBloc, SelectionState>(
       builder: (context, state) {
         if (!state.isSelectionMode) {
           return AppBar(title: Text(baseTitle));
         }
 
-        final selection = context.read<SelectionCubit>();
+        final selection = context.read<SelectionBloc>();
         final actions = selection.computeActions();
 
         return AppBar(
@@ -103,7 +103,7 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
     BuildContext context, {
     required bool completed,
   }) async {
-    final selection = context.read<SelectionCubit>();
+    final selection = context.read<SelectionBloc>();
     final screenActions = context.read<ScreenActionsBloc>();
 
     await selection.runSequential((key) async {
@@ -159,7 +159,7 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
     BuildContext context, {
     required bool pinned,
   }) async {
-    final selection = context.read<SelectionCubit>();
+    final selection = context.read<SelectionBloc>();
     final screenActions = context.read<ScreenActionsBloc>();
 
     await selection.runSequential((key) async {
@@ -194,7 +194,7 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Future<void> _completeSeries(BuildContext context) async {
-    final selection = context.read<SelectionCubit>();
+    final selection = context.read<SelectionBloc>();
     final screenActions = context.read<ScreenActionsBloc>();
 
     await selection.runSequential((key) async {
@@ -230,7 +230,7 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Future<void> _moveToProject(BuildContext context) async {
-    final selection = context.read<SelectionCubit>();
+    final selection = context.read<SelectionBloc>();
 
     final selected = selection.selectedEntitiesMeta();
     if (selected.isEmpty) return;
@@ -270,7 +270,7 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Future<void> _deleteSelected(BuildContext context) async {
-    final selection = context.read<SelectionCubit>();
+    final selection = context.read<SelectionBloc>();
     final metas = selection.selectedEntitiesMeta();
     if (metas.isEmpty) return;
 

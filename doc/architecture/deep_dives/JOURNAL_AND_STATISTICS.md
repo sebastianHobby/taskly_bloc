@@ -210,8 +210,8 @@ Key design points:
 Current UI surfaces include:
 
 - Value detail statistics modal(s) (trend charts etc.)
-- A system screen `statistics` wired to a `statisticsDashboard` template, which
-  is currently a placeholder UI
+- A system screen `statistics` (values-centric dashboard) driven by a
+  presentation-layer BLoC
 
 Entry points:
 

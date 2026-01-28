@@ -5,10 +5,12 @@ import 'package:taskly_ui/taskly_ui_tokens.dart';
 class CorrelationCard extends StatelessWidget {
   const CorrelationCard({
     required this.correlation,
+    this.insightOverride,
     this.onTap,
     super.key,
   });
   final CorrelationResult correlation;
+  final String? insightOverride;
   final VoidCallback? onTap;
 
   @override
@@ -53,7 +55,7 @@ class CorrelationCard extends StatelessWidget {
               ),
               SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
-                correlation.insight ?? '',
+                insightOverride ?? correlation.insight ?? '',
                 style: theme.textTheme.bodyMedium,
               ),
               if (correlation.differencePercent != null) ...[

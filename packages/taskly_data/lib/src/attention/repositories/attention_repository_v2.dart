@@ -16,11 +16,9 @@ import 'package:taskly_domain/time.dart' show Clock, systemClock;
 ///
 /// This is not wired into the UI yet (Phase 05 cutover).
 class AttentionRepositoryV2 implements AttentionRepositoryContract {
-  AttentionRepositoryV2({
-    required AppDatabase db,
-    Clock clock = systemClock,
-  }) : _db = db,
-       _clock = clock;
+  AttentionRepositoryV2({required AppDatabase db, Clock clock = systemClock})
+    : _db = db,
+      _clock = clock;
 
   final AppDatabase _db;
   final Clock _clock;
@@ -115,7 +113,18 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
   }
 
   @override
-  Future<void> updateRuleActive(String ruleId, bool active) async {
+  Future<void> updateRuleActive(
+    String ruleId,
+    bool active, {
+    OperationContext? context,
+  }) async {
+    if (context != null) {
+      talker.repositoryLog(
+        'AttentionV2',
+        'updateRuleActive ruleId=$ruleId active=$active '
+            'context=${context.toLogFields()}',
+      );
+    }
     await (_db.update(_db.attentionRules)..where((t) => t.id.equals(ruleId)))
         .write(AttentionRulesCompanion(active: Value(active)));
   }
@@ -123,8 +132,16 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
   @override
   Future<void> updateRuleEvaluatorParams(
     String ruleId,
-    Map<String, dynamic> evaluatorParams,
-  ) async {
+    Map<String, dynamic> evaluatorParams, {
+    OperationContext? context,
+  }) async {
+    if (context != null) {
+      talker.repositoryLog(
+        'AttentionV2',
+        'updateRuleEvaluatorParams ruleId=$ruleId '
+            'context=${context.toLogFields()}',
+      );
+    }
     await (_db.update(
       _db.attentionRules,
     )..where((t) => t.id.equals(ruleId))).write(

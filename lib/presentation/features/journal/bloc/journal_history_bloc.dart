@@ -58,7 +58,10 @@ class JournalHistoryBloc
        _dayKeyService = dayKeyService,
        super(JournalHistoryLoading(JournalHistoryFilters.initial())) {
     on<JournalHistoryStarted>(_onStarted, transformer: restartable());
-    on<JournalHistoryFiltersChanged>(_onFiltersChanged, transformer: restartable());
+    on<JournalHistoryFiltersChanged>(
+      _onFiltersChanged,
+      transformer: restartable(),
+    );
   }
 
   final JournalRepositoryContract _repository;
@@ -152,13 +155,14 @@ class JournalHistoryBloc
       );
     }
 
-    final dateRange = filters.dateRange;
-    if (dateRange != null) {
+    final rangeStart = filters.rangeStart;
+    final rangeEnd = filters.rangeEnd;
+    if (rangeStart != null && rangeEnd != null) {
       predicates.add(
         JournalDatePredicate(
           operator: DateOperator.between,
-          startDate: dateOnly(dateRange.start),
-          endDate: dateOnly(dateRange.end),
+          startDate: dateOnly(rangeStart),
+          endDate: dateOnly(rangeEnd),
         ),
       );
     } else {
@@ -179,14 +183,15 @@ class JournalHistoryBloc
     JournalHistoryFilters filters, {
     required DateTime todayDayKeyUtc,
   }) {
-    final dateRange = filters.dateRange;
-    if (dateRange == null) {
+    final rangeStart = filters.rangeStart;
+    final rangeEnd = filters.rangeEnd;
+    if (rangeStart == null || rangeEnd == null) {
       final startUtc = todayDayKeyUtc.subtract(const Duration(days: 29));
       return DateRange(start: startUtc, end: todayDayKeyUtc);
     }
     return DateRange(
-      start: dateOnly(dateRange.start),
-      end: dateOnly(dateRange.end),
+      start: dateOnly(rangeStart),
+      end: dateOnly(rangeEnd),
     );
   }
 
@@ -332,29 +337,33 @@ final class JournalDailySummaryItem {
 final class JournalHistoryFilters {
   const JournalHistoryFilters({
     required this.searchText,
-    required this.dateRange,
+    required this.rangeStart,
+    required this.rangeEnd,
     required this.moodMinValue,
   });
 
-  factory JournalHistoryFilters.initial() =>
-      const JournalHistoryFilters(
-        searchText: '',
-        dateRange: null,
-        moodMinValue: null,
-      );
+  factory JournalHistoryFilters.initial() => const JournalHistoryFilters(
+    searchText: '',
+    rangeStart: null,
+    rangeEnd: null,
+    moodMinValue: null,
+  );
 
   final String searchText;
-  final DateTimeRange? dateRange;
+  final DateTime? rangeStart;
+  final DateTime? rangeEnd;
   final int? moodMinValue;
 
   JournalHistoryFilters copyWith({
     String? searchText,
-    DateTimeRange? dateRange,
+    DateTime? rangeStart,
+    DateTime? rangeEnd,
     int? moodMinValue,
   }) {
     return JournalHistoryFilters(
       searchText: searchText ?? this.searchText,
-      dateRange: dateRange ?? this.dateRange,
+      rangeStart: rangeStart ?? this.rangeStart,
+      rangeEnd: rangeEnd ?? this.rangeEnd,
       moodMinValue: moodMinValue ?? this.moodMinValue,
     );
   }

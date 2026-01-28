@@ -86,6 +86,7 @@ abstract class SystemAttentionRules {
     evaluator: 'project_predicate_v1',
     evaluatorParams: {
       'predicate': 'missingNextActions',
+      'minOpenTasks': 1,
     },
     severity: AttentionSeverity.info,
     displayConfig: {

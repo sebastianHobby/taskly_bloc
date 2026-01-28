@@ -30,16 +30,8 @@ class RoutineEntityTile extends StatelessWidget {
     final badges = model.badges;
     final hasBadges = badges.isNotEmpty;
 
-    final statusLabel = model.statusLabel.trim();
     final showProgress = model.progress != null;
     final showScheduleRow = model.scheduleRow != null;
-    final showStatus =
-        statusLabel.isNotEmpty && !showProgress && !showScheduleRow;
-    final statusColor = _statusColor(model.statusTone, scheme);
-    final statusStyle = theme.textTheme.labelSmall?.copyWith(
-      color: statusColor,
-      fontWeight: FontWeight.w600,
-    );
 
     final valueChip = model.valueChip;
     final metaLabel =
@@ -56,7 +48,8 @@ class RoutineEntityTile extends StatelessWidget {
     final baseOpacity = model.completed ? 0.7 : 1.0;
     final opacity = baseOpacity.clamp(0.0, 1.0);
 
-    final isSelected = model.selected || model.completed;
+    final isSelected =
+        model.selected || (model.completed && model.highlightCompleted);
     final selectedTint = scheme.primaryContainer.withValues(alpha: 0.16);
     final tileSurface = isSelected
         ? Color.alphaBlend(selectedTint, scheme.surface)
@@ -110,7 +103,7 @@ class RoutineEntityTile extends StatelessWidget {
                         ),
                         if (!showProgress &&
                             !showScheduleRow &&
-                            (valueChip != null || showMeta || showStatus)) ...[
+                            (valueChip != null || showMeta)) ...[
                           SizedBox(height: tokens.spaceXs2),
                           Wrap(
                             spacing: tokens.spaceXs2,
@@ -126,11 +119,6 @@ class RoutineEntityTile extends StatelessWidget {
                                 if (valueChip != null)
                                   _ValueMetaDot(tokens: tokens),
                                 Text(metaLabel, style: metaStyle),
-                              ],
-                              if (showStatus) ...[
-                                if (valueChip != null || showMeta)
-                                  _ValueMetaDot(tokens: tokens),
-                                Text(statusLabel, style: statusStyle),
                               ],
                             ],
                           ),
@@ -240,15 +228,6 @@ class _PrimaryActionButton extends StatelessWidget {
       ),
     );
   }
-}
-
-Color _statusColor(TasklyRoutineStatusTone tone, ColorScheme scheme) {
-  return switch (tone) {
-    TasklyRoutineStatusTone.onPace => scheme.tertiary,
-    TasklyRoutineStatusTone.tightWeek => scheme.secondary,
-    TasklyRoutineStatusTone.catchUp => scheme.error,
-    TasklyRoutineStatusTone.restWeek => scheme.onSurfaceVariant,
-  };
 }
 
 TasklyBadgeStyle _badgeStyle(TasklyBadgeTone tone) {

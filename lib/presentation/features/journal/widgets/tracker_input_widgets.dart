@@ -32,8 +32,8 @@ class TrackerChoiceInput extends StatelessWidget {
               onSelected: !enabled
                   ? null
                   : (selected) => onSelected(
-                        selected ? c.choiceKey : null,
-                      ),
+                      selected ? c.choiceKey : null,
+                    ),
             ),
         ],
       );
@@ -42,7 +42,7 @@ class TrackerChoiceInput extends StatelessWidget {
     final selectedLabel = choices
         .firstWhere(
           (c) => c.choiceKey == selectedKey,
-          orElse: () => const TrackerDefinitionChoice(
+          orElse: () => TrackerDefinitionChoice(
             id: '',
             trackerId: '',
             choiceKey: '',
@@ -76,17 +76,18 @@ class TrackerChoiceInput extends StatelessWidget {
             final filtered = query.isEmpty
                 ? choices
                 : choices
-                    .where(
-                      (c) => c.label.toLowerCase().contains(query),
-                    )
-                    .toList(growable: false);
+                      .where(
+                        (c) => c.label.toLowerCase().contains(query),
+                      )
+                      .toList(growable: false);
 
             return Padding(
               padding: EdgeInsets.only(
                 left: TasklyTokens.of(context).spaceLg,
                 right: TasklyTokens.of(context).spaceLg,
                 top: TasklyTokens.of(context).spaceLg,
-                bottom: MediaQuery.viewInsetsOf(context).bottom +
+                bottom:
+                    MediaQuery.viewInsetsOf(context).bottom +
                     TasklyTokens.of(context).spaceLg,
               ),
               child: Column(
@@ -119,8 +120,7 @@ class TrackerChoiceInput extends StatelessWidget {
                         final selected = choice.choiceKey == selectedKey;
                         return ListTile(
                           title: Text(choice.label),
-                          trailing:
-                              selected ? const Icon(Icons.check) : null,
+                          trailing: selected ? const Icon(Icons.check) : null,
                           onTap: () {
                             next = choice.choiceKey;
                             Navigator.of(context).pop();
@@ -233,7 +233,8 @@ class TrackerQuantityInput extends StatelessWidget {
             left: TasklyTokens.of(context).spaceLg,
             right: TasklyTokens.of(context).spaceLg,
             top: TasklyTokens.of(context).spaceLg,
-            bottom: MediaQuery.viewInsetsOf(context).bottom +
+            bottom:
+                MediaQuery.viewInsetsOf(context).bottom +
                 TasklyTokens.of(context).spaceLg,
           ),
           child: Column(

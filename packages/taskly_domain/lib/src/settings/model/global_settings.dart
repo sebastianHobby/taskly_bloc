@@ -60,10 +60,20 @@ abstract class GlobalSettings with _$GlobalSettings {
     /// Maintenance checks in weekly review.
     @Default(true) bool maintenanceEnabled,
     @Default(true) bool maintenanceDeadlineRiskEnabled,
+    @Default(GlobalSettings.defaultMaintenanceDeadlineRiskDueWithinDays)
+    int maintenanceDeadlineRiskDueWithinDays,
+    @Default(GlobalSettings.defaultMaintenanceDeadlineRiskMinUnscheduledCount)
+    int maintenanceDeadlineRiskMinUnscheduledCount,
     @Default(true) bool maintenanceDueSoonEnabled,
     @Default(true) bool maintenanceStaleEnabled,
+    @Default(GlobalSettings.defaultMaintenanceTaskStaleThresholdDays)
+    int maintenanceTaskStaleThresholdDays,
+    @Default(GlobalSettings.defaultMaintenanceProjectIdleThresholdDays)
+    int maintenanceProjectIdleThresholdDays,
     @Default(true) bool maintenanceFrequentSnoozedEnabled,
     @Default(true) bool maintenanceMissingNextActionsEnabled,
+    @Default(GlobalSettings.defaultMaintenanceMissingNextActionsMinOpenTasks)
+    int maintenanceMissingNextActionsMinOpenTasks,
     @Default(1.0) double textScaleFactor,
     @Default(false) bool onboardingCompleted,
   }) = _GlobalSettings;
@@ -101,6 +111,22 @@ abstract class GlobalSettings with _$GlobalSettings {
         (json['valuesSummaryWinsCount'] as num?)?.toInt() ??
         defaultValuesSummaryWinsCount;
 
+    final rawMaintenanceDeadlineRiskDueWithinDays =
+        (json['maintenanceDeadlineRiskDueWithinDays'] as num?)?.toInt() ??
+        defaultMaintenanceDeadlineRiskDueWithinDays;
+    final rawMaintenanceDeadlineRiskMinUnscheduledCount =
+        (json['maintenanceDeadlineRiskMinUnscheduledCount'] as num?)?.toInt() ??
+        defaultMaintenanceDeadlineRiskMinUnscheduledCount;
+    final rawMaintenanceTaskStaleThresholdDays =
+        (json['maintenanceTaskStaleThresholdDays'] as num?)?.toInt() ??
+        defaultMaintenanceTaskStaleThresholdDays;
+    final rawMaintenanceProjectIdleThresholdDays =
+        (json['maintenanceProjectIdleThresholdDays'] as num?)?.toInt() ??
+        defaultMaintenanceProjectIdleThresholdDays;
+    final rawMaintenanceMissingNextActionsMinOpenTasks =
+        (json['maintenanceMissingNextActionsMinOpenTasks'] as num?)?.toInt() ??
+        defaultMaintenanceMissingNextActionsMinOpenTasks;
+
     return GlobalSettings(
       themeMode: AppThemeMode.fromName(json['themeMode'] as String?),
       colorSchemeSeedArgb: _rgbHexToArgb(
@@ -132,13 +158,38 @@ abstract class GlobalSettings with _$GlobalSettings {
       maintenanceEnabled: json['maintenanceEnabled'] as bool? ?? true,
       maintenanceDeadlineRiskEnabled:
           json['maintenanceDeadlineRiskEnabled'] as bool? ?? true,
+      maintenanceDeadlineRiskDueWithinDays:
+          rawMaintenanceDeadlineRiskDueWithinDays.clamp(
+            maintenanceDeadlineRiskDueWithinDaysMin,
+            maintenanceDeadlineRiskDueWithinDaysMax,
+          ),
+      maintenanceDeadlineRiskMinUnscheduledCount:
+          rawMaintenanceDeadlineRiskMinUnscheduledCount.clamp(
+            maintenanceDeadlineRiskMinUnscheduledCountMin,
+            maintenanceDeadlineRiskMinUnscheduledCountMax,
+          ),
       maintenanceDueSoonEnabled:
           json['maintenanceDueSoonEnabled'] as bool? ?? true,
       maintenanceStaleEnabled: json['maintenanceStaleEnabled'] as bool? ?? true,
+      maintenanceTaskStaleThresholdDays: rawMaintenanceTaskStaleThresholdDays
+          .clamp(
+            maintenanceStaleThresholdDaysMin,
+            maintenanceStaleThresholdDaysMax,
+          ),
+      maintenanceProjectIdleThresholdDays:
+          rawMaintenanceProjectIdleThresholdDays.clamp(
+            maintenanceStaleThresholdDaysMin,
+            maintenanceStaleThresholdDaysMax,
+          ),
       maintenanceFrequentSnoozedEnabled:
           json['maintenanceFrequentSnoozedEnabled'] as bool? ?? true,
       maintenanceMissingNextActionsEnabled:
           json['maintenanceMissingNextActionsEnabled'] as bool? ?? true,
+      maintenanceMissingNextActionsMinOpenTasks:
+          rawMaintenanceMissingNextActionsMinOpenTasks.clamp(
+            maintenanceMissingNextActionsMinOpenTasksMin,
+            maintenanceMissingNextActionsMinOpenTasksMax,
+          ),
       textScaleFactor: (json['textScaleFactor'] as num?)?.toDouble() ?? 1.0,
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
     );
@@ -169,6 +220,30 @@ abstract class GlobalSettings with _$GlobalSettings {
 
   /// Default value wins count.
   static const int defaultValuesSummaryWinsCount = 3;
+
+  /// Default stale-task threshold (days).
+  static const int defaultMaintenanceTaskStaleThresholdDays = 30;
+
+  /// Default idle-project threshold (days).
+  static const int defaultMaintenanceProjectIdleThresholdDays = 30;
+
+  /// Default deadline-risk horizon (days).
+  static const int defaultMaintenanceDeadlineRiskDueWithinDays = 14;
+
+  /// Default minimum unscheduled task count for deadline risk.
+  static const int defaultMaintenanceDeadlineRiskMinUnscheduledCount = 5;
+
+  /// Default minimum open-task count for missing next actions.
+  static const int defaultMaintenanceMissingNextActionsMinOpenTasks = 1;
+
+  static const int maintenanceStaleThresholdDaysMin = 1;
+  static const int maintenanceStaleThresholdDaysMax = 90;
+  static const int maintenanceDeadlineRiskDueWithinDaysMin = 1;
+  static const int maintenanceDeadlineRiskDueWithinDaysMax = 30;
+  static const int maintenanceDeadlineRiskMinUnscheduledCountMin = 1;
+  static const int maintenanceDeadlineRiskMinUnscheduledCountMax = 20;
+  static const int maintenanceMissingNextActionsMinOpenTasksMin = 1;
+  static const int maintenanceMissingNextActionsMinOpenTasksMax = 10;
 
   /// Parses `#RRGGBB`, `RRGGBB`, `#RGB`, or `RGB` into an ARGB int.
   ///
@@ -228,11 +303,36 @@ extension GlobalSettingsJson on GlobalSettings {
     'valuesSummaryWinsCount': valuesSummaryWinsCount.clamp(1, 5),
     'maintenanceEnabled': maintenanceEnabled,
     'maintenanceDeadlineRiskEnabled': maintenanceDeadlineRiskEnabled,
+    'maintenanceDeadlineRiskDueWithinDays': maintenanceDeadlineRiskDueWithinDays
+        .clamp(
+          GlobalSettings.maintenanceDeadlineRiskDueWithinDaysMin,
+          GlobalSettings.maintenanceDeadlineRiskDueWithinDaysMax,
+        ),
+    'maintenanceDeadlineRiskMinUnscheduledCount':
+        maintenanceDeadlineRiskMinUnscheduledCount.clamp(
+          GlobalSettings.maintenanceDeadlineRiskMinUnscheduledCountMin,
+          GlobalSettings.maintenanceDeadlineRiskMinUnscheduledCountMax,
+        ),
     'maintenanceDueSoonEnabled': maintenanceDueSoonEnabled,
     'maintenanceStaleEnabled': maintenanceStaleEnabled,
+    'maintenanceTaskStaleThresholdDays': maintenanceTaskStaleThresholdDays
+        .clamp(
+          GlobalSettings.maintenanceStaleThresholdDaysMin,
+          GlobalSettings.maintenanceStaleThresholdDaysMax,
+        ),
+    'maintenanceProjectIdleThresholdDays': maintenanceProjectIdleThresholdDays
+        .clamp(
+          GlobalSettings.maintenanceStaleThresholdDaysMin,
+          GlobalSettings.maintenanceStaleThresholdDaysMax,
+        ),
     'maintenanceFrequentSnoozedEnabled': maintenanceFrequentSnoozedEnabled,
     'maintenanceMissingNextActionsEnabled':
         maintenanceMissingNextActionsEnabled,
+    'maintenanceMissingNextActionsMinOpenTasks':
+        maintenanceMissingNextActionsMinOpenTasks.clamp(
+          GlobalSettings.maintenanceMissingNextActionsMinOpenTasksMin,
+          GlobalSettings.maintenanceMissingNextActionsMinOpenTasksMax,
+        ),
     'textScaleFactor': textScaleFactor,
     'onboardingCompleted': onboardingCompleted,
   };

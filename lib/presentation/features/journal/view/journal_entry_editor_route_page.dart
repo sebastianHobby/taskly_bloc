@@ -195,7 +195,7 @@ class _JournalEntryEditorRoutePageState
                 max: max,
                 step: step,
                 enabled: !isSaving,
-                onChanged: (v) => setValue(v),
+                onChanged: setValue,
                 onClear: () => setValue(null),
               );
             }

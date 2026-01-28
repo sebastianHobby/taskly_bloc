@@ -8,7 +8,8 @@ import 'package:taskly_data/src/mappers/drift_to_domain.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/telemetry.dart';
-import 'package:taskly_domain/time.dart' show Clock, systemClock;
+import 'package:taskly_domain/time.dart'
+    show Clock, dateOnly, dateOnlyOrNull, encodeDateOnly, systemClock;
 
 final class RoutineRepository implements RoutineRepositoryContract {
   RoutineRepository({

@@ -3,6 +3,8 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
@@ -11,7 +13,6 @@ import 'package:taskly_domain/time.dart';
 
 import 'package:taskly_bloc/presentation/features/routines/model/routine_list_item.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
-import 'package:taskly_bloc/presentation/shared/utils/routine_day_policy.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 
 part 'routine_list_bloc.freezed.dart';
@@ -22,6 +23,8 @@ sealed class RoutineListEvent with _$RoutineListEvent {
       RoutineListSubscriptionRequested;
   const factory RoutineListEvent.valueFilterChanged({String? valueId}) =
       RoutineListValueFilterChanged;
+  const factory RoutineListEvent.logRequested({required String routineId}) =
+      RoutineListLogRequested;
 }
 
 @freezed
@@ -45,11 +48,15 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
     required SessionDayKeyService sessionDayKeyService,
     required AppErrorReporter errorReporter,
     required SessionSharedDataService sharedDataService,
+    required RoutineWriteService routineWriteService,
+    required NowService nowService,
     RoutineScheduleService scheduleService = const RoutineScheduleService(),
   }) : _routineRepository = routineRepository,
        _sessionDayKeyService = sessionDayKeyService,
        _errorReporter = errorReporter,
        _sharedDataService = sharedDataService,
+       _routineWriteService = routineWriteService,
+       _nowService = nowService,
        _scheduleService = scheduleService,
        super(const RoutineListInitial()) {
     on<RoutineListSubscriptionRequested>(
@@ -57,13 +64,18 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
       transformer: restartable(),
     );
     on<RoutineListValueFilterChanged>(_onValueFilterChanged);
+    on<RoutineListLogRequested>(_onLogRequested, transformer: droppable());
   }
 
   final RoutineRepositoryContract _routineRepository;
   final SessionDayKeyService _sessionDayKeyService;
   final AppErrorReporter _errorReporter;
   final SessionSharedDataService _sharedDataService;
+  final RoutineWriteService _routineWriteService;
+  final NowService _nowService;
   final RoutineScheduleService _scheduleService;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
 
   List<RoutineListItem> _latestItems = const <RoutineListItem>[];
   List<Value> _latestValues = const <Value>[];
@@ -165,6 +177,26 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
     );
   }
 
+  Future<void> _onLogRequested(
+    RoutineListLogRequested event,
+    Emitter<RoutineListState> emit,
+  ) async {
+    final context = _contextFactory.create(
+      feature: 'routines',
+      screen: 'routines_list',
+      intent: 'routine_complete',
+      operation: 'routines.complete',
+      entityType: 'routine',
+      entityId: event.routineId,
+    );
+
+    await _routineWriteService.recordCompletion(
+      routineId: event.routineId,
+      completedAtUtc: _nowService.nowUtc(),
+      context: context,
+    );
+  }
+
   RoutineListLoaded _buildLoadedState({
     required List<Routine> routines,
     required List<Value> values,
@@ -201,17 +233,10 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
         completions: completions,
         skips: skips,
       );
-      final policy = evaluateRoutineDayPolicy(
-        routine: routine,
-        snapshot: snapshot,
-        dayKeyUtc: dayKeyUtc,
-        completions: completions,
-      );
       items.add(
         RoutineListItem(
           routine: routine,
           snapshot: snapshot,
-          isCatchUpDay: policy.isCatchUpDay,
           dayKeyUtc: dayKeyUtc,
           completionsInPeriod: _completionsForPeriod(
             routine: routine,

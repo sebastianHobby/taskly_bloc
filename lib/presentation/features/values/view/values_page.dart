@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
-import 'package:taskly_bloc/presentation/features/values/bloc/value_list_bloc.dart';
+import 'package:taskly_bloc/presentation/features/values/bloc/values_hero_bloc.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/values_list.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
-import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
-import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class ValuesPage extends StatelessWidget {
   const ValuesPage({super.key});
@@ -27,21 +28,21 @@ class ValuesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider<ValueListBloc>(
-          create: (context) => ValueListBloc(
+        BlocProvider<ValuesHeroBloc>(
+          create: (context) => ValuesHeroBloc(
+            analyticsService: context.read<AnalyticsService>(),
             valueRepository: context.read<ValueRepositoryContract>(),
-            valueWriteService: context.read<ValueWriteService>(),
             sharedDataService: context.read<SessionSharedDataService>(),
-            errorReporter: context.read<AppErrorReporter>(),
-          )..add(const ValueListEvent.subscriptionRequested()),
+            nowService: context.read<NowService>(),
+          )..add(const ValuesHeroSubscriptionRequested()),
         ),
-        BlocProvider(create: (_) => SelectionCubit()),
+        BlocProvider(create: (_) => SelectionBloc()),
       ],
       child: Builder(
         builder: (context) {
           final isCompact = WindowSizeClass.of(context).isCompact;
 
-          return BlocBuilder<SelectionCubit, SelectionState>(
+          return BlocBuilder<SelectionBloc, SelectionState>(
             builder: (context, selectionState) {
               return Scaffold(
                 appBar: selectionState.isSelectionMode
@@ -68,26 +69,25 @@ class ValuesPage extends StatelessWidget {
                         child: const Icon(Icons.add),
                       )
                     : null,
-                body: BlocBuilder<ValueListBloc, ValueListState>(
+                body: BlocBuilder<ValuesHeroBloc, ValuesHeroState>(
                   builder: (context, state) {
-                    return switch (state) {
-                      ValueListInitial() ||
-                      ValueListLoading() => const TasklyFeedRenderer(
+                    final body = switch (state) {
+                      ValuesHeroLoading() => const TasklyFeedRenderer(
                         spec: TasklyFeedSpec.loading(),
                       ),
-                      ValueListError(:final error) => TasklyFeedRenderer(
+                      ValuesHeroError(:final error) => TasklyFeedRenderer(
                         spec: TasklyFeedSpec.error(
                           message: friendlyErrorMessageForUi(
                             error,
                             context.l10n,
                           ),
                           retryLabel: context.l10n.retryButton,
-                          onRetry: () => context.read<ValueListBloc>().add(
-                            const ValueListEvent.subscriptionRequested(),
-                          ),
+                          onRetry: () => context
+                              .read<ValuesHeroBloc>()
+                              .add(const ValuesHeroSubscriptionRequested()),
                         ),
                       ),
-                      ValueListLoaded(:final values) when values.isEmpty =>
+                      ValuesHeroLoaded(:final items) when items.isEmpty =>
                         TasklyFeedRenderer(
                           spec: TasklyFeedSpec.empty(
                             empty: TasklyEmptyStateSpec(
@@ -100,10 +100,32 @@ class ValuesPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ValueListLoaded(:final values) => ValuesListView(
-                        values: values,
+                      ValuesHeroLoaded(:final items) => ValuesListView(
+                        items: items,
                       ),
                     };
+
+                    final tokens = TasklyTokens.of(context);
+
+                    return Column(
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            tokens.sectionPaddingH,
+                            tokens.spaceMd,
+                            tokens.sectionPaddingH,
+                            tokens.spaceSm,
+                          ),
+                          child: _ValuesRangeSelector(
+                            selectedDays: state.rangeDays,
+                            onChanged: (days) => context
+                                .read<ValuesHeroBloc>()
+                                .add(ValuesHeroRangeChanged(days)),
+                          ),
+                        ),
+                        Expanded(child: body),
+                      ],
+                    );
                   },
                 ),
               );
@@ -111,6 +133,48 @@ class ValuesPage extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _ValuesRangeSelector extends StatelessWidget {
+  const _ValuesRangeSelector({
+    required this.selectedDays,
+    required this.onChanged,
+  });
+
+  final int selectedDays;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Range',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: tokens.spaceSm),
+        SegmentedButton<int>(
+          segments: const [
+            ButtonSegment(value: 30, label: Text('30d')),
+            ButtonSegment(value: 90, label: Text('90d')),
+            ButtonSegment(value: 180, label: Text('180d')),
+            ButtonSegment(value: 365, label: Text('365d')),
+          ],
+          selected: {selectedDays},
+          onSelectionChanged: (selection) {
+            if (selection.isEmpty) return;
+            onChanged(selection.first);
+          },
+        ),
+      ],
     );
   }
 }

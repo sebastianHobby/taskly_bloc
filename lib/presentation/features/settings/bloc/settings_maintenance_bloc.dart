@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:taskly_domain/services.dart';
 
@@ -44,21 +46,43 @@ final class SettingsMaintenanceState {
   final SettingsMaintenanceStatus status;
 }
 
-class SettingsMaintenanceCubit extends Cubit<SettingsMaintenanceState> {
-  SettingsMaintenanceCubit({
+sealed class SettingsMaintenanceEvent {
+  const SettingsMaintenanceEvent();
+}
+
+final class SettingsMaintenanceGenerateTemplateDataRequested
+    extends SettingsMaintenanceEvent {
+  const SettingsMaintenanceGenerateTemplateDataRequested({
+    required this.completer,
+  });
+
+  final Completer<void> completer;
+}
+
+class SettingsMaintenanceBloc
+    extends Bloc<SettingsMaintenanceEvent, SettingsMaintenanceState> {
+  SettingsMaintenanceBloc({
     required TemplateDataService templateDataService,
   }) : _templateDataService = templateDataService,
-       super(SettingsMaintenanceState.idle());
+       super(SettingsMaintenanceState.idle()) {
+    on<SettingsMaintenanceGenerateTemplateDataRequested>(
+      _onGenerateTemplateDataRequested,
+    );
+  }
 
   final TemplateDataService _templateDataService;
 
-  void _safeEmit(SettingsMaintenanceState state) {
-    if (isClosed) return;
-    emit(state);
+  Future<void> generateTemplateData() {
+    final completer = Completer<void>();
+    add(SettingsMaintenanceGenerateTemplateDataRequested(completer: completer));
+    return completer.future;
   }
 
-  Future<void> generateTemplateData() async {
-    _safeEmit(
+  Future<void> _onGenerateTemplateDataRequested(
+    SettingsMaintenanceGenerateTemplateDataRequested event,
+    Emitter<SettingsMaintenanceState> emit,
+  ) async {
+    emit(
       const SettingsMaintenanceState(
         status: SettingsMaintenanceRunning(
           SettingsMaintenanceAction.generateTemplateData,
@@ -69,9 +93,9 @@ class SettingsMaintenanceCubit extends Cubit<SettingsMaintenanceState> {
     try {
       await _templateDataService.resetAndSeed();
 
-      if (isClosed) return;
+      if (emit.isDone) return;
 
-      _safeEmit(
+      emit(
         const SettingsMaintenanceState(
           status: SettingsMaintenanceSuccess(
             SettingsMaintenanceAction.generateTemplateData,
@@ -79,11 +103,12 @@ class SettingsMaintenanceCubit extends Cubit<SettingsMaintenanceState> {
         ),
       );
 
-      _safeEmit(SettingsMaintenanceState.idle());
+      if (emit.isDone) return;
+      emit(SettingsMaintenanceState.idle());
     } catch (e) {
-      if (isClosed) return;
+      if (emit.isDone) return;
 
-      _safeEmit(
+      emit(
         SettingsMaintenanceState(
           status: SettingsMaintenanceFailure(
             action: SettingsMaintenanceAction.generateTemplateData,
@@ -92,7 +117,12 @@ class SettingsMaintenanceCubit extends Cubit<SettingsMaintenanceState> {
         ),
       );
 
-      _safeEmit(SettingsMaintenanceState.idle());
+      if (emit.isDone) return;
+      emit(SettingsMaintenanceState.idle());
+    } finally {
+      if (!event.completer.isCompleted) {
+        event.completer.complete();
+      }
     }
   }
 }

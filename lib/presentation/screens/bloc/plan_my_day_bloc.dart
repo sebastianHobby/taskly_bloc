@@ -101,8 +101,14 @@ final class PlanMyDayValueShowMore extends PlanMyDayEvent {
   final String valueId;
 }
 
-final class PlanMyDayValueToggleAll extends PlanMyDayEvent {
-  const PlanMyDayValueToggleAll(this.valueId);
+final class PlanMyDayValueAddAll extends PlanMyDayEvent {
+  const PlanMyDayValueAddAll(this.valueId);
+
+  final String valueId;
+}
+
+final class PlanMyDayValueClearAll extends PlanMyDayEvent {
+  const PlanMyDayValueClearAll(this.valueId);
 
   final String valueId;
 }
@@ -334,7 +340,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     on<PlanMyDayValueSortChanged>(_onValueSortChanged);
     on<PlanMyDayValueToggleExpanded>(_onValueToggleExpanded);
     on<PlanMyDayValueShowMore>(_onValueShowMore);
-    on<PlanMyDayValueToggleAll>(_onValueToggleAll);
+    on<PlanMyDayValueAddAll>(_onValueAddAll);
+    on<PlanMyDayValueClearAll>(_onValueClearAll);
     add(const PlanMyDayStarted());
   }
 
@@ -821,31 +828,45 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     _emitReady(emit);
   }
 
-  void _onValueToggleAll(
-    PlanMyDayValueToggleAll event,
+  PlanMyDayValueSuggestionGroup? _findValueGroup(
+    PlanMyDayReady ready,
+    String valueId,
+  ) {
+    for (final item in ready.valueSuggestionGroups) {
+      if (item.valueId == valueId) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  void _onValueAddAll(
+    PlanMyDayValueAddAll event,
     Emitter<PlanMyDayState> emit,
   ) {
     if (state is! PlanMyDayReady) return;
     final ready = state as PlanMyDayReady;
-    PlanMyDayValueSuggestionGroup? group;
-    for (final item in ready.valueSuggestionGroups) {
-      if (item.valueId == event.valueId) {
-        group = item;
-        break;
-      }
-    }
+    final group = _findValueGroup(ready, event.valueId);
     if (group == null || group.tasks.isEmpty) return;
 
     _hasUserSelection = true;
     final taskIds = group.tasks.map((task) => task.id).toSet();
-    final allSelected = taskIds.every(_selectedTaskIds.contains);
+    _selectedTaskIds = {..._selectedTaskIds, ...taskIds};
+    _emitReady(emit);
+  }
 
-    if (allSelected) {
-      _selectedTaskIds = {..._selectedTaskIds}..removeAll(taskIds);
-    } else {
-      _selectedTaskIds = {..._selectedTaskIds, ...taskIds};
-    }
+  void _onValueClearAll(
+    PlanMyDayValueClearAll event,
+    Emitter<PlanMyDayState> emit,
+  ) {
+    if (state is! PlanMyDayReady) return;
+    final ready = state as PlanMyDayReady;
+    final group = _findValueGroup(ready, event.valueId);
+    if (group == null || group.tasks.isEmpty) return;
 
+    _hasUserSelection = true;
+    final taskIds = group.tasks.map((task) => task.id).toSet();
+    _selectedTaskIds = {..._selectedTaskIds}..removeAll(taskIds);
     _emitReady(emit);
   }
 

@@ -44,7 +44,7 @@ class ValueForm extends StatefulWidget {
   /// If null, no close button is shown.
   final VoidCallback? onClose;
 
-  static const _defaultColorHex = ColorUtils.valueBlueId;
+  static const String _defaultColorHex = ColorUtils.valueBlueId;
   static const int maxNameLength = ValueValidators.maxNameLength;
 
   @override

@@ -9,7 +9,7 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
-import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/app_loading_screen.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
@@ -26,6 +26,7 @@ import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_s
 import 'package:taskly_bloc/presentation/screens/view/plan_my_day_page.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/my_day.dart' as my_day;
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
@@ -83,7 +84,8 @@ class _MyDayPageState extends State<MyDayPage> {
 
   @override
   Widget build(BuildContext context) {
-    final today = context.read<HomeDayService>().todayDayKeyUtc().toLocal();
+    final dayKeyUtc = context.read<HomeDayService>().todayDayKeyUtc();
+    final today = dayKeyUtc.toLocal();
     final tokens = TasklyTokens.of(context);
 
     return MultiBlocProvider(
@@ -114,7 +116,7 @@ class _MyDayPageState extends State<MyDayPage> {
             nowService: context.read<NowService>(),
           ),
         ),
-        BlocProvider(create: (_) => SelectionCubit()),
+        BlocProvider(create: (_) => SelectionBloc()),
       ],
       child: BlocBuilder<PlanMyDayBloc, PlanMyDayState>(
         builder: (context, _) {
@@ -124,7 +126,7 @@ class _MyDayPageState extends State<MyDayPage> {
             );
           }
 
-          return BlocBuilder<SelectionCubit, SelectionState>(
+          return BlocBuilder<SelectionBloc, SelectionState>(
             builder: (context, selectionState) {
               final gateBody = BlocBuilder<MyDayGateBloc, MyDayGateState>(
                 builder: (context, gateState) {
@@ -134,6 +136,7 @@ class _MyDayPageState extends State<MyDayPage> {
                   }
                   return _MyDayLoadedBody(
                     today: today,
+                    dayKeyUtc: dayKeyUtc,
                     onOpenPlan: () => _enterPlanMode(context),
                   );
                 },
@@ -203,10 +206,12 @@ class _MyDayPageState extends State<MyDayPage> {
 class _MyDayLoadedBody extends StatelessWidget {
   const _MyDayLoadedBody({
     required this.today,
+    required this.dayKeyUtc,
     required this.onOpenPlan,
   });
 
   final DateTime today;
+  final DateTime dayKeyUtc;
   final VoidCallback onOpenPlan;
 
   @override
@@ -264,6 +269,7 @@ class _MyDayLoadedBody extends StatelessWidget {
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   _MyDayTaskList(
                     today: today,
+                    dayKeyUtc: dayKeyUtc,
                     plannedItems: plannedItems,
                     pinnedTasks: pinnedTasks,
                   ),
@@ -334,11 +340,13 @@ class _MyDayHeaderRow extends StatelessWidget {
 class _MyDayTaskList extends StatefulWidget {
   const _MyDayTaskList({
     required this.today,
+    required this.dayKeyUtc,
     required this.plannedItems,
     required this.pinnedTasks,
   });
 
   final DateTime today;
+  final DateTime dayKeyUtc;
   final List<MyDayPlannedItem> plannedItems;
   final List<Task> pinnedTasks;
 
@@ -349,10 +357,11 @@ class _MyDayTaskList extends StatefulWidget {
 class _MyDayTaskListState extends State<_MyDayTaskList> {
   var _routinesCollapsed = false;
   var _tasksCollapsed = false;
+  var _completedCollapsed = true;
 
   @override
   Widget build(BuildContext context) {
-    final selection = context.read<SelectionCubit>();
+    final selection = context.read<SelectionBloc>();
     final todayDate = dateOnly(widget.today);
 
     final pickedTaskIds = widget.plannedItems
@@ -381,14 +390,36 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
     final routineEntries = plannedEntries
         .where((entry) => entry.item.type == MyDayPlannedItemType.routine)
         .toList(growable: false);
-    final taskEntries = [
-      ...pinnedEntries,
-      ...plannedEntries.where(
-        (entry) => entry.item.type == MyDayPlannedItemType.task,
-      ),
-    ];
+    final completedRoutineEntries = routineEntries
+        .where((entry) => entry.item.completed)
+        .toList(
+          growable: false,
+        );
+    final activeRoutineEntries = routineEntries
+        .where((entry) => !entry.item.completed)
+        .toList(
+          growable: false,
+        );
 
-    if (routineEntries.isEmpty && taskEntries.isEmpty) {
+    final plannedTaskEntries = plannedEntries.where(
+      (entry) => entry.item.type == MyDayPlannedItemType.task,
+    );
+    final completedTaskEntries = plannedTaskEntries
+        .where((entry) => entry.item.completed)
+        .toList(
+          growable: false,
+        );
+    final activeTaskEntries = plannedTaskEntries
+        .where((entry) => !entry.item.completed)
+        .toList(
+          growable: false,
+        );
+
+    final taskEntries = [...pinnedEntries, ...activeTaskEntries];
+
+    final hasCompleted =
+        completedRoutineEntries.isNotEmpty || completedTaskEntries.isNotEmpty;
+    if (routineEntries.isEmpty && taskEntries.isEmpty && !hasCompleted) {
       return TasklyFeedRenderer(
         spec: TasklyFeedSpec.empty(
           empty: TasklyEmptyStateSpec(
@@ -410,12 +441,19 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
     final tokens = TasklyTokens.of(context);
     final routineRows = _buildRoutineRows(
       context,
-      routineEntries,
+      activeRoutineEntries,
+      dayKeyUtc: widget.dayKeyUtc,
     );
     final taskRows = _buildTaskRows(
       context,
       taskEntries,
       todayDate: todayDate,
+    );
+    final completedRows = _buildCompletedRows(
+      context,
+      completedRoutineEntries: completedRoutineEntries,
+      completedTaskEntries: completedTaskEntries,
+      dayKeyUtc: widget.dayKeyUtc,
     );
 
     return Column(
@@ -450,6 +488,23 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
             emptyLabel: 'Your task list is clear.',
           ),
         ),
+        if (completedRows.isNotEmpty) ...[
+          SizedBox(height: tokens.spaceSm2),
+          _MyDayCollapsibleSection(
+            title: 'Completed',
+            count: completedRows.length,
+            isCollapsed: _completedCollapsed,
+            onToggle: () => setState(
+              () => _completedCollapsed = !_completedCollapsed,
+            ),
+            child: _buildSectionBody(
+              context,
+              id: 'myday-execute-completed',
+              rows: completedRows,
+              emptyLabel: 'No completed items yet.',
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -545,35 +600,42 @@ class _MyDayCollapsibleSection extends StatelessWidget {
 
 List<TasklyRowSpec> _buildRoutineRows(
   BuildContext context,
-  List<_MyDayListEntry> entries,
-) {
-  final groups = _groupEntriesByValue(entries);
+  List<_MyDayListEntry> entries, {
+  required DateTime dayKeyUtc,
+}) {
+  final routineEntries = entries
+      .where((entry) => entry.item.type == MyDayPlannedItemType.routine)
+      .toList(growable: false);
+  routineEntries.sort((a, b) {
+    final routineA = a.item.routine;
+    final routineB = b.item.routine;
+    final scheduledA = routineA?.routineType == RoutineType.weeklyFixed;
+    final scheduledB = routineB?.routineType == RoutineType.weeklyFixed;
+    if (scheduledA != scheduledB) return scheduledA ? -1 : 1;
+    final bySortIndex = a.item.sortIndex.compareTo(b.item.sortIndex);
+    if (bySortIndex != 0) return bySortIndex;
+    final nameA = routineA?.name ?? '';
+    final nameB = routineB?.name ?? '';
+    return nameA.compareTo(nameB);
+  });
+
   final rows = <TasklyRowSpec>[];
-
-  for (final group in groups) {
-    final routineEntries =
-        group.entries
-            .where((entry) => entry.item.type == MyDayPlannedItemType.routine)
-            .toList()
-          ..sort(
-            (a, b) => a.item.sortIndex.compareTo(b.item.sortIndex),
-          );
-
-    for (final entry in routineEntries) {
-      final item = entry.item;
-      final routine = item.routine;
-      final snapshot = item.routineSnapshot;
-      if (routine == null || snapshot == null) continue;
-      rows.add(
-        _buildRoutineRow(
-          context,
-          routine: routine,
-          snapshot: snapshot,
-          completed: item.completed,
-          depthOffset: 0,
-        ),
-      );
-    }
+  for (final entry in routineEntries) {
+    final item = entry.item;
+    final routine = item.routine;
+    final snapshot = item.routineSnapshot;
+    if (routine == null || snapshot == null) continue;
+    rows.add(
+      _buildRoutineRow(
+        context,
+        routine: routine,
+        snapshot: snapshot,
+        completed: item.completed,
+        dayKeyUtc: dayKeyUtc,
+        completionsInPeriod: item.completionsInPeriod,
+        depthOffset: 0,
+      ),
+    );
   }
 
   return rows;
@@ -620,6 +682,52 @@ List<TasklyRowSpec> _buildTaskRows(
         ),
       );
     }
+  }
+
+  return rows;
+}
+
+List<TasklyRowSpec> _buildCompletedRows(
+  BuildContext context, {
+  required List<_MyDayListEntry> completedRoutineEntries,
+  required List<_MyDayListEntry> completedTaskEntries,
+  required DateTime dayKeyUtc,
+}) {
+  final routineRows = _buildRoutineRows(
+    context,
+    completedRoutineEntries,
+    dayKeyUtc: dayKeyUtc,
+  );
+
+  final taskRows = _buildCompletedTaskRows(
+    context,
+    completedTaskEntries,
+  );
+
+  return [...routineRows, ...taskRows];
+}
+
+List<TasklyRowSpec> _buildCompletedTaskRows(
+  BuildContext context,
+  List<_MyDayListEntry> entries,
+) {
+  final completedTaskEntries =
+      entries
+          .where((entry) => entry.item.type == MyDayPlannedItemType.task)
+          .toList(growable: false)
+        ..sort((a, b) => a.item.sortIndex.compareTo(b.item.sortIndex));
+
+  final rows = <TasklyRowSpec>[];
+  for (final entry in completedTaskEntries) {
+    final task = entry.item.task;
+    if (task == null) continue;
+    rows.add(
+      _buildTaskRowSpec(
+        context,
+        task,
+        depthOffset: 0,
+      ),
+    );
   }
 
   return rows;
@@ -779,7 +887,7 @@ class _WeeklyReviewBanner extends StatelessWidget {
 }
 
 void _registerVisibleTasks(
-  SelectionCubit selection,
+  SelectionBloc selection,
   List<Task> tasks,
 ) {
   selection.updateVisibleEntities(
@@ -848,6 +956,8 @@ TasklyRowSpec _buildRoutineRow(
   required Routine routine,
   required RoutineCadenceSnapshot snapshot,
   required bool completed,
+  required DateTime dayKeyUtc,
+  required List<RoutineCompletion> completionsInPeriod,
   int depthOffset = 0,
 }) {
   final data = buildRoutineRowData(
@@ -855,7 +965,14 @@ TasklyRowSpec _buildRoutineRow(
     routine: routine,
     snapshot: snapshot,
     completed: completed,
-    labels: buildRoutineListLabels(context),
+    highlightCompleted: false,
+    showProgress:
+        routine.routineType == RoutineType.weeklyFlexible ||
+        routine.routineType == RoutineType.monthlyFlexible,
+    showScheduleRow: routine.routineType == RoutineType.weeklyFixed,
+    dayKeyUtc: dayKeyUtc,
+    completionsInPeriod: completionsInPeriod,
+    labels: buildRoutineExecutionLabels(context),
   );
 
   return TasklyRowSpec.routine(
@@ -864,6 +981,11 @@ TasklyRowSpec _buildRoutineRow(
     depth: depthOffset,
     actions: TasklyRoutineRowActions(
       onTap: completed
+          ? null
+          : () => context.read<MyDayBloc>().add(
+              MyDayRoutineCompletionRequested(routineId: routine.id),
+            ),
+      onPrimaryAction: completed
           ? null
           : () => context.read<MyDayBloc>().add(
               MyDayRoutineCompletionRequested(routineId: routine.id),
@@ -877,7 +999,7 @@ TasklyRowSpec _buildTaskRowSpec(
   Task task, {
   int depthOffset = 0,
 }) {
-  final selection = context.read<SelectionCubit>();
+  final selection = context.read<SelectionBloc>();
   final selectionMode = selection.isSelectionMode;
   final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
   final key = SelectionKey(

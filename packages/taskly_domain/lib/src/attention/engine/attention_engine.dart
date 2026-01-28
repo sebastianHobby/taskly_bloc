@@ -231,6 +231,10 @@ class AttentionEngine implements AttentionEngineContract {
     final minUnscheduledCount =
         _readInt(rule.evaluatorParams, 'minUnscheduledCount') ??
         _readInt(rule.evaluatorParams, 'min_unscheduled_count');
+    final minOpenTasks =
+        _readInt(rule.evaluatorParams, 'minOpenTasks') ??
+        _readInt(rule.evaluatorParams, 'min_open_tasks') ??
+        1;
 
     final now = inputs.now;
     final items = <_EvaluatedItem>[];
@@ -294,6 +298,7 @@ class AttentionEngine implements AttentionEngineContract {
           project,
           inputs.tasks,
           inputs.projectNextActions,
+          minOpenTasks: minOpenTasks,
         ),
         _ => false,
       };
@@ -520,12 +525,15 @@ class AttentionEngine implements AttentionEngineContract {
   bool _isProjectMissingNextActions(
     Project project,
     List<Task> tasks,
-    List<ProjectNextAction> nextActions,
-  ) {
-    final hasOpenTask = tasks.any(
-      (task) => task.projectId == project.id && !task.completed,
-    );
-    if (!hasOpenTask) return false;
+    List<ProjectNextAction> nextActions, {
+    required int minOpenTasks,
+  }) {
+    final openTaskCount = tasks
+        .where(
+          (task) => task.projectId == project.id && !task.completed,
+        )
+        .length;
+    if (openTaskCount < minOpenTasks) return false;
     return !nextActions.any((action) => action.projectId == project.id);
   }
 

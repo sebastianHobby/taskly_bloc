@@ -8,7 +8,7 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
-import 'package:taskly_bloc/presentation/shared/selection/selection_cubit.dart';
+import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rich_text_utils.dart';
@@ -43,7 +43,7 @@ class ProjectDetailPage extends StatelessWidget {
             sessionDayKeyService: context.read<SessionDayKeyService>(),
           ),
         ),
-        BlocProvider(create: (_) => SelectionCubit()),
+        BlocProvider(create: (_) => SelectionBloc()),
       ],
       child: _ProjectDetailView(projectId: projectId),
     );
@@ -89,7 +89,7 @@ class _ProjectDetailView extends StatelessWidget {
       padding: chrome.iconButtonPadding,
     );
 
-    return BlocBuilder<SelectionCubit, SelectionState>(
+    return BlocBuilder<SelectionBloc, SelectionState>(
       builder: (context, selectionState) {
         return Scaffold(
           appBar: selectionState.isSelectionMode
@@ -217,7 +217,7 @@ class _ProjectDetailBody extends StatelessWidget {
       );
     }
 
-    final selection = context.read<SelectionCubit>();
+    final selection = context.read<SelectionBloc>();
     final visibleTasks = [
       ...nextActionEntries.map((entry) => entry.task),
       ...remainingOpen,
@@ -978,7 +978,7 @@ TasklyRowSpec _buildProjectTaskRow(
   VoidCallback? onTapOverride,
   VoidCallback? onLongPressOverride,
 }) {
-  final selection = context.read<SelectionCubit>();
+  final selection = context.read<SelectionBloc>();
   final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
   final data = buildTaskRowData(
     context,
@@ -1046,7 +1046,7 @@ TasklyRowSpec _buildProjectTaskRow(
 }
 
 void _registerVisibleTasks(
-  SelectionCubit selection,
+  SelectionBloc selection,
   List<Task> tasks,
 ) {
   selection.updateVisibleEntities(

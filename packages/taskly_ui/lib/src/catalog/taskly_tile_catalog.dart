@@ -170,8 +170,6 @@ class TasklyTileCatalog extends StatelessWidget {
           targetLabel: '3×/week',
           remainingLabel: '2 left',
           windowLabel: '4 days left (Mon–Sun)',
-          statusLabel: 'On pace',
-          statusTone: TasklyRoutineStatusTone.onPace,
           valueChip: valueHealth,
           labels: const TasklyRoutineRowLabels(
             primaryActionLabel: 'Do today',
@@ -187,8 +185,6 @@ class TasklyTileCatalog extends StatelessWidget {
           targetLabel: '3x/week',
           remainingLabel: '2 left',
           windowLabel: '4 days left',
-          statusLabel: '',
-          statusTone: TasklyRoutineStatusTone.onPace,
           valueChip: valueKnowledge,
           progress: const TasklyRoutineProgressData(
             completedCount: 1,
@@ -209,8 +205,6 @@ class TasklyTileCatalog extends StatelessWidget {
           targetLabel: 'Scheduled',
           remainingLabel: '2 left',
           windowLabel: 'Mon-Sun',
-          statusLabel: '',
-          statusTone: TasklyRoutineStatusTone.onPace,
           valueChip: valueHealth,
           scheduleRow: const TasklyRoutineScheduleRowData(
             icons: [
@@ -368,6 +362,48 @@ class TasklyTileCatalog extends StatelessWidget {
           accentColor: scheme.primary,
         ),
         preset: const TasklyValueRowPreset.standard(),
+        actions: _valueActions,
+      ),
+      TasklyRowSpec.header(
+        key: 'catalog-values-hero',
+        title: 'Value Â· Hero',
+      ),
+      TasklyRowSpec.value(
+        key: 'catalog-value-hero',
+        data: TasklyValueRowData(
+          id: 'v-hero-1',
+          title: 'Health & Energy',
+          icon: Icons.favorite_rounded,
+          accentColor: scheme.secondary,
+          priorityLabel: 'High Priority',
+          priorityDotColor: scheme.secondary,
+          primaryStatLabel: '24% of completed tasks',
+          primaryStatSubLabel: 'reflected this value',
+          metrics: const [
+            TasklyValueRowMetric(label: 'tasks', value: '12'),
+            TasklyValueRowMetric(label: 'projects', value: '3'),
+          ],
+        ),
+        preset: const TasklyValueRowPreset.hero(),
+        actions: _valueActions,
+      ),
+      TasklyRowSpec.value(
+        key: 'catalog-value-hero-selected',
+        data: TasklyValueRowData(
+          id: 'v-hero-2',
+          title: 'Learning',
+          icon: Icons.psychology_rounded,
+          accentColor: scheme.primary,
+          priorityLabel: 'Medium Priority',
+          priorityDotColor: scheme.tertiary,
+          emptyStatTitle: 'No completions yet',
+          emptyStatSubtitle: 'Start small - every action counts',
+          metrics: const [
+            TasklyValueRowMetric(label: 'tasks', value: '4'),
+            TasklyValueRowMetric(label: 'projects', value: '1'),
+          ],
+        ),
+        preset: const TasklyValueRowPreset.heroSelection(selected: true),
         actions: _valueActions,
       ),
       TasklyRowSpec.header(

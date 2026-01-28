@@ -523,13 +523,68 @@ class AnalyticsServiceImpl implements AnalyticsService {
 
   // === Private Helper Methods ===
 
+  Future<List<Task>> _getCompletedOccurrences({
+    required DateRange range,
+  }) async {
+    final rangeStart = dateOnly(range.start);
+    final rangeEnd = dateOnly(range.end);
+
+    final query = TaskQuery(
+      filter: QueryFilter<TaskPredicate>(
+        shared: [
+          const TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isTrue,
+          ),
+          TaskDatePredicate(
+            field: TaskDateField.completedAt,
+            operator: DateOperator.between,
+            startDate: rangeStart,
+            endDate: rangeEnd,
+          ),
+        ],
+      ),
+    );
+
+    return _occurrenceReadService
+        .watchTaskOccurrences(
+          query: query,
+          rangeStartDay: rangeStart,
+          rangeEndDay: rangeEnd,
+          todayDayKeyUtc: _dayKeyService.todayDayKeyUtc(),
+        )
+        .first;
+  }
+
   Future<List<Task>> _getTasksForEntity({
     required String entityId,
     required EntityType entityType,
   }) async {
-    // Get all tasks - in a real implementation, this would be filtered
-    final allTasks = await _taskRepo.watchAll().first;
-    return allTasks;
+    final shared = <TaskPredicate>[];
+
+    switch (entityType) {
+      case EntityType.task:
+        final task = await _taskRepo.getById(entityId);
+        return task == null ? const <Task>[] : [task];
+      case EntityType.project:
+        shared.add(
+          TaskProjectPredicate(
+            operator: ProjectOperator.matches,
+            projectId: entityId,
+          ),
+        );
+      case EntityType.value:
+        shared.add(
+          TaskValuePredicate(
+            operator: ValueOperator.hasAll,
+            valueIds: [entityId],
+            includeInherited: true,
+          ),
+        );
+    }
+
+    final query = TaskQuery(filter: QueryFilter<TaskPredicate>(shared: shared));
+    return _taskRepo.getAll(query);
   }
 
   Iterable<Value> _effectiveValuesForTask(Task task) {
@@ -544,25 +599,12 @@ class AnalyticsServiceImpl implements AnalyticsService {
   Future<Map<String, int>> getRecentCompletionsByValue({
     required int days,
   }) async {
-    final cutoff = _clock.nowLocal().subtract(Duration(days: days));
-
-    // Query completed tasks since cutoff using TaskQuery
-    final query = TaskQuery(
-      filter: QueryFilter<TaskPredicate>(
-        shared: [
-          const TaskBoolPredicate(
-            field: TaskBoolField.completed,
-            operator: BoolOperator.isTrue,
-          ),
-          TaskDatePredicate(
-            field: TaskDateField.completedAt,
-            operator: DateOperator.onOrAfter,
-            date: cutoff,
-          ),
-        ],
-      ),
+    final windowDays = days.clamp(1, 365);
+    final endDay = dateOnly(_clock.nowLocal());
+    final startDay = endDay.subtract(Duration(days: windowDays - 1));
+    final completedTasks = await _getCompletedOccurrences(
+      range: DateRange(start: startDay, end: endDay),
     );
-    final completedTasks = await _taskRepo.getAll(query);
 
     // Count by value
     final counts = <String, int>{};
@@ -584,27 +626,24 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required int days,
   }) async {
     final windowDays = days.clamp(1, 60);
-    final today = dateOnly(_clock.nowLocal());
-    final startDay = today.subtract(Duration(days: windowDays - 1));
+    final endDay = dateOnly(_clock.nowLocal());
+    final startDay = endDay.subtract(Duration(days: windowDays - 1));
 
-    final completions = await _taskRepo.watchCompletionHistory().first;
-    if (completions.isEmpty) return const <String, List<int>>{};
-
-    final taskIds = completions.map((c) => c.entityId).toSet();
-    final tasks = await _taskRepo.getByIds(taskIds);
-    final tasksById = {for (final task in tasks) task.id: task};
+    final completedTasks = await _getCompletedOccurrences(
+      range: DateRange(start: startDay, end: endDay),
+    );
+    if (completedTasks.isEmpty) return const <String, List<int>>{};
 
     final counts = <String, List<int>>{};
 
-    for (final completion in completions) {
-      final completedLocal = completion.completedAt.toLocal();
-      final completedDay = dateOnly(completedLocal);
-      if (completedDay.isBefore(startDay) || completedDay.isAfter(today)) {
+    for (final task in completedTasks) {
+      final completedAt = task.occurrence?.completedAt;
+      if (completedAt == null) continue;
+
+      final completedDay = dateOnly(completedAt.toLocal());
+      if (completedDay.isBefore(startDay) || completedDay.isAfter(endDay)) {
         continue;
       }
-
-      final task = tasksById[completion.entityId];
-      if (task == null) continue;
 
       final index = completedDay.difference(startDay).inDays;
       if (index < 0 || index >= windowDays) continue;
@@ -643,28 +682,31 @@ class AnalyticsServiceImpl implements AnalyticsService {
       trends[value.id] = List.filled(weeks, 0);
     }
 
-    for (var i = weeks - 1; i >= 0; i--) {
-      final weekStart = now.subtract(Duration(days: (i + 1) * 7));
-      final weekEnd = now.subtract(Duration(days: i * 7));
+    final safeWeeks = weeks.clamp(1, 52);
+    final endDay = dateOnly(now);
+    final startDay = endDay.subtract(Duration(days: safeWeeks * 7 - 1));
 
-      // Query completed tasks in range using TaskQuery
-      final query = TaskQuery(
-        filter: QueryFilter<TaskPredicate>(
-          shared: [
-            const TaskBoolPredicate(
-              field: TaskBoolField.completed,
-              operator: BoolOperator.isTrue,
-            ),
-            TaskDatePredicate(
-              field: TaskDateField.completedAt,
-              operator: DateOperator.between,
-              startDate: weekStart,
-              endDate: weekEnd,
-            ),
-          ],
-        ),
-      );
-      final completions = await _taskRepo.getAll(query);
+    final completedTasks = await _getCompletedOccurrences(
+      range: DateRange(start: startDay, end: endDay),
+    );
+    if (completedTasks.isEmpty) return trends;
+
+    final completionsByWeek = <int, List<Task>>{};
+    for (final task in completedTasks) {
+      final completedAt = task.occurrence?.completedAt;
+      if (completedAt == null) continue;
+      final completedDay = dateOnly(completedAt.toLocal());
+      if (completedDay.isBefore(startDay) || completedDay.isAfter(endDay)) {
+        continue;
+      }
+
+      final index = completedDay.difference(startDay).inDays ~/ 7;
+      if (index < 0 || index >= safeWeeks) continue;
+      (completionsByWeek[index] ??= <Task>[]).add(task);
+    }
+
+    for (var weekIndex = 0; weekIndex < safeWeeks; weekIndex++) {
+      final completions = completionsByWeek[weekIndex] ?? const <Task>[];
 
       // Count per value based on effective values.
       // IMPORTANT: use a denominator consistent with multi-value tagging.
@@ -685,7 +727,6 @@ class AnalyticsServiceImpl implements AnalyticsService {
       if (totalTaggedThisWeek == 0) continue;
 
       for (final entry in valueCounts.entries) {
-        final weekIndex = weeks - 1 - i;
         if (trends.containsKey(entry.key)) {
           trends[entry.key]![weekIndex] =
               entry.value / totalTaggedThisWeek * 100;

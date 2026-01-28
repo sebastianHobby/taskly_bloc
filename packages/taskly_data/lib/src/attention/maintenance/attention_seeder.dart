@@ -7,6 +7,7 @@ import 'package:taskly_data/src/infrastructure/drift/features/shared_enums.dart'
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/attention.dart' as domain;
+import 'package:taskly_domain/telemetry.dart';
 
 /// Seeds system attention rules to database
 ///
@@ -29,7 +30,18 @@ class AttentionSeeder {
   ///
   /// Uses deterministic IDs so re-running is safe (no duplicates)
   Future<void> seedSystemRules() async {
-    talker.info('[AttentionSeeder] Seeding system attention rules');
+    final context = systemOperationContext(
+      feature: 'attention',
+      intent: 'seed_system_rules',
+      operation: 'attention.seedSystemRules',
+      entityType: 'attention_rule',
+    );
+
+    AppLog.routineStructured(
+      'data.attention',
+      'Seeding system attention rules',
+      fields: context.toLogFields(),
+    );
 
     try {
       await _db.transaction(() async {
@@ -38,15 +50,21 @@ class AttentionSeeder {
         }
       });
 
-      talker.info(
-        '[AttentionSeeder] Successfully seeded '
-        '${SystemAttentionRules.all.length} rules',
+      AppLog.routineStructured(
+        'data.attention',
+        'Seeded system attention rules',
+        fields: <String, Object?>{
+          ...context.toLogFields(),
+          'count': SystemAttentionRules.all.length,
+        },
       );
     } catch (e, stackTrace) {
-      talker.operationFailed(
-        '[AttentionSeeder] Failed to seed attention rules',
+      AppLog.handleStructured(
+        'data.attention',
+        'Failed to seed attention rules',
         e,
         stackTrace,
+        context.toLogFields(),
       );
       rethrow;
     }

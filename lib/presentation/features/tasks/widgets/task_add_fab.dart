@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 
 /// A FAB that opens a task creation modal sheet.
@@ -9,17 +9,10 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 /// `AddProjectFab` and `AddValueFab`.
 class AddTaskFab extends StatelessWidget {
   const AddTaskFab({
-    required this.taskRepository,
-    required this.projectRepository,
-    required this.valueRepository,
     this.defaultProjectId,
     this.defaultValueIds,
     super.key,
   });
-
-  final TaskRepositoryContract taskRepository;
-  final ProjectRepositoryContract projectRepository;
-  final ValueRepositoryContract valueRepository;
 
   /// Optional project ID to pre-select in the task form.
   final String? defaultProjectId;
@@ -34,11 +27,7 @@ class AddTaskFab extends StatelessWidget {
     return FloatingActionButton(
       tooltip: fabContext.l10n.createTaskTooltip,
       onPressed: () async {
-        final launcher = EditorLauncher(
-          taskRepository: taskRepository,
-          projectRepository: projectRepository,
-          valueRepository: valueRepository,
-        );
+        final launcher = fabContext.read<EditorLauncher>();
         await launcher.openTaskEditor(
           fabContext,
           defaultProjectId: defaultProjectId,

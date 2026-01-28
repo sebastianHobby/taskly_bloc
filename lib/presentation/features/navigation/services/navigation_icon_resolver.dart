@@ -59,6 +59,10 @@ class NavigationIconResolver {
       'projects' => (icon: Icons.folder_outlined, selectedIcon: Icons.folder),
       'labels' => (icon: Icons.label_outline, selectedIcon: Icons.label),
       'values' => (icon: Icons.star_outline, selectedIcon: Icons.star),
+      'statistics' => (
+        icon: Icons.leaderboard_outlined,
+        selectedIcon: Icons.leaderboard,
+      ),
       'settings' => (
         icon: Icons.settings_outlined,
         selectedIcon: Icons.settings,

@@ -16,17 +16,17 @@ final class MyDayPlannedItem {
        id = task.id,
        routine = null,
        routineSnapshot = null,
-       completed = task.occurrence?.isCompleted ?? task.completed,
-       isCatchUpDay = false;
+       completionsInPeriod = const <RoutineCompletion>[],
+       completed = task.occurrence?.isCompleted ?? task.completed;
 
   MyDayPlannedItem.routine({
     required Routine this.routine,
     required RoutineCadenceSnapshot this.routineSnapshot,
+    required this.completionsInPeriod,
     required this.bucket,
     required this.sortIndex,
     required this.qualifyingValueId,
     required this.completed,
-    required this.isCatchUpDay,
   }) : type = MyDayPlannedItemType.routine,
        id = routine.id,
        task = null;
@@ -39,8 +39,8 @@ final class MyDayPlannedItem {
   final Task? task;
   final Routine? routine;
   final RoutineCadenceSnapshot? routineSnapshot;
+  final List<RoutineCompletion> completionsInPeriod;
   final bool completed;
-  final bool isCatchUpDay;
 
   String? get valueId {
     final fromPick = qualifyingValueId;

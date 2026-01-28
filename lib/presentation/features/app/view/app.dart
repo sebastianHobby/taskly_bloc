@@ -22,12 +22,17 @@ import 'package:taskly_bloc/presentation/features/app/view/initial_sync_gate_scr
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
+import 'package:taskly_bloc/presentation/screens/services/my_day_gate_query_service.dart';
+import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
 import 'package:taskly_bloc/presentation/shared/sync/sync_anomaly_bloc.dart';
 import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
@@ -63,6 +68,7 @@ class App extends StatelessWidget {
         lazy: false, // Start immediately to load settings
         create: (context) => GlobalSettingsBloc(
           settingsRepository: getIt<SettingsRepositoryContract>(),
+          attentionRepository: getIt<AttentionRepositoryContract>(),
           nowService: getIt<NowService>(),
           errorReporter: context.read<AppErrorReporter>(),
         )..add(const GlobalSettingsEvent.started()),
@@ -283,7 +289,9 @@ class _AuthenticatedApp extends StatelessWidget {
         Provider<PresentationSessionServicesCoordinator>(
           create: (_) => getIt<PresentationSessionServicesCoordinator>(),
         ),
-        Provider<InitialSyncService>(create: (_) => getIt<InitialSyncService>()),
+        Provider<InitialSyncService>(
+          create: (_) => getIt<InitialSyncService>(),
+        ),
         Provider<PendingNotificationsProcessor>(
           create: (_) => getIt<PendingNotificationsProcessor>(),
         ),

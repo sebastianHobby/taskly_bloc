@@ -3,6 +3,7 @@ import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 /// Seeds system tracker definitions and default preferences.
@@ -24,7 +25,18 @@ class JournalTrackerSeeder {
   final Clock _clock;
 
   Future<void> ensureSeeded() async {
-    talker.info('[JournalTrackerSeeder] Seeding system trackers');
+    final context = systemOperationContext(
+      feature: 'journal',
+      intent: 'seed_system_trackers',
+      operation: 'journal.seedSystemTrackers',
+      entityType: 'tracker_definition',
+    );
+
+    AppLog.routineStructured(
+      'data.journal',
+      'Seeding system trackers',
+      fields: context.toLogFields(),
+    );
 
     try {
       await _db.transaction(() async {
@@ -33,15 +45,21 @@ class JournalTrackerSeeder {
         }
       });
 
-      talker.info(
-        '[JournalTrackerSeeder] Successfully seeded '
-        '${SystemTrackers.all.length} tracker(s)',
+      AppLog.routineStructured(
+        'data.journal',
+        'Seeded system trackers',
+        fields: <String, Object?>{
+          ...context.toLogFields(),
+          'count': SystemTrackers.all.length,
+        },
       );
     } catch (e, st) {
-      talker.operationFailed(
-        '[JournalTrackerSeeder] Failed to seed system trackers',
+      AppLog.handleStructured(
+        'data.journal',
+        'Failed to seed system trackers',
         e,
         st,
+        context.toLogFields(),
       );
       rethrow;
     }

@@ -5,6 +5,7 @@ import 'package:taskly_domain/src/notifications/model/pending_notification.dart'
 import 'package:taskly_domain/src/interfaces/pending_notifications_repository_contract.dart';
 import 'package:taskly_domain/src/services/notifications/notification_presenter.dart';
 import 'package:taskly_domain/src/time/clock.dart';
+import 'package:taskly_domain/telemetry.dart';
 
 /// Watches for new pending notifications and processes them.
 ///
@@ -58,7 +59,17 @@ class PendingNotificationsProcessor {
         }
 
         await _presenter(item);
-        await _repository.markDelivered(id: item.id);
+        final context = systemOperationContext(
+          feature: 'notifications',
+          intent: 'deliver_pending_notification',
+          operation: 'notifications.markDelivered',
+          entityType: 'pending_notification',
+          entityId: item.id,
+          extraFields: <String, Object?>{
+            'scheduledFor': item.scheduledFor.toIso8601String(),
+          },
+        );
+        await _repository.markDelivered(id: item.id, context: context);
       } catch (error, stackTrace) {
         talker.handle(
           error,

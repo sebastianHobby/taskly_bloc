@@ -385,7 +385,7 @@ class CorrelationCalculator {
       sampleSize: sampleSize,
       strength: CorrelationStrength.negligible,
       insight:
-          '⚠️ Insufficient data: $reason. Keep tracking to discover patterns.',
+          'Warning: insufficient data: $reason. Keep tracking to discover patterns.',
       sourceHigherIsBetter: sourceHigherIsBetter,
       targetHigherIsBetter: targetHigherIsBetter,
     );
@@ -416,7 +416,7 @@ class CorrelationCalculator {
     // Show data quality indicators
     if (!isSignificant) {
       if (sampleSize < 20) {
-        return '⚠️ Early pattern detected (n=$sampleSize) - collect more data to confirm correlation between $sourceLabel and $targetLabel';
+        return 'Early pattern detected (n=$sampleSize). Collect more data to confirm correlation between $sourceLabel and $targetLabel.';
       }
       return 'No statistically significant correlation found between $sourceLabel and $targetLabel (p ≥ 0.05)';
     }
@@ -429,7 +429,7 @@ class CorrelationCalculator {
     final absPercent = (differencePercent?.abs() ?? 0).toStringAsFixed(0);
 
     if (valueWithSource != null && valueWithoutSource != null) {
-      return '✓ When you engage with $sourceLabel, your $targetLabel is $absPercent% $direction (statistically significant, n=$sampleSize)';
+      return 'When you engage with $sourceLabel, your $targetLabel is $absPercent% $direction (statistically significant, n=$sampleSize).';
     }
 
     final strengthText = switch (strength) {
@@ -444,6 +444,6 @@ class CorrelationCalculator {
       _ => 'not significantly associated with',
     };
 
-    return '✓ $sourceLabel is $strengthText $targetLabel (p < 0.05, n=$sampleSize)';
+    return '$sourceLabel is $strengthText $targetLabel (p < 0.05, n=$sampleSize).';
   }
 }
