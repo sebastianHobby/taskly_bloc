@@ -32,6 +32,16 @@ void main() {
     expect(decoded, equals(p));
   });
 
+  testSafe('ProjectBoolPredicate JSON roundtrip (repeating)', () async {
+    const p = ProjectBoolPredicate(
+      field: ProjectBoolField.repeating,
+      operator: BoolOperator.isTrue,
+    );
+
+    final decoded = ProjectPredicate.fromJson(p.toJson());
+    expect(decoded, equals(p));
+  });
+
   testSafe('ProjectBoolPredicate.fromJson uses defaults', () async {
     final decoded = ProjectBoolPredicate.fromJson(const <String, dynamic>{
       'type': 'bool',

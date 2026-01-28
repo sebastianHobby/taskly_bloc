@@ -103,6 +103,26 @@ Coverage can be generated and filtered via repo tooling.
 - Filter script: `tool/coverage_filter.dart`
 - Summary script: `tool/coverage_summary.dart`
 
+#### 6.2.1 Coverage goals (planning targets)
+
+These targets guide prioritization and help keep coverage aligned with the
+testing standards in `INVARIANTS.md`. They are directional, not hard gates.
+
+- `taskly_core`: 90%+ (core utilities and cross-cutting infrastructure)
+- `taskly_domain`: 70%+ (business semantics and domain services)
+- `taskly_data`: 60%+ (repositories, mappers, sync helpers)
+- `taskly_bloc` (app/presentation): 60%+ (BLoCs, screen orchestration)
+- `taskly_ui`: 50%+ (widget and golden tests for shared UI)
+
+#### 6.2.2 Test mix standards (by layer)
+
+- **Unit**: domain rules, validators, mapping, and BLoC reducers/state
+  transitions.
+- **Widget**: UI composition, BLoC wiring, and critical shared UI components.
+- **Repository/Integration**: persistence behavior against real local DB.
+- **Pipeline**: local Supabase/PowerSync flows, offline → online sync,
+  and round-trips of critical entities.
+
 ## 7) Enforcement and guardrails
 
 Guardrails should be cheap, predictable, and aligned with the invariants.

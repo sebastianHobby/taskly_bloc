@@ -16,6 +16,7 @@ void main() {
         'myDayShowAvailableToStart': false,
         'textScaleFactor': 1.25,
         'onboardingCompleted': true,
+        'guidedTourCompleted': true,
       });
 
       expect(settings.themeMode, AppThemeMode.dark);
@@ -27,6 +28,7 @@ void main() {
       expect(settings.myDayCountRoutinePicksAgainstValueQuotas, isTrue);
       expect(settings.textScaleFactor, 1.25);
       expect(settings.onboardingCompleted, isTrue);
+      expect(settings.guidedTourCompleted, isTrue);
     },
   );
 
@@ -66,6 +68,7 @@ void main() {
       maintenanceMissingNextActionsMinOpenTasks: 42,
       textScaleFactor: 0.9,
       onboardingCompleted: true,
+      guidedTourCompleted: true,
     );
 
     final json = original.toJson();
@@ -103,5 +106,6 @@ void main() {
     );
     expect(decoded.textScaleFactor, 0.9);
     expect(decoded.onboardingCompleted, isTrue);
+    expect(decoded.guidedTourCompleted, isTrue);
   });
 }

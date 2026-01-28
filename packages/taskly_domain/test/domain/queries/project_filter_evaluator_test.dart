@@ -20,6 +20,7 @@ void main() {
     DateTime? deadlineDate,
     DateTime? completedAt,
     List<Value> values = const <Value>[],
+    String? repeatIcalRrule,
   }) {
     return Project(
       id: 'p1',
@@ -30,6 +31,7 @@ void main() {
       startDate: startDate,
       deadlineDate: deadlineDate,
       values: values,
+      repeatIcalRrule: repeatIcalRrule,
       occurrence: completedAt == null
           ? null
           : OccurrenceData(
@@ -68,6 +70,28 @@ void main() {
 
     final ok = evaluator.matches(baseProject(completed: false), filter, ctx);
     expect(ok, isFalse);
+  });
+
+  testSafe('repeating predicate matches project.isRepeating', () async {
+    const evaluator = ProjectFilterEvaluator();
+    final ctx = EvaluationContext.forDate(DateTime.utc(2026, 1, 10));
+
+    final filter = QueryFilter<ProjectPredicate>(
+      shared: const [
+        ProjectBoolPredicate(
+          field: ProjectBoolField.repeating,
+          operator: BoolOperator.isTrue,
+        ),
+      ],
+    );
+
+    final ok = evaluator.matches(
+      baseProject(repeatIcalRrule: 'RRULE:FREQ=DAILY'),
+      filter,
+      ctx,
+    );
+
+    expect(ok, isTrue);
   });
 
   testSafe('orGroups are evaluated as one-level OR of AND groups', () async {

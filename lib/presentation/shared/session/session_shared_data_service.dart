@@ -57,7 +57,8 @@ final class SessionSharedDataService {
   ValueStream<int> watchInboxTaskCount() {
     return _cacheManager.getOrCreate<int>(
       key: _inboxCountKey,
-      source: () => _taskRepository.watchAllCount(TaskQuery.inbox()),
+      source: () =>
+          _taskRepository.watchAllCount(TaskQuery.inbox()).startWith(0),
       pauseOnBackground: true,
     );
   }

@@ -81,6 +81,30 @@ void main() {
       expect(out, isEmpty);
     });
 
+    testSafe('skips non-repeating task with no start or deadline', () async {
+      final expander = OccurrenceStreamExpander(
+        clock: FixedClock(DateTime.utc(2025, 1, 1)),
+      );
+
+      final task = Task(
+        id: 't1',
+        createdAt: DateTime.utc(2025, 1, 1, 12),
+        updatedAt: DateTime.utc(2025, 1, 1, 12),
+        name: 'Task',
+        completed: false,
+      );
+
+      final out = expander.expandTaskOccurrencesSync(
+        tasks: [task],
+        completions: const <CompletionHistoryData>[],
+        exceptions: const <RecurrenceExceptionData>[],
+        rangeStart: DateTime.utc(2025, 1, 1),
+        rangeEnd: DateTime.utc(2025, 1, 31),
+      );
+
+      expect(out, isEmpty);
+    });
+
     testSafe('treats invalid RRULE as non-repeating', () async {
       final expander = OccurrenceStreamExpander(
         clock: FixedClock(DateTime.utc(2025, 1, 1)),
@@ -299,6 +323,64 @@ void main() {
             DateTime.utc(2025, 1, 2),
           ]),
         );
+      },
+    );
+  });
+
+  group('OccurrenceStreamExpander.expandProjectOccurrencesSync', () {
+    testSafe(
+      'expands non-repeating project into a single occurrence in range',
+      () async {
+        final expander = OccurrenceStreamExpander(
+          clock: FixedClock(DateTime.utc(2025, 1, 1)),
+        );
+
+        final project = Project(
+          id: 'p1',
+          createdAt: DateTime.utc(2025, 1, 1, 12),
+          updatedAt: DateTime.utc(2025, 1, 1, 12),
+          name: 'Project',
+          completed: false,
+          startDate: DateTime.utc(2025, 1, 5, 20),
+        );
+
+        final out = expander.expandProjectOccurrencesSync(
+          projects: [project],
+          completions: const <CompletionHistoryData>[],
+          exceptions: const <RecurrenceExceptionData>[],
+          rangeStart: DateTime.utc(2025, 1, 1),
+          rangeEnd: DateTime.utc(2025, 1, 31),
+        );
+
+        expect(out.length, equals(1));
+        expect(out.single.occurrence?.date, equals(DateTime.utc(2025, 1, 5)));
+      },
+    );
+
+    testSafe(
+      'skips non-repeating project with no start or deadline',
+      () async {
+        final expander = OccurrenceStreamExpander(
+          clock: FixedClock(DateTime.utc(2025, 1, 1)),
+        );
+
+        final project = Project(
+          id: 'p1',
+          createdAt: DateTime.utc(2025, 1, 1, 12),
+          updatedAt: DateTime.utc(2025, 1, 1, 12),
+          name: 'Project',
+          completed: false,
+        );
+
+        final out = expander.expandProjectOccurrencesSync(
+          projects: [project],
+          completions: const <CompletionHistoryData>[],
+          exceptions: const <RecurrenceExceptionData>[],
+          rangeStart: DateTime.utc(2025, 1, 1),
+          rangeEnd: DateTime.utc(2025, 1, 31),
+        );
+
+        expect(out, isEmpty);
       },
     );
   });

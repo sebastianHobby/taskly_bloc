@@ -120,6 +120,13 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
     final allOccurrences = <Task>[];
 
     for (final task in tasks) {
+      final hasScheduledDate =
+          task.startDate != null || task.deadlineDate != null;
+      final hasRepeat = task.repeatIcalRrule?.trim().isNotEmpty ?? false;
+      if (!hasScheduledDate && !hasRepeat) {
+        // No scheduled date information, so do not create occurrences.
+        continue;
+      }
       final taskCompletions = completionsByTask[task.id] ?? [];
       final taskExceptions = exceptionsByTask[task.id] ?? [];
 
@@ -173,6 +180,13 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
     final allOccurrences = <Project>[];
 
     for (final project in projects) {
+      final hasScheduledDate =
+          project.startDate != null || project.deadlineDate != null;
+      final hasRepeat = project.repeatIcalRrule?.trim().isNotEmpty ?? false;
+      if (!hasScheduledDate && !hasRepeat) {
+        // No scheduled date information, so do not create occurrences.
+        continue;
+      }
       final projectCompletions = completionsByProject[project.id] ?? [];
       final projectExceptions = exceptionsByProject[project.id] ?? [];
 

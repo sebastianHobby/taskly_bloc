@@ -42,7 +42,21 @@ class TaskPredicateMapper with QueryBuilderMixin {
     TaskBoolPredicate predicate,
     $TaskTableTable t,
   ) {
-    return SqlComparisonBuilder.boolComparison(t.completed, predicate.operator);
+    final column = switch (predicate.field) {
+      TaskBoolField.completed => t.completed,
+      TaskBoolField.repeating =>
+        t.repeatIcalRrule.isNotNull() & t.repeatIcalRrule.isNotValue(''),
+    };
+
+    if (predicate.field == TaskBoolField.repeating) {
+      return switch (predicate.operator) {
+        BoolOperator.isTrue => column,
+        BoolOperator.isFalse =>
+          t.repeatIcalRrule.isNull() | t.repeatIcalRrule.equals(''),
+      };
+    }
+
+    return SqlComparisonBuilder.boolComparison(column, predicate.operator);
   }
 
   Expression<bool> _projectPredicateToExpression(

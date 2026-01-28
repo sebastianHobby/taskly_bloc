@@ -20,6 +20,7 @@ import 'package:taskly_bloc/presentation/features/auth/view/forgot_password_view
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/features/app/view/initial_sync_gate_screen.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
@@ -342,6 +343,11 @@ class _AuthenticatedApp extends StatelessWidget {
               initialSyncService: context.read<InitialSyncService>(),
               sharedDataService: context.read<SessionSharedDataService>(),
             )..add(const InitialSyncGateStarted()),
+          ),
+          BlocProvider<GuidedTourBloc>(
+            create: (context) => GuidedTourBloc(
+              settingsRepository: context.read<SettingsRepositoryContract>(),
+            ),
           ),
           BlocProvider<ScreenActionsBloc>(
             create: (context) => ScreenActionsBloc(

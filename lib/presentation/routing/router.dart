@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/scaffold_with_nested_navigation.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/view/guided_tour_overlay.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/presentation/routing/not_found_route_page.dart';
 import 'package:taskly_bloc/presentation/routing/route_codec.dart';
@@ -107,12 +108,14 @@ GoRouter createRouter({required bool forceOnboarding}) {
               ? Routing.parseScreenKey('scheduled')
               : null;
 
-          return ScaffoldWithNestedNavigation(
-            activeScreenId:
-                scopedScheduledActiveScreenId ??
-                scopedAnytimeActiveScreenId ??
-                activeScreenId,
-            child: child,
+          return GuidedTourOverlayHost(
+            child: ScaffoldWithNestedNavigation(
+              activeScreenId:
+                  scopedScheduledActiveScreenId ??
+                  scopedAnytimeActiveScreenId ??
+                  activeScreenId,
+              child: child,
+            ),
           );
         },
         routes: [

@@ -77,6 +77,9 @@ When asked to design UI/UX:
   ensure it is green before reporting done.
 - Keep unit tests up to date with changes and add new unit tests for new
   behavior or regressions; follow existing test patterns.
+- When creating new tests, always run them and ensure they pass.
+- After any significant change, run the appropriate regression tests and ensure
+  they pass.
 - Do not try to “fix tests to make them pass” while the analyzer reports
   problems.
 - If `dart analyze` fails to start due to sandbox restrictions (e.g. “windows

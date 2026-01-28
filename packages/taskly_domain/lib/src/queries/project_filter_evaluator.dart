@@ -48,6 +48,7 @@ class ProjectFilterEvaluator {
   bool _evalBool(Project project, ProjectBoolPredicate p) {
     final value = switch (p.field) {
       ProjectBoolField.completed => project.completed,
+      ProjectBoolField.repeating => project.isRepeating,
     };
     return BoolComparison.evaluate(fieldValue: value, operator: p.operator);
   }

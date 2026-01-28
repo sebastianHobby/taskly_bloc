@@ -13,6 +13,45 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     throw "Docker not found on PATH. Install Docker Desktop and retry."
 }
 
+function Test-DockerReady {
+    try {
+        docker info | Out-Null
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
+function Start-DockerDesktopIfNeeded {
+    if (Test-DockerReady) {
+        return
+    }
+
+    Write-Host "Docker Desktop is not running. Attempting to start it..."
+
+    $candidatePaths = @(
+        (Join-Path $env:ProgramFiles "Docker\Docker\Docker Desktop.exe"),
+        (Join-Path ${env:ProgramFiles(x86)} "Docker\Docker\Docker Desktop.exe")
+    ) | Where-Object { $_ -and (Test-Path $_) }
+
+    if ($candidatePaths.Count -eq 0) {
+        throw "Docker Desktop executable not found. Start Docker Desktop manually."
+    }
+
+    Start-Process -FilePath $candidatePaths[0] | Out-Null
+
+    $deadline = (Get-Date).AddMinutes(2)
+    while (-not (Test-DockerReady)) {
+        if ((Get-Date) -gt $deadline) {
+            throw "Docker Desktop did not become ready within 2 minutes."
+        }
+        Start-Sleep -Seconds 2
+    }
+}
+
+Start-DockerDesktopIfNeeded
+
 Write-Host "Starting Supabase local stack..."
 supabase start | Out-Host
 

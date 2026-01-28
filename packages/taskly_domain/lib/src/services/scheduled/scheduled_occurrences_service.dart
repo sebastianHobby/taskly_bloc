@@ -54,41 +54,64 @@ final class ScheduledOccurrencesService {
       today,
       effectiveScope,
     );
-    final scheduledTasksQuery = _buildScheduledTasksQuery(
-      rangeStart: startDay,
-      rangeEnd: endDay,
+    final scheduledNonRecurringTasksQuery =
+        _buildScheduledNonRecurringTasksQuery(
+          rangeStart: startDay,
+          rangeEnd: endDay,
+          scope: effectiveScope,
+        );
+    final scheduledNonRecurringProjectsQuery =
+        _buildScheduledNonRecurringProjectsQuery(
+          rangeStart: startDay,
+          rangeEnd: endDay,
+          scope: effectiveScope,
+        );
+    final scheduledRecurringTasksQuery = _buildScheduledRecurringTasksQuery(
       scope: effectiveScope,
     );
-    final scheduledProjectsQuery = _buildScheduledProjectsQuery(
-      rangeStart: startDay,
-      rangeEnd: endDay,
-      scope: effectiveScope,
-    );
+    final scheduledRecurringProjectsQuery =
+        _buildScheduledRecurringProjectsQuery(scope: effectiveScope);
 
     final overdueTasksStream = _taskRepository.watchAll(overdueTasksQuery);
     final overdueProjectsStream = _projectRepository.watchAll(
       overdueProjectsQuery,
     );
-    final scheduledTasksStream = _occurrenceReadService.watchTaskOccurrences(
-      query: scheduledTasksQuery,
-      rangeStartDay: startDay,
-      rangeEndDay: endDay,
-      todayDayKeyUtc: today,
+    final scheduledNonRecurringTasksStream = _taskRepository.watchAll(
+      scheduledNonRecurringTasksQuery,
     );
-    final scheduledProjectsStream = _occurrenceReadService
+    final scheduledNonRecurringProjectsStream = _projectRepository.watchAll(
+      scheduledNonRecurringProjectsQuery,
+    );
+    final scheduledRecurringTasksStream = _occurrenceReadService
+        .watchTaskOccurrences(
+          query: scheduledRecurringTasksQuery,
+          rangeStartDay: startDay,
+          rangeEndDay: endDay,
+          todayDayKeyUtc: today,
+        );
+    final scheduledRecurringProjectsStream = _occurrenceReadService
         .watchProjectOccurrences(
-          query: scheduledProjectsQuery,
+          query: scheduledRecurringProjectsQuery,
           rangeStartDay: startDay,
           rangeEndDay: endDay,
           todayDayKeyUtc: today,
         );
 
-    return Rx.combineLatest4(
+    return Rx.combineLatest6(
       overdueTasksStream,
       overdueProjectsStream,
-      scheduledTasksStream,
-      scheduledProjectsStream,
-      (overdueTasks, overdueProjects, scheduledTasks, scheduledProjects) {
+      scheduledNonRecurringTasksStream,
+      scheduledNonRecurringProjectsStream,
+      scheduledRecurringTasksStream,
+      scheduledRecurringProjectsStream,
+      (
+        overdueTasks,
+        overdueProjects,
+        scheduledNonRecurringTasks,
+        scheduledNonRecurringProjects,
+        scheduledRecurringTasks,
+        scheduledRecurringProjects,
+      ) {
         final overdue = <ScheduledOccurrence>[
           ...overdueTasks.map((t) => _overdueTask(t, today: today)),
           ...overdueProjects.map((p) => _overdueProject(p, today: today)),
@@ -96,7 +119,7 @@ final class ScheduledOccurrencesService {
 
         final occurrences = <ScheduledOccurrence>[];
 
-        for (final task in scheduledTasks) {
+        for (final task in scheduledNonRecurringTasks) {
           occurrences.addAll(
             _expandTask(
               task,
@@ -106,7 +129,27 @@ final class ScheduledOccurrencesService {
           );
         }
 
-        for (final project in scheduledProjects) {
+        for (final task in scheduledRecurringTasks) {
+          occurrences.addAll(
+            _expandTask(
+              task,
+              rangeStart: startDay,
+              rangeEnd: endDay,
+            ),
+          );
+        }
+
+        for (final project in scheduledNonRecurringProjects) {
+          occurrences.addAll(
+            _expandProject(
+              project,
+              rangeStart: startDay,
+              rangeEnd: endDay,
+            ),
+          );
+        }
+
+        for (final project in scheduledRecurringProjects) {
           occurrences.addAll(
             _expandProject(
               project,
@@ -369,7 +412,7 @@ final class ScheduledOccurrencesService {
     );
   }
 
-  TaskQuery _buildScheduledTasksQuery({
+  TaskQuery _buildScheduledNonRecurringTasksQuery({
     required DateTime rangeStart,
     required DateTime rangeEnd,
     required ScheduledScope? scope,
@@ -379,6 +422,10 @@ final class ScheduledOccurrencesService {
         shared: <TaskPredicate>[
           const TaskBoolPredicate(
             field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          const TaskBoolPredicate(
+            field: TaskBoolField.repeating,
             operator: BoolOperator.isFalse,
           ),
           ..._taskScopePredicates(scope),
@@ -405,7 +452,27 @@ final class ScheduledOccurrencesService {
     );
   }
 
-  ProjectQuery _buildScheduledProjectsQuery({
+  TaskQuery _buildScheduledRecurringTasksQuery({
+    required ScheduledScope? scope,
+  }) {
+    return TaskQuery(
+      filter: QueryFilter<TaskPredicate>(
+        shared: <TaskPredicate>[
+          const TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          const TaskBoolPredicate(
+            field: TaskBoolField.repeating,
+            operator: BoolOperator.isTrue,
+          ),
+          ..._taskScopePredicates(scope),
+        ],
+      ),
+    );
+  }
+
+  ProjectQuery _buildScheduledNonRecurringProjectsQuery({
     required DateTime rangeStart,
     required DateTime rangeEnd,
     required ScheduledScope? scope,
@@ -415,6 +482,10 @@ final class ScheduledOccurrencesService {
         shared: <ProjectPredicate>[
           const ProjectBoolPredicate(
             field: ProjectBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          const ProjectBoolPredicate(
+            field: ProjectBoolField.repeating,
             operator: BoolOperator.isFalse,
           ),
           ..._projectScopePredicates(scope),
@@ -436,6 +507,26 @@ final class ScheduledOccurrencesService {
               endDate: rangeEnd,
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  ProjectQuery _buildScheduledRecurringProjectsQuery({
+    required ScheduledScope? scope,
+  }) {
+    return ProjectQuery(
+      filter: QueryFilter<ProjectPredicate>(
+        shared: <ProjectPredicate>[
+          const ProjectBoolPredicate(
+            field: ProjectBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          const ProjectBoolPredicate(
+            field: ProjectBoolField.repeating,
+            operator: BoolOperator.isTrue,
+          ),
+          ..._projectScopePredicates(scope),
         ],
       ),
     );

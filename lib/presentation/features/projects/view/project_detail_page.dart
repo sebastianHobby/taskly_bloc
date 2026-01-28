@@ -38,8 +38,8 @@ class ProjectDetailPage extends StatelessWidget {
             projectId: projectId,
             projectRepository: context.read<ProjectRepositoryContract>(),
             occurrenceReadService: context.read<OccurrenceReadService>(),
-            projectNextActionsRepository:
-                context.read<ProjectNextActionsRepositoryContract>(),
+            projectNextActionsRepository: context
+                .read<ProjectNextActionsRepositoryContract>(),
             sessionDayKeyService: context.read<SessionDayKeyService>(),
           ),
         ),
@@ -253,36 +253,41 @@ class _ProjectDetailBody extends StatelessWidget {
         TasklyTokens.of(context).spaceXl,
       ),
       children: [
-        _ProjectDetailHeader(
-          data: headerData,
-          description: project.description,
-          isInbox: isInbox,
-          onEditRequested: openEdit,
-        ),
-        SizedBox(height: TasklyTokens.of(context).spaceSm),
-        if (!isInbox)
-          _ProjectNextActionsSection(
-            entries: nextActionEntries,
-            selectionState: selectionState,
-            onPickRequested: () => _showNextActionPicker(
-              context,
-              availableTasks: remainingOpen,
-              existingActions: orderedNextActions,
-              tasksById: tasksById,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _ProjectDetailHeader(
+              data: headerData,
+              description: project.description,
+              isInbox: isInbox,
+              onEditRequested: openEdit,
             ),
-            onRemoveRequested: (taskId) => _removeNextAction(
-              context,
-              taskId: taskId,
-              existingActions: orderedNextActions,
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
+            if (!isInbox)
+              _ProjectNextActionsSection(
+                entries: nextActionEntries,
+                selectionState: selectionState,
+                onPickRequested: () => _showNextActionPicker(
+                  context,
+                  availableTasks: remainingOpen,
+                  existingActions: orderedNextActions,
+                  tasksById: tasksById,
+                ),
+                onRemoveRequested: (taskId) => _removeNextAction(
+                  context,
+                  taskId: taskId,
+                  existingActions: orderedNextActions,
+                ),
+                onReorderRequested: (entries) => _reorderNextActions(
+                  context,
+                  entries: entries,
+                ),
+              ),
+            if (!isInbox) SizedBox(height: TasklyTokens.of(context).spaceSm),
+            TasklyFeedRenderer.buildSection(
+              TasklySectionSpec.standardList(id: 'project-detail', rows: rows),
             ),
-            onReorderRequested: (entries) => _reorderNextActions(
-              context,
-              entries: entries,
-            ),
-          ),
-        if (!isInbox) SizedBox(height: TasklyTokens.of(context).spaceSm),
-        TasklyFeedRenderer.buildSection(
-          TasklySectionSpec.standardList(id: 'project-detail', rows: rows),
+          ],
         ),
       ],
     );

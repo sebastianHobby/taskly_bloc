@@ -114,6 +114,61 @@ void main() {
 
     expect(updated?.name, 'Remote Rename');
   });
+
+  testSafe('uploads offline project after reconnect', () async {
+    final repo = bindings.projectRepository;
+
+    await repo.create(name: 'Offline Project');
+    final created = await repo.getAll();
+    expect(created, isNotEmpty);
+
+    final projectId = created.single.id;
+
+    await stack.startSession();
+    await bindings.initialSyncService.waitForFirstSync();
+
+    final remote = await _waitForRemoteProject(supabase, projectId);
+    expect(remote['name'], 'Offline Project');
+  });
+
+  testSafe('downloads remote project updates into local database', () async {
+    await stack.startSession();
+    await bindings.initialSyncService.waitForFirstSync();
+
+    final repo = bindings.projectRepository;
+    await repo.create(name: 'Local Project');
+    final created = await repo.getAll();
+    final projectId = created.single.id;
+
+    await _waitForRemoteProject(supabase, projectId);
+
+    await supabase
+        .from('projects')
+        .update({'name': 'Remote Project Rename'})
+        .eq('id', projectId);
+
+    final updated = await repo
+        .watchById(projectId)
+        .firstWhere((project) => project?.name == 'Remote Project Rename');
+
+    expect(updated?.name, 'Remote Project Rename');
+  });
+
+  testSafe('uploads offline value after reconnect', () async {
+    final repo = bindings.valueRepository;
+
+    await repo.create(name: 'Offline Value', color: '#123456');
+    final created = await repo.getAll();
+    expect(created, isNotEmpty);
+
+    final valueId = created.single.id;
+
+    await stack.startSession();
+    await bindings.initialSyncService.waitForFirstSync();
+
+    final remote = await _waitForRemoteValue(supabase, valueId);
+    expect(remote['name'], 'Offline Value');
+  });
 }
 
 Future<void> _ensureSignedIn(
@@ -168,6 +223,40 @@ Future<Map<String, dynamic>> _waitForRemoteTask(
     await Future<void>.delayed(const Duration(milliseconds: 350));
   }
   throw TimeoutException('Timed out waiting for task $taskId to sync.');
+}
+
+Future<Map<String, dynamic>> _waitForRemoteProject(
+  SupabaseClient client,
+  String projectId,
+) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 12));
+  while (DateTime.now().isBefore(deadline)) {
+    final row = await client
+        .from('projects')
+        .select('id, name')
+        .eq('id', projectId)
+        .maybeSingle();
+    if (row != null) return Map<String, dynamic>.from(row);
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+  }
+  throw TimeoutException('Timed out waiting for project $projectId to sync.');
+}
+
+Future<Map<String, dynamic>> _waitForRemoteValue(
+  SupabaseClient client,
+  String valueId,
+) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 12));
+  while (DateTime.now().isBefore(deadline)) {
+    final row = await client
+        .from('values')
+        .select('id, name')
+        .eq('id', valueId)
+        .maybeSingle();
+    if (row != null) return Map<String, dynamic>.from(row);
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+  }
+  throw TimeoutException('Timed out waiting for value $valueId to sync.');
 }
 
 final class TimeoutException implements Exception {

@@ -25,6 +25,9 @@ class MockSettingsRepositoryContract extends Mock
 class MockRoutineRepositoryContract extends Mock
     implements RoutineRepositoryContract {}
 
+class MockMyDayRepositoryContract extends Mock
+    implements MyDayRepositoryContract {}
+
 // === Occurrence Helpers ===
 
 class MockOccurrenceStreamExpanderContract extends Mock

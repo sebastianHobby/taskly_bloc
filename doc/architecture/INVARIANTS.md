@@ -552,6 +552,26 @@ excluded from the fast presets.
 
 Use timing artifacts (for example `test/last_run.json`) to identify regressions.
 
+#### TG-010-A -- Coverage alignment with testing standards
+
+Coverage must stay aligned with the repo’s testing standards and should trend
+upward in touched areas.
+
+Normative rules:
+
+- New or changed behavior must add tests at the appropriate layer
+  (unit/widget for pure logic and UI wiring, repository/integration for
+  persistence and multi-component flows, pipeline for sync stack behavior).
+- Filtered coverage must not regress for packages touched by the change.
+- If a package is materially below its coverage goals, changes touching that
+  package must include tests that increase coverage or an explicit exception.
+  Exceptions must follow the documented exception process.
+
+Operational guidance (non-normative):
+
+- Use `tool/coverage_filter.dart` and `tool/coverage_summary.dart` to track
+  per-package coverage.
+
 ### 3.4 Testing taxonomy (directory contract) (strict)
 
 | Directory | Primary tags | IO policy | Typical scope |

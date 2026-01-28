@@ -29,6 +29,7 @@ void main() {
     Project? project,
     List<Value> values = const <Value>[],
     OccurrenceData? occurrence,
+    String? repeatIcalRrule,
   }) {
     return Task(
       id: 't1',
@@ -42,6 +43,7 @@ void main() {
       project: project,
       values: values,
       occurrence: occurrence,
+      repeatIcalRrule: repeatIcalRrule,
     );
   }
 
@@ -66,6 +68,20 @@ void main() {
     );
 
     expect(evaluator.matches(t, filter, ctx), isFalse);
+  });
+
+  testSafe('repeating predicate matches task.isRepeating', () async {
+    final t = task(repeatIcalRrule: 'RRULE:FREQ=DAILY');
+    const filter = QueryFilter<TaskPredicate>(
+      shared: [
+        TaskBoolPredicate(
+          field: TaskBoolField.repeating,
+          operator: BoolOperator.isTrue,
+        ),
+      ],
+    );
+
+    expect(evaluator.matches(t, filter, ctx), isTrue);
   });
 
   testSafe('orGroups are evaluated as one-level OR of AND groups', () async {

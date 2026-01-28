@@ -7,6 +7,7 @@ import 'package:rxdart/rxdart.dart';
 import '../../../../helpers/test_imports.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_feed_bloc.dart';
 import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
+import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/core.dart';
@@ -121,6 +122,80 @@ void main() {
         'message',
         contains('boom'),
       ),
+    ],
+  );
+
+  blocTestSafe<AnytimeFeedBloc, AnytimeFeedState>(
+    'repro: global scope should render projects before inbox count emits',
+    build: () => AnytimeFeedBloc(queryService: queryService),
+    act: (_) {
+      final value = TestData.value(id: 'value-1', name: 'Purpose');
+      final project = Project(
+        id: 'project-1',
+        createdAt: TestConstants.referenceDate,
+        updatedAt: TestConstants.referenceDate,
+        name: 'First Project',
+        completed: false,
+        values: [value],
+        primaryValueId: value.id,
+      );
+
+      projects.add([project]);
+      values.add([value]);
+    },
+    expect: () => [
+      isA<AnytimeFeedLoaded>().having((s) => s.rows.length, 'rows.length', 1),
+    ],
+  );
+
+  blocTestSafe<AnytimeFeedBloc, AnytimeFeedState>(
+    'value scope still renders project without inbox count',
+    build: () => AnytimeFeedBloc(
+      queryService: queryService,
+      scope: const AnytimeValueScope(valueId: 'value-1'),
+    ),
+    act: (_) {
+      final value = TestData.value(id: 'value-1', name: 'Purpose');
+      final project = Project(
+        id: 'project-1',
+        createdAt: TestConstants.referenceDate,
+        updatedAt: TestConstants.referenceDate,
+        name: 'First Project',
+        completed: false,
+        values: [value],
+        primaryValueId: value.id,
+      );
+
+      projects.add([project]);
+      values.add([value]);
+    },
+    expect: () => [
+      isA<AnytimeFeedLoaded>().having((s) => s.rows.length, 'rows.length', 1),
+    ],
+  );
+
+  blocTestSafe<AnytimeFeedBloc, AnytimeFeedState>(
+    'repro: inbox count present should not block new projects',
+    build: () => AnytimeFeedBloc(queryService: queryService),
+    act: (_) async {
+      final value = TestData.value(id: 'value-1', name: 'Purpose');
+      final project = Project(
+        id: 'project-1',
+        createdAt: TestConstants.referenceDate,
+        updatedAt: TestConstants.referenceDate,
+        name: 'Second Project',
+        completed: false,
+        values: [value],
+        primaryValueId: value.id,
+      );
+
+      values.add([value]);
+      await Future<void>.delayed(TestConstants.defaultWait);
+      inboxCounts.add(1);
+      projects.add([project]);
+    },
+    expect: () => [
+      isA<AnytimeFeedLoaded>().having((s) => s.rows.length, 'rows.length', 2),
     ],
   );
 }
