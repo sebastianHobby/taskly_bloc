@@ -64,6 +64,12 @@ abstract class RoutineRepositoryContract {
     OperationContext? context,
   });
 
+  Future<bool> removeLatestCompletionForDay({
+    required String routineId,
+    required DateTime dayKeyUtc,
+    OperationContext? context,
+  });
+
   Future<void> recordSkip({
     required String routineId,
     required RoutineSkipPeriodType periodType,

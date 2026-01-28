@@ -362,20 +362,15 @@ class _ValueSuggestionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final l10n = context.l10n;
 
     final value = group.value;
     final totalCount = group.totalCount;
     final visibleCount = group.visibleCount.clamp(0, totalCount);
     final remaining = (totalCount - visibleCount).clamp(0, totalCount);
     final tasks = group.tasks.take(visibleCount).toList(growable: false);
-
-    final selectedCount = group.tasks
-        .where((task) => data.selectedTaskIds.contains(task.id))
-        .length;
-    final allSelected = totalCount > 0 && selectedCount == totalCount;
-
-    final countLabel = _taskCountLabel(totalCount);
     final needsAttention = group.attentionNeeded;
+    final priorityLabel = _priorityLabel(l10n, value.priority);
 
     return Container(
       decoration: BoxDecoration(
@@ -421,8 +416,8 @@ class _ValueSuggestionCard extends StatelessWidget {
                       ),
                       SizedBox(width: tokens.spaceXs2),
                       Text(
-                        countLabel,
-                        style: theme.textTheme.bodySmall?.copyWith(
+                        priorityLabel,
+                        style: theme.textTheme.labelSmall?.copyWith(
                           color: scheme.onSurfaceVariant,
                           fontWeight: FontWeight.w700,
                         ),
@@ -448,7 +443,7 @@ class _ValueSuggestionCard extends StatelessWidget {
                 children: [
                   Icon(
                     Icons.priority_high_rounded,
-                    size: tokens.spaceSm,
+                    size: tokens.spaceMd2,
                     color: scheme.error,
                   ),
                   SizedBox(width: tokens.spaceXs2),
@@ -465,7 +460,7 @@ class _ValueSuggestionCard extends StatelessWidget {
                     triggerMode: TooltipTriggerMode.tap,
                     child: Icon(
                       Icons.info_outline,
-                      size: tokens.spaceSm,
+                      size: tokens.spaceMd2,
                       color: scheme.onSurfaceVariant,
                     ),
                   ),
@@ -473,51 +468,6 @@ class _ValueSuggestionCard extends StatelessWidget {
               ),
             ],
             SizedBox(height: tokens.spaceSm),
-            Row(
-              children: [
-                ToggleButtons(
-                  borderRadius: BorderRadius.circular(tokens.radiusMd),
-                  isSelected: [!allSelected, allSelected],
-                  onPressed: (index) {
-                    if (totalCount == 0) return;
-                    final bloc = context.read<PlanMyDayBloc>();
-                    if (index == 0) {
-                      if (allSelected) return;
-                      bloc.add(PlanMyDayValueAddAll(group.valueId));
-                      return;
-                    }
-                    if (selectedCount == 0) return;
-                    bloc.add(PlanMyDayValueClearAll(group.valueId));
-                  },
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: tokens.spaceMd,
-                        vertical: tokens.spaceXs,
-                      ),
-                      child: const Text('Add all'),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: tokens.spaceMd,
-                        vertical: tokens.spaceXs,
-                      ),
-                      child: const Text('Clear'),
-                    ),
-                  ],
-                ),
-                if (selectedCount > 0) ...[
-                  SizedBox(width: tokens.spaceSm),
-                  Text(
-                    ' selected',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ],
-            ),
             if (group.expanded) ...[
               if (tasks.isNotEmpty)
                 TasklyFeedRenderer.buildSection(
@@ -553,8 +503,13 @@ class _ValueSuggestionCard extends StatelessWidget {
     );
   }
 
-  String _taskCountLabel(int count) {
-    return count == 1 ? '1 task' : ' tasks';
+  String _priorityLabel(AppLocalizations l10n, ValuePriority priority) {
+    final priorityLabel = switch (priority) {
+      ValuePriority.high => l10n.valuePriorityHighLabel,
+      ValuePriority.medium => l10n.valuePriorityMediumLabel,
+      ValuePriority.low => l10n.valuePriorityLowLabel,
+    };
+    return '$priorityLabel ${l10n.priorityLabel}';
   }
 
   Color _priorityColor(ColorScheme scheme, ValuePriority priority) {

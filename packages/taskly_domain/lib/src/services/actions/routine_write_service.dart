@@ -45,6 +45,18 @@ final class RoutineWriteService {
     );
   }
 
+  Future<bool> removeLatestCompletionForDay({
+    required String routineId,
+    required DateTime dayKeyUtc,
+    OperationContext? context,
+  }) {
+    return _routineRepository.removeLatestCompletionForDay(
+      routineId: routineId,
+      dayKeyUtc: dayKeyUtc,
+      context: context,
+    );
+  }
+
   Future<bool> setPausedUntil(
     String routineId, {
     required DateTime? pausedUntilUtc,

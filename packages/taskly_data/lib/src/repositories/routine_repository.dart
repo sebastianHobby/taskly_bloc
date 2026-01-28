@@ -267,6 +267,44 @@ final class RoutineRepository implements RoutineRepositoryContract {
   }
 
   @override
+  Future<bool> removeLatestCompletionForDay({
+    required String routineId,
+    required DateTime dayKeyUtc,
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final dayStart = dateOnly(dayKeyUtc);
+        final dayEnd = dayStart.add(const Duration(days: 1));
+
+        final query = _db.select(_db.routineCompletionsTable)
+          ..where((t) => t.routineId.equals(routineId))
+          ..where((t) => t.completedAt.isBiggerOrEqualValue(dayStart))
+          ..where((t) => t.completedAt.isSmallerThanValue(dayEnd))
+          ..orderBy([
+            (t) => OrderingTerm(
+              expression: t.completedAt,
+              mode: OrderingMode.desc,
+            ),
+          ])
+          ..limit(1);
+
+        final latest = await query.getSingleOrNull();
+        if (latest == null) return false;
+
+        await (_db.delete(
+          _db.routineCompletionsTable,
+        )..where((t) => t.id.equals(latest.id))).go();
+
+        return true;
+      },
+      area: 'data.routines',
+      opName: 'removeLatestCompletionForDay',
+      context: context,
+    );
+  }
+
+  @override
   Future<void> recordSkip({
     required String routineId,
     required RoutineSkipPeriodType periodType,
