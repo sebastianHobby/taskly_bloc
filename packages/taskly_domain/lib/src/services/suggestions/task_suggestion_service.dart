@@ -28,6 +28,7 @@ final class TaskSuggestionSnapshot {
     required this.availableToStartNotSuggested,
     required this.snoozed,
     required this.requiresValueSetup,
+    required this.requiresRatings,
     required this.neglectDeficits,
     this.spotlightTaskId,
   });
@@ -38,6 +39,7 @@ final class TaskSuggestionSnapshot {
   final List<Task> availableToStartNotSuggested;
   final List<Task> snoozed;
   final bool requiresValueSetup;
+  final bool requiresRatings;
   final Map<String, double> neglectDeficits;
   final String? spotlightTaskId;
 }
@@ -142,6 +144,7 @@ final class TaskSuggestionService {
       availableToStartNotSuggested: availableToStartNotSuggested,
       snoozed: snoozed,
       requiresValueSetup: allocation.requiresValueSetup,
+      requiresRatings: allocation.requiresRatings,
       neglectDeficits: allocation.reasoning.neglectDeficits,
       spotlightTaskId: spotlightTaskId,
     );

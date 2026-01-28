@@ -1,4 +1,4 @@
-# Weekly Values Ratings + Suggestions Signal Plan
+ï»¿# Weekly Values Ratings + Suggestions Signal Plan
 
 Date: 2026-01-28
 Owner: Product/Design
@@ -20,6 +20,8 @@ Status: Draft (not implemented)
 - Ratings history is stored per week.
 - EMA smoothing window: 4 weeks.
 - Max values: 8 total (validation to prevent creation beyond 8).
+- New table: value_ratings_weekly in Supabase (user-owned rows via RLS).
+- PowerSync sync rules updated to include value_ratings_weekly under user_history.
 
 ## 3) UX + UI (Weekly Review)
 
@@ -40,7 +42,7 @@ Status: Draft (not implemented)
 
 ### 3.3 Anchoring + feedback
 
-- Legend: "1 Neglected • 4 Low • 7 Steady • 8 Thriving."
+- Legend: "1 Neglected â€¢ 4 Low â€¢ 7 Steady â€¢ 8 Thriving."
 - Last rating cue: "Last rating X (Y weeks ago)."
 - Progress indicator: "N/8 values rated."
 
@@ -53,12 +55,12 @@ Status: Draft (not implemented)
   - Completion count
   - Routine count
   - 4-week trend sparkline
-  - History access (last 3–4 ratings)
+  - History access (last 3â€“4 ratings)
 
 ### 3.5 Flow + gating
 
 - Continue disabled until all values rated.
-- If in fallback week 1–2: show banner indicating last ratings are used.
+- If in fallback week 1â€“2: show banner indicating last ratings are used.
 
 ## 4) Settings (Suggestion signal)
 
@@ -104,6 +106,8 @@ Helper text:
   - Last rating
   - Last 4 weeks history
   - Staleness detection
+- Supabase DDL + RLS provided for value_ratings_weekly (see product notes).
+- PowerSync sync rules include the new table for replication.
 
 ## 8) Validation: max 8 values
 

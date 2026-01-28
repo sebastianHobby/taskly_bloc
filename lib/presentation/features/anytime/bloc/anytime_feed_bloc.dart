@@ -134,7 +134,10 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
   void _emitRows(Emitter<AnytimeFeedState> emit) {
     try {
-      final rows = _mapToRows(_latestProjects);
+      final rows = _mapToRows(
+        _latestProjects,
+        inboxTaskCount: _inboxTaskCount ?? 0,
+      );
       emit(
         AnytimeFeedLoaded(
           rows: rows,
@@ -147,8 +150,24 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     }
   }
 
-  List<ListRowUiModel> _mapToRows(List<Project> projects) {
+  List<ListRowUiModel> _mapToRows(
+    List<Project> projects, {
+    required int inboxTaskCount,
+  }) {
     final aggregates = _aggregateProjects(projects);
+    final includeInbox = _scope == null && inboxTaskCount > 0;
+    if (includeInbox) {
+      aggregates.add(
+        _ProjectAggregate(
+          projectRef: const ProjectGroupingRef.inbox(),
+          title: 'Inbox',
+          project: null,
+          taskCount: inboxTaskCount,
+          completedTaskCount: 0,
+          dueSoonCount: 0,
+        ),
+      );
+    }
     final filtered = aggregates.where(_matchesFilters).toList(growable: false)
       ..sort(_compareProjectGroupsWithValues);
 
@@ -248,6 +267,11 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     _ProjectAggregate a,
     _ProjectAggregate b,
   ) {
+    final aInbox = a.projectRef.isInbox;
+    final bInbox = b.projectRef.isInbox;
+    if (aInbox != bInbox) {
+      return aInbox ? -1 : 1;
+    }
     final aValue = a.project?.primaryValue;
     final bValue = b.project?.primaryValue;
     final rankA = _valuePriorityRank(aValue?.priority ?? ValuePriority.medium);

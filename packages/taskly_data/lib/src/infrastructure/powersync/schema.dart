@@ -98,6 +98,14 @@ const schema = Schema([
     Column.text('icon_name'),
     Column.text('priority'),
   ], trackMetadata: true),
+  Table('value_ratings_weekly', [
+    Column.text('user_id'),
+    Column.text('value_id'),
+    Column.text('week_start'),
+    Column.integer('rating'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+  ], trackMetadata: true),
   Table(
     'user_profiles',
     [

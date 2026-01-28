@@ -122,6 +122,11 @@ Important ownership rule:
 - Schema source of truth: Supabase Cloud.
 - Local schema is generated via `supabase db pull` (which produces `supabase/migrations/` as generated output).
 
+Recent schema additions that must be reflected in both Supabase and PowerSync:
+- `value_ratings_weekly` (weekly value ratings history)
+  - Supabase table + RLS (user owns row)
+  - PowerSync sync rules include the table under `user_history`
+
 Note: this repo currently does not ship a dedicated migration for PowerSync replication/publication setup.
 
 ### Local E2E scripts + docs

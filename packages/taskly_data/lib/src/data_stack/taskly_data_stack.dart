@@ -27,7 +27,9 @@ import 'package:taskly_data/src/repositories/routine_repository.dart';
 import 'package:taskly_data/src/repositories/settings_repository.dart';
 import 'package:taskly_data/src/repositories/task_repository.dart';
 import 'package:taskly_data/src/repositories/value_repository.dart';
+import 'package:taskly_data/src/repositories/value_ratings_repository.dart';
 import 'package:taskly_data/src/services/occurrence_write_helper.dart';
+import 'package:taskly_data/src/services/maintenance/user_data_wipe_service_impl.dart';
 import 'package:taskly_data/src/services/sync/powersync_initial_sync_service.dart';
 
 /// Strongly-typed bindings for Taskly's day-1 data stack.
@@ -40,11 +42,13 @@ final class TasklyDataBindings {
     required this.idGenerator,
     required this.authRepository,
     required this.localDataMaintenanceService,
+    required this.userDataWipeService,
     required this.projectRepository,
     required this.projectNextActionsRepository,
     required this.projectAnchorStateRepository,
     required this.taskRepository,
     required this.valueRepository,
+    required this.valueRatingsRepository,
     required this.myDayRepository,
     required this.routineRepository,
     required this.settingsRepository,
@@ -64,12 +68,14 @@ final class TasklyDataBindings {
   final IdGenerator idGenerator;
   final AuthRepositoryContract authRepository;
   final LocalDataMaintenanceService localDataMaintenanceService;
+  final UserDataWipeService userDataWipeService;
 
   final ProjectRepositoryContract projectRepository;
   final ProjectNextActionsRepositoryContract projectNextActionsRepository;
   final ProjectAnchorStateRepositoryContract projectAnchorStateRepository;
   final TaskRepositoryContract taskRepository;
   final ValueRepositoryContract valueRepository;
+  final ValueRatingsRepositoryContract valueRatingsRepository;
   final MyDayRepositoryContract myDayRepository;
   final RoutineRepositoryContract routineRepository;
   final SettingsRepositoryContract settingsRepository;
@@ -303,6 +309,12 @@ final class TasklyDataStack implements SyncAnomalyStream {
       clock: clock,
     );
 
+    final valueRatingsRepository = ValueRatingsRepository(
+      driftDb: driftDb,
+      idGenerator: idGenerator,
+      clock: clock,
+    );
+
     final myDayRepository = MyDayRepositoryImpl(
       driftDb: driftDb,
       ids: idGenerator,
@@ -363,17 +375,24 @@ final class TasklyDataStack implements SyncAnomalyStream {
     );
 
     final initialSyncService = PowerSyncInitialSyncService(syncDb);
+    final userDataWipeService = PowerSyncUserDataWipeService(
+      driftDb: driftDb,
+      syncDb: syncDb,
+      clock: clock,
+    );
 
     return TasklyDataBindings(
       driftDb: driftDb,
       idGenerator: idGenerator,
       authRepository: authRepository,
       localDataMaintenanceService: localDataMaintenanceService,
+      userDataWipeService: userDataWipeService,
       projectRepository: projectRepository,
       projectNextActionsRepository: projectNextActionsRepository,
       projectAnchorStateRepository: projectAnchorStateRepository,
       taskRepository: taskRepository,
       valueRepository: valueRepository,
+      valueRatingsRepository: valueRatingsRepository,
       myDayRepository: myDayRepository,
       routineRepository: routineRepository,
       settingsRepository: settingsRepository,

@@ -3,6 +3,7 @@ library;
 
 export 'src/services/debug/template_data_service.dart';
 export 'src/services/maintenance/local_data_maintenance_service.dart';
+export 'src/services/maintenance/user_data_wipe_service.dart';
 export 'src/services/sync/initial_sync_service.dart';
 export 'src/services/notifications/notification_presenter.dart';
 export 'src/services/notifications/pending_notifications_processor.dart';
@@ -27,6 +28,7 @@ export 'src/services/actions/project_write_service.dart';
 export 'src/services/actions/routine_write_service.dart';
 export 'src/services/actions/task_write_service.dart';
 export 'src/services/actions/value_write_service.dart';
+export 'src/services/actions/value_ratings_write_service.dart';
 export 'src/services/capabilities/entity_tile_capabilities_resolver.dart';
 export 'src/routines/services/routine_schedule_service.dart';
 export 'src/services/my_day/my_day_ritual_status_service.dart';

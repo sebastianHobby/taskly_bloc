@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_core/logging.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -18,6 +18,8 @@ class SettingsDeveloperPage extends StatelessWidget {
     return BlocProvider<SettingsMaintenanceBloc>(
       create: (context) => SettingsMaintenanceBloc(
         templateDataService: context.read<TemplateDataService>(),
+        userDataWipeService: context.read<UserDataWipeService>(),
+        authRepository: context.read<AuthRepositoryContract>(),
       ),
       child: Scaffold(
         appBar: AppBar(
@@ -29,7 +31,7 @@ class SettingsDeveloperPage extends StatelessWidget {
             children: [
               _buildViewLogsItem(context),
               _buildTileCatalogItem(context),
-              if (kDebugMode) _buildOnboardingItem(context),
+              if (kDebugMode) const _ResetOnboardingItem(),
               const _GenerateTemplateDataItem(),
               SizedBox(height: TasklyTokens.of(context).spaceSm),
             ],
@@ -71,14 +73,99 @@ class SettingsDeveloperPage extends StatelessWidget {
     );
   }
 
-  Widget _buildOnboardingItem(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.play_circle_outline),
-      title: const Text('Launch Onboarding'),
-      subtitle: const Text('Run the onboarding flow from the start'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => GoRouter.of(context).push('/onboarding?debug=1'),
+}
+
+class _ResetOnboardingItem extends StatelessWidget {
+  const _ResetOnboardingItem();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<SettingsMaintenanceBloc, SettingsMaintenanceState>(
+      listenWhen: (prev, next) =>
+          prev.status.runtimeType != next.status.runtimeType,
+      listener: (context, state) {
+        final messenger = ScaffoldMessenger.of(context);
+
+        switch (state.status) {
+          case SettingsMaintenanceRunning(:final action)
+              when action ==
+                  SettingsMaintenanceAction.resetOnboardingAndLogout:
+            messenger.clearSnackBars();
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('Wiping account data and signing out...'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          case SettingsMaintenanceSuccess(:final action)
+              when action ==
+                  SettingsMaintenanceAction.resetOnboardingAndLogout:
+            messenger.clearSnackBars();
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('Wipe complete. Onboarding will run next sign-in.'),
+              ),
+            );
+          case SettingsMaintenanceFailure(:final action, :final message)
+              when action ==
+                  SettingsMaintenanceAction.resetOnboardingAndLogout:
+            messenger.clearSnackBars();
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(message),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          default:
+            break;
+        }
+      },
+      child: ListTile(
+        leading: Icon(
+          Icons.restart_alt_outlined,
+          color: Theme.of(context).colorScheme.error,
+        ),
+        title: const Text('Wipe account data and reset onboarding'),
+        subtitle: const Text(
+          'Deletes all synced data for this account, then signs out.',
+        ),
+        trailing: Icon(
+          Icons.warning_amber,
+          color: Theme.of(context).colorScheme.error,
+        ),
+        onTap: () => _confirmAndRun(context),
+      ),
     );
+  }
+
+  Future<void> _confirmAndRun(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Wipe account data and reset onboarding'),
+        content: const Text(
+          'This will delete all synced data for this account (server + local) '
+          'and then sign you out.\n\n'
+          'Your auth account remains, and onboarding will run next sign-in.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Wipe & Sign out'),
+          ),
+        ],
+      ),
+    );
+
+    if (!(confirmed ?? false) || !context.mounted) return;
+    await context.read<SettingsMaintenanceBloc>().resetOnboardingAndSignOut();
   }
 }
 

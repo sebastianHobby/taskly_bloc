@@ -9,6 +9,7 @@ export 'package:taskly_domain/src/core/model/task.dart';
 export 'package:taskly_domain/src/core/model/task_snooze_stats.dart';
 export 'package:taskly_domain/src/core/model/value.dart';
 export 'package:taskly_domain/core/model/value_priority.dart';
+export 'package:taskly_domain/src/values/model/value_weekly_rating.dart';
 export 'package:taskly_domain/src/projects/model/project_anchor_state.dart';
 export 'package:taskly_domain/src/projects/model/project_next_action.dart';
 export 'package:taskly_domain/src/projects/model/project_next_action_draft.dart';

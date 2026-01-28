@@ -18,6 +18,9 @@ abstract class ValueRepositoryContract {
   /// If [query] is null, returns all values.
   Future<List<Value>> getAll([ValueQuery? query]);
 
+  /// Get total count of values.
+  Future<int> getCount();
+
   /// Watch a value by id.
   ///
   /// Stream contract:

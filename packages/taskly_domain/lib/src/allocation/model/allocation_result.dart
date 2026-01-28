@@ -21,6 +21,9 @@ abstract class AllocationResult with _$AllocationResult {
     /// True if allocation cannot proceed because user has no values defined.
     /// When true, the UI should show a gateway prompting value setup.
     @Default(false) bool requiresValueSetup,
+
+    /// True if allocation cannot proceed because ratings are overdue.
+    @Default(false) bool requiresRatings,
   }) = _AllocationResult;
 }
 

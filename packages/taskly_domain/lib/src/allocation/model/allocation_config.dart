@@ -38,6 +38,15 @@ enum NextActionPolicy {
   require,
 }
 
+/// Controls the signal used for task suggestions.
+enum SuggestionSignal {
+  @JsonValue('behavior')
+  behaviorBased,
+
+  @JsonValue('ratings')
+  ratingsBased,
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -62,6 +71,10 @@ abstract class AllocationConfig with _$AllocationConfig {
     @Default(StrategySettings()) StrategySettings strategySettings,
     @Default(DisplaySettings()) DisplaySettings displaySettings,
     @Default([]) List<AllocationExceptionRule> exceptionRules,
+
+    /// What signal drives suggestion weighting.
+    @Default(SuggestionSignal.behaviorBased)
+    SuggestionSignal suggestionSignal,
   }) = _AllocationConfig;
 
   factory AllocationConfig.fromJson(Map<String, dynamic> json) =>

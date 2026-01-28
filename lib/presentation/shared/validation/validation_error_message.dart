@@ -57,6 +57,9 @@ String validationErrorMessage(BuildContext context, ValidationError error) {
     case 'valueFormNameTooLong':
       final max = error.args['max'] as int? ?? 30;
       return l10n.valueFormNameTooLong(max);
+    case 'valueFormMaxValues':
+      final max = error.args['max'] as int? ?? 8;
+      return l10n.valueFormMaxValues(max);
     case 'validationRequired':
       return l10n.validationRequired;
     case 'validationInvalid':

@@ -19,6 +19,23 @@ final class ValueCommandHandler {
     final failure = _validate(command.name, command.color, command.iconName);
     if (failure != null) return CommandResult.validationFailure(failure);
 
+    final currentCount = await _valueRepository.getCount();
+    if (currentCount >= ValueValidators.maxValuesAllowed) {
+      return CommandResult.validationFailure(
+        ValidationFailure(
+          fieldErrors: {
+            ValueFieldKeys.name: [
+              ValidationError(
+                code: 'max_items',
+                messageKey: 'valueFormMaxValues',
+                args: const {'max': ValueValidators.maxValuesAllowed},
+              ),
+            ],
+          },
+        ),
+      );
+    }
+
     await _valueRepository.create(
       name: command.name.trim(),
       color: command.color,

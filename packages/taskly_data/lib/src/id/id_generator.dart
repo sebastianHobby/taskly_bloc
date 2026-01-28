@@ -40,6 +40,7 @@ class IdGenerator {
   /// 23505 errors on these tables may indicate expected duplicates.
   static const Set<String> v5Tables = {
     'values',
+    'value_ratings_weekly',
     'task_completion_history',
     'project_completion_history',
     'task_recurrence_exceptions',
@@ -253,6 +254,16 @@ class IdGenerator {
 
   /// Generate random ID for attention resolution.
   String attentionResolutionId() => _uuid.v4();
+
+  /// Generate deterministic ID for a weekly value rating.
+  /// Natural key: userId + valueId + weekStart (YYYY-MM-DD)
+  String valueWeeklyRatingId({
+    required String valueId,
+    required DateTime weekStartUtc,
+  }) {
+    final dateKey = weekStartUtc.toIso8601String().split('T').first;
+    return _v5('value_ratings_weekly/$valueId/$dateKey');
+  }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PRIVATE HELPERS

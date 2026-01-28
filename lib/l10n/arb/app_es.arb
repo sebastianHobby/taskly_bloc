@@ -522,6 +522,16 @@
             }
         }
     },
+    "valueFormMaxValues": "Puedes tener hasta {max} valores.",
+    "@valueFormMaxValues": {
+        "description": "Error shown when the user exceeds the max number of values",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "8"
+            }
+        }
+    },
     "valueFormPreviewLabel": "Vista previa",
     "@valueFormPreviewLabel": {
         "description": "Small label above the live preview card in the value editor"

@@ -5,10 +5,12 @@ import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.d
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
+import 'package:taskly_bloc/presentation/features/review/view/weekly_review_modal.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
+import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
@@ -240,6 +242,7 @@ class _PlanValuesStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final groups = data.valueSuggestionGroups;
     final l10n = context.l10n;
+    final usesRatings = data.suggestionSignal == SuggestionSignal.ratingsBased;
     final needsSetup =
         data.requiresValueSetup &&
         gateState is MyDayGateLoaded &&
@@ -247,6 +250,18 @@ class _PlanValuesStep extends StatelessWidget {
 
     if (needsSetup) {
       return const MyDayValuesGate();
+    }
+
+    if (data.requiresRatings) {
+      return _RatingsGate(
+        onRateRequested: () => showWeeklyReviewModal(
+          context,
+          settings: data.globalSettings,
+        ),
+        onSwitchRequested: () => context.read<PlanMyDayBloc>().add(
+          const PlanMyDaySwitchToBehaviorSuggestionsRequested(),
+        ),
+      );
     }
 
     if (groups.isEmpty) {
@@ -272,9 +287,10 @@ class _PlanValuesStep extends StatelessWidget {
         Row(
           children: [
             Tooltip(
-              message:
-                  'Suggestions are ranked by your values and priorities. '
-                  'Recent completions shift what rises next.',
+              message: usesRatings
+                  ? 'Suggestions are based on your weekly value ratings.'
+                  : 'Suggestions are ranked by your values and priorities. '
+                        'Recent completions shift what rises next.',
               triggerMode: TooltipTriggerMode.tap,
               child: IconButton(
                 tooltip: l10n.myDayWhySuggestedSemanticLabel,
@@ -290,6 +306,16 @@ class _PlanValuesStep extends StatelessWidget {
             ),
           ],
         ),
+        if (usesRatings) ...[
+          Text(
+            'Based on your ratings',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
+        ],
         SizedBox(height: TasklyTokens.of(context).spaceSm),
         for (final group in groups) ...[
           _ValueSuggestionCard(
@@ -562,6 +588,70 @@ class _ValueIconAvatar extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: Icon(iconData, color: color, size: tokens.spaceLg),
+    );
+  }
+}
+
+class _RatingsGate extends StatelessWidget {
+  const _RatingsGate({
+    required this.onRateRequested,
+    required this.onSwitchRequested,
+  });
+
+  final VoidCallback onRateRequested;
+  final VoidCallback onSwitchRequested;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          tokens.spaceLg,
+          tokens.spaceLg,
+          tokens.spaceLg,
+          tokens.spaceXl,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.auto_graph_rounded,
+              size: 48,
+              color: scheme.primary,
+            ),
+            SizedBox(height: tokens.spaceSm),
+            Text(
+              'Rate your values to unlock suggestions',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: tokens.spaceSm),
+            Text(
+              'Weekly ratings keep suggestions aligned with what matters most.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: tokens.spaceLg),
+            FilledButton(
+              onPressed: onRateRequested,
+              child: const Text('Rate values'),
+            ),
+            SizedBox(height: tokens.spaceSm),
+            OutlinedButton(
+              onPressed: onSwitchRequested,
+              child: const Text('Switch to behavior-based suggestions'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

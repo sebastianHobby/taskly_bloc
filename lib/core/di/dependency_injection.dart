@@ -90,6 +90,12 @@ Future<void> setupDependencies() async {
     ..registerSingleton<ValueRepositoryContract>(
       getIt<TasklyDataBindings>().valueRepository,
     )
+    ..registerSingleton<ValueRatingsRepositoryContract>(
+      getIt<TasklyDataBindings>().valueRatingsRepository,
+    )
+    ..registerSingleton<UserDataWipeService>(
+      getIt<TasklyDataBindings>().userDataWipeService,
+    )
     ..registerSingleton<RoutineRepositoryContract>(
       getIt<TasklyDataBindings>().routineRepository,
     )
@@ -185,6 +191,7 @@ Future<void> setupDependencies() async {
       () => AllocationOrchestrator(
         taskRepository: getIt<TaskRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
+        valueRatingsRepository: getIt<ValueRatingsRepositoryContract>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
         analyticsService: getIt<AnalyticsService>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
@@ -229,6 +236,11 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<ValueWriteService>(
       () => ValueWriteService(
         valueRepository: getIt<ValueRepositoryContract>(),
+      ),
+    )
+    ..registerLazySingleton<ValueRatingsWriteService>(
+      () => ValueRatingsWriteService(
+        repository: getIt<ValueRatingsRepositoryContract>(),
       ),
     )
     ..registerLazySingleton<RoutineWriteService>(
@@ -385,6 +397,8 @@ Future<void> setupDependencies() async {
     ..registerFactory<SettingsMaintenanceBloc>(
       () => SettingsMaintenanceBloc(
         templateDataService: getIt<TemplateDataService>(),
+        userDataWipeService: getIt<UserDataWipeService>(),
+        authRepository: getIt<AuthRepositoryContract>(),
       ),
     )
     ..registerFactory<AllocationSettingsBloc>(

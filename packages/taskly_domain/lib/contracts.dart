@@ -20,3 +20,4 @@ export 'src/interfaces/routine_repository_contract.dart';
 export 'src/interfaces/settings_repository_contract.dart';
 export 'src/interfaces/task_repository_contract.dart';
 export 'src/interfaces/value_repository_contract.dart';
+export 'src/interfaces/value_ratings_repository_contract.dart';

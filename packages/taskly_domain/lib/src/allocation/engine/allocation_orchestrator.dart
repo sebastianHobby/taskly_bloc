@@ -7,10 +7,12 @@ import 'package:taskly_domain/src/interfaces/project_anchor_state_repository_con
 import 'package:taskly_domain/src/interfaces/project_next_actions_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/settings_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
+import 'package:taskly_domain/src/interfaces/value_ratings_repository_contract.dart';
 import 'package:taskly_domain/src/settings/settings.dart';
 import 'package:taskly_domain/src/preferences/model/settings_key.dart';
 import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/core/model/project.dart';
+import 'package:taskly_domain/src/core/model/value.dart';
 import 'package:taskly_domain/src/projects/model/project_anchor_state.dart';
 import 'package:taskly_domain/src/projects/model/project_next_action.dart';
 import 'package:taskly_domain/src/allocation/model/allocation_result.dart';
@@ -21,6 +23,7 @@ import 'package:taskly_domain/src/allocation/engine/urgency_detector.dart';
 import 'package:taskly_domain/src/services/analytics/analytics_service.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/time/clock.dart';
+import 'package:taskly_domain/time.dart' show dateOnly;
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 /// Orchestrates task allocation using pinned labels and allocation strategies.
@@ -32,6 +35,7 @@ class AllocationOrchestrator {
   AllocationOrchestrator({
     required TaskRepositoryContract taskRepository,
     required ValueRepositoryContract valueRepository,
+    required ValueRatingsRepositoryContract valueRatingsRepository,
     required SettingsRepositoryContract settingsRepository,
     required AnalyticsService analyticsService,
     required ProjectRepositoryContract projectRepository,
@@ -41,6 +45,7 @@ class AllocationOrchestrator {
     Clock clock = systemClock,
   }) : _taskRepository = taskRepository,
        _valueRepository = valueRepository,
+       _valueRatingsRepository = valueRatingsRepository,
        _settingsRepository = settingsRepository,
        _analyticsService = analyticsService,
        _projectRepository = projectRepository,
@@ -51,6 +56,7 @@ class AllocationOrchestrator {
 
   final TaskRepositoryContract _taskRepository;
   final ValueRepositoryContract _valueRepository;
+  final ValueRatingsRepositoryContract _valueRatingsRepository;
   final SettingsRepositoryContract _settingsRepository;
   final AnalyticsService _analyticsService;
   final ProjectRepositoryContract _projectRepository;
@@ -61,6 +67,10 @@ class AllocationOrchestrator {
 
   static const int _neglectLookbackDays = 14;
   static const double _neglectSmoothingAlpha = 0.20;
+  static const int _ratingsLookbackWeeks = 4;
+  static const int _ratingsGraceWeeks = 2;
+  static const double _ratingsSmoothingAlpha = 0.40;
+  static const int _ratingsMax = 8;
 
   /// Compute a single allocation snapshot (pinned + allocated tasks).
   ///
@@ -364,13 +374,37 @@ class AllocationOrchestrator {
       '${values.length} values',
     );
 
-    // Build category map - use value priority
+    final useRatingsSignal =
+        allocationConfig.suggestionSignal == SuggestionSignal.ratingsBased;
+
+    // Build category map - use value priority (behavior mode) or ratings
     final categories = <String, double>{};
 
     if (values.isNotEmpty) {
-      // Use priority from value
-      for (final value in values) {
-        categories[value.id] = value.priority.weight.toDouble();
+      if (useRatingsSignal) {
+        final ratingSignal = await _buildRatingsSignal(
+          values: values,
+          todayDayKeyUtc: todayDayKeyUtc,
+        );
+        if (ratingSignal.isStale) {
+          return AllocationResult(
+            allocatedTasks: const [],
+            reasoning: AllocationReasoning(
+              strategyUsed: 'ratings',
+              categoryAllocations: const {},
+              categoryWeights: const {},
+              explanation: ratingSignal.explanation,
+            ),
+            excludedTasks: const [],
+            requiresRatings: true,
+          );
+        }
+        categories.addAll(ratingSignal.weights);
+      } else {
+        // Use priority from value
+        for (final value in values) {
+          categories[value.id] = value.priority.weight.toDouble();
+        }
       }
     }
 
@@ -415,7 +449,7 @@ class AllocationOrchestrator {
     // Fetch recent completions by value if value balancing is enabled.
     final settings = allocationConfig.strategySettings;
     Map<String, double> completionsByValue = const {};
-    if (settings.enableNeglectWeighting) {
+    if (!useRatingsSignal && settings.enableNeglectWeighting) {
       final dailyCompletions = await _analyticsService
           .getDailyCompletionsByValue(days: _neglectLookbackDays);
       final smoothedCompletions = _smoothCompletionsByValue(
@@ -454,12 +488,97 @@ class AllocationOrchestrator {
       readinessFilter: settings.readinessFilter,
       taskUrgencyThresholdDays: settings.taskUrgencyThresholdDays,
       keepValuesInBalance:
-          settings.enableNeglectWeighting && completionsByValue.isNotEmpty,
+          !useRatingsSignal &&
+          settings.enableNeglectWeighting &&
+          completionsByValue.isNotEmpty,
       completionsByValue: completionsByValue,
       routineSelectionsByValue: routineSelectionsByValue,
     );
 
     return engine.allocate(parameters);
+  }
+
+  Future<_RatingsSignal> _buildRatingsSignal({
+    required List<Value> values,
+    required DateTime todayDayKeyUtc,
+  }) async {
+    final ratings = await _valueRatingsRepository.getAll(
+      weeks: _ratingsLookbackWeeks,
+    );
+    final ratingsByValue = <String, Map<DateTime, int>>{};
+    final latestByValue = <String, DateTime>{};
+
+    for (final rating in ratings) {
+      final weekStart = dateOnly(rating.weekStartUtc);
+      (ratingsByValue[rating.valueId] ??= {})[weekStart] = rating.rating;
+      final latest = latestByValue[rating.valueId];
+      if (latest == null || weekStart.isAfter(latest)) {
+        latestByValue[rating.valueId] = weekStart;
+      }
+    }
+
+    final nowWeekStart = _weekStartFor(todayDayKeyUtc);
+    final graceCutoff = nowWeekStart.subtract(
+      Duration(days: _ratingsGraceWeeks * 7),
+    );
+
+    for (final value in values) {
+      final latest = latestByValue[value.id];
+      if (latest == null || latest.isBefore(graceCutoff)) {
+        return const _RatingsSignal(
+          isStale: true,
+          weights: {},
+          explanation: 'Ratings are overdue',
+        );
+      }
+    }
+
+    final window = <DateTime>[
+      for (var i = _ratingsLookbackWeeks - 1; i >= 0; i--)
+        nowWeekStart.subtract(Duration(days: i * 7)),
+    ];
+
+    final weights = <String, double>{};
+    for (final value in values) {
+      final perWeek = ratingsByValue[value.id] ?? const {};
+      int? lastKnown;
+      double? ema;
+      for (final week in window) {
+        final raw = perWeek[week];
+        if (raw != null) {
+          lastKnown = raw;
+        }
+        final rating = lastKnown;
+        if (rating == null) continue;
+        final clamped = rating.clamp(1, _ratingsMax).toDouble();
+        ema = ema == null
+            ? clamped
+            : (_ratingsSmoothingAlpha * clamped) +
+                  ((1 - _ratingsSmoothingAlpha) * ema);
+      }
+      if (ema != null) {
+        weights[value.id] = ema;
+      }
+    }
+
+    if (weights.isEmpty) {
+      return const _RatingsSignal(
+        isStale: true,
+        weights: {},
+        explanation: 'Ratings are missing',
+      );
+    }
+
+    return _RatingsSignal(
+      isStale: false,
+      weights: weights,
+      explanation: 'Ratings signal',
+    );
+  }
+
+  DateTime _weekStartFor(DateTime dayKeyUtc) {
+    final today = dateOnly(dayKeyUtc);
+    return today.subtract(Duration(days: today.weekday - 1));
   }
 
   /// Pin a task
@@ -552,4 +671,16 @@ class AllocationOrchestrator {
 
     return smoothed;
   }
+}
+
+final class _RatingsSignal {
+  const _RatingsSignal({
+    required this.isStale,
+    required this.weights,
+    required this.explanation,
+  });
+
+  final bool isStale;
+  final Map<String, double> weights;
+  final String? explanation;
 }

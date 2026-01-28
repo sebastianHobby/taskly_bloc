@@ -621,7 +621,9 @@ final class TasklyRoutineRowData {
   final TasklyRoutineRowLabels? labels;
 }
 
-enum TasklyRoutineScheduleIcon {
+enum TasklyRoutineScheduleDayState {
+  none,
+  scheduled,
   loggedScheduled,
   loggedUnscheduled,
   missedScheduled,
@@ -649,23 +651,21 @@ final class TasklyRoutineProgressData {
 final class TasklyRoutineScheduleDay {
   const TasklyRoutineScheduleDay({
     required this.label,
-    required this.isScheduled,
     required this.isToday,
+    required this.state,
   });
 
   final String label;
-  final bool isScheduled;
   final bool isToday;
+  final TasklyRoutineScheduleDayState state;
 }
 
 @immutable
 final class TasklyRoutineScheduleRowData {
   const TasklyRoutineScheduleRowData({
-    required this.icons,
     required this.days,
   });
 
-  final List<TasklyRoutineScheduleIcon> icons;
   final List<TasklyRoutineScheduleDay> days;
 }
 
