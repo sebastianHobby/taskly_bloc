@@ -74,7 +74,7 @@ class ValueDetailModal extends StatelessWidget {
                     width: 18,
                     height: 18,
                     decoration: BoxDecoration(
-                      color: ColorUtils.fromHexWithThemeFallback(
+                      color: ColorUtils.valueColorForTheme(
                         context,
                         value.color,
                       ).withOpacity(0.9),

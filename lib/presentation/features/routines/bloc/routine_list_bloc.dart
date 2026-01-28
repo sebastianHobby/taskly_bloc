@@ -7,6 +7,7 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/time.dart';
 
 import 'package:taskly_bloc/presentation/features/routines/model/routine_list_item.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
@@ -211,11 +212,36 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
           routine: routine,
           snapshot: snapshot,
           isCatchUpDay: policy.isCatchUpDay,
+          dayKeyUtc: dayKeyUtc,
+          completionsInPeriod: _completionsForPeriod(
+            routine: routine,
+            snapshot: snapshot,
+            completions: completions,
+          ),
         ),
       );
     }
 
     items.sort((a, b) => a.routine.name.compareTo(b.routine.name));
     return items;
+  }
+
+  List<RoutineCompletion> _completionsForPeriod({
+    required Routine routine,
+    required RoutineCadenceSnapshot snapshot,
+    required List<RoutineCompletion> completions,
+  }) {
+    final periodStart = dateOnly(snapshot.periodStartUtc);
+    final periodEnd = dateOnly(snapshot.periodEndUtc);
+    final filtered = <RoutineCompletion>[];
+
+    for (final completion in completions) {
+      if (completion.routineId != routine.id) continue;
+      final day = dateOnly(completion.completedAtUtc);
+      if (day.isBefore(periodStart) || day.isAfter(periodEnd)) continue;
+      filtered.add(completion);
+    }
+
+    return filtered;
   }
 }

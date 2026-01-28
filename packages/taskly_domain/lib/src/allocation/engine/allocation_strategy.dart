@@ -98,7 +98,7 @@ class AllocationParameters {
 
   /// Recent completions by value ID (pre-computed for Reflector mode).
   /// Passed in from orchestrator to avoid async in allocate().
-  final Map<String, int> completionsByValue;
+  final Map<String, double> completionsByValue;
 
   /// Routine selections for today by value ID.
   final Map<String, int> routineSelectionsByValue;

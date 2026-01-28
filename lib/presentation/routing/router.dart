@@ -12,6 +12,7 @@ import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_edi
 import 'package:taskly_bloc/presentation/features/journal/view/journal_history_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_trackers_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routine_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routines_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
@@ -34,6 +35,7 @@ import 'package:taskly_bloc/presentation/features/settings/view/settings_account
 import 'package:taskly_bloc/presentation/features/settings/view/settings_developer_page.dart';
 import 'package:taskly_bloc/presentation/features/trackers/view/trackers_page.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
+import 'package:taskly_bloc/presentation/features/onboarding/view/onboarding_flow_page.dart';
 
 /// Router for authenticated app shell.
 ///
@@ -44,336 +46,360 @@ import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 /// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
 ///
 /// Note: entity editor routes remain the canonical edit entrypoints.
-final router = GoRouter(
-  initialLocation: Routing.screenPath('my_day'),
-  observers: [
-    TalkerRouteObserver(talkerRaw),
-    appRouteObserver,
-  ],
-  errorBuilder: (_, state) => NotFoundRoutePage(
-    message: 'Page not found',
-    details: state.error?.toString(),
-  ),
-  routes: [
-    ShellRoute(
-      builder: (context, state, child) {
-        // Derive activeScreenId from the URL path for 1-segment screen routes.
-        // For non-screen routes (editors/details), keep it null to preserve
-        // previous behavior (no nav highlight).
-        final segments = state.uri.pathSegments;
-        final candidate = segments.isNotEmpty
-            ? Routing.parseScreenKey(segments.first)
-            : null;
-        final activeScreenId =
-            (candidate != null && Routing.isSystemScreenKey(candidate))
-            ? candidate
-            : null;
+GoRouter createRouter({required bool forceOnboarding}) {
+  return GoRouter(
+    initialLocation: forceOnboarding
+        ? '/onboarding'
+        : Routing.screenPath('my_day'),
+    observers: [
+      TalkerRouteObserver(talkerRaw),
+      appRouteObserver,
+    ],
+    errorBuilder: (_, state) => NotFoundRoutePage(
+      message: 'Page not found',
+      details: state.error?.toString(),
+    ),
+    redirect: (context, state) {
+      final path = state.uri.path;
+      if (forceOnboarding) {
+        if (path != '/onboarding') return '/onboarding';
+        return null;
+      }
 
-        // Scoped Anytime routes should still highlight the Anytime destination.
-        final scopedAnytimeActiveScreenId =
-            (segments.length == 3 &&
-                (segments.first == 'project' || segments.first == 'value') &&
-                segments.last == 'anytime')
-            ? Routing.parseScreenKey('anytime')
-            : null;
+      if (path == '/onboarding' && state.uri.queryParameters['debug'] != '1') {
+        return Routing.screenPath('someday');
+      }
+      return null;
+    },
+    routes: [
+      GoRoute(
+        path: '/onboarding',
+        builder: (_, __) => const OnboardingFlowPage(),
+      ),
+      ShellRoute(
+        builder: (context, state, child) {
+          // Derive activeScreenId from the URL path for 1-segment screen routes.
+          // For non-screen routes (editors/details), keep it null to preserve
+          // previous behavior (no nav highlight).
+          final segments = state.uri.pathSegments;
+          final candidate = segments.isNotEmpty
+              ? Routing.parseScreenKey(segments.first)
+              : null;
+          final activeScreenId =
+              (candidate != null && Routing.isSystemScreenKey(candidate))
+              ? candidate
+              : null;
 
-        // Scoped Scheduled routes should still highlight the Scheduled destination.
-        final scopedScheduledActiveScreenId =
-            (segments.length == 3 &&
-                (segments.first == 'project' || segments.first == 'value') &&
-                segments.last == 'scheduled')
-            ? Routing.parseScreenKey('scheduled')
-            : null;
+          // Scoped Anytime routes should still highlight the Anytime destination.
+          final scopedAnytimeActiveScreenId =
+              (segments.length == 3 &&
+                  (segments.first == 'project' || segments.first == 'value') &&
+                  segments.last == 'anytime')
+              ? Routing.parseScreenKey('anytime')
+              : null;
 
-        return ScaffoldWithNestedNavigation(
-          activeScreenId:
-              scopedScheduledActiveScreenId ??
-              scopedAnytimeActiveScreenId ??
-              activeScreenId,
-          child: child,
-        );
-      },
-      routes: [
-        GoRoute(
-          path: '/not-found',
-          builder: (_, state) => NotFoundRoutePage(
-            message: state.uri.queryParameters['message'],
-            details: state.uri.queryParameters['details'],
-          ),
-        ),
+          // Scoped Scheduled routes should still highlight the Scheduled destination.
+          final scopedScheduledActiveScreenId =
+              (segments.length == 3 &&
+                  (segments.first == 'project' || segments.first == 'value') &&
+                  segments.last == 'scheduled')
+              ? Routing.parseScreenKey('scheduled')
+              : null;
 
-        // === MVP SHELL ROUTES (Package D strangler entrypoints) ===
-        GoRoute(
-          path: Routing.screenPath('my_day'),
-          builder: (_, __) {
-            return const MyDayPage();
-          },
-        ),
-        GoRoute(
-          path: Routing.screenPath('someday'),
-          builder: (_, __) => const AnytimePage(),
-        ),
+          return ScaffoldWithNestedNavigation(
+            activeScreenId:
+                scopedScheduledActiveScreenId ??
+                scopedAnytimeActiveScreenId ??
+                activeScreenId,
+            child: child,
+          );
+        },
+        routes: [
+          GoRoute(
+            path: '/not-found',
+            builder: (_, state) => NotFoundRoutePage(
+              message: state.uri.queryParameters['message'],
+              details: state.uri.queryParameters['details'],
+            ),
+          ),
 
-        // Scoped Anytime feeds.
-        GoRoute(
-          path: '/project/:id/anytime',
-          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-            state,
-            paramName: 'id',
-            entityType: 'project',
-            operation: 'route_param_decode_project_anytime_scope',
-          ),
-          builder: (_, state) {
-            final id = state.pathParameters['id']!;
-            return ProjectDetailPage(projectId: id);
-          },
-        ),
-        GoRoute(
-          path: '/value/:id/anytime',
-          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-            state,
-            paramName: 'id',
-            entityType: 'value',
-            operation: 'route_param_decode_value_anytime_scope',
-          ),
-          builder: (_, state) {
-            final id = state.pathParameters['id']!;
-            return AnytimePage(
-              scope: AnytimeScope.value(valueId: id),
-            );
-          },
-        ),
-        GoRoute(
-          path: '/project/inbox/detail',
-          builder: (_, __) => ProjectDetailPage(
-            projectId: ProjectGroupingRef.inbox().stableKey,
-          ),
-        ),
-        GoRoute(
-          path: '/project/:id/detail',
-          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-            state,
-            paramName: 'id',
-            entityType: 'project',
-            operation: 'route_param_decode_project_detail',
-          ),
-          builder: (_, state) => ProjectDetailPage(
-            projectId: state.pathParameters['id']!,
-          ),
-        ),
-        GoRoute(
-          path: Routing.screenPath('scheduled'),
-          builder: (_, __) => const ScheduledPage(),
-        ),
-        GoRoute(
-          path: Routing.screenPath('routines'),
-          builder: (_, __) => const RoutinesPage(),
-        ),
-
-        // Scoped Scheduled feeds.
-        GoRoute(
-          path: '/project/:id/scheduled',
-          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-            state,
-            paramName: 'id',
-            entityType: 'project',
-            operation: 'route_param_decode_project_scheduled_scope',
-          ),
-          builder: (_, state) {
-            final id = state.pathParameters['id']!;
-            return ScheduledPage(
-              scope: ProjectScheduledScope(projectId: id),
-            );
-          },
-        ),
-        GoRoute(
-          path: '/value/:id/scheduled',
-          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-            state,
-            paramName: 'id',
-            entityType: 'value',
-            operation: 'route_param_decode_value_scheduled_scope',
-          ),
-          builder: (_, state) {
-            final id = state.pathParameters['id']!;
-            return ScheduledPage(
-              scope: ValueScheduledScope(valueId: id),
-            );
-          },
-        ),
-
-        // === ENTITY EDITOR ROUTES (NAV-01) ===
-        // Create + edit are route-backed editor entry points.
-        // They open the modal editor and then return (pop).
-
-        // Journal entry editor (create + edit)
-        GoRoute(
-          path: '/journal/entry/new',
-          builder: (_, state) {
-            final csv = state.uri.queryParameters['trackerIds'] ?? '';
-            final ids = csv
-                .split(',')
-                .map((s) => s.trim())
-                .where((s) => s.isNotEmpty)
-                .toSet();
-
-            return JournalEntryEditorRoutePage(
-              entryId: null,
-              preselectedTrackerIds: ids,
-            );
-          },
-        ),
-        GoRoute(
-          path: '/journal/entry/:id/edit',
-          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-            state,
-            paramName: 'id',
-            entityType: 'journal_entry',
-            operation: 'route_param_decode_journal_entry_edit',
-          ),
-          builder: (_, state) => JournalEntryEditorRoutePage(
-            entryId: state.pathParameters['id'],
-            preselectedTrackerIds: const <String>{},
-          ),
-        ),
-
-        // Task (editor-only; no read-only task detail surface)
-        GoRoute(
-          path: '/task/new',
-          builder: (_, state) => TaskEditorRoutePage(
-            taskId: null,
-            defaultProjectId: state.uri.queryParameters['projectId'],
-            defaultValueIds: switch (state.uri.queryParameters['valueId']) {
-              final v? when v.trim().isNotEmpty => [v],
-              _ => null,
+          // === MVP SHELL ROUTES (Package D strangler entrypoints) ===
+          GoRoute(
+            path: Routing.screenPath('my_day'),
+            builder: (_, __) {
+              return const MyDayPage();
             },
           ),
-        ),
-        GoRoute(
-          path: '/task/:id/edit',
-          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-            state,
-            paramName: 'id',
-            entityType: 'task',
-            operation: 'route_param_decode_task_edit',
+          GoRoute(
+            path: Routing.screenPath('someday'),
+            builder: (_, __) => const AnytimePage(),
           ),
-          builder: (_, state) => TaskEditorRoutePage(
-            taskId: state.pathParameters['id'],
-          ),
-        ),
 
-        // Project (editor routes)
-        GoRoute(
-          path: '/project/new',
-          builder: (_, __) => const ProjectEditorRoutePage(projectId: null),
-        ),
-        GoRoute(
-          path: '/project/:id/edit',
-          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-            state,
-            paramName: 'id',
-            entityType: 'project',
-            operation: 'route_param_decode_project_edit',
+          // Scoped Anytime feeds.
+          GoRoute(
+            path: '/project/:id/anytime',
+            redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'project',
+              operation: 'route_param_decode_project_anytime_scope',
+            ),
+            builder: (_, state) {
+              final id = state.pathParameters['id']!;
+              return ProjectDetailPage(projectId: id);
+            },
           ),
-          builder: (_, state) => ProjectEditorRoutePage(
-            projectId: state.pathParameters['id'],
+          GoRoute(
+            path: '/value/:id/anytime',
+            redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'value',
+              operation: 'route_param_decode_value_anytime_scope',
+            ),
+            builder: (_, state) {
+              final id = state.pathParameters['id']!;
+              return AnytimePage(
+                scope: AnytimeScope.value(valueId: id),
+              );
+            },
           ),
-        ),
+          GoRoute(
+            path: '/project/inbox/detail',
+            builder: (_, __) => ProjectDetailPage(
+              projectId: ProjectGroupingRef.inbox().stableKey,
+            ),
+          ),
+          GoRoute(
+            path: '/project/:id/detail',
+            redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'project',
+              operation: 'route_param_decode_project_detail',
+            ),
+            builder: (_, state) => ProjectDetailPage(
+              projectId: state.pathParameters['id']!,
+            ),
+          ),
+          GoRoute(
+            path: Routing.screenPath('scheduled'),
+            builder: (_, __) => const ScheduledPage(),
+          ),
+          GoRoute(
+            path: Routing.screenPath('routines'),
+            builder: (_, __) => const RoutinesPage(),
+          ),
 
-        // Value (editor routes)
-        GoRoute(
-          path: '/value/new',
-          builder: (_, __) => const ValueEditorRoutePage(valueId: null),
-        ),
-        GoRoute(
-          path: '/value/:id/edit',
-          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-            state,
-            paramName: 'id',
-            entityType: 'value',
-            operation: 'route_param_decode_value_edit',
+          // Scoped Scheduled feeds.
+          GoRoute(
+            path: '/project/:id/scheduled',
+            redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'project',
+              operation: 'route_param_decode_project_scheduled_scope',
+            ),
+            builder: (_, state) {
+              final id = state.pathParameters['id']!;
+              return ScheduledPage(
+                scope: ProjectScheduledScope(projectId: id),
+              );
+            },
           ),
-          builder: (_, state) => ValueEditorRoutePage(
-            valueId: state.pathParameters['id'],
+          GoRoute(
+            path: '/value/:id/scheduled',
+            redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'value',
+              operation: 'route_param_decode_value_scheduled_scope',
+            ),
+            builder: (_, state) {
+              final id = state.pathParameters['id']!;
+              return ScheduledPage(
+                scope: ValueScheduledScope(valueId: id),
+              );
+            },
           ),
-        ),
 
-        // Routine (editor routes)
-        GoRoute(
-          path: '/routine/new',
-          builder: (_, __) => const RoutineEditorRoutePage(routineId: null),
-        ),
-        GoRoute(
-          path: '/routine/:id/edit',
-          redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-            state,
-            paramName: 'id',
-            entityType: 'routine',
-            operation: 'route_param_decode_routine_edit',
-          ),
-          builder: (_, state) => RoutineEditorRoutePage(
-            routineId: state.pathParameters['id'],
-          ),
-        ),
+          // === ENTITY EDITOR ROUTES (NAV-01) ===
+          // Create + edit are route-backed editor entry points.
+          // They open the modal editor and then return (pop).
 
-        // === OTHER SYSTEM SCREENS (explicit; no catch-all) ===
-        GoRoute(
-          path: Routing.screenPath('journal'),
-          builder: (_, __) => const JournalHubPage(),
-        ),
-        GoRoute(
-          path: Routing.screenPath('values'),
-          builder: (_, __) => const ValuesPage(),
-        ),
-        GoRoute(
-          path: Routing.screenPath('settings'),
-          builder: (_, __) => const SettingsScreen(),
-        ),
-        GoRoute(
-          path: '${Routing.screenPath('settings')}/appearance',
-          builder: (_, __) => const SettingsAppearancePage(),
-        ),
-        GoRoute(
-          path: '${Routing.screenPath('settings')}/my-day',
-          builder: (_, __) => const SettingsMyDayPage(),
-        ),
-        GoRoute(
-          path: '${Routing.screenPath('settings')}/task-suggestions',
-          builder: (_, __) => const SettingsTaskSuggestionsPage(),
-        ),
-        GoRoute(
-          path: '${Routing.screenPath('settings')}/weekly-review',
-          builder: (_, __) => const SettingsWeeklyReviewPage(),
-        ),
-        GoRoute(
-          path: '${Routing.screenPath('settings')}/language-region',
-          builder: (_, __) => const SettingsLanguageRegionPage(),
-        ),
-        GoRoute(
-          path: '${Routing.screenPath('settings')}/account',
-          builder: (_, __) => const SettingsAccountPage(),
-        ),
-        GoRoute(
-          path: '${Routing.screenPath('settings')}/developer',
-          builder: (_, __) => const SettingsDeveloperPage(),
-        ),
-        GoRoute(
-          path: Routing.screenPath('journal_history'),
-          builder: (_, __) => const JournalHistoryPage(),
-        ),
-        GoRoute(
-          path: Routing.screenPath('journal_manage_trackers'),
-          builder: (_, __) => const JournalTrackersPage(),
-        ),
-        GoRoute(
-          path: Routing.screenPath('trackers'),
-          builder: (_, __) => const TrackersPage(),
-        ),
-        GoRoute(
-          path: '/debug/tiles',
-          builder: (_, __) => const TasklyTileCatalogPage(),
-        ),
-      ],
-    ),
-  ],
-);
+          // Journal entry editor (create + edit)
+          GoRoute(
+            path: '/journal/entry/new',
+            builder: (_, state) {
+              final csv = state.uri.queryParameters['trackerIds'] ?? '';
+              final ids = csv
+                  .split(',')
+                  .map((s) => s.trim())
+                  .where((s) => s.isNotEmpty)
+                  .toSet();
+
+              return JournalEntryEditorRoutePage(
+                entryId: null,
+                preselectedTrackerIds: ids,
+              );
+            },
+          ),
+          GoRoute(
+            path: '/journal/entry/:id/edit',
+            redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'journal_entry',
+              operation: 'route_param_decode_journal_entry_edit',
+            ),
+            builder: (_, state) => JournalEntryEditorRoutePage(
+              entryId: state.pathParameters['id'],
+              preselectedTrackerIds: const <String>{},
+            ),
+          ),
+
+          // Task (editor-only; no read-only task detail surface)
+          GoRoute(
+            path: '/task/new',
+            builder: (_, state) => TaskEditorRoutePage(
+              taskId: null,
+              defaultProjectId: state.uri.queryParameters['projectId'],
+              defaultValueIds: switch (state.uri.queryParameters['valueId']) {
+                final v? when v.trim().isNotEmpty => [v],
+                _ => null,
+              },
+            ),
+          ),
+          GoRoute(
+            path: '/task/:id/edit',
+            redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'task',
+              operation: 'route_param_decode_task_edit',
+            ),
+            builder: (_, state) => TaskEditorRoutePage(
+              taskId: state.pathParameters['id'],
+            ),
+          ),
+
+          // Project (editor routes)
+          GoRoute(
+            path: '/project/new',
+            builder: (_, __) => const ProjectEditorRoutePage(projectId: null),
+          ),
+          GoRoute(
+            path: '/project/:id/edit',
+            redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'project',
+              operation: 'route_param_decode_project_edit',
+            ),
+            builder: (_, state) => ProjectEditorRoutePage(
+              projectId: state.pathParameters['id'],
+            ),
+          ),
+
+          // Value (editor routes)
+          GoRoute(
+            path: '/value/new',
+            builder: (_, __) => const ValueEditorRoutePage(valueId: null),
+          ),
+          GoRoute(
+            path: '/value/:id/edit',
+            redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'value',
+              operation: 'route_param_decode_value_edit',
+            ),
+            builder: (_, state) => ValueEditorRoutePage(
+              valueId: state.pathParameters['id'],
+            ),
+          ),
+
+          // Routine (editor routes)
+          GoRoute(
+            path: '/routine/new',
+            builder: (_, __) => const RoutineEditorRoutePage(routineId: null),
+          ),
+          GoRoute(
+            path: '/routine/:id/edit',
+            redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'routine',
+              operation: 'route_param_decode_routine_edit',
+            ),
+            builder: (_, state) => RoutineEditorRoutePage(
+              routineId: state.pathParameters['id'],
+            ),
+          ),
+
+          // === OTHER SYSTEM SCREENS (explicit; no catch-all) ===
+          GoRoute(
+            path: Routing.screenPath('journal'),
+            builder: (_, __) => const JournalHubPage(),
+          ),
+          GoRoute(
+            path: Routing.screenPath('values'),
+            builder: (_, __) => const ValuesPage(),
+          ),
+          GoRoute(
+            path: Routing.screenPath('settings'),
+            builder: (_, __) => const SettingsScreen(),
+          ),
+          GoRoute(
+            path: '${Routing.screenPath('settings')}/appearance',
+            builder: (_, __) => const SettingsAppearancePage(),
+          ),
+          GoRoute(
+            path: '${Routing.screenPath('settings')}/my-day',
+            builder: (_, __) => const SettingsMyDayPage(),
+          ),
+          GoRoute(
+            path: '${Routing.screenPath('settings')}/task-suggestions',
+            builder: (_, __) => const SettingsTaskSuggestionsPage(),
+          ),
+          GoRoute(
+            path: '${Routing.screenPath('settings')}/weekly-review',
+            builder: (_, __) => const SettingsWeeklyReviewPage(),
+          ),
+          GoRoute(
+            path: '${Routing.screenPath('settings')}/language-region',
+            builder: (_, __) => const SettingsLanguageRegionPage(),
+          ),
+          GoRoute(
+            path: '${Routing.screenPath('settings')}/account',
+            builder: (_, __) => const SettingsAccountPage(),
+          ),
+          GoRoute(
+            path: '${Routing.screenPath('settings')}/developer',
+            builder: (_, __) => const SettingsDeveloperPage(),
+          ),
+          GoRoute(
+            path: Routing.screenPath('journal_history'),
+            builder: (_, __) => const JournalHistoryPage(),
+          ),
+          GoRoute(
+            path: Routing.screenPath('journal_manage_trackers'),
+            builder: (_, __) => const JournalTrackersPage(),
+          ),
+          GoRoute(
+            path: '/journal/trackers/new',
+            builder: (_, __) => const JournalTrackerWizardPage(),
+          ),
+          GoRoute(
+            path: Routing.screenPath('trackers'),
+            builder: (_, __) => const TrackersPage(),
+          ),
+          GoRoute(
+            path: '/debug/tiles',
+            builder: (_, __) => const TasklyTileCatalogPage(),
+          ),
+        ],
+      ),
+    ],
+  );
+}

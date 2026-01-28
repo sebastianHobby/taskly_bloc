@@ -8,17 +8,21 @@ import 'package:taskly_data/src/repositories/repository_exceptions.dart';
 import 'package:taskly_domain/core.dart' hide Value;
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/telemetry.dart';
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 final class ProjectNextActionsRepository
     implements ProjectNextActionsRepositoryContract {
   ProjectNextActionsRepository({
     required AppDatabase driftDb,
     required IdGenerator idGenerator,
+    Clock clock = systemClock,
   }) : _db = driftDb,
-       _ids = idGenerator;
+       _ids = idGenerator,
+       _clock = clock;
 
   final AppDatabase _db;
   final IdGenerator _ids;
+  final Clock _clock;
 
   @override
   Stream<List<ProjectNextAction>> watchAll() {
@@ -74,8 +78,8 @@ final class ProjectNextActionsRepository
     return FailureGuard.run(
       () async {
         final normalized = _normalizeActions(actions);
-        final now = DateTime.now();
-        final psMetadata = encodeCrudMetadata(context);
+        final now = _clock.nowUtc();
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         await _db.transaction(() async {
           await (_db.delete(
@@ -113,8 +117,8 @@ final class ProjectNextActionsRepository
   }) async {
     return FailureGuard.run(
       () async {
-        final now = DateTime.now();
-        final psMetadata = encodeCrudMetadata(context);
+        final now = _clock.nowUtc();
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         await _db.transaction(() async {
           final rows = await (_db.select(

@@ -83,11 +83,42 @@ final class PlanMyDayMoreSuggestionsRequested extends PlanMyDayEvent {
   const PlanMyDayMoreSuggestionsRequested();
 }
 
+final class PlanMyDayValueSortChanged extends PlanMyDayEvent {
+  const PlanMyDayValueSortChanged(this.sort);
+
+  final PlanMyDayValueSort sort;
+}
+
+final class PlanMyDayValueToggleExpanded extends PlanMyDayEvent {
+  const PlanMyDayValueToggleExpanded(this.valueId);
+
+  final String valueId;
+}
+
+final class PlanMyDayValueShowMore extends PlanMyDayEvent {
+  const PlanMyDayValueShowMore(this.valueId);
+
+  final String valueId;
+}
+
+final class PlanMyDayValueToggleAll extends PlanMyDayEvent {
+  const PlanMyDayValueToggleAll(this.valueId);
+
+  final String valueId;
+}
+
 enum PlanMyDayStep {
   valuesStep,
   routines,
   triage,
   summary,
+}
+
+enum PlanMyDayValueSort {
+  attentionFirst,
+  priorityFirst,
+  mostSuggested,
+  alphabetical,
 }
 
 sealed class PlanMyDayState {
@@ -113,6 +144,7 @@ final class PlanMyDayRoutineItem {
     required this.isScheduled,
     required this.isEligibleToday,
     required this.lastScheduledDayUtc,
+    required this.completionsInPeriod,
   });
 
   final Routine routine;
@@ -123,6 +155,30 @@ final class PlanMyDayRoutineItem {
   final bool isScheduled;
   final bool isEligibleToday;
   final DateTime? lastScheduledDayUtc;
+  final List<RoutineCompletion> completionsInPeriod;
+}
+
+@immutable
+final class PlanMyDayValueSuggestionGroup {
+  const PlanMyDayValueSuggestionGroup({
+    required this.valueId,
+    required this.value,
+    required this.tasks,
+    required this.attentionNeeded,
+    required this.neglectScore,
+    required this.visibleCount,
+    required this.expanded,
+  });
+
+  final String valueId;
+  final Value value;
+  final List<Task> tasks;
+  final bool attentionNeeded;
+  final double neglectScore;
+  final int visibleCount;
+  final bool expanded;
+
+  int get totalCount => tasks.length;
 }
 
 @immutable
@@ -147,6 +203,9 @@ final class PlanMyDayReady extends PlanMyDayState {
     required this.selectedRoutineIds,
     required this.allTasks,
     required this.routineSelectionsByValue,
+    required this.valueSuggestionGroups,
+    required this.valueSort,
+    required this.spotlightTaskId,
     this.nav,
     this.navRequestId = 0,
   });
@@ -170,6 +229,9 @@ final class PlanMyDayReady extends PlanMyDayState {
   final Set<String> selectedRoutineIds;
   final List<Task> allTasks;
   final Map<String, int> routineSelectionsByValue;
+  final List<PlanMyDayValueSuggestionGroup> valueSuggestionGroups;
+  final PlanMyDayValueSort valueSort;
+  final String? spotlightTaskId;
   final PlanMyDayNav? nav;
   final int navRequestId;
 
@@ -195,6 +257,9 @@ final class PlanMyDayReady extends PlanMyDayState {
     Set<String>? selectedRoutineIds,
     List<Task>? allTasks,
     Map<String, int>? routineSelectionsByValue,
+    List<PlanMyDayValueSuggestionGroup>? valueSuggestionGroups,
+    PlanMyDayValueSort? valueSort,
+    String? spotlightTaskId,
     PlanMyDayNav? nav,
     int? navRequestId,
   }) {
@@ -220,6 +285,10 @@ final class PlanMyDayReady extends PlanMyDayState {
       allTasks: allTasks ?? this.allTasks,
       routineSelectionsByValue:
           routineSelectionsByValue ?? this.routineSelectionsByValue,
+      valueSuggestionGroups:
+          valueSuggestionGroups ?? this.valueSuggestionGroups,
+      valueSort: valueSort ?? this.valueSort,
+      spotlightTaskId: spotlightTaskId ?? this.spotlightTaskId,
       nav: nav ?? this.nav,
       navRequestId: navRequestId ?? this.navRequestId,
     );
@@ -262,6 +331,10 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     on<PlanMyDayConfirm>(_onConfirm);
     on<PlanMyDaySnoozeTaskRequested>(_onSnoozeTaskRequested);
     on<PlanMyDayMoreSuggestionsRequested>(_onMoreSuggestionsRequested);
+    on<PlanMyDayValueSortChanged>(_onValueSortChanged);
+    on<PlanMyDayValueToggleExpanded>(_onValueToggleExpanded);
+    on<PlanMyDayValueShowMore>(_onValueShowMore);
+    on<PlanMyDayValueToggleAll>(_onValueToggleAll);
     add(const PlanMyDayStarted());
   }
 
@@ -280,10 +353,15 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
+  static const double _attentionDeficitThreshold = 0.20;
+  static const int _showMoreIncrement = 3;
+  static const int _poolExtraCount = _showMoreIncrement * 2;
+
   settings.GlobalSettings _globalSettings = const settings.GlobalSettings();
   DateTime _dayKeyUtc;
 
   TaskSuggestionSnapshot? _suggestionSnapshot;
+  Map<String, double> _lastNeglectDeficits = const {};
   List<Task> _tasks = const <Task>[];
   List<Task> _incompleteTasks = const <Task>[];
   List<Routine> _routines = const <Routine>[];
@@ -298,6 +376,10 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   Set<String> _selectedRoutineIds = <String>{};
   Set<String> _lockedCompletedPickIds = const <String>{};
   Set<String> _lockedCompletedRoutineIds = const <String>{};
+
+  final Map<String, int> _visibleSuggestionCountsByValue = <String, int>{};
+  final Set<String> _collapsedValueIds = <String>{};
+  PlanMyDayValueSort _valuesSort = PlanMyDayValueSort.attentionFirst;
 
   PlanMyDayStep? _currentStep;
   Completer<void>? _refreshCompleter;
@@ -705,6 +787,68 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     _emitReady(emit);
   }
 
+  void _onValueSortChanged(
+    PlanMyDayValueSortChanged event,
+    Emitter<PlanMyDayState> emit,
+  ) {
+    if (state is! PlanMyDayReady) return;
+    _valuesSort = event.sort;
+    _emitReady(emit);
+  }
+
+  void _onValueToggleExpanded(
+    PlanMyDayValueToggleExpanded event,
+    Emitter<PlanMyDayState> emit,
+  ) {
+    if (state is! PlanMyDayReady) return;
+    if (_collapsedValueIds.contains(event.valueId)) {
+      _collapsedValueIds.remove(event.valueId);
+    } else {
+      _collapsedValueIds.add(event.valueId);
+    }
+    _emitReady(emit);
+  }
+
+  void _onValueShowMore(
+    PlanMyDayValueShowMore event,
+    Emitter<PlanMyDayState> emit,
+  ) {
+    if (state is! PlanMyDayReady) return;
+    final current = _visibleSuggestionCountsByValue[event.valueId];
+    if (current == null) return;
+    _visibleSuggestionCountsByValue[event.valueId] =
+        current + _showMoreIncrement;
+    _emitReady(emit);
+  }
+
+  void _onValueToggleAll(
+    PlanMyDayValueToggleAll event,
+    Emitter<PlanMyDayState> emit,
+  ) {
+    if (state is! PlanMyDayReady) return;
+    final ready = state as PlanMyDayReady;
+    PlanMyDayValueSuggestionGroup? group;
+    for (final item in ready.valueSuggestionGroups) {
+      if (item.valueId == event.valueId) {
+        group = item;
+        break;
+      }
+    }
+    if (group == null || group.tasks.isEmpty) return;
+
+    _hasUserSelection = true;
+    final taskIds = group.tasks.map((task) => task.id).toSet();
+    final allSelected = taskIds.every(_selectedTaskIds.contains);
+
+    if (allSelected) {
+      _selectedTaskIds = {..._selectedTaskIds}..removeAll(taskIds);
+    } else {
+      _selectedTaskIds = {..._selectedTaskIds, ...taskIds};
+    }
+
+    _emitReady(emit);
+  }
+
   Future<void> _refreshSnapshots({required bool resetSelection}) async {
     final inFlight = _refreshCompleter;
     if (inFlight != null) {
@@ -719,6 +863,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       _selectedTaskIds = <String>{};
       _selectedRoutineIds = <String>{};
       _suggestionBatchCount = 1;
+      _visibleSuggestionCountsByValue.clear();
+      _collapsedValueIds.clear();
     }
 
     try {
@@ -815,22 +961,31 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       triageSelections,
     );
 
+    final targetCount = _suggestionPoolTargetCount();
+
     _suggestionSnapshot = await _taskSuggestionService.getSnapshot(
       dueWindowDays: _globalSettings.myDayDueWindowDays,
       includeDueSoon: showTriage,
       includeAvailableToStart: showPlanned,
       batchCount: _suggestionBatchCount,
+      suggestedTargetCount: targetCount,
       tasksOverride: _incompleteTasks,
       routineSelectionsByValue: selectionCounts,
       nowUtc: _nowService.nowUtc(),
     );
+    _lastNeglectDeficits = _suggestionSnapshot?.neglectDeficits ?? const {};
   }
 
   void _emitReady(Emitter<PlanMyDayState> emit) {
     final snapshot = _suggestionSnapshot;
-    final suggested = snapshot == null
-        ? const <Task>[]
-        : snapshot.suggested.map((entry) => entry.task).toList(growable: false);
+    final suggestedEntries = snapshot?.suggested ?? const <SuggestedTask>[];
+    final valueGroups = _buildValueSuggestionGroups(
+      suggestedEntries,
+      deficits: snapshot?.neglectDeficits ?? const {},
+    );
+    final suggested = valueGroups
+        .expand((group) => group.tasks)
+        .toList(growable: false);
 
     final dueRaw = snapshot?.dueSoonNotSuggested ?? const <Task>[];
     final startsRaw = snapshot?.availableToStartNotSuggested ?? const <Task>[];
@@ -840,17 +995,11 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     final showRoutines = _globalSettings.myDayShowRoutines;
 
     final triageDue = showTriage
-        ? dueRaw
-              .where((task) => !_selectedTaskIds.contains(task.id))
-              .toList(
-                growable: false,
-              )
+        ? dueRaw.toList(growable: false)
         : const <Task>[];
 
     final triageStarts = showPlanned
-        ? startsRaw
-              .where((task) => !_selectedTaskIds.contains(task.id))
-              .toList(growable: false)
+        ? startsRaw.toList(growable: false)
         : const <Task>[];
 
     final routineItems = showRoutines
@@ -901,6 +1050,9 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         selectedRoutineIds: selectedRoutineIds,
         allTasks: _tasks,
         routineSelectionsByValue: _routineSelectionsByValue(),
+        valueSuggestionGroups: valueGroups,
+        valueSort: _valuesSort,
+        spotlightTaskId: snapshot?.spotlightTaskId,
       ),
     );
   }
@@ -936,6 +1088,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         completions: _routineCompletions,
       );
       final isCompletedToday = completedToday.contains(routine.id);
+      final completionsInPeriod = _completionsForPeriod(routine, snapshot);
       final item = PlanMyDayRoutineItem(
         routine: routine,
         snapshot: snapshot,
@@ -945,6 +1098,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         isScheduled: policy.cadenceKind == RoutineCadenceKind.scheduled,
         isEligibleToday: policy.isEligibleToday && !isCompletedToday,
         lastScheduledDayUtc: policy.lastScheduledDayUtc,
+        completionsInPeriod: completionsInPeriod,
       );
 
       if (item.isEligibleToday) {
@@ -1142,6 +1296,160 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     if (visibleIds.isEmpty) return const <String>{};
 
     return _selectedTaskIds.where(visibleIds.contains).toSet();
+  }
+
+  int _suggestionPoolTargetCount() {
+    final valuesById = <String, Value>{};
+    for (final task in _incompleteTasks) {
+      final value = task.effectivePrimaryValue;
+      if (value != null) {
+        valuesById[value.id] = value;
+      }
+    }
+
+    if (valuesById.isEmpty) return 0;
+
+    var total = 0;
+    final hasDeficitData = _lastNeglectDeficits.isNotEmpty;
+    for (final value in valuesById.values) {
+      final deficit = _lastNeglectDeficits[value.id] ?? 0.0;
+      final attentionNeeded =
+          !hasDeficitData || deficit >= _attentionDeficitThreshold;
+      final defaultVisible = _defaultVisibleCount(
+        value.priority,
+        attentionNeeded: attentionNeeded,
+      );
+      total += defaultVisible + _poolExtraCount;
+    }
+
+    return total * _suggestionBatchCount;
+  }
+
+  List<PlanMyDayValueSuggestionGroup> _buildValueSuggestionGroups(
+    List<SuggestedTask> suggested, {
+    required Map<String, double> deficits,
+  }) {
+    if (suggested.isEmpty) return const [];
+
+    final groupsById = <String, List<Task>>{};
+    final valueById = <String, Value>{};
+    final deficitById = <String, double>{};
+
+    for (final entry in suggested) {
+      final valueId = entry.qualifyingValueId?.trim().isNotEmpty ?? false
+          ? entry.qualifyingValueId!.trim()
+          : entry.task.effectivePrimaryValueId;
+      if (valueId == null || valueId.isEmpty) continue;
+
+      final value = _resolveValueForTask(entry.task, valueId);
+      if (value == null) continue;
+
+      groupsById.putIfAbsent(valueId, () => []).add(entry.task);
+      valueById[valueId] = value;
+      deficitById[valueId] = deficits[valueId] ?? 0.0;
+    }
+
+    final groups = <PlanMyDayValueSuggestionGroup>[];
+    for (final entry in groupsById.entries) {
+      final valueId = entry.key;
+      final value = valueById[valueId];
+      if (value == null) continue;
+
+      final deficit = deficitById[valueId] ?? 0.0;
+      final attentionNeeded = deficit >= _attentionDeficitThreshold;
+      final defaultVisible = _defaultVisibleCount(
+        value.priority,
+        attentionNeeded: attentionNeeded,
+      );
+      final poolSize = entry.value.length;
+      final storedVisible =
+          _visibleSuggestionCountsByValue[valueId] ?? defaultVisible;
+      final visibleCount = storedVisible.clamp(0, poolSize);
+      _visibleSuggestionCountsByValue[valueId] = visibleCount;
+
+      groups.add(
+        PlanMyDayValueSuggestionGroup(
+          valueId: valueId,
+          value: value,
+          tasks: entry.value,
+          attentionNeeded: attentionNeeded,
+          neglectScore: deficit,
+          visibleCount: visibleCount,
+          expanded: !_collapsedValueIds.contains(valueId),
+        ),
+      );
+    }
+
+    groups.sort((a, b) {
+      switch (_valuesSort) {
+        case PlanMyDayValueSort.attentionFirst:
+          if (a.attentionNeeded != b.attentionNeeded) {
+            return a.attentionNeeded ? -1 : 1;
+          }
+          final byPriority = _valuePriorityRank(
+            a.value.priority,
+          ).compareTo(_valuePriorityRank(b.value.priority));
+          if (byPriority != 0) return byPriority;
+          final byDeficit = b.neglectScore.compareTo(a.neglectScore);
+          if (byDeficit != 0) return byDeficit;
+          return a.value.name.compareTo(b.value.name);
+        case PlanMyDayValueSort.priorityFirst:
+          final byPriority = _valuePriorityRank(
+            a.value.priority,
+          ).compareTo(_valuePriorityRank(b.value.priority));
+          if (byPriority != 0) return byPriority;
+          if (a.attentionNeeded != b.attentionNeeded) {
+            return a.attentionNeeded ? -1 : 1;
+          }
+          final byDeficit = b.neglectScore.compareTo(a.neglectScore);
+          if (byDeficit != 0) return byDeficit;
+          return a.value.name.compareTo(b.value.name);
+        case PlanMyDayValueSort.mostSuggested:
+          final byCount = b.totalCount.compareTo(a.totalCount);
+          if (byCount != 0) return byCount;
+          return a.value.name.compareTo(b.value.name);
+        case PlanMyDayValueSort.alphabetical:
+          return a.value.name.compareTo(b.value.name);
+      }
+    });
+
+    return groups;
+  }
+
+  int _defaultVisibleCount(
+    ValuePriority priority, {
+    required bool attentionNeeded,
+  }) {
+    return switch (priority) {
+      ValuePriority.high => attentionNeeded ? 4 : 3,
+      ValuePriority.medium => attentionNeeded ? 3 : 2,
+      ValuePriority.low => attentionNeeded ? 2 : 1,
+    };
+  }
+
+  Value? _resolveValueForTask(Task task, String valueId) {
+    for (final value in task.effectiveValues) {
+      if (value.id == valueId) return value;
+    }
+    return null;
+  }
+
+  List<RoutineCompletion> _completionsForPeriod(
+    Routine routine,
+    RoutineCadenceSnapshot snapshot,
+  ) {
+    final periodStart = dateOnly(snapshot.periodStartUtc);
+    final periodEnd = dateOnly(snapshot.periodEndUtc);
+    final completions = <RoutineCompletion>[];
+
+    for (final completion in _routineCompletions) {
+      if (completion.routineId != routine.id) continue;
+      final day = dateOnly(completion.completedAtUtc);
+      if (day.isBefore(periodStart) || day.isAfter(periodEnd)) continue;
+      completions.add(completion);
+    }
+
+    return completions;
   }
 
   bool _isSameDayUtc(DateTime a, DateTime b) {

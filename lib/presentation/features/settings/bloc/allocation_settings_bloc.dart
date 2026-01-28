@@ -40,8 +40,7 @@ final class AllocationSettingsStreamUpdated extends AllocationSettingsEvent {
   final AllocationConfig settings;
 }
 
-final class AllocationValuesBalanceModeChanged
-    extends AllocationSettingsEvent {
+final class AllocationValuesBalanceModeChanged extends AllocationSettingsEvent {
   const AllocationValuesBalanceModeChanged(this.mode);
 
   final ValuesBalanceMode mode;
@@ -60,8 +59,7 @@ final class AllocationNextActionsPreferenceChanged
   final NextActionsPreference preference;
 }
 
-final class AllocationSuggestionScopeChanged
-    extends AllocationSettingsEvent {
+final class AllocationSuggestionScopeChanged extends AllocationSettingsEvent {
   const AllocationSuggestionScopeChanged(this.scope);
 
   final SuggestionScope scope;
@@ -205,7 +203,10 @@ class AllocationSettingsBloc
     await _persist(updated, intent: 'allocation_suggestion_scope_changed');
   }
 
-  Future<void> _persist(AllocationConfig updated, {required String intent}) async {
+  Future<void> _persist(
+    AllocationConfig updated, {
+    required String intent,
+  }) async {
     final context = _contextFactory.create(
       feature: 'settings',
       screen: 'task_suggestions',
@@ -225,14 +226,14 @@ class AllocationSettingsBloc
   static _SuggestionPreset _suggestionPresetFor(SuggestionScope scope) {
     return switch (scope) {
       SuggestionScope.compact => const _SuggestionPreset(
-        suggestionsPerBatch: 5,
+        suggestionsPerBatch: 10,
         anchorCount: 1,
         tasksPerAnchorMin: 1,
         tasksPerAnchorMax: 2,
         freeSlots: 0,
       ),
       SuggestionScope.standard => const _SuggestionPreset(
-        suggestionsPerBatch: 7,
+        suggestionsPerBatch: 10,
         anchorCount: 2,
         tasksPerAnchorMin: 1,
         tasksPerAnchorMax: 2,

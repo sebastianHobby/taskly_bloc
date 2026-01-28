@@ -1,6 +1,7 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_core/logging.dart';
+import 'package:taskly_domain/auth.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/telemetry.dart';
 
@@ -8,25 +9,29 @@ import 'package:taskly_data/src/errors/app_failure_mapper.dart';
 
 /// Implementation of authentication repository using Supabase.
 class AuthRepository implements AuthRepositoryContract {
-  AuthRepository({required SupabaseClient client}) : _client = client;
+  AuthRepository({required supabase.SupabaseClient client}) : _client = client;
 
-  final SupabaseClient _client;
+  final supabase.SupabaseClient _client;
 
-  late final Stream<AuthState> _authStateStream = _client.auth.onAuthStateChange
+  late final Stream<AuthStateChange> _authStateStream = _client
+      .auth
+      .onAuthStateChange
+      .map(_mapAuthState)
       // Shared + replay-last so multiple UI listeners can attach safely.
       .shareReplay(maxSize: 1);
 
   @override
-  Stream<AuthState> watchAuthState() {
+  Stream<AuthStateChange> watchAuthState() {
     AppLog.routine('data.auth', 'watchAuthState: subscribing to auth changes');
     return _authStateStream;
   }
 
   @override
-  Session? get currentSession => _client.auth.currentSession;
+  AuthSession? get currentSession =>
+      _mapSession(_client.auth.currentSession);
 
   @override
-  User? get currentUser => _client.auth.currentUser;
+  AuthUser? get currentUser => _mapUser(_client.auth.currentUser);
 
   @override
   Future<AuthResponse> signInWithPassword({
@@ -44,7 +49,7 @@ class AuthRepository implements AuthRepositoryContract {
         password: password,
       );
       AppLog.info('data.auth', 'signInWithPassword: success');
-      return response;
+      return _mapAuthResponse(response);
     } catch (e, st) {
       final failure = AppFailureMapper.fromException(e);
       AppLog.handleStructured(
@@ -71,7 +76,7 @@ class AuthRepository implements AuthRepositoryContract {
         password: password,
       );
       AppLog.info('data.auth', 'signUp: success');
-      return response;
+      return _mapAuthResponse(response);
     } catch (e, st) {
       final failure = AppFailureMapper.fromException(e);
       AppLog.handleStructured(
@@ -130,17 +135,17 @@ class AuthRepository implements AuthRepositoryContract {
   }
 
   @override
-  Future<UserResponse> updatePassword(
+  Future<UserUpdateResponse> updatePassword(
     String newPassword, {
     OperationContext? context,
   }) async {
     AppLog.info('data.auth', 'updatePassword');
     try {
       final response = await _client.auth.updateUser(
-        UserAttributes(password: newPassword),
+        supabase.UserAttributes(password: newPassword),
       );
       AppLog.info('data.auth', 'updatePassword: success');
-      return response;
+      return _mapUserResponse(response);
     } catch (e, st) {
       final failure = AppFailureMapper.fromException(e);
       AppLog.handleStructured(
@@ -152,5 +157,94 @@ class AuthRepository implements AuthRepositoryContract {
       );
       throw failure;
     }
+  }
+
+  @override
+  Future<UserUpdateResponse> updateUserProfile({
+    String? displayName,
+    OperationContext? context,
+  }) async {
+    AppLog.info('data.auth', 'updateUserProfile');
+    try {
+      final response = await _client.auth.updateUser(
+        supabase.UserAttributes(
+          data: <String, Object?>{
+            ...?displayName == null
+                ? null
+                : <String, Object?>{'display_name': displayName},
+          },
+        ),
+      );
+      AppLog.info('data.auth', 'updateUserProfile: success');
+      return _mapUserResponse(response);
+    } catch (e, st) {
+      final failure = AppFailureMapper.fromException(e);
+      AppLog.handleStructured(
+        'data.auth',
+        'updateUserProfile failed',
+        failure,
+        st,
+        context?.toLogFields() ?? const <String, Object?>{},
+      );
+      throw failure;
+    }
+  }
+
+  static AuthStateChange _mapAuthState(supabase.AuthState state) {
+    return AuthStateChange(
+      event: _mapAuthEvent(state.event),
+      session: _mapSession(state.session),
+    );
+  }
+
+  static AuthEventKind _mapAuthEvent(supabase.AuthChangeEvent event) {
+    return switch (event) {
+      supabase.AuthChangeEvent.initialSession => AuthEventKind.initialSession,
+      supabase.AuthChangeEvent.signedIn => AuthEventKind.signedIn,
+      supabase.AuthChangeEvent.signedOut => AuthEventKind.signedOut,
+      supabase.AuthChangeEvent.tokenRefreshed => AuthEventKind.tokenRefreshed,
+      supabase.AuthChangeEvent.userUpdated => AuthEventKind.userUpdated,
+      supabase.AuthChangeEvent.passwordRecovery => AuthEventKind.passwordRecovery,
+      _ => AuthEventKind.unknown,
+    };
+  }
+
+  static AuthSession? _mapSession(supabase.Session? session) {
+    if (session == null) return null;
+    return AuthSession(
+      user: _mapUser(session.user) ?? AuthUser(id: session.user.id),
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      expiresAt: session.expiresAt == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(
+              session.expiresAt! * 1000,
+              isUtc: true,
+            ),
+    );
+  }
+
+  static AuthUser? _mapUser(supabase.User? user) {
+    if (user == null) return null;
+    return AuthUser(
+      id: user.id,
+      email: user.email,
+      metadata: user.userMetadata,
+    );
+  }
+
+  static AuthResponse _mapAuthResponse(supabase.AuthResponse response) {
+    return AuthResponse(
+      session: _mapSession(response.session),
+      user: _mapUser(response.user),
+    );
+  }
+
+  static UserUpdateResponse _mapUserResponse(
+    supabase.UserResponse response,
+  ) {
+    return UserUpdateResponse(
+      user: _mapUser(response.user),
+    );
   }
 }

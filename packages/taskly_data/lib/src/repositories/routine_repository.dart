@@ -8,17 +8,20 @@ import 'package:taskly_data/src/mappers/drift_to_domain.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/telemetry.dart';
-import 'package:taskly_domain/time.dart';
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 final class RoutineRepository implements RoutineRepositoryContract {
   RoutineRepository({
     required AppDatabase driftDb,
     required IdGenerator idGenerator,
+    Clock clock = systemClock,
   }) : _db = driftDb,
-       _ids = idGenerator;
+       _ids = idGenerator,
+       _clock = clock;
 
   final AppDatabase _db;
   final IdGenerator _ids;
+  final Clock _clock;
 
   @override
   Stream<List<Routine>> watchAll({bool includeInactive = true}) {
@@ -91,8 +94,8 @@ final class RoutineRepository implements RoutineRepositoryContract {
   }) async {
     return FailureGuard.run(
       () async {
-        final now = DateTime.now();
-        final psMetadata = encodeCrudMetadata(context);
+        final now = _clock.nowUtc();
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         await _db
             .into(_db.routinesTable)
@@ -147,8 +150,8 @@ final class RoutineRepository implements RoutineRepositoryContract {
   }) async {
     return FailureGuard.run(
       () async {
-        final now = DateTime.now();
-        final psMetadata = encodeCrudMetadata(context);
+        final now = _clock.nowUtc();
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         await (_db.update(
           _db.routinesTable,
@@ -240,8 +243,8 @@ final class RoutineRepository implements RoutineRepositoryContract {
   }) async {
     return FailureGuard.run(
       () async {
-        final now = DateTime.now();
-        final psMetadata = encodeCrudMetadata(context);
+        final now = _clock.nowUtc();
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         await _db
             .into(_db.routineCompletionsTable)
@@ -271,8 +274,8 @@ final class RoutineRepository implements RoutineRepositoryContract {
   }) async {
     return FailureGuard.run(
       () async {
-        final now = DateTime.now();
-        final psMetadata = encodeCrudMetadata(context);
+        final now = _clock.nowUtc();
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
         final normalizedKey = dateOnly(periodKeyUtc);
 
         final existing =

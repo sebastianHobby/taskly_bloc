@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:rrule/rrule.dart';
 import 'package:taskly_core/logging.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
@@ -203,7 +203,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
 
   @override
   Widget build(BuildContext context) {
-    final now = getIt<NowService>().nowLocal();
+    final now = context.read<NowService>().nowLocal();
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;

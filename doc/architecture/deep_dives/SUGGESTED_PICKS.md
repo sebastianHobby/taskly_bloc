@@ -4,6 +4,9 @@
 >
 > Scope: the "Suggested picks" allocation path used by the My Day ritual.
 
+For the full My Day + Plan My Day architecture (including routines integration),
+see: [MY_DAY_PLAN_MY_DAY.md](MY_DAY_PLAN_MY_DAY.md).
+
 ## 1) Purpose
 
 Taskly's "Suggested picks" are meant to be calm, values-led recommendations.
@@ -88,9 +91,12 @@ When enabled, the engine may perform a **bounded quota repair** pass:
 
 - Uses recent completion counts per value (via analytics) to identify values the
   user has focused on less recently.
+- Completion history is smoothed with EMA (α = 0.20) over the lookback window
+  before computing deficits.
 - Performs a small, capped reallocation of quota toward the most-neglected
   values.
-- The cap is intentionally tight so this never "overrides the plan".
+- The cap scales with the number of values so the shift stays modest as values
+  increase.
 
 This produces explainability via the reason code `neglectBalance` for any tasks
 that enter the selection due to the quota repair step.
@@ -104,6 +110,24 @@ Within a value, tasks are ordered using deterministic tie-breaks:
 
 This avoids "spiky" ranking behavior and prevents urgency/priority from becoming
 an implicit global optimizer.
+
+### 4.4 Spotlight cue (ordering only)
+
+When value balancing is enabled and a value deficit crosses the spotlight
+threshold (20%), the top task for the most-neglected value is **moved to the
+front** of the suggestion list. This does not change quotas; it is a visual
+ordering cue for the first row only.
+
+### 4.5 Per-value suggestion pools (Plan My Day)
+
+For the Plan My Day ritual, suggested picks are now **pooled per value** to
+support progressive disclosure in the UI:
+
+- Each value gets a **default visible count** based on priority + neglect
+  status.
+- The allocator returns a **per-value pool** sized to
+  `defaultVisible + (2 * showMoreIncrement)` (showMoreIncrement = 3).
+- UI reveals the pool progressively ("Show more") without re-running allocation.
 
 ## 5) Settings model
 

@@ -584,6 +584,8 @@ final class TasklyRoutineRowData {
     required this.windowLabel,
     required this.statusLabel,
     required this.statusTone,
+    this.progress,
+    this.scheduleRow,
     this.valueChip,
     this.selected = false,
     this.completed = false,
@@ -598,11 +600,61 @@ final class TasklyRoutineRowData {
   final String windowLabel;
   final String statusLabel;
   final TasklyRoutineStatusTone statusTone;
+  final TasklyRoutineProgressData? progress;
+  final TasklyRoutineScheduleRowData? scheduleRow;
   final ValueChipData? valueChip;
   final bool selected;
   final bool completed;
   final List<TasklyBadgeData> badges;
   final TasklyRoutineRowLabels? labels;
+}
+
+enum TasklyRoutineScheduleIcon {
+  loggedScheduled,
+  loggedUnscheduled,
+  missedScheduled,
+}
+
+@immutable
+final class TasklyRoutineProgressData {
+  const TasklyRoutineProgressData({
+    required this.completedCount,
+    required this.targetCount,
+    required this.windowLabel,
+  });
+
+  final int completedCount;
+  final int targetCount;
+  final String windowLabel;
+
+  double get progressRatio {
+    if (targetCount <= 0) return 0;
+    return completedCount.clamp(0, targetCount) / targetCount;
+  }
+}
+
+@immutable
+final class TasklyRoutineScheduleDay {
+  const TasklyRoutineScheduleDay({
+    required this.label,
+    required this.isScheduled,
+    required this.isToday,
+  });
+
+  final String label;
+  final bool isScheduled;
+  final bool isToday;
+}
+
+@immutable
+final class TasklyRoutineScheduleRowData {
+  const TasklyRoutineScheduleRowData({
+    required this.icons,
+    required this.days,
+  });
+
+  final List<TasklyRoutineScheduleIcon> icons;
+  final List<TasklyRoutineScheduleDay> days;
 }
 
 @immutable

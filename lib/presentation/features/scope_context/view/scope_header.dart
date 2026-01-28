@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_domain/contracts.dart';
 
 import 'package:taskly_bloc/presentation/features/scope_context/bloc/scope_context_bloc.dart';
@@ -18,11 +17,11 @@ class ScopeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ScopeContextBloc(
+      create: (context) => ScopeContextBloc(
         scope: scope,
-        taskRepository: getIt<TaskRepositoryContract>(),
-        projectRepository: getIt<ProjectRepositoryContract>(),
-        valueRepository: getIt<ValueRepositoryContract>(),
+        taskRepository: context.read<TaskRepositoryContract>(),
+        projectRepository: context.read<ProjectRepositoryContract>(),
+        valueRepository: context.read<ValueRepositoryContract>(),
       ),
       child: const _ScopeHeaderView(),
     );

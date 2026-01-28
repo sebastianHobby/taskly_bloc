@@ -681,8 +681,8 @@ See: [deep_dives/POWERSYNC_SUPABASE.md](deep_dives/POWERSYNC_SUPABASE.md)
 Guardrail: the repo includes a lightweight check to prevent accidental usage.
 
 - Script: [tool/no_powersync_local_upserts.dart](../../tool/no_powersync_local_upserts.dart)
-  - Scans `lib/data/` and `packages/taskly_data/lib/` for common Drift UPSERT
-    patterns (`insertOnConflictUpdate`, `insertAllOnConflictUpdate`,
+  - Scans `packages/taskly_data/lib/` for common Drift UPSERT patterns
+    (`insertOnConflictUpdate`, `insertAllOnConflictUpdate`,
     `insertOrReplace`, `InsertMode.insertOrReplace`).
   - Escape hatch (use sparingly): add `// ignore-powersync-upsert-guardrail` in
     a file to skip it.
@@ -705,8 +705,8 @@ Normative rules:
 Guardrail:
 
 - Pre-push validation: implemented in [git_hooks.dart](../../git_hooks.dart)
-  (compares `lib/data/infrastructure/powersync/schema.dart` against
-  `lib/data/id/id_generator.dart` when present)
+  (compares `packages/taskly_data/lib/src/infrastructure/powersync/schema.dart`
+  against `packages/taskly_data/lib/src/id/id_generator.dart`)
 
 ### 5.4 `user_id` is server-owned (strict)
 

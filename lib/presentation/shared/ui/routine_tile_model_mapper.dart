@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:characters/characters.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_domain/routines.dart';
+import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 
 TasklyRoutineRowData buildRoutineRowData(
@@ -12,6 +14,10 @@ TasklyRoutineRowData buildRoutineRowData(
   bool selected = false,
   bool completed = false,
   bool isCatchUpDay = false,
+  bool showProgress = false,
+  bool showScheduleRow = false,
+  DateTime? dayKeyUtc,
+  List<RoutineCompletion>? completionsInPeriod,
   List<TasklyBadgeData> badges = const <TasklyBadgeData>[],
   TasklyRoutineRowLabels? labels,
 }) {
@@ -19,21 +25,56 @@ TasklyRoutineRowData buildRoutineRowData(
   final windowLabel = _windowLabel(context, routine, snapshot);
   final targetLabel = _cadenceLabel(context, routine);
 
+  final effectiveShowProgress =
+      showProgress && _supportsProgress(routine.routineType);
+
+  final progressData = effectiveShowProgress
+      ? TasklyRoutineProgressData(
+          completedCount: snapshot.completedCount,
+          targetCount: snapshot.targetCount,
+          windowLabel: windowLabel,
+        )
+      : null;
+
+  TasklyRoutineScheduleRowData? scheduleRow;
+  if (showScheduleRow &&
+      routine.routineType == RoutineType.weeklyFixed &&
+      routine.scheduleDays.isNotEmpty &&
+      dayKeyUtc != null &&
+      completionsInPeriod != null) {
+    scheduleRow = _buildScheduleRow(
+      context,
+      routine: routine,
+      dayKeyUtc: dayKeyUtc,
+      completions: completionsInPeriod,
+      status: snapshot.status,
+    );
+  }
+  final effectiveShowSchedule = scheduleRow != null;
+
+  final statusLabel = (effectiveShowProgress || effectiveShowSchedule)
+      ? ''
+      : _statusLabel(
+          context,
+          snapshot.status,
+          isCatchUpDay: isCatchUpDay,
+        );
+
+  final statusTone = _statusTone(
+    snapshot.status,
+    isCatchUpDay: isCatchUpDay,
+  );
+
   return TasklyRoutineRowData(
     id: routine.id,
     title: routine.name,
     targetLabel: targetLabel,
     remainingLabel: remainingLabel,
     windowLabel: windowLabel,
-    statusLabel: _statusLabel(
-      context,
-      snapshot.status,
-      isCatchUpDay: isCatchUpDay,
-    ),
-    statusTone: _statusTone(
-      snapshot.status,
-      isCatchUpDay: isCatchUpDay,
-    ),
+    statusLabel: statusLabel,
+    statusTone: statusTone,
+    progress: progressData,
+    scheduleRow: scheduleRow,
     valueChip: routine.value?.toChipData(context),
     selected: selected,
     completed: completed,
@@ -139,4 +180,87 @@ String _scheduledDaysLabel(BuildContext context, List<int> scheduleDays) {
   return sorted
       .map((day) => formatter.format(DateTime.utc(2024, 1, day)))
       .join('/');
+}
+
+bool _supportsProgress(RoutineType type) {
+  return type == RoutineType.weeklyFlexible ||
+      type == RoutineType.monthlyFlexible;
+}
+
+TasklyRoutineScheduleRowData _buildScheduleRow(
+  BuildContext context, {
+  required Routine routine,
+  required DateTime dayKeyUtc,
+  required List<RoutineCompletion> completions,
+  required RoutineStatus status,
+}) {
+  final today = dateOnly(dayKeyUtc);
+  final scheduleDays = routine.scheduleDays.toSet();
+
+  final completionDays = <DateTime>{};
+  for (final completion in completions) {
+    completionDays.add(dateOnly(completion.completedAtUtc));
+  }
+
+  final weekStart = _weekStart(today);
+  final days = <TasklyRoutineScheduleDay>[];
+  var loggedScheduled = false;
+  var loggedUnscheduled = false;
+  var missedScheduled = false;
+
+  for (var i = 0; i < 7; i++) {
+    final day = weekStart.add(Duration(days: i));
+    final isScheduled = scheduleDays.contains(day.weekday);
+    final isToday = day.isAtSameMomentAs(today);
+    final label = _dayLetter(context, day);
+
+    if (completionDays.contains(day)) {
+      if (isScheduled) {
+        loggedScheduled = true;
+      } else {
+        loggedUnscheduled = true;
+      }
+    }
+
+    if (isScheduled && day.isBefore(today) && !completionDays.contains(day)) {
+      missedScheduled = true;
+    }
+
+    days.add(
+      TasklyRoutineScheduleDay(
+        label: label,
+        isScheduled: isScheduled,
+        isToday: isToday,
+      ),
+    );
+  }
+
+  if (status == RoutineStatus.restWeek) {
+    missedScheduled = false;
+  }
+
+  final icons = <TasklyRoutineScheduleIcon>[
+    if (missedScheduled) TasklyRoutineScheduleIcon.missedScheduled,
+    if (loggedScheduled) TasklyRoutineScheduleIcon.loggedScheduled,
+    if (loggedUnscheduled) TasklyRoutineScheduleIcon.loggedUnscheduled,
+  ];
+
+  return TasklyRoutineScheduleRowData(
+    icons: icons,
+    days: days,
+  );
+}
+
+String _dayLetter(BuildContext context, DateTime day) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final formatter = DateFormat.E(locale);
+  final label = formatter.format(day.toLocal());
+  if (label.isEmpty) return '';
+  return label.characters.first;
+}
+
+DateTime _weekStart(DateTime dayKeyUtc) {
+  final normalized = dateOnly(dayKeyUtc);
+  final delta = normalized.weekday - DateTime.monday;
+  return normalized.subtract(Duration(days: delta));
 }

@@ -1,28 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:taskly_domain/services.dart';
 
-/// Coarse-grained lifecycle events that are useful for domain coordinators.
-enum AppLifecycleEvent {
-  resumed,
-  inactive,
-  paused,
-  detached,
-}
-
-/// Exposes app lifecycle transitions as a stream.
-///
-/// Timers do not fire while the app is suspended, so coordinators should
-/// re-check time-based boundaries on [AppLifecycleEvent.resumed].
-class AppLifecycleService with WidgetsBindingObserver {
+/// Flutter-backed lifecycle service for app/presentation layers.
+class AppLifecycleService with WidgetsBindingObserver
+    implements AppLifecycleEvents {
   AppLifecycleService();
 
   final StreamController<AppLifecycleEvent> _eventsController =
       StreamController<AppLifecycleEvent>.broadcast();
 
   /// Broadcast stream of lifecycle events.
-  ///
-  /// Multiple coordinators/services are expected to listen concurrently.
+  @override
   Stream<AppLifecycleEvent> get events => _eventsController.stream;
 
   bool _started = false;

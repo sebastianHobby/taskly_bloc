@@ -252,7 +252,10 @@ final class TasklyDataStack implements SyncAnomalyStream {
   /// The stack itself owns the wiring between infra + repositories. The app
   /// consumes domain services via the returned bindings.
   TasklyDataBindings createBindings({Clock clock = systemClock}) {
-    final settingsRepository = SettingsRepository(driftDb: driftDb);
+    final settingsRepository = SettingsRepository(
+      driftDb: driftDb,
+      clock: clock,
+    );
 
     final homeDayKeyService = HomeDayKeyService(
       settingsRepository: settingsRepository,
@@ -271,11 +274,13 @@ final class TasklyDataStack implements SyncAnomalyStream {
       occurrenceExpander: occurrenceExpander,
       occurrenceWriteHelper: occurrenceWriteHelper,
       idGenerator: idGenerator,
+      clock: clock,
     );
 
     final projectNextActionsRepository = ProjectNextActionsRepository(
       driftDb: driftDb,
       idGenerator: idGenerator,
+      clock: clock,
     );
 
     final projectAnchorStateRepository = ProjectAnchorStateRepository(
@@ -289,30 +294,43 @@ final class TasklyDataStack implements SyncAnomalyStream {
       occurrenceExpander: occurrenceExpander,
       occurrenceWriteHelper: occurrenceWriteHelper,
       idGenerator: idGenerator,
+      clock: clock,
     );
 
     final valueRepository = ValueRepository(
       driftDb: driftDb,
       idGenerator: idGenerator,
+      clock: clock,
     );
 
     final myDayRepository = MyDayRepositoryImpl(
       driftDb: driftDb,
       ids: idGenerator,
+      clock: clock,
     );
 
     final routineRepository = RoutineRepository(
       driftDb: driftDb,
       idGenerator: idGenerator,
+      clock: clock,
     );
 
     final attentionRepository = attention_repo_v2_impl.AttentionRepositoryV2(
       db: driftDb,
+      clock: clock,
     );
 
-    final analyticsRepository = AnalyticsRepositoryImpl(driftDb, idGenerator);
+    final analyticsRepository = AnalyticsRepositoryImpl(
+      driftDb,
+      idGenerator,
+      clock: clock,
+    );
 
-    final journalRepository = JournalRepositoryImpl(driftDb, idGenerator);
+    final journalRepository = JournalRepositoryImpl(
+      driftDb,
+      idGenerator,
+      clock: clock,
+    );
 
     final occurrenceReadService = OccurrenceReadService(
       taskRepository: taskRepository,
@@ -336,6 +354,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
 
     final pendingNotificationsRepository = PendingNotificationsRepositoryImpl(
       driftDb,
+      clock: clock,
     );
 
     final pendingNotificationsProcessor = PendingNotificationsProcessor(

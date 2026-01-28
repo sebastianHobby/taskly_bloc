@@ -19,7 +19,7 @@ export 'src/services/occurrence/occurrence_read_service.dart';
 export 'src/services/occurrence/occurrence_stream_expander.dart';
 export 'src/services/values/effective_values.dart';
 export 'src/services/values/task_value_policy.dart';
-export 'src/services/time/app_lifecycle_service.dart';
+export 'src/services/time/app_lifecycle_events.dart';
 export 'src/services/time/home_day_key_service.dart';
 export 'src/services/time/temporal_trigger_service.dart';
 export 'src/services/suggestions/task_suggestion_service.dart';

@@ -11,6 +11,7 @@ import 'package:taskly_data/src/repositories/query_stream_cache.dart';
 import 'package:taskly_data/src/repositories/repository_exceptions.dart';
 import 'package:taskly_data/src/repositories/repository_helpers.dart';
 import 'package:taskly_data/src/repositories/stream_cache_policy.dart';
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 import 'package:taskly_domain/taskly_domain.dart';
 
 class ProjectRepository implements ProjectRepositoryContract {
@@ -19,7 +20,9 @@ class ProjectRepository implements ProjectRepositoryContract {
     required this.occurrenceExpander,
     required this.occurrenceWriteHelper,
     required this.idGenerator,
-  }) : _predicateMapper = ProjectPredicateMapper(driftDb: driftDb);
+    Clock clock = systemClock,
+  }) : _predicateMapper = ProjectPredicateMapper(driftDb: driftDb),
+       _clock = clock;
 
   // Task counts are merged into Project domain objects. We intentionally keep
   // the project+values join separate from task counting to avoid join row
@@ -31,6 +34,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   final OccurrenceWriteHelperContract occurrenceWriteHelper;
   final IdGenerator idGenerator;
   final ProjectPredicateMapper _predicateMapper;
+  final Clock _clock;
 
   // Shared streams using RxDart for efficient multi-subscriber support
   ValueStream<List<Project>>? _sharedProjectsWithRelated;
@@ -190,7 +194,7 @@ class ProjectRepository implements ProjectRepositoryContract {
 
     if (tasks.isEmpty) return;
 
-    final now = DateTime.now();
+    final now = _clock.nowUtc();
     for (final task in tasks) {
       final overrides = <String>[
         if (task.overridePrimaryValueId != null) task.overridePrimaryValueId!,
@@ -509,13 +513,13 @@ class ProjectRepository implements ProjectRepositoryContract {
           );
         }
         final primaryValueId = normalizedValueIds.first;
-        final now = DateTime.now();
+        final now = _clock.nowUtc();
         final id = idGenerator.projectId();
 
         final normalizedStartDate = dateOnlyOrNull(startDate);
         final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
-        final psMetadata = encodeCrudMetadata(context);
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         await driftDb.transaction(() async {
           await _createProject(
@@ -598,14 +602,14 @@ class ProjectRepository implements ProjectRepositoryContract {
           throw RepositoryNotFoundException('No project found to update');
         }
 
-        final now = DateTime.now();
+        final now = _clock.nowUtc();
 
         final normalizedStartDate = dateOnlyOrNull(startDate);
         final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
         final nextPinned = !completed && (isPinned ?? existing.isPinned);
 
-        final psMetadata = encodeCrudMetadata(context);
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         final nextPrimaryValueId = normalizedValueIds == null
             ? existing.primaryValueId
@@ -675,8 +679,8 @@ class ProjectRepository implements ProjectRepositoryContract {
     return FailureGuard.run(
       () async {
         final normalizedDeadline = dateOnlyOrNull(deadlineDate);
-        final now = DateTime.now();
-        final psMetadata = encodeCrudMetadata(context);
+        final now = _clock.nowUtc();
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         return driftDb.transaction(() async {
           final existingIds =
@@ -730,7 +734,7 @@ class ProjectRepository implements ProjectRepositoryContract {
           '[ProjectRepository] setPinned: id=$id, isPinned=$isPinned',
         );
 
-        final psMetadata = encodeCrudMetadata(context);
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
         await (driftDb.update(
           driftDb.projectTable,
         )..where((t) => t.id.equals(id))).write(
@@ -739,7 +743,7 @@ class ProjectRepository implements ProjectRepositoryContract {
             psMetadata: psMetadata == null
                 ? const drift_pkg.Value<String?>.absent()
                 : drift_pkg.Value(psMetadata),
-            updatedAt: drift_pkg.Value(DateTime.now()),
+            updatedAt: drift_pkg.Value(_clock.nowUtc()),
           ),
         );
       },

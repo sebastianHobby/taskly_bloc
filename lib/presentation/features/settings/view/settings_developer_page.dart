@@ -1,7 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker_flutter/talker_flutter.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
@@ -15,8 +16,8 @@ class SettingsDeveloperPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<SettingsMaintenanceCubit>(
-      create: (_) => SettingsMaintenanceCubit(
-        templateDataService: getIt<TemplateDataService>(),
+      create: (context) => SettingsMaintenanceCubit(
+        templateDataService: context.read<TemplateDataService>(),
       ),
       child: Scaffold(
         appBar: AppBar(
@@ -28,6 +29,7 @@ class SettingsDeveloperPage extends StatelessWidget {
             children: [
               _buildViewLogsItem(context),
               _buildTileCatalogItem(context),
+              if (kDebugMode) _buildOnboardingItem(context),
               const _GenerateTemplateDataItem(),
               SizedBox(height: TasklyTokens.of(context).spaceSm),
             ],
@@ -66,6 +68,16 @@ class SettingsDeveloperPage extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildOnboardingItem(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.play_circle_outline),
+      title: const Text('Launch Onboarding'),
+      subtitle: const Text('Run the onboarding flow from the start'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => GoRouter.of(context).push('/onboarding?debug=1'),
     );
   }
 }

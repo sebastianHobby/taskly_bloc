@@ -20,6 +20,7 @@ import 'package:taskly_data/src/infrastructure/powersync/upload_data_normalizer.
     as upload_normalizer;
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/telemetry.dart';
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 /// Postgres Response codes that we cannot recover from by retrying.
 /// Note: 23505 (unique violation) is handled separately in _handle23505.
@@ -56,12 +57,17 @@ Map<String, dynamic> _normalizeUploadData(
 
 /// Use Supabase for authentication and data upload.
 class SupabaseConnector extends PowerSyncBackendConnector {
-  SupabaseConnector(this.db, {void Function(SyncAnomaly anomaly)? onAnomaly})
-    : _onAnomaly = onAnomaly;
+  SupabaseConnector(
+    this.db, {
+    void Function(SyncAnomaly anomaly)? onAnomaly,
+    Clock clock = systemClock,
+  }) : _onAnomaly = onAnomaly,
+       _clock = clock;
 
   PowerSyncDatabase db;
 
   final void Function(SyncAnomaly anomaly)? _onAnomaly;
+  final Clock _clock;
 
   Future<void>? _refreshFuture;
 
@@ -154,7 +160,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
         // Enhanced logging for user_profiles to trace sync sequence
         final isUserProfiles = op.table == 'user_profiles';
-        final uploadStartTime = DateTime.now();
+        final uploadStartTime = _clock.nowUtc();
 
         if (isUserProfiles) {
           talker.debug(
@@ -189,7 +195,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         }
 
         if (isUserProfiles) {
-          final uploadEndTime = DateTime.now();
+          final uploadEndTime = _clock.nowUtc();
           talker.debug(
             '[POWERSYNC UPLOAD] user_profiles operation COMPLETE at $uploadEndTime\n'
             '  Duration: ${uploadEndTime.difference(uploadStartTime).inMilliseconds}ms\n'
@@ -202,7 +208,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       // All operations successful.
       await transaction.complete();
       talker.debug(
-        '[POWERSYNC UPLOAD] transaction.complete() called at ${DateTime.now()}\n'
+        '[POWERSYNC UPLOAD] transaction.complete() called at ${_clock.nowUtc()}\n'
         '  All ${transaction.crud.length} operations uploaded to Supabase\n'
         '  PowerSync will now wait for CDC to sync back',
       );
@@ -467,7 +473,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
     final anomaly = SyncAnomaly(
       kind: kind,
-      occurredAt: DateTime.now(),
+      occurredAt: _clock.nowUtc(),
       table: op.table,
       rowId: op.id,
       operation: op.op.name,
@@ -514,7 +520,10 @@ Future<String> getDatabasePath() async {
 }
 
 /// Opens the PowerSync database and sets up auth state listeners.
-Future<PowerSyncDatabase> openDatabase({String? pathOverride}) async {
+Future<PowerSyncDatabase> openDatabase({
+  String? pathOverride,
+  Clock clock = systemClock,
+}) async {
   installPowerSyncLogForwarding();
 
   const powersyncVerbose = bool.fromEnvironment('POWERSYNC_VERBOSE_LOGS');
@@ -594,7 +603,7 @@ Future<PowerSyncDatabase> openDatabase({String? pathOverride}) async {
   // Log sync status changes only when diagnostics are enabled.
   if (enableDbDiagnostics) {
     db.statusStream.listen((status) {
-      final now = DateTime.now();
+      final now = clock.nowUtc();
       talker.debug(
         '[POWERSYNC SYNC STATUS] at $now\n'
         '  connected=${status.connected}\n'

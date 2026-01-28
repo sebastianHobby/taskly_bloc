@@ -5,15 +5,20 @@ import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/infrastructure/powersync/crud_metadata.dart';
 import 'package:taskly_domain/my_day.dart' as domain;
 import 'package:taskly_domain/telemetry.dart';
-import 'package:taskly_domain/time.dart';
+import 'package:taskly_domain/time.dart' show Clock, systemClock, dateOnly;
 
 final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
-  MyDayRepositoryImpl({required AppDatabase driftDb, required IdGenerator ids})
-    : _db = driftDb,
-      _ids = ids;
+  MyDayRepositoryImpl({
+    required AppDatabase driftDb,
+    required IdGenerator ids,
+    Clock clock = systemClock,
+  }) : _db = driftDb,
+       _ids = ids,
+       _clock = clock;
 
   final AppDatabase _db;
   final IdGenerator _ids;
+  final Clock _clock;
 
   @override
   Stream<domain.MyDayDayPicks> watchDay(DateTime dayKeyUtc) {
@@ -122,12 +127,12 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
     required List<domain.MyDayPick> picks,
     required OperationContext context,
   }) async {
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = _clock.nowUtc();
 
     final dayUtc = dateOnly(dayKeyUtc);
     final dayId = _ids.myDayDayId(dayUtc: dayUtc);
 
-    final psMetadata = encodeCrudMetadata(context);
+    final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
     await _db.transaction(() async {
       // Ensure day row exists.
@@ -204,12 +209,12 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
     required domain.MyDayPickBucket bucket,
     required OperationContext context,
   }) async {
-    final nowUtc = DateTime.now().toUtc();
+    final nowUtc = _clock.nowUtc();
 
     final dayUtc = dateOnly(dayKeyUtc);
     final dayId = _ids.myDayDayId(dayUtc: dayUtc);
 
-    final psMetadata = encodeCrudMetadata(context);
+    final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
     await _db.transaction(() async {
       // Ensure day row exists (append is only valid after confirmation, but

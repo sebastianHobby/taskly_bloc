@@ -27,6 +27,11 @@ class TasklyTileCatalog extends StatelessWidget {
       icon: Icons.savings_rounded,
       color: scheme.tertiary,
     );
+    final valueKnowledge = ValueChipData(
+      label: 'Knowledge',
+      icon: Icons.psychology_rounded,
+      color: scheme.primary,
+    );
 
     final rows = <TasklyRowSpec>[
       TasklyRowSpec.header(
@@ -168,6 +173,89 @@ class TasklyTileCatalog extends StatelessWidget {
           statusLabel: 'On pace',
           statusTone: TasklyRoutineStatusTone.onPace,
           valueChip: valueHealth,
+          labels: const TasklyRoutineRowLabels(
+            primaryActionLabel: 'Do today',
+          ),
+        ),
+        actions: _routineActions,
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-flexible',
+        data: TasklyRoutineRowData(
+          id: 'r-flex-1',
+          title: 'Read non-fiction',
+          targetLabel: '3x/week',
+          remainingLabel: '2 left',
+          windowLabel: '4 days left',
+          statusLabel: '',
+          statusTone: TasklyRoutineStatusTone.onPace,
+          valueChip: valueKnowledge,
+          progress: const TasklyRoutineProgressData(
+            completedCount: 1,
+            targetCount: 3,
+            windowLabel: '4 days left',
+          ),
+          labels: const TasklyRoutineRowLabels(
+            primaryActionLabel: 'Do today',
+          ),
+        ),
+        actions: _routineActions,
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-scheduled',
+        data: TasklyRoutineRowData(
+          id: 'r-scheduled-1',
+          title: 'Morning routine',
+          targetLabel: 'Scheduled',
+          remainingLabel: '2 left',
+          windowLabel: 'Mon-Sun',
+          statusLabel: '',
+          statusTone: TasklyRoutineStatusTone.onPace,
+          valueChip: valueHealth,
+          scheduleRow: const TasklyRoutineScheduleRowData(
+            icons: [
+              TasklyRoutineScheduleIcon.missedScheduled,
+              TasklyRoutineScheduleIcon.loggedScheduled,
+              TasklyRoutineScheduleIcon.loggedUnscheduled,
+            ],
+            days: [
+              TasklyRoutineScheduleDay(
+                label: 'M',
+                isScheduled: true,
+                isToday: false,
+              ),
+              TasklyRoutineScheduleDay(
+                label: 'T',
+                isScheduled: false,
+                isToday: false,
+              ),
+              TasklyRoutineScheduleDay(
+                label: 'W',
+                isScheduled: true,
+                isToday: true,
+              ),
+              TasklyRoutineScheduleDay(
+                label: 'T',
+                isScheduled: false,
+                isToday: false,
+              ),
+              TasklyRoutineScheduleDay(
+                label: 'F',
+                isScheduled: true,
+                isToday: false,
+              ),
+              TasklyRoutineScheduleDay(
+                label: 'S',
+                isScheduled: false,
+                isToday: false,
+              ),
+              TasklyRoutineScheduleDay(
+                label: 'S',
+                isScheduled: true,
+                isToday: false,
+              ),
+            ],
+          ),
           labels: const TasklyRoutineRowLabels(
             primaryActionLabel: 'Do today',
           ),

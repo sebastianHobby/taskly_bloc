@@ -17,6 +17,7 @@ import 'package:taskly_domain/attention.dart'
     show AttentionEngine;
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/core/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/allocation_settings_bloc.dart';
@@ -131,10 +132,13 @@ Future<void> setupDependencies() async {
       getIt<TasklyDataBindings>().homeDayKeyService,
     )
     ..registerLazySingleton<AppLifecycleService>(AppLifecycleService.new)
+    ..registerLazySingleton<AppLifecycleEvents>(
+      () => getIt<AppLifecycleService>(),
+    )
     ..registerLazySingleton<TemporalTriggerService>(
       () => TemporalTriggerService(
         dayKeyService: getIt<HomeDayKeyService>(),
-        lifecycleService: getIt<AppLifecycleService>(),
+        lifecycleService: getIt<AppLifecycleEvents>(),
         clock: getIt<Clock>(),
       ),
     )
@@ -146,7 +150,7 @@ Future<void> setupDependencies() async {
     )
     ..registerLazySingleton<SessionStreamCacheManager>(
       () => SessionStreamCacheManager(
-        appLifecycleService: getIt<AppLifecycleService>(),
+        appLifecycleService: getIt<AppLifecycleEvents>(),
       ),
     )
     ..registerLazySingleton<SessionSharedDataService>(

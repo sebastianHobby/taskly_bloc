@@ -1,10 +1,10 @@
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/auth.dart';
 import 'package:taskly_domain/errors.dart';
 import 'package:taskly_domain/telemetry.dart';
 import 'package:uuid/uuid.dart';
@@ -85,7 +85,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       emit(state.copyWith(status: AuthStatus.unauthenticated));
     }
 
-    await emit.forEach<AuthState>(
+    await emit.forEach<AuthStateChange>(
       _authRepository.watchAuthState(),
       onData: (authState) {
         talker.blocLog(

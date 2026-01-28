@@ -92,7 +92,7 @@ class ValueView extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
 
-    final valueColor = ColorUtils.fromHexWithThemeFallback(
+    final valueColor = ColorUtils.valueColorForTheme(
       context,
       value.color,
     );
@@ -202,7 +202,7 @@ class ValueView extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
     final valueStats = stats;
-    final valueColor = ColorUtils.fromHexWithThemeFallback(
+    final valueColor = ColorUtils.valueColorForTheme(
       context,
       value.color,
     );
@@ -259,7 +259,7 @@ class ValueView extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
     final valueStats = stats;
-    final valueColor = ColorUtils.fromHexWithThemeFallback(
+    final valueColor = ColorUtils.valueColorForTheme(
       context,
       value.color,
     );
@@ -389,7 +389,7 @@ class ValueView extends StatelessWidget {
     ThemeData theme,
     ColorScheme colorScheme,
   ) {
-    final valueColor = ColorUtils.fromHexWithThemeFallback(
+    final valueColor = ColorUtils.valueColorForTheme(
       context,
       value.color,
     );

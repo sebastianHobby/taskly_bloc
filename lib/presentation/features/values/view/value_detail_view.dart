@@ -117,7 +117,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
     final iconName = rawIconName.trim().isEmpty ? null : rawIconName.trim();
     final colorValue = formValues[ValueFieldKeys.colour.id] as Color?;
     final color = colorValue != null
-        ? ColorUtils.toHexWithHash(colorValue)
+        ? ColorUtils.valuePaletteIdOrHex(colorValue)
         : _draft.color;
 
     final priority =

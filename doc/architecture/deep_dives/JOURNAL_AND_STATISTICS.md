@@ -41,27 +41,27 @@ Canonical presentation boundary:
 
 ### Journal domain (models + system templates)
 - Journal models:
-  - [lib/domain/journal/model/](../../lib/domain/journal/model/)
+  - [packages/taskly_domain/lib/src/journal/model/](../../../packages/taskly_domain/lib/src/journal/model/)
 - System tracker templates (seed set):
-  - [lib/domain/journal/system_trackers.dart](../../lib/domain/journal/system_trackers.dart)
+  - [packages/taskly_domain/lib/src/journal/system_trackers.dart](../../../packages/taskly_domain/lib/src/journal/system_trackers.dart)
 
 Key model files:
-- [lib/domain/journal/model/journal_entry.dart](../../lib/domain/journal/model/journal_entry.dart)
-- [lib/domain/journal/model/tracker_definition.dart](../../lib/domain/journal/model/tracker_definition.dart)
-- [lib/domain/journal/model/tracker_event.dart](../../lib/domain/journal/model/tracker_event.dart)
-- [lib/domain/journal/model/tracker_preference.dart](../../lib/domain/journal/model/tracker_preference.dart)
-- [lib/domain/journal/model/tracker_state_day.dart](../../lib/domain/journal/model/tracker_state_day.dart)
-- [lib/domain/journal/model/tracker_state_entry.dart](../../lib/domain/journal/model/tracker_state_entry.dart)
+- [packages/taskly_domain/lib/src/journal/model/journal_entry.dart](../../../packages/taskly_domain/lib/src/journal/model/journal_entry.dart)
+- [packages/taskly_domain/lib/src/journal/model/tracker_definition.dart](../../../packages/taskly_domain/lib/src/journal/model/tracker_definition.dart)
+- [packages/taskly_domain/lib/src/journal/model/tracker_event.dart](../../../packages/taskly_domain/lib/src/journal/model/tracker_event.dart)
+- [packages/taskly_domain/lib/src/journal/model/tracker_preference.dart](../../../packages/taskly_domain/lib/src/journal/model/tracker_preference.dart)
+- [packages/taskly_domain/lib/src/journal/model/tracker_state_day.dart](../../../packages/taskly_domain/lib/src/journal/model/tracker_state_day.dart)
+- [packages/taskly_domain/lib/src/journal/model/tracker_state_entry.dart](../../../packages/taskly_domain/lib/src/journal/model/tracker_state_entry.dart)
 
 ### Journal contract + implementation
 - Repository contract:
-  - [lib/domain/interfaces/journal_repository_contract.dart](../../lib/domain/interfaces/journal_repository_contract.dart)
+  - [packages/taskly_domain/lib/src/interfaces/journal_repository_contract.dart](../../../packages/taskly_domain/lib/src/interfaces/journal_repository_contract.dart)
 - Repository implementation:
-  - [lib/data/features/journal/repositories/journal_repository_impl.dart](../../lib/data/features/journal/repositories/journal_repository_impl.dart)
+  - [packages/taskly_data/lib/src/features/journal/repositories/journal_repository_impl.dart](../../../packages/taskly_data/lib/src/features/journal/repositories/journal_repository_impl.dart)
 
 ### Journal bootstrapping/maintenance
 - Seeder (system trackers):
-  - [lib/data/features/journal/maintenance/journal_tracker_seeder.dart](../../lib/data/features/journal/maintenance/journal_tracker_seeder.dart)
+  - [packages/taskly_data/lib/src/features/journal/maintenance/journal_tracker_seeder.dart](../../../packages/taskly_data/lib/src/features/journal/maintenance/journal_tracker_seeder.dart)
 
 ### Screen integration
 
@@ -70,18 +70,18 @@ BLoCs.
 
 ### Journal presentation (BLoCs + pages)
 - Hub (tabs):
-  - [lib/presentation/features/journal/view/journal_hub_page.dart](../../lib/presentation/features/journal/view/journal_hub_page.dart)
+  - [lib/presentation/features/journal/view/journal_hub_page.dart](../../../lib/presentation/features/journal/view/journal_hub_page.dart)
 - BLoCs/cubits:
-  - [lib/presentation/features/journal/bloc/](../../lib/presentation/features/journal/bloc/)
+  - [lib/presentation/features/journal/bloc/](../../../lib/presentation/features/journal/bloc/)
 
 ### Analytics/statistics
 - Analytics service implementation:
-  - [lib/data/features/analytics/services/analytics_service_impl.dart](../../lib/data/features/analytics/services/analytics_service_impl.dart)
+  - [packages/taskly_data/lib/src/features/analytics/services/analytics_service_impl.dart](../../../packages/taskly_data/lib/src/features/analytics/services/analytics_service_impl.dart)
 - Analytics repository contract + implementation:
-  - [lib/domain/interfaces/analytics_repository_contract.dart](../../lib/domain/interfaces/analytics_repository_contract.dart)
-  - [lib/data/features/analytics/repositories/analytics_repository_impl.dart](../../lib/data/features/analytics/repositories/analytics_repository_impl.dart)
+  - [packages/taskly_domain/lib/src/interfaces/analytics_repository_contract.dart](../../../packages/taskly_domain/lib/src/interfaces/analytics_repository_contract.dart)
+  - [packages/taskly_data/lib/src/features/analytics/repositories/analytics_repository_impl.dart](../../../packages/taskly_data/lib/src/features/analytics/repositories/analytics_repository_impl.dart)
 - Correlation calculation (stats math):
-  - [lib/domain/services/analytics/correlation_calculator.dart](../../lib/domain/services/analytics/correlation_calculator.dart)
+  - [packages/taskly_domain/lib/src/services/analytics/correlation_calculator.dart](../../../packages/taskly_domain/lib/src/services/analytics/correlation_calculator.dart)
 
 ---
 
@@ -215,8 +215,8 @@ Current UI surfaces include:
 
 Entry points:
 
-- [lib/domain/screens/catalog/system_screens/system_screen_specs.dart](../../lib/domain/screens/catalog/system_screens/system_screen_specs.dart)
-- [lib/presentation/screens/templates/screen_template_widget.dart](../../lib/presentation/screens/templates/screen_template_widget.dart)
+- [lib/presentation/routing/router.dart](../../../lib/presentation/routing/router.dart)
+- [lib/presentation/routing/routing.dart](../../../lib/presentation/routing/routing.dart)
 
 ---
 
@@ -246,5 +246,8 @@ for the product/architecture:
   analytics (mood trend, distributions, correlations).
 - Decide which computations should be *purely derived* vs *persisted* (snapshots)
   for offline speed and sync friendliness.
+
+
+
 
 

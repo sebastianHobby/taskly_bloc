@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_add_entry_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/tracker_input_widgets.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
@@ -20,13 +20,9 @@ class AddLogSheet extends StatelessWidget {
     DateTime? selectedDayLocal,
     Set<String> preselectedTrackerIds = const <String>{},
   }) async {
+    final now = context.read<NowService>().nowLocal();
     final day =
-        selectedDayLocal ??
-        DateTime(
-          getIt<NowService>().nowLocal().year,
-          getIt<NowService>().nowLocal().month,
-          getIt<NowService>().nowLocal().day,
-        );
+        selectedDayLocal ?? DateTime(now.year, now.month, now.day);
 
     await showModalBottomSheet<void>(
       context: context,
@@ -35,9 +31,9 @@ class AddLogSheet extends StatelessWidget {
       builder: (context) {
         return BlocProvider<JournalAddEntryBloc>(
           create: (context) => JournalAddEntryBloc(
-            repository: getIt<JournalRepositoryContract>(),
+            repository: context.read<JournalRepositoryContract>(),
             errorReporter: context.read<AppErrorReporter>(),
-            nowUtc: getIt<NowService>().nowUtc,
+            nowUtc: context.read<NowService>().nowUtc,
             preselectedTrackerIds: preselectedTrackerIds,
           )..add(JournalAddEntryStarted(selectedDayLocal: day)),
           child: Padding(
@@ -202,36 +198,15 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
               _ => 0,
             };
 
-            int clamp(int v) {
-              var out = v;
-              if (min != null) out = out < min ? min : out;
-              if (max != null) out = out > max ? max : out;
-              return out;
-            }
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(d.name, style: theme.textTheme.titleSmall),
-                SizedBox(height: TasklyTokens.of(context).spaceSm),
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: isSaving
-                          ? null
-                          : () => setValue(clamp(intValue - step)),
-                      icon: const Icon(Icons.remove),
-                    ),
-                    Text('$intValue', style: theme.textTheme.titleMedium),
-                    IconButton(
-                      onPressed: isSaving
-                          ? null
-                          : () => setValue(clamp(intValue + step)),
-                      icon: const Icon(Icons.add),
-                    ),
-                  ],
-                ),
-              ],
+            return TrackerQuantityInput(
+              label: d.name,
+              value: intValue,
+              min: min,
+              max: max,
+              step: step,
+              enabled: !isSaving,
+              onChanged: (v) => setValue(v),
+              onClear: () => setValue(null),
             );
           }
 
@@ -258,19 +233,11 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                         ),
                       )
                     else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final c in choices)
-                            ChoiceChip(
-                              label: Text(c.label),
-                              selected: selectedKey == c.choiceKey,
-                              onSelected: isSaving
-                                  ? null
-                                  : (_) => setValue(c.choiceKey),
-                            ),
-                        ],
+                      TrackerChoiceInput(
+                        choices: choices,
+                        selectedKey: selectedKey,
+                        enabled: !isSaving,
+                        onSelected: setValue,
                       ),
                   ],
                 );

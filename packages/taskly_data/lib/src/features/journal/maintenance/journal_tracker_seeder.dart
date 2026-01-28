@@ -3,6 +3,7 @@ import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 /// Seeds system tracker definitions and default preferences.
 ///
@@ -13,11 +14,14 @@ class JournalTrackerSeeder {
   JournalTrackerSeeder({
     required AppDatabase db,
     required IdGenerator idGenerator,
+    Clock clock = systemClock,
   }) : _db = db,
-       _idGenerator = idGenerator;
+       _idGenerator = idGenerator,
+       _clock = clock;
 
   final AppDatabase _db;
   final IdGenerator _idGenerator;
+  final Clock _clock;
 
   Future<void> ensureSeeded() async {
     talker.info('[JournalTrackerSeeder] Seeding system trackers');
@@ -46,7 +50,7 @@ class JournalTrackerSeeder {
   Future<void> _seedTracker(SystemTrackerTemplate template) async {
     final trackerId = _idGenerator.trackerDefinitionId(name: template.name);
 
-    final now = DateTime.now().toUtc();
+    final now = _clock.nowUtc();
 
     // Definitions are system-owned; keep them updated so the app can evolve.
     // PowerSync applies the schema using SQLite views; SQLite does not support

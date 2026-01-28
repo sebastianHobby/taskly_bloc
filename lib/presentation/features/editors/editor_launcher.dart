@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -40,19 +39,6 @@ class EditorLauncher {
        _projectWriteService = projectWriteService,
        _valueWriteService = valueWriteService,
        _routineWriteService = routineWriteService;
-
-  factory EditorLauncher.fromGetIt() {
-    return EditorLauncher(
-      taskRepository: getIt<TaskRepositoryContract>(),
-      projectRepository: getIt<ProjectRepositoryContract>(),
-      valueRepository: getIt<ValueRepositoryContract>(),
-      routineRepository: getIt<RoutineRepositoryContract>(),
-      taskWriteService: getIt<TaskWriteService>(),
-      projectWriteService: getIt<ProjectWriteService>(),
-      valueWriteService: getIt<ValueWriteService>(),
-      routineWriteService: getIt<RoutineWriteService>(),
-    );
-  }
 
   final TaskRepositoryContract? _taskRepository;
   final RoutineRepositoryContract? _routineRepository;

@@ -580,6 +580,51 @@ class AnalyticsServiceImpl implements AnalyticsService {
   }
 
   @override
+  Future<Map<String, List<int>>> getDailyCompletionsByValue({
+    required int days,
+  }) async {
+    final windowDays = days.clamp(1, 60);
+    final today = dateOnly(_clock.nowLocal());
+    final startDay = today.subtract(Duration(days: windowDays - 1));
+
+    final completions = await _taskRepo.watchCompletionHistory().first;
+    if (completions.isEmpty) return const <String, List<int>>{};
+
+    final taskIds = completions.map((c) => c.entityId).toSet();
+    final tasks = await _taskRepo.getByIds(taskIds);
+    final tasksById = {for (final task in tasks) task.id: task};
+
+    final counts = <String, List<int>>{};
+
+    for (final completion in completions) {
+      final completedLocal = completion.completedAt.toLocal();
+      final completedDay = dateOnly(completedLocal);
+      if (completedDay.isBefore(startDay) || completedDay.isAfter(today)) {
+        continue;
+      }
+
+      final task = tasksById[completion.entityId];
+      if (task == null) continue;
+
+      final index = completedDay.difference(startDay).inDays;
+      if (index < 0 || index >= windowDays) continue;
+
+      final valueIds = _effectiveValuesForTask(task).map((v) => v.id).toSet();
+      if (valueIds.isEmpty) continue;
+
+      for (final valueId in valueIds) {
+        final series = counts.putIfAbsent(
+          valueId,
+          () => List.filled(windowDays, 0),
+        );
+        series[index] += 1;
+      }
+    }
+
+    return counts;
+  }
+
+  @override
   Future<int> getTotalRecentCompletions({required int days}) async {
     final completionsByValue = await getRecentCompletionsByValue(days: days);
     return completionsByValue.values.fold<int>(0, (sum, count) => sum + count);

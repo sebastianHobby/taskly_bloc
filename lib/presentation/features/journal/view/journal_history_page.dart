@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_daily_detail_sheet.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -16,8 +17,11 @@ class JournalHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<JournalHistoryBloc>(
-      create: (_) =>
-          getIt<JournalHistoryBloc>()..add(const JournalHistoryStarted()),
+      create: (context) =>
+          JournalHistoryBloc(
+            repository: context.read<JournalRepositoryContract>(),
+            dayKeyService: context.read<HomeDayKeyService>(),
+          )..add(const JournalHistoryStarted()),
       child: BlocBuilder<JournalHistoryBloc, JournalHistoryState>(
         builder: (context, state) {
           return switch (state) {

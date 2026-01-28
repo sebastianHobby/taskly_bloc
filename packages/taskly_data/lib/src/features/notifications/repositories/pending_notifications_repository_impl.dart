@@ -2,13 +2,18 @@ import 'package:drift/drift.dart';
 import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart' as db;
 import 'package:taskly_domain/taskly_domain.dart' hide Value;
+import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 /// Drift implementation of [PendingNotificationsRepositoryContract].
 class PendingNotificationsRepositoryImpl
     implements PendingNotificationsRepositoryContract {
-  PendingNotificationsRepositoryImpl(this._db);
+  PendingNotificationsRepositoryImpl(
+    this._db, {
+    Clock clock = systemClock,
+  }) : _clock = clock;
 
   final db.AppDatabase _db;
+  final Clock _clock;
 
   @override
   Stream<List<PendingNotification>> watchPending() {
@@ -41,7 +46,7 @@ class PendingNotificationsRepositoryImpl
     DateTime? deliveredAt,
     OperationContext? context,
   }) async {
-    final now = deliveredAt ?? DateTime.now();
+    final now = deliveredAt ?? _clock.nowUtc();
 
     return FailureGuard.run(
       () async {

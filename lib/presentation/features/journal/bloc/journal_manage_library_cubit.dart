@@ -357,83 +357,45 @@ class JournalManageLibraryCubit extends Cubit<JournalManageLibraryState> {
     }
   }
 
-  Future<void> createTracker({required String name, String? groupId}) async {
+  Future<void> renameTracker({
+    required TrackerDefinition def,
+    required String name,
+  }) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
 
     _setStatus(const JournalManageLibrarySaving());
 
     final context = _newContext(
-      intent: 'create_tracker',
+      intent: 'rename_tracker',
       operation: 'journal.saveTrackerDefinition',
-      extraFields: <String, Object?>{
-        'nameLength': trimmed.length,
-        'groupId': groupId,
-      },
+      entityId: def.id,
     );
 
     try {
-      final now = _nowUtc();
-      final defs = _defsOrEmpty();
-
-      final groupDefs = defs
-          .where((d) => (d.groupId ?? '') == (groupId ?? ''))
-          .toList();
-      groupDefs.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
       await _repository.saveTrackerDefinition(
-        TrackerDefinition(
-          id: '',
-          name: trimmed,
-          description: null,
-          scope: 'entry',
-          valueType: 'yes_no',
-          valueKind: 'boolean',
-          opKind: 'set',
-          createdAt: now,
-          updatedAt: now,
-          roles: const <String>[],
-          config: const <String, dynamic>{},
-          goal: const <String, dynamic>{},
-          isActive: true,
-          sortOrder: groupDefs.length * 10 + 100,
-          groupId: groupId,
-          deletedAt: null,
-          source: 'user',
-          systemKey: null,
-          minInt: null,
-          maxInt: null,
-          stepInt: null,
-          linkedValueId: null,
-          isOutcome: false,
-          isInsightEnabled: false,
-          higherIsBetter: null,
-          unitKind: null,
-          userId: null,
-        ),
+        def.copyWith(name: trimmed, updatedAt: _nowUtc()),
         context: context,
       );
-
       _setStatus(const JournalManageLibrarySaved());
     } catch (error, stackTrace) {
       _reportIfUnexpectedOrUnmapped(
         error,
         stackTrace,
         context: context,
-        message: '[JournalManageLibraryCubit] createTracker failed',
+        message: '[JournalManageLibraryCubit] renameTracker failed',
       );
 
       _setStatus(
         JournalManageLibraryActionError(
           _uiMessageFor(
             error,
-            fallback: 'Failed to create tracker. Please try again.',
+            fallback: 'Failed to rename tracker. Please try again.',
           ),
         ),
       );
     }
   }
-
   Future<void> setTrackerActive({
     required TrackerDefinition def,
     required bool isActive,

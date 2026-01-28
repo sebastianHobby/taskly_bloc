@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/contracts.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// A FAB that opens a value creation modal sheet.
 ///
@@ -9,13 +8,11 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 /// `AddTaskFab` and `AddProjectFab`.
 class AddValueFab extends StatelessWidget {
   const AddValueFab({
-    required this.valueRepository,
     required this.tooltip,
     required this.heroTag,
     super.key,
   });
 
-  final ValueRepositoryContract valueRepository;
   final String tooltip;
   final String heroTag;
 
@@ -24,10 +21,7 @@ class AddValueFab extends StatelessWidget {
     return FloatingActionButton(
       tooltip: tooltip,
       onPressed: () async {
-        final launcher = EditorLauncher(
-          projectRepository: getIt<ProjectRepositoryContract>(),
-          valueRepository: valueRepository,
-        );
+        final launcher = fabContext.read<EditorLauncher>();
         await launcher.openValueEditor(fabContext);
       },
       heroTag: heroTag,

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:taskly_domain/telemetry.dart';
+import 'package:taskly_domain/time.dart';
 
 /// Encodes PowerSync CRUD metadata for a write operation.
 ///
@@ -9,10 +10,10 @@ import 'package:taskly_domain/telemetry.dart';
 ///
 /// Keep this payload small and stable; it is intended for correlation and
 /// debugging (not business logic).
-String? encodeCrudMetadata(OperationContext? context) {
+String? encodeCrudMetadata(OperationContext? context, {Clock clock = systemClock}) {
   if (context == null) return null;
 
-  final nowUtcIso = DateTime.now().toUtc().toIso8601String();
+  final nowUtcIso = clock.nowUtc().toIso8601String();
 
   final payload = <String, Object?>{
     // Short keys used by the upload anomaly pipeline.

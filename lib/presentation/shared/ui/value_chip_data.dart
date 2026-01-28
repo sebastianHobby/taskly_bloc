@@ -7,7 +7,7 @@ import 'package:taskly_ui/taskly_ui_models.dart';
 /// Maps a domain [Value] into UI-only [ValueChipData].
 extension ValueChipDataMapper on Value {
   ValueChipData toChipData(BuildContext context) {
-    final valueColor = ColorUtils.fromHexWithThemeFallback(context, color);
+    final valueColor = ColorUtils.valueColorForTheme(context, color);
     final iconData = getIconDataFromName(iconName) ?? Icons.star;
 
     return ValueChipData(

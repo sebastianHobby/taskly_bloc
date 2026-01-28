@@ -16,8 +16,8 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:provider/provider.dart';
 
 /// A modern form for creating or editing projects.
 ///
@@ -575,11 +575,10 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                                 final iconData =
                                     getIconDataFromName(value.iconName) ??
                                     Icons.star;
-                                final color =
-                                    ColorUtils.fromHexWithThemeFallback(
-                                      context,
-                                      value.color,
-                                    );
+                                final color = ColorUtils.valueColorForTheme(
+                                  context,
+                                  value.color,
+                                );
                                 return TasklyFormValueChipModel(
                                   label: value.name,
                                   color: color,
@@ -690,6 +689,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                           : DateDisplayUtils.formatMonthDayYear(deadlineDate);
                       final isOverdue = DateDisplayUtils.isOverdue(
                         deadlineDate,
+                        now: now,
                       );
 
                       return TasklyFormDateCard(
@@ -1190,7 +1190,7 @@ class _ProjectDatePickerPanelState extends State<_ProjectDatePickerPanel> {
   @override
   void initState() {
     super.initState();
-    final now = getIt<NowService>().nowLocal();
+    final now = context.read<NowService>().nowLocal();
     _selected = widget.initialDate ?? now;
   }
 
@@ -1198,7 +1198,7 @@ class _ProjectDatePickerPanelState extends State<_ProjectDatePickerPanel> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
-    final now = getIt<NowService>().nowLocal();
+    final now = context.read<NowService>().nowLocal();
     final today = dateOnly(now);
     final tomorrow = today.add(const Duration(days: 1));
     final nextWeek = today.add(const Duration(days: 7));

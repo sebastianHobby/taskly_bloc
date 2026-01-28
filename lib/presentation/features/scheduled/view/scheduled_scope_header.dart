@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_scope_header_bloc.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/taskly_domain.dart';
@@ -14,10 +13,10 @@ class ScheduledScopeHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ScheduledScopeHeaderBloc(
+      create: (context) => ScheduledScopeHeaderBloc(
         scope: scope,
-        projectRepository: getIt<ProjectRepositoryContract>(),
-        valueRepository: getIt<ValueRepositoryContract>(),
+        projectRepository: context.read<ProjectRepositoryContract>(),
+        valueRepository: context.read<ValueRepositoryContract>(),
       ),
       child: const _ScheduledScopeHeaderView(),
     );

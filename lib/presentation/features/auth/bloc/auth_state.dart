@@ -23,7 +23,7 @@ class AppAuthState extends Equatable {
   });
 
   final AuthStatus status;
-  final User? user;
+  final AuthUser? user;
   final String? error;
   final String? message;
 
@@ -33,7 +33,7 @@ class AppAuthState extends Equatable {
 
   AppAuthState copyWith({
     AuthStatus? status,
-    User? user,
+    AuthUser? user,
     String? error,
     String? message,
   }) {

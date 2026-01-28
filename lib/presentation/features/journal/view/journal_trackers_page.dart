@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_library_cubit.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalTrackersPage extends StatelessWidget {
@@ -15,9 +15,9 @@ class JournalTrackersPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider<JournalManageLibraryCubit>(
       create: (context) => JournalManageLibraryCubit(
-        repository: getIt<JournalRepositoryContract>(),
+        repository: context.read<JournalRepositoryContract>(),
         errorReporter: context.read<AppErrorReporter>(),
-        nowUtc: getIt<NowService>().nowUtc,
+        nowUtc: context.read<NowService>().nowUtc,
       ),
       child: BlocConsumer<JournalManageLibraryCubit, JournalManageLibraryState>(
         listenWhen: (prev, next) {
@@ -87,73 +87,6 @@ class _ManageLibraryView extends StatelessWidget {
           .where((d) => (d.groupId ?? '') == key)
           .toList(growable: false)
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    }
-
-    Future<({String name, String? groupId})?> showCreateTrackerDialog() async {
-      final controller = TextEditingController();
-      TrackerGroup? selected;
-
-      try {
-        final result = await showDialog<({String name, String? groupId})>(
-          context: context,
-          builder: (context) {
-            return StatefulBuilder(
-              builder: (context, setState) {
-                return AlertDialog(
-                  title: const Text('New tracker'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: controller,
-                        autofocus: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Name',
-                          hintText: 'e.g. Read, Walk, Stretch',
-                        ),
-                        textInputAction: TextInputAction.next,
-                      ),
-                      SizedBox(height: TasklyTokens.of(context).spaceSm),
-                      DropdownButtonFormField<TrackerGroup?>(
-                        value: selected,
-                        decoration: const InputDecoration(
-                          labelText: 'Group',
-                        ),
-                        items: [
-                          for (final g in groupOptions())
-                            DropdownMenuItem<TrackerGroup?>(
-                              value: g,
-                              child: Text(groupLabel(g)),
-                            ),
-                        ],
-                        onChanged: (v) => setState(() => selected = v),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancel'),
-                    ),
-                    FilledButton(
-                      onPressed: () => Navigator.of(context).pop(
-                        (name: controller.text, groupId: selected?.id),
-                      ),
-                      child: const Text('Create'),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        );
-
-        final name = (result?.name ?? '').trim();
-        if (name.isEmpty) return null;
-        return (name: name, groupId: result?.groupId);
-      } finally {
-        controller.dispose();
-      }
     }
 
     Future<String?> showCreateGroupDialog() async {
@@ -233,6 +166,64 @@ class _ManageLibraryView extends StatelessWidget {
       }
     }
 
+    Future<String?> showRenameTrackerBottomSheet(String currentName) async {
+      final controller = TextEditingController(text: currentName);
+      try {
+        return await showModalBottomSheet<String>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          builder: (context) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: TasklyTokens.of(context).spaceLg,
+                right: TasklyTokens.of(context).spaceLg,
+                top: TasklyTokens.of(context).spaceLg,
+                bottom: MediaQuery.viewInsetsOf(context).bottom +
+                    TasklyTokens.of(context).spaceLg,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Rename tracker',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    decoration: const InputDecoration(labelText: 'Name'),
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (value) =>
+                        Navigator.of(context).pop(value),
+                  ),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
+                  Row(
+                    children: [
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () =>
+                            Navigator.of(context).pop(controller.text),
+                        child: const Text('Save'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      } finally {
+        controller.dispose();
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage trackers'),
@@ -255,17 +246,7 @@ class _ManageLibraryView extends StatelessWidget {
             tooltip: 'New tracker',
             onPressed: isSaving
                 ? null
-                : () async {
-                    final result = await showCreateTrackerDialog();
-                    if (result == null) return;
-                    if (!context.mounted) return;
-                    await context
-                        .read<JournalManageLibraryCubit>()
-                        .createTracker(
-                          name: result.name,
-                          groupId: result.groupId,
-                        );
-                  },
+                : () => Routing.toJournalTrackerWizard(context),
             icon: const Icon(Icons.add),
           ),
         ],
@@ -375,16 +356,45 @@ class _ManageLibraryView extends StatelessWidget {
                                 ListTile(
                                   title: Text(d.name),
                                   subtitle: Text('${d.valueType} • ${d.scope}'),
-                                  trailing: Switch(
-                                    value: d.isActive,
-                                    onChanged: isSaving
-                                        ? null
-                                        : (v) => context
-                                              .read<JournalManageLibraryCubit>()
-                                              .setTrackerActive(
-                                                def: d,
-                                                isActive: v,
-                                              ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Switch(
+                                        value: d.isActive,
+                                        onChanged: isSaving
+                                            ? null
+                                            : (v) => context
+                                                  .read<
+                                                    JournalManageLibraryCubit
+                                                  >()
+                                                  .setTrackerActive(
+                                                    def: d,
+                                                    isActive: v,
+                                                  ),
+                                      ),
+                                      IconButton(
+                                        tooltip: 'Rename',
+                                        onPressed: isSaving
+                                            ? null
+                                            : () async {
+                                                final name =
+                                                    await showRenameTrackerBottomSheet(
+                                                  d.name,
+                                                );
+                                                if (name == null) return;
+                                                if (!context.mounted) return;
+                                                await context
+                                                    .read<
+                                                      JournalManageLibraryCubit
+                                                    >()
+                                                    .renameTracker(
+                                                      def: d,
+                                                      name: name,
+                                                    );
+                                              },
+                                        icon: const Icon(Icons.edit_outlined),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 Padding(

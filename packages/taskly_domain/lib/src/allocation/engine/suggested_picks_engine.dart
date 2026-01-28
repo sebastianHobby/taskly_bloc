@@ -134,10 +134,7 @@ final class SuggestedPicksEngine implements AllocationStrategy {
         parameters.keepValuesInBalance &&
         parameters.completionsByValue.isNotEmpty;
 
-    final (
-      repairedQuotas,
-      repairedCategories,
-    ) = keepValuesInBalance
+    final repair = keepValuesInBalance
         ? _applyBoundedQuotaRepairQ2(
             baseQuotas: baseQuotas,
             availableCounts: {
@@ -149,7 +146,16 @@ final class SuggestedPicksEngine implements AllocationStrategy {
             suggestedCount: anchorCount,
             completionsByValue: parameters.completionsByValue,
           )
-        : (baseQuotas, const <String>{});
+        : (
+            quotas: baseQuotas,
+            boostedCategories: const <String>{},
+            deficits: const <String, double>{},
+            topNeglectScore: 0.0,
+            topNeglectValueId: null,
+          );
+
+    final repairedQuotas = repair.quotas;
+    final repairedCategories = repair.boostedCategories;
 
     final adjustedQuotas = _applyRoutineSelectionAdjustment(
       quotas: repairedQuotas,
@@ -286,6 +292,9 @@ final class SuggestedPicksEngine implements AllocationStrategy {
         strategyUsed: strategyName,
         categoryAllocations: adjustedQuotas,
         categoryWeights: categories,
+        neglectDeficits: repair.deficits,
+        topNeglectScore: repair.topNeglectScore,
+        topNeglectValueId: repair.topNeglectValueId,
         explanation: keepValuesInBalance
             ? 'Project-first anchors with bounded value balancing'
             : 'Project-first anchors',
@@ -331,45 +340,81 @@ final class SuggestedPicksEngine implements AllocationStrategy {
   /// Q2 bounded quota repair:
   ///
   /// maxMoves = clamp(round(suggestedCount * 0.25 * topNeglect), 0, 3)
-  (Map<String, int>, Set<String>) _applyBoundedQuotaRepairQ2({
+  ({
+    Map<String, int> quotas,
+    Set<String> boostedCategories,
+    Map<String, double> deficits,
+    double topNeglectScore,
+    String? topNeglectValueId,
+  })
+  _applyBoundedQuotaRepairQ2({
     required Map<String, int> baseQuotas,
     required Map<String, int> availableCounts,
     required Map<String, double> categories,
     required double totalWeight,
     required int suggestedCount,
-    required Map<String, int> completionsByValue,
+    required Map<String, double> completionsByValue,
   }) {
     final relevantCategories = categories.keys
         .where((id) => (availableCounts[id] ?? 0) > 0)
         .toList(growable: false);
 
     if (relevantCategories.length <= 1) {
-      return (baseQuotas, const <String>{});
+      return (
+        quotas: baseQuotas,
+        boostedCategories: const <String>{},
+        deficits: const <String, double>{},
+        topNeglectScore: 0.0,
+        topNeglectValueId: null,
+      );
     }
 
-    final totalCompletions = relevantCategories.fold<int>(
+    final totalCompletions = relevantCategories.fold<double>(
       0,
-      (sum, id) => sum + (completionsByValue[id] ?? 0),
+      (sum, id) => sum + (completionsByValue[id] ?? 0.0),
     );
 
     // If we have no completion data, we can't honestly claim "neglect".
     if (totalCompletions <= 0) {
-      return (baseQuotas, const <String>{});
+      return (
+        quotas: baseQuotas,
+        boostedCategories: const <String>{},
+        deficits: const <String, double>{},
+        topNeglectScore: 0.0,
+        topNeglectValueId: null,
+      );
     }
 
     final deficits = <String, double>{};
     var topNeglect = 0.0;
+    String? topNeglectValueId;
 
     for (final id in relevantCategories) {
       final targetShare = (categories[id]! / totalWeight).clamp(0.0, 1.0);
-      final actualShare = (completionsByValue[id] ?? 0) / totalCompletions;
+      final actualShare = (completionsByValue[id] ?? 0.0) / totalCompletions;
       final deficit = (targetShare - actualShare).clamp(0.0, 1.0);
       deficits[id] = deficit;
-      if (deficit > topNeglect) topNeglect = deficit;
+      if (deficit > topNeglect) {
+        topNeglect = deficit;
+        topNeglectValueId = id;
+      }
     }
 
-    final maxMoves = (suggestedCount * 0.25 * topNeglect).round().clamp(0, 3);
-    if (maxMoves <= 0) return (baseQuotas, const <String>{});
+    final baseMoveBudget = (suggestedCount * 0.25 * topNeglect).round().clamp(
+      0,
+      suggestedCount,
+    );
+    final adaptiveCap = _adaptiveNeglectCap(relevantCategories.length);
+    final maxMoves = math.min(baseMoveBudget, adaptiveCap);
+    if (maxMoves <= 0) {
+      return (
+        quotas: baseQuotas,
+        boostedCategories: const <String>{},
+        deficits: deficits,
+        topNeglectScore: topNeglect,
+        topNeglectValueId: topNeglectValueId,
+      );
+    }
 
     final repairedQuotas = Map<String, int>.from(baseQuotas);
     final boosted = <String>{};
@@ -411,7 +456,18 @@ final class SuggestedPicksEngine implements AllocationStrategy {
       boosted.add(receiver);
     }
 
-    return (repairedQuotas, boosted);
+    return (
+      quotas: repairedQuotas,
+      boostedCategories: boosted,
+      deficits: deficits,
+      topNeglectScore: topNeglect,
+      topNeglectValueId: topNeglectValueId,
+    );
+  }
+
+  int _adaptiveNeglectCap(int valueCount) {
+    if (valueCount <= 1) return 0;
+    return math.max(1, (valueCount / 2).round());
   }
 
   Map<String, int> _applyRoutineSelectionAdjustment({

@@ -13,8 +13,8 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:provider/provider.dart';
 
 /// A modern form for creating or editing tasks.
 ///
@@ -755,7 +755,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                     final iconData =
                         getIconDataFromName(primaryValue.iconName) ??
                         Icons.star;
-                    final color = ColorUtils.fromHexWithThemeFallback(
+                    final color = ColorUtils.valueColorForTheme(
                       context,
                       primaryValue.color,
                     );
@@ -888,11 +888,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                                   final iconData =
                                       getIconDataFromName(value.iconName) ??
                                       Icons.star;
-                                  final color =
-                                      ColorUtils.fromHexWithThemeFallback(
-                                        context,
-                                        value.color,
-                                      );
+                                  final color = ColorUtils.valueColorForTheme(
+                                    context,
+                                    value.color,
+                                  );
                                   return TasklyFormValueChipModel(
                                     label: value.name,
                                     color: color,
@@ -1040,7 +1039,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                   final dueLabel = deadlineDate == null
                       ? null
                       : DateDisplayUtils.formatMonthDayYear(deadlineDate);
-                  final isOverdue = DateDisplayUtils.isOverdue(deadlineDate);
+                  final isOverdue = DateDisplayUtils.isOverdue(
+                    deadlineDate,
+                    now: now,
+                  );
 
                   return TasklyFormDateCard(
                     rows: [
@@ -1380,7 +1382,7 @@ class _TaskDatePickerPanelState extends State<_TaskDatePickerPanel> {
   @override
   void initState() {
     super.initState();
-    final now = getIt<NowService>().nowLocal();
+    final now = context.read<NowService>().nowLocal();
     _selected = widget.initialDate ?? now;
   }
 
@@ -1388,7 +1390,7 @@ class _TaskDatePickerPanelState extends State<_TaskDatePickerPanel> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
-    final now = getIt<NowService>().nowLocal();
+    final now = context.read<NowService>().nowLocal();
     final today = dateOnly(now);
     final tomorrow = today.add(const Duration(days: 1));
     final nextWeek = today.add(const Duration(days: 7));

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fleather/fleather.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
@@ -35,13 +34,13 @@ class ProjectDetailPage extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => ProjectOverviewBloc(
+          create: (context) => ProjectOverviewBloc(
             projectId: projectId,
-            projectRepository: getIt<ProjectRepositoryContract>(),
-            occurrenceReadService: getIt<OccurrenceReadService>(),
+            projectRepository: context.read<ProjectRepositoryContract>(),
+            occurrenceReadService: context.read<OccurrenceReadService>(),
             projectNextActionsRepository:
-                getIt<ProjectNextActionsRepositoryContract>(),
-            sessionDayKeyService: getIt<SessionDayKeyService>(),
+                context.read<ProjectNextActionsRepositoryContract>(),
+            sessionDayKeyService: context.read<SessionDayKeyService>(),
           ),
         ),
         BlocProvider(create: (_) => SelectionCubit()),
@@ -60,7 +59,7 @@ class _ProjectDetailView extends StatelessWidget {
     final inboxId = ProjectGroupingRef.inbox().stableKey;
     final defaultProjectId = projectId == inboxId ? null : projectId;
 
-    return EditorLauncher.fromGetIt().openTaskEditor(
+    return context.read<EditorLauncher>().openTaskEditor(
       context,
       taskId: null,
       defaultProjectId: defaultProjectId,
@@ -69,7 +68,7 @@ class _ProjectDetailView extends StatelessWidget {
   }
 
   Future<void> _openNewProjectEditor(BuildContext context) {
-    return EditorLauncher.fromGetIt().openProjectEditor(
+    return context.read<EditorLauncher>().openProjectEditor(
       context,
       projectId: null,
       showDragHandle: true,
@@ -211,7 +210,7 @@ class _ProjectDetailBody extends StatelessWidget {
       dueSoonCount: dueSoonCount,
     );
     void openEdit() {
-      EditorLauncher.fromGetIt().openProjectEditor(
+      context.read<EditorLauncher>().openProjectEditor(
         context,
         projectId: project.id,
         showDragHandle: true,

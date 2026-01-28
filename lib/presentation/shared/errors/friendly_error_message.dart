@@ -1,4 +1,3 @@
-import 'package:taskly_data/repository_exceptions.dart';
 import 'package:taskly_bloc/l10n/gen/app_localizations.dart';
 import 'package:taskly_domain/errors.dart';
 
@@ -6,8 +5,8 @@ import 'package:taskly_domain/errors.dart';
 ///
 /// This avoids leaking raw exception strings to end users.
 String friendlyErrorMessage(Object error) {
-  if (error is RepositoryException) {
-    return error.message;
+  if (error is AppFailure) {
+    return error.uiMessage();
   }
 
   // Keep a conservative default for unexpected errors.
@@ -22,6 +21,10 @@ String friendlyErrorMessageForUi(Object error, AppLocalizations l10n) {
     return error;
   }
 
+  if (error is AppFailure) {
+    return error.uiMessage();
+  }
+
   if (error is NotFoundEntity) {
     return switch (error) {
       NotFoundEntity.task => l10n.taskNotFound,
@@ -29,10 +32,6 @@ String friendlyErrorMessageForUi(Object error, AppLocalizations l10n) {
       NotFoundEntity.value => l10n.valueNotFound,
       NotFoundEntity.routine => l10n.routineNotFound,
     };
-  }
-
-  if (error is RepositoryException) {
-    return error.message;
   }
 
   return l10n.genericErrorFallback;
