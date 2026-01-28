@@ -207,46 +207,41 @@ class TasklyTileCatalog extends StatelessWidget {
           windowLabel: 'Mon-Sun',
           valueChip: valueHealth,
           scheduleRow: const TasklyRoutineScheduleRowData(
-            icons: [
-              TasklyRoutineScheduleIcon.missedScheduled,
-              TasklyRoutineScheduleIcon.loggedScheduled,
-              TasklyRoutineScheduleIcon.loggedUnscheduled,
-            ],
             days: [
               TasklyRoutineScheduleDay(
                 label: 'M',
-                isScheduled: true,
                 isToday: false,
+                state: TasklyRoutineScheduleDayState.missedScheduled,
               ),
               TasklyRoutineScheduleDay(
                 label: 'T',
-                isScheduled: false,
                 isToday: false,
+                state: TasklyRoutineScheduleDayState.none,
               ),
               TasklyRoutineScheduleDay(
                 label: 'W',
-                isScheduled: true,
                 isToday: true,
+                state: TasklyRoutineScheduleDayState.loggedScheduled,
               ),
               TasklyRoutineScheduleDay(
                 label: 'T',
-                isScheduled: false,
                 isToday: false,
+                state: TasklyRoutineScheduleDayState.loggedUnscheduled,
               ),
               TasklyRoutineScheduleDay(
                 label: 'F',
-                isScheduled: true,
                 isToday: false,
+                state: TasklyRoutineScheduleDayState.scheduled,
               ),
               TasklyRoutineScheduleDay(
                 label: 'S',
-                isScheduled: false,
                 isToday: false,
+                state: TasklyRoutineScheduleDayState.none,
               ),
               TasklyRoutineScheduleDay(
                 label: 'S',
-                isScheduled: true,
                 isToday: false,
+                state: TasklyRoutineScheduleDayState.scheduled,
               ),
             ],
           ),

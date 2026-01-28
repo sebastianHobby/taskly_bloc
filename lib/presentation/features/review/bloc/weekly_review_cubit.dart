@@ -1,10 +1,15 @@
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart';
+import 'package:taskly_domain/time.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 
 class WeeklyReviewConfig {
@@ -98,6 +103,66 @@ class WeeklyReviewValueWin {
   final int completionCount;
 }
 
+class WeeklyReviewRatingEntry {
+  const WeeklyReviewRatingEntry({
+    required this.value,
+    required this.rating,
+    required this.lastRating,
+    required this.weeksSinceLastRating,
+    required this.history,
+    required this.taskCompletions,
+    required this.routineCompletions,
+    required this.trend,
+  });
+
+  final Value value;
+  final int rating;
+  final int? lastRating;
+  final int? weeksSinceLastRating;
+  final List<ValueWeeklyRating> history;
+  final int taskCompletions;
+  final int routineCompletions;
+  final List<double> trend;
+}
+
+class WeeklyReviewRatingsSummary {
+  const WeeklyReviewRatingsSummary({
+    required this.weekStartUtc,
+    required this.entries,
+    required this.maxRating,
+    required this.graceWeeks,
+    required this.ratingsEnabled,
+    required this.ratingsOverdue,
+    required this.ratingsInGrace,
+    this.selectedValueId,
+  });
+
+  final DateTime weekStartUtc;
+  final List<WeeklyReviewRatingEntry> entries;
+  final int maxRating;
+  final int graceWeeks;
+  final bool ratingsEnabled;
+  final bool ratingsOverdue;
+  final bool ratingsInGrace;
+  final String? selectedValueId;
+
+  int get ratedCount => entries.where((entry) => entry.rating > 0).length;
+
+  int get totalCount => entries.length;
+
+  bool get isComplete => totalCount == 0 || ratedCount == totalCount;
+
+  WeeklyReviewRatingEntry? get selectedEntry {
+    if (entries.isEmpty) return null;
+    final selectedId = selectedValueId;
+    if (selectedId == null) return entries.first;
+    for (final entry in entries) {
+      if (entry.value.id == selectedId) return entry;
+    }
+    return entries.first;
+  }
+}
+
 class WeeklyReviewMaintenanceItem {
   const WeeklyReviewMaintenanceItem({
     required this.title,
@@ -125,6 +190,7 @@ class WeeklyReviewMaintenanceSection {
 class WeeklyReviewState {
   const WeeklyReviewState({
     this.status = WeeklyReviewStatus.loading,
+    this.ratingsSummary,
     this.valuesSummary,
     this.valueWins = const [],
     this.maintenanceSections = const [],
@@ -132,6 +198,7 @@ class WeeklyReviewState {
   });
 
   final WeeklyReviewStatus status;
+  final WeeklyReviewRatingsSummary? ratingsSummary;
   final WeeklyReviewValuesSummary? valuesSummary;
   final List<WeeklyReviewValueWin> valueWins;
   final List<WeeklyReviewMaintenanceSection> maintenanceSections;
@@ -139,6 +206,7 @@ class WeeklyReviewState {
 
   WeeklyReviewState copyWith({
     WeeklyReviewStatus? status,
+    WeeklyReviewRatingsSummary? ratingsSummary,
     WeeklyReviewValuesSummary? valuesSummary,
     List<WeeklyReviewValueWin>? valueWins,
     List<WeeklyReviewMaintenanceSection>? maintenanceSections,
@@ -146,6 +214,7 @@ class WeeklyReviewState {
   }) {
     return WeeklyReviewState(
       status: status ?? this.status,
+      ratingsSummary: ratingsSummary ?? this.ratingsSummary,
       valuesSummary: valuesSummary ?? this.valuesSummary,
       valueWins: valueWins ?? this.valueWins,
       maintenanceSections: maintenanceSections ?? this.maintenanceSections,
@@ -164,27 +233,63 @@ final class WeeklyReviewRequested extends WeeklyReviewEvent {
   final WeeklyReviewConfig config;
 }
 
+final class WeeklyReviewValueSelected extends WeeklyReviewEvent {
+  const WeeklyReviewValueSelected(this.valueId);
+
+  final String valueId;
+}
+
+final class WeeklyReviewValueRatingChanged extends WeeklyReviewEvent {
+  const WeeklyReviewValueRatingChanged({
+    required this.valueId,
+    required this.rating,
+  });
+
+  final String valueId;
+  final int rating;
+}
+
 class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
   WeeklyReviewBloc({
     required AnalyticsService analyticsService,
     required AttentionEngineContract attentionEngine,
     required ValueRepositoryContract valueRepository,
+    required ValueRatingsRepositoryContract valueRatingsRepository,
+    required ValueRatingsWriteService valueRatingsWriteService,
+    required RoutineRepositoryContract routineRepository,
+    required SettingsRepositoryContract settingsRepository,
     required TaskRepositoryContract taskRepository,
     required NowService nowService,
   }) : _analyticsService = analyticsService,
        _attentionEngine = attentionEngine,
        _valueRepository = valueRepository,
+       _valueRatingsRepository = valueRatingsRepository,
+       _valueRatingsWriteService = valueRatingsWriteService,
+       _routineRepository = routineRepository,
+       _settingsRepository = settingsRepository,
        _taskRepository = taskRepository,
        _nowService = nowService,
        super(const WeeklyReviewState()) {
     on<WeeklyReviewRequested>(_onRequested, transformer: restartable());
+    on<WeeklyReviewValueSelected>(_onValueSelected);
+    on<WeeklyReviewValueRatingChanged>(_onValueRatingChanged);
   }
 
   final AnalyticsService _analyticsService;
   final AttentionEngineContract _attentionEngine;
   final ValueRepositoryContract _valueRepository;
+  final ValueRatingsRepositoryContract _valueRatingsRepository;
+  final ValueRatingsWriteService _valueRatingsWriteService;
+  final RoutineRepositoryContract _routineRepository;
+  final SettingsRepositoryContract _settingsRepository;
   final TaskRepositoryContract _taskRepository;
   final NowService _nowService;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
+
+  static const int _ratingsHistoryWeeks = 8;
+  static const int _ratingsGraceWeeks = 2;
+  static const int _ratingsMax = 8;
 
   Future<void> _onRequested(
     WeeklyReviewRequested event,
@@ -195,10 +300,24 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     emit(state.copyWith(status: WeeklyReviewStatus.loading));
 
     try {
-      final summary = config.valuesSummaryEnabled
+      final allocationConfig = await _settingsRepository.load(
+        SettingsKey.allocation,
+      );
+      final ratingsEnabled =
+          allocationConfig.suggestionSignal == SuggestionSignal.ratingsBased;
+
+      final ratingsSummary = ratingsEnabled
+          ? await _buildRatingsSummary(
+              config: config,
+            )
+          : null;
+
+      final shouldShowValuesSummary =
+          config.valuesSummaryEnabled && !ratingsEnabled;
+      final summary = shouldShowValuesSummary
           ? await _buildValuesSummary(config)
           : null;
-      final wins = config.valuesSummaryEnabled
+      final wins = shouldShowValuesSummary
           ? await _buildValueWins(config)
           : const <WeeklyReviewValueWin>[];
 
@@ -211,6 +330,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       emit(
         state.copyWith(
           status: WeeklyReviewStatus.ready,
+          ratingsSummary: ratingsSummary,
           valuesSummary: summary,
           valueWins: wins,
           maintenanceSections: initialSections,
@@ -244,6 +364,256 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
         ),
       );
     }
+  }
+
+  void _onValueSelected(
+    WeeklyReviewValueSelected event,
+    Emitter<WeeklyReviewState> emit,
+  ) {
+    final current = state.ratingsSummary;
+    if (current == null) return;
+    if (!current.ratingsEnabled) return;
+
+    emit(
+      state.copyWith(
+        ratingsSummary: WeeklyReviewRatingsSummary(
+          weekStartUtc: current.weekStartUtc,
+          entries: current.entries,
+          maxRating: current.maxRating,
+          graceWeeks: current.graceWeeks,
+          ratingsEnabled: current.ratingsEnabled,
+          ratingsOverdue: current.ratingsOverdue,
+          ratingsInGrace: current.ratingsInGrace,
+          selectedValueId: event.valueId,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _onValueRatingChanged(
+    WeeklyReviewValueRatingChanged event,
+    Emitter<WeeklyReviewState> emit,
+  ) async {
+    final current = state.ratingsSummary;
+    if (current == null || !current.ratingsEnabled) return;
+
+    final clamped = event.rating.clamp(1, current.maxRating);
+    final updated = _applyRatingChange(
+      current,
+      valueId: event.valueId,
+      rating: clamped,
+    );
+
+    emit(state.copyWith(ratingsSummary: updated));
+
+    final context = _contextFactory.create(
+      feature: 'weekly_review',
+      screen: 'weekly_review',
+      intent: 'rate_value',
+      operation: 'value.rating.upsert',
+      entityType: 'value',
+      entityId: event.valueId,
+      extraFields: <String, Object?>{
+        'weekStartUtc': updated.weekStartUtc.toIso8601String(),
+        'rating': clamped,
+      },
+    );
+
+    await _valueRatingsWriteService.recordWeeklyRatings(
+      weekStartUtc: updated.weekStartUtc,
+      ratingsByValueId: {event.valueId: clamped},
+      context: context,
+    );
+  }
+
+  Future<WeeklyReviewRatingsSummary> _buildRatingsSummary({
+    required WeeklyReviewConfig config,
+  }) async {
+    final values = await _valueRepository.getAll();
+    final nowUtc = _nowService.nowUtc();
+    final weekStartUtc = _weekStartFor(nowUtc);
+
+    if (values.isEmpty) {
+      return WeeklyReviewRatingsSummary(
+        weekStartUtc: weekStartUtc,
+        entries: const [],
+        maxRating: _ratingsMax,
+        graceWeeks: _ratingsGraceWeeks,
+        ratingsEnabled: true,
+        ratingsOverdue: false,
+        ratingsInGrace: false,
+      );
+    }
+
+    final history = await _valueRatingsRepository.getAll(
+      weeks: _ratingsHistoryWeeks,
+    );
+    final historyByValue = <String, List<ValueWeeklyRating>>{};
+    for (final rating in history) {
+      (historyByValue[rating.valueId] ??= []).add(rating);
+    }
+    for (final entry in historyByValue.entries) {
+      entry.value.sort((a, b) => b.weekStartUtc.compareTo(a.weekStartUtc));
+    }
+
+    final windowWeeks = config.valuesWindowWeeks.clamp(1, 12);
+    final days = windowWeeks * 7;
+
+    final taskCompletions = await _analyticsService.getRecentCompletionsByValue(
+      days: days,
+    );
+    final valueTrends = await _analyticsService.getValueWeeklyTrends(
+      weeks: windowWeeks,
+    );
+
+    final routines = await _routineRepository.getAll(includeInactive: true);
+    final routineById = {for (final routine in routines) routine.id: routine};
+    final routineCompletions = await _routineRepository.getCompletions();
+    final startDay = dateOnly(nowUtc).subtract(Duration(days: days - 1));
+    final endDay = dateOnly(nowUtc);
+
+    final routineCounts = <String, int>{};
+    for (final completion in routineCompletions) {
+      final routine = routineById[completion.routineId];
+      if (routine == null) continue;
+      final day = dateOnly(completion.completedAtUtc);
+      if (day.isBefore(startDay) || day.isAfter(endDay)) continue;
+      routineCounts[routine.valueId] =
+          (routineCounts[routine.valueId] ?? 0) + 1;
+    }
+
+    final entries = <WeeklyReviewRatingEntry>[];
+    for (final value in values) {
+      final valueHistory = historyByValue[value.id] ?? const [];
+      ValueWeeklyRating? currentWeek;
+      for (final rating in valueHistory) {
+        if (dateOnly(rating.weekStartUtc).isAtSameMomentAs(weekStartUtc)) {
+          currentWeek = rating;
+          break;
+        }
+      }
+
+      final currentRating = currentWeek?.rating ?? 0;
+      final hasCurrentWeek = currentRating > 0;
+      final latest = valueHistory.isEmpty ? null : valueHistory.first;
+      final weeksSinceLast = latest == null
+          ? null
+          : weekStartUtc.difference(dateOnly(latest.weekStartUtc)).inDays ~/ 7;
+
+      entries.add(
+        WeeklyReviewRatingEntry(
+          value: value,
+          rating: hasCurrentWeek ? currentRating : 0,
+          lastRating: latest?.rating,
+          weeksSinceLastRating: weeksSinceLast,
+          history: valueHistory.take(4).toList(growable: false),
+          taskCompletions: taskCompletions[value.id] ?? 0,
+          routineCompletions: routineCounts[value.id] ?? 0,
+          trend: valueTrends[value.id] ?? const <double>[],
+        ),
+      );
+    }
+
+    final flags = _ratingsFlags(entries);
+
+    return WeeklyReviewRatingsSummary(
+      weekStartUtc: weekStartUtc,
+      entries: entries,
+      maxRating: _ratingsMax,
+      graceWeeks: _ratingsGraceWeeks,
+      ratingsEnabled: true,
+      ratingsOverdue: flags.overdue,
+      ratingsInGrace: flags.inGrace,
+      selectedValueId: entries.isEmpty ? null : entries.first.value.id,
+    );
+  }
+
+  WeeklyReviewRatingsSummary _applyRatingChange(
+    WeeklyReviewRatingsSummary summary, {
+    required String valueId,
+    required int rating,
+  }) {
+    final nowUtc = _nowService.nowUtc();
+    final weekStart = summary.weekStartUtc;
+
+    final updatedEntries = summary.entries
+        .map((entry) {
+          if (entry.value.id != valueId) return entry;
+
+          final updatedHistory = [...entry.history];
+          final index = updatedHistory.indexWhere(
+            (item) => dateOnly(item.weekStartUtc).isAtSameMomentAs(weekStart),
+          );
+
+          final updatedItem = ValueWeeklyRating(
+            id: index >= 0 ? updatedHistory[index].id : 'local-$valueId',
+            valueId: valueId,
+            weekStartUtc: weekStart,
+            rating: rating,
+            createdAtUtc: index >= 0
+                ? updatedHistory[index].createdAtUtc
+                : nowUtc,
+            updatedAtUtc: nowUtc,
+          );
+
+          if (index >= 0) {
+            updatedHistory[index] = updatedItem;
+          } else {
+            updatedHistory.insert(0, updatedItem);
+          }
+
+          return WeeklyReviewRatingEntry(
+            value: entry.value,
+            rating: rating,
+            lastRating: rating,
+            weeksSinceLastRating: 0,
+            history: updatedHistory.take(4).toList(growable: false),
+            taskCompletions: entry.taskCompletions,
+            routineCompletions: entry.routineCompletions,
+            trend: entry.trend,
+          );
+        })
+        .toList(growable: false);
+
+    final flags = _ratingsFlags(updatedEntries);
+
+    return WeeklyReviewRatingsSummary(
+      weekStartUtc: summary.weekStartUtc,
+      entries: updatedEntries,
+      maxRating: summary.maxRating,
+      graceWeeks: summary.graceWeeks,
+      ratingsEnabled: summary.ratingsEnabled,
+      ratingsOverdue: flags.overdue,
+      ratingsInGrace: flags.inGrace,
+      selectedValueId: valueId,
+    );
+  }
+
+  ({bool overdue, bool inGrace}) _ratingsFlags(
+    List<WeeklyReviewRatingEntry> entries,
+  ) {
+    var overdue = false;
+    var inGrace = false;
+
+    for (final entry in entries) {
+      final weeksSince = entry.weeksSinceLastRating;
+      if (weeksSince == null) {
+        overdue = true;
+        continue;
+      }
+      if (weeksSince > _ratingsGraceWeeks) {
+        overdue = true;
+      } else if (weeksSince >= 1) {
+        inGrace = true;
+      }
+    }
+
+    return (overdue: overdue, inGrace: inGrace);
+  }
+
+  DateTime _weekStartFor(DateTime nowUtc) {
+    final today = dateOnly(nowUtc);
+    return today.subtract(Duration(days: today.weekday - 1));
   }
 
   Future<WeeklyReviewValuesSummary> _buildValuesSummary(

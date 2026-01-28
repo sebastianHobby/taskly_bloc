@@ -101,6 +101,11 @@ final class PlanMyDayValueShowMore extends PlanMyDayEvent {
   final String valueId;
 }
 
+final class PlanMyDaySwitchToBehaviorSuggestionsRequested
+    extends PlanMyDayEvent {
+  const PlanMyDaySwitchToBehaviorSuggestionsRequested();
+}
+
 enum PlanMyDayStep {
   valuesStep,
   routines,
@@ -180,12 +185,15 @@ final class PlanMyDayReady extends PlanMyDayState {
   const PlanMyDayReady({
     required this.needsPlan,
     required this.dayKeyUtc,
+    required this.globalSettings,
+    required this.suggestionSignal,
     required this.steps,
     required this.currentStep,
     required this.dueWindowDays,
     required this.showAvailableToStart,
     required this.showDueSoon,
     required this.requiresValueSetup,
+    required this.requiresRatings,
     required this.countRoutinesAgainstValues,
     required this.suggested,
     required this.triageDue,
@@ -206,12 +214,15 @@ final class PlanMyDayReady extends PlanMyDayState {
 
   final bool needsPlan;
   final DateTime dayKeyUtc;
+  final settings.GlobalSettings globalSettings;
+  final SuggestionSignal suggestionSignal;
   final List<PlanMyDayStep> steps;
   final PlanMyDayStep currentStep;
   final int dueWindowDays;
   final bool showAvailableToStart;
   final bool showDueSoon;
   final bool requiresValueSetup;
+  final bool requiresRatings;
   final bool countRoutinesAgainstValues;
   final List<Task> suggested;
   final List<Task> triageDue;
@@ -234,12 +245,15 @@ final class PlanMyDayReady extends PlanMyDayState {
   PlanMyDayReady copyWith({
     bool? needsPlan,
     DateTime? dayKeyUtc,
+    settings.GlobalSettings? globalSettings,
+    SuggestionSignal? suggestionSignal,
     List<PlanMyDayStep>? steps,
     PlanMyDayStep? currentStep,
     int? dueWindowDays,
     bool? showAvailableToStart,
     bool? showDueSoon,
     bool? requiresValueSetup,
+    bool? requiresRatings,
     bool? countRoutinesAgainstValues,
     List<Task>? suggested,
     List<Task>? triageDue,
@@ -260,12 +274,15 @@ final class PlanMyDayReady extends PlanMyDayState {
     return PlanMyDayReady(
       needsPlan: needsPlan ?? this.needsPlan,
       dayKeyUtc: dayKeyUtc ?? this.dayKeyUtc,
+      globalSettings: globalSettings ?? this.globalSettings,
+      suggestionSignal: suggestionSignal ?? this.suggestionSignal,
       steps: steps ?? this.steps,
       currentStep: currentStep ?? this.currentStep,
       dueWindowDays: dueWindowDays ?? this.dueWindowDays,
       showAvailableToStart: showAvailableToStart ?? this.showAvailableToStart,
       showDueSoon: showDueSoon ?? this.showDueSoon,
       requiresValueSetup: requiresValueSetup ?? this.requiresValueSetup,
+      requiresRatings: requiresRatings ?? this.requiresRatings,
       countRoutinesAgainstValues:
           countRoutinesAgainstValues ?? this.countRoutinesAgainstValues,
       suggested: suggested ?? this.suggested,
@@ -328,6 +345,9 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     on<PlanMyDayValueSortChanged>(_onValueSortChanged);
     on<PlanMyDayValueToggleExpanded>(_onValueToggleExpanded);
     on<PlanMyDayValueShowMore>(_onValueShowMore);
+    on<PlanMyDaySwitchToBehaviorSuggestionsRequested>(
+      _onSwitchToBehaviorSuggestionsRequested,
+    );
     add(const PlanMyDayStarted());
   }
 
@@ -351,6 +371,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   static const int _poolExtraCount = _showMoreIncrement * 2;
 
   settings.GlobalSettings _globalSettings = const settings.GlobalSettings();
+  AllocationConfig _allocationConfig = const AllocationConfig();
   DateTime _dayKeyUtc;
 
   TaskSuggestionSnapshot? _suggestionSnapshot;
@@ -814,6 +835,41 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     _emitReady(emit);
   }
 
+  Future<void> _onSwitchToBehaviorSuggestionsRequested(
+    PlanMyDaySwitchToBehaviorSuggestionsRequested event,
+    Emitter<PlanMyDayState> emit,
+  ) async {
+    final allocation = await _settingsRepository.load(
+      SettingsKey.allocation,
+    );
+    final updated = allocation.copyWith(
+      suggestionSignal: SuggestionSignal.behaviorBased,
+    );
+
+    final context = _contextFactory.create(
+      feature: 'my_day',
+      screen: 'plan_my_day',
+      intent: 'switch_suggestion_signal',
+      operation: 'settings.allocation.save',
+      entityType: 'settings',
+      extraFields: <String, Object?>{
+        'suggestionSignal': SuggestionSignal.behaviorBased.name,
+      },
+    );
+
+    await _settingsRepository.save(
+      SettingsKey.allocation,
+      updated,
+      context: context,
+    );
+
+    _allocationConfig = updated;
+
+    await _refreshSuggestions();
+    if (emit.isDone) return;
+    _emitReady(emit);
+  }
+
   Future<void> _refreshSnapshots({required bool resetSelection}) async {
     final inFlight = _refreshCompleter;
     if (inFlight != null) {
@@ -835,6 +891,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     try {
       final results = await Future.wait([
         _settingsRepository.load<settings.GlobalSettings>(SettingsKey.global),
+        _settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
         _myDayRepository.loadDay(_dayKeyUtc),
         _taskRepository.getAll(TaskQuery.incomplete()),
         _routineRepository.getAll(includeInactive: true),
@@ -843,16 +900,17 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       ]);
 
       _globalSettings = results[0] as settings.GlobalSettings;
+      _allocationConfig = results[1] as AllocationConfig;
 
-      final picks = results[1] as my_day.MyDayDayPicks;
+      final picks = results[2] as my_day.MyDayDayPicks;
       _dayPicks = picks;
 
-      final incompleteTasks = results[2] as List<Task>;
+      final incompleteTasks = results[3] as List<Task>;
       _incompleteTasks = incompleteTasks;
 
-      final routines = results[3] as List<Routine>;
-      final completions = results[4] as List<RoutineCompletion>;
-      final skips = results[5] as List<RoutineSkip>;
+      final routines = results[4] as List<Routine>;
+      final completions = results[5] as List<RoutineCompletion>;
+      final skips = results[6] as List<RoutineSkip>;
 
       _routines = routines;
       _routineCompletions = completions;
@@ -985,7 +1043,9 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
     final steps = _buildSteps(
       hasValues:
-          suggested.isNotEmpty || (snapshot?.requiresValueSetup ?? false),
+          suggested.isNotEmpty ||
+          (snapshot?.requiresValueSetup ?? false) ||
+          (snapshot?.requiresRatings ?? false),
       hasRoutines: scheduledRoutines.isNotEmpty || flexibleRoutines.isNotEmpty,
       hasTriage: triageDue.isNotEmpty || triageStarts.isNotEmpty,
     );
@@ -997,12 +1057,15 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       PlanMyDayReady(
         needsPlan: _dayPicks.ritualCompletedAtUtc == null,
         dayKeyUtc: _dayKeyUtc,
+        globalSettings: _globalSettings,
+        suggestionSignal: _allocationConfig.suggestionSignal,
         steps: steps,
         currentStep: currentStep,
         dueWindowDays: _globalSettings.myDayDueWindowDays,
         showAvailableToStart: showPlanned,
         showDueSoon: showTriage,
         requiresValueSetup: snapshot?.requiresValueSetup ?? false,
+        requiresRatings: snapshot?.requiresRatings ?? false,
         countRoutinesAgainstValues:
             _globalSettings.myDayCountRoutinePicksAgainstValueQuotas,
         suggested: suggested,

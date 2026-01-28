@@ -371,21 +371,9 @@ class _RoutineScheduleRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final iconSpacing = tokens.spaceXxs2;
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (data.icons.isNotEmpty) ...[
-          Wrap(
-            spacing: iconSpacing,
-            runSpacing: iconSpacing,
-            children: [
-              for (final icon in data.icons) _ScheduleStatusIcon(type: icon),
-            ],
-          ),
-          SizedBox(width: tokens.spaceSm),
-        ],
         Expanded(
           child: Wrap(
             spacing: tokens.spaceXxs2,
@@ -398,62 +386,13 @@ class _RoutineScheduleRow extends StatelessWidget {
                   onSurfaceVariant: scheme.onSurfaceVariant,
                   outline: scheme.outlineVariant,
                   accent: scheme.primary,
+                  error: scheme.error,
+                  errorContainer: scheme.errorContainer,
                 ),
             ],
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ScheduleStatusIcon extends StatelessWidget {
-  const _ScheduleStatusIcon({required this.type});
-
-  final TasklyRoutineScheduleIcon type;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-
-    final size = tokens.spaceLg2;
-    final iconSize = tokens.spaceMd;
-    final borderRadius = tokens.radiusPill;
-
-    Color borderColor;
-    Color foreground;
-    Color background;
-    IconData icon;
-
-    switch (type) {
-      case TasklyRoutineScheduleIcon.loggedScheduled:
-        borderColor = scheme.primary.withValues(alpha: 0.6);
-        foreground = scheme.onPrimary;
-        background = scheme.primary;
-        icon = Icons.check_rounded;
-      case TasklyRoutineScheduleIcon.loggedUnscheduled:
-        borderColor = scheme.primary.withValues(alpha: 0.8);
-        foreground = scheme.primary;
-        background = Colors.transparent;
-        icon = Icons.check_rounded;
-      case TasklyRoutineScheduleIcon.missedScheduled:
-        borderColor = scheme.error.withValues(alpha: 0.6);
-        foreground = scheme.error;
-        background = scheme.errorContainer.withValues(alpha: 0.3);
-        icon = Icons.remove_rounded;
-    }
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: background,
-        border: Border.all(color: borderColor),
-        borderRadius: BorderRadius.circular(borderRadius),
-      ),
-      alignment: Alignment.center,
-      child: Icon(icon, size: iconSize, color: foreground),
     );
   }
 }
@@ -465,6 +404,8 @@ class _ScheduleDayPill extends StatelessWidget {
     required this.onSurfaceVariant,
     required this.outline,
     required this.accent,
+    required this.error,
+    required this.errorContainer,
   });
 
   final TasklyRoutineScheduleDay day;
@@ -472,23 +413,58 @@ class _ScheduleDayPill extends StatelessWidget {
   final Color onSurfaceVariant;
   final Color outline;
   final Color accent;
+  final Color error;
+  final Color errorContainer;
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final size = tokens.spaceLg2;
-    final isScheduled = day.isScheduled;
     final isToday = day.isToday;
+    final state = day.state;
 
-    final borderColor = isScheduled
-        ? outline.withValues(alpha: 0.8)
-        : outline.withValues(alpha: 0.5);
-    final textColor = isScheduled
-        ? onSurface
-        : onSurfaceVariant.withValues(alpha: 0.6);
-    final background = isToday
+    final isScheduledState =
+        state == TasklyRoutineScheduleDayState.scheduled ||
+        state == TasklyRoutineScheduleDayState.loggedScheduled ||
+        state == TasklyRoutineScheduleDayState.missedScheduled;
+
+    final showIcon =
+        state == TasklyRoutineScheduleDayState.loggedScheduled ||
+        state == TasklyRoutineScheduleDayState.loggedUnscheduled ||
+        state == TasklyRoutineScheduleDayState.missedScheduled;
+
+    final baseBackground = isToday
         ? accent.withValues(alpha: 0.12)
         : Colors.transparent;
+
+    var background = baseBackground;
+    var borderColor = isScheduledState
+        ? outline.withValues(alpha: 0.8)
+        : outline.withValues(alpha: 0.5);
+    var foreground = isScheduledState
+        ? onSurface
+        : onSurfaceVariant.withValues(alpha: 0.6);
+    IconData? icon;
+
+    switch (state) {
+      case TasklyRoutineScheduleDayState.loggedScheduled:
+        borderColor = accent.withValues(alpha: 0.7);
+        background = accent.withValues(alpha: 0.16);
+        foreground = accent;
+        icon = Icons.check_rounded;
+      case TasklyRoutineScheduleDayState.loggedUnscheduled:
+        borderColor = accent.withValues(alpha: 0.8);
+        foreground = accent;
+        icon = Icons.check_rounded;
+      case TasklyRoutineScheduleDayState.missedScheduled:
+        borderColor = error.withValues(alpha: 0.7);
+        background = errorContainer.withValues(alpha: 0.35);
+        foreground = error;
+        icon = Icons.remove_rounded;
+      case TasklyRoutineScheduleDayState.scheduled:
+      case TasklyRoutineScheduleDayState.none:
+        break;
+    }
 
     return Container(
       width: size,
@@ -499,14 +475,18 @@ class _ScheduleDayPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radiusPill),
         border: Border.all(color: borderColor),
       ),
-      child: Text(
-        day.label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: textColor,
-          fontWeight: isScheduled ? FontWeight.w700 : FontWeight.w500,
-          height: 1,
-        ),
-      ),
+      child: showIcon
+          ? Icon(icon, size: tokens.spaceMd, color: foreground)
+          : Text(
+              day.label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: foreground,
+                fontWeight: isScheduledState
+                    ? FontWeight.w700
+                    : FontWeight.w500,
+                height: 1,
+              ),
+            ),
     );
   }
 }

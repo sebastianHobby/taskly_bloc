@@ -194,6 +194,15 @@ class ValueRepository implements ValueRepositoryContract {
   }
 
   @override
+  Future<int> getCount() async {
+    final countExp = driftDb.valueTable.id.count();
+    final query = driftDb.selectOnly(driftDb.valueTable)
+      ..addColumns([countExp]);
+    final row = await query.getSingleOrNull();
+    return row == null ? 0 : (row.read(countExp) ?? 0);
+  }
+
+  @override
   Stream<Value?> watchById(String id) =>
       (driftDb.select(driftDb.valueTable)..where((l) => l.id.equals(id)))
           .watch()

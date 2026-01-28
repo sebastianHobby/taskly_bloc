@@ -61,6 +61,9 @@ bucket_definitions:
       # Routine Skips (week/month)
       - SELECT * FROM routine_skips WHERE user_id = bucket.user_id
 
+      # Weekly Value Ratings
+      - SELECT * FROM value_ratings_weekly WHERE user_id = bucket.user_id
+
       # Project Completion History
       - SELECT * FROM project_completion_history WHERE user_id = bucket.user_id
 

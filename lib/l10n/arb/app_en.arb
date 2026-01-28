@@ -425,6 +425,16 @@
             }
         }
     },
+    "valueFormMaxValues": "You can have up to {max} values.",
+    "@valueFormMaxValues": {
+        "description": "Validation error shown when the user exceeds the max values limit",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "8"
+            }
+        }
+    },
     "valueFormPreviewLabel": "Preview",
     "@valueFormPreviewLabel": {
         "description": "Small label above the live preview card in the value editor"

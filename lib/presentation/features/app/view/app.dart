@@ -277,6 +277,9 @@ class _AuthenticatedApp extends StatelessWidget {
         Provider<ValueRepositoryContract>(
           create: (_) => getIt<ValueRepositoryContract>(),
         ),
+        Provider<ValueRatingsRepositoryContract>(
+          create: (_) => getIt<ValueRatingsRepositoryContract>(),
+        ),
         Provider<RoutineRepositoryContract>(
           create: (_) => getIt<RoutineRepositoryContract>(),
         ),
@@ -301,6 +304,9 @@ class _AuthenticatedApp extends StatelessWidget {
           create: (_) => getIt<ProjectWriteService>(),
         ),
         Provider<ValueWriteService>(create: (_) => getIt<ValueWriteService>()),
+        Provider<ValueRatingsWriteService>(
+          create: (_) => getIt<ValueRatingsWriteService>(),
+        ),
         Provider<RoutineWriteService>(
           create: (_) => getIt<RoutineWriteService>(),
         ),

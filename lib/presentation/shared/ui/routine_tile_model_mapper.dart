@@ -164,9 +164,6 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
 
   final weekStart = _weekStart(today);
   final days = <TasklyRoutineScheduleDay>[];
-  var loggedScheduled = false;
-  var loggedUnscheduled = false;
-  var missedScheduled = false;
 
   for (var i = 0; i < 7; i++) {
     final day = weekStart.add(Duration(days: i));
@@ -174,43 +171,37 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
     final isScheduled = scheduleDays.contains(day.weekday);
     final isToday = day.isAtSameMomentAs(today);
     final label = _dayLetter(context, day);
+    final isCompleted = completionDays.contains(day);
 
-    if (completionDays.contains(day)) {
-      if (isScheduled) {
-        loggedScheduled = true;
-      } else {
-        loggedUnscheduled = true;
-      }
-    }
-
-    if (!isBeforeCreation &&
+    final isMissed =
+        !isBeforeCreation &&
         isScheduled &&
         day.isBefore(today) &&
-        !completionDays.contains(day)) {
-      missedScheduled = true;
-    }
+        !isCompleted &&
+        status != RoutineStatus.restWeek;
+
+    final state = isBeforeCreation
+        ? TasklyRoutineScheduleDayState.none
+        : isCompleted
+        ? (isScheduled
+              ? TasklyRoutineScheduleDayState.loggedScheduled
+              : TasklyRoutineScheduleDayState.loggedUnscheduled)
+        : isMissed
+        ? TasklyRoutineScheduleDayState.missedScheduled
+        : isScheduled
+        ? TasklyRoutineScheduleDayState.scheduled
+        : TasklyRoutineScheduleDayState.none;
 
     days.add(
       TasklyRoutineScheduleDay(
         label: label,
-        isScheduled: isScheduled,
         isToday: isToday,
+        state: state,
       ),
     );
   }
 
-  if (status == RoutineStatus.restWeek) {
-    missedScheduled = false;
-  }
-
-  final icons = <TasklyRoutineScheduleIcon>[
-    if (missedScheduled) TasklyRoutineScheduleIcon.missedScheduled,
-    if (loggedScheduled) TasklyRoutineScheduleIcon.loggedScheduled,
-    if (loggedUnscheduled) TasklyRoutineScheduleIcon.loggedUnscheduled,
-  ];
-
   return TasklyRoutineScheduleRowData(
-    icons: icons,
     days: days,
   );
 }

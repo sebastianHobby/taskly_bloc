@@ -29,6 +29,7 @@ class SettingsTaskSuggestionsPage extends StatelessWidget {
               isExpandedLayout: context.isExpandedScreen,
               child: ListView(
                 children: [
+                  _SuggestionSignalSection(settings: state.settings),
                   _ValuesBalanceSection(settings: state.settings),
                   _ProjectFocusSection(settings: state.settings),
                   _NextActionsSection(settings: state.settings),
@@ -40,6 +41,70 @@ class SettingsTaskSuggestionsPage extends StatelessWidget {
           },
         ),
       ),
+    );
+  }
+}
+
+class _SuggestionSignalSection extends StatelessWidget {
+  const _SuggestionSignalSection({required this.settings});
+
+  final AllocationConfig settings;
+
+  @override
+  Widget build(BuildContext context) {
+    final mode = switch (settings.suggestionSignal) {
+      SuggestionSignal.behaviorBased => SuggestionSignalOption.behaviorBased,
+      SuggestionSignal.ratingsBased => SuggestionSignalOption.ratingsBased,
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _SectionHeader(title: 'Suggestion signal'),
+        RadioListTile<SuggestionSignalOption>(
+          title: const Text('Behavior-based (Completions + balance)'),
+          subtitle: const Text(
+            'Stable and objective. Follows what you actually did.',
+          ),
+          value: SuggestionSignalOption.behaviorBased,
+          groupValue: mode,
+          onChanged: (value) {
+            if (value == null) return;
+            context.read<AllocationSettingsBloc>().add(
+              AllocationSuggestionSignalChanged(value),
+            );
+          },
+        ),
+        RadioListTile<SuggestionSignalOption>(
+          title: const Text('Ratings-based (Values + ratings)'),
+          subtitle: const Text(
+            'More personal and reflective. Uses your weekly check-ins.',
+          ),
+          value: SuggestionSignalOption.ratingsBased,
+          groupValue: mode,
+          onChanged: (value) {
+            if (value == null) return;
+            context.read<AllocationSettingsBloc>().add(
+              AllocationSuggestionSignalChanged(value),
+            );
+          },
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            TasklyTokens.of(context).spaceLg,
+            0,
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceSm,
+          ),
+          child: Text(
+            'Ratings mode requires weekly ratings and may change suggestions '
+            'more quickly.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

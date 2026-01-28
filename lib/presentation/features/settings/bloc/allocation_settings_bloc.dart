@@ -26,6 +26,11 @@ enum SuggestionScope {
   expanded,
 }
 
+enum SuggestionSignalOption {
+  behaviorBased,
+  ratingsBased,
+}
+
 sealed class AllocationSettingsEvent {
   const AllocationSettingsEvent();
 }
@@ -63,6 +68,12 @@ final class AllocationSuggestionScopeChanged extends AllocationSettingsEvent {
   const AllocationSuggestionScopeChanged(this.scope);
 
   final SuggestionScope scope;
+}
+
+final class AllocationSuggestionSignalChanged extends AllocationSettingsEvent {
+  const AllocationSuggestionSignalChanged(this.signal);
+
+  final SuggestionSignalOption signal;
 }
 
 final class AllocationSettingsState {
@@ -106,6 +117,7 @@ class AllocationSettingsBloc
     on<AllocationProjectFocusStyleChanged>(_onProjectFocusChanged);
     on<AllocationNextActionsPreferenceChanged>(_onNextActionsChanged);
     on<AllocationSuggestionScopeChanged>(_onSuggestionScopeChanged);
+    on<AllocationSuggestionSignalChanged>(_onSuggestionSignalChanged);
   }
 
   final SettingsRepositoryContract _settingsRepository;
@@ -201,6 +213,22 @@ class AllocationSettingsBloc
     );
     emit(state.copyWith(settings: updated, isLoading: false));
     await _persist(updated, intent: 'allocation_suggestion_scope_changed');
+  }
+
+  Future<void> _onSuggestionSignalChanged(
+    AllocationSuggestionSignalChanged event,
+    Emitter<AllocationSettingsState> emit,
+  ) async {
+    final signal = switch (event.signal) {
+      SuggestionSignalOption.behaviorBased => SuggestionSignal.behaviorBased,
+      SuggestionSignalOption.ratingsBased => SuggestionSignal.ratingsBased,
+    };
+
+    final updated = state.settings.copyWith(
+      suggestionSignal: signal,
+    );
+    emit(state.copyWith(settings: updated, isLoading: false));
+    await _persist(updated, intent: 'allocation_suggestion_signal_changed');
   }
 
   Future<void> _persist(

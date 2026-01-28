@@ -4,6 +4,7 @@ final class ValueValidators {
   ValueValidators._();
 
   static const int maxNameLength = 30;
+  static const int maxValuesAllowed = 8;
 
   static List<ValidationError> name(String? value) {
     final trimmed = (value ?? '').trim();

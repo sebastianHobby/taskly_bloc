@@ -174,6 +174,41 @@ class ValueTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class ValueRatingsWeeklyTable extends Table {
+  @override
+  String get tableName => 'value_ratings_weekly';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  @ReferenceName('valueRatingsValue')
+  TextColumn get valueId => text()
+      .named('value_id')
+      .references(ValueTable, #id, onDelete: KeyAction.cascade)();
+
+  TextColumn get weekStart => text()
+      .map(dateOnlyStringConverter)
+      .named('week_start')();
+
+  IntColumn get rating => integer().named('rating')();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {userId, valueId, weekStart},
+  ];
+}
+
 class UserProfileTable extends Table {
   @override
   String get tableName => 'user_profiles';
@@ -610,6 +645,7 @@ class RoutineSkipsTable extends Table {
     ProjectTable,
     TaskTable,
     ValueTable,
+    ValueRatingsWeeklyTable,
     UserProfileTable,
     MyDayDaysTable,
     MyDayPicksTable,
@@ -648,7 +684,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

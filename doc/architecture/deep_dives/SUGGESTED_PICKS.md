@@ -85,6 +85,16 @@ weights.
 
 Selection is then done per value using a calm tie-break sort.
 
+### 4.1.1 Ratings-based signal (weekly values)
+
+When **Suggestion signal** is set to ratings-based:
+
+- Category weights come from weekly value ratings (1-8 scale).
+- Ratings are smoothed with EMA over a 4-week window.
+- Value priority is ignored (ratings are the primary signal).
+- Ratings are required weekly; a 2-week grace window allows last ratings to
+  remain active before suggestions are blocked.
+
 ### 4.2 Bounded value balancing ("Keep my values in balance")
 
 When enabled, the engine may perform a **bounded quota repair** pass:
@@ -134,6 +144,9 @@ support progressive disclosure in the UI:
 User-facing setting:
 
 - **Keep my values in balance** -> `AllocationConfig.strategySettings.enableNeglectWeighting`
+- **Suggestion signal** -> `AllocationConfig.suggestionSignal`
+  - Behavior-based (Completions + balance)
+  - Ratings-based (Values + weekly ratings)
 
 Implementation notes:
 
