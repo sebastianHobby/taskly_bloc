@@ -4,7 +4,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
-import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
 import 'package:taskly_domain/taskly_domain.dart';
@@ -12,8 +11,8 @@ import 'package:taskly_domain/taskly_domain.dart';
 import '../../../helpers/bloc_test_patterns.dart';
 import '../../../helpers/test_environment.dart';
 import '../../../helpers/test_imports.dart';
-
-class MockEntityActionService extends Mock implements EntityActionService {}
+import '../../../mocks/feature_mocks.dart';
+import '../../../mocks/repository_mocks.dart';
 
 void main() {
   setUpAll(() {
@@ -33,18 +32,41 @@ void main() {
   setUp(setUpTestEnvironment);
 
   group('ScreenActionsBloc (TG-006)', () {
-    late MockEntityActionService mockEntityActionService;
+    late MockTaskRepositoryContract taskRepository;
+    late MockProjectRepositoryContract projectRepository;
+    late MockValueRepositoryContract valueRepository;
+    late MockAllocationOrchestrator allocationOrchestrator;
+    late MockOccurrenceCommandService occurrenceCommandService;
+    late TaskWriteService taskWriteService;
+    late ProjectWriteService projectWriteService;
+    late ValueWriteService valueWriteService;
     late AppErrorReporter errorReporter;
 
     setUp(() {
-      mockEntityActionService = MockEntityActionService();
+      taskRepository = MockTaskRepositoryContract();
+      projectRepository = MockProjectRepositoryContract();
+      valueRepository = MockValueRepositoryContract();
+      allocationOrchestrator = MockAllocationOrchestrator();
+      occurrenceCommandService = MockOccurrenceCommandService();
+      taskWriteService = TaskWriteService(
+        taskRepository: taskRepository,
+        projectRepository: projectRepository,
+        allocationOrchestrator: allocationOrchestrator,
+        occurrenceCommandService: occurrenceCommandService,
+      );
+      projectWriteService = ProjectWriteService(
+        projectRepository: projectRepository,
+        allocationOrchestrator: allocationOrchestrator,
+        occurrenceCommandService: occurrenceCommandService,
+      );
+      valueWriteService = ValueWriteService(valueRepository: valueRepository);
       errorReporter = AppErrorReporter(
         messengerKey: GlobalKey<ScaffoldMessengerState>(),
       );
 
       when(
-        () => mockEntityActionService.completeTask(
-          any(),
+        () => occurrenceCommandService.completeTask(
+          taskId: any(named: 'taskId'),
           occurrenceDate: any(named: 'occurrenceDate'),
           originalOccurrenceDate: any(named: 'originalOccurrenceDate'),
           context: any(named: 'context'),
@@ -56,7 +78,9 @@ void main() {
       'forwards OperationContext into EntityActionService.completeTask',
       build: () {
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -74,8 +98,8 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.completeTask(
-                    'task-1',
+                  () => occurrenceCommandService.completeTask(
+                    taskId: 'task-1',
                     occurrenceDate: any(named: 'occurrenceDate'),
                     originalOccurrenceDate: any(
                       named: 'originalOccurrenceDate',

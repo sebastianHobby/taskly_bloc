@@ -20,7 +20,8 @@ void main() {
       );
 
       expect(result.strength, CorrelationStrength.negligible);
-      expect(result.insight, contains('Insufficient data'));
+      expect(result.insight, isNotNull);
+      expect(result.insight!.toLowerCase(), contains('insufficient data'));
     });
 
     testSafe('calculates correlation with adequate sample size', () async {

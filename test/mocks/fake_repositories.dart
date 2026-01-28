@@ -176,31 +176,6 @@ class FakeTaskRepository implements TaskRepositoryContract {
   }
 
   @override
-  Future<int> bulkRescheduleDeadlines({
-    required Iterable<String> projectIds,
-    required DateTime deadlineDate,
-    OperationContext? context,
-  }) async {
-    final ids = projectIds.toSet();
-    if (ids.isEmpty) return 0;
-    if (_last.where((p) => ids.contains(p.id)).length != ids.length) {
-      throw StateError('Missing project in bulk update');
-    }
-
-    final updatedProjects = _last
-        .map(
-          (project) => ids.contains(project.id)
-              ? project.copyWith(deadlineDate: deadlineDate, updatedAt: _now())
-              : project,
-        )
-        .toList(growable: false);
-
-    _last = updatedProjects;
-    _controller.add(_last);
-    return ids.length;
-  }
-
-  @override
   Future<void> setMyDaySnoozedUntil({
     required String id,
     required DateTime? untilUtc,
@@ -621,6 +596,31 @@ class FakeProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
+  Future<int> bulkRescheduleDeadlines({
+    required Iterable<String> projectIds,
+    required DateTime deadlineDate,
+    OperationContext? context,
+  }) async {
+    final ids = projectIds.toSet();
+    if (ids.isEmpty) return 0;
+    if (_last.where((p) => ids.contains(p.id)).length != ids.length) {
+      throw StateError('Missing project in bulk update');
+    }
+
+    final updatedProjects = _last
+        .map(
+          (project) => ids.contains(project.id)
+              ? project.copyWith(deadlineDate: deadlineDate, updatedAt: _now())
+              : project,
+        )
+        .toList(growable: false);
+
+    _last = updatedProjects;
+    _controller.add(_last);
+    return ids.length;
+  }
+
+  @override
   Future<void> delete(String id, {OperationContext? context}) async {
     _last = _last.where((p) => p.id != id).toList();
     _controller.add(_last);
@@ -850,6 +850,9 @@ class FakeValueRepository implements ValueRepositoryContract {
   Future<List<Value>> getAll([ValueQuery? query]) async => _last;
 
   @override
+  Future<int> getCount() async => _last.length;
+
+  @override
   Stream<Value?> watchById(String id) => _controller.stream.map((values) {
     try {
       return values.firstWhere((v) => v.id == id);
@@ -926,5 +929,62 @@ class FakeValueRepository implements ValueRepositoryContract {
 
   void dispose() {
     _controller.close();
+  }
+}
+
+class FakeValueRatingsRepository implements ValueRatingsRepositoryContract {
+  FakeValueRatingsRepository({List<ValueWeeklyRating>? seed})
+    : _controller = BehaviorSubject<List<ValueWeeklyRating>>.seeded(
+        seed ?? const [],
+      );
+
+  final BehaviorSubject<List<ValueWeeklyRating>> _controller;
+
+  List<ValueWeeklyRating> get _last => _controller.value;
+  set _last(List<ValueWeeklyRating> value) => _controller.add(value);
+
+  void pushRatings(List<ValueWeeklyRating> ratings) {
+    _controller.add(ratings);
+  }
+
+  @override
+  Stream<List<ValueWeeklyRating>> watchAll({int weeks = 4}) =>
+      _controller.stream;
+
+  @override
+  Future<List<ValueWeeklyRating>> getAll({int weeks = 4}) async => _last;
+
+  @override
+  Future<List<ValueWeeklyRating>> getForValue(
+    String valueId, {
+    int weeks = 4,
+  }) async {
+    return _last.where((r) => r.valueId == valueId).toList(growable: false);
+  }
+
+  @override
+  Future<void> upsertWeeklyRating({
+    required String valueId,
+    required DateTime weekStartUtc,
+    required int rating,
+    OperationContext? context,
+  }) async {
+    final updated = [..._last]
+      ..removeWhere(
+        (r) =>
+            r.valueId == valueId &&
+            r.weekStartUtc.isAtSameMomentAs(weekStartUtc),
+      )
+      ..add(
+        ValueWeeklyRating(
+          id: 'vr-${_last.length + 1}',
+          valueId: valueId,
+          weekStartUtc: weekStartUtc,
+          rating: rating,
+          createdAtUtc: weekStartUtc,
+          updatedAtUtc: weekStartUtc,
+        ),
+      );
+    _last = updated;
   }
 }

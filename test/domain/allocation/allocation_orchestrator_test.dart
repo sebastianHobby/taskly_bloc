@@ -16,6 +16,7 @@ void main() {
   group('AllocationOrchestrator', () {
     late FakeTaskRepository taskRepository;
     late FakeValueRepository valueRepository;
+    late FakeValueRatingsRepository valueRatingsRepository;
     late FakeSettingsRepository settingsRepository;
     late FakeProjectRepository projectRepository;
     late FakeProjectNextActionsRepository projectNextActionsRepository;
@@ -26,6 +27,7 @@ void main() {
     setUp(() {
       taskRepository = FakeTaskRepository();
       valueRepository = FakeValueRepository();
+      valueRatingsRepository = FakeValueRatingsRepository();
       settingsRepository = FakeSettingsRepository(
         allocation: const AllocationConfig(suggestionsPerBatch: 2),
       );
@@ -46,6 +48,7 @@ void main() {
       final orchestrator = AllocationOrchestrator(
         taskRepository: taskRepository,
         valueRepository: valueRepository,
+        valueRatingsRepository: valueRatingsRepository,
         settingsRepository: settingsRepository,
         analyticsService: analyticsService,
         projectRepository: projectRepository,
@@ -88,6 +91,7 @@ void main() {
       final orchestrator = AllocationOrchestrator(
         taskRepository: taskRepository,
         valueRepository: valueRepository,
+        valueRatingsRepository: valueRatingsRepository,
         settingsRepository: settingsRepository,
         analyticsService: analyticsService,
         projectRepository: projectRepository,
@@ -121,6 +125,7 @@ void main() {
       final orchestrator = AllocationOrchestrator(
         taskRepository: taskRepository,
         valueRepository: valueRepository,
+        valueRatingsRepository: valueRatingsRepository,
         settingsRepository: settingsRepository,
         analyticsService: analyticsService,
         projectRepository: projectRepository,

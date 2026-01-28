@@ -2,7 +2,6 @@
 library;
 
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
@@ -33,32 +32,31 @@ void main() {
 
   setUp(setUpTestEnvironment);
 
-  group('EntityActionService (TG-006)', () {
+  group('TaskWriteService (TG-006)', () {
     late MockTaskRepositoryContract taskRepository;
     late MockProjectRepositoryContract projectRepository;
-    late MockValueRepositoryContract valueRepository;
     late MockAllocationOrchestrator allocationOrchestrator;
     late MockHomeDayKeyService dayKeyService;
 
-    late EntityActionService service;
+    late TaskWriteService service;
 
     setUp(() {
       taskRepository = MockTaskRepositoryContract();
       projectRepository = MockProjectRepositoryContract();
-      valueRepository = MockValueRepositoryContract();
       allocationOrchestrator = MockAllocationOrchestrator();
       dayKeyService = MockHomeDayKeyService();
 
-      service = EntityActionService(
+      final occurrenceCommandService = OccurrenceCommandService(
         taskRepository: taskRepository,
         projectRepository: projectRepository,
-        valueRepository: valueRepository,
+        dayKeyService: dayKeyService,
+      );
+
+      service = TaskWriteService(
+        taskRepository: taskRepository,
+        projectRepository: projectRepository,
         allocationOrchestrator: allocationOrchestrator,
-        occurrenceCommandService: OccurrenceCommandService(
-          taskRepository: taskRepository,
-          projectRepository: projectRepository,
-          dayKeyService: dayKeyService,
-        ),
+        occurrenceCommandService: occurrenceCommandService,
       );
 
       when(
@@ -103,7 +101,7 @@ void main() {
           entityId: 'task-1',
         );
 
-        await service.completeTask(
+        await service.complete(
           'task-1',
           occurrenceDate: DateTime.utc(2025, 1, 15),
           originalOccurrenceDate: DateTime.utc(2025, 1, 1),
@@ -129,42 +127,6 @@ void main() {
     );
 
     testSafe(
-      'forwards OperationContext into TaskRepository.uncompleteOccurrence',
-      () async {
-        final factory = TestOperationContextFactory(
-          correlationIdPrefix: 'entity-action',
-        );
-
-        final created = factory.create(
-          feature: 'screen_actions',
-          intent: 'task_completion_changed',
-          operation: 'uncomplete_occurrence',
-          screen: 'screen_actions',
-          entityType: 'task',
-          entityId: 'task-1',
-        );
-
-        await service.uncompleteTask(
-          'task-1',
-          occurrenceDate: DateTime.utc(2025, 1, 15),
-          context: created,
-        );
-
-        final forwarded =
-            verify(
-                  () => taskRepository.uncompleteOccurrence(
-                    taskId: 'task-1',
-                    occurrenceDate: any(named: 'occurrenceDate'),
-                    context: captureAny(named: 'context'),
-                  ),
-                ).captured.single
-                as OperationContext?;
-
-        expectOperationContextForwarded(created: created, forwarded: forwarded);
-      },
-    );
-
-    testSafe(
       'forwards OperationContext into AllocationOrchestrator.pinTask',
       () async {
         final factory = TestOperationContextFactory(
@@ -180,7 +142,11 @@ void main() {
           entityId: 'task-1',
         );
 
-        await service.pinTask('task-1', context: created);
+        await service.setPinned(
+          'task-1',
+          isPinned: true,
+          context: created,
+        );
 
         final forwarded =
             verify(

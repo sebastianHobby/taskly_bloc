@@ -1,24 +1,16 @@
 @Tags(['unit', 'tasks'])
 library;
 
+import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_imports.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
-import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/services.dart';
-import 'package:taskly_domain/telemetry.dart';
+import 'package:taskly_domain/taskly_domain.dart';
 
-class MockTaskRepository extends Mock implements TaskRepositoryContract {}
-
-class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
-
-class MockValueRepository extends Mock implements ValueRepositoryContract {}
-
-class MockTaskWriteService extends Mock implements TaskWriteService {}
-
-class MockAppErrorReporter extends Mock implements AppErrorReporter {}
+import '../../../../mocks/feature_mocks.dart';
+import '../../../../mocks/repository_mocks.dart';
 
 void main() {
   setUpAll(() {
@@ -42,11 +34,13 @@ void main() {
 
   setUp(setUpTestEnvironment);
 
-  late MockTaskRepository taskRepository;
-  late MockProjectRepository projectRepository;
-  late MockValueRepository valueRepository;
-  late MockTaskWriteService taskWriteService;
-  late MockAppErrorReporter errorReporter;
+  late MockTaskRepositoryContract taskRepository;
+  late MockProjectRepositoryContract projectRepository;
+  late MockValueRepositoryContract valueRepository;
+  late MockAllocationOrchestrator allocationOrchestrator;
+  late MockOccurrenceCommandService occurrenceCommandService;
+  late TaskWriteService taskWriteService;
+  late AppErrorReporter errorReporter;
 
   TaskDetailBloc buildBloc() {
     return TaskDetailBloc(
@@ -60,11 +54,20 @@ void main() {
   }
 
   setUp(() {
-    taskRepository = MockTaskRepository();
-    projectRepository = MockProjectRepository();
-    valueRepository = MockValueRepository();
-    taskWriteService = MockTaskWriteService();
-    errorReporter = MockAppErrorReporter();
+    taskRepository = MockTaskRepositoryContract();
+    projectRepository = MockProjectRepositoryContract();
+    valueRepository = MockValueRepositoryContract();
+    allocationOrchestrator = MockAllocationOrchestrator();
+    occurrenceCommandService = MockOccurrenceCommandService();
+    taskWriteService = TaskWriteService(
+      taskRepository: taskRepository,
+      projectRepository: projectRepository,
+      allocationOrchestrator: allocationOrchestrator,
+      occurrenceCommandService: occurrenceCommandService,
+    );
+    errorReporter = AppErrorReporter(
+      messengerKey: GlobalKey<ScaffoldMessengerState>(),
+    );
   });
 
   blocTestSafe<TaskDetailBloc, TaskDetailState>(
@@ -109,25 +112,11 @@ void main() {
   blocTestSafe<TaskDetailBloc, TaskDetailState>(
     'emits validation failure when create command fails validation',
     build: () {
-      when(
-        () => taskWriteService.create(
-          any(),
-          context: any(named: 'context'),
-        ),
-      ).thenAnswer(
-        (_) async => const CommandValidationFailure(
-          ValidationFailure(
-            formErrors: [
-              ValidationError(code: 'invalid', messageKey: 'invalid'),
-            ],
-          ),
-        ),
-      );
       return buildBloc();
     },
     act: (bloc) => bloc.add(
       const TaskDetailEvent.create(
-        command: CreateTaskCommand(name: 'Task', completed: false),
+        command: CreateTaskCommand(name: '', completed: false),
       ),
     ),
     expect: () => [isA<TaskDetailValidationFailure>()],
@@ -137,11 +126,21 @@ void main() {
     'creates task with operation context metadata',
     build: () {
       when(
-        () => taskWriteService.create(
-          any(),
+        () => taskRepository.create(
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          completed: any(named: 'completed'),
+          startDate: any(named: 'startDate'),
+          deadlineDate: any(named: 'deadlineDate'),
+          projectId: any(named: 'projectId'),
+          priority: any(named: 'priority'),
+          repeatIcalRrule: any(named: 'repeatIcalRrule'),
+          repeatFromCompletion: any(named: 'repeatFromCompletion'),
+          seriesEnded: any(named: 'seriesEnded'),
+          valueIds: any(named: 'valueIds'),
           context: any(named: 'context'),
         ),
-      ).thenAnswer((_) async => const CommandSuccess());
+      ).thenAnswer((_) async {});
       return buildBloc();
     },
     act: (bloc) => bloc.add(
@@ -152,8 +151,18 @@ void main() {
     expect: () => [isA<TaskDetailOperationSuccess>()],
     verify: (_) {
       final captured = verify(
-        () => taskWriteService.create(
-          any(),
+        () => taskRepository.create(
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          completed: any(named: 'completed'),
+          startDate: any(named: 'startDate'),
+          deadlineDate: any(named: 'deadlineDate'),
+          projectId: any(named: 'projectId'),
+          priority: any(named: 'priority'),
+          repeatIcalRrule: any(named: 'repeatIcalRrule'),
+          repeatFromCompletion: any(named: 'repeatFromCompletion'),
+          seriesEnded: any(named: 'seriesEnded'),
+          valueIds: any(named: 'valueIds'),
           context: captureAny(named: 'context'),
         ),
       ).captured;

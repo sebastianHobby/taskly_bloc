@@ -259,6 +259,9 @@ class _AuthenticatedApp extends StatelessWidget {
         Provider<TemplateDataService>(
           create: (_) => getIt<TemplateDataService>(),
         ),
+        Provider<UserDataWipeService>(
+          create: (_) => getIt<UserDataWipeService>(),
+        ),
         Provider<SettingsRepositoryContract>(
           create: (_) => getIt<SettingsRepositoryContract>(),
         ),

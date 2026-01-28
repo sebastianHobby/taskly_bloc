@@ -1,17 +1,34 @@
 @Tags(['widget', 'tasks'])
 library;
 
+import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 
 import '../../../helpers/test_imports.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_form.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/core.dart';
 
 class MockTaskDetailBloc extends MockBloc<TaskDetailEvent, TaskDetailState>
     implements TaskDetailBloc {}
+
+class FakeNowService implements NowService {
+  FakeNowService(this.now);
+
+  final DateTime now;
+
+  @override
+  DateTime nowLocal() => now;
+
+  @override
+  DateTime nowUtc() => now.toUtc();
+}
 
 void main() {
   setUpAll(() {
@@ -27,6 +44,23 @@ void main() {
     bloc = MockTaskDetailBloc();
   });
 
+  Future<void> pumpSheet(WidgetTester tester) async {
+    await tester.pumpWidget(
+      Provider<NowService>.value(
+        value: FakeNowService(DateTime(2025, 1, 15, 9)),
+        child: MaterialApp(
+          theme: AppTheme.lightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: BlocProvider<TaskDetailBloc>.value(
+            value: bloc,
+            child: const TaskDetailSheet(),
+          ),
+        ),
+      ),
+    );
+  }
+
   testWidgetsSafe('shows loading indicator while loading', (tester) async {
     when(() => bloc.state).thenReturn(const TaskDetailInitial());
     whenListen(
@@ -35,10 +69,7 @@ void main() {
       initialState: const TaskDetailInitial(),
     );
 
-    await tester.pumpWidgetWithBloc<TaskDetailBloc>(
-      bloc: bloc,
-      child: const TaskDetailSheet(),
-    );
+    await pumpSheet(tester);
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
@@ -52,10 +83,7 @@ void main() {
     when(() => bloc.state).thenReturn(state);
     whenListen(bloc, Stream.value(state), initialState: state);
 
-    await tester.pumpWidgetWithBloc<TaskDetailBloc>(
-      bloc: bloc,
-      child: const TaskDetailSheet(),
-    );
+    await pumpSheet(tester);
     await tester.pumpForStream();
 
     expect(find.byType(TaskForm), findsOneWidget);
@@ -73,10 +101,7 @@ void main() {
     when(() => bloc.state).thenReturn(state);
     whenListen(bloc, Stream.value(state), initialState: state);
 
-    await tester.pumpWidgetWithBloc<TaskDetailBloc>(
-      bloc: bloc,
-      child: const TaskDetailSheet(),
-    );
+    await pumpSheet(tester);
     await tester.pumpForStream();
 
     expect(find.byType(TaskForm), findsOneWidget);

@@ -8,6 +8,7 @@ import '../fixtures/test_data.dart';
 import 'package:taskly_domain/analytics.dart' as domain_analytics;
 import 'package:taskly_domain/core.dart' as domain_core;
 import 'package:taskly_domain/queries.dart' as domain_queries;
+import 'package:taskly_domain/routines.dart' as domain_routines;
 
 bool _fallbackValuesRegistered = false;
 
@@ -47,6 +48,8 @@ void registerAllFallbackValues() {
   registerFallbackValue(TestData.value());
   registerFallbackValue(domain_core.ValuePriority.medium);
   registerFallbackValue(domain_queries.TaskQuery.all());
+  registerFallbackValue(domain_queries.JournalQuery());
+  registerFallbackValue(domain_routines.RoutineType.weeklyFixed);
   registerFallbackValue(PageKey.taskOverview);
 
   // === Views ===
