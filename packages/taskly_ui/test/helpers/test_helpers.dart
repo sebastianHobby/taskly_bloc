@@ -30,3 +30,29 @@ void testSafe(
     },
   );
 }
+
+@isTest
+void testWidgetsSafe(
+  String description,
+  Future<void> Function(WidgetTester) callback, {
+  Duration timeout = kDefaultTestTimeout,
+  bool skip = false,
+  dynamic tags,
+}) {
+  testWidgets(
+    description,
+    skip: skip,
+    tags: tags,
+    (tester) async {
+      await callback(tester).timeout(
+        timeout,
+        onTimeout: () {
+          throw TimeoutException(
+            'Test "$description" exceeded ${timeout.inSeconds}s total duration.',
+            timeout,
+          );
+        },
+      );
+    },
+  );
+}

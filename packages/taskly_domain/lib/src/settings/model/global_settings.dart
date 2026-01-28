@@ -76,6 +76,7 @@ abstract class GlobalSettings with _$GlobalSettings {
     int maintenanceMissingNextActionsMinOpenTasks,
     @Default(1.0) double textScaleFactor,
     @Default(false) bool onboardingCompleted,
+    @Default(false) bool guidedTourCompleted,
   }) = _GlobalSettings;
 
   factory GlobalSettings.fromJson(Map<String, dynamic> json) {
@@ -192,6 +193,7 @@ abstract class GlobalSettings with _$GlobalSettings {
           ),
       textScaleFactor: (json['textScaleFactor'] as num?)?.toDouble() ?? 1.0,
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
+      guidedTourCompleted: json['guidedTourCompleted'] as bool? ?? false,
     );
   }
 
@@ -335,5 +337,6 @@ extension GlobalSettingsJson on GlobalSettings {
         ),
     'textScaleFactor': textScaleFactor,
     'onboardingCompleted': onboardingCompleted,
+    'guidedTourCompleted': guidedTourCompleted,
   };
 }

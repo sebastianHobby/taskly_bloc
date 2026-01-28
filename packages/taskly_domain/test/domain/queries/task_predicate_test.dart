@@ -30,6 +30,16 @@ void main() {
     expect(withDefaults.operator, BoolOperator.isFalse);
   });
 
+  testSafe('TaskBoolPredicate json roundtrip (repeating)', () async {
+    const p = TaskBoolPredicate(
+      field: TaskBoolField.repeating,
+      operator: BoolOperator.isTrue,
+    );
+
+    final decoded = TaskPredicate.fromJson(p.toJson());
+    expect(decoded, equals(p));
+  });
+
   testSafe('TaskDatePredicate json roundtrip and relative fields', () async {
     final p = TaskDatePredicate(
       field: TaskDateField.deadlineDate,

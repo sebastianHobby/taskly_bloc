@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -34,6 +36,14 @@ class SettingsScreen extends StatelessWidget {
               title: 'Task Suggestions',
               subtitle: 'Values balance and project focus',
               onTap: () => Routing.pushSettingsTaskSuggestions(context),
+            ),
+            _SettingsNavItem(
+              icon: Icons.flag_outlined,
+              title: 'Guided tour',
+              subtitle: 'Walk through the core screens again',
+              onTap: () => context.read<GuidedTourBloc>().add(
+                const GuidedTourStarted(force: true),
+              ),
             ),
             _SettingsNavItem(
               icon: Icons.event_repeat_outlined,

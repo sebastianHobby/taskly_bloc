@@ -11,7 +11,7 @@ enum ProjectDateField {
   completedAt,
 }
 
-enum ProjectBoolField { completed }
+enum ProjectBoolField { completed, repeating }
 
 @immutable
 sealed class ProjectPredicate {

@@ -45,6 +45,7 @@ class TaskFilterEvaluator {
   bool _evalBool(Task task, TaskBoolPredicate p) {
     final value = switch (p.field) {
       TaskBoolField.completed => task.completed,
+      TaskBoolField.repeating => task.isRepeating,
     };
     return BoolComparison.evaluate(fieldValue: value, operator: p.operator);
   }

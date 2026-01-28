@@ -13,16 +13,22 @@ import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 
 class _StreamTaskRepo extends Fake implements TaskRepositoryContract {
-  _StreamTaskRepo(this._controller);
+  _StreamTaskRepo(this._overdueController, this._scheduledController);
 
-  final StreamController<List<Task>> _controller;
+  final StreamController<List<Task>> _overdueController;
+  final StreamController<List<Task>> _scheduledController;
 
-  TaskQuery? lastWatchAllQuery;
+  TaskQuery? lastOverdueQuery;
+  TaskQuery? lastScheduledQuery;
 
   @override
   Stream<List<Task>> watchAll([TaskQuery? query]) {
-    lastWatchAllQuery = query;
-    return _controller.stream;
+    if (_isScheduledNonRecurringTaskQuery(query)) {
+      lastScheduledQuery = query;
+      return _scheduledController.stream;
+    }
+    lastOverdueQuery = query;
+    return _overdueController.stream;
   }
 
   @override
@@ -35,16 +41,22 @@ class _StreamTaskRepo extends Fake implements TaskRepositoryContract {
 }
 
 class _StreamProjectRepo extends Fake implements ProjectRepositoryContract {
-  _StreamProjectRepo(this._controller);
+  _StreamProjectRepo(this._overdueController, this._scheduledController);
 
-  final StreamController<List<Project>> _controller;
+  final StreamController<List<Project>> _overdueController;
+  final StreamController<List<Project>> _scheduledController;
 
-  ProjectQuery? lastWatchAllQuery;
+  ProjectQuery? lastOverdueQuery;
+  ProjectQuery? lastScheduledQuery;
 
   @override
   Stream<List<Project>> watchAll([ProjectQuery? query]) {
-    lastWatchAllQuery = query;
-    return _controller.stream;
+    if (_isScheduledNonRecurringProjectQuery(query)) {
+      lastScheduledQuery = query;
+      return _scheduledController.stream;
+    }
+    lastOverdueQuery = query;
+    return _overdueController.stream;
   }
 }
 
@@ -96,6 +108,28 @@ class _CapturingOccurrenceService extends Fake
     lastProjectToday = todayDayKeyUtc;
     return _projectsController.stream;
   }
+}
+
+bool _isScheduledNonRecurringTaskQuery(TaskQuery? query) {
+  if (query == null) return false;
+  final shared = query.filter.shared;
+  return shared.any(
+    (p) =>
+        p is TaskBoolPredicate &&
+        p.field == TaskBoolField.repeating &&
+        p.operator == BoolOperator.isFalse,
+  );
+}
+
+bool _isScheduledNonRecurringProjectQuery(ProjectQuery? query) {
+  if (query == null) return false;
+  final shared = query.filter.shared;
+  return shared.any(
+    (p) =>
+        p is ProjectBoolPredicate &&
+        p.field == ProjectBoolField.repeating &&
+        p.operator == BoolOperator.isFalse,
+  );
 }
 
 void main() {
@@ -156,17 +190,28 @@ void main() {
       final scheduledTasksController = StreamController<List<Task>>.broadcast();
       final scheduledProjectsController =
           StreamController<List<Project>>.broadcast();
+      final recurringTasksController = StreamController<List<Task>>.broadcast();
+      final recurringProjectsController =
+          StreamController<List<Project>>.broadcast();
 
       addTearDown(overdueTasksController.close);
       addTearDown(overdueProjectsController.close);
       addTearDown(scheduledTasksController.close);
       addTearDown(scheduledProjectsController.close);
+      addTearDown(recurringTasksController.close);
+      addTearDown(recurringProjectsController.close);
 
-      final taskRepo = _StreamTaskRepo(overdueTasksController);
-      final projectRepo = _StreamProjectRepo(overdueProjectsController);
-      final occurrenceService = _CapturingOccurrenceService(
+      final taskRepo = _StreamTaskRepo(
+        overdueTasksController,
         scheduledTasksController,
+      );
+      final projectRepo = _StreamProjectRepo(
+        overdueProjectsController,
         scheduledProjectsController,
+      );
+      final occurrenceService = _CapturingOccurrenceService(
+        recurringTasksController,
+        recurringProjectsController,
       );
 
       final service = ScheduledOccurrencesService(
@@ -196,19 +241,13 @@ void main() {
         start: today,
         deadline: today,
       );
-      final repeatingTask = buildTask(
-        id: 't-repeat',
+      final repeatingOccurrence = buildTask(
+        id: 't-repeat-occurrence',
         name: 'Repeat',
         start: rangeStart,
         deadline: rangeEnd,
         repeatRrule: 'RRULE:FREQ=DAILY',
         repeatFromCompletion: true,
-      );
-      final occurrenceTask = buildTask(
-        id: 't-occurrence',
-        name: 'Occurrence',
-        start: DateTime.utc(2026, 1, 1),
-        deadline: DateTime.utc(2026, 1, 2),
         occurrence: OccurrenceData(
           date: today,
           isRescheduled: false,
@@ -221,6 +260,18 @@ void main() {
         start: rangeStart,
         deadline: rangeStart,
       );
+      final repeatingProject = buildProject(
+        id: 'p-repeat',
+        name: 'Recurring',
+        start: rangeStart,
+        deadline: rangeEnd,
+        repeatRrule: 'RRULE:FREQ=DAILY',
+        repeatFromCompletion: true,
+        occurrence: OccurrenceData(
+          date: today,
+          isRescheduled: false,
+        ),
+      );
 
       final resultFuture = service
           .watchScheduledOccurrences(
@@ -232,10 +283,10 @@ void main() {
 
       overdueTasksController.add([overdueTask]);
       overdueProjectsController.add([overdueProject]);
-      scheduledTasksController.add(
-        [scheduledSameDay, repeatingTask, occurrenceTask],
-      );
+      scheduledTasksController.add([scheduledSameDay]);
       scheduledProjectsController.add([scheduledProject]);
+      recurringTasksController.add([repeatingOccurrence]);
+      recurringProjectsController.add([repeatingProject]);
 
       final result = await resultFuture;
 
@@ -252,7 +303,7 @@ void main() {
       expect(sameDay.single.tag, ScheduledDateTag.due);
 
       final repeating = result.occurrences
-          .where((o) => o.entityId == 't-repeat')
+          .where((o) => o.entityId == 't-repeat-occurrence')
           .toList(growable: false);
       expect(
         repeating.map((o) => o.tag),
@@ -260,7 +311,7 @@ void main() {
       );
 
       final occurrenceRow = result.occurrences
-          .where((o) => o.entityId == 't-occurrence')
+          .where((o) => o.entityId == 't-repeat-occurrence')
           .single;
       expect(occurrenceRow.localDay, dateOnly(today));
 
@@ -281,17 +332,28 @@ void main() {
       final scheduledTasksController = StreamController<List<Task>>.broadcast();
       final scheduledProjectsController =
           StreamController<List<Project>>.broadcast();
+      final recurringTasksController = StreamController<List<Task>>.broadcast();
+      final recurringProjectsController =
+          StreamController<List<Project>>.broadcast();
 
       addTearDown(overdueTasksController.close);
       addTearDown(overdueProjectsController.close);
       addTearDown(scheduledTasksController.close);
       addTearDown(scheduledProjectsController.close);
+      addTearDown(recurringTasksController.close);
+      addTearDown(recurringProjectsController.close);
 
-      final taskRepo = _StreamTaskRepo(overdueTasksController);
-      final projectRepo = _StreamProjectRepo(overdueProjectsController);
-      final occurrenceService = _CapturingOccurrenceService(
+      final taskRepo = _StreamTaskRepo(
+        overdueTasksController,
         scheduledTasksController,
+      );
+      final projectRepo = _StreamProjectRepo(
+        overdueProjectsController,
         scheduledProjectsController,
+      );
+      final occurrenceService = _CapturingOccurrenceService(
+        recurringTasksController,
+        recurringProjectsController,
       );
 
       final service = ScheduledOccurrencesService(
@@ -316,18 +378,38 @@ void main() {
       overdueProjectsController.add(const <Project>[]);
       scheduledTasksController.add(const <Task>[]);
       scheduledProjectsController.add(const <Project>[]);
+      recurringTasksController.add(const <Task>[]);
+      recurringProjectsController.add(const <Project>[]);
       await resultFuture;
 
-      final taskPredicates = taskRepo.lastWatchAllQuery?.filter.shared ?? [];
+      final taskPredicates = taskRepo.lastScheduledQuery?.filter.shared ?? [];
       expect(
         taskPredicates.any((p) => p is TaskValuePredicate),
         isTrue,
       );
+      expect(
+        taskPredicates.any(
+          (p) =>
+              p is TaskBoolPredicate &&
+              p.field == TaskBoolField.repeating &&
+              p.operator == BoolOperator.isFalse,
+        ),
+        isTrue,
+      );
 
       final projectPredicates =
-          projectRepo.lastWatchAllQuery?.filter.shared ?? [];
+          projectRepo.lastScheduledQuery?.filter.shared ?? [];
       expect(
         projectPredicates.any((p) => p is ProjectValuePredicate),
+        isTrue,
+      );
+      expect(
+        projectPredicates.any(
+          (p) =>
+              p is ProjectBoolPredicate &&
+              p.field == ProjectBoolField.repeating &&
+              p.operator == BoolOperator.isFalse,
+        ),
         isTrue,
       );
 
@@ -337,11 +419,29 @@ void main() {
         scheduledTaskPredicates.any((p) => p is TaskValuePredicate),
         isTrue,
       );
+      expect(
+        scheduledTaskPredicates.any(
+          (p) =>
+              p is TaskBoolPredicate &&
+              p.field == TaskBoolField.repeating &&
+              p.operator == BoolOperator.isTrue,
+        ),
+        isTrue,
+      );
 
       final scheduledProjectPredicates =
           occurrenceService.lastProjectQuery?.filter.shared ?? [];
       expect(
         scheduledProjectPredicates.any((p) => p is ProjectValuePredicate),
+        isTrue,
+      );
+      expect(
+        scheduledProjectPredicates.any(
+          (p) =>
+              p is ProjectBoolPredicate &&
+              p.field == ProjectBoolField.repeating &&
+              p.operator == BoolOperator.isTrue,
+        ),
         isTrue,
       );
     },
@@ -356,17 +456,28 @@ void main() {
       final scheduledTasksController = StreamController<List<Task>>.broadcast();
       final scheduledProjectsController =
           StreamController<List<Project>>.broadcast();
+      final recurringTasksController = StreamController<List<Task>>.broadcast();
+      final recurringProjectsController =
+          StreamController<List<Project>>.broadcast();
 
       addTearDown(overdueTasksController.close);
       addTearDown(overdueProjectsController.close);
       addTearDown(scheduledTasksController.close);
       addTearDown(scheduledProjectsController.close);
+      addTearDown(recurringTasksController.close);
+      addTearDown(recurringProjectsController.close);
 
-      final taskRepo = _StreamTaskRepo(overdueTasksController);
-      final projectRepo = _StreamProjectRepo(overdueProjectsController);
-      final occurrenceService = _CapturingOccurrenceService(
+      final taskRepo = _StreamTaskRepo(
+        overdueTasksController,
         scheduledTasksController,
+      );
+      final projectRepo = _StreamProjectRepo(
+        overdueProjectsController,
         scheduledProjectsController,
+      );
+      final occurrenceService = _CapturingOccurrenceService(
+        recurringTasksController,
+        recurringProjectsController,
       );
 
       final service = ScheduledOccurrencesService(
@@ -391,16 +502,18 @@ void main() {
       overdueProjectsController.add(const <Project>[]);
       scheduledTasksController.add(const <Task>[]);
       scheduledProjectsController.add(const <Project>[]);
+      recurringTasksController.add(const <Task>[]);
+      recurringProjectsController.add(const <Project>[]);
       await resultFuture;
 
-      final taskPredicates = taskRepo.lastWatchAllQuery?.filter.shared ?? [];
+      final taskPredicates = taskRepo.lastScheduledQuery?.filter.shared ?? [];
       expect(
         taskPredicates.any((p) => p is TaskProjectPredicate),
         isTrue,
       );
 
       final projectPredicates =
-          projectRepo.lastWatchAllQuery?.filter.shared ?? [];
+          projectRepo.lastScheduledQuery?.filter.shared ?? [];
       expect(
         projectPredicates.any((p) => p is ProjectIdPredicate),
         isTrue,

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/onboarding/bloc/onboarding_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -17,7 +18,6 @@ import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -99,6 +99,9 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
               context.read<GlobalSettingsBloc>().add(
                 const GlobalSettingsEvent.onboardingCompleted(),
               );
+              context.read<GuidedTourBloc>().add(
+                const GuidedTourStarted(force: true),
+              );
               Routing.toScreenKey(context, 'someday');
             }
 
@@ -156,10 +159,11 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.labelMedium
                             ?.copyWith(
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                       SizedBox(height: tokens.spaceSm),
                       FilledButton(
@@ -341,11 +345,11 @@ class _SuggestionSignalStep extends StatelessWidget {
           ),
           SizedBox(height: tokens.spaceLg),
           _SuggestionSignalCard(
-            title: 'Values + weekly check-ins',
-            subtitle: 'Uses your weekly value ratings',
+            title: 'Values + check-ins',
+            subtitle: 'Based on your value check-ins',
             body:
-                'Your check-ins keep suggestions grounded in what you care '
-                'about right now.',
+                'Your check-ins keep suggestions grounded in what matters to '
+                'you now.',
             selected: signal == SuggestionSignal.ratingsBased,
             recommended: true,
             accentColor: scheme.primary,
@@ -360,8 +364,8 @@ class _SuggestionSignalStep extends StatelessWidget {
             title: 'Task completions',
             subtitle: 'Based on what you finish',
             body:
-                "Your completions keep suggestions grounded in what you’re "
-                'actually doing right now.',
+                "Your completions keep suggestions grounded in what you're "
+                'actually doing now.',
             selected: signal == SuggestionSignal.behaviorBased,
             recommended: false,
             accentColor: scheme.secondary,
@@ -373,8 +377,8 @@ class _SuggestionSignalStep extends StatelessWidget {
           ),
           SizedBox(height: tokens.spaceMd),
           Text(
-            'Ratings mode requires weekly ratings and may change suggestions '
-            'more quickly.',
+            'Ratings mode uses weekly check-ins to keep suggestions aligned '
+            'over time.',
             style: theme.textTheme.bodySmall?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
@@ -529,7 +533,7 @@ class _ValuesStep extends StatelessWidget {
           ),
           SizedBox(height: tokens.spaceSm),
           Text(
-            'Pick 1–3 to start.',
+            'Pick 1-3 to start.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
@@ -767,7 +771,6 @@ class _QuickPickCard extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _SelectedValueRow extends StatelessWidget {
@@ -827,7 +830,6 @@ class _SelectedValueRow extends StatelessWidget {
     );
   }
 }
-
 
 class _CustomValueSheet extends StatefulWidget {
   const _CustomValueSheet();

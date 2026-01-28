@@ -301,7 +301,7 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
       emit(
         state.copyWith(
           isSavingName: false,
-          step: OnboardingStep.valuesSetup,
+          step: OnboardingStep.suggestionSignal,
           effect: null,
         ),
       );

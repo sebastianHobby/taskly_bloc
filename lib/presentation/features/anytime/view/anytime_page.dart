@@ -17,6 +17,7 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/view/guided_tour_targets.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
@@ -244,15 +245,18 @@ class _AnytimeViewState extends State<_AnytimeView> {
                   ),
             floatingActionButton: selectionState.isSelectionMode
                 ? null
-                : EntityAddSpeedDial(
-                    heroTag: 'add_speed_dial_anytime',
-                    onCreateTask: () => context.read<AnytimeScreenBloc>().add(
-                      const AnytimeCreateTaskRequested(),
+                : GuidedTourTarget(
+                    id: 'anytime_create',
+                    child: EntityAddSpeedDial(
+                      heroTag: 'add_speed_dial_anytime',
+                      onCreateTask: () => context.read<AnytimeScreenBloc>().add(
+                        const AnytimeCreateTaskRequested(),
+                      ),
+                      onCreateProject: () =>
+                          context.read<AnytimeScreenBloc>().add(
+                            const AnytimeCreateProjectRequested(),
+                          ),
                     ),
-                    onCreateProject: () =>
-                        context.read<AnytimeScreenBloc>().add(
-                          const AnytimeCreateProjectRequested(),
-                        ),
                   ),
             body: Column(
               children: [

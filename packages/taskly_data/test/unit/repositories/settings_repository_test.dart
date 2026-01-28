@@ -38,6 +38,7 @@ void main() {
         myDayShowAvailableToStart: false,
         textScaleFactor: 1.1,
         onboardingCompleted: true,
+        guidedTourCompleted: true,
       );
 
       await repo.save(SettingsKey.global, settings);

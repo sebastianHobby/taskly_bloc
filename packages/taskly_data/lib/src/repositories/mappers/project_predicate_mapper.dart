@@ -43,7 +43,18 @@ class ProjectPredicateMapper with QueryBuilderMixin {
   ) {
     final column = switch (predicate.field) {
       ProjectBoolField.completed => p.completed,
+      ProjectBoolField.repeating =>
+        p.repeatIcalRrule.isNotNull() & p.repeatIcalRrule.isNotValue(''),
     };
+
+    if (predicate.field == ProjectBoolField.repeating) {
+      return switch (predicate.operator) {
+        BoolOperator.isTrue => column,
+        BoolOperator.isFalse =>
+          p.repeatIcalRrule.isNull() | p.repeatIcalRrule.equals(''),
+      };
+    }
+
     return SqlComparisonBuilder.boolComparison(column, predicate.operator);
   }
 

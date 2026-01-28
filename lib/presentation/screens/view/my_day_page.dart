@@ -17,6 +17,7 @@ import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/view/guided_tour_targets.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
@@ -316,19 +317,22 @@ class _MyDayHeaderRow extends StatelessWidget {
                 ),
               ),
             ),
-            TextButton(
-              onPressed: onUpdatePlan,
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.symmetric(
-                  horizontal: TasklyTokens.of(context).spaceLg,
+            GuidedTourTarget(
+              id: 'my_day_plan_button',
+              child: TextButton(
+                onPressed: onUpdatePlan,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: TasklyTokens.of(context).spaceLg,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  textStyle: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                textStyle: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                child: Text(l10n.myDayUpdatePlanTitle),
               ),
-              child: Text(l10n.myDayUpdatePlanTitle),
             ),
           ],
         ),

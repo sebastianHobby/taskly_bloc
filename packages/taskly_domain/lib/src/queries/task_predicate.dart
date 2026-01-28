@@ -43,7 +43,7 @@ enum TaskDateField {
   completedAt,
 }
 
-enum TaskBoolField { completed }
+enum TaskBoolField { completed, repeating }
 
 /// A single predicate in a task filter.
 @immutable
