@@ -4,8 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
-import 'package:taskly_bloc/presentation/theme/taskly_typography.dart';
-import 'package:taskly_ui/taskly_ui_feed.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 import '../../helpers/test_environment.dart';
 import '../../helpers/test_imports.dart';
@@ -38,22 +37,17 @@ void main() {
       brightness: Brightness.dark,
     );
 
-    final design = theme.extension<TasklyDesignExtension>();
-    expect(design, isNotNull);
+    final tokens = theme.extension<TasklyTokens>();
+    expect(tokens, isNotNull);
     expect(
-      design!.urgentSurface,
+      tokens!.urgentSurface,
       scheme.errorContainer.withValues(alpha: 0.2),
     );
-    expect(design.neonAccent, scheme.primary);
-
-    expect(theme.extension<TasklyTypography>(), isNotNull);
-    expect(theme.extension<TasklyEntityTileTheme>(), isNotNull);
-    expect(theme.extension<TasklyFeedTheme>(), isNotNull);
-    expect(theme.extension<TasklyChromeTheme>(), isNotNull);
+    expect(tokens.neonAccent, scheme.primary);
   });
 
-  testSafe('TasklyChromeTheme copyWith and lerp preserve values', () async {
-    final base = TasklyChromeTheme.fromTheme(ThemeData.light());
+  testSafe('TasklyTokens copyWith and lerp preserve values', () async {
+    final base = TasklyTokens.fromTheme(ThemeData.light());
     final updated = base.copyWith(
       iconButtonMinSize: base.iconButtonMinSize + 10,
       monthStripDotSize: base.monthStripDotSize + 2,
@@ -69,37 +63,11 @@ void main() {
     );
   });
 
-  testSafe('TasklyDesignExtension copyWith and lerp work', () async {
-    const start = TasklyDesignExtension(
-      urgentSurface: Color(0xFF000000),
-      warningSurface: Color(0xFF111111),
-      safeSurface: Color(0xFF222222),
-      neonAccent: Color(0xFF333333),
-      glassBorder: Color(0xFF444444),
-    );
-    const end = TasklyDesignExtension(
-      urgentSurface: Color(0xFFFFFFFF),
-      warningSurface: Color(0xFFEEEEEE),
-      safeSurface: Color(0xFFDDDDDD),
-      neonAccent: Color(0xFFCCCCCC),
-      glassBorder: Color(0xFFBBBBBB),
-    );
-
-    final copy = start.copyWith(neonAccent: const Color(0xFFAAAAAA));
-    expect(copy.neonAccent, const Color(0xFFAAAAAA));
-    expect(copy.warningSurface, start.warningSurface);
-
-    final lerped = start.lerp(end, 0.5);
-    expect(
-      lerped.urgentSurface,
-      Color.lerp(start.urgentSurface, end.urgentSurface, 0.5),
-    );
-  });
-
-  testSafe('AppSpacing and AppRadius expose expected constants', () async {
-    expect(AppSpacing.xs, 4);
-    expect(AppSpacing.cardPadding, const EdgeInsets.all(12));
-    expect(AppRadius.md, 12);
-    expect(AppRadius.xxl, 28);
+  testSafe('TasklyTokens exposes expected spacing/radius constants', () async {
+    final tokens = TasklyTokens.fromTheme(ThemeData.light());
+    expect(tokens.spaceXs, 4);
+    expect(tokens.spaceMd, 12);
+    expect(tokens.radiusMd, 12);
+    expect(tokens.radiusXxl, 28);
   });
 }

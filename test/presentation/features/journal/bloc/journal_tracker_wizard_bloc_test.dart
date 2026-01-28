@@ -9,17 +9,21 @@ import 'package:taskly_bloc/presentation/features/journal/bloc/journal_tracker_w
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/taskly_domain.dart' show OperationContext;
+import 'package:flutter/material.dart';
 
 class MockJournalRepository extends Mock implements JournalRepositoryContract {}
-
-class MockAppErrorReporter extends Mock implements AppErrorReporter {}
-
-class FakeOperationContext extends Fake implements OperationContext {}
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUpAll(() {
-    registerFallbackValue(FakeOperationContext());
+    registerFallbackValue(
+      OperationContext(
+        correlationId: 'fallback-correlation-id',
+        feature: 'journal',
+        intent: 'fallback',
+        operation: 'fallback',
+      ),
+    );
     registerFallbackValue(
       TrackerDefinition(
         id: 'id',
@@ -44,11 +48,13 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockJournalRepository repository;
-  late MockAppErrorReporter errorReporter;
+  late AppErrorReporter errorReporter;
 
   setUp(() {
     repository = MockJournalRepository();
-    errorReporter = MockAppErrorReporter();
+    errorReporter = AppErrorReporter(
+      messengerKey: GlobalKey<ScaffoldMessengerState>(),
+    );
 
     when(
       () => repository.watchTrackerGroups(),
@@ -100,9 +106,9 @@ void main() {
       );
       bloc.add(const JournalTrackerWizardSaveRequested());
     },
-    verify: (_) {
+    verify: (bloc) {
       expect(
-        _.state,
+        bloc.state.status,
         isA<JournalTrackerWizardSaved>(),
       );
       final captured =
@@ -163,9 +169,9 @@ void main() {
       bloc.add(const JournalTrackerWizardChoiceAdded('Work'));
       bloc.add(const JournalTrackerWizardSaveRequested());
     },
-    verify: (_) {
+    verify: (bloc) {
       expect(
-        _.state,
+        bloc.state.status,
         isA<JournalTrackerWizardSaved>(),
       );
       verify(

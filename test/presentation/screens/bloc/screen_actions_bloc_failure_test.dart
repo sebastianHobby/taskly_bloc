@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
-import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
 import 'package:taskly_domain/taskly_domain.dart';
@@ -14,8 +13,8 @@ import 'package:taskly_domain/taskly_domain.dart';
 import '../../../helpers/bloc_test_patterns.dart';
 import '../../../helpers/test_environment.dart';
 import '../../../helpers/test_imports.dart';
-
-class MockEntityActionService extends Mock implements EntityActionService {}
+import '../../../mocks/feature_mocks.dart';
+import '../../../mocks/repository_mocks.dart';
 
 void main() {
   setUpAll(() {
@@ -34,11 +33,34 @@ void main() {
   setUp(setUpTestEnvironment);
 
   group('ScreenActionsBloc failure handling', () {
-    late MockEntityActionService mockEntityActionService;
+    late MockTaskRepositoryContract taskRepository;
+    late MockProjectRepositoryContract projectRepository;
+    late MockValueRepositoryContract valueRepository;
+    late MockAllocationOrchestrator allocationOrchestrator;
+    late MockOccurrenceCommandService occurrenceCommandService;
+    late TaskWriteService taskWriteService;
+    late ProjectWriteService projectWriteService;
+    late ValueWriteService valueWriteService;
     late AppErrorReporter errorReporter;
 
     setUp(() {
-      mockEntityActionService = MockEntityActionService();
+      taskRepository = MockTaskRepositoryContract();
+      projectRepository = MockProjectRepositoryContract();
+      valueRepository = MockValueRepositoryContract();
+      allocationOrchestrator = MockAllocationOrchestrator();
+      occurrenceCommandService = MockOccurrenceCommandService();
+      taskWriteService = TaskWriteService(
+        taskRepository: taskRepository,
+        projectRepository: projectRepository,
+        allocationOrchestrator: allocationOrchestrator,
+        occurrenceCommandService: occurrenceCommandService,
+      );
+      projectWriteService = ProjectWriteService(
+        projectRepository: projectRepository,
+        allocationOrchestrator: allocationOrchestrator,
+        occurrenceCommandService: occurrenceCommandService,
+      );
+      valueWriteService = ValueWriteService(valueRepository: valueRepository);
       errorReporter = AppErrorReporter(
         messengerKey: GlobalKey<ScaffoldMessengerState>(),
       );
@@ -48,8 +70,8 @@ void main() {
       'emits failure then idle and completes completer on expected failure',
       build: () {
         when(
-          () => mockEntityActionService.completeTask(
-            any(),
+          () => occurrenceCommandService.completeTask(
+            taskId: any(named: 'taskId'),
             occurrenceDate: any(named: 'occurrenceDate'),
             originalOccurrenceDate: any(named: 'originalOccurrenceDate'),
             context: any(named: 'context'),
@@ -59,7 +81,9 @@ void main() {
         );
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -103,8 +127,8 @@ void main() {
       'emits failure then idle and suppresses snackbar on unexpected failure',
       build: () {
         when(
-          () => mockEntityActionService.completeTask(
-            any(),
+          () => occurrenceCommandService.completeTask(
+            taskId: any(named: 'taskId'),
             occurrenceDate: any(named: 'occurrenceDate'),
             originalOccurrenceDate: any(named: 'originalOccurrenceDate'),
             context: any(named: 'context'),
@@ -114,7 +138,9 @@ void main() {
         );
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -140,8 +166,8 @@ void main() {
       'emits failure for project completion errors',
       build: () {
         when(
-          () => mockEntityActionService.completeProject(
-            any(),
+          () => occurrenceCommandService.completeProject(
+            projectId: any(named: 'projectId'),
             occurrenceDate: any(named: 'occurrenceDate'),
             originalOccurrenceDate: any(named: 'originalOccurrenceDate'),
             context: any(named: 'context'),
@@ -151,7 +177,9 @@ void main() {
         );
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -192,9 +220,22 @@ void main() {
       'emits failure for move task errors',
       build: () {
         when(
-          () => mockEntityActionService.moveTask(
-            any(),
-            any(),
+          () => taskRepository.getById('task-1'),
+        ).thenAnswer((_) async => TestData.task(id: 'task-1'));
+        when(
+          () => taskRepository.update(
+            id: any(named: 'id'),
+            name: any(named: 'name'),
+            completed: any(named: 'completed'),
+            description: any(named: 'description'),
+            startDate: any(named: 'startDate'),
+            deadlineDate: any(named: 'deadlineDate'),
+            projectId: any(named: 'projectId'),
+            priority: any(named: 'priority'),
+            repeatIcalRrule: any(named: 'repeatIcalRrule'),
+            repeatFromCompletion: any(named: 'repeatFromCompletion'),
+            seriesEnded: any(named: 'seriesEnded'),
+            valueIds: any(named: 'valueIds'),
             context: any(named: 'context'),
           ),
         ).thenThrow(
@@ -202,7 +243,9 @@ void main() {
         );
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },

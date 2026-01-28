@@ -32,7 +32,7 @@ class SettingsScreen extends StatelessWidget {
             _SettingsNavItem(
               icon: Icons.auto_awesome_outlined,
               title: 'Task Suggestions',
-              subtitle: 'Values balance, project focus, and suggestion scope',
+              subtitle: 'Values balance and project focus',
               onTap: () => Routing.pushSettingsTaskSuggestions(context),
             ),
             _SettingsNavItem(

@@ -17,6 +17,7 @@ void main() {
 
     setUp(() {
       repo = MockValueRepositoryContract();
+      when(() => repo.getCount()).thenAnswer((_) async => 0);
       handler = ValueCommandHandler(valueRepository: repo);
       when(() => repo.create(
             name: any(named: 'name'),

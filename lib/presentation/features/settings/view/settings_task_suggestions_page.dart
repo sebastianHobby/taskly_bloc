@@ -33,7 +33,6 @@ class SettingsTaskSuggestionsPage extends StatelessWidget {
                   _ValuesBalanceSection(settings: state.settings),
                   _ProjectFocusSection(settings: state.settings),
                   _NextActionsSection(settings: state.settings),
-                  _SuggestionScopeSection(settings: state.settings),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                 ],
               ),
@@ -286,71 +285,6 @@ class _NextActionsSection extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-class _SuggestionScopeSection extends StatelessWidget {
-  const _SuggestionScopeSection({required this.settings});
-
-  final AllocationConfig settings;
-
-  @override
-  Widget build(BuildContext context) {
-    final scope = _scopeFor(settings);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionHeader(title: 'Suggestion scope'),
-        RadioListTile<SuggestionScope>(
-          title: const Text('Compact'),
-          subtitle: const Text('Fewer suggestions, more focus.'),
-          value: SuggestionScope.compact,
-          groupValue: scope,
-          onChanged: (value) {
-            if (value == null) return;
-            context.read<AllocationSettingsBloc>().add(
-              AllocationSuggestionScopeChanged(value),
-            );
-          },
-        ),
-        RadioListTile<SuggestionScope>(
-          title: const Text('Standard'),
-          subtitle: const Text('Balanced amount of options.'),
-          value: SuggestionScope.standard,
-          groupValue: scope,
-          onChanged: (value) {
-            if (value == null) return;
-            context.read<AllocationSettingsBloc>().add(
-              AllocationSuggestionScopeChanged(value),
-            );
-          },
-        ),
-        RadioListTile<SuggestionScope>(
-          title: const Text('Expanded'),
-          subtitle: const Text('More suggestions, more choice.'),
-          value: SuggestionScope.expanded,
-          groupValue: scope,
-          onChanged: (value) {
-            if (value == null) return;
-            context.read<AllocationSettingsBloc>().add(
-              AllocationSuggestionScopeChanged(value),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  SuggestionScope _scopeFor(AllocationConfig settings) {
-    final strategy = settings.strategySettings;
-    if (strategy.anchorCount <= 1 && strategy.freeSlots == 0) {
-      return SuggestionScope.compact;
-    }
-    if (strategy.anchorCount >= 3 || strategy.freeSlots >= 1) {
-      return SuggestionScope.expanded;
-    }
-    return SuggestionScope.standard;
   }
 }
 

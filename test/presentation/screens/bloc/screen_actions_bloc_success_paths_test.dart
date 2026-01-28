@@ -8,15 +8,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
-import 'package:taskly_domain/analytics.dart';
-import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
 import '../../../helpers/bloc_test_patterns.dart';
 import '../../../helpers/test_environment.dart';
 import '../../../helpers/test_imports.dart';
-
-class MockEntityActionService extends Mock implements EntityActionService {}
+import '../../../mocks/feature_mocks.dart';
+import '../../../mocks/repository_mocks.dart';
 
 void main() {
   setUpAll(() {
@@ -30,19 +28,39 @@ void main() {
         operation: 'fallback-operation',
       ),
     );
-
-    registerFallbackValue(EntityType.task);
-    registerFallbackValue(EntityActionType.delete);
   });
 
   setUp(setUpTestEnvironment);
 
   group('ScreenActionsBloc success paths', () {
-    late MockEntityActionService mockEntityActionService;
+    late MockTaskRepositoryContract taskRepository;
+    late MockProjectRepositoryContract projectRepository;
+    late MockValueRepositoryContract valueRepository;
+    late MockAllocationOrchestrator allocationOrchestrator;
+    late MockOccurrenceCommandService occurrenceCommandService;
+    late TaskWriteService taskWriteService;
+    late ProjectWriteService projectWriteService;
+    late ValueWriteService valueWriteService;
     late AppErrorReporter errorReporter;
 
     setUp(() {
-      mockEntityActionService = MockEntityActionService();
+      taskRepository = MockTaskRepositoryContract();
+      projectRepository = MockProjectRepositoryContract();
+      valueRepository = MockValueRepositoryContract();
+      allocationOrchestrator = MockAllocationOrchestrator();
+      occurrenceCommandService = MockOccurrenceCommandService();
+      taskWriteService = TaskWriteService(
+        taskRepository: taskRepository,
+        projectRepository: projectRepository,
+        allocationOrchestrator: allocationOrchestrator,
+        occurrenceCommandService: occurrenceCommandService,
+      );
+      projectWriteService = ProjectWriteService(
+        projectRepository: projectRepository,
+        allocationOrchestrator: allocationOrchestrator,
+        occurrenceCommandService: occurrenceCommandService,
+      );
+      valueWriteService = ValueWriteService(valueRepository: valueRepository);
       errorReporter = AppErrorReporter(
         messengerKey: GlobalKey<ScaffoldMessengerState>(),
       );
@@ -52,8 +70,8 @@ void main() {
       'completes project occurrence when completed=true',
       build: () {
         when(
-          () => mockEntityActionService.completeProject(
-            any(),
+          () => occurrenceCommandService.completeProject(
+            projectId: any(named: 'projectId'),
             occurrenceDate: any(named: 'occurrenceDate'),
             originalOccurrenceDate: any(named: 'originalOccurrenceDate'),
             context: any(named: 'context'),
@@ -61,7 +79,9 @@ void main() {
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -84,8 +104,8 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.completeProject(
-                    'project-1',
+                  () => occurrenceCommandService.completeProject(
+                    projectId: 'project-1',
                     occurrenceDate: any(named: 'occurrenceDate'),
                     originalOccurrenceDate: any(
                       named: 'originalOccurrenceDate',
@@ -109,15 +129,17 @@ void main() {
       'uncompletes project occurrence when completed=false',
       build: () {
         when(
-          () => mockEntityActionService.uncompleteProject(
-            any(),
+          () => occurrenceCommandService.uncompleteProject(
+            projectId: any(named: 'projectId'),
             occurrenceDate: any(named: 'occurrenceDate'),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -133,8 +155,8 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.uncompleteProject(
-                    'project-1',
+                  () => occurrenceCommandService.uncompleteProject(
+                    projectId: 'project-1',
                     occurrenceDate: any(named: 'occurrenceDate'),
                     context: captureAny(named: 'context'),
                   ),
@@ -151,14 +173,16 @@ void main() {
       'pins task when pinned=true',
       build: () {
         when(
-          () => mockEntityActionService.pinTask(
+          () => allocationOrchestrator.pinTask(
             any(),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -174,7 +198,7 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.pinTask(
+                  () => allocationOrchestrator.pinTask(
                     'task-1',
                     context: captureAny(named: 'context'),
                   ),
@@ -192,8 +216,8 @@ void main() {
       'completes task occurrence when completed=true',
       build: () {
         when(
-          () => mockEntityActionService.completeTask(
-            any(),
+          () => occurrenceCommandService.completeTask(
+            taskId: any(named: 'taskId'),
             occurrenceDate: any(named: 'occurrenceDate'),
             originalOccurrenceDate: any(named: 'originalOccurrenceDate'),
             context: any(named: 'context'),
@@ -201,7 +225,9 @@ void main() {
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -217,8 +243,8 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.completeTask(
-                    'task-1',
+                  () => occurrenceCommandService.completeTask(
+                    taskId: 'task-1',
                     occurrenceDate: any(named: 'occurrenceDate'),
                     originalOccurrenceDate: any(
                       named: 'originalOccurrenceDate',
@@ -238,15 +264,17 @@ void main() {
       'uncompletes task occurrence when completed=false',
       build: () {
         when(
-          () => mockEntityActionService.uncompleteTask(
-            any(),
+          () => occurrenceCommandService.uncompleteTask(
+            taskId: any(named: 'taskId'),
             occurrenceDate: any(named: 'occurrenceDate'),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -262,8 +290,8 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.uncompleteTask(
-                    'task-1',
+                  () => occurrenceCommandService.uncompleteTask(
+                    taskId: 'task-1',
                     occurrenceDate: any(named: 'occurrenceDate'),
                     context: captureAny(named: 'context'),
                   ),
@@ -279,14 +307,16 @@ void main() {
       'unpins task when pinned=false',
       build: () {
         when(
-          () => mockEntityActionService.unpinTask(
+          () => allocationOrchestrator.unpinTask(
             any(),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -302,7 +332,7 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.unpinTask(
+                  () => allocationOrchestrator.unpinTask(
                     'task-1',
                     context: captureAny(named: 'context'),
                   ),
@@ -319,14 +349,16 @@ void main() {
       'pins project when pinned=true',
       build: () {
         when(
-          () => mockEntityActionService.pinProject(
+          () => allocationOrchestrator.pinProject(
             any(),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -342,7 +374,7 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.pinProject(
+                  () => allocationOrchestrator.pinProject(
                     'project-1',
                     context: captureAny(named: 'context'),
                   ),
@@ -359,14 +391,16 @@ void main() {
       'unpins project when pinned=false',
       build: () {
         when(
-          () => mockEntityActionService.unpinProject(
+          () => allocationOrchestrator.unpinProject(
             any(),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -382,7 +416,7 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.unpinProject(
+                  () => allocationOrchestrator.unpinProject(
                     'project-1',
                     context: captureAny(named: 'context'),
                   ),
@@ -395,20 +429,19 @@ void main() {
     );
 
     blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
-      'deletes entity through EntityActionService.performAction',
+      'deletes entity through TaskWriteService.delete',
       build: () {
         when(
-          () => mockEntityActionService.performAction(
-            entityId: any(named: 'entityId'),
-            entityType: any(named: 'entityType'),
-            action: any(named: 'action'),
-            params: null,
+          () => taskRepository.delete(
+            any(),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -424,11 +457,8 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.performAction(
-                    entityId: 'task-1',
-                    entityType: EntityType.task,
-                    action: EntityActionType.delete,
-                    params: null,
+                  () => taskRepository.delete(
+                    'task-1',
                     context: captureAny(named: 'context'),
                   ),
                 ).captured.single
@@ -446,15 +476,30 @@ void main() {
       'moves task with empty targetProjectId as null',
       build: () {
         when(
-          () => mockEntityActionService.moveTask(
-            'task-1',
-            null,
+          () => taskRepository.getById('task-1'),
+        ).thenAnswer((_) async => TestData.task(id: 'task-1'));
+        when(
+          () => taskRepository.update(
+            id: any(named: 'id'),
+            name: any(named: 'name'),
+            completed: any(named: 'completed'),
+            description: any(named: 'description'),
+            startDate: any(named: 'startDate'),
+            deadlineDate: any(named: 'deadlineDate'),
+            projectId: any(named: 'projectId'),
+            priority: any(named: 'priority'),
+            repeatIcalRrule: any(named: 'repeatIcalRrule'),
+            repeatFromCompletion: any(named: 'repeatFromCompletion'),
+            seriesEnded: any(named: 'seriesEnded'),
+            valueIds: any(named: 'valueIds'),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -469,9 +514,19 @@ void main() {
       expect: () => const <dynamic>[],
       verify: (bloc) {
         verify(
-          () => mockEntityActionService.moveTask(
-            'task-1',
-            null,
+          () => taskRepository.update(
+            id: 'task-1',
+            name: any(named: 'name'),
+            completed: any(named: 'completed'),
+            description: any(named: 'description'),
+            startDate: any(named: 'startDate'),
+            deadlineDate: any(named: 'deadlineDate'),
+            projectId: null,
+            priority: any(named: 'priority'),
+            repeatIcalRrule: any(named: 'repeatIcalRrule'),
+            repeatFromCompletion: any(named: 'repeatFromCompletion'),
+            seriesEnded: any(named: 'seriesEnded'),
+            valueIds: any(named: 'valueIds'),
             context: any(named: 'context'),
           ),
         ).called(1);
@@ -482,15 +537,30 @@ void main() {
       'moves task with a target project id',
       build: () {
         when(
-          () => mockEntityActionService.moveTask(
-            'task-1',
-            'project-1',
+          () => taskRepository.getById('task-1'),
+        ).thenAnswer((_) async => TestData.task(id: 'task-1'));
+        when(
+          () => taskRepository.update(
+            id: any(named: 'id'),
+            name: any(named: 'name'),
+            completed: any(named: 'completed'),
+            description: any(named: 'description'),
+            startDate: any(named: 'startDate'),
+            deadlineDate: any(named: 'deadlineDate'),
+            projectId: any(named: 'projectId'),
+            priority: any(named: 'priority'),
+            repeatIcalRrule: any(named: 'repeatIcalRrule'),
+            repeatFromCompletion: any(named: 'repeatFromCompletion'),
+            seriesEnded: any(named: 'seriesEnded'),
+            valueIds: any(named: 'valueIds'),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -506,9 +576,19 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.moveTask(
-                    'task-1',
-                    'project-1',
+                  () => taskRepository.update(
+                    id: 'task-1',
+                    name: any(named: 'name'),
+                    completed: any(named: 'completed'),
+                    description: any(named: 'description'),
+                    startDate: any(named: 'startDate'),
+                    deadlineDate: any(named: 'deadlineDate'),
+                    projectId: 'project-1',
+                    priority: any(named: 'priority'),
+                    repeatIcalRrule: any(named: 'repeatIcalRrule'),
+                    repeatFromCompletion: any(named: 'repeatFromCompletion'),
+                    seriesEnded: any(named: 'seriesEnded'),
+                    valueIds: any(named: 'valueIds'),
                     context: captureAny(named: 'context'),
                   ),
                 ).captured.single
@@ -523,14 +603,16 @@ void main() {
       'completes task series',
       build: () {
         when(
-          () => mockEntityActionService.completeTaskSeries(
-            any(),
+          () => occurrenceCommandService.completeTaskSeries(
+            taskId: any(named: 'taskId'),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -541,8 +623,8 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.completeTaskSeries(
-                    'task-1',
+                  () => occurrenceCommandService.completeTaskSeries(
+                    taskId: 'task-1',
                     context: captureAny(named: 'context'),
                   ),
                 ).captured.single
@@ -558,14 +640,16 @@ void main() {
       'completes project series',
       build: () {
         when(
-          () => mockEntityActionService.completeProjectSeries(
-            any(),
+          () => occurrenceCommandService.completeProjectSeries(
+            projectId: any(named: 'projectId'),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
 
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },
@@ -576,8 +660,8 @@ void main() {
       verify: (bloc) {
         final captured =
             verify(
-                  () => mockEntityActionService.completeProjectSeries(
-                    'p-1',
+                  () => occurrenceCommandService.completeProjectSeries(
+                    projectId: 'p-1',
                     context: captureAny(named: 'context'),
                   ),
                 ).captured.single
@@ -593,7 +677,9 @@ void main() {
       'FailureEvent emits failure then idle',
       build: () {
         return ScreenActionsBloc(
-          entityActionService: mockEntityActionService,
+          taskWriteService: taskWriteService,
+          projectWriteService: projectWriteService,
+          valueWriteService: valueWriteService,
           errorReporter: errorReporter,
         );
       },

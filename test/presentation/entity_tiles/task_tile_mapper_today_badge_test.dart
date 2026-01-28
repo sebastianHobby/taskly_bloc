@@ -1,7 +1,9 @@
 @Tags(['widget', 'tasks'])
 library;
 
+import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
+import 'package:taskly_ui/taskly_ui_feed.dart';
 
 import '../../helpers/test_imports.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';

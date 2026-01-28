@@ -20,12 +20,6 @@ enum NextActionsPreference {
   preferNextActions,
 }
 
-enum SuggestionScope {
-  compact,
-  standard,
-  expanded,
-}
-
 enum SuggestionSignalOption {
   behaviorBased,
   ratingsBased,
@@ -62,12 +56,6 @@ final class AllocationNextActionsPreferenceChanged
   const AllocationNextActionsPreferenceChanged(this.preference);
 
   final NextActionsPreference preference;
-}
-
-final class AllocationSuggestionScopeChanged extends AllocationSettingsEvent {
-  const AllocationSuggestionScopeChanged(this.scope);
-
-  final SuggestionScope scope;
 }
 
 final class AllocationSuggestionSignalChanged extends AllocationSettingsEvent {
@@ -116,7 +104,6 @@ class AllocationSettingsBloc
     on<AllocationValuesBalanceModeChanged>(_onValuesBalanceChanged);
     on<AllocationProjectFocusStyleChanged>(_onProjectFocusChanged);
     on<AllocationNextActionsPreferenceChanged>(_onNextActionsChanged);
-    on<AllocationSuggestionScopeChanged>(_onSuggestionScopeChanged);
     on<AllocationSuggestionSignalChanged>(_onSuggestionSignalChanged);
   }
 
@@ -197,24 +184,6 @@ class AllocationSettingsBloc
     await _persist(updated, intent: 'allocation_next_actions_changed');
   }
 
-  Future<void> _onSuggestionScopeChanged(
-    AllocationSuggestionScopeChanged event,
-    Emitter<AllocationSettingsState> emit,
-  ) async {
-    final preset = _suggestionPresetFor(event.scope);
-    final updated = state.settings.copyWith(
-      suggestionsPerBatch: preset.suggestionsPerBatch,
-      strategySettings: state.settings.strategySettings.copyWith(
-        anchorCount: preset.anchorCount,
-        tasksPerAnchorMin: preset.tasksPerAnchorMin,
-        tasksPerAnchorMax: preset.tasksPerAnchorMax,
-        freeSlots: preset.freeSlots,
-      ),
-    );
-    emit(state.copyWith(settings: updated, isLoading: false));
-    await _persist(updated, intent: 'allocation_suggestion_scope_changed');
-  }
-
   Future<void> _onSuggestionSignalChanged(
     AllocationSuggestionSignalChanged event,
     Emitter<AllocationSettingsState> emit,
@@ -250,46 +219,4 @@ class AllocationSettingsBloc
       context: context,
     );
   }
-
-  static _SuggestionPreset _suggestionPresetFor(SuggestionScope scope) {
-    return switch (scope) {
-      SuggestionScope.compact => const _SuggestionPreset(
-        suggestionsPerBatch: 10,
-        anchorCount: 1,
-        tasksPerAnchorMin: 1,
-        tasksPerAnchorMax: 2,
-        freeSlots: 0,
-      ),
-      SuggestionScope.standard => const _SuggestionPreset(
-        suggestionsPerBatch: 10,
-        anchorCount: 2,
-        tasksPerAnchorMin: 1,
-        tasksPerAnchorMax: 2,
-        freeSlots: 0,
-      ),
-      SuggestionScope.expanded => const _SuggestionPreset(
-        suggestionsPerBatch: 10,
-        anchorCount: 3,
-        tasksPerAnchorMin: 1,
-        tasksPerAnchorMax: 2,
-        freeSlots: 1,
-      ),
-    };
-  }
-}
-
-class _SuggestionPreset {
-  const _SuggestionPreset({
-    required this.suggestionsPerBatch,
-    required this.anchorCount,
-    required this.tasksPerAnchorMin,
-    required this.tasksPerAnchorMax,
-    required this.freeSlots,
-  });
-
-  final int suggestionsPerBatch;
-  final int anchorCount;
-  final int tasksPerAnchorMin;
-  final int tasksPerAnchorMax;
-  final int freeSlots;
 }

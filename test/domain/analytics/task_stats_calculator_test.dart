@@ -39,7 +39,7 @@ void main() {
 
       expect(total.value, 2);
       expect(completed.value, 1);
-      expect(rate.formattedValue, endsWith('%'));
+      expect(rate.value, closeTo(50, 0.001));
     });
 
     testSafe('calculates stale and overdue counts', () async {
@@ -99,8 +99,8 @@ void main() {
         range: range,
       );
 
-      expect(avg.formattedValue, contains('days'));
-      expect(velocity.formattedValue, contains('tasks/week'));
+      expect(avg.value, closeTo(4, 0.001));
+      expect(velocity.value, closeTo(1, 0.001));
     });
 
     testSafe('returns completion days for entity', () async {

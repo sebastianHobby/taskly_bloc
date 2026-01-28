@@ -1,8 +1,9 @@
 @Tags(['widget'])
 library;
 
-import '../../helpers/test_imports.dart';
+import 'package:flutter/material.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
+import '../../helpers/test_imports.dart';
 
 void main() {
   setUpAll(setUpAllTestEnvironment);

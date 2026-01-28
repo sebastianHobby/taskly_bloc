@@ -1,9 +1,13 @@
 @Tags(['unit'])
 library;
 
+import 'package:mocktail/mocktail.dart';
+
 import '../../helpers/test_imports.dart';
 import '../../mocks/fake_repositories.dart';
+import '../../mocks/repository_mocks.dart';
 import 'package:taskly_domain/my_day.dart';
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_domain/time.dart';
@@ -70,13 +74,38 @@ void main() {
     testSafe('seeds values, projects, and tasks', () async {
       final taskRepo = FakeTaskRepository();
       final projectRepo = FakeProjectRepository();
+      final routineRepo = MockRoutineRepositoryContract();
       final valueRepo = FakeValueRepository();
       final myDayRepo = _RecordingMyDayRepository();
       final clock = FixedClock(DateTime(2025, 1, 15, 12));
 
+      when(
+        () => routineRepo.getAll(includeInactive: true),
+      ).thenAnswer((_) async => const <Routine>[]);
+      when(
+        () => routineRepo.delete(any(), context: any(named: 'context')),
+      ).thenAnswer((_) async {});
+      when(
+        () => routineRepo.create(
+          name: any(named: 'name'),
+          valueId: any(named: 'valueId'),
+          routineType: any(named: 'routineType'),
+          targetCount: any(named: 'targetCount'),
+          scheduleDays: any(named: 'scheduleDays'),
+          minSpacingDays: any(named: 'minSpacingDays'),
+          restDayBuffer: any(named: 'restDayBuffer'),
+          preferredWeeks: any(named: 'preferredWeeks'),
+          fixedDayOfMonth: any(named: 'fixedDayOfMonth'),
+          fixedWeekday: any(named: 'fixedWeekday'),
+          fixedWeekOfMonth: any(named: 'fixedWeekOfMonth'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async {});
+
       final service = TemplateDataService(
         taskRepository: taskRepo,
         projectRepository: projectRepo,
+        routineRepository: routineRepo,
         valueRepository: valueRepo,
         myDayRepository: myDayRepo,
         clock: clock,

@@ -13,6 +13,7 @@ import 'package:taskly_bloc/presentation/shared/validation/form_builder_validato
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_color_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
+import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
@@ -28,6 +29,7 @@ class OnboardingFlowPage extends StatelessWidget {
     return BlocProvider(
       create: (context) => OnboardingBloc(
         authRepository: context.read<AuthRepositoryContract>(),
+        settingsRepository: context.read<SettingsRepositoryContract>(),
         valueRepository: context.read<ValueRepositoryContract>(),
         valueWriteService: context.read<ValueWriteService>(),
         errorReporter: context.read<AppErrorReporter>(),
@@ -115,6 +117,7 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
             final primaryLabel = _primaryLabelFor(state.step);
             final isPrimaryBusy =
                 state.isSavingName ||
+                state.isSavingSuggestionSignal ||
                 state.isCreatingValue ||
                 state.isCompleting;
 
@@ -127,12 +130,13 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
                     children: [
                       _WelcomeStep(tokens: tokens),
                       _NameStep(controller: _nameController),
+                      _SuggestionSignalStep(
+                        signal: state.suggestionSignal,
+                      ),
                       _ValuesStep(
                         selectedValues: state.selectedValues,
                         isBusy: state.isCreatingValue,
                       ),
-                      _PlanMyDayStep(tokens: tokens),
-                      _OverviewStep(tokens: tokens),
                     ],
                   ),
                 ),
@@ -146,6 +150,18 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      Text(
+                        'Step ${state.step.index + 1} of '
+                        '${OnboardingStep.values.length}',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: tokens.spaceSm),
                       FilledButton(
                         onPressed: isPrimaryBusy || !_isPrimaryEnabled(state)
                             ? null
@@ -199,9 +215,8 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
     return switch (step) {
       OnboardingStep.welcome => 'Get started',
       OnboardingStep.name => 'Continue',
-      OnboardingStep.valuesSetup => 'Continue',
-      OnboardingStep.planMyDay => 'Next',
-      OnboardingStep.overview => 'Got it',
+      OnboardingStep.suggestionSignal => 'Continue',
+      OnboardingStep.valuesSetup => 'Finish',
     };
   }
 }
@@ -226,13 +241,19 @@ class _WelcomeStep extends StatelessWidget {
           ),
           SizedBox(height: tokens.spaceLg),
           Text(
-            'Welcome to Taskly',
+            'Meet Taskly',
             style: theme.textTheme.displaySmall,
             textAlign: TextAlign.center,
           ),
           SizedBox(height: tokens.spaceSm),
           Text(
-            'Focus your day without losing your backlog.',
+            'Your daily plan, shaped by what matters.',
+            style: theme.textTheme.bodyLarge,
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: tokens.spaceSm),
+          Text(
+            'Choose your values to get better suggestions.',
             style: theme.textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
@@ -285,6 +306,187 @@ class _NameStep extends StatelessWidget {
   }
 }
 
+class _SuggestionSignalStep extends StatelessWidget {
+  const _SuggestionSignalStep({
+    required this.signal,
+  });
+
+  final SuggestionSignal signal;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = TasklyTokens.of(context);
+    final scheme = theme.colorScheme;
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spaceLg,
+        tokens.spaceXl,
+        tokens.spaceLg,
+        tokens.spaceLg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'How should Taskly suggest tasks?',
+            style: theme.textTheme.displaySmall,
+          ),
+          SizedBox(height: tokens.spaceSm),
+          Text(
+            'Choose the signal Taskly uses for daily suggestions. '
+            'You can change this later.',
+            style: theme.textTheme.bodyLarge,
+          ),
+          SizedBox(height: tokens.spaceLg),
+          _SuggestionSignalCard(
+            title: 'Values + weekly check-ins',
+            subtitle: 'Uses your weekly value ratings',
+            body:
+                'Your check-ins keep suggestions grounded in what you care '
+                'about right now.',
+            selected: signal == SuggestionSignal.ratingsBased,
+            recommended: true,
+            accentColor: scheme.primary,
+            onTap: () => context.read<OnboardingBloc>().add(
+              const OnboardingSuggestionSignalChanged(
+                SuggestionSignal.ratingsBased,
+              ),
+            ),
+          ),
+          SizedBox(height: tokens.spaceSm),
+          _SuggestionSignalCard(
+            title: 'Task completions',
+            subtitle: 'Based on what you finish',
+            body:
+                "Your completions keep suggestions grounded in what you’re "
+                'actually doing right now.',
+            selected: signal == SuggestionSignal.behaviorBased,
+            recommended: false,
+            accentColor: scheme.secondary,
+            onTap: () => context.read<OnboardingBloc>().add(
+              const OnboardingSuggestionSignalChanged(
+                SuggestionSignal.behaviorBased,
+              ),
+            ),
+          ),
+          SizedBox(height: tokens.spaceMd),
+          Text(
+            'Ratings mode requires weekly ratings and may change suggestions '
+            'more quickly.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestionSignalCard extends StatelessWidget {
+  const _SuggestionSignalCard({
+    required this.title,
+    required this.subtitle,
+    required this.body,
+    required this.selected,
+    required this.recommended,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final String body;
+  final bool selected;
+  final bool recommended;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+
+    final borderColor = selected
+        ? accentColor.withValues(alpha: 0.55)
+        : scheme.outlineVariant.withValues(alpha: 0.6);
+    final background = selected
+        ? Color.alphaBlend(
+            accentColor.withValues(alpha: 0.12),
+            scheme.surfaceContainerLow,
+          )
+        : scheme.surfaceContainerLow;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(tokens.radiusLg),
+      child: Container(
+        padding: EdgeInsets.all(tokens.spaceMd),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(tokens.radiusLg),
+          border: Border.all(color: borderColor, width: selected ? 1.6 : 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (recommended)
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spaceSm,
+                      vertical: tokens.spaceXxs2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(tokens.radiusPill),
+                      border: Border.all(
+                        color: accentColor.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Text(
+                      'Recommended',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: accentColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            SizedBox(height: tokens.spaceXs),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: tokens.spaceXs2),
+            Text(
+              body,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ValuesStep extends StatelessWidget {
   const _ValuesStep({
     required this.selectedValues,
@@ -321,13 +523,13 @@ class _ValuesStep extends StatelessWidget {
           ),
           SizedBox(height: tokens.spaceSm),
           Text(
-            'Values guide your daily focus. Taskly uses them to suggest tasks '
-            'and keep your attention balanced.',
+            'Taskly suggests tasks based on these and helps balance what '
+            'matters most to you right now.',
             style: theme.textTheme.bodyLarge,
           ),
           SizedBox(height: tokens.spaceSm),
           Text(
-            'Pick 1-3 values that feel meaningful and doable.',
+            'Pick 1–3 to start.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
@@ -520,12 +722,10 @@ class _QuickPickCard extends StatelessWidget {
       onTap: enabled
           ? () async {
               if (isSelected) return;
-              final priority = await _selectPriority(context, template.name);
-              if (priority == null || !context.mounted) return;
               final draft = ValueDraft(
                 name: template.name,
                 color: template.colorId,
-                priority: priority,
+                priority: ValuePriority.medium,
                 iconName: template.iconName,
               );
               context.read<OnboardingBloc>().add(
@@ -568,17 +768,6 @@ class _QuickPickCard extends StatelessWidget {
     );
   }
 
-  Future<ValuePriority?> _selectPriority(
-    BuildContext context,
-    String name,
-  ) {
-    final sheetContext = _navigatorContext(context);
-    return showModalBottomSheet<ValuePriority>(
-      context: sheetContext,
-      useSafeArea: true,
-      builder: (_) => _PrioritySheet(valueName: name),
-    );
-  }
 }
 
 class _SelectedValueRow extends StatelessWidget {
@@ -623,7 +812,6 @@ class _SelectedValueRow extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
           ),
-          _PriorityPill(priority: value.priority),
           IconButton(
             tooltip: 'Edit',
             icon: const Icon(Icons.edit_outlined),
@@ -640,123 +828,6 @@ class _SelectedValueRow extends StatelessWidget {
   }
 }
 
-class _PriorityPill extends StatelessWidget {
-  const _PriorityPill({required this.priority});
-
-  final ValuePriority priority;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final label = switch (priority) {
-      ValuePriority.high => context.l10n.valuePriorityHighLabel,
-      ValuePriority.medium => context.l10n.valuePriorityMediumLabel,
-      ValuePriority.low => context.l10n.valuePriorityLowLabel,
-    };
-    final color = switch (priority) {
-      ValuePriority.high => scheme.secondary,
-      ValuePriority.medium => scheme.primary,
-      ValuePriority.low => scheme.onSurfaceVariant,
-    };
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spaceXs,
-        vertical: tokens.spaceXxs2,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(tokens.radiusPill),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: color,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _PrioritySheet extends StatefulWidget {
-  const _PrioritySheet({required this.valueName});
-
-  final String valueName;
-
-  @override
-  State<_PrioritySheet> createState() => _PrioritySheetState();
-}
-
-class _PrioritySheetState extends State<_PrioritySheet> {
-  ValuePriority _priority = ValuePriority.medium;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        tokens.spaceLg,
-        tokens.spaceLg,
-        tokens.spaceLg,
-        tokens.spaceXl,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Priority for ${widget.valueName}',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          SizedBox(height: tokens.spaceSm),
-          Text(
-            'Higher priorities get a little more space in suggestions.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: tokens.spaceLg),
-          TasklyFormPrioritySegmented(
-            segments: [
-              TasklyFormPrioritySegment(
-                label: context.l10n.valuePriorityLowLabel,
-                value: ValuePriority.low.index,
-                selectedColor: scheme.onSurfaceVariant,
-              ),
-              TasklyFormPrioritySegment(
-                label: context.l10n.valuePriorityMediumLabel,
-                value: ValuePriority.medium.index,
-                selectedColor: scheme.primary,
-              ),
-              TasklyFormPrioritySegment(
-                label: context.l10n.valuePriorityHighLabel,
-                value: ValuePriority.high.index,
-                selectedColor: scheme.secondary,
-              ),
-            ],
-            value: _priority.index,
-            onChanged: (value) {
-              if (value == null) return;
-              setState(() {
-                _priority = ValuePriority.values[value];
-              });
-            },
-          ),
-          SizedBox(height: tokens.spaceLg),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, _priority),
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _CustomValueSheet extends StatefulWidget {
   const _CustomValueSheet();
@@ -767,7 +838,6 @@ class _CustomValueSheet extends StatefulWidget {
 
 class _CustomValueSheetState extends State<_CustomValueSheet> {
   final _formKey = GlobalKey<FormBuilderState>();
-  ValuePriority _priority = ValuePriority.medium;
 
   @override
   Widget build(BuildContext context) {
@@ -795,7 +865,7 @@ class _CustomValueSheetState extends State<_CustomValueSheet> {
             ),
             SizedBox(height: tokens.spaceSm),
             Text(
-              'Name it, pick an icon and color, then set priority.',
+              'Name it, pick an icon and color.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
@@ -838,35 +908,6 @@ class _CustomValueSheetState extends State<_CustomValueSheet> {
                 context,
               ),
             ),
-            SizedBox(height: tokens.spaceMd),
-            TasklyFormSectionLabel(text: context.l10n.priorityLabel),
-            SizedBox(height: tokens.spaceSm),
-            TasklyFormPrioritySegmented(
-              segments: [
-                TasklyFormPrioritySegment(
-                  label: context.l10n.valuePriorityLowLabel,
-                  value: ValuePriority.low.index,
-                  selectedColor: scheme.onSurfaceVariant,
-                ),
-                TasklyFormPrioritySegment(
-                  label: context.l10n.valuePriorityMediumLabel,
-                  value: ValuePriority.medium.index,
-                  selectedColor: scheme.primary,
-                ),
-                TasklyFormPrioritySegment(
-                  label: context.l10n.valuePriorityHighLabel,
-                  value: ValuePriority.high.index,
-                  selectedColor: scheme.secondary,
-                ),
-              ],
-              value: _priority.index,
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() {
-                  _priority = ValuePriority.values[value];
-                });
-              },
-            ),
             SizedBox(height: tokens.spaceLg),
             FilledButton(
               onPressed: _handleSave,
@@ -900,339 +941,12 @@ class _CustomValueSheetState extends State<_CustomValueSheet> {
       ValueDraft(
         name: name,
         color: colorHex,
-        priority: _priority,
+        priority: ValuePriority.medium,
         iconName: iconName,
       ),
     );
   }
 }
-
-class _PlanMyDayStep extends StatelessWidget {
-  const _PlanMyDayStep({required this.tokens});
-
-  final TasklyTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        tokens.spaceLg,
-        tokens.spaceXl,
-        tokens.spaceLg,
-        tokens.spaceLg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Plan My Day',
-            style: theme.textTheme.displaySmall,
-          ),
-          SizedBox(height: tokens.spaceSm),
-          Text(
-            'Taskly uses your values, routines, and urgent items to build '
-            "today's focus list. You confirm the final picks.",
-            style: theme.textTheme.bodyLarge,
-          ),
-          SizedBox(height: tokens.spaceLg),
-          Text(
-            'Plan My Day (4 steps)',
-            style: theme.textTheme.titleMedium,
-          ),
-          SizedBox(height: tokens.spaceSm),
-          _InfoGrid(
-            items: const [
-              _InfoCardData(
-                title: 'Values',
-                body: 'Tasks linked to what matters most.',
-                detail:
-                    'Values lead the plan. Taskly looks at your value '
-                    'priorities and surfaces tasks that support them.',
-              ),
-              _InfoCardData(
-                title: 'Routines',
-                body: 'Optional habits you want to keep on track.',
-                detail:
-                    'Routines can appear in your plan when you want them. '
-                    'They stay optional.',
-              ),
-              _InfoCardData(
-                title: 'Urgent / Planned',
-                body: "Time-sensitive items you shouldn't miss.",
-                detail:
-                    'Due or planned tasks are shown so you can balance '
-                    "today's focus with timing.",
-              ),
-              _InfoCardData(
-                title: 'Summary',
-                body: 'Your final focus list for today.',
-                detail: 'You confirm the list. Nothing is auto-committed.',
-              ),
-            ],
-          ),
-          SizedBox(height: tokens.spaceLg),
-          Text(
-            'My Day',
-            style: theme.textTheme.titleMedium,
-          ),
-          SizedBox(height: tokens.spaceSm),
-          _InfoCard(
-            title: "Today's focus list",
-            body: 'Built from your values, routines, and urgent items.',
-            tint: scheme.primaryContainer,
-            onTap: () => _showInfoSheet(
-              context,
-              title: 'My Day',
-              body:
-                  'My Day is your focus list for today. It pulls from values, '
-                  'routines, and time-sensitive items so you can choose what '
-                  'to work on now.',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OverviewStep extends StatelessWidget {
-  const _OverviewStep({required this.tokens});
-
-  final TasklyTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        tokens.spaceLg,
-        tokens.spaceXl,
-        tokens.spaceLg,
-        tokens.spaceLg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Anytime',
-            style: theme.textTheme.displaySmall,
-          ),
-          SizedBox(height: tokens.spaceSm),
-          _InfoCard(
-            title: 'Your full list',
-            body:
-                'Anytime is where all your tasks and projects live. '
-                'My Day brings the right ones forward when it matters.',
-            tint: scheme.secondaryContainer,
-          ),
-          SizedBox(height: tokens.spaceLg),
-          Text(
-            'Scheduled',
-            style: theme.textTheme.titleMedium,
-          ),
-          SizedBox(height: tokens.spaceSm),
-          _InfoCard(
-            title: 'A calendar lens',
-            body: 'Upcoming tasks and projects, grouped by date.',
-            tint: scheme.tertiaryContainer,
-          ),
-          SizedBox(height: tokens.spaceLg),
-          Text(
-            'Routines are optional',
-            style: theme.textTheme.titleMedium,
-          ),
-          SizedBox(height: tokens.spaceSm),
-          Text(
-            'Routines are habits linked to your values. They can show up in '
-            'Plan My Day when you want them to.',
-            style: theme.textTheme.bodyLarge,
-          ),
-          SizedBox(height: tokens.spaceSm),
-          _RoutineSampleTile(),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoGrid extends StatelessWidget {
-  const _InfoGrid({required this.items});
-
-  final List<_InfoCardData> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    return GridView.count(
-      crossAxisCount: 2,
-      childAspectRatio: 1.15,
-      crossAxisSpacing: tokens.spaceSm,
-      mainAxisSpacing: tokens.spaceSm,
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      children: [
-        for (final item in items)
-          _InfoCard(
-            title: item.title,
-            body: item.body,
-            onTap: () => _showInfoSheet(
-              context,
-              title: item.title,
-              body: item.detail,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _InfoCardData {
-  const _InfoCardData({
-    required this.title,
-    required this.body,
-    required this.detail,
-  });
-
-  final String title;
-  final String body;
-  final String detail;
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.title,
-    required this.body,
-    this.tint,
-    this.onTap,
-  });
-
-  final String title;
-  final String body;
-  final Color? tint;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final background = tint == null
-        ? scheme.surfaceContainerLow
-        : Color.alphaBlend(tint!.withValues(alpha: 0.22), scheme.surface);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(tokens.radiusLg),
-      child: Container(
-        padding: EdgeInsets.all(tokens.spaceSm),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(tokens.radiusLg),
-          border: Border.all(
-            color: scheme.outlineVariant.withValues(alpha: 0.6),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleSmall),
-            SizedBox(height: tokens.spaceXs),
-            Text(
-              body,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _RoutineSampleTile extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final routineRow = TasklyRowSpec.routine(
-      key: 'onboarding-routine-sample',
-      data: TasklyRoutineRowData(
-        id: 'r-sample-1',
-        title: 'Morning walk',
-        targetLabel: '3x/week',
-        remainingLabel: '2 left',
-        windowLabel: '4 days left',
-        valueChip: ValueChipData(
-          label: 'Health',
-          icon: Icons.favorite_rounded,
-          color: scheme.primary,
-        ),
-        labels: const TasklyRoutineRowLabels(primaryActionLabel: 'Do today'),
-      ),
-      actions: const TasklyRoutineRowActions(
-        onTap: _noop,
-        onPrimaryAction: _noop,
-      ),
-    );
-
-    return TasklyFeedRenderer(
-      spec: TasklyFeedSpec.content(
-        sections: [
-          TasklySectionSpec.standardList(
-            id: 'onboarding-routine',
-            rows: [routineRow],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-void _showInfoSheet(
-  BuildContext context, {
-  required String title,
-  required String body,
-}) {
-  final tokens = TasklyTokens.of(context);
-  showModalBottomSheet<void>(
-    context: _navigatorContext(context),
-    useSafeArea: true,
-    builder: (_) => Padding(
-      padding: EdgeInsets.fromLTRB(
-        tokens.spaceLg,
-        tokens.spaceLg,
-        tokens.spaceLg,
-        tokens.spaceXl,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleLarge),
-          SizedBox(height: tokens.spaceSm),
-          Text(
-            body,
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          SizedBox(height: tokens.spaceLg),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-void _noop() {}
 
 BuildContext _navigatorContext(BuildContext context) {
   return GoRouter.of(context).routerDelegate.navigatorKey.currentContext ??

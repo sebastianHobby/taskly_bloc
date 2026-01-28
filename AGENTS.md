@@ -29,6 +29,10 @@ When changes affect architecture (new boundaries, responsibilities, data flow,
 storage/sync behavior, cross-feature patterns), update the relevant files under
 doc/architecture/ in the same PR.
 
+Keep specifications and architecture documents under `doc/` up to date. When
+introducing significant new features, update architecture docs and, if the
+feature has sufficient complexity, create a new deep dive spec.
+
 If a change would violate an invariant:
 
 - Get explicit user confirmation.
@@ -71,6 +75,8 @@ When asked to design UI/UX:
 
 - Always run `dart analyze` (command line) after all changes are completed and
   ensure it is green before reporting done.
+- Keep unit tests up to date with changes and add new unit tests for new
+  behavior or regressions; follow existing test patterns.
 - Do not try to “fix tests to make them pass” while the analyzer reports
   problems.
 - If `dart analyze` fails to start due to sandbox restrictions (e.g. “windows

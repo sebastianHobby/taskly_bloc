@@ -109,13 +109,18 @@ class FakeAttentionRepository implements AttentionRepositoryContract {
   Future<void> upsertRule(AttentionRule rule) async {}
 
   @override
-  Future<void> updateRuleActive(String ruleId, bool active) async {}
+  Future<void> updateRuleActive(
+    String ruleId,
+    bool active, {
+    OperationContext? context,
+  }) async {}
 
   @override
   Future<void> updateRuleEvaluatorParams(
     String ruleId,
-    Map<String, dynamic> evaluatorParams,
-  ) async {}
+    Map<String, dynamic> evaluatorParams, {
+    OperationContext? context,
+  }) async {}
 
   @override
   Future<void> updateRuleSeverity(

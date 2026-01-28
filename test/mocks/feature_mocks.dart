@@ -1,4 +1,5 @@
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_domain/taskly_domain.dart';
 
 /// Mock implementations for feature-level repositories and services.
 ///
@@ -7,11 +8,18 @@ import 'package:mocktail/mocktail.dart';
 
 // === Analytics Feature ===
 
-import 'package:taskly_domain/taskly_domain.dart';
 class MockAnalyticsRepositoryContract extends Mock
     implements AnalyticsRepositoryContract {}
 
 class MockAnalyticsService extends Mock implements AnalyticsService {}
+
+// === Actions/Orchestrators ===
+
+class MockAllocationOrchestrator extends Mock
+    implements AllocationOrchestrator {}
+
+class MockOccurrenceCommandService extends Mock
+    implements OccurrenceCommandService {}
 
 // === Journal Feature ===
 
