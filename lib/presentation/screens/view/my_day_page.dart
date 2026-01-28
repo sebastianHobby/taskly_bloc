@@ -972,7 +972,10 @@ TasklyRowSpec _buildRoutineRow(
     showScheduleRow: routine.routineType == RoutineType.weeklyFixed,
     dayKeyUtc: dayKeyUtc,
     completionsInPeriod: completionsInPeriod,
-    labels: buildRoutineExecutionLabels(context),
+    labels: buildRoutineExecutionLabels(
+      context,
+      completed: completed,
+    ),
   );
 
   return TasklyRowSpec.routine(
@@ -980,16 +983,20 @@ TasklyRowSpec _buildRoutineRow(
     data: data,
     depth: depthOffset,
     actions: TasklyRoutineRowActions(
-      onTap: completed
-          ? null
-          : () => context.read<MyDayBloc>().add(
-              MyDayRoutineCompletionRequested(routineId: routine.id),
-            ),
-      onPrimaryAction: completed
-          ? null
-          : () => context.read<MyDayBloc>().add(
-              MyDayRoutineCompletionRequested(routineId: routine.id),
-            ),
+      onTap: () => context.read<MyDayBloc>().add(
+        MyDayRoutineCompletionToggled(
+          routineId: routine.id,
+          completedToday: completed,
+          dayKeyUtc: dayKeyUtc,
+        ),
+      ),
+      onPrimaryAction: () => context.read<MyDayBloc>().add(
+        MyDayRoutineCompletionToggled(
+          routineId: routine.id,
+          completedToday: completed,
+          dayKeyUtc: dayKeyUtc,
+        ),
+      ),
     ),
   );
 }

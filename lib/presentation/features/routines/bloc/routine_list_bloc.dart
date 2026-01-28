@@ -181,6 +181,27 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
     RoutineListLogRequested event,
     Emitter<RoutineListState> emit,
   ) async {
+    final completedToday = _isCompletedToday(event.routineId);
+    final dayKeyUtc =
+        _dayKeyForRoutine(event.routineId) ?? dateOnly(_nowService.nowUtc());
+    if (completedToday) {
+      final context = _contextFactory.create(
+        feature: 'routines',
+        screen: 'routines_list',
+        intent: 'routine_unlog',
+        operation: 'routines.unlog',
+        entityType: 'routine',
+        entityId: event.routineId,
+      );
+
+      await _routineWriteService.removeLatestCompletionForDay(
+        routineId: event.routineId,
+        dayKeyUtc: dayKeyUtc,
+        context: context,
+      );
+      return;
+    }
+
     final context = _contextFactory.create(
       feature: 'routines',
       screen: 'routines_list',
@@ -268,5 +289,25 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
     }
 
     return filtered;
+  }
+
+  bool _isCompletedToday(String routineId) {
+    for (final item in _latestItems) {
+      if (item.routine.id != routineId) continue;
+      final today = dateOnly(item.dayKeyUtc);
+      return item.completionsInPeriod.any(
+        (completion) =>
+            completion.routineId == routineId &&
+            dateOnly(completion.completedAtUtc).isAtSameMomentAs(today),
+      );
+    }
+    return false;
+  }
+
+  DateTime? _dayKeyForRoutine(String routineId) {
+    for (final item in _latestItems) {
+      if (item.routine.id == routineId) return item.dayKeyUtc;
+    }
+    return null;
   }
 }

@@ -197,7 +197,7 @@ class _PrimaryActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final isDone = completed && onPressed == null;
+    final isDone = completed;
     final bg = isDone ? scheme.primaryContainer : Colors.transparent;
     final fg = isDone ? scheme.primary : scheme.onSurfaceVariant;
     final borderColor = isDone

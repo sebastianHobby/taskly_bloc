@@ -67,9 +67,14 @@ TasklyRoutineRowData buildRoutineRowData(
   );
 }
 
-TasklyRoutineRowLabels buildRoutineExecutionLabels(BuildContext context) {
+TasklyRoutineRowLabels buildRoutineExecutionLabels(
+  BuildContext context, {
+  required bool completed,
+}) {
   return TasklyRoutineRowLabels(
-    primaryActionLabel: context.l10n.myDayDoTodayAction,
+    primaryActionLabel: completed
+        ? context.l10n.routineLoggedLabel
+        : context.l10n.myDayDoTodayAction,
   );
 }
 

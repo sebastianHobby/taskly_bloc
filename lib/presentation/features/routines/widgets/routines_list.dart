@@ -3,6 +3,7 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/routines/model/routine_list_item.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
 import 'package:taskly_domain/routines.dart';
+import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -56,6 +57,7 @@ class RoutinesListView extends StatelessWidget {
                   context,
                   routine: item.routine,
                   snapshot: item.snapshot,
+                  completed: _completedToday(item),
                   showScheduleRow:
                       item.routine.routineType == RoutineType.weeklyFixed,
                   showProgress:
@@ -64,7 +66,10 @@ class RoutinesListView extends StatelessWidget {
                   highlightCompleted: false,
                   dayKeyUtc: item.dayKeyUtc,
                   completionsInPeriod: item.completionsInPeriod,
-                  labels: buildRoutineExecutionLabels(context),
+                  labels: buildRoutineExecutionLabels(
+                    context,
+                    completed: _completedToday(item),
+                  ),
                 ),
                 actions: TasklyRoutineRowActions(
                   onTap: () => onEditRoutine(item.routine.id),
@@ -89,6 +94,7 @@ class RoutinesListView extends StatelessWidget {
                   context,
                   routine: item.routine,
                   snapshot: item.snapshot,
+                  completed: _completedToday(item),
                   showScheduleRow:
                       item.routine.routineType == RoutineType.weeklyFixed,
                   showProgress:
@@ -97,7 +103,10 @@ class RoutinesListView extends StatelessWidget {
                   highlightCompleted: false,
                   dayKeyUtc: item.dayKeyUtc,
                   completionsInPeriod: item.completionsInPeriod,
-                  labels: buildRoutineExecutionLabels(context),
+                  labels: buildRoutineExecutionLabels(
+                    context,
+                    completed: _completedToday(item),
+                  ),
                 ),
                 actions: TasklyRoutineRowActions(
                   onTap: () => onEditRoutine(item.routine.id),
@@ -117,4 +126,13 @@ class RoutinesListView extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _completedToday(RoutineListItem item) {
+  final today = dateOnly(item.dayKeyUtc);
+  return item.completionsInPeriod.any(
+    (completion) =>
+        completion.routineId == item.routine.id &&
+        dateOnly(completion.completedAtUtc).isAtSameMomentAs(today),
+  );
 }

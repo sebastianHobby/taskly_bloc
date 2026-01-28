@@ -2909,14 +2909,18 @@
             }
         }
     },
-    "routinePrimaryActionLabel": "Do today",
-    "@routinePrimaryActionLabel": {
-        "description": "Primary action label for routine cards."
-    },
-    "routinePauseLabel": "Pause routine",
-    "@routinePauseLabel": {
-        "description": "Menu label to pause a routine."
-    },
+  "routinePrimaryActionLabel": "Do today",
+  "@routinePrimaryActionLabel": {
+    "description": "Primary action label for routine cards."
+  },
+  "routineLoggedLabel": "Registrado",
+  "@routineLoggedLabel": {
+    "description": "Label shown when a routine has been logged for today."
+  },
+  "routinePauseLabel": "Pause routine",
+  "@routinePauseLabel": {
+    "description": "Menu label to pause a routine."
+  },
   "routineEditLabel": "Edit schedule",
   "@routineEditLabel": {
     "description": "Menu label to edit a routine schedule."

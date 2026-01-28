@@ -312,6 +312,15 @@ class _InMemoryRoutineRepo extends Fake implements RoutineRepositoryContract {
   }
 
   @override
+  Future<bool> removeLatestCompletionForDay({
+    required String routineId,
+    required DateTime dayKeyUtc,
+    OperationContext? context,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<void> recordSkip({
     required String routineId,
     required RoutineSkipPeriodType periodType,

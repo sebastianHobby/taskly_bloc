@@ -18,10 +18,16 @@ final class MyDayStarted extends MyDayEvent {
   const MyDayStarted();
 }
 
-final class MyDayRoutineCompletionRequested extends MyDayEvent {
-  const MyDayRoutineCompletionRequested({required this.routineId});
+final class MyDayRoutineCompletionToggled extends MyDayEvent {
+  const MyDayRoutineCompletionToggled({
+    required this.routineId,
+    required this.completedToday,
+    required this.dayKeyUtc,
+  });
 
   final String routineId;
+  final bool completedToday;
+  final DateTime dayKeyUtc;
 }
 
 sealed class MyDayState {
@@ -82,8 +88,8 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
        _nowService = nowService,
        super(const MyDayLoading()) {
     on<MyDayStarted>(_onStarted, transformer: restartable());
-    on<MyDayRoutineCompletionRequested>(
-      _onRoutineCompletionRequested,
+    on<MyDayRoutineCompletionToggled>(
+      _onRoutineCompletionToggled,
       transformer: droppable(),
     );
     add(const MyDayStarted());
@@ -122,10 +128,28 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
     );
   }
 
-  Future<void> _onRoutineCompletionRequested(
-    MyDayRoutineCompletionRequested event,
+  Future<void> _onRoutineCompletionToggled(
+    MyDayRoutineCompletionToggled event,
     Emitter<MyDayState> emit,
   ) async {
+    if (event.completedToday) {
+      final context = _contextFactory.create(
+        feature: 'routines',
+        screen: 'my_day',
+        intent: 'routine_unlog',
+        operation: 'routines.unlog',
+        entityType: 'routine',
+        entityId: event.routineId,
+      );
+
+      await _routineWriteService.removeLatestCompletionForDay(
+        routineId: event.routineId,
+        dayKeyUtc: event.dayKeyUtc,
+        context: context,
+      );
+      return;
+    }
+
     final context = _contextFactory.create(
       feature: 'routines',
       screen: 'my_day',

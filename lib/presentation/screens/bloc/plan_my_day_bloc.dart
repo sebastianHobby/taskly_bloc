@@ -101,18 +101,6 @@ final class PlanMyDayValueShowMore extends PlanMyDayEvent {
   final String valueId;
 }
 
-final class PlanMyDayValueAddAll extends PlanMyDayEvent {
-  const PlanMyDayValueAddAll(this.valueId);
-
-  final String valueId;
-}
-
-final class PlanMyDayValueClearAll extends PlanMyDayEvent {
-  const PlanMyDayValueClearAll(this.valueId);
-
-  final String valueId;
-}
-
 enum PlanMyDayStep {
   valuesStep,
   routines,
@@ -340,8 +328,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     on<PlanMyDayValueSortChanged>(_onValueSortChanged);
     on<PlanMyDayValueToggleExpanded>(_onValueToggleExpanded);
     on<PlanMyDayValueShowMore>(_onValueShowMore);
-    on<PlanMyDayValueAddAll>(_onValueAddAll);
-    on<PlanMyDayValueClearAll>(_onValueClearAll);
     add(const PlanMyDayStarted());
   }
 
@@ -825,48 +811,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     if (current == null) return;
     _visibleSuggestionCountsByValue[event.valueId] =
         current + _showMoreIncrement;
-    _emitReady(emit);
-  }
-
-  PlanMyDayValueSuggestionGroup? _findValueGroup(
-    PlanMyDayReady ready,
-    String valueId,
-  ) {
-    for (final item in ready.valueSuggestionGroups) {
-      if (item.valueId == valueId) {
-        return item;
-      }
-    }
-    return null;
-  }
-
-  void _onValueAddAll(
-    PlanMyDayValueAddAll event,
-    Emitter<PlanMyDayState> emit,
-  ) {
-    if (state is! PlanMyDayReady) return;
-    final ready = state as PlanMyDayReady;
-    final group = _findValueGroup(ready, event.valueId);
-    if (group == null || group.tasks.isEmpty) return;
-
-    _hasUserSelection = true;
-    final taskIds = group.tasks.map((task) => task.id).toSet();
-    _selectedTaskIds = {..._selectedTaskIds, ...taskIds};
-    _emitReady(emit);
-  }
-
-  void _onValueClearAll(
-    PlanMyDayValueClearAll event,
-    Emitter<PlanMyDayState> emit,
-  ) {
-    if (state is! PlanMyDayReady) return;
-    final ready = state as PlanMyDayReady;
-    final group = _findValueGroup(ready, event.valueId);
-    if (group == null || group.tasks.isEmpty) return;
-
-    _hasUserSelection = true;
-    final taskIds = group.tasks.map((task) => task.id).toSet();
-    _selectedTaskIds = {..._selectedTaskIds}..removeAll(taskIds);
     _emitReady(emit);
   }
 

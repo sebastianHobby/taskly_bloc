@@ -2998,6 +2998,10 @@
   "@routinePrimaryActionLabel": {
     "description": "Primary action label for routine cards."
   },
+  "routineLoggedLabel": "Logged",
+  "@routineLoggedLabel": {
+    "description": "Label shown when a routine has been logged for today."
+  },
   "routinePauseLabel": "Pause routine",
   "@routinePauseLabel": {
     "description": "Menu label to pause a routine."
