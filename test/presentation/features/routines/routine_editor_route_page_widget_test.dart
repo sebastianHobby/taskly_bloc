@@ -19,10 +19,6 @@ class MockRoutineRepository extends Mock implements RoutineRepositoryContract {}
 
 class MockValueRepository extends Mock implements ValueRepositoryContract {}
 
-class MockRoutineWriteService extends Mock implements RoutineWriteService {}
-
-class MockErrorReporter extends Mock implements AppErrorReporter {}
-
 void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
@@ -32,14 +28,18 @@ void main() {
 
   late MockRoutineRepository routineRepository;
   late MockValueRepository valueRepository;
-  late MockRoutineWriteService routineWriteService;
-  late MockErrorReporter errorReporter;
+  late RoutineWriteService routineWriteService;
+  late AppErrorReporter errorReporter;
 
   setUp(() {
     routineRepository = MockRoutineRepository();
     valueRepository = MockValueRepository();
-    routineWriteService = MockRoutineWriteService();
-    errorReporter = MockErrorReporter();
+    routineWriteService = RoutineWriteService(
+      routineRepository: routineRepository,
+    );
+    errorReporter = AppErrorReporter(
+      messengerKey: GlobalKey<ScaffoldMessengerState>(),
+    );
 
     when(() => valueRepository.getAll()).thenAnswer((_) async => <Value>[]);
   });

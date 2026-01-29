@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_imports.dart';
-import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/routines/bloc/routine_detail_bloc.dart';
@@ -28,7 +27,7 @@ void main() {
 
   late MockRoutineRepositoryContract routineRepository;
   late MockValueRepositoryContract valueRepository;
-  late MockRoutineWriteService routineWriteService;
+  late RoutineWriteService routineWriteService;
   late AppErrorReporter errorReporter;
 
   RoutineDetailBloc buildBloc() {
@@ -44,7 +43,9 @@ void main() {
   setUp(() {
     routineRepository = MockRoutineRepositoryContract();
     valueRepository = MockValueRepositoryContract();
-    routineWriteService = MockRoutineWriteService();
+    routineWriteService = RoutineWriteService(
+      routineRepository: routineRepository,
+    );
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
     );

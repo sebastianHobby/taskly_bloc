@@ -19,8 +19,6 @@ class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
 class MockValueRepository extends Mock implements ValueRepositoryContract {}
 
-class MockErrorReporter extends Mock implements AppErrorReporter {}
-
 void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
@@ -33,7 +31,7 @@ void main() {
   late MockAllocationOrchestrator allocationOrchestrator;
   late MockOccurrenceCommandService occurrenceCommandService;
   late ProjectWriteService projectWriteService;
-  late MockErrorReporter errorReporter;
+  late AppErrorReporter errorReporter;
 
   setUp(() {
     projectRepository = MockProjectRepository();
@@ -45,7 +43,9 @@ void main() {
       allocationOrchestrator: allocationOrchestrator,
       occurrenceCommandService: occurrenceCommandService,
     );
-    errorReporter = MockErrorReporter();
+    errorReporter = AppErrorReporter(
+      messengerKey: GlobalKey<ScaffoldMessengerState>(),
+    );
 
     when(() => valueRepository.getAll()).thenAnswer((_) async => const []);
   });

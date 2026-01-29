@@ -25,8 +25,6 @@ class FakeNowService implements NowService {
   DateTime nowUtc() => now.toUtc();
 }
 
-class MockErrorReporter extends Mock implements AppErrorReporter {}
-
 void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
@@ -35,13 +33,15 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockJournalRepositoryContract repository;
-  late MockErrorReporter errorReporter;
+  late AppErrorReporter errorReporter;
   late BehaviorSubject<List<TrackerGroup>> groupsSubject;
   late BehaviorSubject<List<TrackerDefinition>> defsSubject;
 
   setUp(() {
     repository = MockJournalRepositoryContract();
-    errorReporter = MockErrorReporter();
+    errorReporter = AppErrorReporter(
+      messengerKey: GlobalKey<ScaffoldMessengerState>(),
+    );
     groupsSubject = BehaviorSubject<List<TrackerGroup>>.seeded(
       const <TrackerGroup>[],
     );
@@ -49,10 +49,12 @@ void main() {
       const <TrackerDefinition>[],
     );
 
-    when(() => repository.watchTrackerGroups())
-        .thenAnswer((_) => groupsSubject);
-    when(() => repository.watchTrackerDefinitions())
-        .thenAnswer((_) => defsSubject);
+    when(
+      () => repository.watchTrackerGroups(),
+    ).thenAnswer((_) => groupsSubject);
+    when(
+      () => repository.watchTrackerDefinitions(),
+    ).thenAnswer((_) => defsSubject);
     when(
       () => repository.saveTrackerDefinition(
         any(),
@@ -76,7 +78,9 @@ void main() {
     await tester.pumpApp(
       MultiRepositoryProvider(
         providers: [
-          RepositoryProvider<JournalRepositoryContract>.value(value: repository),
+          RepositoryProvider<JournalRepositoryContract>.value(
+            value: repository,
+          ),
           RepositoryProvider<AppErrorReporter>.value(value: errorReporter),
           RepositoryProvider<NowService>.value(
             value: FakeNowService(DateTime(2025, 1, 15, 9)),
@@ -87,9 +91,12 @@ void main() {
     );
   }
 
-  testWidgetsSafe('shows error snack bar when groups stream fails', (tester) async {
-    when(() => repository.watchTrackerGroups())
-        .thenAnswer((_) => Stream<List<TrackerGroup>>.error('boom'));
+  testWidgetsSafe('shows error snack bar when groups stream fails', (
+    tester,
+  ) async {
+    when(
+      () => repository.watchTrackerGroups(),
+    ).thenAnswer((_) => Stream<List<TrackerGroup>>.error('boom'));
 
     await pumpPage(tester);
     await tester.pumpForStream();

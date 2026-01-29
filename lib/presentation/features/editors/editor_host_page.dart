@@ -27,6 +27,7 @@ class EditorHostPage extends StatefulWidget {
 class _EditorHostPageState extends State<EditorHostPage> {
   bool _openedModal = false;
   bool? _useModal;
+  String? _modalRouteLocation;
 
   @override
   void didChangeDependencies() {
@@ -47,9 +48,18 @@ class _EditorHostPageState extends State<EditorHostPage> {
     // Guard: widget can unmount before post-frame.
     if (!mounted) return;
 
+    _modalRouteLocation ??=
+        GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString();
+
     await widget.openModal(context);
 
     if (!mounted) return;
+
+    final currentLocation =
+        GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString();
+    if (_modalRouteLocation != null && currentLocation != _modalRouteLocation) {
+      return;
+    }
 
     // Close the editor route (or go home if this was somehow root).
     await closeEditor(context);

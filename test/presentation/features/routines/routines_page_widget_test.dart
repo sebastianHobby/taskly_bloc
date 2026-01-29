@@ -9,10 +9,15 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../helpers/test_imports.dart';
+import '../../../mocks/presentation_mocks.dart';
+import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routines_page.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -21,13 +26,7 @@ import 'package:taskly_domain/services.dart';
 
 class MockRoutineRepository extends Mock implements RoutineRepositoryContract {}
 
-class MockSessionDayKeyService extends Mock implements SessionDayKeyService {}
-
-class MockErrorReporter extends Mock implements AppErrorReporter {}
-
-class MockSharedDataService extends Mock implements SessionSharedDataService {}
-
-class MockRoutineWriteService extends Mock implements RoutineWriteService {}
+class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
 class FakeNowService implements NowService {
   FakeNowService(this.now);
@@ -49,12 +48,21 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockRoutineRepository routineRepository;
-  late MockSessionDayKeyService sessionDayKeyService;
-  late MockErrorReporter errorReporter;
-  late MockSharedDataService sharedDataService;
-  late MockRoutineWriteService routineWriteService;
+  late SessionDayKeyService sessionDayKeyService;
+  late AppErrorReporter errorReporter;
+  late SessionSharedDataService sharedDataService;
+  late RoutineWriteService routineWriteService;
+  late SessionStreamCacheManager cacheManager;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
+  late MockAppLifecycleEvents appLifecycleEvents;
+  late MockHomeDayKeyService dayKeyService;
+  late MockTemporalTriggerService temporalTriggerService;
+  late MockValueRepositoryContract valueRepository;
+  late MockProjectRepositoryContract projectRepository;
+  late MockTaskRepositoryContract taskRepository;
 
-  late BehaviorSubject<DateTime> dayKeySubject;
+  late TestStreamController<TemporalTriggerEvent> temporalController;
   late BehaviorSubject<List<Routine>> routinesSubject;
   late BehaviorSubject<List<RoutineCompletion>> completionsSubject;
   late BehaviorSubject<List<RoutineSkip>> skipsSubject;
@@ -62,12 +70,29 @@ void main() {
 
   setUp(() {
     routineRepository = MockRoutineRepository();
-    sessionDayKeyService = MockSessionDayKeyService();
-    errorReporter = MockErrorReporter();
-    sharedDataService = MockSharedDataService();
-    routineWriteService = MockRoutineWriteService();
+    appLifecycleEvents = MockAppLifecycleEvents();
+    dayKeyService = MockHomeDayKeyService();
+    temporalTriggerService = MockTemporalTriggerService();
+    valueRepository = MockValueRepositoryContract();
+    projectRepository = MockProjectRepositoryContract();
+    taskRepository = MockTaskRepositoryContract();
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: appLifecycleEvents,
+    );
+    sessionDayKeyService = SessionDayKeyService(
+      dayKeyService: dayKeyService,
+      temporalTriggerService: temporalTriggerService,
+    );
+    routineWriteService = RoutineWriteService(
+      routineRepository: routineRepository,
+    );
+    errorReporter = AppErrorReporter(
+      messengerKey: GlobalKey<ScaffoldMessengerState>(),
+    );
 
-    dayKeySubject = BehaviorSubject<DateTime>.seeded(DateTime.utc(2025, 1, 15));
+    temporalController = TestStreamController.seeded(const AppResumed());
     routinesSubject = BehaviorSubject<List<Routine>>.seeded(const <Routine>[]);
     completionsSubject = BehaviorSubject<List<RoutineCompletion>>.seeded(
       const <RoutineCompletion>[],
@@ -77,7 +102,15 @@ void main() {
     );
     valuesSubject = BehaviorSubject<List<Value>>.seeded(const <Value>[]);
 
-    when(() => sessionDayKeyService.todayDayKeyUtc).thenReturn(dayKeySubject);
+    when(() => appLifecycleEvents.events).thenAnswer(
+      (_) => const Stream<AppLifecycleEvent>.empty(),
+    );
+    when(() => temporalTriggerService.events).thenAnswer(
+      (_) => temporalController.stream,
+    );
+    when(
+      () => dayKeyService.todayDayKeyUtc(),
+    ).thenReturn(DateTime.utc(2025, 1, 15));
 
     when(
       () => routineRepository.watchAll(includeInactive: true),
@@ -90,16 +123,29 @@ void main() {
     ).thenAnswer((_) => skipsSubject.stream);
 
     when(
-      () => sharedDataService.watchValues(),
-    ).thenAnswer((_) => valuesSubject);
+      () => valueRepository.watchAll(),
+    ).thenAnswer((_) => valuesSubject.stream);
+
+    sharedDataService = SessionSharedDataService(
+      cacheManager: cacheManager,
+      valueRepository: valueRepository,
+      projectRepository: projectRepository,
+      taskRepository: taskRepository,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
+    );
+    sessionDayKeyService.start();
   });
 
   tearDown(() async {
-    await dayKeySubject.close();
+    await temporalController.close();
     await routinesSubject.close();
     await completionsSubject.close();
     await skipsSubject.close();
     await valuesSubject.close();
+    await sessionDayKeyService.dispose();
+    await cacheManager.dispose();
+    await demoModeService.dispose();
   });
 
   Routine buildRoutine({

@@ -9,15 +9,17 @@ import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_allocation_cache_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/my_day.dart' as my_day;
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
-import '../../fixtures/test_data.dart';
-import '../../helpers/test_imports.dart';
-import '../../mocks/feature_mocks.dart';
-import '../../mocks/repository_mocks.dart';
+import '../../../fixtures/test_data.dart';
+import '../../../helpers/test_imports.dart';
+import '../../../mocks/feature_mocks.dart';
+import '../../../mocks/repository_mocks.dart';
 
 class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
@@ -51,6 +53,8 @@ void main() {
   late SessionAllocationCacheService allocationCacheService;
   late MyDayRitualStatusService ritualStatusService;
   late MyDayQueryService queryService;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
 
   late TestStreamController<TemporalTriggerEvent> triggerController;
   late TestStreamController<AppLifecycleEvent> lifecycleController;
@@ -59,12 +63,12 @@ void main() {
   late TestStreamController<List<Project>> projectsController;
   late TestStreamController<List<ProjectNextAction>> nextActionsController;
   late TestStreamController<List<ProjectAnchorState>>
-      projectAnchorStateController;
+  projectAnchorStateController;
   late TestStreamController<List<Routine>> routinesController;
   late TestStreamController<List<RoutineCompletion>> completionsController;
   late TestStreamController<List<RoutineSkip>> skipsController;
   late TestStreamController<List<CompletionHistoryData>>
-      completionHistoryController;
+  completionHistoryController;
   late TestStreamController<AllocationConfig> allocationConfigController;
 
   setUp(() {
@@ -80,29 +84,40 @@ void main() {
     dayKeyService = MockHomeDayKeyService();
     temporalTriggerService = MockTemporalTriggerService();
     appLifecycleEvents = MockAppLifecycleEvents();
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
 
     triggerController = TestStreamController.seeded(const AppResumed());
-    lifecycleController = TestStreamController.seeded(AppLifecycleEvent.resumed);
+    lifecycleController = TestStreamController.seeded(
+      AppLifecycleEvent.resumed,
+    );
     valuesController = TestStreamController.seeded(const <Value>[]);
     tasksController = TestStreamController.seeded(const <Task>[]);
     projectsController = TestStreamController.seeded(const <Project>[]);
-    nextActionsController =
-        TestStreamController.seeded(const <ProjectNextAction>[]);
-    projectAnchorStateController =
-        TestStreamController.seeded(const <ProjectAnchorState>[]);
+    nextActionsController = TestStreamController.seeded(
+      const <ProjectNextAction>[],
+    );
+    projectAnchorStateController = TestStreamController.seeded(
+      const <ProjectAnchorState>[],
+    );
     routinesController = TestStreamController.seeded(const <Routine>[]);
-    completionsController =
-        TestStreamController.seeded(const <RoutineCompletion>[]);
+    completionsController = TestStreamController.seeded(
+      const <RoutineCompletion>[],
+    );
     skipsController = TestStreamController.seeded(const <RoutineSkip>[]);
-    completionHistoryController =
-        TestStreamController.seeded(const <CompletionHistoryData>[]);
-    allocationConfigController =
-        TestStreamController.seeded(const AllocationConfig());
+    completionHistoryController = TestStreamController.seeded(
+      const <CompletionHistoryData>[],
+    );
+    allocationConfigController = TestStreamController.seeded(
+      const AllocationConfig(),
+    );
 
-    when(() => temporalTriggerService.events)
-        .thenAnswer((_) => triggerController.stream);
-    when(() => appLifecycleEvents.events)
-        .thenAnswer((_) => lifecycleController.stream);
+    when(
+      () => temporalTriggerService.events,
+    ).thenAnswer((_) => triggerController.stream);
+    when(
+      () => appLifecycleEvents.events,
+    ).thenAnswer((_) => lifecycleController.stream);
 
     cacheManager = SessionStreamCacheManager(
       appLifecycleService: appLifecycleEvents,
@@ -113,6 +128,8 @@ void main() {
       valueRepository: valueRepository,
       projectRepository: projectRepository,
       taskRepository: taskRepository,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
     );
 
     allocationCacheService = SessionAllocationCacheService(
@@ -143,28 +160,40 @@ void main() {
       temporalTriggerService: temporalTriggerService,
       allocationCacheService: allocationCacheService,
       sharedDataService: sharedDataService,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
     );
 
-    when(() => valueRepository.watchAll())
-        .thenAnswer((_) => valuesController.stream);
-    when(() => taskRepository.watchAll(any()))
-        .thenAnswer((_) => tasksController.stream);
-    when(() => projectRepository.watchAll())
-        .thenAnswer((_) => projectsController.stream);
-    when(() => projectNextActionsRepository.watchAll())
-        .thenAnswer((_) => nextActionsController.stream);
-    when(() => projectAnchorStateRepository.watchAll())
-        .thenAnswer((_) => projectAnchorStateController.stream);
-    when(() => routineRepository.watchAll(includeInactive: true))
-        .thenAnswer((_) => routinesController.stream);
-    when(() => routineRepository.watchCompletions())
-        .thenAnswer((_) => completionsController.stream);
-    when(() => routineRepository.watchSkips())
-        .thenAnswer((_) => skipsController.stream);
-    when(() => taskRepository.watchCompletionHistory())
-        .thenAnswer((_) => completionHistoryController.stream);
-    when(() => settingsRepository.watch(SettingsKey.allocation))
-        .thenAnswer((_) => allocationConfigController.stream);
+    when(
+      () => valueRepository.watchAll(),
+    ).thenAnswer((_) => valuesController.stream);
+    when(
+      () => taskRepository.watchAll(any()),
+    ).thenAnswer((_) => tasksController.stream);
+    when(
+      () => projectRepository.watchAll(),
+    ).thenAnswer((_) => projectsController.stream);
+    when(
+      () => projectNextActionsRepository.watchAll(),
+    ).thenAnswer((_) => nextActionsController.stream);
+    when(
+      () => projectAnchorStateRepository.watchAll(),
+    ).thenAnswer((_) => projectAnchorStateController.stream);
+    when(
+      () => routineRepository.watchAll(includeInactive: true),
+    ).thenAnswer((_) => routinesController.stream);
+    when(
+      () => routineRepository.watchCompletions(),
+    ).thenAnswer((_) => completionsController.stream);
+    when(
+      () => routineRepository.watchSkips(),
+    ).thenAnswer((_) => skipsController.stream);
+    when(
+      () => taskRepository.watchCompletionHistory(),
+    ).thenAnswer((_) => completionHistoryController.stream);
+    when(
+      () => settingsRepository.watch(SettingsKey.allocation),
+    ).thenAnswer((_) => allocationConfigController.stream);
 
     addTearDown(() async {
       await triggerController.close();
@@ -180,6 +209,7 @@ void main() {
       await completionHistoryController.close();
       await allocationConfigController.close();
       await cacheManager.dispose();
+      await demoModeService.dispose();
     });
   });
 
@@ -187,8 +217,7 @@ void main() {
     final dayKey = DateTime.utc(2025, 1, 15);
     var currentDayKey = dayKey;
 
-    when(() => dayKeyService.todayDayKeyUtc())
-        .thenAnswer((_) => currentDayKey);
+    when(() => dayKeyService.todayDayKeyUtc()).thenAnswer((_) => currentDayKey);
 
     final value = TestData.value(id: 'value-1', name: 'Health');
     final task = TestData.task(id: 'task-1', name: 'Allocated Task');
@@ -213,8 +242,9 @@ void main() {
       excludedTasks: const <ExcludedTask>[],
     );
 
-    when(() => allocationOrchestrator.getAllocationSnapshot())
-        .thenAnswer((_) async => allocation);
+    when(
+      () => allocationOrchestrator.getAllocationSnapshot(),
+    ).thenAnswer((_) async => allocation);
 
     final picks = my_day.MyDayDayPicks(
       dayKeyUtc: dayKey,
@@ -223,8 +253,9 @@ void main() {
     );
 
     when(() => myDayRepository.loadDay(dayKey)).thenAnswer((_) async => picks);
-    when(() => myDayRepository.watchDay(dayKey))
-        .thenAnswer((_) => Stream.value(picks));
+    when(
+      () => myDayRepository.watchDay(dayKey),
+    ).thenAnswer((_) => Stream.value(picks));
 
     final model = await queryService.watchMyDayViewModel().first;
 
@@ -256,17 +287,22 @@ void main() {
     );
 
     when(() => myDayRepository.loadDay(dayKey)).thenAnswer((_) async => picks);
-    when(() => myDayRepository.watchDay(dayKey))
-        .thenAnswer((_) => Stream.value(picks));
+    when(
+      () => myDayRepository.watchDay(dayKey),
+    ).thenAnswer((_) => Stream.value(picks));
 
-    when(() => taskRepository.getAll(TaskQuery.all()))
-        .thenAnswer((_) async => [task]);
-    when(() => routineRepository.getAll(includeInactive: true))
-        .thenAnswer((_) async => const <Routine>[]);
-    when(() => routineRepository.getCompletions())
-        .thenAnswer((_) async => const <RoutineCompletion>[]);
-    when(() => routineRepository.getSkips())
-        .thenAnswer((_) async => const <RoutineSkip>[]);
+    when(
+      () => taskRepository.getAll(TaskQuery.all()),
+    ).thenAnswer((_) async => [task]);
+    when(
+      () => routineRepository.getAll(includeInactive: true),
+    ).thenAnswer((_) async => const <Routine>[]);
+    when(
+      () => routineRepository.getCompletions(),
+    ).thenAnswer((_) async => const <RoutineCompletion>[]);
+    when(
+      () => routineRepository.getSkips(),
+    ).thenAnswer((_) async => const <RoutineSkip>[]);
 
     final model = await queryService.watchMyDayViewModel().first;
 
@@ -279,8 +315,7 @@ void main() {
     final dayKey2 = DateTime.utc(2025, 1, 16);
     var currentDayKey = dayKey1;
 
-    when(() => dayKeyService.todayDayKeyUtc())
-        .thenAnswer((_) => currentDayKey);
+    when(() => dayKeyService.todayDayKeyUtc()).thenAnswer((_) => currentDayKey);
 
     final picks1 = my_day.MyDayDayPicks(
       dayKeyUtc: dayKey1,

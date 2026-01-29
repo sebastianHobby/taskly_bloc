@@ -322,15 +322,18 @@ class _AuthenticatedApp extends StatelessWidget {
         Provider<ValueRatingsWriteService>(
           create: (_) => getIt<ValueRatingsWriteService>(),
         ),
-        Provider<RoutineWriteService>(
-          create: (_) => getIt<RoutineWriteService>(),
-        ),
-        Provider<EditorLauncher>(
-          create: (_) => EditorLauncher(
-            taskRepository: getIt<TaskRepositoryContract>(),
-            projectRepository: getIt<ProjectRepositoryContract>(),
-            valueRepository: getIt<ValueRepositoryContract>(),
-            routineRepository: getIt<RoutineRepositoryContract>(),
+          Provider<RoutineWriteService>(
+            create: (_) => getIt<RoutineWriteService>(),
+          ),
+          Provider<EditorLauncher>(
+            create: (_) => EditorLauncher(
+              errorReporter: App.errorReporter,
+              demoModeService: getIt<DemoModeService>(),
+              demoDataProvider: getIt<DemoDataProvider>(),
+              taskRepository: getIt<TaskRepositoryContract>(),
+              projectRepository: getIt<ProjectRepositoryContract>(),
+              valueRepository: getIt<ValueRepositoryContract>(),
+              routineRepository: getIt<RoutineRepositoryContract>(),
             taskWriteService: getIt<TaskWriteService>(),
             projectWriteService: getIt<ProjectWriteService>(),
             valueWriteService: getIt<ValueWriteService>(),
@@ -415,12 +418,6 @@ class _AuthenticatedApp extends StatelessWidget {
                         AppLocalizations.localizationsDelegates,
                     supportedLocales: AppLocalizations.supportedLocales,
                     debugShowCheckedModeBanner: false,
-                    builder: (context, child) {
-                      return _DebugBootstrapper(
-                        enabled: debugBootstrapEnabled,
-                        child: child ?? const SizedBox.shrink(),
-                      );
-                    },
                     home: MediaQuery(
                       data: MediaQuery.of(context).copyWith(
                         textScaler: TextScaler.linear(

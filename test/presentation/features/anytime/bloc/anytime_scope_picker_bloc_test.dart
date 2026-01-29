@@ -4,9 +4,16 @@ library;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_imports.dart';
-import '../../../../mocks/presentation_mocks.dart';
+import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_scope_picker_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/services.dart';
+
+class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
 void main() {
   setUpAll(() {
@@ -15,7 +22,14 @@ void main() {
   });
   setUp(setUpTestEnvironment);
 
-  late MockSessionSharedDataService sharedDataService;
+  late SessionSharedDataService sharedDataService;
+  late SessionStreamCacheManager cacheManager;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
+  late MockAppLifecycleEvents appLifecycleEvents;
+  late MockValueRepositoryContract valueRepository;
+  late MockProjectRepositoryContract projectRepository;
+  late MockTaskRepositoryContract taskRepository;
   late TestStreamController<List<Value>> valuesController;
   late TestStreamController<List<Project>> projectsController;
 
@@ -24,7 +38,12 @@ void main() {
   }
 
   setUp(() {
-    sharedDataService = MockSessionSharedDataService();
+    appLifecycleEvents = MockAppLifecycleEvents();
+    valueRepository = MockValueRepositoryContract();
+    projectRepository = MockProjectRepositoryContract();
+    taskRepository = MockTaskRepositoryContract();
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
     valuesController = TestStreamController.seeded([
       TestData.value(id: 'v-low', name: 'Low', priority: ValuePriority.low),
       TestData.value(id: 'v-high', name: 'High', priority: ValuePriority.high),
@@ -34,15 +53,32 @@ void main() {
       TestData.project(id: 'p1', name: 'Alpha'),
     ]);
 
-    when(() => sharedDataService.watchValues()).thenAnswer(
+    when(() => appLifecycleEvents.events).thenAnswer(
+      (_) => const Stream<AppLifecycleEvent>.empty(),
+    );
+    when(() => valueRepository.watchAll()).thenAnswer(
       (_) => valuesController.stream,
     );
-    when(() => sharedDataService.watchAllProjects()).thenAnswer(
+    when(() => projectRepository.watchAll()).thenAnswer(
       (_) => projectsController.stream,
+    );
+
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: appLifecycleEvents,
+    );
+    sharedDataService = SessionSharedDataService(
+      cacheManager: cacheManager,
+      valueRepository: valueRepository,
+      projectRepository: projectRepository,
+      taskRepository: taskRepository,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
     );
 
     addTearDown(valuesController.close);
     addTearDown(projectsController.close);
+    addTearDown(cacheManager.dispose);
+    addTearDown(demoModeService.dispose);
   });
 
   blocTestSafe<AnytimeScopePickerBloc, AnytimeScopePickerState>(

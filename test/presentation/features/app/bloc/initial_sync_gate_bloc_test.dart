@@ -4,15 +4,22 @@ library;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_imports.dart';
-import '../../../../mocks/presentation_mocks.dart';
+import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 
 class MockAuthenticatedAppServicesCoordinator extends Mock
     implements AuthenticatedAppServicesCoordinator {}
 
 class MockInitialSyncService extends Mock implements InitialSyncService {}
+
+class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
 InitialSyncProgress _progress({
   bool hasSynced = false,
@@ -37,8 +44,17 @@ void main() {
 
   late MockAuthenticatedAppServicesCoordinator coordinator;
   late MockInitialSyncService initialSyncService;
-  late MockSessionSharedDataService sharedDataService;
+  late SessionSharedDataService sharedDataService;
+  late SessionStreamCacheManager cacheManager;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
+  late MockAppLifecycleEvents appLifecycleEvents;
+  late MockValueRepositoryContract valueRepository;
+  late MockTaskRepositoryContract taskRepository;
+  late MockProjectRepositoryContract projectRepository;
   late TestStreamController<InitialSyncProgress> progressController;
+  late TestStreamController<int> taskCountController;
+  late TestStreamController<List<Value>> valuesController;
 
   InitialSyncGateBloc buildBloc() {
     return InitialSyncGateBloc(
@@ -51,29 +67,53 @@ void main() {
   setUp(() {
     coordinator = MockAuthenticatedAppServicesCoordinator();
     initialSyncService = MockInitialSyncService();
-    sharedDataService = MockSessionSharedDataService();
+    appLifecycleEvents = MockAppLifecycleEvents();
+    valueRepository = MockValueRepositoryContract();
+    taskRepository = MockTaskRepositoryContract();
+    projectRepository = MockProjectRepositoryContract();
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
     progressController = TestStreamController.seeded(_progress());
+    taskCountController = TestStreamController.seeded(0);
+    valuesController = TestStreamController.seeded(const <Value>[]);
 
     when(() => coordinator.start()).thenAnswer((_) async {});
     when(() => initialSyncService.progress).thenAnswer(
       (_) => progressController.stream,
     );
-    when(() => sharedDataService.watchAllTaskCount()).thenAnswer(
-      (_) => Stream.value(0),
+    when(() => appLifecycleEvents.events).thenAnswer(
+      (_) => const Stream<AppLifecycleEvent>.empty(),
     );
-    when(() => sharedDataService.watchValues()).thenAnswer(
-      (_) => Stream.value(const []),
+    when(() => taskRepository.watchAllCount()).thenAnswer(
+      (_) => taskCountController.stream,
+    );
+    when(() => valueRepository.watchAll()).thenAnswer(
+      (_) => valuesController.stream,
+    );
+
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: appLifecycleEvents,
+    );
+    sharedDataService = SessionSharedDataService(
+      cacheManager: cacheManager,
+      valueRepository: valueRepository,
+      projectRepository: projectRepository,
+      taskRepository: taskRepository,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
     );
 
     addTearDown(progressController.close);
+    addTearDown(taskCountController.close);
+    addTearDown(valuesController.close);
+    addTearDown(cacheManager.dispose);
+    addTearDown(demoModeService.dispose);
   });
 
   blocTestSafe<InitialSyncGateBloc, InitialSyncGateState>(
     'emits ready immediately when local data exists',
     build: () {
-      when(() => sharedDataService.watchAllTaskCount()).thenAnswer(
-        (_) => Stream.value(2),
-      );
+      taskCountController.emit(2);
       return buildBloc();
     },
     act: (bloc) => bloc.add(const InitialSyncGateStarted()),

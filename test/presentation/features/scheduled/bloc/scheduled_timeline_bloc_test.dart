@@ -2,11 +2,11 @@
 library;
 
 import 'package:mocktail/mocktail.dart';
-import 'package:rxdart/rxdart.dart';
 
 import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/presentation_mocks.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_timeline_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_domain/services.dart';
 
 class MockScheduledOccurrencesService extends Mock
@@ -20,9 +20,11 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockScheduledOccurrencesService occurrencesService;
-  late MockSessionDayKeyService sessionDayKeyService;
+  late SessionDayKeyService sessionDayKeyService;
+  late MockHomeDayKeyService dayKeyService;
+  late MockTemporalTriggerService temporalTriggerService;
   late MockNowService nowService;
-  late BehaviorSubject<DateTime> dayKeySubject;
+  late TestStreamController<TemporalTriggerEvent> temporalController;
   late TestStreamController<ScheduledOccurrencesResult> resultController;
 
   ScheduledTimelineBloc buildBloc() {
@@ -35,9 +37,10 @@ void main() {
 
   setUp(() {
     occurrencesService = MockScheduledOccurrencesService();
-    sessionDayKeyService = MockSessionDayKeyService();
+    dayKeyService = MockHomeDayKeyService();
+    temporalTriggerService = MockTemporalTriggerService();
     nowService = MockNowService();
-    dayKeySubject = BehaviorSubject<DateTime>.seeded(DateTime.utc(2025, 1, 15));
+    temporalController = TestStreamController.seeded(const AppResumed());
     resultController = TestStreamController.seeded(
       ScheduledOccurrencesResult(
         rangeStartDay: DateTime.utc(2025, 1, 15),
@@ -47,8 +50,17 @@ void main() {
       ),
     );
 
-    when(() => sessionDayKeyService.todayDayKeyUtc).thenReturn(dayKeySubject);
-    when(() => sessionDayKeyService.start()).thenAnswer((_) {});
+    when(() => temporalTriggerService.events).thenAnswer(
+      (_) => temporalController.stream,
+    );
+    when(
+      () => dayKeyService.todayDayKeyUtc(),
+    ).thenReturn(DateTime.utc(2025, 1, 15));
+    sessionDayKeyService = SessionDayKeyService(
+      dayKeyService: dayKeyService,
+      temporalTriggerService: temporalTriggerService,
+    );
+    sessionDayKeyService.start();
     when(() => nowService.nowLocal()).thenReturn(DateTime(2025, 1, 15));
     when(
       () => occurrencesService.watchScheduledOccurrences(
@@ -59,7 +71,8 @@ void main() {
       ),
     ).thenAnswer((_) => resultController.stream);
 
-    addTearDown(dayKeySubject.close);
+    addTearDown(temporalController.close);
+    addTearDown(sessionDayKeyService.dispose);
     addTearDown(resultController.close);
   });
 

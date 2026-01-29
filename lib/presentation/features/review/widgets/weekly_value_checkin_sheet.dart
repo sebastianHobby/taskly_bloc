@@ -89,6 +89,8 @@ class WeeklyValueCheckInContent extends StatefulWidget {
 }
 
 class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
+  final Map<String, int> _draftRatings = <String, int>{};
+
   @override
   void initState() {
     super.initState();
@@ -130,7 +132,8 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
           final stepIndex = selectedIndex < 0 ? 0 : selectedIndex;
           final isFirst = stepIndex == 0;
           final isLast = stepIndex == entries.length - 1;
-          final rating = selected.rating;
+          final rating =
+              _draftRatings[selected.value.id] ?? selected.rating;
           final maxRating = summary.maxRating;
           final trend = _ratingTrendPercent(
             selected,
@@ -282,7 +285,10 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
                           rating: rating,
                           maxRating: maxRating,
                           accent: accent,
-                          onChanged: (value) {
+                          onChanged: (value) => setState(() {
+                            _draftRatings[selected.value.id] = value;
+                          }),
+                          onCommit: (value) {
                             context.read<WeeklyReviewBloc>().add(
                               WeeklyReviewValueRatingChanged(
                                 valueId: selected.value.id,
@@ -299,6 +305,14 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
                             onPressed: rating <= 0
                                 ? null
                                 : () {
+                                    if (rating != selected.rating) {
+                                      context.read<WeeklyReviewBloc>().add(
+                                        WeeklyReviewValueRatingChanged(
+                                          valueId: selected.value.id,
+                                          rating: rating,
+                                        ),
+                                      );
+                                    }
                                     if (isLast) {
                                       widget.onComplete();
                                       return;
@@ -624,12 +638,14 @@ class _RatingSlider extends StatelessWidget {
     required this.maxRating,
     required this.accent,
     required this.onChanged,
+    required this.onCommit,
   });
 
   final int rating;
   final int maxRating;
   final Color accent;
   final ValueChanged<int> onChanged;
+  final ValueChanged<int> onCommit;
 
   @override
   Widget build(BuildContext context) {
@@ -666,6 +682,7 @@ class _RatingSlider extends StatelessWidget {
             max: maxRating.toDouble(),
             divisions: maxRating - 1,
             onChanged: (value) => onChanged(value.round()),
+            onChangeEnd: (value) => onCommit(value.round()),
           ),
         ),
         Row(

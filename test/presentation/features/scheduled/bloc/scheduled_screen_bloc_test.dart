@@ -5,7 +5,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/feature_mocks.dart';
-import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_screen_bloc.dart';
 import 'package:taskly_domain/services.dart';
@@ -26,7 +25,8 @@ void main() {
   });
   setUp(setUpTestEnvironment);
 
-  late MockTaskWriteService taskWriteService;
+  late MockTaskRepositoryContract taskRepository;
+  late TaskWriteService taskWriteService;
   late MockProjectRepositoryContract projectRepository;
   late MockAllocationOrchestrator allocationOrchestrator;
   late MockOccurrenceCommandService occurrenceCommandService;
@@ -40,10 +40,16 @@ void main() {
   }
 
   setUp(() {
-    taskWriteService = MockTaskWriteService();
+    taskRepository = MockTaskRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
     allocationOrchestrator = MockAllocationOrchestrator();
     occurrenceCommandService = MockOccurrenceCommandService();
+    taskWriteService = TaskWriteService(
+      taskRepository: taskRepository,
+      projectRepository: projectRepository,
+      allocationOrchestrator: allocationOrchestrator,
+      occurrenceCommandService: occurrenceCommandService,
+    );
     projectWriteService = ProjectWriteService(
       projectRepository: projectRepository,
       allocationOrchestrator: allocationOrchestrator,
@@ -51,9 +57,9 @@ void main() {
     );
 
     when(
-      () => taskWriteService.bulkRescheduleDeadlines(
-        any(),
-        any(),
+      () => taskRepository.bulkRescheduleDeadlines(
+        taskIds: any(named: 'taskIds'),
+        deadlineDate: any(named: 'deadlineDate'),
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async => 2);
@@ -109,9 +115,9 @@ void main() {
     ],
     verify: (_) {
       final captured = verify(
-        () => taskWriteService.bulkRescheduleDeadlines(
-          any(),
-          any(),
+        () => taskRepository.bulkRescheduleDeadlines(
+          taskIds: any(named: 'taskIds'),
+          deadlineDate: any(named: 'deadlineDate'),
           context: captureAny(named: 'context'),
         ),
       ).captured;
@@ -149,9 +155,9 @@ void main() {
     'emits show message on reschedule failure',
     build: () {
       when(
-        () => taskWriteService.bulkRescheduleDeadlines(
-          any(),
-          any(),
+        () => taskRepository.bulkRescheduleDeadlines(
+          taskIds: any(named: 'taskIds'),
+          deadlineDate: any(named: 'deadlineDate'),
           context: any(named: 'context'),
         ),
       ).thenThrow(StateError('boom'));

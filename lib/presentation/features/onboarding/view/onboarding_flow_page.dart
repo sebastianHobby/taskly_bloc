@@ -298,11 +298,11 @@ class _NameStep extends StatelessWidget {
           TextField(
             controller: controller,
             textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
-              labelText: 'Name',
-              hintText: 'Jordan Lee',
-              border: OutlineInputBorder(),
-            ),
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                hintText: 'Sebastian',
+                border: OutlineInputBorder(),
+              ),
           ),
         ],
       ),

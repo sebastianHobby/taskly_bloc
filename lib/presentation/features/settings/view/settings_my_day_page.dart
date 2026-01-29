@@ -62,7 +62,7 @@ class _MyDayShowTriageToggle extends StatelessWidget {
   }
 }
 
-class _MyDayDueWindowSlider extends StatelessWidget {
+class _MyDayDueWindowSlider extends StatefulWidget {
   const _MyDayDueWindowSlider({required this.settings});
 
   final GlobalSettings settings;
@@ -71,9 +71,31 @@ class _MyDayDueWindowSlider extends StatelessWidget {
   static const int _max = 30;
 
   @override
+  State<_MyDayDueWindowSlider> createState() => _MyDayDueWindowSliderState();
+}
+
+class _MyDayDueWindowSliderState extends State<_MyDayDueWindowSlider> {
+  late int _draftDays = widget.settings.myDayDueWindowDays.clamp(
+    _MyDayDueWindowSlider._min,
+    _MyDayDueWindowSlider._max,
+  );
+
+  @override
+  void didUpdateWidget(covariant _MyDayDueWindowSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.settings.myDayDueWindowDays.clamp(
+      _MyDayDueWindowSlider._min,
+      _MyDayDueWindowSlider._max,
+    );
+    if (next != _draftDays) {
+      _draftDays = next;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final days = settings.myDayDueWindowDays.clamp(_min, _max);
-    final enabled = settings.myDayDueSoonEnabled;
+    final days = _draftDays;
+    final enabled = widget.settings.myDayDueSoonEnabled;
     final helperText = enabled
         ? 'Include tasks due within the next $days days'
         : 'Enable "Show triage" to include deadline-based tasks.';
@@ -93,41 +115,47 @@ class _MyDayDueWindowSlider extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Due window',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              Text(
-                '$days days',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-            ],
-          ),
-          Text(
-            helperText,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
+            Text(
+              '$days days',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ],
+        ),
+        Text(
+          helperText,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-          Slider(
-            value: days.toDouble(),
-            min: _min.toDouble(),
-            max: _max.toDouble(),
-            divisions: _max - _min,
-            label: '$days days',
-            onChanged: enabled
-                ? (value) {
-                    context.read<GlobalSettingsBloc>().add(
-                      GlobalSettingsEvent.myDayDueWindowDaysChanged(
-                        value.round(),
-                      ),
-                    );
-                  }
-                : null,
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+        Slider(
+          value: days.toDouble(),
+          min: _MyDayDueWindowSlider._min.toDouble(),
+          max: _MyDayDueWindowSlider._max.toDouble(),
+          divisions:
+              _MyDayDueWindowSlider._max - _MyDayDueWindowSlider._min,
+          label: '$days days',
+          onChanged: enabled
+              ? (value) => setState(() {
+                _draftDays = value.round();
+              })
+              : null,
+          onChangeEnd: enabled
+              ? (value) {
+                  context.read<GlobalSettingsBloc>().add(
+                    GlobalSettingsEvent.myDayDueWindowDaysChanged(
+                      value.round(),
+                    ),
+                  );
+                }
+              : null,
+        ),
+      ],
+    ),
+  );
+}
 }
 
 class _MyDayShowPlannedToggle extends StatelessWidget {

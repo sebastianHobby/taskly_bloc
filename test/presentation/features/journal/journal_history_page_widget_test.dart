@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_history_page.dart';
@@ -36,15 +37,19 @@ void main() {
     dayStatesSubject = BehaviorSubject<List<TrackerStateDay>>();
     eventsSubject = BehaviorSubject<List<TrackerEvent>>();
 
-    when(() => homeDayKeyService.todayDayKeyUtc())
-        .thenReturn(DateTime.utc(2025, 1, 15));
+    when(
+      () => homeDayKeyService.todayDayKeyUtc(),
+    ).thenReturn(DateTime.utc(2025, 1, 15));
 
-    when(() => repository.watchTrackerDefinitions())
-        .thenAnswer((_) => defsSubject);
-    when(() => repository.watchJournalEntriesByQuery(any()))
-        .thenAnswer((_) => entriesSubject);
-    when(() => repository.watchTrackerStateDay(range: any(named: 'range')))
-        .thenAnswer((_) => dayStatesSubject);
+    when(
+      () => repository.watchTrackerDefinitions(),
+    ).thenAnswer((_) => defsSubject);
+    when(
+      () => repository.watchJournalEntriesByQuery(any()),
+    ).thenAnswer((_) => entriesSubject);
+    when(
+      () => repository.watchTrackerStateDay(range: any(named: 'range')),
+    ).thenAnswer((_) => dayStatesSubject);
     when(
       () => repository.watchTrackerEvents(
         range: any(named: 'range'),
@@ -81,8 +86,9 @@ void main() {
   });
 
   testWidgetsSafe('shows error state when streams fail', (tester) async {
-    when(() => repository.watchTrackerDefinitions())
-        .thenAnswer((_) => Stream<List<TrackerDefinition>>.error('boom'));
+    when(
+      () => repository.watchTrackerDefinitions(),
+    ).thenAnswer((_) => Stream<List<TrackerDefinition>>.error('boom'));
 
     await pumpPage(tester);
     await tester.pumpForStream();

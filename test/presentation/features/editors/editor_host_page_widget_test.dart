@@ -101,4 +101,85 @@ void main() {
     );
     expect(foundHome, isTrue);
   });
+
+  testWidgetsSafe('does not auto-close when route changes during modal', (
+    tester,
+  ) async {
+    var openCount = 0;
+
+    late GoRouter router;
+    router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) {
+            return Scaffold(
+              body: const Center(child: Text('Home')),
+              floatingActionButton: FilledButton(
+                onPressed: () => context.push('/edit'),
+                child: const Text('Open Edit'),
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/edit',
+          builder: (context, state) => EditorHostPage(
+            openModal: (context) async {
+              openCount += 1;
+              return showDialog<void>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('Modal Content'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: const Text('Close Modal'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            fullPageBuilder: (_) => const Text('FullPage'),
+          ),
+        ),
+        GoRoute(
+          path: '/other',
+          builder: (context, state) {
+            return const Scaffold(
+              body: Center(child: Text('Other')),
+            );
+          },
+        ),
+      ],
+    );
+
+    await pumpLocalizedRouterApp(tester, router: router);
+    await tester.pumpForStream(5);
+
+    await tester.tap(find.text('Open Edit'));
+    await tester.pumpForStream(5);
+
+    final foundModal = await tester.pumpUntilFound(
+      find.text('Modal Content'),
+      timeout: const Duration(seconds: 2),
+    );
+    expect(foundModal, isTrue);
+    expect(openCount, 1);
+
+    router.go('/other');
+    await tester.pumpForStream(5);
+
+    if (find.text('Close Modal').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Close Modal'));
+      await tester.pumpForStream(5);
+    }
+
+    final foundOther = await tester.pumpUntilFound(
+      find.text('Other'),
+      timeout: const Duration(seconds: 2),
+    );
+    expect(foundOther, isTrue);
+    expect(find.text('Home'), findsNothing);
+  });
 }

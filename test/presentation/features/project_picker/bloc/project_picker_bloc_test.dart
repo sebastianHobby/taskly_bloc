@@ -5,15 +5,29 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../../helpers/test_imports.dart';
-import '../../../../mocks/presentation_mocks.dart';
+import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/project_picker/bloc/project_picker_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/services.dart';
+
+class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);
 
-  late MockSessionSharedDataService sharedDataService;
+  late SessionSharedDataService sharedDataService;
+  late SessionStreamCacheManager cacheManager;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
+  late MockAppLifecycleEvents appLifecycleEvents;
+  late MockValueRepositoryContract valueRepository;
+  late MockTaskRepositoryContract taskRepository;
+  late MockProjectRepositoryContract projectRepository;
   late BehaviorSubject<List<Project>> projectsSubject;
 
   ProjectPickerBloc buildBloc() {
@@ -21,12 +35,34 @@ void main() {
   }
 
   setUp(() {
-    sharedDataService = MockSessionSharedDataService();
+    appLifecycleEvents = MockAppLifecycleEvents();
+    valueRepository = MockValueRepositoryContract();
+    taskRepository = MockTaskRepositoryContract();
+    projectRepository = MockProjectRepositoryContract();
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
     projectsSubject = BehaviorSubject<List<Project>>();
-    when(() => sharedDataService.watchAllProjects()).thenAnswer(
+    when(() => appLifecycleEvents.events).thenAnswer(
+      (_) => const Stream<AppLifecycleEvent>.empty(),
+    );
+    when(() => projectRepository.watchAll()).thenAnswer(
       (_) => projectsSubject.stream,
     );
+
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: appLifecycleEvents,
+    );
+    sharedDataService = SessionSharedDataService(
+      cacheManager: cacheManager,
+      valueRepository: valueRepository,
+      projectRepository: projectRepository,
+      taskRepository: taskRepository,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
+    );
     addTearDown(projectsSubject.close);
+    addTearDown(cacheManager.dispose);
+    addTearDown(demoModeService.dispose);
   });
 
   blocTestSafe<ProjectPickerBloc, ProjectPickerState>(

@@ -8,9 +8,11 @@ import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
-import 'package:taskly_domain/core.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_domain/time.dart';
 
 void main() {
@@ -33,9 +35,11 @@ void main() {
   late MockSettingsRepositoryContract settingsRepository;
   late OccurrenceReadService occurrenceReadService;
   late MockProjectNextActionsRepositoryContract nextActionsRepository;
-  late MockSessionDayKeyService sessionDayKeyService;
+  late SessionDayKeyService sessionDayKeyService;
+  late MockHomeDayKeyService dayKeyService;
+  late MockTemporalTriggerService temporalTriggerService;
 
-  late BehaviorSubject<DateTime> dayKeySubject;
+  late TestStreamController<TemporalTriggerEvent> temporalController;
   late BehaviorSubject<Project?> projectSubject;
   late BehaviorSubject<List<Task>> tasksSubject;
   late BehaviorSubject<List<ProjectNextAction>> nextActionsSubject;
@@ -59,15 +63,20 @@ void main() {
     occurrenceReadService = OccurrenceReadService(
       taskRepository: taskRepository,
       projectRepository: projectRepository,
-      homeDayKeyService: HomeDayKeyService(
+      dayKeyService: HomeDayKeyService(
         settingsRepository: settingsRepository,
         clock: FakeClock(DateTime.utc(2025, 1, 15)),
       ),
     );
     nextActionsRepository = MockProjectNextActionsRepositoryContract();
-    sessionDayKeyService = MockSessionDayKeyService();
+    dayKeyService = MockHomeDayKeyService();
+    temporalTriggerService = MockTemporalTriggerService();
+    sessionDayKeyService = SessionDayKeyService(
+      dayKeyService: dayKeyService,
+      temporalTriggerService: temporalTriggerService,
+    );
 
-    dayKeySubject = BehaviorSubject.seeded(DateTime.utc(2025, 1, 15));
+    temporalController = TestStreamController.seeded(const AppResumed());
     projectSubject = BehaviorSubject<Project?>.seeded(
       TestData.project(id: 'p-1'),
     );
@@ -89,9 +98,13 @@ void main() {
     when(() => taskRepository.watchRecurrenceExceptions()).thenAnswer(
       (_) => exceptionsSubject.stream,
     );
-    when(() => sessionDayKeyService.todayDayKeyUtc).thenAnswer(
-      (_) => dayKeySubject.stream,
+    when(() => temporalTriggerService.events).thenAnswer(
+      (_) => temporalController.stream,
     );
+    when(
+      () => dayKeyService.todayDayKeyUtc(),
+    ).thenReturn(DateTime.utc(2025, 1, 15));
+    sessionDayKeyService.start();
     when(() => projectRepository.watchById('p-1')).thenAnswer(
       (_) => projectSubject.stream,
     );
@@ -106,7 +119,8 @@ void main() {
       ),
     ).thenAnswer((_) async {});
 
-    addTearDown(dayKeySubject.close);
+    addTearDown(temporalController.close);
+    addTearDown(sessionDayKeyService.dispose);
     addTearDown(projectSubject.close);
     addTearDown(tasksSubject.close);
     addTearDown(nextActionsSubject.close);

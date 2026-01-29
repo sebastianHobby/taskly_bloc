@@ -99,7 +99,7 @@ class _AccentPalettePicker extends StatelessWidget {
   }
 }
 
-class _TextSizeSlider extends StatelessWidget {
+class _TextSizeSlider extends StatefulWidget {
   const _TextSizeSlider({required this.settings});
 
   final GlobalSettings settings;
@@ -108,7 +108,30 @@ class _TextSizeSlider extends StatelessWidget {
   static const double _max = 1.25;
 
   @override
+  State<_TextSizeSlider> createState() => _TextSizeSliderState();
+}
+
+class _TextSizeSliderState extends State<_TextSizeSlider> {
+  late double _draftScale = widget.settings.textScaleFactor.clamp(
+    _TextSizeSlider._min,
+    _TextSizeSlider._max,
+  );
+
+  @override
+  void didUpdateWidget(covariant _TextSizeSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.settings.textScaleFactor.clamp(
+      _TextSizeSlider._min,
+      _TextSizeSlider._max,
+    );
+    if (next != _draftScale) {
+      _draftScale = next;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final scale = _draftScale;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         TasklyTokens.of(context).spaceLg,
@@ -128,18 +151,21 @@ class _TextSizeSlider extends StatelessWidget {
                 ),
               ),
               Text(
-                '${(settings.textScaleFactor * 100).round()}%',
+                '${(scale * 100).round()}%',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ],
           ),
           Slider(
-            value: settings.textScaleFactor.clamp(_min, _max),
-            min: _min,
-            max: _max,
+            value: scale,
+            min: _TextSizeSlider._min,
+            max: _TextSizeSlider._max,
             divisions: 8,
-            label: '${(settings.textScaleFactor * 100).round()}%',
-            onChanged: (value) {
+            label: '${(scale * 100).round()}%',
+            onChanged: (value) => setState(() {
+              _draftScale = value;
+            }),
+            onChangeEnd: (value) {
               context.read<GlobalSettingsBloc>().add(
                 GlobalSettingsEvent.textScaleChanged(value),
               );

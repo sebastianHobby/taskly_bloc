@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_imports.dart';
-import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
@@ -16,13 +15,17 @@ void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
     registerFallbackValue(
-      const CreateValueCommand(name: 'Test', color: '#000000'),
+      const CreateValueCommand(
+        name: 'Test',
+        color: '#000000',
+        priority: ValuePriority.medium,
+      ),
     );
   });
   setUp(setUpTestEnvironment);
 
   late MockValueRepositoryContract valueRepository;
-  late MockValueWriteService valueWriteService;
+  late ValueWriteService valueWriteService;
   late AppErrorReporter errorReporter;
 
   ValueDetailBloc buildBloc() {
@@ -35,7 +38,7 @@ void main() {
 
   setUp(() {
     valueRepository = MockValueRepositoryContract();
-    valueWriteService = MockValueWriteService();
+    valueWriteService = ValueWriteService(valueRepository: valueRepository);
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
     );
@@ -60,26 +63,14 @@ void main() {
 
   blocTestSafe<ValueDetailBloc, ValueDetailState>(
     'emits validation failure on create',
-    build: () {
-      when(
-        () => valueWriteService.create(
-          any(),
-          context: any(named: 'context'),
-        ),
-      ).thenAnswer(
-        (_) async => CommandValidationFailure(
-          failure: const ValidationFailure(
-            formErrors: [
-              ValidationError(code: 'invalid', messageKey: 'invalid'),
-            ],
-          ),
-        ),
-      );
-      return buildBloc();
-    },
+    build: buildBloc,
     act: (bloc) => bloc.add(
       const ValueDetailEvent.create(
-        command: CreateValueCommand(name: '', color: '#000000'),
+        command: CreateValueCommand(
+          name: '',
+          color: '#000000',
+          priority: ValuePriority.medium,
+        ),
       ),
     ),
     expect: () => [isA<ValueDetailValidationFailure>()],

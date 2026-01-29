@@ -25,6 +25,9 @@ import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 /// create/edit forms.
 class EditorLauncher {
   const EditorLauncher({
+    required AppErrorReporter errorReporter,
+    required DemoModeService demoModeService,
+    required DemoDataProvider demoDataProvider,
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
     TaskRepositoryContract? taskRepository,
@@ -33,7 +36,10 @@ class EditorLauncher {
     ProjectWriteService? projectWriteService,
     ValueWriteService? valueWriteService,
     RoutineWriteService? routineWriteService,
-  }) : _taskRepository = taskRepository,
+  }) : _errorReporter = errorReporter,
+       _demoModeService = demoModeService,
+       _demoDataProvider = demoDataProvider,
+       _taskRepository = taskRepository,
        _routineRepository = routineRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
@@ -50,6 +56,9 @@ class EditorLauncher {
   final ProjectWriteService? _projectWriteService;
   final ValueWriteService? _valueWriteService;
   final RoutineWriteService? _routineWriteService;
+  final AppErrorReporter _errorReporter;
+  final DemoModeService _demoModeService;
+  final DemoDataProvider _demoDataProvider;
 
   Future<void> openTaskEditor(
     BuildContext context, {
@@ -78,8 +87,6 @@ class EditorLauncher {
       context: context,
       showDragHandle: effectiveShowDragHandle,
       childBuilder: (modalContext) {
-        final demoModeService = context.read<DemoModeService>();
-        final demoDataProvider = context.read<DemoDataProvider>();
         return BlocProvider(
           create: (context) => TaskDetailBloc(
             taskId: taskId,
@@ -87,9 +94,9 @@ class EditorLauncher {
             projectRepository: _projectRepository,
             valueRepository: _valueRepository,
             taskWriteService: taskWriteService,
-            errorReporter: context.read<AppErrorReporter>(),
-            demoModeService: demoModeService,
-            demoDataProvider: demoDataProvider,
+            errorReporter: _errorReporter,
+            demoModeService: _demoModeService,
+            demoDataProvider: _demoDataProvider,
           ),
           child: TaskDetailSheet(
             defaultProjectId: defaultProjectId,
