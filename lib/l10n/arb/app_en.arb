@@ -55,7 +55,8 @@
     "projectValueTitle": "Project value",
     "projectValueHelper": "Choose one value to guide this project.",
     "projectFormSingleValueOnly": "Choose one value.",
-    "taskProjectValueTitle": "Value",
+    "taskProjectValueTitle": "What this supports",
+    "taskProjectValueHelper": "Aligned to the value your project is built around.",
     "taskProjectValueLockedLabel": "Locked",
     "taskProjectValueNotSet": "Value not set.",
     "taskProjectValueRow": "Value: {valueName}",
@@ -179,6 +180,9 @@
     },
     "@taskProjectValueTitle": {
         "description": "Section title for the locked project value in task form."
+    },
+    "@taskProjectValueHelper": {
+        "description": "Helper text explaining the inherited project value in task form."
     },
     "@taskProjectValueLockedLabel": {
         "description": "Label shown next to the locked project value."
@@ -2955,6 +2959,30 @@
     "description": "Remaining count label for routine cadence.",
     "placeholders": {
       "count": {
+        "type": "int"
+      }
+    }
+  },
+  "routineProgressCaptionWeekly": "{completed}/{target} this week",
+  "@routineProgressCaptionWeekly": {
+    "description": "Progress caption for weekly routines.",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "routineProgressCaptionMonthly": "{completed}/{target} this month",
+  "@routineProgressCaptionMonthly": {
+    "description": "Progress caption for monthly routines.",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "target": {
         "type": "int"
       }
     }

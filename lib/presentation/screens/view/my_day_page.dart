@@ -11,13 +11,13 @@ import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.d
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/app_loading_screen.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/view/guided_tour_targets.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
@@ -26,6 +26,10 @@ import 'package:taskly_bloc/presentation/screens/services/my_day_gate_query_serv
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/view/plan_my_day_page.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/my_day.dart' as my_day;
@@ -38,6 +42,11 @@ import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 enum _MyDayMode { execute, plan }
 
+enum _MyDayMenuAction {
+  showCompleted,
+  selectMultiple,
+}
+
 class MyDayPage extends StatefulWidget {
   const MyDayPage({super.key});
 
@@ -47,6 +56,7 @@ class MyDayPage extends StatefulWidget {
 
 class _MyDayPageState extends State<MyDayPage> {
   _MyDayMode _mode = _MyDayMode.execute;
+  bool _showCompleted = false;
 
   Future<void> _openNewTaskEditor(
     BuildContext context, {
@@ -83,6 +93,38 @@ class _MyDayPageState extends State<MyDayPage> {
     });
   }
 
+  void _syncTourStep(BuildContext context, GuidedTourState state) {
+    if (!state.active) return;
+    final step = state.currentStep;
+    if (step == null) return;
+
+    final planStep = switch (step.id) {
+      'plan_my_day_triage' => PlanMyDayStep.triage,
+      'plan_my_day_scheduled_routines' => PlanMyDayStep.routines,
+      'plan_my_day_flexible_routines' => PlanMyDayStep.routines,
+      'plan_my_day_values' => PlanMyDayStep.valuesStep,
+      'plan_my_day_summary' => PlanMyDayStep.summary,
+      _ => null,
+    };
+
+    if (planStep != null) {
+      if (_mode != _MyDayMode.plan) {
+        _enterPlanMode(context);
+      }
+      context.read<PlanMyDayBloc>().add(PlanMyDayStepRequested(planStep));
+      return;
+    }
+
+    if (_mode != _MyDayMode.execute &&
+        (step.id == 'my_day_summary' || step.id == 'my_day_focus_list')) {
+      _exitPlanMode();
+    }
+  }
+
+  void _toggleShowCompleted() {
+    setState(() => _showCompleted = !_showCompleted);
+  }
+
   @override
   Widget build(BuildContext context) {
     final dayKeyUtc = context.read<HomeDayService>().todayDayKeyUtc();
@@ -101,6 +143,7 @@ class _MyDayPageState extends State<MyDayPage> {
             queryService: context.read<MyDaySessionQueryService>(),
             routineWriteService: context.read<RoutineWriteService>(),
             nowService: context.read<NowService>(),
+            demoModeService: context.read<DemoModeService>(),
           ),
         ),
         BlocProvider<PlanMyDayBloc>(
@@ -115,90 +158,123 @@ class _MyDayPageState extends State<MyDayPage> {
             dayKeyService: context.read<HomeDayKeyService>(),
             temporalTriggerService: context.read<TemporalTriggerService>(),
             nowService: context.read<NowService>(),
+            demoModeService: context.read<DemoModeService>(),
+            demoDataProvider: context.read<DemoDataProvider>(),
           ),
         ),
         BlocProvider(create: (_) => SelectionBloc()),
       ],
-      child: BlocBuilder<PlanMyDayBloc, PlanMyDayState>(
-        builder: (context, _) {
-          if (_mode == _MyDayMode.plan) {
-            return PlanMyDayPage(
-              onCloseRequested: _exitPlanMode,
-            );
-          }
-
-          return BlocBuilder<SelectionBloc, SelectionState>(
-            builder: (context, selectionState) {
-              final gateBody = BlocBuilder<MyDayGateBloc, MyDayGateState>(
-                builder: (context, gateState) {
-                  if (gateState is MyDayGateLoaded &&
-                      gateState.needsValuesSetup) {
-                    return const MyDayValuesGate();
-                  }
-                  return _MyDayLoadedBody(
-                    today: today,
-                    dayKeyUtc: dayKeyUtc,
-                    onOpenPlan: () => _enterPlanMode(context),
-                  );
-                },
+      child: BlocListener<GuidedTourBloc, GuidedTourState>(
+        listenWhen: (previous, current) =>
+            previous.currentIndex != current.currentIndex ||
+            previous.active != current.active,
+        listener: _syncTourStep,
+        child: BlocBuilder<PlanMyDayBloc, PlanMyDayState>(
+          builder: (context, _) {
+            if (_mode == _MyDayMode.plan) {
+              return PlanMyDayPage(
+                onCloseRequested: _exitPlanMode,
               );
+            }
 
-              return Scaffold(
-                appBar: selectionState.isSelectionMode
-                    ? SelectionAppBar(
-                        baseTitle: context.l10n.myDayTitle,
-                        onExit: () {},
-                      )
-                    : AppBar(
-                        toolbarHeight: 56,
-                        title: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              context.l10n.myDayTitle,
-                              style: Theme.of(context).textTheme.titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
+            return BlocBuilder<SelectionBloc, SelectionState>(
+              builder: (context, selectionState) {
+                final gateBody = BlocBuilder<MyDayGateBloc, MyDayGateState>(
+                  builder: (context, gateState) {
+                    if (gateState is MyDayGateLoaded &&
+                        gateState.needsValuesSetup) {
+                      return const MyDayValuesGate();
+                    }
+                    return _MyDayLoadedBody(
+                      today: today,
+                      dayKeyUtc: dayKeyUtc,
+                      onOpenPlan: () => _enterPlanMode(context),
+                      showCompleted: _showCompleted,
+                    );
+                  },
+                );
+
+                return Scaffold(
+                  appBar: selectionState.isSelectionMode
+                      ? SelectionAppBar(
+                          baseTitle: context.l10n.myDayTitle,
+                          onExit: () {},
+                        )
+                      : AppBar(
+                          toolbarHeight: 56,
+                          title: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                context.l10n.myDayTitle,
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
+                              SizedBox(height: tokens.spaceXxs2),
+                              Text(
+                                context.l10n.myDaySubtitleChosenForToday,
+                                style: Theme.of(context).textTheme.labelMedium
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            IconButton(
+                              tooltip: context.l10n.settingsTitle,
+                              icon: const Icon(Icons.settings_outlined),
+                              onPressed: () =>
+                                  Routing.toScreenKey(context, 'settings'),
                             ),
-                            SizedBox(height: tokens.spaceXxs2),
-                            Text(
-                              context.l10n.myDaySubtitleChosenForToday,
-                              style: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
+                            TasklyOverflowMenuButton<_MyDayMenuAction>(
+                              tooltip: 'More',
+                              itemsBuilder: (context) => [
+                                CheckedPopupMenuItem(
+                                  value: _MyDayMenuAction.showCompleted,
+                                  checked: _showCompleted,
+                                  child: const Text('Show completed'),
+                                ),
+                                const PopupMenuItem(
+                                  value: _MyDayMenuAction.selectMultiple,
+                                  child: Text('Select multiple'),
+                                ),
+                              ],
+                              onSelected: (action) {
+                                switch (action) {
+                                  case _MyDayMenuAction.showCompleted:
+                                    _toggleShowCompleted();
+                                  case _MyDayMenuAction.selectMultiple:
+                                    context
+                                        .read<SelectionBloc>()
+                                        .enterSelectionMode();
+                                }
+                              },
                             ),
                           ],
                         ),
-                        actions: [
-                          IconButton(
-                            tooltip: context.l10n.settingsTitle,
-                            icon: const Icon(Icons.settings_outlined),
-                            onPressed: () =>
-                                Routing.toScreenKey(context, 'settings'),
+                  floatingActionButton: selectionState.isSelectionMode
+                      ? null
+                      : EntityAddSpeedDial(
+                          heroTag: 'add_speed_dial_my_day',
+                          onCreateTask: () => _openNewTaskEditor(
+                            context,
+                            defaultDay: today,
                           ),
-                        ],
-                      ),
-                floatingActionButton: selectionState.isSelectionMode
-                    ? null
-                    : EntityAddSpeedDial(
-                        heroTag: 'add_speed_dial_my_day',
-                        onCreateTask: () => _openNewTaskEditor(
-                          context,
-                          defaultDay: today,
+                          onCreateProject: () => _openNewProjectEditor(
+                            context,
+                          ),
                         ),
-                        onCreateProject: () => _openNewProjectEditor(
-                          context,
-                        ),
-                      ),
-                body: gateBody,
-              );
-            },
-          );
-        },
+                  body: gateBody,
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -209,11 +285,13 @@ class _MyDayLoadedBody extends StatelessWidget {
     required this.today,
     required this.dayKeyUtc,
     required this.onOpenPlan,
+    required this.showCompleted,
   });
 
   final DateTime today;
   final DateTime dayKeyUtc;
   final VoidCallback onOpenPlan;
+  final bool showCompleted;
 
   @override
   Widget build(BuildContext context) {
@@ -273,6 +351,7 @@ class _MyDayLoadedBody extends StatelessWidget {
                     dayKeyUtc: dayKeyUtc,
                     plannedItems: plannedItems,
                     pinnedTasks: pinnedTasks,
+                    showCompleted: showCompleted,
                   ),
                 ],
               ),
@@ -317,22 +396,18 @@ class _MyDayHeaderRow extends StatelessWidget {
                 ),
               ),
             ),
-            GuidedTourTarget(
-              id: 'my_day_plan_button',
-              child: TextButton(
-                onPressed: onUpdatePlan,
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: TasklyTokens.of(context).spaceLg,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  textStyle: theme.textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+            TextButton(
+              key: GuidedTourAnchors.myDayPlanButton,
+              onPressed: onUpdatePlan,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(
+                  horizontal: TasklyTokens.of(context).spaceLg,
                 ),
-                child: Text(l10n.myDayUpdatePlanTitle),
+                textStyle: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
+              child: Text(l10n.myDayUpdatePlanTitle),
             ),
           ],
         ),
@@ -347,12 +422,14 @@ class _MyDayTaskList extends StatefulWidget {
     required this.dayKeyUtc,
     required this.plannedItems,
     required this.pinnedTasks,
+    required this.showCompleted,
   });
 
   final DateTime today;
   final DateTime dayKeyUtc;
   final List<MyDayPlannedItem> plannedItems;
   final List<Task> pinnedTasks;
+  final bool showCompleted;
 
   @override
   State<_MyDayTaskList> createState() => _MyDayTaskListState();
@@ -361,7 +438,6 @@ class _MyDayTaskList extends StatefulWidget {
 class _MyDayTaskListState extends State<_MyDayTaskList> {
   var _routinesCollapsed = false;
   var _tasksCollapsed = false;
-  var _completedCollapsed = true;
 
   @override
   Widget build(BuildContext context) {
@@ -419,11 +495,25 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
           growable: false,
         );
 
-    final taskEntries = [...pinnedEntries, ...activeTaskEntries];
+    final activeTaskEntriesCombined = <_MyDayListEntry>[
+      ...pinnedEntries.where((entry) => !entry.item.completed),
+      ...activeTaskEntries,
+    ];
 
-    final hasCompleted =
-        completedRoutineEntries.isNotEmpty || completedTaskEntries.isNotEmpty;
-    if (routineEntries.isEmpty && taskEntries.isEmpty && !hasCompleted) {
+    final completedTaskEntriesCombined = widget.showCompleted
+        ? completedTaskEntries
+        : const <_MyDayListEntry>[];
+
+    final routineVisibleEntries = [
+      ...activeRoutineEntries,
+      if (widget.showCompleted) ...completedRoutineEntries,
+    ];
+
+    final hasVisibleTasks =
+        activeTaskEntriesCombined.isNotEmpty ||
+        (widget.showCompleted && completedTaskEntriesCombined.isNotEmpty);
+
+    if (routineVisibleEntries.isEmpty && !hasVisibleTasks) {
       return TasklyFeedRenderer(
         spec: TasklyFeedSpec.empty(
           empty: TasklyEmptyStateSpec(
@@ -436,29 +526,40 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
       );
     }
 
-    final visibleTasks = taskEntries
-        .map((entry) => entry.item.task)
-        .whereType<Task>()
-        .toList(growable: false);
+    final visibleTasks = [
+      ...activeTaskEntriesCombined,
+      if (widget.showCompleted) ...completedTaskEntriesCombined,
+    ].map((entry) => entry.item.task).whereType<Task>().toList(growable: false);
     _registerVisibleTasks(selection, visibleTasks);
 
     final tokens = TasklyTokens.of(context);
-    final routineRows = _buildRoutineRows(
+    final activeRoutineRows = _buildRoutineRows(
       context,
       activeRoutineEntries,
       dayKeyUtc: widget.dayKeyUtc,
     );
-    final taskRows = _buildTaskRows(
+    final completedRoutineRows = widget.showCompleted
+        ? _buildRoutineRows(
+            context,
+            completedRoutineEntries,
+            dayKeyUtc: widget.dayKeyUtc,
+          )
+        : const <TasklyRowSpec>[];
+    final routineRows = [...activeRoutineRows, ...completedRoutineRows];
+    final activeTaskRows = _buildTaskRows(
       context,
-      taskEntries,
+      activeTaskEntriesCombined,
       todayDate: todayDate,
     );
-    final completedRows = _buildCompletedRows(
-      context,
-      completedRoutineEntries: completedRoutineEntries,
-      completedTaskEntries: completedTaskEntries,
-      dayKeyUtc: widget.dayKeyUtc,
-    );
+    final completedTaskRows = widget.showCompleted
+        ? _buildTaskRows(
+            context,
+            completedTaskEntriesCombined,
+            todayDate: todayDate,
+          )
+        : const <TasklyRowSpec>[];
+
+    final taskRows = [...activeTaskRows, ...completedTaskRows];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -492,23 +593,6 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
             emptyLabel: 'Your task list is clear.',
           ),
         ),
-        if (completedRows.isNotEmpty) ...[
-          SizedBox(height: tokens.spaceSm2),
-          _MyDayCollapsibleSection(
-            title: 'Completed',
-            count: completedRows.length,
-            isCollapsed: _completedCollapsed,
-            onToggle: () => setState(
-              () => _completedCollapsed = !_completedCollapsed,
-            ),
-            child: _buildSectionBody(
-              context,
-              id: 'myday-execute-completed',
-              rows: completedRows,
-              emptyLabel: 'No completed items yet.',
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -674,7 +758,8 @@ List<TasklyRowSpec> _buildTaskRows(
         if (taskEntriesById[task.id] != null) taskEntriesById[task.id]!,
     ];
 
-    for (final entry in sortedTaskEntries) {
+    for (var index = 0; index < sortedTaskEntries.length; index += 1) {
+      final entry = sortedTaskEntries[index];
       final item = entry.item;
       final task = item.task;
       if (task == null) continue;
@@ -682,56 +767,11 @@ List<TasklyRowSpec> _buildTaskRows(
         _buildTaskRowSpec(
           context,
           task,
+          anchorKey: index == 0 ? GuidedTourAnchors.myDayFocusTask1 : null,
           depthOffset: 0,
         ),
       );
     }
-  }
-
-  return rows;
-}
-
-List<TasklyRowSpec> _buildCompletedRows(
-  BuildContext context, {
-  required List<_MyDayListEntry> completedRoutineEntries,
-  required List<_MyDayListEntry> completedTaskEntries,
-  required DateTime dayKeyUtc,
-}) {
-  final routineRows = _buildRoutineRows(
-    context,
-    completedRoutineEntries,
-    dayKeyUtc: dayKeyUtc,
-  );
-
-  final taskRows = _buildCompletedTaskRows(
-    context,
-    completedTaskEntries,
-  );
-
-  return [...routineRows, ...taskRows];
-}
-
-List<TasklyRowSpec> _buildCompletedTaskRows(
-  BuildContext context,
-  List<_MyDayListEntry> entries,
-) {
-  final completedTaskEntries =
-      entries
-          .where((entry) => entry.item.type == MyDayPlannedItemType.task)
-          .toList(growable: false)
-        ..sort((a, b) => a.item.sortIndex.compareTo(b.item.sortIndex));
-
-  final rows = <TasklyRowSpec>[];
-  for (final entry in completedTaskEntries) {
-    final task = entry.item.task;
-    if (task == null) continue;
-    rows.add(
-      _buildTaskRowSpec(
-        context,
-        task,
-        depthOffset: 0,
-      ),
-    );
   }
 
   return rows;
@@ -1008,6 +1048,7 @@ TasklyRowSpec _buildRoutineRow(
 TasklyRowSpec _buildTaskRowSpec(
   BuildContext context,
   Task task, {
+  Key? anchorKey,
   int depthOffset = 0,
 }) {
   final selection = context.read<SelectionBloc>();
@@ -1044,6 +1085,7 @@ TasklyRowSpec _buildTaskRowSpec(
 
   return TasklyRowSpec.task(
     key: 'myday-accepted-${task.id}',
+    anchorKey: anchorKey,
     data: updatedData,
     depth: depthOffset,
     style: selectionMode

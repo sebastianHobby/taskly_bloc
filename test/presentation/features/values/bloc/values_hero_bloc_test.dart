@@ -50,10 +50,13 @@ void main() {
     when(() => sharedDataService.watchValues()).thenAnswer(
       (_) => valuesController.stream,
     );
-    when(() => analyticsService.getRecentCompletionsByValue(days: any()))
-        .thenAnswer((_) async => {'v1': 3});
+    when(
+      () => analyticsService.getRecentCompletionsByValue(days: any()),
+    ).thenAnswer((_) async => {'v1': 3});
     when(() => analyticsService.getValueActivityStats()).thenAnswer(
-      (_) async => {'v1': const ValueActivityStats(taskCount: 1, projectCount: 2)},
+      (_) async => {
+        'v1': const ValueActivityStats(taskCount: 1, projectCount: 2),
+      },
     );
 
     addTearDown(valuesController.close);
@@ -65,8 +68,7 @@ void main() {
     act: (bloc) => bloc.add(const ValuesHeroSubscriptionRequested()),
     expect: () => [
       isA<ValuesHeroLoading>(),
-      isA<ValuesHeroLoaded>()
-          .having((s) => s.items.length, 'items.length', 1),
+      isA<ValuesHeroLoaded>().having((s) => s.items.length, 'items.length', 1),
     ],
   );
 
@@ -77,7 +79,11 @@ void main() {
       bloc.add(const ValuesHeroSubscriptionRequested());
       valuesController.emit([
         TestData.value(id: 'v1', name: 'Purpose', priority: ValuePriority.high),
-        TestData.value(id: 'v2', name: 'Growth', priority: ValuePriority.medium),
+        TestData.value(
+          id: 'v2',
+          name: 'Growth',
+          priority: ValuePriority.medium,
+        ),
       ]);
     },
     expect: () => [
@@ -90,16 +96,19 @@ void main() {
   blocTestSafe<ValuesHeroBloc, ValuesHeroState>(
     'emits error when analytics fails',
     build: () {
-      when(() => analyticsService.getRecentCompletionsByValue(days: any()))
-          .thenThrow(StateError('boom'));
+      when(
+        () => analyticsService.getRecentCompletionsByValue(days: any()),
+      ).thenThrow(StateError('boom'));
       return buildBloc();
     },
     act: (bloc) => bloc.add(const ValuesHeroSubscriptionRequested()),
     expect: () => [
       isA<ValuesHeroLoading>(),
-      isA<ValuesHeroError>()
-          .having((s) => s.error.toString(), 'error', contains('boom')),
+      isA<ValuesHeroError>().having(
+        (s) => s.error.toString(),
+        'error',
+        contains('boom'),
+      ),
     ],
   );
 }
-

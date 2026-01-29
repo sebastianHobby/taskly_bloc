@@ -218,6 +218,182 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
     );
   }
 
+  Future<void> logRoutines(List<String> routineIds) async {
+    if (routineIds.isEmpty) return;
+    for (final routineId in routineIds) {
+      if (_isCompletedToday(routineId)) continue;
+      final context = _contextFactory.create(
+        feature: 'routines',
+        screen: 'routines_list',
+        intent: 'routine_bulk_log',
+        operation: 'routines.complete',
+        entityType: 'routine',
+        entityId: routineId,
+      );
+      try {
+        await _routineWriteService.recordCompletion(
+          routineId: routineId,
+          completedAtUtc: _nowService.nowUtc(),
+          context: context,
+        );
+      } catch (error, stackTrace) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: context,
+          message: '[RoutineListBloc] bulk log failed',
+        );
+      }
+    }
+  }
+
+  Future<void> unlogRoutines(List<String> routineIds) async {
+    if (routineIds.isEmpty) return;
+    for (final routineId in routineIds) {
+      final dayKeyUtc =
+          _dayKeyForRoutine(routineId) ?? dateOnly(_nowService.nowUtc());
+      final context = _contextFactory.create(
+        feature: 'routines',
+        screen: 'routines_list',
+        intent: 'routine_bulk_unlog',
+        operation: 'routines.unlog',
+        entityType: 'routine',
+        entityId: routineId,
+      );
+      try {
+        await _routineWriteService.removeLatestCompletionForDay(
+          routineId: routineId,
+          dayKeyUtc: dayKeyUtc,
+          context: context,
+        );
+      } catch (error, stackTrace) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: context,
+          message: '[RoutineListBloc] bulk unlog failed',
+        );
+      }
+    }
+  }
+
+  Future<void> deactivateRoutines(List<String> routineIds) async {
+    if (routineIds.isEmpty) return;
+    for (final routineId in routineIds) {
+      final routine = _routineById(routineId);
+      if (routine == null || !routine.isActive) continue;
+
+      final context = _contextFactory.create(
+        feature: 'routines',
+        screen: 'routines_list',
+        intent: 'routine_bulk_deactivate',
+        operation: 'routines.deactivate',
+        entityType: 'routine',
+        entityId: routineId,
+      );
+
+      try {
+        await _routineWriteService.update(
+          UpdateRoutineCommand(
+            id: routine.id,
+            name: routine.name,
+            valueId: routine.valueId,
+            routineType: routine.routineType,
+            targetCount: routine.targetCount,
+            scheduleDays: routine.scheduleDays,
+            minSpacingDays: routine.minSpacingDays,
+            restDayBuffer: routine.restDayBuffer,
+            preferredWeeks: routine.preferredWeeks,
+            fixedDayOfMonth: routine.fixedDayOfMonth,
+            fixedWeekday: routine.fixedWeekday,
+            fixedWeekOfMonth: routine.fixedWeekOfMonth,
+            isActive: false,
+            pausedUntilUtc: routine.pausedUntil,
+          ),
+          context: context,
+        );
+      } catch (error, stackTrace) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: context,
+          message: '[RoutineListBloc] bulk deactivate failed',
+        );
+      }
+    }
+  }
+
+  Future<void> activateRoutines(List<String> routineIds) async {
+    if (routineIds.isEmpty) return;
+    for (final routineId in routineIds) {
+      final routine = _routineById(routineId);
+      if (routine == null || routine.isActive) continue;
+
+      final context = _contextFactory.create(
+        feature: 'routines',
+        screen: 'routines_list',
+        intent: 'routine_bulk_activate',
+        operation: 'routines.activate',
+        entityType: 'routine',
+        entityId: routineId,
+      );
+
+      try {
+        await _routineWriteService.update(
+          UpdateRoutineCommand(
+            id: routine.id,
+            name: routine.name,
+            valueId: routine.valueId,
+            routineType: routine.routineType,
+            targetCount: routine.targetCount,
+            scheduleDays: routine.scheduleDays,
+            minSpacingDays: routine.minSpacingDays,
+            restDayBuffer: routine.restDayBuffer,
+            preferredWeeks: routine.preferredWeeks,
+            fixedDayOfMonth: routine.fixedDayOfMonth,
+            fixedWeekday: routine.fixedWeekday,
+            fixedWeekOfMonth: routine.fixedWeekOfMonth,
+            isActive: true,
+            pausedUntilUtc: routine.pausedUntil,
+          ),
+          context: context,
+        );
+      } catch (error, stackTrace) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: context,
+          message: '[RoutineListBloc] bulk activate failed',
+        );
+      }
+    }
+  }
+
+  Future<void> deleteRoutines(List<String> routineIds) async {
+    if (routineIds.isEmpty) return;
+    for (final routineId in routineIds) {
+      final context = _contextFactory.create(
+        feature: 'routines',
+        screen: 'routines_list',
+        intent: 'routine_bulk_delete',
+        operation: 'routines.delete',
+        entityType: 'routine',
+        entityId: routineId,
+      );
+
+      try {
+        await _routineWriteService.delete(routineId, context: context);
+      } catch (error, stackTrace) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: context,
+          message: '[RoutineListBloc] bulk delete failed',
+        );
+      }
+    }
+  }
+
   RoutineListLoaded _buildLoadedState({
     required List<Routine> routines,
     required List<Value> values,
@@ -302,6 +478,13 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
       );
     }
     return false;
+  }
+
+  Routine? _routineById(String routineId) {
+    for (final item in _latestItems) {
+      if (item.routine.id == routineId) return item.routine;
+    }
+    return null;
   }
 
   DateTime? _dayKeyForRoutine(String routineId) {

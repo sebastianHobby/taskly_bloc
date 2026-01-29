@@ -33,6 +33,7 @@ TasklyRoutineRowData buildRoutineRowData(
           completedCount: snapshot.completedCount,
           targetCount: snapshot.targetCount,
           windowLabel: windowLabel,
+          caption: _progressCaption(context, snapshot),
         )
       : null;
 
@@ -129,6 +130,23 @@ String _windowLabel(
   }
 
   return _monthlyWindowLabel(context, snapshot);
+}
+
+String _progressCaption(
+  BuildContext context,
+  RoutineCadenceSnapshot snapshot,
+) {
+  if (snapshot.targetCount <= 0) return '';
+  return switch (snapshot.periodType) {
+    RoutinePeriodType.week => context.l10n.routineProgressCaptionWeekly(
+      snapshot.completedCount,
+      snapshot.targetCount,
+    ),
+    RoutinePeriodType.month => context.l10n.routineProgressCaptionMonthly(
+      snapshot.completedCount,
+      snapshot.targetCount,
+    ),
+  };
 }
 
 String _scheduledDaysLabel(BuildContext context, List<int> scheduleDays) {

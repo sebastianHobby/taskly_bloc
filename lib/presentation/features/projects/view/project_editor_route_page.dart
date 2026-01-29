@@ -25,8 +25,7 @@ class ProjectEditorRoutePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EditorHostPage(
-      openModal: (context) =>
-          context.read<EditorLauncher>().openProjectEditor(
+      openModal: (context) => context.read<EditorLauncher>().openProjectEditor(
         context,
         projectId: projectId,
         showDragHandle: true,

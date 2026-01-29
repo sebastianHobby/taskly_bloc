@@ -2,11 +2,9 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/analytics.dart';
-import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart';
 import 'package:taskly_domain/time.dart';
@@ -257,7 +255,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     required ValueRatingsRepositoryContract valueRatingsRepository,
     required ValueRatingsWriteService valueRatingsWriteService,
     required RoutineRepositoryContract routineRepository,
-    required SettingsRepositoryContract settingsRepository,
     required TaskRepositoryContract taskRepository,
     required NowService nowService,
   }) : _analyticsService = analyticsService,
@@ -266,13 +263,15 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
        _valueRatingsRepository = valueRatingsRepository,
        _valueRatingsWriteService = valueRatingsWriteService,
        _routineRepository = routineRepository,
-       _settingsRepository = settingsRepository,
        _taskRepository = taskRepository,
        _nowService = nowService,
        super(const WeeklyReviewState()) {
     on<WeeklyReviewRequested>(_onRequested, transformer: restartable());
     on<WeeklyReviewValueSelected>(_onValueSelected);
-    on<WeeklyReviewValueRatingChanged>(_onValueRatingChanged);
+    on<WeeklyReviewValueRatingChanged>(
+      _onValueRatingChanged,
+      transformer: sequential(),
+    );
   }
 
   final AnalyticsService _analyticsService;
@@ -281,7 +280,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
   final ValueRatingsRepositoryContract _valueRatingsRepository;
   final ValueRatingsWriteService _valueRatingsWriteService;
   final RoutineRepositoryContract _routineRepository;
-  final SettingsRepositoryContract _settingsRepository;
   final TaskRepositoryContract _taskRepository;
   final NowService _nowService;
   final OperationContextFactory _contextFactory =
@@ -289,7 +287,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
   static const int _ratingsHistoryWeeks = 8;
   static const int _ratingsGraceWeeks = 2;
-  static const int _ratingsMax = 8;
+  static const int _ratingsMax = 10;
 
   Future<void> _onRequested(
     WeeklyReviewRequested event,
@@ -300,20 +298,11 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     emit(state.copyWith(status: WeeklyReviewStatus.loading));
 
     try {
-      final allocationConfig = await _settingsRepository.load(
-        SettingsKey.allocation,
+      final ratingsSummary = await _buildRatingsSummary(
+        config: config,
       );
-      final ratingsEnabled =
-          allocationConfig.suggestionSignal == SuggestionSignal.ratingsBased;
 
-      final ratingsSummary = ratingsEnabled
-          ? await _buildRatingsSummary(
-              config: config,
-            )
-          : null;
-
-      final shouldShowValuesSummary =
-          config.valuesSummaryEnabled && !ratingsEnabled;
+      final shouldShowValuesSummary = config.valuesSummaryEnabled;
       final summary = shouldShowValuesSummary
           ? await _buildValuesSummary(config)
           : null;
@@ -439,7 +428,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
         entries: const [],
         maxRating: _ratingsMax,
         graceWeeks: _ratingsGraceWeeks,
-        ratingsEnabled: true,
+        ratingsEnabled: false,
         ratingsOverdue: false,
         ratingsInGrace: false,
       );

@@ -7,6 +7,8 @@ import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_domain/services.dart';
 
@@ -73,6 +75,8 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     required ValueRepositoryContract valueRepository,
     required TaskWriteService taskWriteService,
     required AppErrorReporter errorReporter,
+    required DemoModeService demoModeService,
+    required DemoDataProvider demoDataProvider,
     String? taskId,
     bool autoLoad = true,
   }) : _taskRepository = taskRepository,
@@ -80,6 +84,8 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
        _valueRepository = valueRepository,
        _taskWriteService = taskWriteService,
        _errorReporter = errorReporter,
+       _demoModeService = demoModeService,
+       _demoDataProvider = demoDataProvider,
        super(const TaskDetailState.initial()) {
     on<_TaskDetailLoadInitialData>(
       _onLoadInitialData,
@@ -104,6 +110,8 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   final ValueRepositoryContract _valueRepository;
   final TaskWriteService _taskWriteService;
   final AppErrorReporter _errorReporter;
+  final DemoModeService _demoModeService;
+  final DemoDataProvider _demoDataProvider;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
@@ -183,8 +191,13 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   ) async {
     emit(const TaskDetailState.loadInProgress());
     try {
-      final projects = await _projectRepository.getAll();
-      final values = await _valueRepository.getAll();
+      final useDemo = _demoModeService.isEnabled;
+      final projects = useDemo
+          ? _demoDataProvider.projects
+          : await _projectRepository.getAll();
+      final values = useDemo
+          ? _demoDataProvider.values
+          : await _valueRepository.getAll();
 
       emit(
         TaskDetailState.initialDataLoadSuccess(

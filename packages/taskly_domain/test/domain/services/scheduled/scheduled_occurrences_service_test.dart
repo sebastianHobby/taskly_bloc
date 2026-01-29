@@ -13,22 +13,46 @@ import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 
 class _StreamTaskRepo extends Fake implements TaskRepositoryContract {
-  _StreamTaskRepo(this._overdueController, this._scheduledController);
+  _StreamTaskRepo(
+    this._overdueController,
+    this._scheduledController,
+    this._recurringController,
+    this._completionsController,
+    this._exceptionsController,
+  );
 
   final StreamController<List<Task>> _overdueController;
   final StreamController<List<Task>> _scheduledController;
+  final StreamController<List<Task>> _recurringController;
+  final StreamController<List<CompletionHistoryData>> _completionsController;
+  final StreamController<List<RecurrenceExceptionData>> _exceptionsController;
 
   TaskQuery? lastOverdueQuery;
   TaskQuery? lastScheduledQuery;
+  TaskQuery? lastRecurringQuery;
 
   @override
   Stream<List<Task>> watchAll([TaskQuery? query]) {
+    if (_isRecurringTaskQuery(query)) {
+      lastRecurringQuery = query;
+      return _recurringController.stream;
+    }
     if (_isScheduledNonRecurringTaskQuery(query)) {
       lastScheduledQuery = query;
       return _scheduledController.stream;
     }
     lastOverdueQuery = query;
     return _overdueController.stream;
+  }
+
+  @override
+  Stream<List<CompletionHistoryData>> watchCompletionHistory() {
+    return _completionsController.stream;
+  }
+
+  @override
+  Stream<List<RecurrenceExceptionData>> watchRecurrenceExceptions() {
+    return _exceptionsController.stream;
   }
 
   @override
@@ -41,16 +65,30 @@ class _StreamTaskRepo extends Fake implements TaskRepositoryContract {
 }
 
 class _StreamProjectRepo extends Fake implements ProjectRepositoryContract {
-  _StreamProjectRepo(this._overdueController, this._scheduledController);
+  _StreamProjectRepo(
+    this._overdueController,
+    this._scheduledController,
+    this._recurringController,
+    this._completionsController,
+    this._exceptionsController,
+  );
 
   final StreamController<List<Project>> _overdueController;
   final StreamController<List<Project>> _scheduledController;
+  final StreamController<List<Project>> _recurringController;
+  final StreamController<List<CompletionHistoryData>> _completionsController;
+  final StreamController<List<RecurrenceExceptionData>> _exceptionsController;
 
   ProjectQuery? lastOverdueQuery;
   ProjectQuery? lastScheduledQuery;
+  ProjectQuery? lastRecurringQuery;
 
   @override
   Stream<List<Project>> watchAll([ProjectQuery? query]) {
+    if (_isRecurringProjectQuery(query)) {
+      lastRecurringQuery = query;
+      return _recurringController.stream;
+    }
     if (_isScheduledNonRecurringProjectQuery(query)) {
       lastScheduledQuery = query;
       return _scheduledController.stream;
@@ -58,55 +96,15 @@ class _StreamProjectRepo extends Fake implements ProjectRepositoryContract {
     lastOverdueQuery = query;
     return _overdueController.stream;
   }
-}
-
-class _CapturingOccurrenceService extends Fake
-    implements OccurrenceReadService {
-  _CapturingOccurrenceService(
-    this._tasksController,
-    this._projectsController,
-  );
-
-  final StreamController<List<Task>> _tasksController;
-  final StreamController<List<Project>> _projectsController;
-
-  TaskQuery? lastTaskQuery;
-  ProjectQuery? lastProjectQuery;
-
-  DateTime? lastTaskRangeStart;
-  DateTime? lastTaskRangeEnd;
-  DateTime? lastTaskToday;
-
-  DateTime? lastProjectRangeStart;
-  DateTime? lastProjectRangeEnd;
-  DateTime? lastProjectToday;
 
   @override
-  Stream<List<Task>> watchTaskOccurrences({
-    required TaskQuery query,
-    required DateTime rangeStartDay,
-    required DateTime rangeEndDay,
-    DateTime? todayDayKeyUtc,
-  }) {
-    lastTaskQuery = query;
-    lastTaskRangeStart = rangeStartDay;
-    lastTaskRangeEnd = rangeEndDay;
-    lastTaskToday = todayDayKeyUtc;
-    return _tasksController.stream;
+  Stream<List<CompletionHistoryData>> watchCompletionHistory() {
+    return _completionsController.stream;
   }
 
   @override
-  Stream<List<Project>> watchProjectOccurrences({
-    required ProjectQuery query,
-    required DateTime rangeStartDay,
-    required DateTime rangeEndDay,
-    DateTime? todayDayKeyUtc,
-  }) {
-    lastProjectQuery = query;
-    lastProjectRangeStart = rangeStartDay;
-    lastProjectRangeEnd = rangeEndDay;
-    lastProjectToday = todayDayKeyUtc;
-    return _projectsController.stream;
+  Stream<List<RecurrenceExceptionData>> watchRecurrenceExceptions() {
+    return _exceptionsController.stream;
   }
 }
 
@@ -121,6 +119,17 @@ bool _isScheduledNonRecurringTaskQuery(TaskQuery? query) {
   );
 }
 
+bool _isRecurringTaskQuery(TaskQuery? query) {
+  if (query == null) return false;
+  final shared = query.filter.shared;
+  return shared.any(
+    (p) =>
+        p is TaskBoolPredicate &&
+        p.field == TaskBoolField.repeating &&
+        p.operator == BoolOperator.isTrue,
+  );
+}
+
 bool _isScheduledNonRecurringProjectQuery(ProjectQuery? query) {
   if (query == null) return false;
   final shared = query.filter.shared;
@@ -130,6 +139,83 @@ bool _isScheduledNonRecurringProjectQuery(ProjectQuery? query) {
         p.field == ProjectBoolField.repeating &&
         p.operator == BoolOperator.isFalse,
   );
+}
+
+bool _isRecurringProjectQuery(ProjectQuery? query) {
+  if (query == null) return false;
+  final shared = query.filter.shared;
+  return shared.any(
+    (p) =>
+        p is ProjectBoolPredicate &&
+        p.field == ProjectBoolField.repeating &&
+        p.operator == BoolOperator.isTrue,
+  );
+}
+
+class _PassThroughOccurrenceExpander extends Fake
+    implements OccurrenceStreamExpanderContract {
+  @override
+  Stream<List<Task>> expandTaskOccurrences({
+    required Stream<List<Task>> tasksStream,
+    required Stream<List<CompletionHistoryData>> completionsStream,
+    required Stream<List<RecurrenceExceptionData>> exceptionsStream,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    bool Function(Task)? postExpansionFilter,
+  }) {
+    return tasksStream;
+  }
+
+  @override
+  Stream<List<Project>> expandProjectOccurrences({
+    required Stream<List<Project>> projectsStream,
+    required Stream<List<CompletionHistoryData>> completionsStream,
+    required Stream<List<RecurrenceExceptionData>> exceptionsStream,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    bool Function(Project)? postExpansionFilter,
+  }) {
+    return projectsStream;
+  }
+
+  @override
+  List<Task> expandTaskOccurrencesSync({
+    required List<Task> tasks,
+    required List<CompletionHistoryData> completions,
+    required List<RecurrenceExceptionData> exceptions,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    bool Function(Task)? postExpansionFilter,
+  }) {
+    return tasks;
+  }
+
+  @override
+  List<Project> expandProjectOccurrencesSync({
+    required List<Project> projects,
+    required List<CompletionHistoryData> completions,
+    required List<RecurrenceExceptionData> exceptions,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    bool Function(Project)? postExpansionFilter,
+  }) {
+    return projects;
+  }
+}
+
+class _MockSettingsRepository extends Mock
+    implements SettingsRepositoryContract {}
+
+class _FakeClock implements Clock {
+  _FakeClock(this.now);
+
+  final DateTime now;
+
+  @override
+  DateTime nowLocal() => now;
+
+  @override
+  DateTime nowUtc() => now.toUtc();
 }
 
 void main() {
@@ -193,6 +279,14 @@ void main() {
       final recurringTasksController = StreamController<List<Task>>.broadcast();
       final recurringProjectsController =
           StreamController<List<Project>>.broadcast();
+      final taskCompletionsController =
+          StreamController<List<CompletionHistoryData>>.broadcast();
+      final taskExceptionsController =
+          StreamController<List<RecurrenceExceptionData>>.broadcast();
+      final projectCompletionsController =
+          StreamController<List<CompletionHistoryData>>.broadcast();
+      final projectExceptionsController =
+          StreamController<List<RecurrenceExceptionData>>.broadcast();
 
       addTearDown(overdueTasksController.close);
       addTearDown(overdueProjectsController.close);
@@ -200,18 +294,34 @@ void main() {
       addTearDown(scheduledProjectsController.close);
       addTearDown(recurringTasksController.close);
       addTearDown(recurringProjectsController.close);
+      addTearDown(taskCompletionsController.close);
+      addTearDown(taskExceptionsController.close);
+      addTearDown(projectCompletionsController.close);
+      addTearDown(projectExceptionsController.close);
 
       final taskRepo = _StreamTaskRepo(
         overdueTasksController,
         scheduledTasksController,
+        recurringTasksController,
+        taskCompletionsController,
+        taskExceptionsController,
       );
       final projectRepo = _StreamProjectRepo(
         overdueProjectsController,
         scheduledProjectsController,
-      );
-      final occurrenceService = _CapturingOccurrenceService(
-        recurringTasksController,
         recurringProjectsController,
+        projectCompletionsController,
+        projectExceptionsController,
+      );
+      final settingsRepository = _MockSettingsRepository();
+      final occurrenceService = OccurrenceReadService(
+        taskRepository: taskRepo,
+        projectRepository: projectRepo,
+        homeDayKeyService: HomeDayKeyService(
+          settingsRepository: settingsRepository,
+          clock: _FakeClock(DateTime.utc(2026, 1, 1)),
+        ),
+        occurrenceExpander: _PassThroughOccurrenceExpander(),
       );
 
       final service = ScheduledOccurrencesService(
@@ -335,6 +445,14 @@ void main() {
       final recurringTasksController = StreamController<List<Task>>.broadcast();
       final recurringProjectsController =
           StreamController<List<Project>>.broadcast();
+      final taskCompletionsController =
+          StreamController<List<CompletionHistoryData>>.broadcast();
+      final taskExceptionsController =
+          StreamController<List<RecurrenceExceptionData>>.broadcast();
+      final projectCompletionsController =
+          StreamController<List<CompletionHistoryData>>.broadcast();
+      final projectExceptionsController =
+          StreamController<List<RecurrenceExceptionData>>.broadcast();
 
       addTearDown(overdueTasksController.close);
       addTearDown(overdueProjectsController.close);
@@ -342,18 +460,34 @@ void main() {
       addTearDown(scheduledProjectsController.close);
       addTearDown(recurringTasksController.close);
       addTearDown(recurringProjectsController.close);
+      addTearDown(taskCompletionsController.close);
+      addTearDown(taskExceptionsController.close);
+      addTearDown(projectCompletionsController.close);
+      addTearDown(projectExceptionsController.close);
 
       final taskRepo = _StreamTaskRepo(
         overdueTasksController,
         scheduledTasksController,
+        recurringTasksController,
+        taskCompletionsController,
+        taskExceptionsController,
       );
       final projectRepo = _StreamProjectRepo(
         overdueProjectsController,
         scheduledProjectsController,
-      );
-      final occurrenceService = _CapturingOccurrenceService(
-        recurringTasksController,
         recurringProjectsController,
+        projectCompletionsController,
+        projectExceptionsController,
+      );
+      final settingsRepository = _MockSettingsRepository();
+      final occurrenceService = OccurrenceReadService(
+        taskRepository: taskRepo,
+        projectRepository: projectRepo,
+        homeDayKeyService: HomeDayKeyService(
+          settingsRepository: settingsRepository,
+          clock: _FakeClock(DateTime.utc(2026, 1, 1)),
+        ),
+        occurrenceExpander: _PassThroughOccurrenceExpander(),
       );
 
       final service = ScheduledOccurrencesService(
@@ -414,7 +548,7 @@ void main() {
       );
 
       final scheduledTaskPredicates =
-          occurrenceService.lastTaskQuery?.filter.shared ?? [];
+          taskRepo.lastRecurringQuery?.filter.shared ?? [];
       expect(
         scheduledTaskPredicates.any((p) => p is TaskValuePredicate),
         isTrue,
@@ -430,7 +564,7 @@ void main() {
       );
 
       final scheduledProjectPredicates =
-          occurrenceService.lastProjectQuery?.filter.shared ?? [];
+          projectRepo.lastRecurringQuery?.filter.shared ?? [];
       expect(
         scheduledProjectPredicates.any((p) => p is ProjectValuePredicate),
         isTrue,
@@ -459,6 +593,14 @@ void main() {
       final recurringTasksController = StreamController<List<Task>>.broadcast();
       final recurringProjectsController =
           StreamController<List<Project>>.broadcast();
+      final taskCompletionsController =
+          StreamController<List<CompletionHistoryData>>.broadcast();
+      final taskExceptionsController =
+          StreamController<List<RecurrenceExceptionData>>.broadcast();
+      final projectCompletionsController =
+          StreamController<List<CompletionHistoryData>>.broadcast();
+      final projectExceptionsController =
+          StreamController<List<RecurrenceExceptionData>>.broadcast();
 
       addTearDown(overdueTasksController.close);
       addTearDown(overdueProjectsController.close);
@@ -466,18 +608,34 @@ void main() {
       addTearDown(scheduledProjectsController.close);
       addTearDown(recurringTasksController.close);
       addTearDown(recurringProjectsController.close);
+      addTearDown(taskCompletionsController.close);
+      addTearDown(taskExceptionsController.close);
+      addTearDown(projectCompletionsController.close);
+      addTearDown(projectExceptionsController.close);
 
       final taskRepo = _StreamTaskRepo(
         overdueTasksController,
         scheduledTasksController,
+        recurringTasksController,
+        taskCompletionsController,
+        taskExceptionsController,
       );
       final projectRepo = _StreamProjectRepo(
         overdueProjectsController,
         scheduledProjectsController,
-      );
-      final occurrenceService = _CapturingOccurrenceService(
-        recurringTasksController,
         recurringProjectsController,
+        projectCompletionsController,
+        projectExceptionsController,
+      );
+      final settingsRepository = _MockSettingsRepository();
+      final occurrenceService = OccurrenceReadService(
+        taskRepository: taskRepo,
+        projectRepository: projectRepo,
+        homeDayKeyService: HomeDayKeyService(
+          settingsRepository: settingsRepository,
+          clock: _FakeClock(DateTime.utc(2026, 1, 1)),
+        ),
+        occurrenceExpander: _PassThroughOccurrenceExpander(),
       );
 
       final service = ScheduledOccurrencesService(

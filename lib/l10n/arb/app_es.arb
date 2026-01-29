@@ -56,7 +56,8 @@
     "projectValueTitle": "Valor del proyecto",
     "projectValueHelper": "Elige un valor para guiar este proyecto.",
     "projectFormSingleValueOnly": "Elige un solo valor.",
-    "taskProjectValueTitle": "Valor",
+    "taskProjectValueTitle": "Lo que apoya",
+    "taskProjectValueHelper": "Alineado con el valor en el que se basa tu proyecto.",
     "taskProjectValueLockedLabel": "Bloqueado",
     "taskProjectValueNotSet": "Valor no establecido.",
     "taskProjectValueRow": "Valor: {valueName}",
@@ -180,6 +181,9 @@
     },
     "@taskProjectValueTitle": {
         "description": "T\u00edtulo de secci\u00f3n para el valor bloqueado del proyecto en la tarea."
+    },
+    "@taskProjectValueHelper": {
+        "description": "Texto de ayuda que explica el valor heredado del proyecto en la tarea."
     },
     "@taskProjectValueLockedLabel": {
         "description": "Etiqueta mostrada junto al valor bloqueado del proyecto."
@@ -2874,6 +2878,30 @@
             }
         }
     },
+    "routineProgressCaptionWeekly": "{completed}/{target} esta semana",
+    "@routineProgressCaptionWeekly": {
+        "description": "Progress caption for weekly routines.",
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "target": {
+                "type": "int"
+            }
+        }
+    },
+    "routineProgressCaptionMonthly": "{completed}/{target} este mes",
+    "@routineProgressCaptionMonthly": {
+        "description": "Progress caption for monthly routines.",
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "target": {
+                "type": "int"
+            }
+        }
+    },
     "routineWindowWeekly": "{daysLeft} days left ({startLabel}-{endLabel})",
     "@routineWindowWeekly": {
         "description": "Window label for weekly routines.",
@@ -3091,7 +3119,22 @@
     "routinePausePickDate": "Pick a date",
     "@routinePausePickDate": {
         "description": "Label for picking a custom pause date."
-    }
+    },
+    "deleteValue": "Eliminar valor",
+    "editValue": "Editar valor",
+    "valueNotFound": "Valor no encontrado.",
+    "routineNotFound": "Rutina no encontrada.",
+    "routineFormActiveLabel": "Activa",
+    "routineWeek1Label": "Semana 1",
+    "routineWeek2Label": "Semana 2",
+    "routineWeek3Label": "Semana 3",
+    "routineWeek4Label": "Semana 4",
+    "routineWeekLastLabel": "Última semana",
+    "routineDeleteTitle": "Eliminar rutina",
+    "routineDeleteDescription": "Esta rutina y su historial se eliminarán.",
+    "routineCreatedSuccessfully": "Rutina creada",
+    "routineUpdatedSuccessfully": "Rutina actualizada",
+    "routineDeletedSuccessfully": "Rutina eliminada"
 }
 
 

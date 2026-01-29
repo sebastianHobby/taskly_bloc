@@ -56,9 +56,9 @@ void main() {
       context: context,
     );
 
-    final created = await journalRepository
-        .watchJournalEntries()
-        .firstWhere((entries) => entries.isNotEmpty);
+    final created = await journalRepository.watchJournalEntries().firstWhere(
+      (entries) => entries.isNotEmpty,
+    );
     expect(created.single.id, entryId);
 
     await journalRepository.upsertJournalEntry(
@@ -66,9 +66,9 @@ void main() {
       context: context,
     );
 
-    final updated = await journalRepository
-        .watchJournalEntries()
-        .firstWhere((entries) => entries.first.journalText == 'Updated');
+    final updated = await journalRepository.watchJournalEntries().firstWhere(
+      (entries) => entries.first.journalText == 'Updated',
+    );
     expect(updated.first.journalText, 'Updated');
 
     final row = await db.select(db.journalEntries).getSingle();
@@ -110,9 +110,9 @@ void main() {
       context: context,
     );
 
-    final groups = await journalRepository
-        .watchTrackerGroups()
-        .firstWhere((rows) => rows.isNotEmpty);
+    final groups = await journalRepository.watchTrackerGroups().firstWhere(
+      (rows) => rows.isNotEmpty,
+    );
     expect(groups.first.name, 'Group');
 
     await journalRepository.saveTrackerDefinition(
@@ -130,9 +130,9 @@ void main() {
       context: context,
     );
 
-    final defs = await journalRepository
-        .watchTrackerDefinitions()
-        .firstWhere((rows) => rows.isNotEmpty);
+    final defs = await journalRepository.watchTrackerDefinitions().firstWhere(
+      (rows) => rows.isNotEmpty,
+    );
     expect(defs.first.name, 'Mood');
 
     final row = await db.select(db.trackerGroups).getSingle();

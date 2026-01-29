@@ -47,9 +47,9 @@ void main() {
       context: context,
     );
 
-    final created = await projectRepository
-        .watchAll()
-        .firstWhere((projects) => projects.isNotEmpty);
+    final created = await projectRepository.watchAll().firstWhere(
+      (projects) => projects.isNotEmpty,
+    );
     expect(created, hasLength(1));
     final projectId = created.single.id;
 
@@ -68,6 +68,65 @@ void main() {
     final row = await db.select(db.projectTable).getSingle();
     final metadata = jsonDecode(row.psMetadata ?? '{}') as Map<String, dynamic>;
     expect(metadata['cid'], context.correlationId);
+  });
+
+  testSafe('project repository delete removes project and emits stream updates', () async {
+    final db = createTestDb();
+    addTearDown(() => closeTestDb(db));
+
+    final clock = _FixedClock(DateTime.utc(2025, 1, 15, 12));
+    final idGenerator = FakeIdGenerator('user-1');
+    final expander = MockOccurrenceStreamExpanderContract();
+    final writeHelper = MockOccurrenceWriteHelperContract();
+
+    final projectRepository = ProjectRepository(
+      driftDb: db,
+      occurrenceExpander: expander,
+      occurrenceWriteHelper: writeHelper,
+      idGenerator: idGenerator,
+      clock: clock,
+    );
+
+    await projectRepository.create(name: 'Delete Project');
+    final created = await projectRepository.watchAll().firstWhere(
+      (projects) => projects.isNotEmpty,
+    );
+    final projectId = created.single.id;
+
+    await projectRepository.delete(projectId);
+
+    final afterDelete = await projectRepository.watchAll().firstWhere(
+      (projects) => projects.isEmpty,
+    );
+    expect(afterDelete, isEmpty);
+
+    final removed = await projectRepository.watchById(projectId).firstWhere(
+      (project) => project == null,
+    );
+    expect(removed, isNull);
+  });
+
+  testSafe('project repository rejects empty name', () async {
+    final db = createTestDb();
+    addTearDown(() => closeTestDb(db));
+
+    final clock = _FixedClock(DateTime.utc(2025, 1, 15, 12));
+    final idGenerator = FakeIdGenerator('user-1');
+    final expander = MockOccurrenceStreamExpanderContract();
+    final writeHelper = MockOccurrenceWriteHelperContract();
+
+    final projectRepository = ProjectRepository(
+      driftDb: db,
+      occurrenceExpander: expander,
+      occurrenceWriteHelper: writeHelper,
+      idGenerator: idGenerator,
+      clock: clock,
+    );
+
+    await expectLater(
+      projectRepository.create(name: ''),
+      throwsA(isA<Exception>()),
+    );
   });
 }
 

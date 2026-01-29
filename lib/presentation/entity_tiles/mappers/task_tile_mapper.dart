@@ -9,6 +9,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/feature_flags.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 
@@ -53,9 +54,11 @@ TasklyTaskRowData buildTaskRowData(
       : resolvedDeadlineDateLabel;
 
   final primaryValueData = task.effectivePrimaryValue?.toChipData(context);
-  final secondaryValueData = task.effectiveSecondaryValues
-      .map((value) => value.toChipData(context))
-      .toList(growable: false);
+  final secondaryValueData = TasklyFeatureFlags.taskSecondaryValuesEnabled
+      ? task.effectiveSecondaryValues
+          .map((value) => value.toChipData(context))
+          .toList(growable: false)
+      : const <ValueChipData>[];
 
   final meta = TasklyEntityMetaData(
     startDateLabel: resolvedStartDateLabel,

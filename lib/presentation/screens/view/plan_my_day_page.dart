@@ -7,6 +7,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
 import 'package:taskly_bloc/presentation/features/review/view/weekly_review_modal.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
@@ -317,10 +318,11 @@ class _PlanValuesStep extends StatelessWidget {
           SizedBox(height: TasklyTokens.of(context).spaceSm),
         ],
         SizedBox(height: TasklyTokens.of(context).spaceSm),
-        for (final group in groups) ...[
+        for (var i = 0; i < groups.length; i += 1) ...[
           _ValueSuggestionCard(
             data: data,
-            group: group,
+            group: groups[i],
+            anchorKey: i == 0 ? GuidedTourAnchors.planMyDayValuesCard : null,
           ),
           SizedBox(height: TasklyTokens.of(context).spaceLg),
         ],
@@ -378,10 +380,12 @@ class _ValueSuggestionCard extends StatelessWidget {
   const _ValueSuggestionCard({
     required this.data,
     required this.group,
+    this.anchorKey,
   });
 
   final PlanMyDayReady data;
   final PlanMyDayValueSuggestionGroup group;
+  final Key? anchorKey;
 
   @override
   Widget build(BuildContext context) {
@@ -399,6 +403,7 @@ class _ValueSuggestionCard extends StatelessWidget {
     final priorityLabel = _priorityLabel(l10n, value.priority);
 
     return Container(
+      key: anchorKey,
       decoration: BoxDecoration(
         color: scheme.surface,
         borderRadius: BorderRadius.circular(tokens.radiusLg),
@@ -691,6 +696,7 @@ class _PlanRoutinesStepState extends State<_PlanRoutinesStep> {
           key: 'plan-routines-scheduled-header',
           title: l10n.routinePanelScheduledTitle,
           trailingLabel: '${scheduled.length}',
+          anchorKey: GuidedTourAnchors.planMyDayScheduledRoutines,
         ),
       );
       rows.addAll(
@@ -728,6 +734,7 @@ class _PlanRoutinesStepState extends State<_PlanRoutinesStep> {
           key: 'plan-routines-flexible-header',
           title: l10n.routinePanelFlexibleTitle,
           trailingLabel: '${flexible.length}',
+          anchorKey: GuidedTourAnchors.planMyDayFlexibleRoutines,
         ),
       );
       rows.addAll(
@@ -753,6 +760,7 @@ class _PlanRoutinesStepState extends State<_PlanRoutinesStep> {
     }
 
     return ListView(
+      key: GuidedTourAnchors.planMyDayTriage,
       padding: EdgeInsets.fromLTRB(
         TasklyTokens.of(context).spaceLg,
         TasklyTokens.of(context).spaceMd,

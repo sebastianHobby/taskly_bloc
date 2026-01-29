@@ -21,8 +21,6 @@ class MockAllocationOrchestrator extends Mock
 class MockOccurrenceCommandService extends Mock
     implements OccurrenceCommandService {}
 
-class MockOccurrenceReadService extends Mock implements OccurrenceReadService {}
-
 // === Journal Feature ===
 
 class MockJournalRepositoryContract extends Mock
@@ -30,20 +28,16 @@ class MockJournalRepositoryContract extends Mock
 
 // === Project Feature ===
 
-class MockProjectWriteService extends Mock implements ProjectWriteService {}
-
 class MockProjectNextActionsRepositoryContract extends Mock
     implements ProjectNextActionsRepositoryContract {}
 
 // === Weekly Review / Ratings ===
 
-class MockAttentionEngineContract extends Mock implements AttentionEngineContract {}
+class MockAttentionEngineContract extends Mock
+    implements AttentionEngineContract {}
 
 class MockValueRatingsRepositoryContract extends Mock
     implements ValueRatingsRepositoryContract {}
-
-class MockValueRatingsWriteService extends Mock
-    implements ValueRatingsWriteService {}
 
 // === Auth Feature ===
 

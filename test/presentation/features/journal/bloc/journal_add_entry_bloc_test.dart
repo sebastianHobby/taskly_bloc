@@ -180,10 +180,16 @@ void main() {
       ]);
     },
     expect: () => [
-      isA<JournalAddEntryState>()
-          .having((s) => s.selectedDayLocal.day, 'day', 14),
-      isA<JournalAddEntryState>()
-          .having((s) => s.status, 'status', isA<JournalAddEntryIdle>()),
+      isA<JournalAddEntryState>().having(
+        (s) => s.selectedDayLocal.day,
+        'day',
+        14,
+      ),
+      isA<JournalAddEntryState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalAddEntryIdle>(),
+      ),
       isA<JournalAddEntryState>()
           .having((s) => s.groups.length, 'groups', 1)
           .having((s) => s.trackers.length, 'trackers', 1)
@@ -265,10 +271,16 @@ void main() {
     ),
     act: (bloc) => bloc.add(const JournalAddEntrySaveRequested()),
     expect: () => [
-      isA<JournalAddEntryState>()
-          .having((s) => s.status, 'status', isA<JournalAddEntrySaving>()),
-      isA<JournalAddEntryState>()
-          .having((s) => s.status, 'status', isA<JournalAddEntrySaved>()),
+      isA<JournalAddEntryState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalAddEntrySaving>(),
+      ),
+      isA<JournalAddEntryState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalAddEntrySaved>(),
+      ),
     ],
     verify: (_) {
       verify(

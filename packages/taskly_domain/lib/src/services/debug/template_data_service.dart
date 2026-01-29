@@ -1,15 +1,17 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_domain/my_day.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/routine_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/value_repository_contract.dart';
 import 'package:taskly_domain/core/model/value_priority.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/src/queries/project_query.dart';
 import 'package:taskly_domain/src/queries/task_query.dart';
 import 'package:taskly_domain/src/routines/model/routine_type.dart';
 import 'package:taskly_domain/src/time/clock.dart';
 import 'package:taskly_domain/src/time/date_only.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
 
 @immutable
@@ -183,54 +185,38 @@ class TemplateDataService {
     required ProjectRepositoryContract projectRepository,
     required RoutineRepositoryContract routineRepository,
     required ValueRepositoryContract valueRepository,
-    required MyDayRepositoryContract myDayRepository,
+    required ValueRatingsWriteService valueRatingsWriteService,
+    required UserDataWipeService userDataWipeService,
+    required SettingsRepositoryContract settingsRepository,
     Clock clock = systemClock,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _routineRepository = routineRepository,
        _valueRepository = valueRepository,
-       _myDayRepository = myDayRepository,
+       _valueRatingsWriteService = valueRatingsWriteService,
+       _userDataWipeService = userDataWipeService,
+       _settingsRepository = settingsRepository,
        _clock = clock;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final RoutineRepositoryContract _routineRepository;
   final ValueRepositoryContract _valueRepository;
-  final MyDayRepositoryContract _myDayRepository;
+  final ValueRatingsWriteService _valueRatingsWriteService;
+  final UserDataWipeService _userDataWipeService;
+  final SettingsRepositoryContract _settingsRepository;
   final Clock _clock;
 
-  /// Deletes all user Tasks/Projects/Values and recreates template demo data.
+  /// Wipes all user data (local + synced) and recreates template demo data.
   ///
   /// Only callable in debug mode.
-  Future<void> resetAndSeed() async {
+  Future<void> resetAndSeed({OperationContext? context}) async {
     if (!kDebugMode) {
       throw StateError('TemplateDataService is debug-only.');
     }
 
-    final today = dateOnly(_clock.nowUtc());
-
-    // 1) Wipe existing entity data.
-    final tasks = await _taskRepository.getAll(TaskQuery.all());
-    for (final task in tasks) {
-      await _taskRepository.delete(task.id);
-    }
-
-    final projects = await _projectRepository.getAll(ProjectQuery.all());
-    for (final project in projects) {
-      await _projectRepository.delete(project.id);
-    }
-
-    final routines = await _routineRepository.getAll(includeInactive: true);
-    for (final routine in routines) {
-      await _routineRepository.delete(routine.id);
-    }
-
-    final values = await _valueRepository.getAll();
-    for (final value in values) {
-      await _valueRepository.delete(value.id);
-    }
-
-    await _clearDayPicks(today);
+    // 1) Wipe existing user data (local + synced).
+    await _userDataWipeService.wipeAllUserData();
 
     // 2) Create Values.
     const seeds = <_TemplateValueSeed>[
@@ -282,11 +268,16 @@ class TemplateDataService {
           preferred: seed.iconName,
         ),
         priority: seed.priority,
+        context: context,
       );
     }
 
     final valueIdByName = await _loadValueIdByName();
+    final priorityByValueName = <String, ValuePriority>{
+      for (final seed in seeds) seed.name: seed.priority,
+    };
 
+    final today = dateOnly(_clock.nowUtc());
     DateTime day(int offset) => today.add(Duration(days: offset));
 
     await _projectRepository.create(
@@ -296,6 +287,7 @@ class TemplateDataService {
       startDate: day(-21),
       deadlineDate: day(45),
       valueIds: [valueIdByName['Home & Comfort']!],
+      context: context,
     );
     await _projectRepository.create(
       name: 'Personal Admin',
@@ -304,6 +296,7 @@ class TemplateDataService {
       startDate: day(-7),
       deadlineDate: day(30),
       valueIds: [valueIdByName['Life Admin']!],
+      context: context,
     );
     await _projectRepository.create(
       name: 'Health Stack',
@@ -312,6 +305,7 @@ class TemplateDataService {
       startDate: day(-14),
       deadlineDate: day(60),
       valueIds: [valueIdByName['Health & Energy']!],
+      context: context,
     );
     await _projectRepository.create(
       name: 'Social Plans',
@@ -320,6 +314,7 @@ class TemplateDataService {
       startDate: day(-5),
       deadlineDate: day(20),
       valueIds: [valueIdByName['Relationships']!],
+      context: context,
     );
 
     final projectIdByName = await _loadProjectIdByName();
@@ -336,6 +331,7 @@ class TemplateDataService {
         targetCount: seed.targetCount,
         scheduleDays: seed.scheduleDays,
         minSpacingDays: seed.minSpacingDays,
+        context: context,
       );
     }
 
@@ -362,18 +358,27 @@ class TemplateDataService {
             : day(seed.deadlineOffset!),
         valueIds: taskValueIds,
         repeatIcalRrule: seed.repeatIcalRrule,
+        context: context,
       );
 
       if (seed.pin) pinnedTaskNames.add(seed.name);
       if (seed.complete) completedTaskNames.add(seed.name);
     }
 
-    await _completeTasksByName(completedTaskNames);
-    await _pinTasksByName(pinnedTaskNames.take(1).toList());
+    await _completeTasksByName(completedTaskNames, context: context);
+    await _pinTasksByName(pinnedTaskNames.take(1).toList(), context: context);
     await _snoozeTaskRepeatedly(
       'Laundry + bedding',
       days: const <int>[2, 10, 18],
+      context: context,
     );
+
+    await _seedWeeklyRatings(
+      valueIdByName: valueIdByName,
+      priorityByValueName: priorityByValueName,
+      context: context,
+    );
+    await _forceWeeklyReviewDue(context);
   }
 
   List<String>? _valueIdsFor(
@@ -404,7 +409,10 @@ class TemplateDataService {
     return filtered.isEmpty ? null : filtered;
   }
 
-  Future<void> _completeTasksByName(List<String> names) async {
+  Future<void> _completeTasksByName(
+    List<String> names, {
+    OperationContext? context,
+  }) async {
     if (names.isEmpty) return;
     final tasks = await _taskRepository.getAll(TaskQuery.all());
     final idByName = <String, String>{for (final t in tasks) t.name: t.id};
@@ -414,11 +422,7 @@ class TemplateDataService {
       if (id == null) continue;
       await _taskRepository.completeOccurrence(
         taskId: id,
-        context: _templateContext(
-          intent: 'complete_task',
-          entityType: 'task',
-          entityId: id,
-        ),
+        context: context,
       );
     }
   }
@@ -426,6 +430,7 @@ class TemplateDataService {
   Future<void> _snoozeTaskRepeatedly(
     String name, {
     required List<int> days,
+    OperationContext? context,
   }) async {
     if (days.isEmpty) return;
     final tasks = await _taskRepository.getAll(TaskQuery.all());
@@ -438,40 +443,9 @@ class TemplateDataService {
       await _taskRepository.setMyDaySnoozedUntil(
         id: id,
         untilUtc: until,
-        context: _templateContext(
-          intent: 'snooze_task',
-          entityType: 'task',
-          entityId: id,
-        ),
+        context: context,
       );
     }
-  }
-
-  Future<void> _clearDayPicks(DateTime dayKeyUtc) async {
-    await _myDayRepository.clearDay(
-      dayKeyUtc: dayKeyUtc,
-      context: _templateContext(
-        intent: 'clear_day',
-        entityType: 'my_day_day',
-        entityId: encodeDateOnly(dayKeyUtc),
-      ),
-    );
-  }
-
-  OperationContext _templateContext({
-    required String intent,
-    String? entityType,
-    String? entityId,
-  }) {
-    final correlationId = '$intent-${_clock.nowUtc().microsecondsSinceEpoch}';
-    return OperationContext(
-      correlationId: correlationId,
-      feature: 'settings',
-      intent: 'template.$intent',
-      operation: 'settings.template.$intent',
-      entityType: entityType,
-      entityId: entityId,
-    );
   }
 
   Future<Map<String, String>> _loadValueIdByName() async {
@@ -489,15 +463,107 @@ class TemplateDataService {
     return {for (final p in projects) p.id: p.primaryValueId};
   }
 
-  Future<void> _pinTasksByName(List<String> names) async {
+  Future<void> _pinTasksByName(
+    List<String> names, {
+    OperationContext? context,
+  }) async {
     final tasks = await _taskRepository.getAll(TaskQuery.all());
     final idByName = <String, String>{for (final t in tasks) t.name: t.id};
 
     for (final name in names) {
       final id = idByName[name];
       if (id == null) continue;
-      await _taskRepository.setPinned(id: id, isPinned: true);
+      await _taskRepository.setPinned(
+        id: id,
+        isPinned: true,
+        context: context,
+      );
     }
+  }
+
+  Future<void> _seedWeeklyRatings({
+    required Map<String, String> valueIdByName,
+    required Map<String, ValuePriority> priorityByValueName,
+    OperationContext? context,
+  }) async {
+    if (valueIdByName.isEmpty) return;
+
+    const weeksToSeed = 6;
+    final weekStart = _weekStartFor(_clock.nowUtc());
+
+    for (var offset = 0; offset < weeksToSeed; offset++) {
+      final week = weekStart.subtract(Duration(days: offset * 7));
+      final ratings = <String, int>{};
+
+      for (final entry in valueIdByName.entries) {
+        final priority = priorityByValueName[entry.key] ?? ValuePriority.medium;
+        final rating = _ratingFor(
+          valueName: entry.key,
+          priority: priority,
+          weekOffset: offset,
+        );
+        ratings[entry.value] = rating;
+      }
+
+      await _valueRatingsWriteService.recordWeeklyRatings(
+        weekStartUtc: week,
+        ratingsByValueId: ratings,
+        context: context,
+      );
+    }
+  }
+
+  int _ratingFor({
+    required String valueName,
+    required ValuePriority priority,
+    required int weekOffset,
+  }) {
+    final base = switch (priority) {
+      ValuePriority.high => 8,
+      ValuePriority.medium => 6,
+      ValuePriority.low => 5,
+    };
+    final variance = (_stableHash(valueName) + weekOffset) % 3 - 1;
+    return (base + variance).clamp(1, 10);
+  }
+
+  DateTime _weekStartFor(DateTime nowUtc) {
+    final today = dateOnly(nowUtc);
+    return today.subtract(Duration(days: today.weekday - 1));
+  }
+
+  int _stableHash(String input) {
+    var hash = 0;
+    for (final unit in input.codeUnits) {
+      hash = 0x1fffffff & (hash + unit);
+      hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
+      hash ^= hash >> 6;
+    }
+    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
+    hash ^= hash >> 11;
+    hash = 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
+    return hash;
+  }
+
+  Future<void> _forceWeeklyReviewDue(OperationContext? context) async {
+    final settings = await _settingsRepository.load(SettingsKey.global);
+    final nowLocal = _clock.nowLocal();
+    final minutesOfDay = (nowLocal.hour * 60 + nowLocal.minute).clamp(0, 1439);
+
+    await _settingsRepository.save(
+      SettingsKey.global,
+      settings.copyWith(
+        weeklyReviewEnabled: true,
+        weeklyReviewDayOfWeek: nowLocal.weekday,
+        weeklyReviewTimeMinutes: minutesOfDay,
+        weeklyReviewLastCompletedAt: null,
+        onboardingCompleted: true,
+      ),
+      context: context?.copyWith(
+        intent: 'weekly_review.force_due',
+        operation: 'settings.weekly_review.force_due',
+      ),
+    );
   }
 }
 

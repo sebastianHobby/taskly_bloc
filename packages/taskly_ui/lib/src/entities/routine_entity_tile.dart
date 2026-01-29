@@ -27,6 +27,7 @@ class RoutineEntityTile extends StatelessWidget {
     final showPrimary =
         primaryLabelText.isNotEmpty &&
         (actions.onPrimaryAction != null || model.completed);
+    final showSelection = actions.onToggleSelected != null;
     final badges = model.badges;
     final hasBadges = badges.isNotEmpty;
 
@@ -86,6 +87,7 @@ class RoutineEntityTile extends StatelessWidget {
           type: MaterialType.transparency,
           child: InkWell(
             onTap: actions.onTap,
+            onLongPress: actions.onLongPress,
             child: Padding(
               padding: tokens.taskPadding,
               child: Row(
@@ -166,6 +168,13 @@ class RoutineEntityTile extends StatelessWidget {
                       onPressed: actions.onPrimaryAction,
                     ),
                   ],
+                  if (showSelection) ...[
+                    SizedBox(width: tokens.spaceSm),
+                    _SelectionToggleButton(
+                      selected: model.selected,
+                      onPressed: actions.onToggleSelected,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -178,6 +187,36 @@ class RoutineEntityTile extends StatelessWidget {
       key: Key('routine-${model.id}'),
       opacity: opacity,
       child: tile,
+    );
+  }
+}
+
+class _SelectionToggleButton extends StatelessWidget {
+  const _SelectionToggleButton({
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final bool selected;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
+    return IconButton(
+      tooltip: selected ? 'Deselect' : 'Select',
+      onPressed: onPressed,
+      icon: Icon(
+        selected
+            ? Icons.check_circle_rounded
+            : Icons.radio_button_unchecked_rounded,
+        color: selected ? scheme.primary : scheme.onSurfaceVariant,
+      ),
+      style: IconButton.styleFrom(
+        minimumSize: Size.square(tokens.minTapTargetSize),
+        padding: EdgeInsets.all(tokens.spaceSm2),
+      ),
     );
   }
 }
@@ -311,50 +350,71 @@ class _RoutineProgressRow extends StatelessWidget {
 
     final progressLabel = '${data.completedCount}/${data.targetCount}';
     final windowLabel = data.windowLabel.trim();
+    final caption = data.caption?.trim() ?? '';
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        SizedBox(
-          width: progressWidth,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(tokens.radiusPill),
-            child: SizedBox(
-              height: barHeight,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  DecoratedBox(
-                    decoration: BoxDecoration(color: trackColor),
-                  ),
-                  FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: data.progressRatio.clamp(0.0, 1.0),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(color: progressColor),
-                    ),
-                  ),
-                ],
+    final bar = SizedBox(
+      width: progressWidth,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(tokens.radiusPill),
+        child: SizedBox(
+          height: barHeight,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(color: trackColor),
               ),
-            ),
+              FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: data.progressRatio.clamp(0.0, 1.0),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: progressColor),
+                ),
+              ),
+            ],
           ),
         ),
-        SizedBox(width: tokens.spaceSm),
-        Expanded(
-          child: Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(text: progressLabel),
-                if (windowLabel.isNotEmpty)
-                  TextSpan(text: ' \u00b7 $windowLabel'),
-              ],
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
+      ),
+    );
+
+    final metaText = Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: progressLabel),
+          if (windowLabel.isNotEmpty) TextSpan(text: ' \u00b7 $windowLabel'),
+        ],
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: textTheme.labelSmall?.copyWith(
+        color: scheme.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+
+    if (caption.isEmpty) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          bar,
+          SizedBox(width: tokens.spaceSm),
+          Expanded(child: metaText),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        bar,
+        SizedBox(height: tokens.spaceXs2),
+        Text(
+          caption,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: textTheme.labelSmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],

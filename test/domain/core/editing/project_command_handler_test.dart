@@ -17,35 +17,37 @@ void main() {
     setUp(() {
       repo = MockProjectRepositoryContract();
       handler = ProjectCommandHandler(projectRepository: repo);
-      when(() => repo.create(
-            name: any(named: 'name'),
-            description: any(named: 'description'),
-            completed: any(named: 'completed'),
-            startDate: any(named: 'startDate'),
-            deadlineDate: any(named: 'deadlineDate'),
-            priority: any(named: 'priority'),
-            repeatIcalRrule: any(named: 'repeatIcalRrule'),
-            repeatFromCompletion: any(named: 'repeatFromCompletion'),
-            seriesEnded: any(named: 'seriesEnded'),
-            valueIds: any(named: 'valueIds'),
-            context: any(named: 'context'),
-          ))
-          .thenAnswer((_) async {});
-      when(() => repo.update(
-            id: any(named: 'id'),
-            name: any(named: 'name'),
-            description: any(named: 'description'),
-            completed: any(named: 'completed'),
-            startDate: any(named: 'startDate'),
-            deadlineDate: any(named: 'deadlineDate'),
-            priority: any(named: 'priority'),
-            repeatIcalRrule: any(named: 'repeatIcalRrule'),
-            repeatFromCompletion: any(named: 'repeatFromCompletion'),
-            seriesEnded: any(named: 'seriesEnded'),
-            valueIds: any(named: 'valueIds'),
-            context: any(named: 'context'),
-          ))
-          .thenAnswer((_) async {});
+      when(
+        () => repo.create(
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          completed: any(named: 'completed'),
+          startDate: any(named: 'startDate'),
+          deadlineDate: any(named: 'deadlineDate'),
+          priority: any(named: 'priority'),
+          repeatIcalRrule: any(named: 'repeatIcalRrule'),
+          repeatFromCompletion: any(named: 'repeatFromCompletion'),
+          seriesEnded: any(named: 'seriesEnded'),
+          valueIds: any(named: 'valueIds'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => repo.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          completed: any(named: 'completed'),
+          startDate: any(named: 'startDate'),
+          deadlineDate: any(named: 'deadlineDate'),
+          priority: any(named: 'priority'),
+          repeatIcalRrule: any(named: 'repeatIcalRrule'),
+          repeatFromCompletion: any(named: 'repeatFromCompletion'),
+          seriesEnded: any(named: 'seriesEnded'),
+          valueIds: any(named: 'valueIds'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async {});
     });
 
     testSafe('handleCreate trims name and calls repository', () async {
@@ -75,34 +77,37 @@ void main() {
       ).called(1);
     });
 
-    testSafe('handleUpdate returns validation failure for invalid name', () async {
-      final result = await handler.handleUpdate(
-        const UpdateProjectCommand(
-          id: 'p1',
-          name: ' ',
-          completed: false,
-          valueIds: ['v1'],
-        ),
-      );
+    testSafe(
+      'handleUpdate returns validation failure for invalid name',
+      () async {
+        final result = await handler.handleUpdate(
+          const UpdateProjectCommand(
+            id: 'p1',
+            name: ' ',
+            completed: false,
+            valueIds: ['v1'],
+          ),
+        );
 
-      expect(result, isA<CommandValidationFailure>());
-      verifyNever(
-        () => repo.update(
-          id: any(named: 'id'),
-          name: any(named: 'name'),
-          description: any(named: 'description'),
-          completed: any(named: 'completed'),
-          startDate: any(named: 'startDate'),
-          deadlineDate: any(named: 'deadlineDate'),
-          priority: any(named: 'priority'),
-          repeatIcalRrule: any(named: 'repeatIcalRrule'),
-          repeatFromCompletion: any(named: 'repeatFromCompletion'),
-          seriesEnded: any(named: 'seriesEnded'),
-          valueIds: any(named: 'valueIds'),
-          context: any(named: 'context'),
-        ),
-      );
-    });
+        expect(result, isA<CommandValidationFailure>());
+        verifyNever(
+          () => repo.update(
+            id: any(named: 'id'),
+            name: any(named: 'name'),
+            description: any(named: 'description'),
+            completed: any(named: 'completed'),
+            startDate: any(named: 'startDate'),
+            deadlineDate: any(named: 'deadlineDate'),
+            priority: any(named: 'priority'),
+            repeatIcalRrule: any(named: 'repeatIcalRrule'),
+            repeatFromCompletion: any(named: 'repeatFromCompletion'),
+            seriesEnded: any(named: 'seriesEnded'),
+            valueIds: any(named: 'valueIds'),
+            context: any(named: 'context'),
+          ),
+        );
+      },
+    );
 
     testSafe('validation fails when deadline is before start', () async {
       final result = await handler.handleCreate(

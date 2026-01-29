@@ -16,6 +16,8 @@ import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart' as settings;
 import 'package:taskly_domain/time.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 
 sealed class PlanMyDayEvent {
   const PlanMyDayEvent();
@@ -318,6 +320,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
     required NowService nowService,
+    required DemoModeService demoModeService,
+    required DemoDataProvider demoDataProvider,
     RoutineScheduleService scheduleService = const RoutineScheduleService(),
   }) : _settingsRepository = settingsRepository,
        _myDayRepository = myDayRepository,
@@ -329,6 +333,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
        _nowService = nowService,
+       _demoModeService = demoModeService,
+       _demoDataProvider = demoDataProvider,
        _scheduleService = scheduleService,
        _dayKeyUtc = dayKeyService.todayDayKeyUtc(),
        super(const PlanMyDayLoading()) {
@@ -361,6 +367,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
   final NowService _nowService;
+  final DemoModeService _demoModeService;
+  final DemoDataProvider _demoDataProvider;
   final RoutineScheduleService _scheduleService;
 
   final OperationContextFactory _contextFactory =
@@ -397,11 +405,20 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
   PlanMyDayStep? _currentStep;
   Completer<void>? _refreshCompleter;
+  bool _isDemoMode = false;
 
   Future<void> _onStarted(
     PlanMyDayStarted event,
     Emitter<PlanMyDayState> emit,
   ) async {
+    _isDemoMode = _demoModeService.enabled.valueOrNull ?? false;
+    if (_isDemoMode) {
+      emit(
+        _demoDataProvider.buildPlanMyDayReady(currentStep: _currentStep),
+      );
+      return;
+    }
+
     _dayKeyUtc = _dayKeyService.todayDayKeyUtc();
     _suggestionBatchCount = 1;
     _dayPicks = my_day.MyDayDayPicks(
@@ -481,6 +498,17 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     Emitter<PlanMyDayState> emit,
   ) async {
     if (state is! PlanMyDayReady) return;
+    if (_isDemoMode) {
+      final ready = state as PlanMyDayReady;
+      final selected = Set<String>.from(ready.selectedTaskIds);
+      if (event.selected) {
+        selected.add(event.taskId);
+      } else {
+        selected.remove(event.taskId);
+      }
+      emit(ready.copyWith(selectedTaskIds: selected));
+      return;
+    }
 
     if (!event.selected && _lockedCompletedPickIds.contains(event.taskId)) {
       return;
@@ -509,6 +537,17 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     Emitter<PlanMyDayState> emit,
   ) async {
     if (state is! PlanMyDayReady) return;
+    if (_isDemoMode) {
+      final ready = state as PlanMyDayReady;
+      final selected = Set<String>.from(ready.selectedRoutineIds);
+      if (event.selected) {
+        selected.add(event.routineId);
+      } else {
+        selected.remove(event.routineId);
+      }
+      emit(ready.copyWith(selectedRoutineIds: selected));
+      return;
+    }
 
     if (!event.selected &&
         _lockedCompletedRoutineIds.contains(event.routineId)) {
@@ -531,6 +570,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     PlanMyDayPauseRoutineRequested event,
     Emitter<PlanMyDayState> emit,
   ) async {
+    if (_isDemoMode) return;
     final routine = _findRoutine(event.routineId);
     if (routine == null) return;
 
@@ -563,6 +603,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     Emitter<PlanMyDayState> emit,
   ) async {
     if (state is! PlanMyDayReady) return;
+    if (_isDemoMode) return;
     final current = state as PlanMyDayReady;
 
     final selectedTaskIds = current.selectedTaskIds;
@@ -750,6 +791,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     PlanMyDaySnoozeTaskRequested event,
     Emitter<PlanMyDayState> emit,
   ) async {
+    if (_isDemoMode) return;
     final task = _tasks.cast<Task?>().firstWhere(
       (t) => t?.id == event.taskId,
       orElse: () => null,
@@ -795,6 +837,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     PlanMyDayMoreSuggestionsRequested event,
     Emitter<PlanMyDayState> emit,
   ) async {
+    if (_isDemoMode) return;
     _suggestionBatchCount += 1;
     await _refreshSnapshots(resetSelection: false);
     if (emit.isDone) return;
@@ -806,6 +849,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     Emitter<PlanMyDayState> emit,
   ) {
     if (state is! PlanMyDayReady) return;
+    if (_isDemoMode) return;
     _valuesSort = event.sort;
     _emitReady(emit);
   }
@@ -815,6 +859,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     Emitter<PlanMyDayState> emit,
   ) {
     if (state is! PlanMyDayReady) return;
+    if (_isDemoMode) return;
     if (_collapsedValueIds.contains(event.valueId)) {
       _collapsedValueIds.remove(event.valueId);
     } else {
@@ -828,6 +873,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     Emitter<PlanMyDayState> emit,
   ) {
     if (state is! PlanMyDayReady) return;
+    if (_isDemoMode) return;
     final current = _visibleSuggestionCountsByValue[event.valueId];
     if (current == null) return;
     _visibleSuggestionCountsByValue[event.valueId] =
@@ -839,6 +885,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     PlanMyDaySwitchToBehaviorSuggestionsRequested event,
     Emitter<PlanMyDayState> emit,
   ) async {
+    if (_isDemoMode) return;
     final allocation = await _settingsRepository.load(
       SettingsKey.allocation,
     );

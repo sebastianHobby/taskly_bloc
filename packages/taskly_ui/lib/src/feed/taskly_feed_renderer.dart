@@ -201,7 +201,20 @@ class TasklyFeedRenderer extends StatelessWidget {
           )
         : indented;
 
-    return KeyedSubtree(key: ValueKey(key), child: padded);
+    final keyedRow = KeyedSubtree(key: ValueKey(key), child: padded);
+    final anchorKey = switch (row) {
+      TasklyHeaderRowSpec(:final anchorKey) => anchorKey,
+      TasklySubheaderRowSpec(:final anchorKey) => anchorKey,
+      TasklyDividerRowSpec(:final anchorKey) => anchorKey,
+      TasklyInlineActionRowSpec(:final anchorKey) => anchorKey,
+      TasklyTaskRowSpec(:final anchorKey) => anchorKey,
+      TasklyProjectRowSpec(:final anchorKey) => anchorKey,
+      TasklyValueRowSpec(:final anchorKey) => anchorKey,
+      TasklyRoutineRowSpec(:final anchorKey) => anchorKey,
+    };
+
+    if (anchorKey == null) return keyedRow;
+    return KeyedSubtree(key: anchorKey, child: keyedRow);
   }
 }
 

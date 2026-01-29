@@ -6,6 +6,8 @@ import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/services.dart';
 
 sealed class ScheduledTimelineEvent {
@@ -100,10 +102,14 @@ final class ScheduledTimelineBloc
     required ScheduledOccurrencesService occurrencesService,
     required SessionDayKeyService sessionDayKeyService,
     required NowService nowService,
+    required DemoModeService demoModeService,
+    required DemoDataProvider demoDataProvider,
     this.scope = const GlobalScheduledScope(),
   }) : _occurrencesService = occurrencesService,
        _sessionDayKeyService = sessionDayKeyService,
        _nowService = nowService,
+       _demoModeService = demoModeService,
+       _demoDataProvider = demoDataProvider,
        super(const ScheduledTimelineLoading()) {
     on<ScheduledTimelineStarted>(_onStarted, transformer: restartable());
     on<ScheduledTimelineVisibleDayChanged>(_onVisibleDayChanged);
@@ -117,6 +123,8 @@ final class ScheduledTimelineBloc
   final ScheduledOccurrencesService _occurrencesService;
   final SessionDayKeyService _sessionDayKeyService;
   final NowService _nowService;
+  final DemoModeService _demoModeService;
+  final DemoDataProvider _demoDataProvider;
   final ScheduledScope scope;
 
   final BehaviorSubject<_RangeWindow> _rangeWindow =
@@ -149,15 +157,17 @@ final class ScheduledTimelineBloc
       // remain in loading indefinitely.
       _sessionDayKeyService.start();
 
+      final demoEnabled = _demoModeService.enabled.valueOrNull ?? false;
       final todayUtc = _sessionDayKeyService.todayDayKeyUtc.valueOrNull;
       final fallbackNow = _nowService.nowLocal();
-      final effectiveTodayUtc =
-          todayUtc ??
-          DateTime.utc(
-            fallbackNow.year,
-            fallbackNow.month,
-            fallbackNow.day,
-          );
+      final effectiveTodayUtc = demoEnabled
+          ? DemoDataProvider.demoDayKeyUtc
+          : (todayUtc ??
+              DateTime.utc(
+                fallbackNow.year,
+                fallbackNow.month,
+                fallbackNow.day,
+              ));
 
       _latestTodayUtc = effectiveTodayUtc;
       _latestTodayLocal = _toLocalDay(effectiveTodayUtc);
@@ -169,30 +179,54 @@ final class ScheduledTimelineBloc
 
       _rangeWindow.add(_initialWindowForToday(_latestTodayLocal!));
 
-      final params$ = Rx.combineLatest2<DateTime, _RangeWindow, _QueryParams>(
-        _sessionDayKeyService.todayDayKeyUtc,
-        _rangeWindow.distinct(),
-        (todayDayKeyUtc, window) => _QueryParams(
-          todayUtc: todayDayKeyUtc,
-          startUtc: _toUtcDay(window.startDay),
-          endUtc: _toUtcDay(window.endDay),
-        ),
-      );
+      final params$ = _demoModeService.enabled.distinct().switchMap((enabled) {
+        if (enabled) {
+          return _rangeWindow.distinct().map(
+            (window) => _QueryParams(
+              todayUtc: DemoDataProvider.demoDayKeyUtc,
+              startUtc: _toUtcDay(window.startDay),
+              endUtc: _toUtcDay(window.endDay),
+              isDemoMode: true,
+            ),
+          );
+        }
+
+        return Rx.combineLatest2<DateTime, _RangeWindow, _QueryParams>(
+          _sessionDayKeyService.todayDayKeyUtc,
+          _rangeWindow.distinct(),
+          (todayDayKeyUtc, window) => _QueryParams(
+            todayUtc: todayDayKeyUtc,
+            startUtc: _toUtcDay(window.startDay),
+            endUtc: _toUtcDay(window.endDay),
+            isDemoMode: false,
+          ),
+        );
+      });
 
       final occurrences$ = params$.switchMap(
-        (p) => _occurrencesService.watchScheduledOccurrences(
-          rangeStartDay: p.startUtc,
-          rangeEndDay: p.endUtc,
-          todayDayKeyUtc: p.todayUtc,
-          scope: scope,
-        ),
+        (p) => p.isDemoMode
+            ? Stream<ScheduledOccurrencesResult>.value(
+                _demoDataProvider.buildScheduledOccurrences(
+                  rangeStartDay: p.startUtc,
+                  rangeEndDay: p.endUtc,
+                ),
+              )
+            : _occurrencesService.watchScheduledOccurrences(
+                rangeStartDay: p.startUtc,
+                rangeEndDay: p.endUtc,
+                todayDayKeyUtc: p.todayUtc,
+                scope: scope,
+              ),
       );
 
       await emit.forEach<ScheduledOccurrencesResult>(
         occurrences$,
         onData: (result) {
           _latestResult = result;
-          _latestTodayUtc = _sessionDayKeyService.todayDayKeyUtc.valueOrNull;
+          final demoEnabled = _demoModeService.enabled.valueOrNull ?? false;
+          _latestTodayUtc = demoEnabled
+              ? DemoDataProvider.demoDayKeyUtc
+              : _sessionDayKeyService.todayDayKeyUtc.valueOrNull;
           _latestTodayLocal = _latestTodayUtc == null
               ? _latestTodayLocal
               : _toLocalDay(_latestTodayUtc!);
@@ -355,9 +389,11 @@ final class _QueryParams {
     required this.todayUtc,
     required this.startUtc,
     required this.endUtc,
+    required this.isDemoMode,
   });
 
   final DateTime todayUtc;
   final DateTime startUtc;
   final DateTime endUtc;
+  final bool isDemoMode;
 }

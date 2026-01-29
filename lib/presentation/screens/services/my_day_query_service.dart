@@ -10,6 +10,8 @@ import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
 import 'package:taskly_bloc/presentation/screens/models/my_day_view_model_builder.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_allocation_cache_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 
 final class MyDayQueryService {
   MyDayQueryService({
@@ -21,6 +23,8 @@ final class MyDayQueryService {
     required TemporalTriggerService temporalTriggerService,
     required SessionAllocationCacheService allocationCacheService,
     required SessionSharedDataService sharedDataService,
+    required DemoModeService demoModeService,
+    required DemoDataProvider demoDataProvider,
     MyDayViewModelBuilder viewModelBuilder = const MyDayViewModelBuilder(),
   }) : _taskRepository = taskRepository,
        _myDayRepository = myDayRepository,
@@ -30,6 +34,8 @@ final class MyDayQueryService {
        _temporalTriggerService = temporalTriggerService,
        _allocationCacheService = allocationCacheService,
        _sharedDataService = sharedDataService,
+       _demoModeService = demoModeService,
+       _demoDataProvider = demoDataProvider,
        _viewModelBuilder = viewModelBuilder;
 
   final TaskRepositoryContract _taskRepository;
@@ -40,9 +46,22 @@ final class MyDayQueryService {
   final TemporalTriggerService _temporalTriggerService;
   final SessionAllocationCacheService _allocationCacheService;
   final SessionSharedDataService _sharedDataService;
+  final DemoModeService _demoModeService;
+  final DemoDataProvider _demoDataProvider;
   final MyDayViewModelBuilder _viewModelBuilder;
 
   Stream<MyDayViewModel> watchMyDayViewModel() {
+    return _demoModeService.enabled.distinct().switchMap((enabled) {
+      if (enabled) {
+        return Stream<MyDayViewModel>.value(
+          _demoDataProvider.buildMyDayViewModel(),
+        );
+      }
+      return _watchMyDayViewModel();
+    });
+  }
+
+  Stream<MyDayViewModel> _watchMyDayViewModel() {
     final triggers = Rx.merge([
       Stream<void>.value(null),
       _temporalTriggerService.events
@@ -109,7 +128,7 @@ final class MyDayQueryService {
                 routines: routines,
                 routineCompletions: completions,
                 routineSkips: skips,
-          ),
+              ),
         );
       }
 

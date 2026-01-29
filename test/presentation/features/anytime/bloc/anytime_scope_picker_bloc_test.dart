@@ -50,7 +50,11 @@ void main() {
     build: buildBloc,
     expect: () => [
       isA<AnytimeScopePickerLoaded>()
-          .having((s) => s.values.first.priority, 'value.priority', ValuePriority.high)
+          .having(
+            (s) => s.values.first.priority,
+            'value.priority',
+            ValuePriority.high,
+          )
           .having((s) => s.projects.first.name, 'project.name', 'Alpha'),
     ],
   );
@@ -60,14 +64,25 @@ void main() {
     build: buildBloc,
     act: (_) {
       valuesController.emit([
-        TestData.value(id: 'v-high', name: 'High', priority: ValuePriority.high),
-        TestData.value(id: 'v-mid', name: 'Mid', priority: ValuePriority.medium),
+        TestData.value(
+          id: 'v-high',
+          name: 'High',
+          priority: ValuePriority.high,
+        ),
+        TestData.value(
+          id: 'v-mid',
+          name: 'Mid',
+          priority: ValuePriority.medium,
+        ),
       ]);
     },
     expect: () => [
       isA<AnytimeScopePickerLoaded>(),
-      isA<AnytimeScopePickerLoaded>()
-          .having((s) => s.values.length, 'values.length', 2),
+      isA<AnytimeScopePickerLoaded>().having(
+        (s) => s.values.length,
+        'values.length',
+        2,
+      ),
     ],
   );
 
@@ -86,9 +101,11 @@ void main() {
       isA<AnytimeScopePickerLoaded>(),
       isA<AnytimeScopePickerError>(),
       isA<AnytimeScopePickerLoading>(),
-      isA<AnytimeScopePickerLoaded>()
-          .having((s) => s.values.length, 'values.length', 1),
+      isA<AnytimeScopePickerLoaded>().having(
+        (s) => s.values.length,
+        'values.length',
+        1,
+      ),
     ],
   );
 }
-

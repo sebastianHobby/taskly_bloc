@@ -9,6 +9,8 @@ import 'package:taskly_domain/analytics.dart' as domain_analytics;
 import 'package:taskly_domain/core.dart' as domain_core;
 import 'package:taskly_domain/queries.dart' as domain_queries;
 import 'package:taskly_domain/routines.dart' as domain_routines;
+import 'package:taskly_domain/services.dart' as domain_services;
+import 'package:taskly_domain/telemetry.dart' as domain_telemetry;
 
 bool _fallbackValuesRegistered = false;
 
@@ -51,6 +53,23 @@ void registerAllFallbackValues() {
   registerFallbackValue(domain_queries.JournalQuery());
   registerFallbackValue(domain_routines.RoutineType.weeklyFixed);
   registerFallbackValue(PageKey.taskOverview);
+  registerFallbackValue(DateTime(2025, 1, 1));
+  registerFallbackValue(const domain_services.GlobalScheduledScope());
+  registerFallbackValue(
+    domain_queries.OccurrencePreview(
+      asOfDayKey: DateTime(2025, 1, 1),
+      pastDays: 30,
+      futureDays: 30,
+    ),
+  );
+  registerFallbackValue(
+    const domain_telemetry.OperationContext(
+      correlationId: 'test',
+      feature: 'test',
+      intent: 'test_intent',
+      operation: 'test.operation',
+    ),
+  );
 
   // === Views ===
   registerFallbackValue(const SortPreferences());

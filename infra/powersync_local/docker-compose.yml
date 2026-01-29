@@ -40,7 +40,7 @@ services:
       NODE_OPTIONS: --max-old-space-size=1000
       PS_DATA_SOURCE_URI: ${PS_DATA_SOURCE_URI}
       PS_MONGO_URI: ${PS_MONGO_URI}
-      PS_JWKS_URL: ${PS_JWKS_URL}
+      PS_SUPABASE_JWT_SECRET: ${PS_SUPABASE_JWT_SECRET}
       PS_PORT: ${PS_PORT}
     healthcheck:
       test: [ "CMD", "node", "-e", "fetch('http://localhost:' + process.env.PS_PORT + '/probes/liveness').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))" ]

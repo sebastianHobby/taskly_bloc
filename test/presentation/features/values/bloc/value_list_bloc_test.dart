@@ -65,10 +65,16 @@ void main() {
     },
     expect: () => [
       const ValueListLoading(),
-      isA<ValueListLoaded>()
-          .having((s) => s.values.first.name, 'first', 'Alpha'),
-      isA<ValueListLoaded>()
-          .having((s) => s.values.first.name, 'first', 'Alpha'),
+      isA<ValueListLoaded>().having(
+        (s) => s.values.first.name,
+        'first',
+        'Alpha',
+      ),
+      isA<ValueListLoaded>().having(
+        (s) => s.values.first.name,
+        'first',
+        'Alpha',
+      ),
     ],
   );
 }

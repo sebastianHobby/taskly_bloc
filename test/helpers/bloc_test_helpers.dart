@@ -19,6 +19,7 @@ import 'test_helpers.dart' show kDefaultStreamTimeout;
 /// Throws [TimeoutException] if stream doesn't emit [count] items
 /// within [timeout] duration.
 import 'package:taskly_domain/taskly_domain.dart';
+
 Future<List<T>> waitForStreamEmissions<T>(
   Stream<T> stream, {
   int count = 1,

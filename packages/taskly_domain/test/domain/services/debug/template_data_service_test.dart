@@ -6,9 +6,10 @@ import '../../../helpers/test_imports.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/my_day.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/settings.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_domain/telemetry.dart';
 
@@ -343,44 +344,81 @@ class _FixedClock implements Clock {
   DateTime nowUtc() => _nowUtc;
 }
 
-class _RecordingMyDayRepository implements MyDayRepositoryContract {
-  final List<DateTime> clearedDays = [];
+class _RecordingUserDataWipeService implements UserDataWipeService {
+  int wipeCalls = 0;
 
   @override
-  Future<void> clearDay({
-    required DateTime dayKeyUtc,
+  Future<void> wipeAllUserData({Duration? timeout}) async {
+    wipeCalls += 1;
+  }
+}
+
+class _InMemorySettingsRepository implements SettingsRepositoryContract {
+  GlobalSettings settings = const GlobalSettings();
+
+  @override
+  Stream<T> watch<T>(SettingsKey<T> key) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<T> load<T>(SettingsKey<T> key) async {
+    if (key == SettingsKey.global) return settings as T;
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> save<T>(
+    SettingsKey<T> key,
+    T value, {
     OperationContext? context,
   }) async {
-    clearedDays.add(dayKeyUtc);
+    if (key != SettingsKey.global) throw UnimplementedError();
+    settings = value as GlobalSettings;
+  }
+}
+
+class _InMemoryValueRatingsRepository extends Fake
+    implements ValueRatingsRepositoryContract {
+  final Map<String, ValueWeeklyRating> _ratings = <String, ValueWeeklyRating>{};
+
+  @override
+  Future<void> upsertWeeklyRating({
+    required String valueId,
+    required DateTime weekStartUtc,
+    required int rating,
+    OperationContext? context,
+  }) async {
+    final week = dateOnly(weekStartUtc);
+    final key = '$valueId-${week.toIso8601String()}';
+    final now = DateTime.utc(2026, 1, 1);
+    _ratings[key] = ValueWeeklyRating(
+      id: key,
+      valueId: valueId,
+      weekStartUtc: week,
+      rating: rating,
+      createdAtUtc: now,
+      updatedAtUtc: now,
+    );
   }
 
   @override
-  Stream<MyDayDayPicks> watchDay(DateTime dayKeyUtc) {
-    throw UnimplementedError();
+  Future<List<ValueWeeklyRating>> getAll({int weeks = 4}) async {
+    return _ratings.values.toList(growable: false);
   }
 
   @override
-  Future<MyDayDayPicks> loadDay(DateTime dayKeyUtc) {
-    throw UnimplementedError();
+  Future<List<ValueWeeklyRating>> getForValue(
+    String valueId, {
+    int weeks = 4,
+  }) async {
+    return _ratings.values
+        .where((entry) => entry.valueId == valueId)
+        .toList(growable: false);
   }
 
   @override
-  Future<void> setDayPicks({
-    required DateTime dayKeyUtc,
-    required DateTime ritualCompletedAtUtc,
-    required List<MyDayPick> picks,
-    required OperationContext context,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> appendPick({
-    required DateTime dayKeyUtc,
-    required String taskId,
-    required MyDayPickBucket bucket,
-    required OperationContext context,
-  }) {
+  Stream<List<ValueWeeklyRating>> watchAll({int weeks = 4}) {
     throw UnimplementedError();
   }
 }
@@ -422,15 +460,22 @@ void main() {
         ],
       );
 
-      final myDayRepo = _RecordingMyDayRepository();
       final routineRepo = _InMemoryRoutineRepo();
+      final wipeService = _RecordingUserDataWipeService();
+      final ratingsRepo = _InMemoryValueRatingsRepository();
+      final ratingsWriteService = ValueRatingsWriteService(
+        repository: ratingsRepo,
+      );
+      final settingsRepo = _InMemorySettingsRepository();
       final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
       final service = TemplateDataService(
         taskRepository: taskRepo,
         projectRepository: projectRepo,
         routineRepository: routineRepo,
         valueRepository: valueRepo,
-        myDayRepository: myDayRepo,
+        valueRatingsWriteService: ratingsWriteService,
+        userDataWipeService: wipeService,
+        settingsRepository: settingsRepo,
         clock: clock,
       );
 
@@ -457,10 +502,10 @@ void main() {
       expect(tasks, hasLength(30));
       expect(routines, hasLength(6));
       expect(tasks.where((t) => t.isPinned), hasLength(1));
-      expect(
-        myDayRepo.clearedDays,
-        contains(dateOnly(clock.nowUtc())),
-      );
+      expect(wipeService.wipeCalls, 1);
+      expect(ratingsRepo.getAll(), completion(isNotEmpty));
+      expect(settingsRepo.settings.weeklyReviewLastCompletedAt, isNull);
+      expect(settingsRepo.settings.onboardingCompleted, isTrue);
     },
   );
 }

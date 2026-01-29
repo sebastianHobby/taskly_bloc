@@ -12,6 +12,7 @@ import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart';
 
 void main() {
@@ -25,7 +26,7 @@ void main() {
   late MockAttentionEngineContract attentionEngine;
   late MockValueRepositoryContract valueRepository;
   late MockValueRatingsRepositoryContract valueRatingsRepository;
-  late MockValueRatingsWriteService valueRatingsWriteService;
+  late ValueRatingsWriteService valueRatingsWriteService;
   late MockRoutineRepositoryContract routineRepository;
   late MockSettingsRepositoryContract settingsRepository;
   late MockTaskRepositoryContract taskRepository;
@@ -50,7 +51,9 @@ void main() {
     attentionEngine = MockAttentionEngineContract();
     valueRepository = MockValueRepositoryContract();
     valueRatingsRepository = MockValueRatingsRepositoryContract();
-    valueRatingsWriteService = MockValueRatingsWriteService();
+    valueRatingsWriteService = ValueRatingsWriteService(
+      repository: valueRatingsRepository,
+    );
     routineRepository = MockRoutineRepositoryContract();
     settingsRepository = MockSettingsRepositoryContract();
     taskRepository = MockTaskRepositoryContract();
@@ -71,35 +74,46 @@ void main() {
       ),
     );
     when(
-      () => analyticsService.getRecentCompletionsByValue(days: any(named: 'days')),
+      () => analyticsService.getRecentCompletionsByValue(
+        days: any(named: 'days'),
+      ),
     ).thenAnswer((_) async => {'v-1': 3});
     when(
       () => analyticsService.getValueWeeklyTrends(weeks: any(named: 'weeks')),
-    ).thenAnswer((_) async => {'v-1': [0.2, 0.3]});
+    ).thenAnswer(
+      (_) async => {
+        'v-1': [0.2, 0.3],
+      },
+    );
     when(
       () => routineRepository.getAll(includeInactive: true),
     ).thenAnswer((_) async => []);
     when(() => routineRepository.getCompletions()).thenAnswer(
       (_) async => [],
     );
-    when(() => valueRatingsRepository.getAll(weeks: any(named: 'weeks'))).thenAnswer(
+    when(
+      () => valueRatingsRepository.getAll(weeks: any(named: 'weeks')),
+    ).thenAnswer(
       (_) async => [],
     );
-    when(() => attentionEngine.watch(any())).thenAnswer(
-      (_) => const Stream<AttentionResults>.empty(),
-    );
-    when(() => taskRepository.getSnoozeStats(
-      sinceUtc: any(named: 'sinceUtc'),
-      untilUtc: any(named: 'untilUtc'),
-    )).thenAnswer((_) async => {});
-    when(() => taskRepository.getByIds(any())).thenAnswer((_) async => []);
     when(
-      () => valueRatingsWriteService.recordWeeklyRatings(
+      () => valueRatingsRepository.upsertWeeklyRating(
+        valueId: any(named: 'valueId'),
         weekStartUtc: any(named: 'weekStartUtc'),
-        ratingsByValueId: any(named: 'ratingsByValueId'),
+        rating: any(named: 'rating'),
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
+    when(() => attentionEngine.watch(any())).thenAnswer(
+      (_) => const Stream<AttentionResults>.empty(),
+    );
+    when(
+      () => taskRepository.getSnoozeStats(
+        sinceUtc: any(named: 'sinceUtc'),
+        untilUtc: any(named: 'untilUtc'),
+      ),
+    ).thenAnswer((_) async => {});
+    when(() => taskRepository.getByIds(any())).thenAnswer((_) async => []);
   });
 
   blocTestSafe<WeeklyReviewBloc, WeeklyReviewState>(
@@ -126,8 +140,11 @@ void main() {
       ),
     ),
     expect: () => [
-      isA<WeeklyReviewState>()
-          .having((s) => s.status, 'status', WeeklyReviewStatus.loading),
+      isA<WeeklyReviewState>().having(
+        (s) => s.status,
+        'status',
+        WeeklyReviewStatus.loading,
+      ),
       isA<WeeklyReviewState>()
           .having((s) => s.status, 'status', WeeklyReviewStatus.ready)
           .having((s) => s.valuesSummary?.hasData, 'hasData', true),
@@ -153,7 +170,7 @@ void main() {
             trend: const [],
           ),
         ],
-        maxRating: 8,
+        maxRating: 10,
         graceWeeks: 2,
         ratingsEnabled: true,
         ratingsOverdue: false,
@@ -165,14 +182,18 @@ void main() {
       const WeeklyReviewValueRatingChanged(valueId: 'v-1', rating: 5),
     ),
     expect: () => [
-      isA<WeeklyReviewState>()
-          .having((s) => s.ratingsSummary?.selectedValueId, 'selected', 'v-1'),
+      isA<WeeklyReviewState>().having(
+        (s) => s.ratingsSummary?.selectedValueId,
+        'selected',
+        'v-1',
+      ),
     ],
     verify: (_) {
       final captured = verify(
-        () => valueRatingsWriteService.recordWeeklyRatings(
+        () => valueRatingsRepository.upsertWeeklyRating(
+          valueId: 'v-1',
           weekStartUtc: any(named: 'weekStartUtc'),
-          ratingsByValueId: any(named: 'ratingsByValueId'),
+          rating: 5,
           context: captureAny(named: 'context'),
         ),
       ).captured;

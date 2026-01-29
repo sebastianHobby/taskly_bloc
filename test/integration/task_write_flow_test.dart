@@ -61,9 +61,9 @@ void main() {
       context: context,
     );
 
-    final created = await taskRepository
-        .watchAll()
-        .firstWhere((tasks) => tasks.isNotEmpty);
+    final created = await taskRepository.watchAll().firstWhere(
+      (tasks) => tasks.isNotEmpty,
+    );
     expect(created, hasLength(1));
     expect(created.single.projectId, projectRow.id);
 
@@ -84,6 +84,65 @@ void main() {
     final row = await db.select(db.taskTable).getSingle();
     final metadata = jsonDecode(row.psMetadata ?? '{}') as Map<String, dynamic>;
     expect(metadata['cid'], context.correlationId);
+  });
+
+  testSafe('task repository delete removes task and emits stream updates', () async {
+    final db = createTestDb();
+    addTearDown(() => closeTestDb(db));
+
+    final clock = _FixedClock(DateTime.utc(2025, 1, 15, 12));
+    final idGenerator = FakeIdGenerator('user-1');
+    final expander = MockOccurrenceStreamExpanderContract();
+    final writeHelper = MockOccurrenceWriteHelperContract();
+
+    final taskRepository = TaskRepository(
+      driftDb: db,
+      occurrenceExpander: expander,
+      occurrenceWriteHelper: writeHelper,
+      idGenerator: idGenerator,
+      clock: clock,
+    );
+
+    await taskRepository.create(name: 'Delete Me', completed: false);
+    final created = await taskRepository.watchAll().firstWhere(
+      (tasks) => tasks.isNotEmpty,
+    );
+    final taskId = created.single.id;
+
+    await taskRepository.delete(taskId);
+
+    final afterDelete = await taskRepository.watchAll().firstWhere(
+      (tasks) => tasks.isEmpty,
+    );
+    expect(afterDelete, isEmpty);
+
+    final removed = await taskRepository.watchById(taskId).firstWhere(
+      (task) => task == null,
+    );
+    expect(removed, isNull);
+  });
+
+  testSafe('task repository rejects empty name', () async {
+    final db = createTestDb();
+    addTearDown(() => closeTestDb(db));
+
+    final clock = _FixedClock(DateTime.utc(2025, 1, 15, 12));
+    final idGenerator = FakeIdGenerator('user-1');
+    final expander = MockOccurrenceStreamExpanderContract();
+    final writeHelper = MockOccurrenceWriteHelperContract();
+
+    final taskRepository = TaskRepository(
+      driftDb: db,
+      occurrenceExpander: expander,
+      occurrenceWriteHelper: writeHelper,
+      idGenerator: idGenerator,
+      clock: clock,
+    );
+
+    await expectLater(
+      taskRepository.create(name: '', completed: false),
+      throwsA(isA<Exception>()),
+    );
   });
 }
 

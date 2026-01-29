@@ -19,6 +19,8 @@ import 'package:taskly_bloc/presentation/features/auth/view/sign_up_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/forgot_password_view.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/features/app/view/initial_sync_gate_screen.dart';
+import 'package:taskly_bloc/presentation/features/app/bloc/debug_bootstrap_bloc.dart';
+import 'package:taskly_bloc/presentation/features/app/view/debug_bootstrap_sheet.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
@@ -37,6 +39,9 @@ import 'package:taskly_bloc/presentation/features/anytime/services/anytime_sessi
 import 'package:taskly_bloc/presentation/shared/sync/sync_anomaly_bloc.dart';
 import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/core/config/debug_bootstrap_flags.dart';
 
 /// Root application widget with auth-gated UI.
 ///
@@ -52,6 +57,8 @@ import 'package:taskly_bloc/presentation/shared/session/presentation_session_ser
 class App extends StatelessWidget {
   const App({super.key});
 
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
   static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
@@ -146,6 +153,7 @@ class _ThemedApp extends StatelessWidget {
     return BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
       builder: (context, state) {
         return MaterialApp(
+          navigatorKey: App.navigatorKey,
           scaffoldMessengerKey: App.scaffoldMessengerKey,
           theme: AppTheme.lightTheme(seedColor: state.seedColor),
           darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
@@ -172,6 +180,7 @@ class _UnauthenticatedApp extends StatelessWidget {
     return BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
       builder: (context, state) {
         return MaterialApp(
+          navigatorKey: App.navigatorKey,
           scaffoldMessengerKey: App.scaffoldMessengerKey,
           theme: AppTheme.lightTheme(seedColor: state.seedColor),
           darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
@@ -232,6 +241,8 @@ class _AuthenticatedApp extends StatelessWidget {
         Provider<SessionSharedDataService>(
           create: (_) => getIt<SessionSharedDataService>(),
         ),
+        Provider<DemoModeService>(create: (_) => getIt<DemoModeService>()),
+        Provider<DemoDataProvider>(create: (_) => getIt<DemoDataProvider>()),
         Provider<MyDayRepositoryContract>(
           create: (_) => getIt<MyDayRepositoryContract>(),
         ),
@@ -347,6 +358,7 @@ class _AuthenticatedApp extends StatelessWidget {
           BlocProvider<GuidedTourBloc>(
             create: (context) => GuidedTourBloc(
               settingsRepository: context.read<SettingsRepositoryContract>(),
+              demoModeService: context.read<DemoModeService>(),
             ),
           ),
           BlocProvider<ScreenActionsBloc>(
@@ -388,8 +400,12 @@ class _AuthenticatedApp extends StatelessWidget {
                         progress?.lastSyncedAt == null,
                 };
 
+                const debugBootstrapEnabled =
+                    kDebugMode && DebugBootstrapFlags.enableDebugBootstrapModal;
+
                 if (shouldBlockOnSync) {
                   return MaterialApp(
+                    navigatorKey: App.navigatorKey,
                     scaffoldMessengerKey: App.scaffoldMessengerKey,
                     theme: commonTheme,
                     darkTheme: commonDarkTheme,
@@ -399,6 +415,12 @@ class _AuthenticatedApp extends StatelessWidget {
                         AppLocalizations.localizationsDelegates,
                     supportedLocales: AppLocalizations.supportedLocales,
                     debugShowCheckedModeBanner: false,
+                    builder: (context, child) {
+                      return _DebugBootstrapper(
+                        enabled: debugBootstrapEnabled,
+                        child: child ?? const SizedBox.shrink(),
+                      );
+                    },
                     home: MediaQuery(
                       data: MediaQuery.of(context).copyWith(
                         textScaler: TextScaler.linear(
@@ -421,10 +443,11 @@ class _AuthenticatedApp extends StatelessWidget {
                   supportedLocales: AppLocalizations.supportedLocales,
                   routerConfig: createRouter(
                     forceOnboarding: !state.settings.onboardingCompleted,
+                    navigatorKey: App.navigatorKey,
                   ),
                   debugShowCheckedModeBanner: false,
                   builder: (context, child) {
-                    return _SyncAnomalySnackBarListener(
+                    final wrapped = _SyncAnomalySnackBarListener(
                       scaffoldMessengerKey: App.scaffoldMessengerKey,
                       child: _ScreenActionsFailureSnackBarListener(
                         scaffoldMessengerKey: App.scaffoldMessengerKey,
@@ -438,6 +461,11 @@ class _AuthenticatedApp extends StatelessWidget {
                         ),
                       ),
                     );
+
+                    return _DebugBootstrapper(
+                      enabled: debugBootstrapEnabled,
+                      child: wrapped,
+                    );
                   },
                 );
               },
@@ -447,6 +475,92 @@ class _AuthenticatedApp extends StatelessWidget {
       ),
     );
   }
+}
+
+class _DebugBootstrapper extends StatefulWidget {
+  const _DebugBootstrapper({
+    required this.enabled,
+    required this.child,
+  });
+
+  final bool enabled;
+  final Widget child;
+
+  @override
+  State<_DebugBootstrapper> createState() => _DebugBootstrapperState();
+}
+
+class _DebugBootstrapperState extends State<_DebugBootstrapper> {
+  static bool _shownThisSession = false;
+  bool _showing = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _maybeShow();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DebugBootstrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.enabled != widget.enabled) {
+      _maybeShow();
+    }
+  }
+
+  void _maybeShow() {
+    talker.debug(
+      '[debug_bootstrap] maybeShow enabled=${widget.enabled} shown=$_shownThisSession showing=$_showing mounted=$mounted',
+    );
+    if (!widget.enabled || _shownThisSession || _showing) return;
+    _showing = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        talker.debug('[debug_bootstrap] postFrame skipped (unmounted)');
+        _showing = false;
+        return;
+      }
+
+      final navigatorState = App.navigatorKey.currentState;
+      final navigatorContext =
+          navigatorState?.overlay?.context ?? App.navigatorKey.currentContext;
+      if (navigatorContext == null) {
+        talker.debug('[debug_bootstrap] no navigator context yet');
+        _showing = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShow());
+        return;
+      }
+
+      talker.debug('[debug_bootstrap] presenting modal');
+      _shownThisSession = true;
+
+      await showModalBottomSheet<void>(
+        context: navigatorContext,
+        useRootNavigator: true,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (sheetContext) {
+          return BlocProvider(
+            create: (context) => DebugBootstrapBloc(
+              templateDataService: context.read<TemplateDataService>(),
+              userDataWipeService: context.read<UserDataWipeService>(),
+              authRepository: context.read<AuthRepositoryContract>(),
+              settingsRepository: context.read<SettingsRepositoryContract>(),
+            ),
+            child: const DebugBootstrapSheet(),
+          );
+        },
+      );
+
+      if (!mounted) return;
+      _showing = false;
+      talker.debug('[debug_bootstrap] modal closed');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _SyncAnomalySnackBarListener extends StatefulWidget {

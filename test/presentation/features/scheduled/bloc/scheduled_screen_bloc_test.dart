@@ -4,12 +4,12 @@ library;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_imports.dart';
+import '../../../../mocks/feature_mocks.dart';
 import '../../../../mocks/presentation_mocks.dart';
+import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_screen_bloc.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
-
-class MockProjectWriteService extends Mock implements ProjectWriteService {}
 
 void main() {
   setUpAll(() {
@@ -27,7 +27,10 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockTaskWriteService taskWriteService;
-  late MockProjectWriteService projectWriteService;
+  late MockProjectRepositoryContract projectRepository;
+  late MockAllocationOrchestrator allocationOrchestrator;
+  late MockOccurrenceCommandService occurrenceCommandService;
+  late ProjectWriteService projectWriteService;
 
   ScheduledScreenBloc buildBloc() {
     return ScheduledScreenBloc(
@@ -38,7 +41,14 @@ void main() {
 
   setUp(() {
     taskWriteService = MockTaskWriteService();
-    projectWriteService = MockProjectWriteService();
+    projectRepository = MockProjectRepositoryContract();
+    allocationOrchestrator = MockAllocationOrchestrator();
+    occurrenceCommandService = MockOccurrenceCommandService();
+    projectWriteService = ProjectWriteService(
+      projectRepository: projectRepository,
+      allocationOrchestrator: allocationOrchestrator,
+      occurrenceCommandService: occurrenceCommandService,
+    );
 
     when(
       () => taskWriteService.bulkRescheduleDeadlines(
@@ -48,9 +58,9 @@ void main() {
       ),
     ).thenAnswer((_) async => 2);
     when(
-      () => projectWriteService.bulkRescheduleDeadlines(
-        any(),
-        any(),
+      () => projectRepository.bulkRescheduleDeadlines(
+        projectIds: any(named: 'projectIds'),
+        deadlineDate: any(named: 'deadlineDate'),
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async => 1);
@@ -86,7 +96,11 @@ void main() {
     ),
     expect: () => [
       isA<ScheduledScreenReady>()
-          .having((s) => s.effect, 'effect', isA<ScheduledBulkDeadlineRescheduled>())
+          .having(
+            (s) => s.effect,
+            'effect',
+            isA<ScheduledBulkDeadlineRescheduled>(),
+          )
           .having(
             (s) => (s.effect as ScheduledBulkDeadlineRescheduled).taskCount,
             'taskCount',
@@ -118,7 +132,11 @@ void main() {
     ),
     expect: () => [
       isA<ScheduledScreenReady>()
-          .having((s) => s.effect, 'effect', isA<ScheduledBulkDeadlineRescheduled>())
+          .having(
+            (s) => s.effect,
+            'effect',
+            isA<ScheduledBulkDeadlineRescheduled>(),
+          )
           .having(
             (s) => (s.effect as ScheduledBulkDeadlineRescheduled).projectCount,
             'projectCount',
@@ -149,9 +167,12 @@ void main() {
       isA<ScheduledScreenReady>().having(
         (s) => s.effect,
         'effect',
-        isA<ScheduledShowMessage>().having((e) => e.message, 'message', contains('boom')),
+        isA<ScheduledShowMessage>().having(
+          (e) => e.message,
+          'message',
+          contains('boom'),
+        ),
       ),
     ],
   );
 }
-

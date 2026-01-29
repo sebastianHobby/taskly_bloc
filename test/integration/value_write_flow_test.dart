@@ -45,9 +45,9 @@ void main() {
       context: context,
     );
 
-    final created = await valueRepository
-        .watchAll()
-        .firstWhere((values) => values.isNotEmpty);
+    final created = await valueRepository.watchAll().firstWhere(
+      (values) => values.isNotEmpty,
+    );
     expect(created, hasLength(1));
     final valueId = created.single.id;
 
@@ -59,14 +59,70 @@ void main() {
       context: context,
     );
 
-    final updated = await valueRepository
-        .watchAll()
-        .firstWhere((values) => values.any((v) => v.name == 'Health Updated'));
+    final updated = await valueRepository.watchAll().firstWhere(
+      (values) => values.any((v) => v.name == 'Health Updated'),
+    );
     expect(updated.single.name, 'Health Updated');
 
     final row = await db.select(db.valueTable).getSingle();
     final metadata = jsonDecode(row.psMetadata ?? '{}') as Map<String, dynamic>;
     expect(metadata['cid'], context.correlationId);
+  });
+
+  testSafe('value repository delete removes value and emits stream updates', () async {
+    final db = createTestDb();
+    addTearDown(() => closeTestDb(db));
+
+    final clock = _FixedClock(DateTime.utc(2025, 1, 15, 12));
+    final idGenerator = FakeIdGenerator('user-1');
+
+    final valueRepository = ValueRepository(
+      driftDb: db,
+      idGenerator: idGenerator,
+      clock: clock,
+    );
+
+    await valueRepository.create(
+      name: 'Delete Value',
+      color: '#00CC66',
+      priority: ValuePriority.high,
+    );
+
+    final created = await valueRepository.watchAll().firstWhere(
+      (values) => values.isNotEmpty,
+    );
+    final valueId = created.single.id;
+
+    await valueRepository.delete(valueId);
+
+    final afterDelete = await valueRepository.watchAll().firstWhere(
+      (values) => values.isEmpty,
+    );
+    expect(afterDelete, isEmpty);
+
+    final removed = await valueRepository.watchById(valueId).firstWhere(
+      (value) => value == null,
+    );
+    expect(removed, isNull);
+  });
+
+  testSafe('value repository rejects empty name', () async {
+    final db = createTestDb();
+    addTearDown(() => closeTestDb(db));
+
+    final clock = _FixedClock(DateTime.utc(2025, 1, 15, 12));
+    final idGenerator = FakeIdGenerator('user-1');
+
+    final valueRepository = ValueRepository(
+      driftDb: db,
+      idGenerator: idGenerator,
+      clock: clock,
+    );
+
+    await expectLater(
+      valueRepository.create(name: '', color: '#00CC66'),
+      throwsA(isA<Exception>()),
+    );
   });
 }
 

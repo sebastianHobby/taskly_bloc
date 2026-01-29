@@ -7,6 +7,7 @@ import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/model/guided_tour_step.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/settings.dart';
 
@@ -15,13 +16,19 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockSettingsRepositoryContract settingsRepository;
+  late DemoModeService demoModeService;
 
   GuidedTourBloc buildBloc() {
-    return GuidedTourBloc(settingsRepository: settingsRepository);
+    return GuidedTourBloc(
+      settingsRepository: settingsRepository,
+      demoModeService: demoModeService,
+    );
   }
 
   setUp(() {
     settingsRepository = MockSettingsRepositoryContract();
+    demoModeService = DemoModeService();
+    addTearDown(demoModeService.dispose);
   });
 
   blocTestSafe<GuidedTourBloc, GuidedTourState>(
@@ -34,6 +41,24 @@ void main() {
           .having((s) => s.currentIndex, 'currentIndex', 0)
           .having((s) => s.navRequestId, 'navRequestId', 1),
     ],
+    verify: (_) => expect(demoModeService.isEnabled, isTrue),
+  );
+
+  blocTestSafe<GuidedTourBloc, GuidedTourState>(
+    'disables demo mode when skipped',
+    build: buildBloc,
+    act: (bloc) {
+      bloc.add(const GuidedTourStarted());
+      bloc.add(const GuidedTourSkipped());
+    },
+    expect: () => [
+      isA<GuidedTourState>()
+          .having((s) => s.active, 'active', true)
+          .having((s) => s.currentIndex, 'currentIndex', 0)
+          .having((s) => s.navRequestId, 'navRequestId', 1),
+      isA<GuidedTourState>().having((s) => s.active, 'active', false),
+    ],
+    verify: (_) => expect(demoModeService.isEnabled, isFalse),
   );
 
   blocTestSafe<GuidedTourBloc, GuidedTourState>(

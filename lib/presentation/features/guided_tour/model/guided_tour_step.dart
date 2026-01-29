@@ -1,18 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
 
 enum GuidedTourStepKind { card, coachmark }
-
-enum GuidedTourPreviewType {
-  anytimeOverview,
-  inboxDetail,
-  projectDetail,
-  routines,
-  planMyDay,
-  myDayExecution,
-  scheduled,
-  valuesIntro,
-}
 
 @immutable
 class GuidedTourCoachmark {
@@ -35,7 +23,6 @@ class GuidedTourStep {
     required this.title,
     required this.body,
     required this.kind,
-    this.previewType,
     this.coachmark,
   });
 
@@ -44,115 +31,240 @@ class GuidedTourStep {
   final String title;
   final String body;
   final GuidedTourStepKind kind;
-  final GuidedTourPreviewType? previewType;
   final GuidedTourCoachmark? coachmark;
 }
 
 List<GuidedTourStep> buildGuidedTourSteps() {
-  final anytime = Routing.screenPath('someday');
-  final myDay = Routing.screenPath('my_day');
-  final scheduled = Routing.screenPath('scheduled');
-  final routines = Routing.screenPath('routines');
-  final values = Routing.screenPath('values');
-
   return [
     GuidedTourStep(
+      id: 'welcome',
+      route: '/anytime',
+      title: 'Welcome to Taskly',
+      body:
+          'You are seeing a demo workspace for this tour. You will return to '
+          'your real tasks when the tour ends.',
+      kind: GuidedTourStepKind.card,
+    ),
+    GuidedTourStep(
       id: 'anytime_overview',
-      route: anytime,
-      title: 'Anytime',
+      route: '/anytime',
+      title: 'Anytime shows every project',
       body:
-          'Anytime is where all your tasks and projects live. '
-          'My Day brings the right ones forward when it matters.',
+          'Anytime is your home base. It keeps every project visible so you '
+          'always know what is in motion.',
       kind: GuidedTourStepKind.card,
-      previewType: GuidedTourPreviewType.anytimeOverview,
     ),
     GuidedTourStep(
-      id: 'inbox_detail',
-      route: '/project/inbox/detail',
-      title: 'Inbox',
-      body:
-          'Inbox is for capturing tasks quickly. Move them into projects and '
-          'add values when you are ready.',
-      kind: GuidedTourStepKind.card,
-      previewType: GuidedTourPreviewType.inboxDetail,
-    ),
-    GuidedTourStep(
-      id: 'create_project',
-      route: anytime,
-      title: 'Create a project',
-      body: 'Group related tasks together.',
+      id: 'anytime_add',
+      route: '/anytime',
+      title: 'Add tasks here...',
+      body: 'Use the + button to add a project or task from anywhere.',
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
-        targetId: 'anytime_create',
-        title: 'Create a project',
-        body: 'Projects help you keep related tasks together.',
+        targetId: 'anytime_create_project',
+        title: 'Add tasks here...',
+        body: 'Use the + button to add a project or task from anywhere.',
+      ),
+    ),
+    GuidedTourStep(
+      id: 'inbox_capture',
+      route: '/anytime',
+      title: 'Inbox for capture',
+      body:
+          'Capture now, organize later. Move tasks into projects when you '
+          'are ready.',
+      kind: GuidedTourStepKind.coachmark,
+      coachmark: GuidedTourCoachmark(
+        targetId: 'anytime_inbox_row',
+        title: 'Inbox for capture',
+        body:
+            'Capture now, organize later. Move tasks into projects when you '
+            'are ready.',
+      ),
+    ),
+    GuidedTourStep(
+      id: 'task_project_value',
+      route: '/task/new',
+      title: 'Set the project',
+      body:
+          'Set the project to connect this task to a value. Taskly uses that '
+          'to suggest the right work. You can also add extra values to a '
+          'task.',
+      kind: GuidedTourStepKind.coachmark,
+      coachmark: GuidedTourCoachmark(
+        targetId: 'task_project_value',
+        title: 'Set the project',
+        body:
+            'Set the project to connect this task to a value. Taskly uses '
+            'that to suggest the right work. You can also add extra values '
+            'to a task.',
       ),
     ),
     GuidedTourStep(
       id: 'project_detail',
       route: '/project/inbox/detail',
-      title: 'Project details',
+      title: 'Projects hold the work',
       body:
-          "Projects keep tasks and values together. Tasks inherit the project's "
-          'value, and you can add another value when needed.',
+          'Open a project to see its tasks, deadlines, and priorities in one '
+          'place.',
       kind: GuidedTourStepKind.card,
-      previewType: GuidedTourPreviewType.projectDetail,
     ),
     GuidedTourStep(
-      id: 'routines',
-      route: routines,
-      title: 'Routines',
+      id: 'values_framing',
+      route: '/values',
+      title: 'Values guide your focus',
       body:
-          'Routines are habits linked to your values. '
-          'They can show up in Plan My Day when you want them to.',
+          'Values keep your days balanced. They shape suggestions and help '
+          'you choose what matters most.',
       kind: GuidedTourStepKind.card,
-      previewType: GuidedTourPreviewType.routines,
+    ),
+    GuidedTourStep(
+      id: 'values_list',
+      route: '/values',
+      title: 'Define what matters',
+      body:
+          'Add a few values so Taskly can recommend the right tasks and '
+          'routines.',
+      kind: GuidedTourStepKind.coachmark,
+      coachmark: GuidedTourCoachmark(
+        targetId: 'values_list',
+        title: 'Define what matters',
+        body:
+            'Add a few values so Taskly can recommend the right tasks and '
+            'routines.',
+      ),
+    ),
+    GuidedTourStep(
+      id: 'routines_overview',
+      route: '/routines',
+      title: 'Routines build momentum',
+      body:
+          'Routines can be flexible or scheduled. Use them to keep progress '
+          'steady.',
+      kind: GuidedTourStepKind.card,
+    ),
+    GuidedTourStep(
+      id: 'scheduled_horizon',
+      route: '/scheduled',
+      title: 'Scheduled looks ahead',
+      body: 'See upcoming tasks by date so nothing sneaks up on you.',
+      kind: GuidedTourStepKind.coachmark,
+      coachmark: GuidedTourCoachmark(
+        targetId: 'scheduled_section_today',
+        title: 'Scheduled looks ahead',
+        body: 'See upcoming tasks by date so nothing sneaks up on you.',
+      ),
     ),
     GuidedTourStep(
       id: 'plan_my_day_entry',
-      route: myDay,
+      route: '/my-day',
       title: 'Plan My Day',
-      body:
-          'Taskly uses your values, routines, and urgent items to build '
-          "today's focus list. You confirm the final picks.",
+      body: 'Review suggestions and pick the tasks you want to focus on today.',
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
         targetId: 'my_day_plan_button',
         title: 'Plan My Day',
-        body: "Tap to build today's plan.",
+        body:
+            'Review suggestions and pick the tasks you want to focus on '
+            'today.',
       ),
     ),
     GuidedTourStep(
-      id: 'plan_my_day_flow',
-      route: myDay,
-      title: 'Pick what matters most',
-      body: "Choose a few suggestions to build today's list.",
-      kind: GuidedTourStepKind.card,
-      previewType: GuidedTourPreviewType.planMyDay,
+      id: 'plan_my_day_triage',
+      route: '/my-day',
+      title: 'Start with time-sensitive',
+      body:
+          "Start with what's time-sensitive. Choose the items you want to "
+          'handle today.',
+      kind: GuidedTourStepKind.coachmark,
+      coachmark: GuidedTourCoachmark(
+        targetId: 'plan_my_day_triage',
+        title: 'Start with time-sensitive',
+        body:
+            "Start with what's time-sensitive. Choose the items you want to "
+            'handle today.',
+      ),
     ),
     GuidedTourStep(
-      id: 'my_day_execution',
-      route: myDay,
-      title: 'My Day',
-      body: "This is today's focus list.",
-      kind: GuidedTourStepKind.card,
-      previewType: GuidedTourPreviewType.myDayExecution,
+      id: 'plan_my_day_scheduled_routines',
+      route: '/my-day',
+      title: 'Scheduled routines',
+      body: "Pick the scheduled habits you're committing to today.",
+      kind: GuidedTourStepKind.coachmark,
+      coachmark: GuidedTourCoachmark(
+        targetId: 'plan_my_day_routines_scheduled',
+        title: 'Scheduled routines',
+        body: "Pick the scheduled habits you're committing to today.",
+      ),
     ),
     GuidedTourStep(
-      id: 'scheduled',
-      route: scheduled,
-      title: 'Scheduled',
-      body: 'Upcoming tasks and projects, grouped by date.',
-      kind: GuidedTourStepKind.card,
-      previewType: GuidedTourPreviewType.scheduled,
+      id: 'plan_my_day_flexible_routines',
+      route: '/my-day',
+      title: 'Flexible routines',
+      body: 'Pick flexible routines to make progress on your weekly targets.',
+      kind: GuidedTourStepKind.coachmark,
+      coachmark: GuidedTourCoachmark(
+        targetId: 'plan_my_day_routines_flexible',
+        title: 'Flexible routines',
+        body: 'Pick flexible routines to make progress on your weekly targets.',
+      ),
     ),
     GuidedTourStep(
-      id: 'values',
-      route: values,
-      title: 'Values',
-      body: 'Values guide suggestions and balance your focus.',
+      id: 'plan_my_day_values',
+      route: '/my-day',
+      title: 'Value-aligned picks',
+      body:
+          'Choose value-aligned tasks to round out your plan. Suggestions '
+          'follow task completions by default, or weekly check-ins if you '
+          'want a more reflective approach.',
+      kind: GuidedTourStepKind.coachmark,
+      coachmark: GuidedTourCoachmark(
+        targetId: 'plan_my_day_values_card',
+        title: 'Value-aligned picks',
+        body:
+            'Choose value-aligned tasks to round out your plan. Suggestions '
+            'follow task completions by default, or weekly check-ins if you '
+            'want a more reflective approach.',
+      ),
+    ),
+    GuidedTourStep(
+      id: 'plan_my_day_summary',
+      route: '/my-day',
+      title: 'Review and confirm',
+      body: "Review your selections and confirm today's plan.",
       kind: GuidedTourStepKind.card,
-      previewType: GuidedTourPreviewType.valuesIntro,
+    ),
+    GuidedTourStep(
+      id: 'my_day_summary',
+      route: '/my-day',
+      title: 'Your plan for today',
+      body: 'Here is the list you just chose, mixing tasks and routines.',
+      kind: GuidedTourStepKind.card,
+    ),
+    GuidedTourStep(
+      id: 'my_day_focus_list',
+      route: '/my-day',
+      title: "Today's focus list",
+      body:
+          'This is the short list you commit to. Keep it realistic and move '
+          'what is done to completed.',
+      kind: GuidedTourStepKind.coachmark,
+      coachmark: GuidedTourCoachmark(
+        targetId: 'my_day_focus_task_1',
+        title: "Today's focus list",
+        body:
+            'This is the short list you commit to. Keep it realistic and '
+            'move what is done to completed.',
+      ),
+    ),
+    GuidedTourStep(
+      id: 'finish',
+      route: '/anytime',
+      title: 'You are ready',
+      body:
+          'The tour is done. Open Settings > Guided tour anytime to replay '
+          'it.',
+      kind: GuidedTourStepKind.card,
     ),
   ];
 }

@@ -34,6 +34,12 @@ final class AnytimeFeedInboxCollapsedChanged extends AnytimeFeedEvent {
   final bool collapsed;
 }
 
+final class AnytimeFeedSortOrderChanged extends AnytimeFeedEvent {
+  const AnytimeFeedSortOrderChanged({required this.sortOrder});
+
+  final AnytimeSortOrder sortOrder;
+}
+
 sealed class AnytimeFeedState {
   const AnytimeFeedState();
 }
@@ -74,6 +80,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     );
     on<AnytimeFeedSearchQueryChanged>(_onSearchQueryChanged);
     on<AnytimeFeedInboxCollapsedChanged>(_onInboxCollapsedChanged);
+    on<AnytimeFeedSortOrderChanged>(_onSortOrderChanged);
 
     add(const AnytimeFeedStarted());
   }
@@ -85,7 +92,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   int? _inboxTaskCount;
   List<Value> _latestValues = const <Value>[];
   String _searchQuery = '';
-  final AnytimeSortOrder _sortOrder = AnytimeSortOrder.dueSoonest;
+  AnytimeSortOrder _sortOrder = AnytimeSortOrder.recentlyUpdated;
 
   Future<void> _onStarted(
     AnytimeFeedStarted event,
@@ -114,6 +121,15 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     AnytimeFeedInboxCollapsedChanged event,
     Emitter<AnytimeFeedState> emit,
   ) {
+    _emitRows(emit);
+  }
+
+  void _onSortOrderChanged(
+    AnytimeFeedSortOrderChanged event,
+    Emitter<AnytimeFeedState> emit,
+  ) {
+    if (_sortOrder == event.sortOrder) return;
+    _sortOrder = event.sortOrder;
     _emitRows(emit);
   }
 
@@ -239,28 +255,12 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   }
 
   int _compareProjectGroups(_ProjectAggregate a, _ProjectAggregate b) {
-    final aDate = a.sortDeadline(_sortOrder);
-    final bDate = b.sortDeadline(_sortOrder);
-    final aHasDate = aDate != null;
-    final bHasDate = bDate != null;
-
-    if (aHasDate != bHasDate) {
-      return aHasDate ? -1 : 1;
-    }
-
-    if (aHasDate && bHasDate) {
-      final compare = aDate.compareTo(bDate);
-      if (compare != 0) {
-        return _sortOrder == AnytimeSortOrder.dueSoonest ? compare : -compare;
-      }
-    }
-
-    final byName = a.title.toLowerCase().compareTo(b.title.toLowerCase());
-    if (byName != 0) return byName;
-
-    return (a.projectRef.projectId ?? '').compareTo(
-      b.projectRef.projectId ?? '',
-    );
+    return switch (_sortOrder) {
+      AnytimeSortOrder.recentlyUpdated => _compareByUpdated(a, b),
+      AnytimeSortOrder.alphabetical => _compareByName(a, b),
+      AnytimeSortOrder.priority => _compareByPriority(a, b),
+      AnytimeSortOrder.dueDate => _compareByDueDate(a, b),
+    };
   }
 
   int _compareProjectGroupsWithValues(
@@ -272,16 +272,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     if (aInbox != bInbox) {
       return aInbox ? -1 : 1;
     }
-    final aValue = a.project?.primaryValue;
-    final bValue = b.project?.primaryValue;
-    final rankA = _valuePriorityRank(aValue?.priority ?? ValuePriority.medium);
-    final rankB = _valuePriorityRank(bValue?.priority ?? ValuePriority.medium);
-    if (rankA != rankB) return rankA.compareTo(rankB);
-
-    final aValueName = (aValue?.name ?? '').toLowerCase();
-    final bValueName = (bValue?.name ?? '').toLowerCase();
-    final byValueName = aValueName.compareTo(bValueName);
-    if (byValueName != 0) return byValueName;
 
     return _compareProjectGroups(a, b);
   }
@@ -315,19 +305,44 @@ class _ProjectAggregate {
       latestDeadlineUtc = deadlineUtc;
     }
   }
-
-  DateTime? sortDeadline(AnytimeSortOrder order) {
-    return switch (order) {
-      AnytimeSortOrder.dueSoonest => earliestDeadlineUtc,
-      AnytimeSortOrder.dueLatest => latestDeadlineUtc ?? earliestDeadlineUtc,
-    };
-  }
 }
 
-int _valuePriorityRank(ValuePriority priority) {
-  return switch (priority) {
-    ValuePriority.high => 0,
-    ValuePriority.medium => 1,
-    ValuePriority.low => 2,
-  };
+int _compareByUpdated(_ProjectAggregate a, _ProjectAggregate b) {
+  final aUpdated = a.project?.updatedAt;
+  final bUpdated = b.project?.updatedAt;
+  if (aUpdated != null && bUpdated != null) {
+    final byUpdated = bUpdated.compareTo(aUpdated);
+    if (byUpdated != 0) return byUpdated;
+  } else if (aUpdated != null || bUpdated != null) {
+    return aUpdated != null ? -1 : 1;
+  }
+  return _compareByName(a, b);
+}
+
+int _compareByName(_ProjectAggregate a, _ProjectAggregate b) {
+  final byName = a.title.toLowerCase().compareTo(b.title.toLowerCase());
+  if (byName != 0) return byName;
+  return (a.projectRef.projectId ?? '').compareTo(
+    b.projectRef.projectId ?? '',
+  );
+}
+
+int _compareByPriority(_ProjectAggregate a, _ProjectAggregate b) {
+  final aPriority = a.project?.priority ?? 999;
+  final bPriority = b.project?.priority ?? 999;
+  final byPriority = aPriority.compareTo(bPriority);
+  if (byPriority != 0) return byPriority;
+  return _compareByName(a, b);
+}
+
+int _compareByDueDate(_ProjectAggregate a, _ProjectAggregate b) {
+  final aDate = a.earliestDeadlineUtc;
+  final bDate = b.earliestDeadlineUtc;
+  if (aDate != null && bDate != null) {
+    final compare = aDate.compareTo(bDate);
+    if (compare != 0) return compare;
+  } else if (aDate != null || bDate != null) {
+    return aDate != null ? -1 : 1;
+  }
+  return _compareByName(a, b);
 }

@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/values_hero_bloc.dart';
+import 'package:taskly_bloc/presentation/features/values/model/value_sort_order.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/values_list.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
@@ -17,11 +18,23 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
-class ValuesPage extends StatelessWidget {
+class ValuesPage extends StatefulWidget {
   const ValuesPage({super.key});
+
+  @override
+  State<ValuesPage> createState() => _ValuesPageState();
+}
+
+class _ValuesPageState extends State<ValuesPage> {
+  ValueSortOrder _sortOrder = ValueSortOrder.priority;
 
   void _createValue(BuildContext context) {
     Routing.toValueNew(context);
+  }
+
+  void _updateSort(ValueSortOrder order) {
+    if (_sortOrder == order) return;
+    setState(() => _sortOrder = order);
   }
 
   @override
@@ -40,8 +53,6 @@ class ValuesPage extends StatelessWidget {
       ],
       child: Builder(
         builder: (context) {
-          final isCompact = WindowSizeClass.of(context).isCompact;
-
           return BlocBuilder<SelectionBloc, SelectionState>(
             builder: (context, selectionState) {
               return Scaffold(
@@ -52,23 +63,38 @@ class ValuesPage extends StatelessWidget {
                         actions: TasklyAppBarActions.withAttentionBell(
                           context,
                           actions: [
-                            if (!isCompact)
-                              IconButton(
-                                tooltip: context.l10n.createValueTooltip,
-                                onPressed: () => _createValue(context),
-                                icon: const Icon(Icons.add),
-                              ),
+                            TasklyOverflowMenuButton<_ValuesMenuAction>(
+                              tooltip: 'More',
+                              itemsBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: _ValuesMenuAction.sortBy,
+                                  child: Text('Sort by'),
+                                ),
+                                const PopupMenuItem(
+                                  value: _ValuesMenuAction.selectMultiple,
+                                  child: Text('Select multiple'),
+                                ),
+                              ],
+                              onSelected: (action) {
+                                switch (action) {
+                                  case _ValuesMenuAction.sortBy:
+                                    _showSortSheet();
+                                  case _ValuesMenuAction.selectMultiple:
+                                    context
+                                        .read<SelectionBloc>()
+                                        .enterSelectionMode();
+                                }
+                              },
+                            ),
                           ],
                         ),
                       ),
-                floatingActionButton: isCompact
-                    ? FloatingActionButton(
-                        tooltip: context.l10n.createValueTooltip,
-                        onPressed: () => _createValue(context),
-                        heroTag: 'create_value_fab_values',
-                        child: const Icon(Icons.add),
-                      )
-                    : null,
+                floatingActionButton: FloatingActionButton(
+                  tooltip: context.l10n.createValueTooltip,
+                  onPressed: () => _createValue(context),
+                  heroTag: 'create_value_fab_values',
+                  child: const Icon(Icons.add),
+                ),
                 body: BlocBuilder<ValuesHeroBloc, ValuesHeroState>(
                   builder: (context, state) {
                     final body = switch (state) {
@@ -82,9 +108,9 @@ class ValuesPage extends StatelessWidget {
                             context.l10n,
                           ),
                           retryLabel: context.l10n.retryButton,
-                          onRetry: () => context
-                              .read<ValuesHeroBloc>()
-                              .add(const ValuesHeroSubscriptionRequested()),
+                          onRetry: () => context.read<ValuesHeroBloc>().add(
+                            const ValuesHeroSubscriptionRequested(),
+                          ),
                         ),
                       ),
                       ValuesHeroLoaded(:final items) when items.isEmpty =>
@@ -101,7 +127,7 @@ class ValuesPage extends StatelessWidget {
                           ),
                         ),
                       ValuesHeroLoaded(:final items) => ValuesListView(
-                        items: items,
+                        items: _sortItems(items, _sortOrder),
                       ),
                     };
 
@@ -135,6 +161,78 @@ class ValuesPage extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _showSortSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text(
+                  'Sort by',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              for (final option in ValueSortOrder.values)
+                RadioListTile<ValueSortOrder>(
+                  value: option,
+                  groupValue: _sortOrder,
+                  title: Text(option.label),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    _updateSort(value);
+                    Navigator.of(sheetContext).pop();
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+enum _ValuesMenuAction {
+  sortBy,
+  selectMultiple,
+}
+
+List<ValueHeroStatsItem> _sortItems(
+  List<ValueHeroStatsItem> items,
+  ValueSortOrder order,
+) {
+  final sorted = items.toList(growable: false);
+  int byName(ValueHeroStatsItem a, ValueHeroStatsItem b) {
+    return a.value.name.compareTo(b.value.name);
+  }
+
+  int byPriority(ValueHeroStatsItem a, ValueHeroStatsItem b) {
+    final byPriority = b.value.priority.weight.compareTo(
+      a.value.priority.weight,
+    );
+    if (byPriority != 0) return byPriority;
+    return byName(a, b);
+  }
+
+  int byMostActive(ValueHeroStatsItem a, ValueHeroStatsItem b) {
+    final byActivity = b.completionCount.compareTo(a.completionCount);
+    if (byActivity != 0) return byActivity;
+    return byName(a, b);
+  }
+
+  sorted.sort(
+    switch (order) {
+      ValueSortOrder.priority => byPriority,
+      ValueSortOrder.alphabetical => byName,
+      ValueSortOrder.mostActive => byMostActive,
+    },
+  );
+
+  return sorted;
 }
 
 class _ValuesRangeSelector extends StatelessWidget {

@@ -32,6 +32,11 @@ class FakeIdGenerator implements IdGenerator {
   int _analyticsInsightIdCounter = 0;
   int _trackerEventIdCounter = 0;
   int _trackerGroupIdCounter = 0;
+  int _taskSnoozeEventIdCounter = 0;
+  int _projectNextActionIdCounter = 0;
+  int _routineIdCounter = 0;
+  int _routineCompletionIdCounter = 0;
+  int _routineSkipIdCounter = 0;
 
   // Call counts for verification
   int get taskIdCallCount => _taskIdCounter;
@@ -70,6 +75,23 @@ class FakeIdGenerator implements IdGenerator {
 
   @override
   String trackerGroupId() => 'tracker-group-${_trackerGroupIdCounter++}';
+
+  @override
+  String taskSnoozeEventId() => 'task-snooze-${_taskSnoozeEventIdCounter++}';
+
+  @override
+  String projectNextActionId() =>
+      'project-next-action-${_projectNextActionIdCounter++}';
+
+  @override
+  String routineId() => 'routine-${_routineIdCounter++}';
+
+  @override
+  String routineCompletionId() =>
+      'routine-completion-${_routineCompletionIdCounter++}';
+
+  @override
+  String routineSkipId() => 'routine-skip-${_routineSkipIdCounter++}';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // V5 DETERMINISTIC IDs - Predictable based on inputs
@@ -163,8 +185,21 @@ class FakeIdGenerator implements IdGenerator {
   }
 
   @override
+  String valueWeeklyRatingId({
+    required String valueId,
+    required DateTime weekStartUtc,
+  }) {
+    final dateKey = weekStartUtc.toIso8601String().split('T').first;
+    return 'value-weekly-$valueId-$dateKey';
+  }
+
+  @override
   String attentionRuleId({required String ruleKey}) =>
       'attention-rule-${ruleKey.toLowerCase().replaceAll('_', '-')}';
+
+  @override
+  String projectAnchorStateIdForProject({required String projectId}) =>
+      'project-anchor-$projectId';
 
   @override
   String attentionResolutionId() =>
@@ -187,6 +222,11 @@ class FakeIdGenerator implements IdGenerator {
     _analyticsInsightIdCounter = 0;
     _trackerEventIdCounter = 0;
     _attentionResolutionIdCounter = 0;
+    _taskSnoozeEventIdCounter = 0;
+    _projectNextActionIdCounter = 0;
+    _routineIdCounter = 0;
+    _routineCompletionIdCounter = 0;
+    _routineSkipIdCounter = 0;
   }
 
   /// Get the next task ID without incrementing the counter.

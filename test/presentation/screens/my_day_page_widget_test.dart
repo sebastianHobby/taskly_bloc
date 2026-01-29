@@ -1,0 +1,558 @@
+@Tags(['widget', 'my_day'])
+library;
+
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:rxdart/rxdart.dart';
+
+import '../../helpers/test_imports.dart';
+import '../../mocks/repository_mocks.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/services/my_day_gate_query_service.dart';
+import 'package:taskly_bloc/presentation/screens/services/my_day_query_service.dart';
+import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
+import 'package:taskly_bloc/presentation/screens/view/my_day_page.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_allocation_cache_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_domain/allocation.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/my_day.dart' as my_day;
+import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/routines.dart';
+import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/settings.dart' as settings;
+
+class MockGlobalSettingsBloc
+    extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
+    implements GlobalSettingsBloc {}
+
+class MockEditorLauncher extends Mock implements EditorLauncher {}
+
+class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
+
+class MockHomeDayKeyService extends Mock implements HomeDayKeyService {}
+
+class MockTemporalTriggerService extends Mock
+    implements TemporalTriggerService {}
+
+class MockNowService extends Mock implements NowService {}
+
+class MockProjectNextActionsRepositoryContract extends Mock
+    implements ProjectNextActionsRepositoryContract {}
+
+class MockProjectAnchorStateRepositoryContract extends Mock
+    implements ProjectAnchorStateRepositoryContract {}
+
+class MockAllocationOrchestrator extends Mock
+    implements AllocationOrchestrator {}
+
+class MockOccurrenceCommandService extends Mock
+    implements OccurrenceCommandService {}
+
+void main() {
+  setUpAll(setUpAllTestEnvironment);
+  setUp(setUpTestEnvironment);
+
+  late MyDaySessionQueryService myDaySessionQueryService;
+  late MyDayGateQueryService myDayGateQueryService;
+  late RoutineWriteService routineWriteService;
+  late TaskWriteService taskWriteService;
+  late TaskSuggestionService taskSuggestionService;
+  late SessionStreamCacheManager sessionStreamCacheManager;
+  late SessionSharedDataService sessionSharedDataService;
+  late SessionAllocationCacheService sessionAllocationCacheService;
+  late SessionDayKeyService sessionDayKeyService;
+  late MyDayQueryService myDayQueryService;
+  late MyDayRitualStatusService myDayRitualStatusService;
+  late MockAllocationOrchestrator allocationOrchestrator;
+  late MockOccurrenceCommandService occurrenceCommandService;
+  late MockNowService nowService;
+  late MockHomeDayKeyService dayKeyService;
+  late MockTemporalTriggerService temporalTriggerService;
+  late MockAppLifecycleEvents appLifecycleEvents;
+  late MockValueRepositoryContract valueRepository;
+  late MockTaskRepositoryContract taskRepository;
+  late MockProjectRepositoryContract projectRepository;
+  late MockRoutineRepositoryContract routineRepository;
+  late MockProjectNextActionsRepositoryContract projectNextActionsRepository;
+  late MockProjectAnchorStateRepositoryContract projectAnchorStateRepository;
+  late MockMyDayRepositoryContract myDayRepository;
+  late MockSettingsRepositoryContract settingsRepository;
+  late MockEditorLauncher editorLauncher;
+  late MockGlobalSettingsBloc globalSettingsBloc;
+
+  late BehaviorSubject<List<Value>> valuesSubject;
+  late BehaviorSubject<List<Task>> tasksSubject;
+  late BehaviorSubject<List<Routine>> routinesSubject;
+  late BehaviorSubject<List<RoutineCompletion>> completionsSubject;
+  late BehaviorSubject<List<RoutineSkip>> skipsSubject;
+  late BehaviorSubject<my_day.MyDayDayPicks> dayPicksSubject;
+  late StreamController<TemporalTriggerEvent> temporalTriggerController;
+  late StreamController<AppLifecycleEvent> appLifecycleController;
+
+  final dayKeyUtc = DateTime.utc(2025, 1, 15);
+  final nowUtc = DateTime.utc(2025, 1, 15, 12);
+  final defaultValues = [
+    TestData.value(id: 'value-1', name: 'Health'),
+  ];
+  const speedDialInitDelay = Duration(milliseconds: 1);
+
+  setUp(() {
+    nowService = MockNowService();
+    dayKeyService = MockHomeDayKeyService();
+    temporalTriggerService = MockTemporalTriggerService();
+    appLifecycleEvents = MockAppLifecycleEvents();
+    valueRepository = MockValueRepositoryContract();
+    taskRepository = MockTaskRepositoryContract();
+    projectRepository = MockProjectRepositoryContract();
+    routineRepository = MockRoutineRepositoryContract();
+    projectNextActionsRepository = MockProjectNextActionsRepositoryContract();
+    projectAnchorStateRepository = MockProjectAnchorStateRepositoryContract();
+    allocationOrchestrator = MockAllocationOrchestrator();
+    occurrenceCommandService = MockOccurrenceCommandService();
+    myDayRepository = MockMyDayRepositoryContract();
+    settingsRepository = MockSettingsRepositoryContract();
+    editorLauncher = MockEditorLauncher();
+    globalSettingsBloc = MockGlobalSettingsBloc();
+
+    valuesSubject = BehaviorSubject<List<Value>>.seeded(defaultValues);
+    tasksSubject = BehaviorSubject<List<Task>>.seeded(const <Task>[]);
+    routinesSubject = BehaviorSubject<List<Routine>>.seeded(const <Routine>[]);
+    completionsSubject = BehaviorSubject<List<RoutineCompletion>>.seeded(
+      const <RoutineCompletion>[],
+    );
+    skipsSubject = BehaviorSubject<List<RoutineSkip>>.seeded(
+      const <RoutineSkip>[],
+    );
+    dayPicksSubject = BehaviorSubject<my_day.MyDayDayPicks>();
+    temporalTriggerController =
+        StreamController<TemporalTriggerEvent>.broadcast();
+    appLifecycleController = StreamController<AppLifecycleEvent>.broadcast();
+
+    when(() => nowService.nowUtc()).thenReturn(nowUtc);
+    when(() => nowService.nowLocal()).thenReturn(DateTime(2025, 1, 15, 12));
+
+    when(() => dayKeyService.todayDayKeyUtc()).thenReturn(dayKeyUtc);
+    when(
+      () => dayKeyService.todayDayKeyUtc(nowUtc: any(named: 'nowUtc')),
+    ).thenReturn(dayKeyUtc);
+    when(
+      () => dayKeyService.nextHomeDayBoundaryUtc(nowUtc: any(named: 'nowUtc')),
+    ).thenReturn(dayKeyUtc.add(const Duration(days: 1)));
+
+    when(() => temporalTriggerService.events).thenAnswer(
+      (_) => temporalTriggerController.stream,
+    );
+    when(() => appLifecycleEvents.events).thenAnswer(
+      (_) => appLifecycleController.stream,
+    );
+
+    when(() => settingsRepository.load(SettingsKey.global)).thenAnswer(
+      (_) async => const settings.GlobalSettings(),
+    );
+    when(() => settingsRepository.load(SettingsKey.allocation)).thenAnswer(
+      (_) async => const AllocationConfig(),
+    );
+
+    when(() => settingsRepository.watch(SettingsKey.allocation)).thenAnswer(
+      (_) => Stream.value(const AllocationConfig()),
+    );
+    when(() => settingsRepository.watch(SettingsKey.global)).thenAnswer(
+      (_) => Stream.value(const settings.GlobalSettings()),
+    );
+
+    when(() => valueRepository.getAll()).thenAnswer(
+      (_) async => defaultValues,
+    );
+    when(() => valueRepository.watchAll()).thenAnswer(
+      (_) => valuesSubject.stream,
+    );
+
+    when(() => taskRepository.getAll(any())).thenAnswer(
+      (_) async => tasksSubject.valueOrNull ?? <Task>[],
+    );
+    when(() => taskRepository.getAll()).thenAnswer(
+      (_) async => tasksSubject.valueOrNull ?? <Task>[],
+    );
+    when(() => taskRepository.watchAll(any())).thenAnswer(
+      (_) => tasksSubject.stream,
+    );
+    when(() => taskRepository.watchAll()).thenAnswer(
+      (_) => tasksSubject.stream,
+    );
+    when(() => taskRepository.watchAllCount(any())).thenAnswer(
+      (_) => Stream.value(0),
+    );
+    when(() => taskRepository.watchAllCount()).thenAnswer(
+      (_) => Stream.value(0),
+    );
+    when(() => taskRepository.watchCompletionHistory()).thenAnswer(
+      (_) => Stream.value(const <CompletionHistoryData>[]),
+    );
+    when(() => taskRepository.watchRecurrenceExceptions()).thenAnswer(
+      (_) => Stream.value(const <RecurrenceExceptionData>[]),
+    );
+    when(() => taskRepository.getByIds(any())).thenAnswer((_) async => []);
+
+    when(() => routineRepository.getAll(includeInactive: true)).thenAnswer(
+      (_) async => routinesSubject.valueOrNull ?? <Routine>[],
+    );
+    when(() => routineRepository.watchAll(includeInactive: true)).thenAnswer(
+      (_) => routinesSubject.stream,
+    );
+    when(() => routineRepository.getCompletions()).thenAnswer(
+      (_) async => completionsSubject.valueOrNull ?? <RoutineCompletion>[],
+    );
+    when(() => routineRepository.watchCompletions()).thenAnswer(
+      (_) => completionsSubject.stream,
+    );
+    when(() => routineRepository.getSkips()).thenAnswer(
+      (_) async => skipsSubject.valueOrNull ?? <RoutineSkip>[],
+    );
+    when(() => routineRepository.watchSkips()).thenAnswer(
+      (_) => skipsSubject.stream,
+    );
+
+    when(() => projectRepository.getAll()).thenAnswer((_) async => []);
+    when(() => projectRepository.watchAll()).thenAnswer(
+      (_) => Stream.value(const <Project>[]),
+    );
+    when(() => projectNextActionsRepository.getAll()).thenAnswer(
+      (_) async => [],
+    );
+    when(() => projectNextActionsRepository.watchAll()).thenAnswer(
+      (_) => Stream.value(const <ProjectNextAction>[]),
+    );
+    when(() => projectAnchorStateRepository.getAll()).thenAnswer(
+      (_) async => [],
+    );
+    when(() => projectAnchorStateRepository.watchAll()).thenAnswer(
+      (_) => Stream.value(const <ProjectAnchorState>[]),
+    );
+    when(() => myDayRepository.loadDay(any())).thenAnswer(
+      (_) async => my_day.MyDayDayPicks(
+        dayKeyUtc: dayKeyUtc,
+        ritualCompletedAtUtc: nowUtc,
+        picks: const <my_day.MyDayPick>[],
+      ),
+    );
+    when(() => myDayRepository.watchDay(any())).thenAnswer(
+      (_) => dayPicksSubject.stream,
+    );
+
+    when(
+      () => allocationOrchestrator.getSuggestedSnapshot(
+        batchCount: any(named: 'batchCount'),
+        nowUtc: any(named: 'nowUtc'),
+        routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+      ),
+    ).thenAnswer(
+      (_) async => AllocationResult(
+        allocatedTasks: const <AllocatedTask>[],
+        reasoning: const AllocationReasoning(
+          strategyUsed: 'none',
+          categoryAllocations: {},
+          categoryWeights: {},
+          explanation: 'test',
+        ),
+        excludedTasks: const <ExcludedTask>[],
+      ),
+    );
+    when(
+      () => allocationOrchestrator.getSuggestedSnapshotForTargetCount(
+        suggestedTaskTarget: any(named: 'suggestedTaskTarget'),
+        nowUtc: any(named: 'nowUtc'),
+        routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+      ),
+    ).thenAnswer(
+      (_) async => AllocationResult(
+        allocatedTasks: const <AllocatedTask>[],
+        reasoning: const AllocationReasoning(
+          strategyUsed: 'none',
+          categoryAllocations: {},
+          categoryWeights: {},
+          explanation: 'test',
+        ),
+        excludedTasks: const <ExcludedTask>[],
+      ),
+    );
+
+    taskWriteService = TaskWriteService(
+      taskRepository: taskRepository,
+      projectRepository: projectRepository,
+      allocationOrchestrator: allocationOrchestrator,
+      occurrenceCommandService: occurrenceCommandService,
+    );
+
+    routineWriteService = RoutineWriteService(
+      routineRepository: routineRepository,
+    );
+
+    taskSuggestionService = TaskSuggestionService(
+      allocationOrchestrator: allocationOrchestrator,
+      taskRepository: taskRepository,
+      dayKeyService: dayKeyService,
+    );
+
+    sessionStreamCacheManager = SessionStreamCacheManager(
+      appLifecycleService: appLifecycleEvents,
+    );
+    sessionDayKeyService = SessionDayKeyService(
+      dayKeyService: dayKeyService,
+      temporalTriggerService: temporalTriggerService,
+    );
+    sessionDayKeyService.start();
+
+    sessionSharedDataService = SessionSharedDataService(
+      cacheManager: sessionStreamCacheManager,
+      valueRepository: valueRepository,
+      projectRepository: projectRepository,
+      taskRepository: taskRepository,
+    );
+
+    sessionAllocationCacheService = SessionAllocationCacheService(
+      cacheManager: sessionStreamCacheManager,
+      sessionDayKeyService: sessionDayKeyService,
+      allocationOrchestrator: allocationOrchestrator,
+      taskRepository: taskRepository,
+      projectRepository: projectRepository,
+      projectNextActionsRepository: projectNextActionsRepository,
+      projectAnchorStateRepository: projectAnchorStateRepository,
+      settingsRepository: settingsRepository,
+      valueRepository: valueRepository,
+    );
+
+    myDayRitualStatusService = MyDayRitualStatusService(
+      myDayRepository: myDayRepository,
+    );
+
+    myDayQueryService = MyDayQueryService(
+      taskRepository: taskRepository,
+      myDayRepository: myDayRepository,
+      ritualStatusService: myDayRitualStatusService,
+      routineRepository: routineRepository,
+      dayKeyService: dayKeyService,
+      temporalTriggerService: temporalTriggerService,
+      allocationCacheService: sessionAllocationCacheService,
+      sharedDataService: sessionSharedDataService,
+    );
+
+    myDaySessionQueryService = MyDaySessionQueryService(
+      queryService: myDayQueryService,
+      cacheManager: sessionStreamCacheManager,
+    );
+
+    myDayGateQueryService = MyDayGateQueryService(
+      valueRepository: valueRepository,
+      sharedDataService: sessionSharedDataService,
+    );
+
+    const globalState = GlobalSettingsState(
+      isLoading: false,
+      settings: settings.GlobalSettings(),
+    );
+    when(() => globalSettingsBloc.state).thenReturn(globalState);
+    whenListen(
+      globalSettingsBloc,
+      Stream.value(globalState),
+      initialState: globalState,
+    );
+
+    addTearDown(valuesSubject.close);
+    addTearDown(tasksSubject.close);
+    addTearDown(routinesSubject.close);
+    addTearDown(completionsSubject.close);
+    addTearDown(skipsSubject.close);
+    addTearDown(dayPicksSubject.close);
+    addTearDown(() async => temporalTriggerController.close());
+    addTearDown(() async => appLifecycleController.close());
+    addTearDown(sessionDayKeyService.dispose);
+    addTearDown(sessionStreamCacheManager.dispose);
+    addTearDown(globalSettingsBloc.close);
+  });
+
+  Widget buildSubject() {
+    final homeDayService = HomeDayService(
+      dayKeyService: dayKeyService,
+      nowService: nowService,
+    );
+
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<MyDayGateQueryService>.value(
+          value: myDayGateQueryService,
+        ),
+        RepositoryProvider<MyDaySessionQueryService>.value(
+          value: myDaySessionQueryService,
+        ),
+        RepositoryProvider<RoutineWriteService>.value(
+          value: routineWriteService,
+        ),
+        RepositoryProvider<NowService>.value(value: nowService),
+        RepositoryProvider<HomeDayKeyService>.value(value: dayKeyService),
+        RepositoryProvider<HomeDayService>.value(value: homeDayService),
+        RepositoryProvider<SettingsRepositoryContract>.value(
+          value: settingsRepository,
+        ),
+        RepositoryProvider<MyDayRepositoryContract>.value(
+          value: myDayRepository,
+        ),
+        RepositoryProvider<TaskSuggestionService>.value(
+          value: taskSuggestionService,
+        ),
+        RepositoryProvider<TaskRepositoryContract>.value(
+          value: taskRepository,
+        ),
+        RepositoryProvider<RoutineRepositoryContract>.value(
+          value: routineRepository,
+        ),
+        RepositoryProvider<TaskWriteService>.value(value: taskWriteService),
+        RepositoryProvider<TemporalTriggerService>.value(
+          value: temporalTriggerService,
+        ),
+        RepositoryProvider<EditorLauncher>.value(value: editorLauncher),
+      ],
+      child: BlocProvider<GlobalSettingsBloc>.value(
+        value: globalSettingsBloc,
+        child: const MyDayPage(),
+      ),
+    );
+  }
+
+  void seedDailyStreams({List<Value>? values}) {
+    valuesSubject.add(values ?? defaultValues);
+    routinesSubject.add(const <Routine>[]);
+    completionsSubject.add(const <RoutineCompletion>[]);
+    skipsSubject.add(const <RoutineSkip>[]);
+  }
+
+  Future<void> pumpMyDay(WidgetTester tester) async {
+    await tester.pumpApp(buildSubject());
+    await tester.pumpForStream();
+    await tester.pump(speedDialInitDelay);
+  }
+
+  testWidgetsSafe('my day shows loading state while waiting for data', (
+    tester,
+  ) async {
+    final completer = Completer<my_day.MyDayDayPicks>();
+    when(() => myDayRepository.loadDay(any())).thenAnswer(
+      (_) => completer.future,
+    );
+    addTearDown(() {
+      if (!completer.isCompleted) {
+        completer.complete(
+          my_day.MyDayDayPicks(
+            dayKeyUtc: dayKeyUtc,
+            ritualCompletedAtUtc: nowUtc,
+            picks: const <my_day.MyDayPick>[],
+          ),
+        );
+      }
+    });
+
+    await pumpMyDay(tester);
+
+    expect(
+      find.text('Preparing a calm list for today...'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgetsSafe(
+    'my day keeps content when watch stream errors after load',
+    (tester) async {
+      final task = TestData.task(id: 'task-err-1', name: 'Still Here');
+      seedDailyStreams();
+      tasksSubject.add([task]);
+
+      final picks = my_day.MyDayDayPicks(
+        dayKeyUtc: dayKeyUtc,
+        ritualCompletedAtUtc: nowUtc,
+        picks: [
+          my_day.MyDayPick.task(
+            taskId: task.id,
+            bucket: my_day.MyDayPickBucket.manual,
+            sortIndex: 0,
+            pickedAtUtc: nowUtc,
+            qualifyingValueId: task.effectivePrimaryValueId,
+          ),
+        ],
+      );
+
+      when(() => myDayRepository.loadDay(any())).thenAnswer((_) async => picks);
+      when(() => myDayRepository.watchDay(any())).thenAnswer(
+        (_) => Stream<my_day.MyDayDayPicks>.error(Exception('boom')),
+      );
+
+      await pumpMyDay(tester);
+      await tester.pumpForStream();
+
+      expect(find.byKey(ValueKey('myday-accepted-${task.id}')), findsOneWidget);
+      expect(find.text("Couldn't load your list."), findsNothing);
+    },
+  );
+
+  testWidgetsSafe('my day renders and updates planned tasks', (tester) async {
+    final task = TestData.task(id: 'task-1', name: 'Plan Something');
+    final task2 = TestData.task(
+      id: 'task-2',
+      name: 'Follow Up',
+    );
+
+    seedDailyStreams();
+    tasksSubject.add([task]);
+    dayPicksSubject.add(
+      my_day.MyDayDayPicks(
+        dayKeyUtc: dayKeyUtc,
+        ritualCompletedAtUtc: nowUtc,
+        picks: [
+          my_day.MyDayPick.task(
+            taskId: task.id,
+            bucket: my_day.MyDayPickBucket.manual,
+            sortIndex: 0,
+            pickedAtUtc: nowUtc,
+            qualifyingValueId: task.effectivePrimaryValueId,
+          ),
+        ],
+      ),
+    );
+
+    await pumpMyDay(tester);
+    await tester.pumpForStream();
+
+    final firstTaskKey = ValueKey('myday-accepted-${task.id}');
+    expect(find.byKey(firstTaskKey), findsOneWidget);
+
+    tasksSubject.add([task2]);
+    dayPicksSubject.add(
+      my_day.MyDayDayPicks(
+        dayKeyUtc: dayKeyUtc,
+        ritualCompletedAtUtc: nowUtc,
+        picks: [
+          my_day.MyDayPick.task(
+            taskId: task2.id,
+            bucket: my_day.MyDayPickBucket.manual,
+            sortIndex: 0,
+            pickedAtUtc: nowUtc,
+            qualifyingValueId: task2.effectivePrimaryValueId,
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpForStream();
+
+    final secondTaskKey = ValueKey('myday-accepted-${task2.id}');
+    expect(find.byKey(secondTaskKey), findsOneWidget);
+  });
+}

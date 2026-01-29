@@ -5,12 +5,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../../helpers/test_imports.dart';
-import '../../../../mocks/feature_mocks.dart';
 import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/time.dart';
 
 void main() {
   setUpAll(() {
@@ -28,7 +29,9 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockProjectRepositoryContract projectRepository;
-  late MockOccurrenceReadService occurrenceReadService;
+  late MockTaskRepositoryContract taskRepository;
+  late MockSettingsRepositoryContract settingsRepository;
+  late OccurrenceReadService occurrenceReadService;
   late MockProjectNextActionsRepositoryContract nextActionsRepository;
   late MockSessionDayKeyService sessionDayKeyService;
 
@@ -36,6 +39,8 @@ void main() {
   late BehaviorSubject<Project?> projectSubject;
   late BehaviorSubject<List<Task>> tasksSubject;
   late BehaviorSubject<List<ProjectNextAction>> nextActionsSubject;
+  late BehaviorSubject<List<CompletionHistoryData>> completionsSubject;
+  late BehaviorSubject<List<RecurrenceExceptionData>> exceptionsSubject;
 
   ProjectOverviewBloc buildBloc(String projectId) {
     return ProjectOverviewBloc(
@@ -49,7 +54,16 @@ void main() {
 
   setUp(() {
     projectRepository = MockProjectRepositoryContract();
-    occurrenceReadService = MockOccurrenceReadService();
+    taskRepository = MockTaskRepositoryContract();
+    settingsRepository = MockSettingsRepositoryContract();
+    occurrenceReadService = OccurrenceReadService(
+      taskRepository: taskRepository,
+      projectRepository: projectRepository,
+      homeDayKeyService: HomeDayKeyService(
+        settingsRepository: settingsRepository,
+        clock: FakeClock(DateTime.utc(2025, 1, 15)),
+      ),
+    );
     nextActionsRepository = MockProjectNextActionsRepositoryContract();
     sessionDayKeyService = MockSessionDayKeyService();
 
@@ -59,19 +73,28 @@ void main() {
     );
     tasksSubject = BehaviorSubject.seeded(<Task>[]);
     nextActionsSubject = BehaviorSubject.seeded(<ProjectNextAction>[]);
+    completionsSubject = BehaviorSubject.seeded(
+      const <CompletionHistoryData>[],
+    );
+    exceptionsSubject = BehaviorSubject.seeded(
+      const <RecurrenceExceptionData>[],
+    );
 
+    when(() => taskRepository.watchAll(any())).thenAnswer(
+      (_) => tasksSubject.stream,
+    );
+    when(() => taskRepository.watchCompletionHistory()).thenAnswer(
+      (_) => completionsSubject.stream,
+    );
+    when(() => taskRepository.watchRecurrenceExceptions()).thenAnswer(
+      (_) => exceptionsSubject.stream,
+    );
     when(() => sessionDayKeyService.todayDayKeyUtc).thenAnswer(
       (_) => dayKeySubject.stream,
     );
     when(() => projectRepository.watchById('p-1')).thenAnswer(
       (_) => projectSubject.stream,
     );
-    when(
-      () => occurrenceReadService.watchTasksWithOccurrencePreview(
-        query: any(named: 'query'),
-        preview: any(named: 'preview'),
-      ),
-    ).thenAnswer((_) => tasksSubject.stream);
     when(() => nextActionsRepository.watchForProject('p-1')).thenAnswer(
       (_) => nextActionsSubject.stream,
     );
@@ -87,6 +110,8 @@ void main() {
     addTearDown(projectSubject.close);
     addTearDown(tasksSubject.close);
     addTearDown(nextActionsSubject.close);
+    addTearDown(completionsSubject.close);
+    addTearDown(exceptionsSubject.close);
   });
 
   blocTestSafe<ProjectOverviewBloc, ProjectOverviewState>(
@@ -99,8 +124,7 @@ void main() {
       isA<ProjectOverviewLoaded>()
           .having((s) => s.project.id, 'projectId', 'p-1')
           .having((s) => s.tasks.length, 'tasks', 0),
-      isA<ProjectOverviewLoaded>()
-          .having((s) => s.tasks.length, 'tasks', 1),
+      isA<ProjectOverviewLoaded>().having((s) => s.tasks.length, 'tasks', 1),
     ],
   );
 
@@ -142,8 +166,11 @@ void main() {
       );
     },
     expect: () => [
-      isA<ProjectOverviewLoaded>()
-          .having((s) => s.project.id, 'projectId', ProjectGroupingRef.inbox().stableKey),
+      isA<ProjectOverviewLoaded>().having(
+        (s) => s.project.id,
+        'projectId',
+        ProjectGroupingRef.inbox().stableKey,
+      ),
     ],
     verify: (_) {
       verifyNever(
@@ -155,4 +182,16 @@ void main() {
       );
     },
   );
+}
+
+class FakeClock implements Clock {
+  FakeClock(this.now);
+
+  DateTime now;
+
+  @override
+  DateTime nowLocal() => now;
+
+  @override
+  DateTime nowUtc() => now.toUtc();
 }

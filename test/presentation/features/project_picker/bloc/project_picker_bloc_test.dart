@@ -42,8 +42,11 @@ void main() {
     },
     expect: () => [
       const ProjectPickerState.initial().copyWith(isLoading: true),
-      isA<ProjectPickerState>()
-          .having((s) => s.allProjects.first.name, 'first', 'Alpha'),
+      isA<ProjectPickerState>().having(
+        (s) => s.allProjects.first.name,
+        'first',
+        'Alpha',
+      ),
       isA<ProjectPickerState>()
           .having((s) => s.visibleProjects.length, 'visible', 1)
           .having((s) => s.visibleProjects.first.name, 'name', 'Bravo'),

@@ -6,6 +6,8 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 
 @immutable
 final class AnytimeProjectsSnapshot {
@@ -25,13 +27,19 @@ final class AnytimeSessionQueryService {
     required ProjectRepositoryContract projectRepository,
     required SessionStreamCacheManager cacheManager,
     required SessionSharedDataService sharedDataService,
+    required DemoModeService demoModeService,
+    required DemoDataProvider demoDataProvider,
   }) : _projectRepository = projectRepository,
        _cacheManager = cacheManager,
-       _sharedDataService = sharedDataService;
+       _sharedDataService = sharedDataService,
+       _demoModeService = demoModeService,
+       _demoDataProvider = demoDataProvider;
 
   final ProjectRepositoryContract _projectRepository;
   final SessionStreamCacheManager _cacheManager;
   final SessionSharedDataService _sharedDataService;
+  final DemoModeService _demoModeService;
+  final DemoDataProvider _demoDataProvider;
   final Set<_ScopeKey> _knownScopes = <_ScopeKey>{};
 
   void start() {
@@ -107,17 +115,43 @@ final class AnytimeSessionQueryService {
       operator: BoolOperator.isFalse,
     );
 
+    return _demoModeService.enabled.distinct().switchMap((enabled) {
+      if (enabled) {
+        return Stream<List<Project>>.value(
+          _projectsForDemoScope(scope),
+        );
+      }
+
+      return switch (scope) {
+        null => _sharedDataService.watchIncompleteProjects(),
+        AnytimeProjectScope(:final projectId) =>
+          _projectRepository
+              .watchById(projectId)
+              .map((project) => project == null ? const [] : [project]),
+        AnytimeValueScope(:final valueId) => _projectRepository.watchAll(
+          ProjectQuery.byValues([valueId]).withAdditionalPredicates([
+            incompletePredicate,
+          ]),
+        ),
+      };
+    });
+  }
+
+  List<Project> _projectsForDemoScope(AnytimeScope? scope) {
+    final projects = _demoDataProvider.projects
+        .where((project) => !project.completed)
+        .toList(growable: false);
+
     return switch (scope) {
-      null => _sharedDataService.watchIncompleteProjects(),
+      null => projects,
       AnytimeProjectScope(:final projectId) =>
-        _projectRepository
-            .watchById(projectId)
-            .map((project) => project == null ? const [] : [project]),
-      AnytimeValueScope(:final valueId) => _projectRepository.watchAll(
-        ProjectQuery.byValues([valueId]).withAdditionalPredicates([
-          incompletePredicate,
-        ]),
-      ),
+        [
+          _demoDataProvider.projectById(projectId),
+        ].whereType<Project>().toList(growable: false),
+      AnytimeValueScope(:final valueId) =>
+        projects
+            .where((project) => project.primaryValueId == valueId)
+            .toList(growable: false),
     };
   }
 }

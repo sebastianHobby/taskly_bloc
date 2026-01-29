@@ -134,7 +134,7 @@ Note: this repo currently does not ship a dedicated migration for PowerSync repl
   - [../runbooks/LOCAL_E2E_STACK.md](../runbooks/LOCAL_E2E_STACK.md)
 - PowerShell helpers:
   - [tool/e2e/Start-LocalE2EStack.ps1](../../tool/e2e/Start-LocalE2EStack.ps1)
-  - [tool/e2e/Run-LocalE2ETests.ps1](../../tool/e2e/Run-LocalE2ETests.ps1)
+  - [tool/e2e/Run-LocalPipelineIntegrationTests.ps1](../../tool/e2e/Run-LocalPipelineIntegrationTests.ps1)
 
 ### Tests + CI
 - Pipeline integration tests:
@@ -197,7 +197,7 @@ Note: this repo currently does not ship a dedicated migration for PowerSync repl
 When running locally, PowerSync joins the Supabase CLI docker network so it can reach:
 
 - Postgres (replication source)
-- Kong (used to access JWKS for JWT validation)
+- Supabase Auth (JWT secret is supplied via local env)
 
 See [infra/powersync_local/docker-compose.yml](../../infra/powersync_local/docker-compose.yml).
 
@@ -278,7 +278,7 @@ Key configuration:
 Access control is enforced at two layers:
 
 - **PostgREST writes**: Supabase Auth JWT is used when calling `.rest.from(table)`; RLS/constraints apply.
-- **PowerSync reads**: PowerSync validates the same JWT against Supabase JWKS and uses `token_parameters.user_id` inside sync rules.
+- **PowerSync reads**: PowerSync validates the same JWT (local dev uses the Supabase JWT secret) and uses `token_parameters.user_id` inside sync rules.
 
 Critically:
 
@@ -289,7 +289,7 @@ Critically:
 The PowerSync local server config sets:
 
 - `client_auth.supabase: true`
-- `jwks_uri: PS_JWKS_URL`
+- `supabase_jwt_secret: PS_SUPABASE_JWT_SECRET`
 - `audience: ["authenticated"]`
 
 See [infra/powersync_local/config/powersync.yaml](../../infra/powersync_local/config/powersync.yaml).
@@ -353,7 +353,7 @@ The repo provides scripts to:
 Entry points:
 - [../runbooks/LOCAL_E2E_STACK.md](../runbooks/LOCAL_E2E_STACK.md)
 - [tool/e2e/Start-LocalE2EStack.ps1](../../tool/e2e/Start-LocalE2EStack.ps1)
-- [tool/e2e/Run-LocalE2ETests.ps1](../../tool/e2e/Run-LocalE2ETests.ps1)
+- [tool/e2e/Run-LocalPipelineIntegrationTests.ps1](../../tool/e2e/Run-LocalPipelineIntegrationTests.ps1)
 
 ### 7.2 Pipeline integration test (ground-truth validation)
 

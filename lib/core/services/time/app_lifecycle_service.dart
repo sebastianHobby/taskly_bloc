@@ -4,7 +4,8 @@ import 'package:flutter/widgets.dart';
 import 'package:taskly_domain/services.dart';
 
 /// Flutter-backed lifecycle service for app/presentation layers.
-class AppLifecycleService with WidgetsBindingObserver
+class AppLifecycleService
+    with WidgetsBindingObserver
     implements AppLifecycleEvents {
   AppLifecycleService();
 

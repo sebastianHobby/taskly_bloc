@@ -12,22 +12,24 @@ class MockSessionSharedDataService extends Mock
 
 class MockSessionDayKeyService extends Mock implements SessionDayKeyService {
   @override
-  ValueStream<DateTime> get todayDayKeyUtc => super.noSuchMethod(
-    Invocation.getter(#todayDayKeyUtc),
-    returnValue: BehaviorSubject<DateTime>(),
-    returnValueForMissingStub: BehaviorSubject<DateTime>(),
-  ) as ValueStream<DateTime>;
+  ValueStream<DateTime> get todayDayKeyUtc =>
+      super.noSuchMethod(
+            Invocation.getter(#todayDayKeyUtc),
+            returnValue: BehaviorSubject<DateTime>(),
+            returnValueForMissingStub: BehaviorSubject<DateTime>(),
+          )
+          as ValueStream<DateTime>;
 }
 
 class MockMyDaySessionQueryService extends Mock
     implements MyDaySessionQueryService {}
 
-class MockMyDayGateQueryService extends Mock
-    implements MyDayGateQueryService {}
+class MockMyDayGateQueryService extends Mock implements MyDayGateQueryService {}
 
 class MockNowService extends Mock implements NowService {}
 
-class MockTemporalTriggerService extends Mock implements TemporalTriggerService {}
+class MockTemporalTriggerService extends Mock
+    implements TemporalTriggerService {}
 
 class MockTaskSuggestionService extends Mock implements TaskSuggestionService {}
 

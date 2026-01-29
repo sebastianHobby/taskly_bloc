@@ -87,8 +87,11 @@ void main() {
       return buildBloc();
     },
     expect: () => [
-      isA<ScheduledTimelineError>()
-          .having((s) => s.message, 'message', contains('boom')),
+      isA<ScheduledTimelineError>().having(
+        (s) => s.message,
+        'message',
+        contains('boom'),
+      ),
     ],
   );
 
@@ -98,8 +101,11 @@ void main() {
     act: (bloc) => bloc.add(const ScheduledTimelineOverdueCollapsedToggled()),
     expect: () => [
       isA<ScheduledTimelineLoaded>(),
-      isA<ScheduledTimelineLoaded>()
-          .having((s) => s.overdueCollapsed, 'overdueCollapsed', true),
+      isA<ScheduledTimelineLoaded>().having(
+        (s) => s.overdueCollapsed,
+        'overdueCollapsed',
+        true,
+      ),
     ],
   );
 
@@ -112,9 +118,12 @@ void main() {
     expect: () => [
       isA<ScheduledTimelineLoaded>(),
       isA<ScheduledTimelineLoaded>()
-          .having((s) => s.scrollTargetDay, 'scrollTargetDay', DateTime(2025, 1, 15))
+          .having(
+            (s) => s.scrollTargetDay,
+            'scrollTargetDay',
+            DateTime(2025, 1, 15),
+          )
           .having((s) => s.scrollToDaySignal, 'scrollToDaySignal', 1),
     ],
   );
 }
-

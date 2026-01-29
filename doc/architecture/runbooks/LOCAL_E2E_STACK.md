@@ -19,6 +19,7 @@ The Flutter app uses entrypoint-based build-time configuration:
 1. Initialize Supabase project (already done in this repo): see `supabase/config.toml`.
 2. Create PowerSync local env file:
    - Copy `infra/powersync_local/powersync.env.example` -> `infra/powersync_local/.env`
+   - Ensure `PS_SUPABASE_JWT_SECRET` matches `supabase status -o json` (`JWT_SECRET`).
 
 ### Start stack (optionally reset DB)
 - Start without reset:
@@ -34,15 +35,15 @@ What reset does:
   - Developers can run `supabase db pull` before reset when needed.
 
 ### Run tests
-- PowerShell 7: `pwsh -File tool/e2e/Run-LocalE2ETests.ps1 -ResetDb`
-- Windows PowerShell: `powershell -File tool/e2e/Run-LocalE2ETests.ps1 -ResetDb`
+- PowerShell 7: `pwsh -File tool/e2e/Run-LocalPipelineIntegrationTests.ps1 -ResetDb`
+- Windows PowerShell: `powershell -File tool/e2e/Run-LocalPipelineIntegrationTests.ps1 -ResetDb`
 
 Notes:
 - The app's local endpoints/keys are selected via `lib/main_local.dart`.
 - PowerSync sync rules are mounted from `supabase/powersync-sync-rules.yaml`.
 
 What the test script runs:
-- `flutter test test/integration_test`
+- `flutter test integration_test/powersync_pipeline_entrypoint_test.dart -d windows`
 
 ## Schema notes (prod -> local)
 
@@ -56,7 +57,7 @@ to manually maintain schema drift.
 
 - Local PowerSync compose: `infra/powersync_local/docker-compose.yml`
 - PowerSync service config: `infra/powersync_local/config/powersync.yaml`
-- We use Supabase JWKS via Kong on the Supabase docker network (`http://kong:8000/.../jwks.json`).
+- Local auth uses the Supabase JWT secret (`PS_SUPABASE_JWT_SECRET`) from `supabase status -o json`.
 
 ## Troubleshooting
 

@@ -59,6 +59,7 @@ class WeeklyRatingWheel extends StatelessWidget {
           },
           child: Stack(
             fit: StackFit.expand,
+            clipBehavior: Clip.none,
             children: [
               CustomPaint(
                 painter: _WeeklyRatingWheelPainter(
@@ -134,7 +135,6 @@ class WeeklyRatingWheel extends StatelessWidget {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2;
     final iconRadius = radius + 18;
-    final labelRadius = radius + 38;
     final sliceAngle = (math.pi * 2) / entries.length;
     const startAngle = -math.pi / 2;
 
@@ -148,37 +148,45 @@ class WeeklyRatingWheel extends StatelessWidget {
         center.dx + math.cos(angle) * iconRadius,
         center.dy + math.sin(angle) * iconRadius,
       );
-      final labelOffset = Offset(
-        center.dx + math.cos(angle) * labelRadius,
-        center.dy + math.sin(angle) * labelRadius,
-      );
       final iconData = getIconDataFromName(entry.value.iconName) ?? Icons.star;
       final color = colors[i];
+      final isSelected = entry.value.id == selectedValueId;
+      final scale = isSelected ? 1.15 : 1.0;
+      final background = color.withValues(alpha: isSelected ? 0.2 : 0.12);
+      final border = color.withValues(alpha: isSelected ? 0.4 : 0.25);
 
       overlays.add(
         Positioned(
-          left: iconOffset.dx - tokens.spaceMd2,
-          top: iconOffset.dy - tokens.spaceMd2,
-          child: Icon(
-            iconData,
-            size: tokens.spaceMd2,
-            color: color,
-          ),
-        ),
-      );
-      overlays.add(
-        Positioned(
-          left: labelOffset.dx - 30,
-          top: labelOffset.dy - 8,
-          width: 60,
-          child: Text(
-            entry.value.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
+          left: iconOffset.dx - (tokens.spaceLg3 + tokens.spaceSm) / 2,
+          top: iconOffset.dy - (tokens.spaceLg3 + tokens.spaceSm) / 2,
+          child: Transform.scale(
+            scale: scale,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => onValueSelected(entry.value.id),
+              child: Container(
+                width: tokens.spaceLg3 + tokens.spaceSm,
+                height: tokens.spaceLg3 + tokens.spaceSm,
+                decoration: BoxDecoration(
+                  color: background,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: border),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.25),
+                            blurRadius: tokens.spaceSm,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Icon(
+                  iconData,
+                  size: tokens.spaceMd2,
+                  color: color,
+                ),
+              ),
             ),
           ),
         ),
