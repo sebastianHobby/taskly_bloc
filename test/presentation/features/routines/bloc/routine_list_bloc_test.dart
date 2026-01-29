@@ -10,17 +10,34 @@ import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/routines/bloc/routine_list_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
+import 'package:taskly_domain/services.dart';
+
+class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);
 
   late MockRoutineRepositoryContract routineRepository;
-  late MockSessionDayKeyService sessionDayKeyService;
-  late MockSessionSharedDataService sharedDataService;
-  late MockRoutineWriteService routineWriteService;
+  late SessionDayKeyService sessionDayKeyService;
+  late SessionSharedDataService sharedDataService;
+  late RoutineWriteService routineWriteService;
+  late SessionStreamCacheManager cacheManager;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
+  late MockAppLifecycleEvents appLifecycleEvents;
+  late MockHomeDayKeyService dayKeyService;
+  late MockTemporalTriggerService temporalTriggerService;
+  late MockValueRepositoryContract valueRepository;
+  late MockTaskRepositoryContract taskRepository;
+  late MockProjectRepositoryContract projectRepository;
   late MockNowService nowService;
   late AppErrorReporter errorReporter;
 
@@ -28,7 +45,7 @@ void main() {
   late BehaviorSubject<List<RoutineCompletion>> completionsSubject;
   late BehaviorSubject<List<RoutineSkip>> skipsSubject;
   late BehaviorSubject<List<Value>> valuesSubject;
-  late BehaviorSubject<DateTime> dayKeySubject;
+  late TestStreamController<TemporalTriggerEvent> temporalController;
 
   RoutineListBloc buildBloc() {
     return RoutineListBloc(
@@ -43,9 +60,24 @@ void main() {
 
   setUp(() {
     routineRepository = MockRoutineRepositoryContract();
-    sessionDayKeyService = MockSessionDayKeyService();
-    sharedDataService = MockSessionSharedDataService();
-    routineWriteService = MockRoutineWriteService();
+    dayKeyService = MockHomeDayKeyService();
+    temporalTriggerService = MockTemporalTriggerService();
+    valueRepository = MockValueRepositoryContract();
+    taskRepository = MockTaskRepositoryContract();
+    projectRepository = MockProjectRepositoryContract();
+    appLifecycleEvents = MockAppLifecycleEvents();
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: appLifecycleEvents,
+    );
+    sessionDayKeyService = SessionDayKeyService(
+      dayKeyService: dayKeyService,
+      temporalTriggerService: temporalTriggerService,
+    );
+    routineWriteService = RoutineWriteService(
+      routineRepository: routineRepository,
+    );
     nowService = MockNowService();
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
@@ -55,7 +87,17 @@ void main() {
     completionsSubject = BehaviorSubject<List<RoutineCompletion>>();
     skipsSubject = BehaviorSubject<List<RoutineSkip>>();
     valuesSubject = BehaviorSubject<List<Value>>();
-    dayKeySubject = BehaviorSubject<DateTime>();
+    temporalController = TestStreamController.seeded(const AppResumed());
+
+    when(() => appLifecycleEvents.events).thenAnswer(
+      (_) => const Stream<AppLifecycleEvent>.empty(),
+    );
+    when(() => temporalTriggerService.events).thenAnswer(
+      (_) => temporalController.stream,
+    );
+    when(
+      () => dayKeyService.todayDayKeyUtc(),
+    ).thenReturn(DateTime.utc(2025, 1, 15));
 
     when(
       () => routineRepository.getAll(includeInactive: true),
@@ -72,20 +114,30 @@ void main() {
     when(() => routineRepository.watchSkips()).thenAnswer(
       (_) => skipsSubject.stream,
     );
-    when(() => sharedDataService.watchValues()).thenAnswer(
+    when(() => valueRepository.watchAll()).thenAnswer(
       (_) => valuesSubject.stream,
-    );
-    when(() => sessionDayKeyService.todayDayKeyUtc).thenReturn(
-      dayKeySubject.stream,
     );
 
     when(() => nowService.nowUtc()).thenReturn(DateTime.utc(2025, 1, 15, 12));
+
+    sharedDataService = SessionSharedDataService(
+      cacheManager: cacheManager,
+      valueRepository: valueRepository,
+      projectRepository: projectRepository,
+      taskRepository: taskRepository,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
+    );
+    sessionDayKeyService.start();
 
     addTearDown(routinesSubject.close);
     addTearDown(completionsSubject.close);
     addTearDown(skipsSubject.close);
     addTearDown(valuesSubject.close);
-    addTearDown(dayKeySubject.close);
+    addTearDown(temporalController.close);
+    addTearDown(sessionDayKeyService.dispose);
+    addTearDown(cacheManager.dispose);
+    addTearDown(demoModeService.dispose);
   });
 
   blocTestSafe<RoutineListBloc, RoutineListState>(
@@ -93,7 +145,6 @@ void main() {
     build: buildBloc,
     act: (bloc) {
       bloc.add(const RoutineListEvent.subscriptionRequested());
-      dayKeySubject.add(DateTime.utc(2025, 1, 15));
       routinesSubject.add(_sampleRoutines());
       completionsSubject.add(const []);
       skipsSubject.add(const []);

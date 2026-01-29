@@ -23,10 +23,6 @@ class MockSettingsRepository extends Mock
 
 class MockValueRepository extends Mock implements ValueRepositoryContract {}
 
-class MockValueWriteService extends Mock implements ValueWriteService {}
-
-class MockErrorReporter extends Mock implements AppErrorReporter {}
-
 class MockGlobalSettingsBloc
     extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
     implements GlobalSettingsBloc {}
@@ -44,8 +40,8 @@ void main() {
   late MockAuthRepository authRepository;
   late MockSettingsRepository settingsRepository;
   late MockValueRepository valueRepository;
-  late MockValueWriteService valueWriteService;
-  late MockErrorReporter errorReporter;
+  late ValueWriteService valueWriteService;
+  late AppErrorReporter errorReporter;
   late MockGlobalSettingsBloc globalSettingsBloc;
   late MockGuidedTourBloc guidedTourBloc;
 
@@ -53,15 +49,17 @@ void main() {
     authRepository = MockAuthRepository();
     settingsRepository = MockSettingsRepository();
     valueRepository = MockValueRepository();
-    valueWriteService = MockValueWriteService();
-    errorReporter = MockErrorReporter();
+    valueWriteService = ValueWriteService(valueRepository: valueRepository);
+    errorReporter = AppErrorReporter(
+      messengerKey: GlobalKey<ScaffoldMessengerState>(),
+    );
     globalSettingsBloc = MockGlobalSettingsBloc();
     guidedTourBloc = MockGuidedTourBloc();
 
     when(() => globalSettingsBloc.state).thenReturn(
       const GlobalSettingsState(isLoading: false),
     );
-    when(() => guidedTourBloc.state).thenReturn(const GuidedTourState());
+    when(() => guidedTourBloc.state).thenReturn(GuidedTourState.initial());
   });
 
   Future<void> pumpPage(WidgetTester tester) async {
@@ -99,7 +97,7 @@ void main() {
   });
 
   testWidgetsSafe('shows loading state while saving name', (tester) async {
-    final completer = Completer<void>();
+    final completer = Completer<UserUpdateResponse>();
     when(
       () => authRepository.updateUserProfile(
         displayName: any(named: 'displayName'),
@@ -120,7 +118,7 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-    completer.complete();
+    completer.complete(const UserUpdateResponse());
   });
 
   testWidgetsSafe('shows error snack bar when name save fails', (tester) async {

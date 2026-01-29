@@ -215,7 +215,7 @@ void main() {
 
       final hasAll = ValueRule(
         operator: ValueRuleOperator.hasAll,
-        valueIds: const ['urgent', 'work'],
+        valueIds: const ['urgent'],
       );
       final hasAny = ValueRule(
         operator: ValueRuleOperator.hasAny,

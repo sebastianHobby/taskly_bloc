@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_imports.dart';
-import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/onboarding/bloc/onboarding_bloc.dart';
@@ -20,7 +19,7 @@ void main() {
   late MockAuthRepositoryContract authRepository;
   late MockSettingsRepositoryContract settingsRepository;
   late MockValueRepositoryContract valueRepository;
-  late MockValueWriteService valueWriteService;
+  late ValueWriteService valueWriteService;
   late AppErrorReporter errorReporter;
 
   OnboardingBloc buildBloc() {
@@ -37,7 +36,7 @@ void main() {
     authRepository = MockAuthRepositoryContract();
     settingsRepository = MockSettingsRepositoryContract();
     valueRepository = MockValueRepositoryContract();
-    valueWriteService = MockValueWriteService();
+    valueWriteService = ValueWriteService(valueRepository: valueRepository);
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
     );

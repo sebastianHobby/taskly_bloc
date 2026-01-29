@@ -332,6 +332,45 @@ Normative rules:
 - Form UI wrappers may live in `taskly_ui` as thin adapters only.
 - Domain validators are pure functions; UI maps errors to localized strings.
 
+### 2.1.2 Input commit boundary (strict)
+
+Widgets own draft UI state; writes are committed explicitly or debounced.
+
+Normative rules:
+
+- Widgets may own draft UI state (FormBuilder state, controllers, slider
+  positions, temporary selections).
+- Widgets must **not** trigger repository/service writes on every
+  `onChanged`/tick.
+- Writes must occur only on:
+  - explicit commit events (Save / Next / Done / Submit / Complete), or
+  - a debounced idle window (e.g., 300–500ms) for text inputs.
+- BLoC write events must represent explicit user intent and should be
+  serialized (see reactive lifecycle rules).
+
+Rationale:
+
+- Prevents write storms and race conditions on PowerSync-backed tables.
+- Keeps intent boundaries explicit and UX predictable.
+
+### 2.1.3 Input event shaping (strict)
+
+High-frequency UI inputs must be shaped before becoming writes.
+
+Normative rules:
+
+- Text inputs: debounce before commit or commit on explicit submit.
+- Sliders: commit on `onChangeEnd` or explicit CTA.
+- Rapid toggles: use `droppable()` or `sequential()` for commit events.
+
+Allowed:
+
+- Frequent draft updates in widget/BLoC state.
+
+Forbidden:
+
+- Writes per keystroke or per slider tick.
+
 ### 2.2 `taskly_ui` shared surface governance (strict)
 
 Changes to `packages/taskly_ui` are governed by shared-surface rules.

@@ -5,40 +5,91 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../helpers/test_imports.dart';
-import '../../../mocks/presentation_mocks.dart';
+import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/services/my_day_gate_query_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_domain/services.dart';
+
+class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);
 
-  late MockMyDayGateQueryService queryService;
-  late BehaviorSubject<bool> subject;
+  late MyDayGateQueryService queryService;
+  late MockAppLifecycleEvents appLifecycleEvents;
+  late MockValueRepositoryContract valueRepository;
+  late MockTaskRepositoryContract taskRepository;
+  late MockProjectRepositoryContract projectRepository;
+  late SessionStreamCacheManager cacheManager;
+  late SessionSharedDataService sharedDataService;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
+  late BehaviorSubject<List<Value>> valuesSubject;
 
   setUp(() {
-    queryService = MockMyDayGateQueryService();
-    subject = BehaviorSubject<bool>();
-    when(() => queryService.watchNeedsValuesSetup()).thenAnswer(
-      (_) => subject.stream,
+    appLifecycleEvents = MockAppLifecycleEvents();
+    valueRepository = MockValueRepositoryContract();
+    taskRepository = MockTaskRepositoryContract();
+    projectRepository = MockProjectRepositoryContract();
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
+    valuesSubject = BehaviorSubject<List<Value>>.seeded(const <Value>[]);
+
+    when(() => appLifecycleEvents.events).thenAnswer(
+      (_) => const Stream<AppLifecycleEvent>.empty(),
     );
-    addTearDown(subject.close);
+    when(() => valueRepository.getAll()).thenAnswer(
+      (_) async => valuesSubject.valueOrNull ?? const <Value>[],
+    );
+    when(() => valueRepository.watchAll()).thenAnswer(
+      (_) => valuesSubject.stream,
+    );
+
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: appLifecycleEvents,
+    );
+    sharedDataService = SessionSharedDataService(
+      cacheManager: cacheManager,
+      valueRepository: valueRepository,
+      projectRepository: projectRepository,
+      taskRepository: taskRepository,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
+    );
+
+    queryService = MyDayGateQueryService(
+      valueRepository: valueRepository,
+      sharedDataService: sharedDataService,
+      demoModeService: demoModeService,
+    );
+
+    addTearDown(valuesSubject.close);
+    addTearDown(cacheManager.dispose);
+    addTearDown(demoModeService.dispose);
   });
 
   blocTestSafe<MyDayGateBloc, MyDayGateState>(
     'emits loaded state when prerequisites stream emits',
     build: () => MyDayGateBloc(queryService: queryService),
-    act: (_) => subject.add(true),
+    act: (_) => valuesSubject.add(const <Value>[]),
     expect: () => [const MyDayGateLoaded(needsValuesSetup: true)],
   );
 
   blocTestSafe<MyDayGateBloc, MyDayGateState>(
     'retry emits loading then loaded',
-    build: () => MyDayGateBloc(queryService: queryService),
+    build: () {
+      valuesSubject.add([TestData.value(id: 'value-1', name: 'Health')]);
+      return MyDayGateBloc(queryService: queryService);
+    },
     act: (bloc) async {
-      subject.add(false);
       await Future<void>.delayed(const Duration(milliseconds: 10));
       bloc.add(const MyDayGateRetryRequested());
-      subject.add(true);
+      valuesSubject.add(const <Value>[]);
     },
     expect: () => [
       const MyDayGateLoaded(needsValuesSetup: false),

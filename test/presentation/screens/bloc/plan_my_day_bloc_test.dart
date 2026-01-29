@@ -8,6 +8,8 @@ import '../../../helpers/test_imports.dart';
 import '../../../mocks/presentation_mocks.dart';
 import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/my_day.dart' as my_day;
@@ -16,6 +18,12 @@ import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart' as settings;
+
+class MockAllocationOrchestrator extends Mock
+    implements AllocationOrchestrator {}
+
+class MockOccurrenceCommandService extends Mock
+    implements OccurrenceCommandService {}
 
 void main() {
   setUpAll(() {
@@ -26,29 +34,36 @@ void main() {
 
   late MockSettingsRepositoryContract settingsRepository;
   late MockMyDayRepositoryContract myDayRepository;
-  late MockTaskSuggestionService taskSuggestionService;
+  late TaskSuggestionService taskSuggestionService;
+  late MockAllocationOrchestrator allocationOrchestrator;
   late MockTaskRepositoryContract taskRepository;
+  late MockProjectRepositoryContract projectRepository;
   late MockRoutineRepositoryContract routineRepository;
-  late MockTaskWriteService taskWriteService;
-  late MockRoutineWriteService routineWriteService;
+  late TaskWriteService taskWriteService;
+  late RoutineWriteService routineWriteService;
+  late MockOccurrenceCommandService occurrenceCommandService;
   late MockHomeDayKeyService dayKeyService;
   late MockTemporalTriggerService temporalTriggerService;
   late MockNowService nowService;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
   late BehaviorSubject<TemporalTriggerEvent> temporalSubject;
 
-  const dayKey = DateTime.utc(2025, 1, 15);
+  final dayKey = DateTime.utc(2025, 1, 15);
 
   setUp(() {
     settingsRepository = MockSettingsRepositoryContract();
     myDayRepository = MockMyDayRepositoryContract();
-    taskSuggestionService = MockTaskSuggestionService();
+    allocationOrchestrator = MockAllocationOrchestrator();
     taskRepository = MockTaskRepositoryContract();
+    projectRepository = MockProjectRepositoryContract();
     routineRepository = MockRoutineRepositoryContract();
-    taskWriteService = MockTaskWriteService();
-    routineWriteService = MockRoutineWriteService();
+    occurrenceCommandService = MockOccurrenceCommandService();
     dayKeyService = MockHomeDayKeyService();
     temporalTriggerService = MockTemporalTriggerService();
     nowService = MockNowService();
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
     temporalSubject = BehaviorSubject<TemporalTriggerEvent>();
 
     when(() => dayKeyService.todayDayKeyUtc()).thenReturn(dayKey);
@@ -80,28 +95,46 @@ void main() {
     when(() => routineRepository.getCompletions()).thenAnswer((_) async => []);
     when(() => routineRepository.getSkips()).thenAnswer((_) async => []);
 
+    final defaultAllocation = AllocationResult(
+      allocatedTasks: const <AllocatedTask>[],
+      reasoning: const AllocationReasoning(
+        strategyUsed: 'none',
+        categoryAllocations: {},
+        categoryWeights: {},
+        explanation: 'test',
+      ),
+      excludedTasks: const <ExcludedTask>[],
+    );
     when(
-      () => taskSuggestionService.getSnapshot(
-        dueWindowDays: any(named: 'dueWindowDays'),
-        includeDueSoon: any(named: 'includeDueSoon'),
-        includeAvailableToStart: any(named: 'includeAvailableToStart'),
+      () => allocationOrchestrator.getSuggestedSnapshot(
         batchCount: any(named: 'batchCount'),
-        suggestedTargetCount: any(named: 'suggestedTargetCount'),
-        tasksOverride: any(named: 'tasksOverride'),
-        routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
         nowUtc: any(named: 'nowUtc'),
+        routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
       ),
-    ).thenAnswer(
-      (_) async => TaskSuggestionSnapshot(
-        dayKeyUtc: dayKey,
-        suggested: const <SuggestedTask>[],
-        dueSoonNotSuggested: const <Task>[],
-        availableToStartNotSuggested: const <Task>[],
-        snoozed: const <Task>[],
-        requiresValueSetup: false,
-        requiresRatings: false,
-        neglectDeficits: const {},
+    ).thenAnswer((_) async => defaultAllocation);
+    when(
+      () => allocationOrchestrator.getSuggestedSnapshotForTargetCount(
+        suggestedTaskTarget: any(named: 'suggestedTaskTarget'),
+        nowUtc: any(named: 'nowUtc'),
+        routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
       ),
+    ).thenAnswer((_) async => defaultAllocation);
+
+    taskSuggestionService = TaskSuggestionService(
+      allocationOrchestrator: allocationOrchestrator,
+      taskRepository: taskRepository,
+      dayKeyService: dayKeyService,
+    );
+
+    taskWriteService = TaskWriteService(
+      taskRepository: taskRepository,
+      projectRepository: projectRepository,
+      allocationOrchestrator: allocationOrchestrator,
+      occurrenceCommandService: occurrenceCommandService,
+    );
+
+    routineWriteService = RoutineWriteService(
+      routineRepository: routineRepository,
     );
 
     addTearDown(temporalSubject.close);
@@ -119,6 +152,8 @@ void main() {
       dayKeyService: dayKeyService,
       temporalTriggerService: temporalTriggerService,
       nowService: nowService,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
     );
   }
 
@@ -131,39 +166,42 @@ void main() {
   blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
     'advances to next step when requested',
     build: () {
-      when(
-        () => taskSuggestionService.getSnapshot(
-          dueWindowDays: any(named: 'dueWindowDays'),
-          includeDueSoon: any(named: 'includeDueSoon'),
-          includeAvailableToStart: any(named: 'includeAvailableToStart'),
-          batchCount: any(named: 'batchCount'),
-          suggestedTargetCount: any(named: 'suggestedTargetCount'),
-          tasksOverride: any(named: 'tasksOverride'),
-          routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
-          nowUtc: any(named: 'nowUtc'),
+      final value = TestData.value(id: 'value-1', name: 'Health');
+      final task = TestData.task(id: 'task-1', values: [value]);
+      when(() => taskRepository.getAll(any())).thenAnswer((_) async => [task]);
+
+      final allocation = AllocationResult(
+        allocatedTasks: [
+          AllocatedTask(
+            task: task,
+            qualifyingValueId: value.id,
+            allocationScore: 0.9,
+            reasonCodes: const [],
+          ),
+        ],
+        reasoning: AllocationReasoning(
+          strategyUsed: 'test',
+          categoryAllocations: const {},
+          categoryWeights: const {},
+          explanation: 'test',
+          neglectDeficits: {value.id: 0.0},
         ),
-      ).thenAnswer(
-        (_) async => TaskSuggestionSnapshot(
-          dayKeyUtc: dayKey,
-          suggested: [
-            SuggestedTask(
-              task: TestData.task(
-                id: 'task-1',
-                values: [TestData.value(id: 'value-1', name: 'Health')],
-              ),
-              rank: 1,
-              qualifyingValueId: 'value-1',
-              reasonCodes: const [],
-            ),
-          ],
-          dueSoonNotSuggested: const <Task>[],
-          availableToStartNotSuggested: const <Task>[],
-          snoozed: const <Task>[],
-          requiresValueSetup: false,
-          requiresRatings: false,
-          neglectDeficits: const {'value-1': 0.0},
-        ),
+        excludedTasks: const <ExcludedTask>[],
       );
+      when(
+        () => allocationOrchestrator.getSuggestedSnapshot(
+          batchCount: any(named: 'batchCount'),
+          nowUtc: any(named: 'nowUtc'),
+          routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+        ),
+      ).thenAnswer((_) async => allocation);
+      when(
+        () => allocationOrchestrator.getSuggestedSnapshotForTargetCount(
+          suggestedTaskTarget: any(named: 'suggestedTaskTarget'),
+          nowUtc: any(named: 'nowUtc'),
+          routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+        ),
+      ).thenAnswer((_) async => allocation);
       return buildBloc();
     },
     act: (bloc) => bloc.add(const PlanMyDayStepNextRequested()),

@@ -22,6 +22,8 @@ import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.d
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_allocation_cache_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -73,6 +75,8 @@ void main() {
   late SessionDayKeyService sessionDayKeyService;
   late MyDayQueryService myDayQueryService;
   late MyDayRitualStatusService myDayRitualStatusService;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
   late MockAllocationOrchestrator allocationOrchestrator;
   late MockOccurrenceCommandService occurrenceCommandService;
   late MockNowService nowService;
@@ -123,6 +127,8 @@ void main() {
     settingsRepository = MockSettingsRepositoryContract();
     editorLauncher = MockEditorLauncher();
     globalSettingsBloc = MockGlobalSettingsBloc();
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
 
     valuesSubject = BehaviorSubject<List<Value>>.seeded(defaultValues);
     tasksSubject = BehaviorSubject<List<Task>>.seeded(const <Task>[]);
@@ -317,6 +323,8 @@ void main() {
       valueRepository: valueRepository,
       projectRepository: projectRepository,
       taskRepository: taskRepository,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
     );
 
     sessionAllocationCacheService = SessionAllocationCacheService(
@@ -344,6 +352,8 @@ void main() {
       temporalTriggerService: temporalTriggerService,
       allocationCacheService: sessionAllocationCacheService,
       sharedDataService: sessionSharedDataService,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
     );
 
     myDaySessionQueryService = MyDaySessionQueryService(
@@ -354,6 +364,7 @@ void main() {
     myDayGateQueryService = MyDayGateQueryService(
       valueRepository: valueRepository,
       sharedDataService: sessionSharedDataService,
+      demoModeService: demoModeService,
     );
 
     const globalState = GlobalSettingsState(
@@ -377,6 +388,7 @@ void main() {
     addTearDown(() async => appLifecycleController.close());
     addTearDown(sessionDayKeyService.dispose);
     addTearDown(sessionStreamCacheManager.dispose);
+    addTearDown(demoModeService.dispose);
     addTearDown(globalSettingsBloc.close);
   });
 
@@ -416,6 +428,7 @@ void main() {
           value: routineRepository,
         ),
         RepositoryProvider<TaskWriteService>.value(value: taskWriteService),
+        RepositoryProvider<DemoModeService>.value(value: demoModeService),
         RepositoryProvider<TemporalTriggerService>.value(
           value: temporalTriggerService,
         ),

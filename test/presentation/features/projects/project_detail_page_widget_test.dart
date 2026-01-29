@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../helpers/test_imports.dart';
+import '../../../mocks/presentation_mocks.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
@@ -20,8 +21,6 @@ class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
 class MockProjectNextActionsRepository extends Mock
     implements ProjectNextActionsRepositoryContract {}
-
-class MockSessionDayKeyService extends Mock implements SessionDayKeyService {}
 
 class MockEditorLauncher extends Mock implements EditorLauncher {}
 
@@ -46,11 +45,13 @@ void main() {
   late MockSettingsRepository settingsRepository;
   late OccurrenceReadService occurrenceReadService;
   late MockProjectNextActionsRepository nextActionsRepository;
-  late MockSessionDayKeyService sessionDayKeyService;
+  late SessionDayKeyService sessionDayKeyService;
+  late MockHomeDayKeyService dayKeyService;
+  late MockTemporalTriggerService temporalTriggerService;
   late MockEditorLauncher editorLauncher;
   late MockGlobalSettingsBloc globalSettingsBloc;
 
-  late BehaviorSubject<DateTime> dayKeySubject;
+  late TestStreamController<TemporalTriggerEvent> temporalController;
   late BehaviorSubject<Project?> projectSubject;
   late BehaviorSubject<List<Task>> tasksSubject;
   late BehaviorSubject<List<ProjectNextAction>> nextActionsSubject;
@@ -64,17 +65,22 @@ void main() {
     occurrenceReadService = OccurrenceReadService(
       taskRepository: taskRepository,
       projectRepository: projectRepository,
-      homeDayKeyService: HomeDayKeyService(
+      dayKeyService: HomeDayKeyService(
         settingsRepository: settingsRepository,
         clock: _FakeClock(DateTime.utc(2025, 1, 15)),
       ),
     );
     nextActionsRepository = MockProjectNextActionsRepository();
-    sessionDayKeyService = MockSessionDayKeyService();
+    dayKeyService = MockHomeDayKeyService();
+    temporalTriggerService = MockTemporalTriggerService();
+    sessionDayKeyService = SessionDayKeyService(
+      dayKeyService: dayKeyService,
+      temporalTriggerService: temporalTriggerService,
+    );
     editorLauncher = MockEditorLauncher();
     globalSettingsBloc = MockGlobalSettingsBloc();
 
-    dayKeySubject = BehaviorSubject<DateTime>.seeded(DateTime.utc(2025, 1, 15));
+    temporalController = TestStreamController.seeded(const AppResumed());
     projectSubject = BehaviorSubject<Project?>();
     tasksSubject = BehaviorSubject<List<Task>>.seeded(const <Task>[]);
     nextActionsSubject = BehaviorSubject<List<ProjectNextAction>>.seeded(
@@ -91,7 +97,13 @@ void main() {
       const GlobalSettingsState(isLoading: false),
     );
 
-    when(() => sessionDayKeyService.todayDayKeyUtc).thenReturn(dayKeySubject);
+    when(() => temporalTriggerService.events).thenAnswer(
+      (_) => temporalController.stream,
+    );
+    when(
+      () => dayKeyService.todayDayKeyUtc(),
+    ).thenReturn(DateTime.utc(2025, 1, 15));
+    sessionDayKeyService.start();
     when(
       () => projectRepository.watchById(any()),
     ).thenAnswer((_) => projectSubject.stream);
@@ -110,7 +122,8 @@ void main() {
   });
 
   tearDown(() async {
-    await dayKeySubject.close();
+    await temporalController.close();
+    await sessionDayKeyService.dispose();
     await projectSubject.close();
     await tasksSubject.close();
     await nextActionsSubject.close();

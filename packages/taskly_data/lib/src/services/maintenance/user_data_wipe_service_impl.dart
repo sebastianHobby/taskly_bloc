@@ -22,9 +22,7 @@ final class PowerSyncUserDataWipeService implements UserDataWipeService {
   static const Duration _pollInterval = Duration(milliseconds: 350);
 
   @override
-  Future<void> wipeAllUserData({
-    Duration timeout = _defaultTimeout,
-  }) async {
+  Future<void> wipeAllUserData({Duration timeout = _defaultTimeout}) async {
     if (!_syncDb.connected) {
       throw StateError('PowerSync is not connected; cannot upload deletions.');
     }
@@ -89,7 +87,8 @@ final class PowerSyncUserDataWipeService implements UserDataWipeService {
   }
 
   Future<void> _deleteAll(String table) {
-    return _driftDb.customStatement('DELETE FROM $table');
+    final escaped = table.replaceAll('"', '""');
+    return _driftDb.customStatement('DELETE FROM "$escaped"');
   }
 
   Future<void> _waitForUploadQueue({required Duration timeout}) async {

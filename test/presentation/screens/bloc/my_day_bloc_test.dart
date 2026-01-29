@@ -2,55 +2,143 @@
 library;
 
 import 'package:mocktail/mocktail.dart';
-import 'package:rxdart/rxdart.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/presentation_mocks.dart';
+import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
-import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
-import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/my_day.dart';
+import 'package:taskly_bloc/presentation/screens/services/my_day_query_service.dart';
+import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_allocation_cache_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_domain/allocation.dart';
+import 'package:taskly_domain/services.dart';
+
+class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
+
+class MockAllocationOrchestrator extends Mock
+    implements AllocationOrchestrator {}
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);
 
-  late MockMyDaySessionQueryService queryService;
-  late MockRoutineWriteService routineWriteService;
+  late MyDaySessionQueryService queryService;
+  late MyDayQueryService myDayQueryService;
+  late SessionStreamCacheManager cacheManager;
+  late SessionSharedDataService sharedDataService;
+  late SessionAllocationCacheService allocationCacheService;
+  late SessionDayKeyService sessionDayKeyService;
+  late MyDayRitualStatusService ritualStatusService;
+  late DemoModeService queryDemoModeService;
+  late DemoModeService blocDemoModeService;
+  late DemoDataProvider demoDataProvider;
+  late MockAppLifecycleEvents appLifecycleEvents;
+  late MockHomeDayKeyService dayKeyService;
+  late MockTemporalTriggerService temporalTriggerService;
+  late MockTaskRepositoryContract taskRepository;
+  late MockMyDayRepositoryContract myDayRepository;
+  late MockRoutineRepositoryContract routineRepository;
+  late MockValueRepositoryContract valueRepository;
+  late MockProjectRepositoryContract projectRepository;
+  late MockProjectNextActionsRepositoryContract projectNextActionsRepository;
+  late MockProjectAnchorStateRepositoryContract projectAnchorStateRepository;
+  late MockSettingsRepositoryContract settingsRepository;
+  late RoutineWriteService routineWriteService;
   late MockNowService nowService;
-  late BehaviorSubject<MyDayViewModel> subject;
-
-  MyDayViewModel buildViewModel() {
-    final dayKey = DateTime(2025, 1, 15);
-    final ritual = MyDayRitualStatus.fromDayPicks(
-      MyDayDayPicks(
-        dayKeyUtc: dayKey,
-        ritualCompletedAtUtc: null,
-        picks: const <MyDayPick>[],
-      ),
-    );
-    return MyDayViewModel(
-      tasks: const <Task>[],
-      plannedItems: const <MyDayPlannedItem>[],
-      ritualStatus: ritual,
-      summary: const MyDaySummary(doneCount: 0, totalCount: 0),
-      mix: MyDayMixVm.empty,
-      pinnedTasks: const <Task>[],
-      completedPicks: const <Task>[],
-      selectedTotalCount: 0,
-      todaySelectedTaskIds: const <String>{},
-      todaySelectedRoutineIds: const <String>{},
-    );
-  }
 
   setUp(() {
-    queryService = MockMyDaySessionQueryService();
-    routineWriteService = MockRoutineWriteService();
+    appLifecycleEvents = MockAppLifecycleEvents();
+    dayKeyService = MockHomeDayKeyService();
+    temporalTriggerService = MockTemporalTriggerService();
+    taskRepository = MockTaskRepositoryContract();
+    myDayRepository = MockMyDayRepositoryContract();
+    routineRepository = MockRoutineRepositoryContract();
+    valueRepository = MockValueRepositoryContract();
+    projectRepository = MockProjectRepositoryContract();
+    projectNextActionsRepository = MockProjectNextActionsRepositoryContract();
+    projectAnchorStateRepository = MockProjectAnchorStateRepositoryContract();
+    settingsRepository = MockSettingsRepositoryContract();
     nowService = MockNowService();
-    subject = BehaviorSubject<MyDayViewModel>.seeded(buildViewModel());
-    when(() => queryService.viewModel).thenReturn(subject);
+
+    queryDemoModeService = DemoModeService()..enable();
+    blocDemoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
+
+    when(() => appLifecycleEvents.events).thenAnswer(
+      (_) => const Stream<AppLifecycleEvent>.empty(),
+    );
+    when(() => temporalTriggerService.events).thenAnswer(
+      (_) => const Stream<TemporalTriggerEvent>.empty(),
+    );
+    when(
+      () => dayKeyService.todayDayKeyUtc(),
+    ).thenReturn(DateTime.utc(2025, 1, 15));
     when(() => nowService.nowUtc()).thenReturn(DateTime.utc(2025, 1, 15, 12));
-    addTearDown(subject.close);
+    when(() => nowService.nowLocal()).thenReturn(DateTime(2025, 1, 15, 12));
+
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: appLifecycleEvents,
+    );
+    sessionDayKeyService = SessionDayKeyService(
+      dayKeyService: dayKeyService,
+      temporalTriggerService: temporalTriggerService,
+    );
+
+    sharedDataService = SessionSharedDataService(
+      cacheManager: cacheManager,
+      valueRepository: valueRepository,
+      projectRepository: projectRepository,
+      taskRepository: taskRepository,
+      demoModeService: queryDemoModeService,
+      demoDataProvider: demoDataProvider,
+    );
+
+    allocationCacheService = SessionAllocationCacheService(
+      cacheManager: cacheManager,
+      sessionDayKeyService: sessionDayKeyService,
+      allocationOrchestrator: MockAllocationOrchestrator(),
+      taskRepository: taskRepository,
+      projectRepository: projectRepository,
+      projectNextActionsRepository: projectNextActionsRepository,
+      projectAnchorStateRepository: projectAnchorStateRepository,
+      settingsRepository: settingsRepository,
+      valueRepository: valueRepository,
+    );
+
+    ritualStatusService = MyDayRitualStatusService(
+      myDayRepository: myDayRepository,
+    );
+
+    myDayQueryService = MyDayQueryService(
+      taskRepository: taskRepository,
+      myDayRepository: myDayRepository,
+      ritualStatusService: ritualStatusService,
+      routineRepository: routineRepository,
+      dayKeyService: dayKeyService,
+      temporalTriggerService: temporalTriggerService,
+      allocationCacheService: allocationCacheService,
+      sharedDataService: sharedDataService,
+      demoModeService: queryDemoModeService,
+      demoDataProvider: demoDataProvider,
+    );
+
+    queryService = MyDaySessionQueryService(
+      queryService: myDayQueryService,
+      cacheManager: cacheManager,
+    );
+
+    routineWriteService = RoutineWriteService(
+      routineRepository: routineRepository,
+    );
+
+    addTearDown(cacheManager.dispose);
+    addTearDown(queryDemoModeService.dispose);
+    addTearDown(blocDemoModeService.dispose);
   });
 
   blocTestSafe<MyDayBloc, MyDayState>(
@@ -59,6 +147,7 @@ void main() {
       queryService: queryService,
       routineWriteService: routineWriteService,
       nowService: nowService,
+      demoModeService: blocDemoModeService,
     ),
     expect: () => [isA<MyDayLoaded>()],
   );
@@ -67,7 +156,7 @@ void main() {
     'records routine completion when toggled to complete',
     build: () {
       when(
-        () => routineWriteService.recordCompletion(
+        () => routineRepository.recordCompletion(
           routineId: any(named: 'routineId'),
           completedAtUtc: any(named: 'completedAtUtc'),
           context: any(named: 'context'),
@@ -77,6 +166,7 @@ void main() {
         queryService: queryService,
         routineWriteService: routineWriteService,
         nowService: nowService,
+        demoModeService: blocDemoModeService,
       );
     },
     act: (bloc) => bloc.add(
@@ -88,7 +178,7 @@ void main() {
     ),
     verify: (_) {
       verify(
-        () => routineWriteService.recordCompletion(
+        () => routineRepository.recordCompletion(
           routineId: 'routine-1',
           completedAtUtc: DateTime.utc(2025, 1, 15, 12),
           context: any(named: 'context'),

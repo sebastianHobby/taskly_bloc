@@ -8,8 +8,15 @@ import '../../../../mocks/feature_mocks.dart';
 import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/values_hero_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/services.dart';
+
+class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
 void main() {
   setUpAll(() {
@@ -20,7 +27,13 @@ void main() {
 
   late MockAnalyticsService analyticsService;
   late MockValueRepositoryContract valueRepository;
-  late MockSessionSharedDataService sharedDataService;
+  late SessionSharedDataService sharedDataService;
+  late SessionStreamCacheManager cacheManager;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
+  late MockAppLifecycleEvents appLifecycleEvents;
+  late MockTaskRepositoryContract taskRepository;
+  late MockProjectRepositoryContract projectRepository;
   late MockNowService nowService;
   late TestStreamController<List<Value>> valuesController;
 
@@ -37,7 +50,11 @@ void main() {
   setUp(() {
     analyticsService = MockAnalyticsService();
     valueRepository = MockValueRepositoryContract();
-    sharedDataService = MockSessionSharedDataService();
+    taskRepository = MockTaskRepositoryContract();
+    projectRepository = MockProjectRepositoryContract();
+    appLifecycleEvents = MockAppLifecycleEvents();
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
     nowService = MockNowService();
     valuesController = TestStreamController.seeded([
       TestData.value(id: 'v1', name: 'Purpose', priority: ValuePriority.high),
@@ -47,7 +64,10 @@ void main() {
     when(() => valueRepository.getAll()).thenAnswer(
       (_) async => valuesController.value ?? const <Value>[],
     );
-    when(() => sharedDataService.watchValues()).thenAnswer(
+    when(() => appLifecycleEvents.events).thenAnswer(
+      (_) => const Stream<AppLifecycleEvent>.empty(),
+    );
+    when(() => valueRepository.watchAll()).thenAnswer(
       (_) => valuesController.stream,
     );
     when(
@@ -59,7 +79,21 @@ void main() {
       },
     );
 
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: appLifecycleEvents,
+    );
+    sharedDataService = SessionSharedDataService(
+      cacheManager: cacheManager,
+      valueRepository: valueRepository,
+      projectRepository: projectRepository,
+      taskRepository: taskRepository,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
+    );
+
     addTearDown(valuesController.close);
+    addTearDown(cacheManager.dispose);
+    addTearDown(demoModeService.dispose);
   });
 
   blocTestSafe<ValuesHeroBloc, ValuesHeroState>(

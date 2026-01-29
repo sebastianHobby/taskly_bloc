@@ -25,8 +25,6 @@ class FakeNowService implements NowService {
   DateTime nowUtc() => now.toUtc();
 }
 
-class MockErrorReporter extends Mock implements AppErrorReporter {}
-
 void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
@@ -35,14 +33,16 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockJournalRepositoryContract repository;
-  late MockErrorReporter errorReporter;
+  late AppErrorReporter errorReporter;
   late BehaviorSubject<List<TrackerDefinition>> defsSubject;
   late BehaviorSubject<List<TrackerGroup>> groupsSubject;
   late BehaviorSubject<List<TrackerStateDay>> dayStatesSubject;
 
   setUp(() {
     repository = MockJournalRepositoryContract();
-    errorReporter = MockErrorReporter();
+    errorReporter = AppErrorReporter(
+      messengerKey: GlobalKey<ScaffoldMessengerState>(),
+    );
     defsSubject = BehaviorSubject<List<TrackerDefinition>>.seeded(
       const <TrackerDefinition>[],
     );
@@ -53,12 +53,15 @@ void main() {
       const <TrackerStateDay>[],
     );
 
-    when(() => repository.watchTrackerDefinitions())
-        .thenAnswer((_) => defsSubject);
-    when(() => repository.watchTrackerGroups())
-        .thenAnswer((_) => groupsSubject);
-    when(() => repository.watchTrackerStateDay(range: any(named: 'range')))
-        .thenAnswer((_) => dayStatesSubject);
+    when(
+      () => repository.watchTrackerDefinitions(),
+    ).thenAnswer((_) => defsSubject);
+    when(
+      () => repository.watchTrackerGroups(),
+    ).thenAnswer((_) => groupsSubject);
+    when(
+      () => repository.watchTrackerStateDay(range: any(named: 'range')),
+    ).thenAnswer((_) => dayStatesSubject);
     when(
       () => repository.watchTrackerEvents(
         range: any(named: 'range'),
@@ -80,7 +83,9 @@ void main() {
     await tester.pumpApp(
       MultiRepositoryProvider(
         providers: [
-          RepositoryProvider<JournalRepositoryContract>.value(value: repository),
+          RepositoryProvider<JournalRepositoryContract>.value(
+            value: repository,
+          ),
           RepositoryProvider<AppErrorReporter>.value(value: errorReporter),
           RepositoryProvider<NowService>.value(
             value: FakeNowService(DateTime(2025, 1, 15, 9)),
@@ -94,9 +99,12 @@ void main() {
     );
   }
 
-  testWidgetsSafe('shows error snack bar when entry load fails', (tester) async {
-    when(() => repository.getJournalEntryById('entry-1'))
-        .thenThrow(StateError('missing'));
+  testWidgetsSafe('shows error snack bar when entry load fails', (
+    tester,
+  ) async {
+    when(
+      () => repository.getJournalEntryById('entry-1'),
+    ).thenThrow(StateError('missing'));
 
     await pumpPage(tester, entryId: 'entry-1');
     await tester.pumpForStream();
@@ -211,8 +219,9 @@ void main() {
     defsSubject.add([moodDef]);
 
     final entry = _entry('entry-1', 'Note');
-    when(() => repository.getJournalEntryById('entry-1'))
-        .thenAnswer((_) async => entry);
+    when(
+      () => repository.getJournalEntryById('entry-1'),
+    ).thenAnswer((_) async => entry);
 
     when(
       () => repository.watchTrackerEvents(
@@ -260,7 +269,9 @@ void main() {
     expect(saveButton.onPressed, isNotNull);
   });
 
-  testWidgetsSafe('updates tracker list when definitions change', (tester) async {
+  testWidgetsSafe('updates tracker list when definitions change', (
+    tester,
+  ) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
     final trackerA = _trackerDef('tracker-1', 'Energy');
     final trackerB = _trackerDef('tracker-2', 'Focus');
@@ -441,8 +452,7 @@ void main() {
 
 Finder _textFieldWithLabel(String label) {
   return find.byWidgetPredicate(
-    (widget) =>
-        widget is TextField && widget.decoration?.labelText == label,
+    (widget) => widget is TextField && widget.decoration?.labelText == label,
   );
 }
 

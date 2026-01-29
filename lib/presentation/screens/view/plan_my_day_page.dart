@@ -759,11 +759,10 @@ class _PlanRoutinesStepState extends State<_PlanRoutinesStep> {
       }
     }
 
-    return ListView(
-      key: GuidedTourAnchors.planMyDayTriage,
-      padding: EdgeInsets.fromLTRB(
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceMd,
+      return ListView(
+        padding: EdgeInsets.fromLTRB(
+          TasklyTokens.of(context).spaceLg,
+          TasklyTokens.of(context).spaceMd,
         TasklyTokens.of(context).spaceLg,
         TasklyTokens.of(context).spaceXl,
       ),
@@ -856,10 +855,11 @@ class _PlanTriageStepState extends State<_PlanTriageStep> {
         ),
     ];
 
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceMd,
+      return ListView(
+        key: GuidedTourAnchors.planMyDayTriage,
+        padding: EdgeInsets.fromLTRB(
+          TasklyTokens.of(context).spaceLg,
+          TasklyTokens.of(context).spaceMd,
         TasklyTokens.of(context).spaceLg,
         TasklyTokens.of(context).spaceXl,
       ),

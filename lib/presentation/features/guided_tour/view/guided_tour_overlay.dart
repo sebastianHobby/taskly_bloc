@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/presentation/features/app/view/app.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/model/guided_tour_step.dart';
@@ -27,6 +28,17 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
   static const Duration _coachmarkRetryDelay = Duration(milliseconds: 50);
   TutorialCoachMark? _coachMark;
   int _showToken = 0;
+  int _navToken = 0;
+  String? _pendingRoute;
+  OverlayState? _rootOverlay;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _rootOverlay =
+        App.navigatorKey.currentState?.overlay ??
+        Overlay.maybeOf(context, rootOverlay: true);
+  }
 
   @override
   void dispose() {
@@ -67,16 +79,23 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
 
   void _onTourStateChanged(BuildContext context, GuidedTourState state) {
     _dismissCoachMark();
-    if (!state.active) return;
+    if (!state.active) {
+      _cancelPendingNavigation();
+      return;
+    }
 
     final step = state.currentStep;
-    if (step == null) return;
-
-    final router = GoRouter.of(context);
-    final location = router.routerDelegate.currentConfiguration.uri.toString();
-    if (location != step.route) {
-      router.go(step.route);
+    if (step == null) {
+      _cancelPendingNavigation();
+      return;
     }
+
+    if (!_isOnRoute(step.route)) {
+      _scheduleNavigation(step);
+      return;
+    }
+
+    _pendingRoute = null;
 
     _scheduleShow(step);
   }
@@ -92,6 +111,15 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
   void _attemptShow(GuidedTourStep step, int attempt) {
     final state = context.read<GuidedTourBloc>().state;
     if (!state.active || state.currentStep?.id != step.id) return;
+    if (!_isOnRoute(step.route)) {
+      if (attempt < _maxCoachmarkAttempts) {
+        Future<void>.delayed(_coachmarkRetryDelay, () {
+          if (!mounted) return;
+          _attemptShow(step, attempt + 1);
+        });
+      }
+      return;
+    }
 
     if (_shouldWaitForPlanMyDay(step)) {
       if (kDebugMode) {
@@ -195,16 +223,60 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
       opacityShadow: 0.72,
     );
     _coachMark = coachMark;
-    final overlay = _overlayFor(step);
+    final navigatorState = App.navigatorKey.currentState;
+    if (navigatorState != null) {
+      coachMark.showWithNavigatorStateKey(
+        navigatorKey: App.navigatorKey,
+        rootOverlay: true,
+      );
+      return;
+    }
+
+    final overlay = _rootOverlay;
     if (overlay != null) {
-      coachMark.showWithOverlayState(overlay: overlay);
-    } else {
-      coachMark.show(context: context);
+      coachMark.showWithOverlayState(
+        overlay: overlay,
+        rootOverlay: true,
+      );
+      return;
+    }
+
+    coachMark.show(context: context);
+  }
+
+  void _scheduleNavigation(GuidedTourStep step) {
+    if (_pendingRoute == step.route) return;
+    _pendingRoute = step.route;
+    final token = ++_navToken;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || token != _navToken) return;
+      _dismissTransientRoutes();
+      if (!_isOnRoute(step.route)) {
+        GoRouter.of(context).go(step.route);
+      }
+      _waitForRouteAndShow(step, 0, token);
+    });
+  }
+
+  void _waitForRouteAndShow(GuidedTourStep step, int attempt, int token) {
+    if (!mounted || token != _navToken) return;
+    if (_isOnRoute(step.route)) {
+      _pendingRoute = null;
+      _scheduleShow(step);
+      return;
+    }
+    if (attempt < _maxCoachmarkAttempts) {
+      Future<void>.delayed(_coachmarkRetryDelay, () {
+        if (!mounted) return;
+        _waitForRouteAndShow(step, attempt + 1, token);
+      });
     }
   }
 
-  OverlayState? _overlayFor(GuidedTourStep step) {
-    return Overlay.of(context);
+  bool _isOnRoute(String route) {
+    final router = GoRouter.of(context);
+    final location = router.routerDelegate.currentConfiguration.uri.toString();
+    return location == route;
   }
 
   TargetFocus _buildTarget(
@@ -320,8 +392,10 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
         : GuidedTourAnchors.keyFor(anchorId);
     final anchorContext = anchorKey?.currentContext;
     if (anchorContext == null) return null;
-    final overlay = Overlay.of(context);
-    final overlayBox = overlay.context.findRenderObject();
+    final overlayContext = _rootOverlay?.context ??
+        Overlay.maybeOf(context, rootOverlay: true)?.context ??
+        context;
+    final overlayBox = overlayContext.findRenderObject();
     final targetBox = anchorContext.findRenderObject();
     if (overlayBox is! RenderBox || targetBox is! RenderBox) return null;
     if (!overlayBox.hasSize || !targetBox.hasSize) return null;
@@ -332,7 +406,7 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
     );
     final targetRect = topLeft & targetBox.size;
 
-    final media = MediaQuery.of(anchorContext);
+    final media = MediaQuery.of(context);
     final safeTop = media.padding.top + tokens.spaceSm;
     final safeBottom = media.padding.bottom + tokens.spaceSm;
     final gap = tokens.spaceMd;
@@ -380,6 +454,17 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
   void _dismissCoachMark() {
     _coachMark?.finish();
     _coachMark = null;
+  }
+
+  void _cancelPendingNavigation() {
+    _pendingRoute = null;
+    _navToken++;
+  }
+
+  void _dismissTransientRoutes() {
+    final navigator = App.navigatorKey.currentState;
+    if (navigator == null) return;
+    navigator.popUntil((route) => route is PageRoute);
   }
 
   void _logAnchorStatus(

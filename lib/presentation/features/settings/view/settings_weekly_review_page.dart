@@ -300,16 +300,16 @@ class _WeeklyReviewValuesSummary extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Slider(
-                    value: weeks.toDouble(),
+                  _CommitSlider(
+                    value: weeks,
                     min: 1,
                     max: 12,
                     divisions: 11,
-                    label: '$weeks weeks',
-                    onChanged: (value) {
+                    labelBuilder: (value) => '$value weeks',
+                    onCommit: (value) {
                       context.read<GlobalSettingsBloc>().add(
                         GlobalSettingsEvent.valuesSummaryWindowWeeksChanged(
-                          value.round(),
+                          value,
                         ),
                       );
                     },
@@ -329,16 +329,16 @@ class _WeeklyReviewValuesSummary extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Slider(
-                    value: wins.toDouble(),
+                  _CommitSlider(
+                    value: wins,
                     min: 1,
                     max: 5,
                     divisions: 4,
-                    label: '$wins items',
-                    onChanged: (value) {
+                    labelBuilder: (value) => '$value items',
+                    onCommit: (value) {
                       context.read<GlobalSettingsBloc>().add(
                         GlobalSettingsEvent.valuesSummaryWinsCountChanged(
-                          value.round(),
+                          value,
                         ),
                       );
                     },
@@ -415,7 +415,7 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
                               .maintenanceDeadlineRiskDueWithinDaysMax,
                           valueLabel:
                               '${settings.maintenanceDeadlineRiskDueWithinDays} days',
-                          onChanged: (value) {
+                          onCommit: (value) {
                             context.read<GlobalSettingsBloc>().add(
                               GlobalSettingsEvent.maintenanceDeadlineRiskDueWithinDaysChanged(
                                 value,
@@ -434,7 +434,7 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
                               .maintenanceDeadlineRiskMinUnscheduledCountMax,
                           valueLabel:
                               '${settings.maintenanceDeadlineRiskMinUnscheduledCount} tasks',
-                          onChanged: (value) {
+                          onCommit: (value) {
                             context.read<GlobalSettingsBloc>().add(
                               GlobalSettingsEvent.maintenanceDeadlineRiskMinUnscheduledCountChanged(
                                 value,
@@ -472,7 +472,7 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
                           max: GlobalSettings.maintenanceStaleThresholdDaysMax,
                           valueLabel:
                               '${settings.maintenanceTaskStaleThresholdDays} days',
-                          onChanged: (value) {
+                          onCommit: (value) {
                             context.read<GlobalSettingsBloc>().add(
                               GlobalSettingsEvent.maintenanceTaskStaleThresholdDaysChanged(
                                 value,
@@ -488,7 +488,7 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
                           max: GlobalSettings.maintenanceStaleThresholdDaysMax,
                           valueLabel:
                               '${settings.maintenanceProjectIdleThresholdDays} days',
-                          onChanged: (value) {
+                          onCommit: (value) {
                             context.read<GlobalSettingsBloc>().add(
                               GlobalSettingsEvent.maintenanceProjectIdleThresholdDaysChanged(
                                 value,
@@ -522,7 +522,7 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
                               .maintenanceMissingNextActionsMinOpenTasksMax,
                           valueLabel:
                               '${settings.maintenanceMissingNextActionsMinOpenTasks} tasks',
-                          onChanged: (value) {
+                          onCommit: (value) {
                             context.read<GlobalSettingsBloc>().add(
                               GlobalSettingsEvent.maintenanceMissingNextActionsMinOpenTasksChanged(
                                 value,
@@ -582,7 +582,7 @@ class _RuleSlider extends StatelessWidget {
     required this.min,
     required this.max,
     required this.valueLabel,
-    required this.onChanged,
+    required this.onCommit,
   });
 
   final String label;
@@ -590,34 +590,86 @@ class _RuleSlider extends StatelessWidget {
   final int min;
   final int max;
   final String valueLabel;
-  final ValueChanged<int> onChanged;
+  final ValueChanged<int> onCommit;
 
   @override
   Widget build(BuildContext context) {
+    return _CommitSlider(
+      value: value,
+      min: min,
+      max: max,
+      divisions: max - min,
+      labelBuilder: (_) => valueLabel,
+      header: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          Text(
+            valueLabel,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ],
+      ),
+      onCommit: onCommit,
+    );
+  }
+}
+
+class _CommitSlider extends StatefulWidget {
+  const _CommitSlider({
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.divisions,
+    required this.labelBuilder,
+    required this.onCommit,
+    this.header,
+  });
+
+  final int value;
+  final int min;
+  final int max;
+  final int divisions;
+  final String Function(int value) labelBuilder;
+  final ValueChanged<int> onCommit;
+  final Widget? header;
+
+  @override
+  State<_CommitSlider> createState() => _CommitSliderState();
+}
+
+class _CommitSliderState extends State<_CommitSlider> {
+  late int _draftValue = widget.value;
+
+  @override
+  void didUpdateWidget(covariant _CommitSlider oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _draftValue = widget.value;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final clamped = _draftValue.clamp(widget.min, widget.max);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            Text(
-              valueLabel,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
+        if (widget.header != null) widget.header!,
         Slider(
-          value: value.clamp(min, max).toDouble(),
-          min: min.toDouble(),
-          max: max.toDouble(),
-          divisions: max - min,
-          label: valueLabel,
-          onChanged: (next) => onChanged(next.round()),
+          value: clamped.toDouble(),
+          min: widget.min.toDouble(),
+          max: widget.max.toDouble(),
+          divisions: widget.divisions,
+          label: widget.labelBuilder(clamped),
+          onChanged: (next) => setState(() {
+            _draftValue = next.round();
+          }),
+          onChangeEnd: (next) => widget.onCommit(next.round()),
         ),
       ],
     );

@@ -8,6 +8,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/feature_mocks.dart';
+import '../../../mocks/presentation_mocks.dart';
 import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
@@ -19,11 +20,7 @@ import 'package:taskly_domain/services.dart';
 class MockScheduledOccurrencesService extends Mock
     implements ScheduledOccurrencesService {}
 
-class MockTaskWriteService extends Mock implements TaskWriteService {}
-
 class MockEditorLauncher extends Mock implements EditorLauncher {}
-
-class MockSessionDayKeyService extends Mock implements SessionDayKeyService {}
 
 class FakeNowService implements NowService {
   FakeNowService(this.now);
@@ -45,37 +42,53 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockScheduledOccurrencesService occurrencesService;
-  late MockTaskWriteService taskWriteService;
+  late TaskWriteService taskWriteService;
+  late MockTaskRepositoryContract taskRepository;
   late MockProjectRepositoryContract projectRepository;
   late MockAllocationOrchestrator allocationOrchestrator;
   late MockOccurrenceCommandService occurrenceCommandService;
   late ProjectWriteService projectWriteService;
   late MockEditorLauncher editorLauncher;
-  late MockSessionDayKeyService sessionDayKeyService;
-  late BehaviorSubject<DateTime> dayKeySubject;
+  late SessionDayKeyService sessionDayKeyService;
+  late MockHomeDayKeyService dayKeyService;
+  late MockTemporalTriggerService temporalTriggerService;
+  late TestStreamController<TemporalTriggerEvent> temporalController;
   late BehaviorSubject<ScheduledOccurrencesResult> occurrencesSubject;
 
   setUp(() {
     occurrencesService = MockScheduledOccurrencesService();
-    taskWriteService = MockTaskWriteService();
+    taskRepository = MockTaskRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
     allocationOrchestrator = MockAllocationOrchestrator();
     occurrenceCommandService = MockOccurrenceCommandService();
+    taskWriteService = TaskWriteService(
+      taskRepository: taskRepository,
+      projectRepository: projectRepository,
+      allocationOrchestrator: allocationOrchestrator,
+      occurrenceCommandService: occurrenceCommandService,
+    );
     projectWriteService = ProjectWriteService(
       projectRepository: projectRepository,
       allocationOrchestrator: allocationOrchestrator,
       occurrenceCommandService: occurrenceCommandService,
     );
     editorLauncher = MockEditorLauncher();
-    sessionDayKeyService = MockSessionDayKeyService();
-
-    dayKeySubject = BehaviorSubject<DateTime>.seeded(
-      DateTime.utc(2025, 1, 15),
+    dayKeyService = MockHomeDayKeyService();
+    temporalTriggerService = MockTemporalTriggerService();
+    temporalController = TestStreamController.seeded(const AppResumed());
+    sessionDayKeyService = SessionDayKeyService(
+      dayKeyService: dayKeyService,
+      temporalTriggerService: temporalTriggerService,
     );
     occurrencesSubject = BehaviorSubject<ScheduledOccurrencesResult>();
 
-    when(() => sessionDayKeyService.todayDayKeyUtc).thenReturn(dayKeySubject);
-    when(() => sessionDayKeyService.start()).thenReturn(null);
+    when(() => temporalTriggerService.events).thenAnswer(
+      (_) => temporalController.stream,
+    );
+    when(
+      () => dayKeyService.todayDayKeyUtc(),
+    ).thenReturn(DateTime.utc(2025, 1, 15));
+    sessionDayKeyService.start();
 
     when(
       () => occurrencesService.watchScheduledOccurrences(
@@ -88,7 +101,8 @@ void main() {
   });
 
   tearDown(() async {
-    await dayKeySubject.close();
+    await temporalController.close();
+    await sessionDayKeyService.dispose();
     await occurrencesSubject.close();
   });
 

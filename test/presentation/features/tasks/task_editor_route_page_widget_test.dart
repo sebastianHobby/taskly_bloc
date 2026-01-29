@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_imports.dart';
+import '../../../mocks/feature_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
@@ -20,10 +21,6 @@ class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
 class MockValueRepository extends Mock implements ValueRepositoryContract {}
 
-class MockTaskWriteService extends Mock implements TaskWriteService {}
-
-class MockErrorReporter extends Mock implements AppErrorReporter {}
-
 void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
@@ -34,15 +31,22 @@ void main() {
   late MockTaskRepository taskRepository;
   late MockProjectRepository projectRepository;
   late MockValueRepository valueRepository;
-  late MockTaskWriteService taskWriteService;
-  late MockErrorReporter errorReporter;
+  late TaskWriteService taskWriteService;
+  late AppErrorReporter errorReporter;
 
   setUp(() {
     taskRepository = MockTaskRepository();
     projectRepository = MockProjectRepository();
     valueRepository = MockValueRepository();
-    taskWriteService = MockTaskWriteService();
-    errorReporter = MockErrorReporter();
+    taskWriteService = TaskWriteService(
+      taskRepository: taskRepository,
+      projectRepository: projectRepository,
+      allocationOrchestrator: MockAllocationOrchestrator(),
+      occurrenceCommandService: MockOccurrenceCommandService(),
+    );
+    errorReporter = AppErrorReporter(
+      messengerKey: GlobalKey<ScaffoldMessengerState>(),
+    );
 
     when(() => projectRepository.getAll()).thenAnswer((_) async => const []);
     when(() => valueRepository.getAll()).thenAnswer((_) async => const []);
