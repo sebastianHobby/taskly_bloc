@@ -19,23 +19,25 @@ void main() {
       repo = MockValueRepositoryContract();
       when(() => repo.getCount()).thenAnswer((_) async => 0);
       handler = ValueCommandHandler(valueRepository: repo);
-      when(() => repo.create(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-            priority: any(named: 'priority'),
-            iconName: any(named: 'iconName'),
-            context: any(named: 'context'),
-          ))
-          .thenAnswer((_) async {});
-      when(() => repo.update(
-            id: any(named: 'id'),
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-            priority: any(named: 'priority'),
-            iconName: any(named: 'iconName'),
-            context: any(named: 'context'),
-          ))
-          .thenAnswer((_) async {});
+      when(
+        () => repo.create(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          priority: any(named: 'priority'),
+          iconName: any(named: 'iconName'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => repo.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          priority: any(named: 'priority'),
+          iconName: any(named: 'iconName'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async {});
     });
 
     testSafe('handleCreate trims name and forwards context', () async {

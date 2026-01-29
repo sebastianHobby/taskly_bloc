@@ -29,7 +29,9 @@ void main() {
 
   late MockProjectRepositoryContract projectRepository;
   late MockValueRepositoryContract valueRepository;
-  late MockProjectWriteService projectWriteService;
+  late MockAllocationOrchestrator allocationOrchestrator;
+  late MockOccurrenceCommandService occurrenceCommandService;
+  late ProjectWriteService projectWriteService;
   late AppErrorReporter errorReporter;
 
   ProjectDetailBloc buildBloc() {
@@ -44,7 +46,13 @@ void main() {
   setUp(() {
     projectRepository = MockProjectRepositoryContract();
     valueRepository = MockValueRepositoryContract();
-    projectWriteService = MockProjectWriteService();
+    allocationOrchestrator = MockAllocationOrchestrator();
+    occurrenceCommandService = MockOccurrenceCommandService();
+    projectWriteService = ProjectWriteService(
+      projectRepository: projectRepository,
+      allocationOrchestrator: allocationOrchestrator,
+      occurrenceCommandService: occurrenceCommandService,
+    );
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
     );
@@ -54,21 +62,45 @@ void main() {
       (_) async => TestData.project(id: 'p-1'),
     );
     when(
-      () => projectWriteService.create(
+      () => projectRepository.create(
+        name: any(named: 'name'),
+        description: any(named: 'description'),
+        completed: any(named: 'completed'),
+        startDate: any(named: 'startDate'),
+        deadlineDate: any(named: 'deadlineDate'),
+        priority: any(named: 'priority'),
+        repeatIcalRrule: any(named: 'repeatIcalRrule'),
+        repeatFromCompletion: any(named: 'repeatFromCompletion'),
+        seriesEnded: any(named: 'seriesEnded'),
+        valueIds: any(named: 'valueIds'),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => projectRepository.update(
+        id: any(named: 'id'),
+        name: any(named: 'name'),
+        description: any(named: 'description'),
+        completed: any(named: 'completed'),
+        startDate: any(named: 'startDate'),
+        deadlineDate: any(named: 'deadlineDate'),
+        priority: any(named: 'priority'),
+        repeatIcalRrule: any(named: 'repeatIcalRrule'),
+        repeatFromCompletion: any(named: 'repeatFromCompletion'),
+        seriesEnded: any(named: 'seriesEnded'),
+        valueIds: any(named: 'valueIds'),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => allocationOrchestrator.pinProject(
         any(),
         context: any(named: 'context'),
       ),
-    ).thenAnswer((_) async => const CommandSuccess());
+    ).thenAnswer((_) async {});
     when(
-      () => projectWriteService.update(
+      () => allocationOrchestrator.unpinProject(
         any(),
-        context: any(named: 'context'),
-      ),
-    ).thenAnswer((_) async => const CommandSuccess());
-    when(
-      () => projectWriteService.setPinned(
-        any(),
-        isPinned: any(named: 'isPinned'),
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
@@ -82,15 +114,20 @@ void main() {
     ),
     expect: () => [
       const ProjectDetailState.loadInProgress(),
-      isA<ProjectDetailLoadSuccess>()
-          .having((s) => s.project.id, 'projectId', 'p-1'),
+      isA<ProjectDetailLoadSuccess>().having(
+        (s) => s.project.id,
+        'projectId',
+        'p-1',
+      ),
     ],
   );
 
   blocTestSafe<ProjectDetailBloc, ProjectDetailState>(
     'loadById emits not found failure',
     build: () {
-      when(() => projectRepository.getById(any())).thenAnswer((_) async => null);
+      when(
+        () => projectRepository.getById(any()),
+      ).thenAnswer((_) async => null);
       return buildBloc();
     },
     act: (bloc) => bloc.add(
@@ -117,8 +154,17 @@ void main() {
     ],
     verify: (_) {
       final captured = verify(
-        () => projectWriteService.create(
-          any(),
+        () => projectRepository.create(
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          completed: any(named: 'completed'),
+          startDate: any(named: 'startDate'),
+          deadlineDate: any(named: 'deadlineDate'),
+          priority: any(named: 'priority'),
+          repeatIcalRrule: any(named: 'repeatIcalRrule'),
+          repeatFromCompletion: any(named: 'repeatFromCompletion'),
+          seriesEnded: any(named: 'seriesEnded'),
+          valueIds: any(named: 'valueIds'),
           context: captureAny(named: 'context'),
         ),
       ).captured;
@@ -133,23 +179,13 @@ void main() {
   blocTestSafe<ProjectDetailBloc, ProjectDetailState>(
     'update emits validation failure',
     build: () {
-      when(
-        () => projectWriteService.update(
-          any(),
-          context: any(named: 'context'),
-        ),
-      ).thenAnswer(
-        (_) async => const CommandValidationFailure(
-          ValidationFailure(),
-        ),
-      );
       return buildBloc();
     },
     act: (bloc) => bloc.add(
       const ProjectDetailEvent.update(
         command: UpdateProjectCommand(
           id: 'p-1',
-          name: 'Updated',
+          name: '',
           completed: false,
         ),
       ),
@@ -166,15 +202,17 @@ void main() {
       const ProjectDetailEvent.setPinned(id: 'p-1', isPinned: true),
     ),
     expect: () => [
-      isA<ProjectDetailInlineActionSuccess>()
-          .having((s) => s.message, 'message', 'Pinned'),
+      isA<ProjectDetailInlineActionSuccess>().having(
+        (s) => s.message,
+        'message',
+        'Pinned',
+      ),
       isA<ProjectDetailLoadSuccess>(),
     ],
     verify: (_) {
       verify(
-        () => projectWriteService.setPinned(
+        () => allocationOrchestrator.pinProject(
           'p-1',
-          isPinned: true,
           context: any(named: 'context'),
         ),
       ).called(1);

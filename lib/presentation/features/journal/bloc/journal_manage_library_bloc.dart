@@ -306,48 +306,51 @@ class JournalManageLibraryBloc
           ({List<TrackerGroup> groups, List<TrackerDefinition> defs})
         >(groups$, defs$, (groups, defs) => (groups: groups, defs: defs));
 
-    await emit.forEach<({List<TrackerGroup> groups, List<TrackerDefinition> defs})>(
-      combined$,
-      onData: (data) {
-        final groups =
-            data.groups.where((g) => g.isActive).toList(growable: false)
-              ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    await emit
+        .forEach<({List<TrackerGroup> groups, List<TrackerDefinition> defs})>(
+          combined$,
+          onData: (data) {
+            final groups =
+                data.groups.where((g) => g.isActive).toList(growable: false)
+                  ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-        final defs =
-            data.defs.where((d) => d.deletedAt == null).toList(growable: false)
-              ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+            final defs =
+                data.defs
+                    .where((d) => d.deletedAt == null)
+                    .toList(growable: false)
+                  ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-        final prevStatus = state is JournalManageLibraryLoaded
-            ? (state as JournalManageLibraryLoaded).status
-            : const JournalManageLibraryIdle();
+            final prevStatus = state is JournalManageLibraryLoaded
+                ? (state as JournalManageLibraryLoaded).status
+                : const JournalManageLibraryIdle();
 
-        return JournalManageLibraryLoaded(
-          groups: groups,
-          trackers: defs,
-          status: prevStatus,
+            return JournalManageLibraryLoaded(
+              groups: groups,
+              trackers: defs,
+              status: prevStatus,
+            );
+          },
+          onError: (Object e, StackTrace st) {
+            final context = _newContext(
+              intent: 'stream_error',
+              operation: 'journal.watchTrackerGroups+definitions',
+            );
+
+            _reportIfUnexpectedOrUnmapped(
+              e,
+              st,
+              context: context,
+              message: '[JournalManageLibraryBloc] stream error',
+            );
+
+            return JournalManageLibraryError(
+              _uiMessageFor(
+                e,
+                fallback: 'Failed to load trackers. Please try again.',
+              ),
+            );
+          },
         );
-      },
-      onError: (Object e, StackTrace st) {
-        final context = _newContext(
-          intent: 'stream_error',
-          operation: 'journal.watchTrackerGroups+definitions',
-        );
-
-        _reportIfUnexpectedOrUnmapped(
-          e,
-          st,
-          context: context,
-          message: '[JournalManageLibraryBloc] stream error',
-        );
-
-        return JournalManageLibraryError(
-          _uiMessageFor(
-            e,
-            fallback: 'Failed to load trackers. Please try again.',
-          ),
-        );
-      },
-    );
   }
 
   Future<void> _onCreateGroupRequested(
@@ -477,8 +480,9 @@ class JournalManageLibraryBloc
     );
 
     try {
-      final defs =
-          _defsOrEmpty().where((d) => d.groupId == event.group.id).toList();
+      final defs = _defsOrEmpty()
+          .where((d) => d.groupId == event.group.id)
+          .toList();
       for (final d in defs) {
         await _repository.saveTrackerDefinition(
           d.copyWith(groupId: null, updatedAt: _nowUtc()),
@@ -815,7 +819,10 @@ class JournalManageLibraryBloc
     return completer.future;
   }
 
-  Future<void> renameGroup({required TrackerGroup group, required String name}) {
+  Future<void> renameGroup({
+    required TrackerGroup group,
+    required String name,
+  }) {
     final completer = Completer<void>();
     add(
       JournalManageLibraryRenameGroupRequested(
@@ -883,7 +890,10 @@ class JournalManageLibraryBloc
     return completer.future;
   }
 
-  Future<void> reorderGroups({required String groupId, required int direction}) {
+  Future<void> reorderGroups({
+    required String groupId,
+    required int direction,
+  }) {
     final completer = Completer<void>();
     add(
       JournalManageLibraryReorderGroupsRequested(

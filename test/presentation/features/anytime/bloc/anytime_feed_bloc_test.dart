@@ -46,7 +46,9 @@ void main() {
     taskRepository = MockTaskRepositoryContract();
     valueRepository = MockValueRepositoryContract();
     lifecycleEvents = FakeAppLifecycleEvents();
-    cacheManager = SessionStreamCacheManager(appLifecycleService: lifecycleEvents);
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: lifecycleEvents,
+    );
     sharedDataService = SessionSharedDataService(
       cacheManager: cacheManager,
       valueRepository: valueRepository,
@@ -64,7 +66,9 @@ void main() {
     values = PublishSubject<List<Value>>();
 
     when(() => projectRepository.watchAll(any())).thenAnswer((_) => projects);
-    when(() => taskRepository.watchAllCount(any())).thenAnswer((_) => inboxCounts);
+    when(
+      () => taskRepository.watchAllCount(any()),
+    ).thenAnswer((_) => inboxCounts);
     when(() => valueRepository.watchAll(any())).thenAnswer((_) => values);
   });
 

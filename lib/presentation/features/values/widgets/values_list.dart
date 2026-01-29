@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/analytics.dart';
@@ -51,8 +52,9 @@ class ValuesListView extends StatelessWidget {
     );
 
     final rows = [
-      for (final item in items)
+      for (var i = 0; i < items.length; i += 1)
         () {
+          final item = items[i];
           final value = item.value;
           final key = SelectionKey(
             entityType: EntityType.value,
@@ -68,6 +70,7 @@ class ValuesListView extends StatelessWidget {
             preset: selectionMode
                 ? TasklyValueRowPreset.heroSelection(selected: isSelected)
                 : const TasklyValueRowPreset.hero(),
+            anchorKey: i == 0 ? GuidedTourAnchors.valuesList : null,
             actions: TasklyValueRowActions(
               onTap: () async {
                 if (selection.shouldInterceptTapAsSelection()) {

@@ -11,6 +11,7 @@ export 'attention.dart';
 export 'contracts.dart';
 export 'core.dart';
 export 'errors.dart';
+export 'feature_flags.dart';
 export 'journal.dart';
 export 'notifications.dart';
 export 'preferences.dart';

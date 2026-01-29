@@ -19,9 +19,7 @@ sync_rules:
   path: sync_rules.yaml
 
 client_auth:
-  # Use Supabase Auth (PowerSync will validate JWTs against the JWKS endpoint).
+  # Use Supabase Auth (local dev uses the Supabase JWT secret).
   supabase: true
-  jwks_uri: !env PS_JWKS_URL
+  supabase_jwt_secret: !env PS_SUPABASE_JWT_SECRET
   audience: ["authenticated"]
-  # Allow local (http://...) JWKS URIs for local dev.
-  allow_local_jwks: true

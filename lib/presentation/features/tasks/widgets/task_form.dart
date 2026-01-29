@@ -9,7 +9,9 @@ import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/feature_flags.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -82,6 +84,9 @@ class TaskForm extends StatefulWidget {
 }
 
 class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
+  bool get _taskSecondaryValuesEnabled =>
+      TasklyFeatureFlags.taskSecondaryValuesEnabled;
+
   @override
   VoidCallback? get onClose => widget.onClose;
 
@@ -180,6 +185,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!context.mounted || _didAutoOpen) return;
       if (!widget.openToValues && !widget.openToProjectPicker) return;
+      if (widget.openToValues && !_taskSecondaryValuesEnabled) return;
       _didAutoOpen = true;
 
       if (widget.openToProjectPicker) {
@@ -228,6 +234,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       }
 
       if (widget.openToValues) {
+        if (!_taskSecondaryValuesEnabled) return;
         final projectId =
             widget
                     .formKey
@@ -490,7 +497,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     final initialProjectId =
         widget.initialData?.projectId ?? widget.defaultProjectId ?? '';
     final initialProject = _findProjectById(initialProjectId);
-    final initialTagsEnabled = _projectHasPrimaryValue(initialProject);
+    final initialTagsEnabled =
+        _taskSecondaryValuesEnabled && _projectHasPrimaryValue(initialProject);
 
     final initialValues = <String, dynamic>{
       TaskFieldKeys.name.id: widget.initialData?.name ?? '',
@@ -699,35 +707,38 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                         .where((p) => p.id == field.value)
                         .firstOrNull;
 
-                    return KeyedSubtree(
-                      key: _projectKey,
-                      child: Builder(
-                        builder: (chipContext) => TasklyFormProjectRow(
-                          label:
-                              selectedProject?.name ??
-                              context.l10n.addProjectAction,
-                          hasValue: selectedProject != null,
-                          onTap: () async {
-                            final result = await _showProjectPicker(
-                              anchorContext: chipContext,
-                              currentProjectId: field.value ?? '',
-                            );
-                            if (result == null) return;
+                    return Container(
+                      key: GuidedTourAnchors.taskProjectAndValue,
+                      child: KeyedSubtree(
+                        key: _projectKey,
+                        child: Builder(
+                          builder: (chipContext) => TasklyFormProjectRow(
+                            label:
+                                selectedProject?.name ??
+                                context.l10n.addProjectAction,
+                            hasValue: selectedProject != null,
+                            onTap: () async {
+                              final result = await _showProjectPicker(
+                                anchorContext: chipContext,
+                                currentProjectId: field.value ?? '',
+                              );
+                              if (result == null) return;
 
-                            switch (result) {
-                              case _ProjectPickerResultCleared():
-                                field.didChange('');
-                              case _ProjectPickerResultSelected(
-                                :final project,
-                              ):
-                                field.didChange(project.id);
-                                _recordRecentProjectId(project.id);
-                            }
+                              switch (result) {
+                                case _ProjectPickerResultCleared():
+                                  field.didChange('');
+                                case _ProjectPickerResultSelected(
+                                  :final project,
+                                ):
+                                  field.didChange(project.id);
+                                  _recordRecentProjectId(project.id);
+                              }
 
-                            markDirty();
-                            _clearTagsIfNotAllowed();
-                            setState(() {});
-                          },
+                              markDirty();
+                              _clearTagsIfNotAllowed();
+                              setState(() {});
+                            },
+                          ),
                         ),
                       ),
                     );
@@ -775,6 +786,13 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                         text: l10n.taskProjectValueTitle,
                       ),
                       SizedBox(height: TasklyTokens.of(context).spaceSm),
+                      Text(
+                        l10n.taskProjectValueHelper,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      SizedBox(height: TasklyTokens.of(context).spaceSm),
                       if (primaryChip != null)
                         Row(
                           children: [
@@ -812,14 +830,14 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           ),
                         ),
                       SizedBox(height: TasklyTokens.of(context).spaceSm),
-                      if (!hasProjectPrimary)
+                      if (_taskSecondaryValuesEnabled && !hasProjectPrimary)
                         Text(
                           l10n.taskAdditionalValuesDisabled,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
                         )
-                      else ...[
+                      else if (_taskSecondaryValuesEnabled) ...[
                         TasklyFormSectionLabel(
                           text: l10n.taskAdditionalValuesTitle,
                         ),

@@ -150,10 +150,16 @@ void main() {
     },
     expect: () => [
       isA<JournalManageLibraryLoaded>(),
-      isA<JournalManageLibraryLoaded>()
-          .having((s) => s.status, 'status', isA<JournalManageLibrarySaving>()),
-      isA<JournalManageLibraryLoaded>()
-          .having((s) => s.status, 'status', isA<JournalManageLibrarySaved>()),
+      isA<JournalManageLibraryLoaded>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalManageLibrarySaving>(),
+      ),
+      isA<JournalManageLibraryLoaded>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalManageLibrarySaved>(),
+      ),
     ],
     verify: (_) {
       final captured = verify(
@@ -206,10 +212,16 @@ void main() {
     },
     expect: () => [
       isA<JournalManageLibraryLoaded>(),
-      isA<JournalManageLibraryLoaded>()
-          .having((s) => s.status, 'status', isA<JournalManageLibrarySaving>()),
-      isA<JournalManageLibraryLoaded>()
-          .having((s) => s.status, 'status', isA<JournalManageLibrarySaved>()),
+      isA<JournalManageLibraryLoaded>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalManageLibrarySaving>(),
+      ),
+      isA<JournalManageLibraryLoaded>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalManageLibrarySaved>(),
+      ),
     ],
     verify: (_) {
       verify(

@@ -124,8 +124,9 @@ void main() {
   blocTestSafe<AuthBloc, AppAuthState>(
     'sign out forwards operation context',
     build: () {
-      when(() => authRepository.signOut(context: any(named: 'context')))
-          .thenAnswer((_) async {});
+      when(
+        () => authRepository.signOut(context: any(named: 'context')),
+      ).thenAnswer((_) async {});
       return buildBloc();
     },
     act: (bloc) => bloc.add(const AuthSignOutRequested()),
@@ -147,4 +148,3 @@ void main() {
     },
   );
 }
-

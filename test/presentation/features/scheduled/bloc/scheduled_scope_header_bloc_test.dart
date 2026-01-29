@@ -49,8 +49,11 @@ void main() {
       valueRepository: valueRepository,
     ),
     expect: () => [
-      isA<ScheduledScopeHeaderLoaded>()
-          .having((s) => s.title, 'title', 'Project: Alpha'),
+      isA<ScheduledScopeHeaderLoaded>().having(
+        (s) => s.title,
+        'title',
+        'Project: Alpha',
+      ),
     ],
   );
 
@@ -62,8 +65,11 @@ void main() {
       valueRepository: valueRepository,
     ),
     expect: () => [
-      isA<ScheduledScopeHeaderLoaded>()
-          .having((s) => s.title, 'title', 'Value: Purpose'),
+      isA<ScheduledScopeHeaderLoaded>().having(
+        (s) => s.title,
+        'title',
+        'Value: Purpose',
+      ),
     ],
   );
 
@@ -88,4 +94,3 @@ void main() {
     ],
   );
 }
-

@@ -85,7 +85,10 @@ void main() {
 
   final nowUtc = DateTime.utc(2025, 1, 15, 12);
 
-  JournalEntryEditorBloc buildBloc({String? entryId, Set<String>? preselected}) {
+  JournalEntryEditorBloc buildBloc({
+    String? entryId,
+    Set<String>? preselected,
+  }) {
     return JournalEntryEditorBloc(
       repository: repository,
       errorReporter: errorReporter,
@@ -150,7 +153,11 @@ void main() {
       isA<JournalEntryEditorState>(),
       isA<JournalEntryEditorState>()
           .having((s) => s.status, 'status', isA<JournalEntryEditorIdle>())
-          .having((s) => s.entryValues.containsKey('t-pre'), 'preselected', true)
+          .having(
+            (s) => s.entryValues.containsKey('t-pre'),
+            'preselected',
+            true,
+          )
           .having((s) => s.isDirty, 'isDirty', false),
     ],
   );
@@ -259,10 +266,16 @@ void main() {
     ),
     act: (bloc) => bloc.add(const JournalEntryEditorSaveRequested()),
     expect: () => [
-      isA<JournalEntryEditorState>()
-          .having((s) => s.status, 'status', isA<JournalEntryEditorSaving>()),
-      isA<JournalEntryEditorState>()
-          .having((s) => s.status, 'status', isA<JournalEntryEditorSaved>()),
+      isA<JournalEntryEditorState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalEntryEditorSaving>(),
+      ),
+      isA<JournalEntryEditorState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalEntryEditorSaved>(),
+      ),
     ],
     verify: (_) {
       verify(

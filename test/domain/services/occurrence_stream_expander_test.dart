@@ -25,7 +25,9 @@ void main() {
 
   group('OccurrenceStreamExpander', () {
     testSafe('expands non-repeating tasks within range', () async {
-      final expander = OccurrenceStreamExpander(clock: FixedClock(DateTime(2025, 1, 1)));
+      final expander = OccurrenceStreamExpander(
+        clock: FixedClock(DateTime(2025, 1, 1)),
+      );
       final task = TestData.task(
         id: 't1',
         startDate: DateTime(2025, 1, 10),
@@ -51,7 +53,9 @@ void main() {
     });
 
     testSafe('expands repeating tasks with exceptions', () async {
-      final expander = OccurrenceStreamExpander(clock: FixedClock(DateTime(2025, 1, 20)));
+      final expander = OccurrenceStreamExpander(
+        clock: FixedClock(DateTime(2025, 1, 20)),
+      );
       final task = TestData.task(
         id: 't2',
         startDate: DateTime(2025, 1, 10),

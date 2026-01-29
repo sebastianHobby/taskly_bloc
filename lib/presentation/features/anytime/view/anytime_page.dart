@@ -1,23 +1,22 @@
 import 'dart:async';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/view/guided_tour_targets.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
@@ -26,6 +25,7 @@ import 'package:taskly_ui/taskly_ui_tokens.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_feed_bloc.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
+import 'package:taskly_bloc/presentation/features/anytime/model/anytime_sort.dart';
 
 class AnytimePage extends StatelessWidget {
   const AnytimePage({
@@ -66,6 +66,9 @@ class _AnytimeViewState extends State<_AnytimeView> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _isSearching = false;
+  bool _showCompleted = false;
+  AnytimeSortOrder _sortOrder = AnytimeSortOrder.recentlyUpdated;
+  final Set<String> _selectedValueIds = <String>{};
 
   AnytimeScope? get scope => widget.scope;
 
@@ -97,6 +100,33 @@ class _AnytimeViewState extends State<_AnytimeView> {
     }
   }
 
+  void _updateSortOrder(AnytimeSortOrder order) {
+    if (_sortOrder == order) return;
+    setState(() => _sortOrder = order);
+    context.read<AnytimeFeedBloc>().add(
+      AnytimeFeedSortOrderChanged(sortOrder: order),
+    );
+  }
+
+  void _toggleShowCompleted() {
+    setState(() => _showCompleted = !_showCompleted);
+  }
+
+  void _toggleValueFilter(String valueId) {
+    setState(() {
+      if (_selectedValueIds.contains(valueId)) {
+        _selectedValueIds.remove(valueId);
+      } else {
+        _selectedValueIds.add(valueId);
+      }
+    });
+  }
+
+  void _clearValueFilters() {
+    if (_selectedValueIds.isEmpty) return;
+    setState(_selectedValueIds.clear);
+  }
+
   Future<void> _openNewTaskEditor(
     BuildContext context, {
     String? defaultProjectId,
@@ -120,6 +150,110 @@ class _AnytimeViewState extends State<_AnytimeView> {
       projectId: null,
       openToValues: openToValues,
       showDragHandle: true,
+    );
+  }
+
+  Future<void> _showFilterSheet({
+    required List<Value> values,
+    required List<ListRowUiModel> rows,
+  }) async {
+    final countRows = _filterAnytimeRows(
+      rows: rows,
+      selectedValueIds: const <String>{},
+      showCompleted: _showCompleted,
+      scope: scope,
+    );
+    final counts = _countProjectsByValue(countRows);
+    final hasScopedValue = scope is AnytimeValueScope;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              TasklyTokens.of(sheetContext).spaceLg,
+              TasklyTokens.of(sheetContext).spaceSm,
+              TasklyTokens.of(sheetContext).spaceLg,
+              TasklyTokens.of(sheetContext).spaceLg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Filter & sort',
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                ),
+                SizedBox(height: TasklyTokens.of(sheetContext).spaceSm),
+                Text(
+                  'Sort',
+                  style: Theme.of(sheetContext).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                for (final order in AnytimeSortOrder.values)
+                  RadioListTile<AnytimeSortOrder>(
+                    value: order,
+                    groupValue: _sortOrder,
+                    title: Text(order.label),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      _updateSortOrder(value);
+                      Navigator.of(sheetContext).pop();
+                    },
+                  ),
+                SizedBox(height: TasklyTokens.of(sheetContext).spaceSm),
+                Text(
+                  'Values',
+                  style: Theme.of(sheetContext).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: TasklyTokens.of(sheetContext).spaceSm),
+                if (hasScopedValue)
+                  Text(
+                    'Value filters are disabled for scoped views.',
+                    style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        sheetContext,
+                      ).colorScheme.onSurfaceVariant,
+                    ),
+                  )
+                else
+                  Wrap(
+                    spacing: TasklyTokens.of(sheetContext).spaceSm,
+                    runSpacing: TasklyTokens.of(sheetContext).spaceSm,
+                    children: [
+                      _ValueFilterChip(
+                        label: 'All values',
+                        count: counts.total,
+                        selected: _selectedValueIds.isEmpty,
+                        icon: Icons.filter_list_rounded,
+                        iconColor: Theme.of(
+                          sheetContext,
+                        ).colorScheme.onSurfaceVariant,
+                        onTap: _clearValueFilters,
+                      ),
+                      for (final value in values) ...[
+                        _ValueFilterChip(
+                          label: value.name,
+                          count: counts.byValueId[value.id],
+                          selected: _selectedValueIds.contains(value.id),
+                          icon: value.toChipData(sheetContext).icon,
+                          iconColor: value.toChipData(sheetContext).color,
+                          tintColor: value.toChipData(sheetContext).color,
+                          onTap: () => _toggleValueFilter(value.id),
+                        ),
+                      ],
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -226,6 +360,19 @@ class _AnytimeViewState extends State<_AnytimeView> {
                     actions: TasklyAppBarActions.withAttentionBell(
                       context,
                       actions: [
+                        IconButton(
+                          tooltip: 'Filter & sort',
+                          icon: const Icon(Icons.tune_rounded),
+                          style: iconButtonStyle,
+                          onPressed: () {
+                            final state = context.read<AnytimeFeedBloc>().state;
+                            if (state is! AnytimeFeedLoaded) return;
+                            _showFilterSheet(
+                              values: state.values,
+                              rows: state.rows,
+                            );
+                          },
+                        ),
                         if (!_isSearching)
                           IconButton(
                             tooltip: 'Search',
@@ -240,13 +387,39 @@ class _AnytimeViewState extends State<_AnytimeView> {
                             style: iconButtonStyle,
                             onPressed: () => _setSearchActive(false),
                           ),
+                        TasklyOverflowMenuButton<_AnytimeMenuAction>(
+                          tooltip: 'More',
+                          icon: Icons.more_vert,
+                          style: iconButtonStyle,
+                          itemsBuilder: (context) => [
+                            CheckedPopupMenuItem(
+                              value: _AnytimeMenuAction.showCompleted,
+                              checked: _showCompleted,
+                              child: const Text('Show completed'),
+                            ),
+                            const PopupMenuItem(
+                              value: _AnytimeMenuAction.selectMultiple,
+                              child: Text('Select multiple'),
+                            ),
+                          ],
+                          onSelected: (action) {
+                            switch (action) {
+                              case _AnytimeMenuAction.showCompleted:
+                                _toggleShowCompleted();
+                              case _AnytimeMenuAction.selectMultiple:
+                                context
+                                    .read<SelectionBloc>()
+                                    .enterSelectionMode();
+                            }
+                          },
+                        ),
                       ],
                     ),
                   ),
             floatingActionButton: selectionState.isSelectionMode
                 ? null
-                : GuidedTourTarget(
-                    id: 'anytime_create',
+                : SizedBox(
+                    key: GuidedTourAnchors.anytimeCreateProject,
                     child: EntityAddSpeedDial(
                       heroTag: 'add_speed_dial_anytime',
                       onCreateTask: () => context.read<AnytimeScreenBloc>().add(
@@ -260,10 +433,6 @@ class _AnytimeViewState extends State<_AnytimeView> {
                   ),
             body: Column(
               children: [
-                Padding(
-                  padding: chrome.anytimeHeaderPadding,
-                  child: _AnytimeValuesAndFiltersRow(scope: scope),
-                ),
                 Expanded(
                   child: BlocBuilder<AnytimeScreenBloc, AnytimeScreenState>(
                     buildWhen: (p, n) => p.searchQuery != n.searchQuery,
@@ -291,13 +460,28 @@ class _AnytimeViewState extends State<_AnytimeView> {
                                 ),
                               ),
                             AnytimeFeedLoaded(:final rows) => () {
+                              final visibleRows = _filterAnytimeRows(
+                                rows: rows,
+                                selectedValueIds: _selectedValueIds,
+                                showCompleted: _showCompleted,
+                                scope: scope,
+                              );
+                              if (visibleRows.isEmpty) {
+                                return TasklyFeedSpec.empty(
+                                  empty: _buildEmptySpec(
+                                    context,
+                                    scope,
+                                    screenState,
+                                  ),
+                                );
+                              }
                               final sections = <TasklySectionSpec>[];
                               sections.add(
                                 TasklySectionSpec.standardList(
                                   id: 'anytime',
                                   rows: _buildStandardRows(
                                     context,
-                                    rows,
+                                    visibleRows,
                                   ),
                                 ),
                               );
@@ -326,6 +510,11 @@ class _AnytimeViewState extends State<_AnytimeView> {
 }
 
 void _noop() {}
+
+enum _AnytimeMenuAction {
+  showCompleted,
+  selectMultiple,
+}
 
 TasklyEmptyStateSpec _buildEmptySpec(
   BuildContext context,
@@ -436,152 +625,14 @@ List<TasklyRowSpec> _buildStandardRows(
         data: data,
         preset: preset,
         actions: actions,
+        anchorKey: row.project == null
+            ? GuidedTourAnchors.anytimeInboxRow
+            : null,
       ),
     );
   }
 
   return specs;
-}
-
-class _AnytimeValuesAndFiltersRow extends StatefulWidget {
-  const _AnytimeValuesAndFiltersRow({required this.scope});
-
-  final AnytimeScope? scope;
-
-  @override
-  State<_AnytimeValuesAndFiltersRow> createState() =>
-      _AnytimeValuesAndFiltersRowState();
-}
-
-class _AnytimeValuesAndFiltersRowState
-    extends State<_AnytimeValuesAndFiltersRow> {
-  final ScrollController _valueScrollController = ScrollController();
-
-  @override
-  void dispose() {
-    _valueScrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final tokens = TasklyTokens.of(context);
-
-    final selectedValueId = switch (widget.scope) {
-      AnytimeValueScope(:final valueId) => valueId,
-      _ => null,
-    };
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        BlocBuilder<AnytimeFeedBloc, AnytimeFeedState>(
-          buildWhen: (prev, next) =>
-              prev is! AnytimeFeedLoaded ||
-              next is! AnytimeFeedLoaded ||
-              prev.values != next.values,
-          builder: (context, state) {
-            final values = switch (state) {
-              AnytimeFeedLoaded(:final values) => values,
-              _ => const <Value>[],
-            };
-            final rows = switch (state) {
-              AnytimeFeedLoaded(:final rows) => rows,
-              _ => const <ListRowUiModel>[],
-            };
-            final sorted = values.toList(growable: false)..sort(_compareValues);
-
-            final counts = _countProjectsByValue(rows);
-            final selectedValue = _findValueById(sorted, selectedValueId);
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(context).copyWith(
-                    dragDevices: const {
-                      PointerDeviceKind.touch,
-                      PointerDeviceKind.mouse,
-                      PointerDeviceKind.trackpad,
-                      PointerDeviceKind.stylus,
-                      PointerDeviceKind.unknown,
-                    },
-                  ),
-                  child: Listener(
-                    onPointerSignal: (signal) {
-                      if (signal is! PointerScrollEvent) return;
-                      if (!_valueScrollController.hasClients) return;
-                      final target =
-                          (_valueScrollController.offset +
-                                  signal.scrollDelta.dy)
-                              .clamp(
-                                0.0,
-                                _valueScrollController.position.maxScrollExtent,
-                              );
-                      _valueScrollController.jumpTo(target);
-                    },
-                    child: SingleChildScrollView(
-                      controller: _valueScrollController,
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: tokens.spaceXs,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _ValueFilterChip(
-                              label: 'All',
-                              count: counts.total,
-                              selected: selectedValue == null,
-                              icon: Icons.filter_list_rounded,
-                              iconColor: scheme.onSurfaceVariant,
-                              onTap: () async {
-                                if (selectedValueId == null) return;
-                                unawaited(HapticFeedback.lightImpact());
-                                await GoRouter.of(context).push('/anytime');
-                              },
-                            ),
-                            for (final value in sorted) ...[
-                              SizedBox(width: tokens.filterRowSpacing),
-                              Builder(
-                                builder: (context) {
-                                  final chip = value.toChipData(context);
-                                  return _ValueFilterChip(
-                                    label: chip.label,
-                                    count: counts.byValueId[value.id],
-                                    selected: value.id == selectedValueId,
-                                    icon: chip.icon,
-                                    iconColor: chip.color,
-                                    tintColor: chip.color,
-                                    onTap: () async {
-                                      if (value.id == selectedValueId) return;
-                                      unawaited(HapticFeedback.lightImpact());
-                                      Routing.pushValueAnytime(
-                                        context,
-                                        value.id,
-                                      );
-                                    },
-                                  );
-                                },
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: TasklyTokens.of(context).spaceSm),
-              ],
-            );
-          },
-        ),
-      ],
-    );
-  }
 }
 
 class _ValueFilterChip extends StatelessWidget {
@@ -685,29 +736,55 @@ class _ValueFilterChip extends StatelessWidget {
   }
 }
 
-int _compareValues(Value a, Value b) {
-  final ap = a.priority;
-  final bp = b.priority;
-  final byPriority = _priorityRank(ap).compareTo(_priorityRank(bp));
-  if (byPriority != 0) return byPriority;
+List<ListRowUiModel> _filterAnytimeRows({
+  required List<ListRowUiModel> rows,
+  required Set<String> selectedValueIds,
+  required bool showCompleted,
+  required AnytimeScope? scope,
+}) {
+  final filtered = <ListRowUiModel>[];
+  for (final row in rows) {
+    if (row is! ProjectRowUiModel) {
+      filtered.add(row);
+      continue;
+    }
 
-  return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-}
+    final project = row.project;
+    final isCompleted = project?.completed ?? false;
+    if (!showCompleted && isCompleted) continue;
 
-int _priorityRank(ValuePriority priority) {
-  return switch (priority) {
-    ValuePriority.high => 0,
-    ValuePriority.medium => 1,
-    ValuePriority.low => 2,
-  };
-}
+    if (scope is AnytimeValueScope) {
+      filtered.add(row);
+      continue;
+    }
 
-Value? _findValueById(List<Value> values, String? id) {
-  if (id == null || id.isEmpty) return null;
-  for (final value in values) {
-    if (value.id == id) return value;
+    if (selectedValueIds.isEmpty) {
+      filtered.add(row);
+      continue;
+    }
+
+    final valueId = project?.primaryValueId;
+    if (valueId != null && selectedValueIds.contains(valueId)) {
+      filtered.add(row);
+    }
   }
-  return null;
+
+  final incomplete = <ProjectRowUiModel>[];
+  final completed = <ProjectRowUiModel>[];
+  for (final row in filtered) {
+    if (row is! ProjectRowUiModel) continue;
+    final isCompleted = row.project?.completed ?? false;
+    if (isCompleted) {
+      completed.add(row);
+    } else {
+      incomplete.add(row);
+    }
+  }
+
+  return [
+    ...incomplete,
+    if (showCompleted) ...completed,
+  ];
 }
 
 _ValueProjectCounts _countProjectsByValue(List<ListRowUiModel> rows) {

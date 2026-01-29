@@ -1,0 +1,219 @@
+@Tags(['widget', 'review'])
+library;
+
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../helpers/test_imports.dart';
+import 'package:taskly_bloc/presentation/features/review/view/weekly_review_modal.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/attention.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/settings.dart';
+import 'package:taskly_domain/services.dart';
+
+class MockAnalyticsService extends Mock implements AnalyticsService {}
+
+class MockAttentionEngine extends Mock implements AttentionEngineContract {}
+
+class MockValueRepository extends Mock implements ValueRepositoryContract {}
+
+class MockValueRatingsRepository extends Mock
+    implements ValueRatingsRepositoryContract {}
+
+class MockRoutineRepository extends Mock implements RoutineRepositoryContract {}
+
+class MockSettingsRepository extends Mock
+    implements SettingsRepositoryContract {}
+
+class MockTaskRepository extends Mock implements TaskRepositoryContract {}
+
+class MockGlobalSettingsBloc
+    extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
+    implements GlobalSettingsBloc {}
+
+class FakeNowService implements NowService {
+  FakeNowService(this.now);
+
+  final DateTime now;
+
+  @override
+  DateTime nowLocal() => now;
+
+  @override
+  DateTime nowUtc() => now.toUtc();
+}
+
+void main() {
+  setUpAll(() {
+    setUpAllTestEnvironment();
+    registerAllFallbackValues();
+  });
+  setUp(setUpTestEnvironment);
+
+  late MockAnalyticsService analyticsService;
+  late MockAttentionEngine attentionEngine;
+  late MockValueRepository valueRepository;
+  late MockValueRatingsRepository valueRatingsRepository;
+  late ValueRatingsWriteService valueRatingsWriteService;
+  late MockRoutineRepository routineRepository;
+  late MockSettingsRepository settingsRepository;
+  late MockTaskRepository taskRepository;
+  late MockGlobalSettingsBloc globalSettingsBloc;
+
+  setUp(() {
+    analyticsService = MockAnalyticsService();
+    attentionEngine = MockAttentionEngine();
+    valueRepository = MockValueRepository();
+    valueRatingsRepository = MockValueRatingsRepository();
+    valueRatingsWriteService = ValueRatingsWriteService(
+      repository: valueRatingsRepository,
+    );
+    routineRepository = MockRoutineRepository();
+    settingsRepository = MockSettingsRepository();
+    taskRepository = MockTaskRepository();
+    globalSettingsBloc = MockGlobalSettingsBloc();
+
+    when(() => globalSettingsBloc.state).thenReturn(
+      const GlobalSettingsState(isLoading: false),
+    );
+
+    when(
+      () => attentionEngine.watch(any()),
+    ).thenAnswer((_) => const Stream<List<AttentionItem>>.empty());
+    when(() => valueRepository.getAll()).thenAnswer((_) async => <Value>[]);
+    when(
+      () => valueRatingsRepository.getAll(weeks: any(named: 'weeks')),
+    ).thenAnswer((_) async => <ValueWeeklyRating>[]);
+    when(
+      () => routineRepository.getAll(includeInactive: true),
+    ).thenAnswer((_) async => <Routine>[]);
+    when(
+      () => routineRepository.getCompletions(),
+    ).thenAnswer((_) async => <RoutineCompletion>[]);
+    when(
+      () => routineRepository.getSkips(),
+    ).thenAnswer((_) async => <RoutineSkip>[]);
+    when(
+      () => taskRepository.getSnoozeStats(
+        sinceUtc: any(named: 'sinceUtc'),
+        untilUtc: any(named: 'untilUtc'),
+      ),
+    ).thenAnswer((_) async => <String, TaskSnoozeStats>{});
+    when(
+      () => taskRepository.getByIds(any()),
+    ).thenAnswer((_) async => <Task>[]);
+
+    when(
+      () => analyticsService.getRecentCompletionsByValue(
+        days: any(named: 'days'),
+      ),
+    ).thenAnswer((_) async => <String, int>{});
+    when(
+      () => analyticsService.getValueWeeklyTrends(weeks: any(named: 'weeks')),
+    ).thenAnswer((_) async => <String, List<double>>{});
+  });
+
+  Future<void> pumpModal(WidgetTester tester) async {
+    await tester.pumpApp(
+      MultiRepositoryProvider(
+        providers: [
+          RepositoryProvider<AnalyticsService>.value(value: analyticsService),
+          RepositoryProvider<AttentionEngineContract>.value(
+            value: attentionEngine,
+          ),
+          RepositoryProvider<ValueRepositoryContract>.value(
+            value: valueRepository,
+          ),
+          RepositoryProvider<ValueRatingsRepositoryContract>.value(
+            value: valueRatingsRepository,
+          ),
+          RepositoryProvider<ValueRatingsWriteService>.value(
+            value: valueRatingsWriteService,
+          ),
+          RepositoryProvider<RoutineRepositoryContract>.value(
+            value: routineRepository,
+          ),
+          RepositoryProvider<SettingsRepositoryContract>.value(
+            value: settingsRepository,
+          ),
+          RepositoryProvider<TaskRepositoryContract>.value(
+            value: taskRepository,
+          ),
+          RepositoryProvider<NowService>.value(
+            value: FakeNowService(DateTime(2025, 1, 15, 9)),
+          ),
+        ],
+        child: BlocProvider<GlobalSettingsBloc>.value(
+          value: globalSettingsBloc,
+          child: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () => showWeeklyReviewModal(
+                      context,
+                      settings: const GlobalSettings(),
+                    ),
+                    child: const Text('Open'),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  testWidgetsSafe('shows loading state while weekly review loads', (
+    tester,
+  ) async {
+    final completer = Completer<AllocationConfig>();
+    when(
+      () => settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
+    ).thenAnswer((_) => completer.future);
+
+    await pumpModal(tester);
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+
+    expect(find.byType(CircularProgressIndicator), findsWidgets);
+
+    completer.complete(const AllocationConfig());
+  });
+
+  testWidgetsSafe('shows error state when weekly review fails', (tester) async {
+    when(
+      () => settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
+    ).thenThrow('review failed');
+
+    await pumpModal(tester);
+    await tester.tap(find.text('Open'));
+    await tester.pumpForStream();
+
+    expect(find.text('review failed'), findsOneWidget);
+  });
+
+  testWidgetsSafe('renders weekly review content when loaded', (tester) async {
+    when(
+      () => settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
+    ).thenAnswer(
+      (_) async => const AllocationConfig(
+        suggestionSignal: SuggestionSignal.behaviorBased,
+      ),
+    );
+
+    await pumpModal(tester);
+    await tester.tap(find.text('Open'));
+    await tester.pumpForStream();
+
+    expect(find.text('Weekly Review'), findsOneWidget);
+  });
+}

@@ -55,8 +55,11 @@ void main() {
       isA<AnytimeScreenReady>().having(
         (s) => s.effect,
         'effect',
-        isA<AnytimeNavigateToTaskNew>()
-            .having((e) => e.defaultProjectId, 'defaultProjectId', 'project-1'),
+        isA<AnytimeNavigateToTaskNew>().having(
+          (e) => e.defaultProjectId,
+          'defaultProjectId',
+          'project-1',
+        ),
       ),
     ],
   );
@@ -78,4 +81,3 @@ void main() {
     ],
   );
 }
-

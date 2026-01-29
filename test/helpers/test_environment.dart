@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:taskly_core/logging.dart';
 
 import 'fallback_values.dart';
@@ -21,6 +22,16 @@ void setUpAllTestEnvironment() {
   // Some suites never touch widgets, but they may still use MethodChannels.
   // Initializing the binding is safe and avoids surprises.
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  initializeLoggingForTest();
+  registerAllFallbackValues();
+}
+
+/// Standard integration test environment initialization.
+///
+/// Use this for pipeline tests that require real HTTP and plugin registration.
+void setUpAllIntegrationTestEnvironment() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   initializeLoggingForTest();
   registerAllFallbackValues();

@@ -75,17 +75,27 @@ When asked to design UI/UX:
 
 - Always run `dart analyze` (command line) after all changes are completed and
   ensure it is green before reporting done.
-- Keep unit tests up to date with changes and add new unit tests for new
-  behavior or regressions; follow existing test patterns.
+- Always keep all tests up to date when changing code, and always run the
+  relevant tests after a change. Follow existing test patterns.
+- When adding new features always add corresponding tests including unit tests and integration or E2E tests if appropiate. 
 - When creating new tests, always run them and ensure they pass.
-- After any significant change, run the appropriate regression tests and ensure
-  they pass.
+- After any significant change, run the appropriate regression tests and ensure  they pass.
 - Do not try to “fix tests to make them pass” while the analyzer reports
   problems.
 - If `dart analyze` fails to start due to sandbox restrictions (e.g. “windows
   sandbox: spawn setup refresh”), rerun it with escalated permissions.
 - When implementing changes, do not run tests unless the user explicitly asks
   or it is required to unblock progress.
+
+### E2E / pipeline tests (strict)
+
+- Follow `doc/architecture/runbooks/LOCAL_E2E_STACK.md`.
+- Start the local stack before running pipeline tests:
+  - `powershell -File tool/e2e/Start-LocalE2EStack.ps1 -ResetDb`
+- Run pipeline tests via the helper script (not direct `flutter test`):
+  - `powershell -File tool/e2e/Run-LocalPipelineIntegrationTests.ps1 -ResetDb`
+- If the script reports missing app tables, run `supabase db pull` (after
+  linking/auth) and re-run the start script.
 
 ### Code generation
 

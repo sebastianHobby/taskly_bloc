@@ -41,7 +41,11 @@ void main() {
     userDataWipeService = MockUserDataWipeService();
     authRepository = MockAuthRepositoryContract();
 
-    when(() => templateDataService.resetAndSeed()).thenAnswer((_) async {});
+    when(
+      () => templateDataService.resetAndSeed(
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
     when(() => userDataWipeService.wipeAllUserData()).thenAnswer((_) async {});
     when(
       () => authRepository.signOut(context: any(named: 'context')),
@@ -88,14 +92,29 @@ void main() {
       ),
     ],
     verify: (_) {
-      verify(() => templateDataService.resetAndSeed()).called(1);
+      final captured = verify(
+        () => templateDataService.resetAndSeed(
+          context: captureAny(named: 'context'),
+        ),
+      ).captured;
+      final context = captured.last as OperationContext;
+      expect(context.feature, 'settings');
+      expect(context.screen, 'developer_settings');
+      expect(context.intent, 'generate_template_data');
+      expect(context.operation, 'settings.template.seed');
+      expect(context.entityType, 'settings');
+      expect(context.correlationId, isNotEmpty);
     },
   );
 
   blocTestSafe<SettingsMaintenanceBloc, SettingsMaintenanceState>(
     'generateTemplateData emits failure when reset fails',
     build: () {
-      when(() => templateDataService.resetAndSeed()).thenThrow(
+      when(
+        () => templateDataService.resetAndSeed(
+          context: any(named: 'context'),
+        ),
+      ).thenThrow(
         StateError('boom'),
       );
       return buildBloc();

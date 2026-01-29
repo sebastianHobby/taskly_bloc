@@ -153,12 +153,21 @@ void main() {
       ]);
     },
     expect: () => [
-      isA<JournalDailyEditState>()
-          .having((s) => s.selectedDayLocal.day, 'day', 14),
-      isA<JournalDailyEditState>()
-          .having((s) => s.status, 'status', isA<JournalDailyEditIdle>()),
-      isA<JournalDailyEditState>()
-          .having((s) => s.dailyTrackers.length, 'dailyTrackers', 1),
+      isA<JournalDailyEditState>().having(
+        (s) => s.selectedDayLocal.day,
+        'day',
+        14,
+      ),
+      isA<JournalDailyEditState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalDailyEditIdle>(),
+      ),
+      isA<JournalDailyEditState>().having(
+        (s) => s.dailyTrackers.length,
+        'dailyTrackers',
+        1,
+      ),
     ],
   );
 
@@ -184,10 +193,16 @@ void main() {
       const JournalDailyEditValueChanged(trackerId: 'daily', value: 5),
     ),
     expect: () => [
-      isA<JournalDailyEditState>()
-          .having((s) => s.status, 'status', isA<JournalDailyEditSaving>()),
-      isA<JournalDailyEditState>()
-          .having((s) => s.status, 'status', isA<JournalDailyEditIdle>()),
+      isA<JournalDailyEditState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalDailyEditSaving>(),
+      ),
+      isA<JournalDailyEditState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalDailyEditIdle>(),
+      ),
     ],
     verify: (_) {
       final captured = verify(
@@ -226,10 +241,16 @@ void main() {
       const JournalDailyEditDeltaAdded(trackerId: 'daily', delta: 2),
     ),
     expect: () => [
-      isA<JournalDailyEditState>()
-          .having((s) => s.status, 'status', isA<JournalDailyEditSaving>()),
-      isA<JournalDailyEditState>()
-          .having((s) => s.status, 'status', isA<JournalDailyEditIdle>()),
+      isA<JournalDailyEditState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalDailyEditSaving>(),
+      ),
+      isA<JournalDailyEditState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalDailyEditIdle>(),
+      ),
     ],
     verify: (_) {
       final captured = verify(
@@ -274,10 +295,16 @@ void main() {
       const JournalDailyEditValueChanged(trackerId: 'daily', value: 1),
     ),
     expect: () => [
-      isA<JournalDailyEditState>()
-          .having((s) => s.status, 'status', isA<JournalDailyEditSaving>()),
-      isA<JournalDailyEditState>()
-          .having((s) => s.status, 'status', isA<JournalDailyEditError>()),
+      isA<JournalDailyEditState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalDailyEditSaving>(),
+      ),
+      isA<JournalDailyEditState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalDailyEditError>(),
+      ),
     ],
   );
 }

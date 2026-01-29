@@ -54,8 +54,7 @@ void main() {
     ),
     expect: () => [
       const ValueDetailState.loadInProgress(),
-      isA<ValueDetailLoadSuccess>()
-          .having((s) => s.value.id, 'id', 'value-1'),
+      isA<ValueDetailLoadSuccess>().having((s) => s.value.id, 'id', 'value-1'),
     ],
   );
 
@@ -67,13 +66,15 @@ void main() {
           any(),
           context: any(named: 'context'),
         ),
-      ).thenAnswer((_) async => CommandValidationFailure(
-        failure: const ValidationFailure(
-          formErrors: [
-            ValidationError(code: 'invalid', messageKey: 'invalid'),
-          ],
+      ).thenAnswer(
+        (_) async => CommandValidationFailure(
+          failure: const ValidationFailure(
+            formErrors: [
+              ValidationError(code: 'invalid', messageKey: 'invalid'),
+            ],
+          ),
         ),
-      ));
+      );
       return buildBloc();
     },
     act: (bloc) => bloc.add(

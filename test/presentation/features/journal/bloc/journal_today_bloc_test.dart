@@ -147,8 +147,11 @@ void main() {
       eventsController.emitError(StateError('boom'));
     },
     expect: () => [
-      isA<JournalTodayError>()
-          .having((s) => s.message, 'message', contains('Failed to load')),
+      isA<JournalTodayError>().having(
+        (s) => s.message,
+        'message',
+        contains('Failed to load'),
+      ),
     ],
   );
 }

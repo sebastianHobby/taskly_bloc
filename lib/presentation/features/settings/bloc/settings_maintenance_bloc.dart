@@ -121,7 +121,11 @@ class SettingsMaintenanceBloc
     );
 
     try {
-      await _templateDataService.resetAndSeed();
+      final context = _newContext(
+        intent: 'generate_template_data',
+        operation: 'settings.template.seed',
+      );
+      await _templateDataService.resetAndSeed(context: context);
 
       if (emit.isDone) return;
 

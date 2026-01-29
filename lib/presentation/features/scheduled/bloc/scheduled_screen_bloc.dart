@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/services.dart';
 
 sealed class ScheduledScreenEffect {
@@ -111,12 +112,15 @@ class ScheduledScreenBloc
   ScheduledScreenBloc({
     required TaskWriteService taskWriteService,
     required ProjectWriteService projectWriteService,
+    required DemoModeService demoModeService,
     OperationContextFactory contextFactory = const OperationContextFactory(),
   }) : _taskWriteService = taskWriteService,
        _projectWriteService = projectWriteService,
+       _demoModeService = demoModeService,
        _contextFactory = contextFactory,
        super(const ScheduledScreenReady()) {
     on<ScheduledCreateTaskForDayRequested>((event, emit) {
+      if (_demoModeService.enabled.valueOrNull ?? false) return;
       emit(
         ScheduledScreenReady(
           effect: ScheduledOpenTaskNew(
@@ -131,6 +135,7 @@ class ScheduledScreenBloc
     });
 
     on<ScheduledCreateProjectRequested>((event, emit) {
+      if (_demoModeService.enabled.valueOrNull ?? false) return;
       emit(const ScheduledScreenReady(effect: ScheduledOpenProjectNew()));
     });
 
@@ -150,12 +155,14 @@ class ScheduledScreenBloc
 
   final TaskWriteService _taskWriteService;
   final ProjectWriteService _projectWriteService;
+  final DemoModeService _demoModeService;
   final OperationContextFactory _contextFactory;
 
   Future<void> _onRescheduleTasksDeadline(
     ScheduledRescheduleTasksDeadlineRequested event,
     Emitter<ScheduledScreenState> emit,
   ) async {
+    if (_demoModeService.enabled.valueOrNull ?? false) return;
     final uniqueTaskIds = event.taskIds.toSet().toList(growable: false);
     if (uniqueTaskIds.isEmpty) return;
 
@@ -201,6 +208,7 @@ class ScheduledScreenBloc
     ScheduledRescheduleProjectsDeadlineRequested event,
     Emitter<ScheduledScreenState> emit,
   ) async {
+    if (_demoModeService.enabled.valueOrNull ?? false) return;
     final uniqueProjectIds = event.projectIds.toSet().toList(growable: false);
     if (uniqueProjectIds.isEmpty) return;
 
@@ -246,6 +254,7 @@ class ScheduledScreenBloc
     ScheduledRescheduleEntitiesDeadlineRequested event,
     Emitter<ScheduledScreenState> emit,
   ) async {
+    if (_demoModeService.enabled.valueOrNull ?? false) return;
     final uniqueTaskIds = event.taskIds.toSet().toList(growable: false);
     final uniqueProjectIds = event.projectIds.toSet().toList(growable: false);
     if (uniqueTaskIds.isEmpty && uniqueProjectIds.isEmpty) return;

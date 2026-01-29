@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/model/guided_tour_step.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/preferences.dart';
@@ -72,7 +73,9 @@ final class GuidedTourState {
 class GuidedTourBloc extends Bloc<GuidedTourEvent, GuidedTourState> {
   GuidedTourBloc({
     required SettingsRepositoryContract settingsRepository,
+    required DemoModeService demoModeService,
   }) : _settingsRepository = settingsRepository,
+       _demoModeService = demoModeService,
        super(GuidedTourState.initial()) {
     on<GuidedTourStarted>(_onStarted);
     on<GuidedTourNextRequested>(_onNextRequested);
@@ -81,6 +84,7 @@ class GuidedTourBloc extends Bloc<GuidedTourEvent, GuidedTourState> {
   }
 
   final SettingsRepositoryContract _settingsRepository;
+  final DemoModeService _demoModeService;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
@@ -89,6 +93,7 @@ class GuidedTourBloc extends Bloc<GuidedTourEvent, GuidedTourState> {
     Emitter<GuidedTourState> emit,
   ) {
     if (state.active && !event.force) return;
+    _demoModeService.enable();
     emit(
       state.copyWith(
         active: true,
@@ -138,6 +143,7 @@ class GuidedTourBloc extends Bloc<GuidedTourEvent, GuidedTourState> {
 
   Future<void> _complete(Emitter<GuidedTourState> emit) async {
     emit(state.copyWith(active: false));
+    _demoModeService.disable();
 
     final context = _contextFactory.create(
       feature: 'guided_tour',
@@ -163,5 +169,11 @@ class GuidedTourBloc extends Bloc<GuidedTourEvent, GuidedTourState> {
         );
       }
     }
+  }
+
+  @override
+  Future<void> close() {
+    _demoModeService.disable();
+    return super.close();
   }
 }

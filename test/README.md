@@ -32,6 +32,12 @@ Tests using real in-memory database. Located in `integration/`.
 - **Run:** `flutter test --tags=integration`
 - **Coverage:** End-to-end CRUD operations, cross-feature workflows
 
+### Pipeline Tests (local Supabase + PowerSync)
+Pipeline tests require a real local stack and run via the integration test
+entrypoint to allow plugins + real HTTP.
+- **Run (Windows):** `powershell -File tool/e2e/Run-LocalPipelineIntegrationTests.ps1 -ResetDb`
+- **Entrypoint:** `integration_test/powersync_pipeline_entrypoint_test.dart`
+
 ### Widget Tests
 Flutter widget tests. Located in `test/presentation/**`.
 - **Run:** `flutter test --tags=widget`

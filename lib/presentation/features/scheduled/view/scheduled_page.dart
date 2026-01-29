@@ -10,12 +10,16 @@ import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_timel
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
@@ -34,6 +38,7 @@ class ScheduledPage extends StatelessWidget {
           create: (context) => ScheduledScreenBloc(
             taskWriteService: context.read<TaskWriteService>(),
             projectWriteService: context.read<ProjectWriteService>(),
+            demoModeService: context.read<DemoModeService>(),
           ),
         ),
         BlocProvider(
@@ -41,6 +46,8 @@ class ScheduledPage extends StatelessWidget {
             occurrencesService: context.read<ScheduledOccurrencesService>(),
             sessionDayKeyService: context.read<SessionDayKeyService>(),
             nowService: context.read<NowService>(),
+            demoModeService: context.read<DemoModeService>(),
+            demoDataProvider: context.read<DemoDataProvider>(),
             scope: scope,
           ),
         ),
@@ -49,6 +56,11 @@ class ScheduledPage extends StatelessWidget {
       child: _ScheduledTimelineView(scope: scope),
     );
   }
+}
+
+enum _ScheduledMenuAction {
+  showCompleted,
+  selectMultiple,
 }
 
 class _ScheduledTimelineView extends StatefulWidget {
@@ -69,6 +81,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
   DateTime? _latestToday;
   int _latestOverdueOffset = 0;
   DateTime? _lastVisibleDay;
+  bool _showCompleted = false;
 
   @override
   void initState() {
@@ -114,9 +127,15 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     );
   }
 
+  void _toggleShowCompleted() {
+    setState(() => _showCompleted = !_showCompleted);
+  }
+
   DateTime _fallbackTodayLocal() {
-    final todayUtc =
-        context.read<SessionDayKeyService>().todayDayKeyUtc.valueOrNull;
+    final todayUtc = context
+        .read<SessionDayKeyService>()
+        .todayDayKeyUtc
+        .valueOrNull;
     final base = (todayUtc ?? context.read<NowService>().nowUtc()).toLocal();
     return DateTime(base.year, base.month, base.day);
   }
@@ -285,6 +304,47 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                       icon: Icons.calendar_month_rounded,
                       onPressed: null,
                     ),
+                    TasklyOverflowMenuButton<_ScheduledMenuAction>(
+                      tooltip: 'More',
+                      icon: Icons.more_vert,
+                      style: IconButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest.withValues(
+                              alpha: TasklyTokens.of(
+                                context,
+                              ).iconButtonBackgroundAlpha,
+                            ),
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onSurface,
+                        shape: const CircleBorder(),
+                        minimumSize: Size.square(
+                          TasklyTokens.of(context).iconButtonMinSize,
+                        ),
+                        padding: TasklyTokens.of(context).iconButtonPadding,
+                      ),
+                      itemsBuilder: (context) => [
+                        CheckedPopupMenuItem(
+                          value: _ScheduledMenuAction.showCompleted,
+                          checked: _showCompleted,
+                          child: const Text('Show completed'),
+                        ),
+                        const PopupMenuItem(
+                          value: _ScheduledMenuAction.selectMultiple,
+                          child: Text('Select multiple'),
+                        ),
+                      ],
+                      onSelected: (action) {
+                        switch (action) {
+                          case _ScheduledMenuAction.showCompleted:
+                            _toggleShowCompleted();
+                          case _ScheduledMenuAction.selectMultiple:
+                            context.read<SelectionBloc>().enterSelectionMode();
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -310,6 +370,47 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                     _CircleIconButton(
                       icon: Icons.calendar_month_rounded,
                       onPressed: null,
+                    ),
+                    TasklyOverflowMenuButton<_ScheduledMenuAction>(
+                      tooltip: 'More',
+                      icon: Icons.more_vert,
+                      style: IconButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest.withValues(
+                              alpha: TasklyTokens.of(
+                                context,
+                              ).iconButtonBackgroundAlpha,
+                            ),
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onSurface,
+                        shape: const CircleBorder(),
+                        minimumSize: Size.square(
+                          TasklyTokens.of(context).iconButtonMinSize,
+                        ),
+                        padding: TasklyTokens.of(context).iconButtonPadding,
+                      ),
+                      itemsBuilder: (context) => [
+                        CheckedPopupMenuItem(
+                          value: _ScheduledMenuAction.showCompleted,
+                          checked: _showCompleted,
+                          child: const Text('Show completed'),
+                        ),
+                        const PopupMenuItem(
+                          value: _ScheduledMenuAction.selectMultiple,
+                          child: Text('Select multiple'),
+                        ),
+                      ],
+                      onSelected: (action) {
+                        switch (action) {
+                          case _ScheduledMenuAction.showCompleted:
+                            _toggleShowCompleted();
+                          case _ScheduledMenuAction.selectMultiple:
+                            context.read<SelectionBloc>().enterSelectionMode();
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -367,16 +468,20 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         final selection = context.read<SelectionBloc>();
 
         final visibleEntities = <SelectionEntityMeta>[];
+        final overdueSorted = state.overdue.toList(growable: false)
+          ..sort(_compareOccurrences);
+        final overdueFiltered = _applyCompletionPolicy(overdueSorted);
 
-        for (final o in state.overdue) {
+        for (final o in overdueFiltered) {
           if (o.entityType == EntityType.task && o.task != null) {
             final t = o.task!;
+            final completed = _isOccurrenceCompleted(o);
             visibleEntities.add(
               SelectionEntityMeta(
                 key: SelectionKey(entityType: EntityType.task, entityId: t.id),
                 displayName: t.name,
                 canDelete: true,
-                completed: t.completed,
+                completed: completed,
                 pinned: t.isPinned,
                 canCompleteSeries: t.isRepeating && !t.seriesEnded,
               ),
@@ -403,10 +508,12 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
           final list = occurrencesByDay[day] ?? const <ScheduledOccurrence>[];
           final sorted = list.toList(growable: false)
             ..sort(_compareOccurrences);
+          final filtered = _applyCompletionPolicy(sorted);
 
-          for (final o in sorted) {
+          for (final o in filtered) {
             if (o.entityType == EntityType.task && o.task != null) {
               final t = o.task!;
+              final completed = _isOccurrenceCompleted(o);
               visibleEntities.add(
                 SelectionEntityMeta(
                   key: SelectionKey(
@@ -415,7 +522,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   ),
                   displayName: t.name,
                   canDelete: true,
-                  completed: t.completed,
+                  completed: completed,
                   pinned: t.isPinned,
                   canCompleteSeries: t.isRepeating && !t.seriesEnded,
                 ),
@@ -441,7 +548,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
 
         selection.updateVisibleEntities(visibleEntities);
 
-        final overdueRows = state.overdue
+        final overdueRows = overdueFiltered
             .map(
               (o) => _buildOccurrenceRow(
                 context,
@@ -482,6 +589,49 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                             today: today,
                             initialDay: _lastVisibleDay ?? today,
                           );
+                        },
+                      ),
+                      TasklyOverflowMenuButton<_ScheduledMenuAction>(
+                        tooltip: 'More',
+                        icon: Icons.more_vert,
+                        style: IconButton.styleFrom(
+                          backgroundColor:
+                              Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest.withValues(
+                                alpha: TasklyTokens.of(
+                                  context,
+                                ).iconButtonBackgroundAlpha,
+                              ),
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onSurface,
+                          shape: const CircleBorder(),
+                          minimumSize: Size.square(
+                            TasklyTokens.of(context).iconButtonMinSize,
+                          ),
+                          padding: TasklyTokens.of(context).iconButtonPadding,
+                        ),
+                        itemsBuilder: (context) => [
+                          CheckedPopupMenuItem(
+                            value: _ScheduledMenuAction.showCompleted,
+                            checked: _showCompleted,
+                            child: const Text('Show completed'),
+                          ),
+                          const PopupMenuItem(
+                            value: _ScheduledMenuAction.selectMultiple,
+                            child: Text('Select multiple'),
+                          ),
+                        ],
+                        onSelected: (action) {
+                          switch (action) {
+                            case _ScheduledMenuAction.showCompleted:
+                              _toggleShowCompleted();
+                            case _ScheduledMenuAction.selectMultiple:
+                              context
+                                  .read<SelectionBloc>()
+                                  .enterSelectionMode();
+                          }
                         },
                       ),
                     ],
@@ -565,11 +715,11 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
 
                     final list =
                         occurrencesByDay[day] ?? const <ScheduledOccurrence>[];
-
                     final sorted = list.toList(growable: false)
                       ..sort(_compareOccurrences);
+                    final filtered = _applyCompletionPolicy(sorted);
 
-                    final rows = sorted
+                    final rows = filtered
                         .map(
                           (o) => _buildOccurrenceRow(
                             context,
@@ -592,6 +742,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                         : (count == 1 ? '1 task' : '$count tasks');
 
                     return Padding(
+                      key: dayIndex == 0
+                          ? GuidedTourAnchors.scheduledSectionToday
+                          : null,
                       padding: EdgeInsets.only(
                         bottom: TasklyTokens.of(
                           context,
@@ -625,6 +778,35 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     final bDue = b.tag == ScheduledDateTag.due;
     if (aDue != bDue) return aDue ? -1 : 1;
     return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  }
+
+  List<ScheduledOccurrence> _applyCompletionPolicy(
+    List<ScheduledOccurrence> occurrences,
+  ) {
+    final incomplete = <ScheduledOccurrence>[];
+    final completed = <ScheduledOccurrence>[];
+
+    for (final occurrence in occurrences) {
+      if (_isOccurrenceCompleted(occurrence)) {
+        completed.add(occurrence);
+      } else {
+        incomplete.add(occurrence);
+      }
+    }
+
+    if (!_showCompleted) return incomplete;
+    return [...incomplete, ...completed];
+  }
+
+  bool _isOccurrenceCompleted(ScheduledOccurrence occurrence) {
+    if (occurrence.task != null) {
+      final task = occurrence.task!;
+      return task.occurrence?.isCompleted ?? task.completed;
+    }
+    if (occurrence.project != null) {
+      return occurrence.project!.completed;
+    }
+    return false;
   }
 
   static TasklyRowSpec? _buildOccurrenceRow(

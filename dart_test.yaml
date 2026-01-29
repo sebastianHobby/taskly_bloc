@@ -38,6 +38,7 @@ tags:
   reviews:
   journal:
   tasks:
+  my_day:
   parity:
 
   # Local-stack pipeline tests (Supabase + PowerSync + real network)

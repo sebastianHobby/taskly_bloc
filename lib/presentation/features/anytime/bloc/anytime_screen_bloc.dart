@@ -122,7 +122,7 @@ class AnytimeScreenBloc extends Bloc<AnytimeScreenEvent, AnytimeScreenState> {
           focusOnly: false,
           inboxCollapsed: false,
           searchQuery: '',
-          sortOrder: AnytimeSortOrder.dueSoonest,
+          sortOrder: AnytimeSortOrder.recentlyUpdated,
         ),
       ) {
     on<AnytimeFocusOnlyToggled>((event, emit) {

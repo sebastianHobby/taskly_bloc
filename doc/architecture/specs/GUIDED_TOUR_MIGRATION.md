@@ -1,19 +1,18 @@
-# Guided Tour Migration (Tutorial Coach Mark + Demo Data)
-
+﻿
 Status: draft
 Owner: Codex
-Last updated: 2026-01-28
+Last updated: 2026-01-29
 
 ## Summary
 
-Replace the legacy guided tour overlay/preview implementation with a full-screen, demo-data-backed guided tour powered by `tutorial_coach_mark`. The tour must be safe on empty accounts and must show the same demo content for all users regardless of their real data. Remove legacy guided tour targets/preview cards and update routing, UI, and tests.
+Replace the legacy guided tour overlay/preview implementation with a live-screen guided tour powered by `tutorial_coach_mark`. The tour runs on real screens with live anchors while demo data is injected via `DemoModeService` to keep the experience deterministic and safe on empty accounts. Remove demo routes/screens and legacy preview wiring.
 
 ## Goals
 
-- Provide a deterministic, full-screen guided tour that always shows demo data.
-- Keep the tour safe for empty accounts and consistent for all users.
+- Provide a deterministic guided tour on **live screens** with real layouts.
+- Keep the tour safe for empty accounts via demo-mode data injection.
 - Use `tutorial_coach_mark` for coachmarks and overlays.
-- Remove legacy guided tour overlay/target registry/preview card wiring.
+- Remove demo routes/screens plus legacy overlay/target registry/preview wiring.
 - Maintain BLoC-only application state boundaries.
 - Keep Taskly UI packages pure UI (no domain access).
 - Ensure guided tour flow remains accessible from Settings and onboarding auto-start.
@@ -22,8 +21,9 @@ Replace the legacy guided tour overlay/preview implementation with a full-screen
 
 - Do not persist or mutate real domain data during the tour.
 - Do not modify core data models or storage schemas.
-- Do not change global navigation structure beyond adding tour routes.
+- Do not change global navigation structure; tour uses existing routes.
 - Do not introduce non-BLoC state for app-level tour flow.
+- Do not introduce demo-only routes or demo-only screen widgets.
 
 ## Architecture Constraints (from invariants)
 
@@ -34,22 +34,31 @@ Replace the legacy guided tour overlay/preview implementation with a full-screen
 
 ## User Experience (Full Screen Option B)
 
-The guided tour uses full-screen demo screens for each step. Coachmarks are overlaid on the demo screen elements. Some steps are full-screen �concept cards� (no target highlight), rendered as full-screen overlays.
+The guided tour uses the **live screens** for each step. Coachmarks are overlaid on the real UI elements. Some steps are full-screen concept cards (no target highlight), rendered as full-screen overlays.
 
-The tour is always deterministic and shows the same demo data for all users. It never depends on actual user content.
+The tour is deterministic by enabling demo-mode data while active, so the same demo content appears regardless of user data.
 
 ### Tour Sequence (Final)
 
 1. Welcome (card)
-2. Anytime overview (coachmark)
-3. Inbox capture (coachmark)
-4. Values framing (card)
-5. Values list focus (coachmark)
-6. Routines focus (coachmark)
-7. Plan My Day entry (coachmark)
-8. My Day focus list (coachmark)
-9. Scheduled horizon (coachmark)
-10. Finish (card)
+2. Anytime overview (card)
+3. Add via FAB (coachmark)
+4. Inbox capture (coachmark)
+5. Task project + value (coachmark)
+6. Project detail (card)
+7. Values framing (card)
+8. Values list focus (coachmark)
+9. Routines overview (card)
+10. Scheduled horizon (coachmark)
+11. Plan My Day entry (coachmark)
+12. Plan My Day - time sensitive (coachmark)
+13. Plan My Day - scheduled routines (coachmark)
+14. Plan My Day - flexible routines (coachmark)
+15. Plan My Day - value picks (coachmark)
+16. Plan My Day - summary (card)
+17. My Day summary (card)
+18. My Day focus list (coachmark)
+19. Finish (card)
 
 ## Copy (Final)
 
@@ -57,108 +66,164 @@ Use the following copy in the tour steps:
 
 1) Welcome
 - Title: "Welcome to Taskly"
-- Body: "You are seeing a demo workspace so every tour looks the same. You will return to your real tasks when the tour ends."
+- Body: "You are seeing a demo workspace for this tour. You will return to your real tasks when the tour ends."
 
-2) Anytime (coachmark)
-- Title: "Anytime is your home base"
-- Body: "Everything starts here. Projects group related tasks so My Day can pull the right work forward."
+2) Anytime overview (card)
+- Title: "Anytime shows every project"
+- Body: "Anytime is your home base. It keeps every project visible so you always know what is in motion."
 
-3) Inbox (coachmark)
+3) Add via FAB (coachmark)
+- Title: "Add tasks here..."
+- Body: "Use the + button to add a project or task from anywhere."
+
+4) Inbox capture (coachmark)
 - Title: "Inbox for capture"
-- Body: "Drop tasks here fast. Sort and organize them into projects when you are ready."
+- Body: "Capture now, organize later. Move tasks into projects when you are ready."
 
-4) Values (card)
+5) Task project + value (coachmark)
+- Title: "Set the project"
+- Body: "Set the project to connect this task to a value. Taskly uses that to suggest the right work. You can also add extra values to a task."
+
+6) Project detail (card)
+- Title: "Projects hold the work"
+- Body: "Open a project to see its tasks, deadlines, and priorities in one place."
+
+7) Values framing (card)
 - Title: "Values guide your focus"
 - Body: "Values keep your days balanced. They shape suggestions and help you choose what matters most."
 
-5) Values list (coachmark)
+8) Values list (coachmark)
 - Title: "Define what matters"
 - Body: "Add a few values so Taskly can recommend the right tasks and routines."
 
-6) Routines (coachmark)
+9) Routines overview (card)
 - Title: "Routines build momentum"
-- Body: "Create habits tied to values. They can show up when you plan your day."
+- Body: "Routines can be flexible or scheduled. Use them to keep progress steady."
 
-7) Plan My Day (coachmark)
-- Title: "Plan My Day"
-- Body: "Review suggestions and pick the tasks you want to focus on today."
-
-8) My Day focus list (coachmark)
-- Title: "Today�s focus list"
-- Body: "This is the short list you commit to. Keep it realistic and move what is done to completed."
-
-9) Scheduled
+10) Scheduled horizon (coachmark)
 - Title: "Scheduled looks ahead"
 - Body: "See upcoming tasks by date so nothing sneaks up on you."
 
-10) Finish
+11) Plan My Day entry (coachmark)
+- Title: "Plan My Day"
+- Body: "Review suggestions and pick the tasks you want to focus on today."
+
+12) Plan My Day - time sensitive (coachmark)
+- Title: "Start with time-sensitive"
+- Body: "Start with what's time-sensitive. Choose the items you want to handle today."
+
+13) Plan My Day - scheduled routines (coachmark)
+- Title: "Scheduled routines"
+- Body: "Pick the scheduled habits you're committing to today."
+
+14) Plan My Day - flexible routines (coachmark)
+- Title: "Flexible routines"
+- Body: "Pick flexible routines to make progress on your weekly targets."
+
+15) Plan My Day - value picks (coachmark)
+- Title: "Value-aligned picks"
+- Body: "Choose value-aligned tasks to round out your plan. Suggestions follow task completions by default, or weekly check-ins if you want a more reflective approach."
+
+16) Plan My Day - summary (card)
+- Title: "Review and confirm"
+- Body: "Review your selections and confirm today's plan."
+
+17) My Day summary (card)
+- Title: "Your plan for today"
+- Body: "Here is the list you just chose, mixing tasks and routines."
+
+18) My Day focus list (coachmark)
+- Title: "Today's focus list"
+- Body: "This is the short list you commit to. Keep it realistic and move what is done to completed."
+
+19) Finish
 - Title: "You are ready"
 - Body: "The tour is done. Open Settings > Guided tour anytime to replay it."
 
 ## Demo Data Requirements
 
-All tour screens must render from static demo data (no repositories).
+While the tour runs on live screens, demo data must be injected via
+`DemoModeService` + `DemoDataProvider` so the experience is deterministic and
+safe on empty accounts. Live screens should consume demo data through their
+normal presentation services/BLoCs (not demo-only widgets).
 
 ### Demo Projects
 - Inbox (special)
-- "Website Refresh"
-- "Spring Routine"
-
-### Demo Tasks
-- "Draft homepage copy" (project: Website Refresh)
-- "Review sitemap" (project: Website Refresh)
-- "Buy protein bars" (project: Spring Routine)
-- "Water plants" (project: Spring Routine)
+- "Japanese Basics"
+- "Photography Practice"
+- "Gym Routine"
+- "Dinner Party Menu"
+- "Studio Jam Demo"
 
 ### Demo Inbox Tasks
-- "Book dentist appointment"
-- "Read Deep Work"
-- "Schedule laptop repair"
+- "Renew gym membership"
+- "Create country flashcards"
+- "Schedule photo walk"
+- "Draft grocery list for new recipe"
+- "Watch 1 lesson video"
 
 ### Demo Values
-- "Focus"
+- "Learning"
 - "Health"
-- "Relationships"
-- "Creativity"
+- "Social"
 
 ### Demo Routines
-- "Morning walk"
-- "Weekly review"
-- "Call a friend"
+- "Gym session"
+- "Weekly photo share"
+- "15-min vocab drill"
+- "20-min guitar practice"
+
+### Demo Project Detail Tasks (Japanese Basics)
+- "Complete Lesson 3" (deadline + priority)
+- "Review Hiragana" (deadline + priority)
+- "Create country flashcards" (deadline + priority)
 
 ### Demo My Day Picks
-- "Draft homepage copy"
-- "Morning walk"
-- "Review sitemap"
+- "15-min vocab drill"
+- "Gym session"
+- "Complete Lesson 3"
+- "Edit 10 photos"
+- "Learn intro riff"
 
 ### Demo Scheduled
-- Today: "Weekly review"
-- Tomorrow: "Schedule laptop repair"
-- Later: "Call a friend"
+- Today: "Gym session"
+- Tomorrow: "Weekly photo share"
+- Later: "Create country flashcards"
 
-## Routing & Navigation
+### Demo Plan My Day
+- Time sensitive: due and planned sections with 2 selected examples
+- Scheduled routines: 1 selected, 1 unselected
+- Flexible routines: 1 selected, 1 unselected (with progress captions)
+- Values focus: learning tasks with one selected
+- Summary: mixed tasks and routines
 
-Add explicit demo routes under the authenticated shell:
+## Routing and Navigation
 
-- `/tour/anytime`
-- `/tour/inbox`
-- `/tour/values`
-- `/tour/routines`
-- `/tour/my-day`
-- `/tour/scheduled`
+Use existing authenticated routes (no demo-only routes):
 
-These routes should map to demo-only pages. They should not affect navigation highlights or shell behavior outside the tour. The shell should map `/tour/<screen>` to the corresponding activeScreenId so the correct nav item is highlighted during the tour.
+- `/anytime`
+- `/task/new`
+- `/project/inbox/detail`
+- `/values`
+- `/routines`
+- `/scheduled`
+- `/my-day`
+
+Plan My Day steps are driven inside the `/my-day` screen by the `GuidedTourBloc`
+state (switching the My Day page into plan mode and selecting the appropriate
+step).
 
 ## Guided Tour Flow (BLoC + Host)
 
 ### BLoC
 - Keep existing `GuidedTourBloc` as the source of truth for steps.
-- Update `buildGuidedTourSteps()` to use the new demo routes and new step IDs/copy.
+- Update `buildGuidedTourSteps()` to use live routes and new step IDs/copy.
 - Steps must include metadata needed by the host to build coachmark targets:
   - `step.id`
   - `step.route`
   - `step.kind` (card or coachmark)
   - `step.coachmark.targetId` (only for coachmarks)
+- When the tour starts, enable demo mode; disable it on finish/skip.
 
 ### Host (Overlay Controller)
 - Replace the legacy overlay with a new host that:
@@ -169,59 +234,46 @@ These routes should map to demo-only pages. They should not affect navigation hi
 - The host must handle showing, advancing, skipping, and finishing.
 
 ### Coachmark Targets
-- Use `GlobalKey` anchors for each target in demo screens.
-- Centralize keys in a `GuidedTourAnchors` class with stable IDs.
 
-Example target IDs:
+Target IDs and anchors:
 - `anytime_create_project`
-- `inbox_quick_add`
-- `values_add_value`
-- `routines_add`
-- `my_day_plan_button`
-- `my_day_focus_task_1`
+- `anytime_inbox_row`
+- `task_project_value`
+- `values_list`
 - `scheduled_section_today`
+- `my_day_plan_button`
+- `plan_my_day_triage`
+- `plan_my_day_routines_scheduled`
+- `plan_my_day_routines_flexible`
+- `plan_my_day_values_card`
+- `my_day_focus_task_1`
 
-## Demo Screens (Full Screen)
+## Live Screen Anchors
 
-Create demo screens under `lib/presentation/features/guided_tour/demo/` using `TasklyFeedRenderer` and Taskly UI models to compose static rows.
+Anchors are added to existing screens (no demo pages). Each target ID maps to a
+stable widget key on the live screen:
 
-Each screen must:
-- be a self-contained widget
-- render static TasklyFeedSpec data
-- expose coachmark target keys on relevant widgets
-- avoid any repo/service or stream subscriptions
-
-### Demo Anytime Screen
-- Use a standard list section with project rows
-- Include a floating action button (or speed dial) anchored for coachmark
-
-### Demo Inbox Screen
-- Use task rows for inbox entries
-- Anchor a quick-add button for coachmark
-
-### Demo Values Screen
-- Use value rows; anchor an add button for coachmark
-
-### Demo Routines Screen
-- Use routine rows; anchor add action
-
-### Demo My Day Screen
-- Show a "Plan My Day" button and a list of focus tasks
-- Anchor plan button and first task row
-
-### Demo Scheduled Screen
-- Use scheduled day sections (Today/Tomorrow/Later)
-- Anchor the Today section header or first row
+- `anytime_create_project` → Anytime add FAB/speed dial
+- `anytime_inbox_row` → Anytime inbox row
+- `task_project_value` → Task editor project/value section
+- `values_list` → first Values list row
+- `scheduled_section_today` → Scheduled “Today” section
+- `my_day_plan_button` → My Day “Plan My Day” button
+- `plan_my_day_triage` → Plan My Day triage step container
+- `plan_my_day_routines_scheduled` → Plan My Day scheduled routines header
+- `plan_my_day_routines_flexible` → Plan My Day flexible routines header
+- `plan_my_day_values_card` → first Plan My Day values card
+- `my_day_focus_task_1` → first My Day focus row
 
 ## Concept Cards (Full Screen)
 
-Concept cards are full-screen overlays rendered inside tutorial_coach_mark using a full-screen `TargetPosition` and a centered card UI with the copy above.
+Concept cards are full-screen overlays rendered inside tutorial_coach_mark using a full-screen target and a centered card UI with the copy above.
 
 Card layout guidelines:
 - Use Taskly tokens for spacing
 - Respect safe areas
-- Provide explicit "Next" and "Back" actions within the card
-- Provide "Skip" as a secondary action
+- Provide explicit Next/Back actions within the card
+- Provide Skip as a secondary action
 
 ## Legacy Removal
 
@@ -232,6 +284,7 @@ Remove the following legacy components and all wiring:
 - legacy overlay logic in `guided_tour_overlay.dart`
 - any `GuidedTourTarget` usage in live screens
 - any preview card logic tied to the old flow
+- demo-only guided tour routes and demo screen widgets
 
 ## Testing Strategy
 
@@ -246,12 +299,12 @@ Remove the following legacy components and all wiring:
 ### Regression
 - Run `dart analyze` after changes.
 - Run guided tour tests and any other impacted tests.
-- Update/repair mocks as needed for final class constraints (OccurrenceReadService, ProjectWriteService, ValueRatingsWriteService).
+- Update/repair mocks as needed for final class constraints.
 
-## Risks & Mitigations
+## Risks and Mitigations
 
 - Risk: tutorial_coach_mark throws NotFoundTargetException if a key is missing.
-  - Mitigation: ensure each demo screen has the correct key and is mounted before showing overlay.
+  - Mitigation: ensure each live screen has the correct key and is mounted before showing overlay.
 
 - Risk: overlay stacks with modal/route transitions.
   - Mitigation: schedule tutorial show after navigation via post-frame, and reuse one overlay per step.
@@ -261,12 +314,13 @@ Remove the following legacy components and all wiring:
 
 ## Rollout Plan
 
-1) Add demo routes and demo screen widgets.
-2) Update GuidedTour steps and copy.
+1) Wire guided tour demo mode on start/finish and add live-screen anchors.
+2) Update GuidedTour steps and copy to use live routes.
 3) Replace overlay host with tutorial_coach_mark host.
-4) Remove legacy guided tour targets/previews.
-5) Update tests and mocks.
-6) Run `dart analyze` and guided tour regression tests.
+4) Add live-screen anchors.
+5) Remove demo routes/screens and legacy guided tour targets/previews.
+6) Update tests and mocks.
+7) Run `dart analyze` and guided tour regression tests.
 
 ## File Checklist
 
@@ -274,19 +328,19 @@ Remove the following legacy components and all wiring:
   - `lib/presentation/features/guided_tour/model/guided_tour_step.dart`
   - `lib/presentation/features/guided_tour/view/guided_tour_overlay.dart`
   - `lib/presentation/routing/router.dart`
+  - `doc/architecture/specs/GUIDED_TOUR_MIGRATION.md`
 
 - Add:
-  - `lib/presentation/features/guided_tour/demo/` (new demo screen widgets)
-  - `lib/presentation/features/guided_tour/demo/guided_tour_anchors.dart`
+  - `lib/presentation/features/guided_tour/guided_tour_anchors.dart`
 
 - Remove:
   - `lib/presentation/features/guided_tour/view/guided_tour_targets.dart`
   - `lib/presentation/features/guided_tour/view/guided_tour_previews.dart`
+  - `lib/presentation/features/guided_tour/demo/`
   - GuidedTourTarget usage in live screens
 
 ## Open Questions
 
-- Confirm final tour copy and step order (this doc assumes current agreed copy).
+- Confirm final tour copy and step order.
 - Confirm exact targets for each coachmark and their UI anchor widgets.
-- Confirm if demo screens should be marked as "tour" mode for analytics.
-
+- Confirm if demo mode should be marked as "tour" mode for analytics.

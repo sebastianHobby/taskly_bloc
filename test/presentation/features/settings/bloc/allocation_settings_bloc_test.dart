@@ -57,8 +57,11 @@ void main() {
     build: buildBloc,
     act: (bloc) => bloc.add(const AllocationSettingsStarted()),
     expect: () => [
-      isA<AllocationSettingsState>()
-          .having((s) => s.isLoading, 'isLoading', false),
+      isA<AllocationSettingsState>().having(
+        (s) => s.isLoading,
+        'isLoading',
+        false,
+      ),
     ],
   );
 
@@ -67,7 +70,11 @@ void main() {
     build: buildBloc,
     act: (bloc) async {
       bloc.add(const AllocationSettingsStarted());
-      bloc.add(const AllocationValuesBalanceModeChanged(ValuesBalanceMode.balanceOverTime));
+      bloc.add(
+        const AllocationValuesBalanceModeChanged(
+          ValuesBalanceMode.balanceOverTime,
+        ),
+      );
     },
     expect: () => [
       isA<AllocationSettingsState>(),
@@ -97,9 +104,11 @@ void main() {
     },
     act: (bloc) => bloc.add(const AllocationSettingsStarted()),
     expect: () => [
-      isA<AllocationSettingsState>()
-          .having((s) => s.errorMessage, 'errorMessage', contains('boom')),
+      isA<AllocationSettingsState>().having(
+        (s) => s.errorMessage,
+        'errorMessage',
+        contains('boom'),
+      ),
     ],
   );
 }
-

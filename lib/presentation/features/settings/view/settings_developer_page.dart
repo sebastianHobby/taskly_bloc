@@ -72,7 +72,6 @@ class SettingsDeveloperPage extends StatelessWidget {
       },
     );
   }
-
 }
 
 class _ResetOnboardingItem extends StatelessWidget {
@@ -88,8 +87,7 @@ class _ResetOnboardingItem extends StatelessWidget {
 
         switch (state.status) {
           case SettingsMaintenanceRunning(:final action)
-              when action ==
-                  SettingsMaintenanceAction.resetOnboardingAndLogout:
+              when action == SettingsMaintenanceAction.resetOnboardingAndLogout:
             messenger.clearSnackBars();
             messenger.showSnackBar(
               const SnackBar(
@@ -98,17 +96,17 @@ class _ResetOnboardingItem extends StatelessWidget {
               ),
             );
           case SettingsMaintenanceSuccess(:final action)
-              when action ==
-                  SettingsMaintenanceAction.resetOnboardingAndLogout:
+              when action == SettingsMaintenanceAction.resetOnboardingAndLogout:
             messenger.clearSnackBars();
             messenger.showSnackBar(
               const SnackBar(
-                content: Text('Wipe complete. Onboarding will run next sign-in.'),
+                content: Text(
+                  'Wipe complete. Onboarding will run next sign-in.',
+                ),
               ),
             );
           case SettingsMaintenanceFailure(:final action, :final message)
-              when action ==
-                  SettingsMaintenanceAction.resetOnboardingAndLogout:
+              when action == SettingsMaintenanceAction.resetOnboardingAndLogout:
             messenger.clearSnackBars();
             messenger.showSnackBar(
               SnackBar(
@@ -216,7 +214,7 @@ class _GenerateTemplateDataItem extends StatelessWidget {
         ),
         title: const Text('Generate Template Data'),
         subtitle: const Text(
-          'Deletes user data and seeds a demo set (single-value projects)',
+          'Wipes all account data and seeds a full demo dataset',
         ),
         trailing: Icon(
           Icons.warning_amber,
@@ -233,10 +231,10 @@ class _GenerateTemplateDataItem extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Generate Template Data'),
         content: const Text(
-          'This will delete all Tasks, Projects, and Values for the current '
-          'account and then generate a sample dataset with single-value '
-          'projects and optional task values.\n\n'
-          'It will also clear any saved My Day plan selections.\n\n'
+          'This will delete all synced account data (local + server) and then '
+          'generate a sample dataset with values, projects, tasks, routines, '
+          'and weekly ratings.\n\n'
+          'Weekly review will be marked due immediately.\n\n'
           'This is intended for debug/demo use only.',
         ),
         actions: [

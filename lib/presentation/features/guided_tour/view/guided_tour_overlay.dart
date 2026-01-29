@@ -1,12 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/model/guided_tour_step.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/view/guided_tour_previews.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/view/guided_tour_targets.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
 class GuidedTourOverlayHost extends StatefulWidget {
   const GuidedTourOverlayHost({
@@ -21,366 +23,580 @@ class GuidedTourOverlayHost extends StatefulWidget {
 }
 
 class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
-  final GuidedTourTargetRegistry _registry = GuidedTourTargetRegistry();
+  static const int _maxCoachmarkAttempts = 200;
+  static const Duration _coachmarkRetryDelay = Duration(milliseconds: 50);
+  TutorialCoachMark? _coachMark;
+  int _showToken = 0;
+
+  @override
+  void dispose() {
+    _dismissCoachMark();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return GuidedTourTargetScope(
-      registry: _registry,
-      child: MultiBlocListener(
-        listeners: [
-          BlocListener<GuidedTourBloc, GuidedTourState>(
-            listenWhen: (prev, next) =>
-                prev.navRequestId != next.navRequestId && next.active,
-            listener: (context, state) {
-              final step = state.currentStep;
-              if (step == null) return;
-              final router = GoRouter.of(context);
-              final location = router.routerDelegate.currentConfiguration.uri
-                  .toString();
-              if (location != step.route) {
-                router.go(step.route);
-              }
-            },
-          ),
-          BlocListener<GlobalSettingsBloc, GlobalSettingsState>(
-            listenWhen: (prev, next) =>
-                prev.settings.guidedTourCompleted !=
-                    next.settings.guidedTourCompleted ||
-                prev.settings.onboardingCompleted !=
-                    next.settings.onboardingCompleted,
-            listener: (context, state) {
-              final shouldStart =
-                  state.settings.onboardingCompleted &&
-                  !state.settings.guidedTourCompleted;
-              final tour = context.read<GuidedTourBloc>();
-              if (shouldStart && !tour.state.active) {
-                tour.add(const GuidedTourStarted());
-              }
-            },
-          ),
-        ],
-        child: Stack(
-          children: [
-            widget.child,
-            const _GuidedTourOverlay(),
-          ],
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<GuidedTourBloc, GuidedTourState>(
+          listenWhen: (prev, next) =>
+              prev.navRequestId != next.navRequestId ||
+              prev.active != next.active,
+          listener: _onTourStateChanged,
         ),
-      ),
+        BlocListener<GlobalSettingsBloc, GlobalSettingsState>(
+          listenWhen: (prev, next) =>
+              prev.settings.guidedTourCompleted !=
+                  next.settings.guidedTourCompleted ||
+              prev.settings.onboardingCompleted !=
+                  next.settings.onboardingCompleted,
+          listener: (context, state) {
+            final shouldStart =
+                state.settings.onboardingCompleted &&
+                !state.settings.guidedTourCompleted;
+            final tour = context.read<GuidedTourBloc>();
+            if (shouldStart && !tour.state.active) {
+              tour.add(const GuidedTourStarted());
+            }
+          },
+        ),
+      ],
+      child: widget.child,
     );
   }
-}
 
-class _GuidedTourOverlay extends StatelessWidget {
-  const _GuidedTourOverlay();
+  void _onTourStateChanged(BuildContext context, GuidedTourState state) {
+    _dismissCoachMark();
+    if (!state.active) return;
 
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<GuidedTourBloc, GuidedTourState>(
-      builder: (context, state) {
-        if (!state.active) return const SizedBox.shrink();
-        final step = state.currentStep;
-        if (step == null) return const SizedBox.shrink();
+    final step = state.currentStep;
+    if (step == null) return;
 
-        return Stack(
-          children: [
-            const ModalBarrier(
-              dismissible: false,
-              color: Color(0xAA000000),
-            ),
-            if (step.kind == GuidedTourStepKind.card)
-              _GuidedTourCard(step: step, state: state)
-            else
-              _GuidedTourCoachmark(step: step, state: state),
-            _GuidedTourControls(state: state),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _GuidedTourCard extends StatelessWidget {
-  const _GuidedTourCard({
-    required this.step,
-    required this.state,
-  });
-
-  final GuidedTourStep step;
-  final GuidedTourState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final previewType = step.previewType;
-    final scheme = Theme.of(context).colorScheme;
-
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          tokens.spaceLg,
-          tokens.spaceLg,
-          tokens.spaceLg,
-          tokens.spaceXl * 1.6,
-        ),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: scheme.surface,
-            borderRadius: BorderRadius.circular(tokens.radiusLg),
-            border: Border.all(
-              color: scheme.outlineVariant.withValues(alpha: 0.6),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: scheme.shadow.withValues(alpha: 0.2),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spaceLg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  step.title,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: scheme.onSurface,
-                  ),
-                ),
-                SizedBox(height: tokens.spaceSm),
-                Text(
-                  step.body,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-                SizedBox(height: tokens.spaceLg),
-                if (previewType != null)
-                  GuidedTourPreview(type: previewType)
-                else
-                  const SizedBox.shrink(),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _GuidedTourCoachmark extends StatelessWidget {
-  const _GuidedTourCoachmark({
-    required this.step,
-    required this.state,
-  });
-
-  final GuidedTourStep step;
-  final GuidedTourState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final coachmark = step.coachmark;
-    if (coachmark == null) {
-      return const SizedBox.shrink();
+    final router = GoRouter.of(context);
+    final location = router.routerDelegate.currentConfiguration.uri.toString();
+    if (location != step.route) {
+      router.go(step.route);
     }
 
-    final registry = GuidedTourTargetScope.of(context);
-    final rect = registry?.rectFor(coachmark.targetId);
-    if (rect == null) {
-      return _CoachmarkBubble(
-        title: coachmark.title,
-        body: coachmark.body,
-        alignment: Alignment.bottomCenter,
+    _scheduleShow(step);
+  }
+
+  void _scheduleShow(GuidedTourStep step) {
+    final token = ++_showToken;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || token != _showToken) return;
+      _attemptShow(step, 0);
+    });
+  }
+
+  void _attemptShow(GuidedTourStep step, int attempt) {
+    final state = context.read<GuidedTourBloc>().state;
+    if (!state.active || state.currentStep?.id != step.id) return;
+
+    if (_shouldWaitForPlanMyDay(step)) {
+      if (kDebugMode) {
+        debugPrint(
+          '[GuidedTourOverlay] waiting for PlanMyDay ready '
+          '(step=${step.id}, attempt=$attempt)',
+        );
+      }
+      if (attempt < _maxCoachmarkAttempts) {
+        Future<void>.delayed(_coachmarkRetryDelay, () {
+          if (!mounted) return;
+          _attemptShow(step, attempt + 1);
+        });
+      }
+      return;
+    }
+
+    if (step.kind == GuidedTourStepKind.coachmark) {
+      final coachmark = step.coachmark;
+      final key = coachmark == null
+          ? null
+          : GuidedTourAnchors.keyFor(coachmark.targetId);
+      _logAnchorStatus(step, attempt, key: key);
+      if (key == null || key.currentContext == null) {
+        if (kDebugMode) {
+          debugPrint(
+            '[GuidedTourOverlay] waiting for anchor '
+            '(step=${step.id}, target=${coachmark?.targetId}, attempt=$attempt)',
+          );
+        }
+        if (attempt < _maxCoachmarkAttempts) {
+          Future<void>.delayed(_coachmarkRetryDelay, () {
+            if (!mounted) return;
+            _attemptShow(step, attempt + 1);
+          });
+        }
+        return;
+      }
+
+      final renderObject = key.currentContext?.findRenderObject();
+      if (renderObject is RenderBox && !renderObject.hasSize) {
+        if (kDebugMode) {
+          debugPrint(
+            '[GuidedTourOverlay] anchor has no size '
+            '(step=${step.id}, target=${coachmark?.targetId}, attempt=$attempt)',
+          );
+        }
+        if (attempt < _maxCoachmarkAttempts) {
+          Future<void>.delayed(_coachmarkRetryDelay, () {
+            if (!mounted) return;
+            _attemptShow(step, attempt + 1);
+          });
+        }
+        return;
+      }
+    }
+
+    _showCoachMark(step, state);
+  }
+
+  bool _shouldWaitForPlanMyDay(GuidedTourStep step) {
+    final planStep = _planMyDayStepFor(step.id);
+    if (planStep == null) return false;
+
+    PlanMyDayBloc bloc;
+    try {
+      bloc = context.read<PlanMyDayBloc>();
+    } catch (_) {
+      return false;
+    }
+
+    final state = bloc.state;
+    if (kDebugMode) {
+      debugPrint(
+        '[GuidedTourOverlay] plan state check '
+        '(step=${step.id}, current=${state.runtimeType}, planStep=$planStep)',
       );
     }
+    if (state is! PlanMyDayReady) return true;
+    return state.currentStep != planStep;
+  }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final overlayBox = context.findRenderObject() as RenderBox?;
-        if (overlayBox == null) {
-          return _CoachmarkBubble(
-            title: coachmark.title,
-            body: coachmark.body,
-            alignment: Alignment.bottomCenter,
+  PlanMyDayStep? _planMyDayStepFor(String stepId) {
+    return switch (stepId) {
+      'plan_my_day_triage' => PlanMyDayStep.triage,
+      'plan_my_day_scheduled_routines' => PlanMyDayStep.routines,
+      'plan_my_day_flexible_routines' => PlanMyDayStep.routines,
+      'plan_my_day_values' => PlanMyDayStep.valuesStep,
+      'plan_my_day_summary' => PlanMyDayStep.summary,
+      _ => null,
+    };
+  }
+
+  void _showCoachMark(GuidedTourStep step, GuidedTourState state) {
+    final tokens = TasklyTokens.of(context);
+    final target = _buildTarget(step, state, tokens);
+    final coachMark = TutorialCoachMark(
+      targets: [target],
+      hideSkip: true,
+      paddingFocus: tokens.spaceSm,
+      opacityShadow: 0.72,
+    );
+    _coachMark = coachMark;
+    final overlay = _overlayFor(step);
+    if (overlay != null) {
+      coachMark.showWithOverlayState(overlay: overlay);
+    } else {
+      coachMark.show(context: context);
+    }
+  }
+
+  OverlayState? _overlayFor(GuidedTourStep step) {
+    return Overlay.of(context);
+  }
+
+  TargetFocus _buildTarget(
+    GuidedTourStep step,
+    GuidedTourState state,
+    TasklyTokens tokens,
+  ) {
+    final coachmarkLayout = step.kind == GuidedTourStepKind.coachmark
+        ? _computeCoachmarkLayout(step, tokens)
+        : null;
+    final content = TargetContent(
+      align: ContentAlign.custom,
+      customPosition: step.kind == GuidedTourStepKind.card
+          ? CustomTargetContentPosition(
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            )
+          : CustomTargetContentPosition(
+              top: coachmarkLayout?.top,
+              bottom: coachmarkLayout?.bottom,
+              left: coachmarkLayout?.left ?? 0,
+              right: coachmarkLayout?.right ?? 0,
+            ),
+      padding: step.kind == GuidedTourStepKind.card
+          ? EdgeInsets.zero
+          : EdgeInsets.fromLTRB(
+              tokens.spaceLg,
+              tokens.spaceLg,
+              tokens.spaceLg,
+              tokens.spaceLg,
+            ),
+      builder: (context, controller) {
+        final card = step.kind == GuidedTourStepKind.card
+            ? _GuidedTourFullScreenCard(
+                key: Key('guided-tour-card-${step.id}'),
+                step: step,
+                state: state,
+                onBack: state.hasPrevious
+                    ? () => _handleBack(controller)
+                    : null,
+                onNext: () => _handleNext(controller),
+                onSkip: () => _handleSkip(controller),
+              )
+            : _GuidedTourCoachmarkCard(
+                key: Key('guided-tour-coachmark-${step.id}'),
+                step: step,
+                state: state,
+                onBack: state.hasPrevious
+                    ? () => _handleBack(controller)
+                    : null,
+                onNext: () => _handleNext(controller),
+                onSkip: () => _handleSkip(controller),
+              );
+
+        if (step.kind == GuidedTourStepKind.coachmark &&
+            coachmarkLayout != null) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: coachmarkLayout.maxHeight,
+            ),
+            child: SingleChildScrollView(
+              child: card,
+            ),
           );
         }
 
-        final topLeft = overlayBox.globalToLocal(rect.topLeft);
-        final localRect = Rect.fromLTWH(
-          topLeft.dx,
-          topLeft.dy,
-          rect.width,
-          rect.height,
-        );
-
-        return Stack(
-          children: [
-            Positioned.fromRect(
-              rect: localRect.inflate(6),
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: tokensFor(context).spaceLg,
-              right: tokensFor(context).spaceLg,
-              top: _bubbleTopFor(localRect, constraints.maxHeight),
-              child: _CoachmarkBubble(
-                title: coachmark.title,
-                body: coachmark.body,
-                alignment: Alignment.center,
-              ),
-            ),
-          ],
-        );
+        return card;
       },
+    );
+
+    if (step.kind == GuidedTourStepKind.card) {
+      return TargetFocus(
+        identify: step.id,
+        targetPosition: TargetPosition(
+          MediaQuery.sizeOf(context),
+          Offset.zero,
+        ),
+        shape: ShapeLightFocus.RRect,
+        radius: 0,
+        enableOverlayTab: false,
+        enableTargetTab: false,
+        contents: [content],
+      );
+    }
+
+    final coachmark = step.coachmark;
+    final key = coachmark == null
+        ? null
+        : GuidedTourAnchors.keyFor(coachmark.targetId);
+    return TargetFocus(
+      identify: step.id,
+      keyTarget: key,
+      targetPosition: key == null
+          ? TargetPosition(MediaQuery.sizeOf(context), Offset.zero)
+          : null,
+      shape: ShapeLightFocus.RRect,
+      radius: tokens.radiusLg,
+      enableOverlayTab: false,
+      enableTargetTab: false,
+      contents: [content],
     );
   }
 
-  double _bubbleTopFor(Rect target, double height) {
-    const gap = 16.0;
-    final below = target.bottom + gap;
-    if (below + 120 < height) return below;
-    final above = target.top - gap - 120;
-    return above.clamp(24.0, height - 160.0);
+  _CoachmarkLayout? _computeCoachmarkLayout(
+    GuidedTourStep step,
+    TasklyTokens tokens,
+  ) {
+    final anchorId = step.coachmark?.targetId;
+    final anchorKey = anchorId == null
+        ? null
+        : GuidedTourAnchors.keyFor(anchorId);
+    final anchorContext = anchorKey?.currentContext;
+    if (anchorContext == null) return null;
+    final overlay = Overlay.of(context);
+    final overlayBox = overlay.context.findRenderObject();
+    final targetBox = anchorContext.findRenderObject();
+    if (overlayBox is! RenderBox || targetBox is! RenderBox) return null;
+    if (!overlayBox.hasSize || !targetBox.hasSize) return null;
+
+    final topLeft = targetBox.localToGlobal(
+      Offset.zero,
+      ancestor: overlayBox,
+    );
+    final targetRect = topLeft & targetBox.size;
+
+    final media = MediaQuery.of(anchorContext);
+    final safeTop = media.padding.top + tokens.spaceSm;
+    final safeBottom = media.padding.bottom + tokens.spaceSm;
+    final gap = tokens.spaceMd;
+
+    final availableAbove = (targetRect.top - safeTop - gap).clamp(
+      0.0,
+      double.infinity,
+    );
+    final availableBelow =
+        ((overlayBox.size.height - safeBottom) - targetRect.bottom - gap).clamp(
+          0.0,
+          double.infinity,
+        );
+
+    final placeBelow =
+        availableBelow >= 180 || availableBelow >= availableAbove;
+    final maxHeight = placeBelow ? availableBelow : availableAbove;
+
+    return _CoachmarkLayout(
+      top: placeBelow ? targetRect.bottom + gap : null,
+      bottom: placeBelow
+          ? null
+          : (overlayBox.size.height - targetRect.top + gap),
+      left: 0,
+      right: 0,
+      maxHeight: maxHeight,
+    );
   }
 
-  TasklyTokens tokensFor(BuildContext context) => TasklyTokens.of(context);
+  void _handleNext(TutorialCoachMarkController controller) {
+    context.read<GuidedTourBloc>().add(const GuidedTourNextRequested());
+    controller.skip();
+  }
+
+  void _handleBack(TutorialCoachMarkController controller) {
+    context.read<GuidedTourBloc>().add(const GuidedTourBackRequested());
+    controller.skip();
+  }
+
+  void _handleSkip(TutorialCoachMarkController controller) {
+    context.read<GuidedTourBloc>().add(const GuidedTourSkipped());
+    controller.skip();
+  }
+
+  void _dismissCoachMark() {
+    _coachMark?.finish();
+    _coachMark = null;
+  }
+
+  void _logAnchorStatus(
+    GuidedTourStep step,
+    int attempt, {
+    GlobalKey? key,
+  }) {
+    if (!kDebugMode) return;
+    if (attempt % 5 != 0) return;
+
+    final targetId = step.coachmark?.targetId;
+    if (key == null) {
+      debugPrint(
+        '[GuidedTourOverlay] anchor key missing '
+        '(step=${step.id}, target=$targetId, attempt=$attempt)',
+      );
+      return;
+    }
+
+    final anchorContext = key.currentContext;
+    if (anchorContext == null) {
+      debugPrint(
+        '[GuidedTourOverlay] anchor context null '
+        '(step=${step.id}, target=$targetId, attempt=$attempt, key=${key.hashCode})',
+      );
+      return;
+    }
+
+    final renderObject = anchorContext.findRenderObject();
+    if (renderObject is RenderBox) {
+      debugPrint(
+        '[GuidedTourOverlay] anchor render box '
+        '(step=${step.id}, target=$targetId, attempt=$attempt, '
+        'hasSize=${renderObject.hasSize}, size=${renderObject.hasSize ? renderObject.size : null})',
+      );
+      return;
+    }
+
+    debugPrint(
+      '[GuidedTourOverlay] anchor render object '
+      '(step=${step.id}, target=$targetId, attempt=$attempt, '
+      'type=${renderObject.runtimeType})',
+    );
+  }
 }
 
-class _CoachmarkBubble extends StatelessWidget {
-  const _CoachmarkBubble({
-    required this.title,
-    required this.body,
-    required this.alignment,
+class _CoachmarkLayout {
+  const _CoachmarkLayout({
+    required this.top,
+    required this.bottom,
+    required this.left,
+    required this.right,
+    required this.maxHeight,
   });
 
-  final String title;
-  final String body;
-  final Alignment alignment;
+  final double? top;
+  final double? bottom;
+  final double left;
+  final double right;
+  final double maxHeight;
+}
+
+class _GuidedTourFullScreenCard extends StatelessWidget {
+  const _GuidedTourFullScreenCard({
+    required this.step,
+    required this.state,
+    required this.onNext,
+    required this.onSkip,
+    this.onBack,
+    super.key,
+  });
+
+  final GuidedTourStep step;
+  final GuidedTourState state;
+  final VoidCallback? onBack;
+  final VoidCallback onNext;
+  final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
 
-    return Align(
-      alignment: alignment,
-      child: Container(
-        padding: EdgeInsets.all(tokens.spaceMd),
-        decoration: BoxDecoration(
-          color: scheme.surface,
-          borderRadius: BorderRadius.circular(tokens.radiusLg),
-          border: Border.all(
-            color: scheme.outlineVariant.withValues(alpha: 0.7),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: ColoredBox(
+            color: scheme.scrim.withValues(alpha: 0.72),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: scheme.shadow.withValues(alpha: 0.2),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
         ),
+        SafeArea(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(tokens.spaceLg),
+              child: _GuidedTourContentCard(
+                step: step,
+                state: state,
+                onBack: onBack,
+                onNext: onNext,
+                onSkip: onSkip,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GuidedTourCoachmarkCard extends StatelessWidget {
+  const _GuidedTourCoachmarkCard({
+    required this.step,
+    required this.state,
+    required this.onNext,
+    required this.onSkip,
+    this.onBack,
+    super.key,
+  });
+
+  final GuidedTourStep step;
+  final GuidedTourState state;
+  final VoidCallback? onBack;
+  final VoidCallback onNext;
+  final VoidCallback onSkip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: _GuidedTourContentCard(
+          step: step,
+          state: state,
+          onBack: onBack,
+          onNext: onNext,
+          onSkip: onSkip,
+        ),
+      ),
+    );
+  }
+}
+
+class _GuidedTourContentCard extends StatelessWidget {
+  const _GuidedTourContentCard({
+    required this.step,
+    required this.state,
+    required this.onNext,
+    required this.onSkip,
+    this.onBack,
+  });
+
+  final GuidedTourStep step;
+  final GuidedTourState state;
+  final VoidCallback? onBack;
+  final VoidCallback onNext;
+  final VoidCallback onSkip;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final titleStyle = Theme.of(context).textTheme.titleLarge?.copyWith(
+      fontWeight: FontWeight.w800,
+      color: scheme.onSurface,
+    );
+    final bodyStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+      color: scheme.onSurfaceVariant,
+    );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(tokens.radiusLg),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.shadow.withValues(alpha: 0.2),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spaceLg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            SizedBox(height: tokens.spaceXs),
-            Text(
-              body,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
+            Text(step.title, style: titleStyle),
+            SizedBox(height: tokens.spaceSm),
+            Text(step.body, style: bodyStyle),
+            SizedBox(height: tokens.spaceLg),
+            Row(
+              children: [
+                if (onBack != null)
+                  TextButton(
+                    onPressed: onBack,
+                    child: const Text('Back'),
+                  )
+                else
+                  const SizedBox(width: 72),
+                const Spacer(),
+                TextButton(
+                  onPressed: onSkip,
+                  child: const Text('Skip'),
+                ),
+                SizedBox(width: tokens.spaceSm),
+                FilledButton(
+                  onPressed: onNext,
+                  child: Text(state.hasNext ? 'Next' : 'Finish'),
+                ),
+              ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GuidedTourControls extends StatelessWidget {
-  const _GuidedTourControls({required this.state});
-
-  final GuidedTourState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final stepIndex = state.currentIndex + 1;
-    final stepCount = state.steps.length;
-    final isLast = !state.hasNext;
-
-    return SafeArea(
-      child: Align(
-        alignment: Alignment.bottomCenter,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            tokens.spaceLg,
-            tokens.spaceSm,
-            tokens.spaceLg,
-            tokens.spaceLg,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Step $stepIndex of $stepCount',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(height: tokens.spaceSm),
-              Row(
-                children: [
-                  if (state.hasPrevious)
-                    TextButton(
-                      onPressed: () => context.read<GuidedTourBloc>().add(
-                        const GuidedTourBackRequested(),
-                      ),
-                      child: const Text('Back'),
-                    )
-                  else
-                    const SizedBox(width: 72),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => context.read<GuidedTourBloc>().add(
-                      const GuidedTourSkipped(),
-                    ),
-                    child: const Text('Skip'),
-                  ),
-                  SizedBox(width: tokens.spaceSm),
-                  FilledButton(
-                    onPressed: () => context.read<GuidedTourBloc>().add(
-                      const GuidedTourNextRequested(),
-                    ),
-                    child: Text(isLast ? 'Finish' : 'Next'),
-                  ),
-                ],
-              ),
-            ],
-          ),
         ),
       ),
     );

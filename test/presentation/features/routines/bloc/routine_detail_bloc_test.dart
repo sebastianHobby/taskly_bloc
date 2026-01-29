@@ -60,8 +60,11 @@ void main() {
     },
     expect: () => [
       const RoutineDetailState.loadInProgress(),
-      isA<RoutineDetailInitialDataLoadSuccess>()
-          .having((s) => s.availableValues.length, 'values', 1),
+      isA<RoutineDetailInitialDataLoadSuccess>().having(
+        (s) => s.availableValues.length,
+        'values',
+        1,
+      ),
     ],
   );
 

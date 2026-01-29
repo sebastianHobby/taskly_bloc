@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:powersync/powersync.dart' show attachedLogger;
 import 'package:taskly_core/logging.dart';
@@ -20,12 +19,14 @@ void installPowerSyncLogForwarding() {
   // Without this, `attachedLogger.level = ...` can throw at runtime.
   hierarchicalLoggingEnabled = true;
 
-  // Default: INFO (useful sync activity, low noise)
+  // Default: WARNING (quiet)
+  // Opt-in: INFO via --dart-define=POWERSYNC_INFO_LOGS=true
   // Opt-in: FINE via --dart-define=POWERSYNC_VERBOSE_LOGS=true
   const powersyncVerbose = bool.fromEnvironment('POWERSYNC_VERBOSE_LOGS');
-  attachedLogger.level = (kDebugMode && powersyncVerbose)
+  const powersyncInfo = bool.fromEnvironment('POWERSYNC_INFO_LOGS');
+  attachedLogger.level = powersyncVerbose
       ? Level.FINE
-      : Level.INFO;
+      : (powersyncInfo ? Level.INFO : Level.WARNING);
 
   Logger.root.onRecord.listen((record) {
     // Only process PowerSync logs (not other logging package users)

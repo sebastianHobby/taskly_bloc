@@ -1,3 +1,4 @@
+import 'package:taskly_domain/feature_flags.dart';
 import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/core/model/value.dart';
 
@@ -10,7 +11,8 @@ import 'package:taskly_domain/src/core/model/value.dart';
 extension TaskEffectiveValuesX on Task {
   /// True when the task has explicit tag values.
   bool get isOverridingValues =>
-      overridePrimaryValueId != null || overrideSecondaryValueId != null;
+      TasklyFeatureFlags.taskSecondaryValuesEnabled &&
+      (overridePrimaryValueId != null || overrideSecondaryValueId != null);
 
   /// The values that should be treated as active for this task.
   List<Value> get effectiveValues {
@@ -81,6 +83,9 @@ extension TaskEffectiveValuesX on Task {
   bool get isEffectivelyValueless => effectiveValues.isEmpty;
 
   List<String> get _effectiveSecondaryValueIds {
+    if (!TasklyFeatureFlags.taskSecondaryValuesEnabled) {
+      return const <String>[];
+    }
     final primaryId = effectivePrimaryValueId;
     if (primaryId == null) return const <String>[];
 

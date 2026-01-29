@@ -9,20 +9,23 @@ void main() {
   setUp(setUpTestEnvironment);
 
   group('CorrelationCalculator', () {
-    testSafe('returns insufficient data result when inputs are empty', () async {
-      final calculator = CorrelationCalculator();
+    testSafe(
+      'returns insufficient data result when inputs are empty',
+      () async {
+        final calculator = CorrelationCalculator();
 
-      final result = calculator.calculate(
-        sourceLabel: 'Source',
-        targetLabel: 'Target',
-        sourceDays: const [],
-        targetData: const {},
-      );
+        final result = calculator.calculate(
+          sourceLabel: 'Source',
+          targetLabel: 'Target',
+          sourceDays: const [],
+          targetData: const {},
+        );
 
-      expect(result.strength, CorrelationStrength.negligible);
-      expect(result.insight, isNotNull);
-      expect(result.insight!.toLowerCase(), contains('insufficient data'));
-    });
+        expect(result.strength, CorrelationStrength.negligible);
+        expect(result.insight, isNotNull);
+        expect(result.insight!.toLowerCase(), contains('insufficient data'));
+      },
+    );
 
     testSafe('calculates correlation with adequate sample size', () async {
       final calculator = CorrelationCalculator();

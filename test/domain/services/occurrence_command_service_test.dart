@@ -10,8 +10,8 @@ import 'package:taskly_domain/services.dart';
 
 class FakeDayKeyService extends HomeDayKeyService {
   FakeDayKeyService({required DateTime today})
-      : _today = today,
-        super(settingsRepository: FakeSettingsRepository());
+    : _today = today,
+      super(settingsRepository: FakeSettingsRepository());
 
   final DateTime _today;
 
@@ -41,13 +41,15 @@ void main() {
         dayKeyService: dayKeyService,
       );
 
-      when(() => taskRepo.completeOccurrence(
-            taskId: 't1',
-            occurrenceDate: any(named: 'occurrenceDate'),
-            originalOccurrenceDate: any(named: 'originalOccurrenceDate'),
-            notes: any(named: 'notes'),
-            context: any(named: 'context'),
-          )).thenAnswer((_) async {});
+      when(
+        () => taskRepo.completeOccurrence(
+          taskId: 't1',
+          occurrenceDate: any(named: 'occurrenceDate'),
+          originalOccurrenceDate: any(named: 'originalOccurrenceDate'),
+          notes: any(named: 'notes'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async {});
 
       await service.completeTask(
         taskId: 't1',
@@ -82,18 +84,22 @@ void main() {
       final expandedTask = baseTask.copyWith(occurrence: occurrence);
 
       when(() => taskRepo.getById('t2')).thenAnswer((_) async => baseTask);
-      when(() => taskRepo.getOccurrencesForTask(
-            taskId: 't2',
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          )).thenAnswer((_) async => [expandedTask]);
-      when(() => taskRepo.completeOccurrence(
-            taskId: 't2',
-            occurrenceDate: any(named: 'occurrenceDate'),
-            originalOccurrenceDate: any(named: 'originalOccurrenceDate'),
-            notes: any(named: 'notes'),
-            context: any(named: 'context'),
-          )).thenAnswer((_) async {});
+      when(
+        () => taskRepo.getOccurrencesForTask(
+          taskId: 't2',
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [expandedTask]);
+      when(
+        () => taskRepo.completeOccurrence(
+          taskId: 't2',
+          occurrenceDate: any(named: 'occurrenceDate'),
+          originalOccurrenceDate: any(named: 'originalOccurrenceDate'),
+          notes: any(named: 'notes'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async {});
 
       await service.completeTask(taskId: 't2');
 
@@ -127,16 +133,20 @@ void main() {
       final expandedTask = baseTask.copyWith(occurrence: completedOccurrence);
 
       when(() => taskRepo.getById('t3')).thenAnswer((_) async => baseTask);
-      when(() => taskRepo.getOccurrencesForTask(
-            taskId: 't3',
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          )).thenAnswer((_) async => [expandedTask]);
-      when(() => taskRepo.uncompleteOccurrence(
-            taskId: 't3',
-            occurrenceDate: any(named: 'occurrenceDate'),
-            context: any(named: 'context'),
-          )).thenAnswer((_) async {});
+      when(
+        () => taskRepo.getOccurrencesForTask(
+          taskId: 't3',
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [expandedTask]);
+      when(
+        () => taskRepo.uncompleteOccurrence(
+          taskId: 't3',
+          occurrenceDate: any(named: 'occurrenceDate'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async {});
 
       await service.uncompleteTask(taskId: 't3');
 

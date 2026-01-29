@@ -189,17 +189,20 @@ sealed class TasklyRowSpec {
     String? trailingLabel,
     IconData? trailingIcon,
     VoidCallback? onTap,
+    Key? anchorKey,
     int depth,
   }) = TasklyHeaderRowSpec;
 
   const factory TasklyRowSpec.subheader({
     required String key,
     required String title,
+    Key? anchorKey,
     int depth,
   }) = TasklySubheaderRowSpec;
 
   const factory TasklyRowSpec.divider({
     required String key,
+    Key? anchorKey,
     int depth,
   }) = TasklyDividerRowSpec;
 
@@ -207,6 +210,7 @@ sealed class TasklyRowSpec {
     required String key,
     required String label,
     required VoidCallback onTap,
+    Key? anchorKey,
     int depth,
   }) = TasklyInlineActionRowSpec;
 
@@ -214,6 +218,7 @@ sealed class TasklyRowSpec {
     required String key,
     required TasklyTaskRowData data,
     required TasklyTaskRowActions actions,
+    Key? anchorKey,
     TasklyTaskRowStyle style,
     int depth,
   }) = TasklyTaskRowSpec;
@@ -222,6 +227,7 @@ sealed class TasklyRowSpec {
     required String key,
     required TasklyProjectRowData data,
     required TasklyProjectRowActions actions,
+    Key? anchorKey,
     TasklyProjectRowPreset preset,
     int depth,
   }) = TasklyProjectRowSpec;
@@ -230,6 +236,7 @@ sealed class TasklyRowSpec {
     required String key,
     required TasklyValueRowData data,
     required TasklyValueRowActions actions,
+    Key? anchorKey,
     TasklyValueRowPreset preset,
   }) = TasklyValueRowSpec;
 
@@ -237,6 +244,7 @@ sealed class TasklyRowSpec {
     required String key,
     required TasklyRoutineRowData data,
     required TasklyRoutineRowActions actions,
+    Key? anchorKey,
     int depth,
   }) = TasklyRoutineRowSpec;
 }
@@ -249,6 +257,7 @@ final class TasklyHeaderRowSpec extends TasklyRowSpec {
     this.trailingLabel,
     this.trailingIcon,
     this.onTap,
+    this.anchorKey,
     this.depth = 0,
   });
 
@@ -258,6 +267,7 @@ final class TasklyHeaderRowSpec extends TasklyRowSpec {
   final String? trailingLabel;
   final IconData? trailingIcon;
   final VoidCallback? onTap;
+  final Key? anchorKey;
   final int depth;
 }
 
@@ -265,18 +275,25 @@ final class TasklySubheaderRowSpec extends TasklyRowSpec {
   const TasklySubheaderRowSpec({
     required this.key,
     required this.title,
+    this.anchorKey,
     this.depth = 0,
   });
 
   final String key;
   final String title;
+  final Key? anchorKey;
   final int depth;
 }
 
 final class TasklyDividerRowSpec extends TasklyRowSpec {
-  const TasklyDividerRowSpec({required this.key, this.depth = 0});
+  const TasklyDividerRowSpec({
+    required this.key,
+    this.anchorKey,
+    this.depth = 0,
+  });
 
   final String key;
+  final Key? anchorKey;
   final int depth;
 }
 
@@ -285,12 +302,14 @@ final class TasklyInlineActionRowSpec extends TasklyRowSpec {
     required this.key,
     required this.label,
     required this.onTap,
+    this.anchorKey,
     this.depth = 0,
   });
 
   final String key;
   final String label;
   final VoidCallback onTap;
+  final Key? anchorKey;
   final int depth;
 }
 
@@ -299,6 +318,7 @@ final class TasklyTaskRowSpec extends TasklyRowSpec {
     required this.key,
     required this.data,
     required this.actions,
+    this.anchorKey,
     this.style = const TasklyTaskRowStyle.standard(),
     this.depth = 0,
   });
@@ -306,6 +326,7 @@ final class TasklyTaskRowSpec extends TasklyRowSpec {
   final String key;
   final TasklyTaskRowData data;
   final TasklyTaskRowActions actions;
+  final Key? anchorKey;
   final TasklyTaskRowStyle style;
   final int depth;
 }
@@ -315,6 +336,7 @@ final class TasklyProjectRowSpec extends TasklyRowSpec {
     required this.key,
     required this.data,
     required this.actions,
+    this.anchorKey,
     this.preset = const TasklyProjectRowPreset.standard(),
     this.depth = 0,
   });
@@ -322,6 +344,7 @@ final class TasklyProjectRowSpec extends TasklyRowSpec {
   final String key;
   final TasklyProjectRowData data;
   final TasklyProjectRowActions actions;
+  final Key? anchorKey;
   final TasklyProjectRowPreset preset;
   final int depth;
 }
@@ -331,12 +354,14 @@ final class TasklyValueRowSpec extends TasklyRowSpec {
     required this.key,
     required this.data,
     required this.actions,
+    this.anchorKey,
     this.preset = const TasklyValueRowPreset.standard(),
   });
 
   final String key;
   final TasklyValueRowData data;
   final TasklyValueRowActions actions;
+  final Key? anchorKey;
   final TasklyValueRowPreset preset;
 }
 
@@ -635,11 +660,13 @@ final class TasklyRoutineProgressData {
     required this.completedCount,
     required this.targetCount,
     required this.windowLabel,
+    this.caption,
   });
 
   final int completedCount;
   final int targetCount;
   final String windowLabel;
+  final String? caption;
 
   double get progressRatio {
     if (targetCount <= 0) return 0;
@@ -683,10 +710,14 @@ final class TasklyRoutineRowActions {
   const TasklyRoutineRowActions({
     this.onTap,
     this.onPrimaryAction,
+    this.onToggleSelected,
+    this.onLongPress,
   });
 
   final VoidCallback? onTap;
   final VoidCallback? onPrimaryAction;
+  final VoidCallback? onToggleSelected;
+  final VoidCallback? onLongPress;
 }
 
 final class TasklyRoutineRowSpec extends TasklyRowSpec {
@@ -694,12 +725,14 @@ final class TasklyRoutineRowSpec extends TasklyRowSpec {
     required this.key,
     required this.data,
     required this.actions,
+    this.anchorKey,
     this.depth = 0,
   });
 
   final String key;
   final TasklyRoutineRowData data;
   final TasklyRoutineRowActions actions;
+  final Key? anchorKey;
   final int depth;
 }
 

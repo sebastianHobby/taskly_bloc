@@ -10,6 +10,8 @@ import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.da
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_detail_view.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 
 /// Centralized entry point for launching create/edit entity forms.
@@ -76,6 +78,8 @@ class EditorLauncher {
       context: context,
       showDragHandle: effectiveShowDragHandle,
       childBuilder: (modalContext) {
+        final demoModeService = context.read<DemoModeService>();
+        final demoDataProvider = context.read<DemoDataProvider>();
         return BlocProvider(
           create: (context) => TaskDetailBloc(
             taskId: taskId,
@@ -84,6 +88,8 @@ class EditorLauncher {
             valueRepository: _valueRepository,
             taskWriteService: taskWriteService,
             errorReporter: context.read<AppErrorReporter>(),
+            demoModeService: demoModeService,
+            demoDataProvider: demoDataProvider,
           ),
           child: TaskDetailSheet(
             defaultProjectId: defaultProjectId,

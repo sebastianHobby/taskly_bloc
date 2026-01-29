@@ -9,6 +9,7 @@ import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 
 sealed class MyDayEvent {
   const MyDayEvent();
@@ -83,9 +84,11 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
     required MyDaySessionQueryService queryService,
     required RoutineWriteService routineWriteService,
     required NowService nowService,
+    required DemoModeService demoModeService,
   }) : _queryService = queryService,
        _routineWriteService = routineWriteService,
        _nowService = nowService,
+       _demoModeService = demoModeService,
        super(const MyDayLoading()) {
     on<MyDayStarted>(_onStarted, transformer: restartable());
     on<MyDayRoutineCompletionToggled>(
@@ -98,6 +101,7 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
   final MyDaySessionQueryService _queryService;
   final RoutineWriteService _routineWriteService;
   final NowService _nowService;
+  final DemoModeService _demoModeService;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
@@ -132,6 +136,7 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
     MyDayRoutineCompletionToggled event,
     Emitter<MyDayState> emit,
   ) async {
+    if (_demoModeService.enabled.valueOrNull ?? false) return;
     if (event.completedToday) {
       final context = _contextFactory.create(
         feature: 'routines',

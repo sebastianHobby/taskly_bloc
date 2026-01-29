@@ -38,6 +38,8 @@ import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_se
 import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_allocation_cache_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -159,12 +161,16 @@ Future<void> setupDependencies() async {
         appLifecycleService: getIt<AppLifecycleEvents>(),
       ),
     )
+    ..registerLazySingleton<DemoModeService>(DemoModeService.new)
+    ..registerLazySingleton<DemoDataProvider>(DemoDataProvider.new)
     ..registerLazySingleton<SessionSharedDataService>(
       () => SessionSharedDataService(
         cacheManager: getIt<SessionStreamCacheManager>(),
         valueRepository: getIt<ValueRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
         taskRepository: getIt<TaskRepositoryContract>(),
+        demoModeService: getIt<DemoModeService>(),
+        demoDataProvider: getIt<DemoDataProvider>(),
       ),
     )
     ..registerLazySingleton<SessionAllocationCacheService>(
@@ -293,7 +299,10 @@ Future<void> setupDependencies() async {
         projectRepository: getIt<ProjectRepositoryContract>(),
         routineRepository: getIt<RoutineRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
-        myDayRepository: getIt<MyDayRepositoryContract>(),
+        valueRatingsWriteService: getIt<ValueRatingsWriteService>(),
+        userDataWipeService: getIt<UserDataWipeService>(),
+        settingsRepository: getIt<SettingsRepositoryContract>(),
+        clock: getIt<Clock>(),
       ),
     )
     ..registerLazySingleton<AuthenticatedAppServicesCoordinator>(
@@ -328,6 +337,7 @@ Future<void> setupDependencies() async {
       () => MyDayGateQueryService(
         valueRepository: getIt<ValueRepositoryContract>(),
         sharedDataService: getIt<SessionSharedDataService>(),
+        demoModeService: getIt<DemoModeService>(),
       ),
     )
     ..registerFactory<MyDayQueryService>(
@@ -340,6 +350,8 @@ Future<void> setupDependencies() async {
         temporalTriggerService: getIt<TemporalTriggerService>(),
         allocationCacheService: getIt<SessionAllocationCacheService>(),
         sharedDataService: getIt<SessionSharedDataService>(),
+        demoModeService: getIt<DemoModeService>(),
+        demoDataProvider: getIt<DemoDataProvider>(),
       ),
     )
     ..registerLazySingleton<MyDaySessionQueryService>(
@@ -360,6 +372,8 @@ Future<void> setupDependencies() async {
         projectRepository: getIt<ProjectRepositoryContract>(),
         cacheManager: getIt<SessionStreamCacheManager>(),
         sharedDataService: getIt<SessionSharedDataService>(),
+        demoModeService: getIt<DemoModeService>(),
+        demoDataProvider: getIt<DemoDataProvider>(),
       ),
     )
     ..registerLazySingleton<PresentationSessionServicesCoordinator>(
@@ -378,6 +392,7 @@ Future<void> setupDependencies() async {
         queryService: getIt<MyDaySessionQueryService>(),
         routineWriteService: getIt<RoutineWriteService>(),
         nowService: getIt<NowService>(),
+        demoModeService: getIt<DemoModeService>(),
       ),
     )
     ..registerFactory<PlanMyDayBloc>(
@@ -392,6 +407,8 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
         nowService: getIt<NowService>(),
+        demoModeService: getIt<DemoModeService>(),
+        demoDataProvider: getIt<DemoDataProvider>(),
       ),
     )
     ..registerFactory<SettingsMaintenanceBloc>(

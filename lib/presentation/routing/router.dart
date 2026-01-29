@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:talker_flutter/talker_flutter.dart';
@@ -48,8 +49,12 @@ import 'package:taskly_bloc/presentation/features/onboarding/view/onboarding_flo
 /// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
 ///
 /// Note: entity editor routes remain the canonical edit entrypoints.
-GoRouter createRouter({required bool forceOnboarding}) {
+GoRouter createRouter({
+  required bool forceOnboarding,
+  GlobalKey<NavigatorState>? navigatorKey,
+}) {
   return GoRouter(
+    navigatorKey: navigatorKey,
     initialLocation: forceOnboarding
         ? '/onboarding'
         : Routing.screenPath('my_day'),

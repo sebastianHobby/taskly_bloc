@@ -77,8 +77,7 @@ void main() {
     build: buildBloc,
     act: (bloc) => bloc.add(const GlobalSettingsEvent.started()),
     expect: () => [
-      isA<GlobalSettingsState>()
-          .having((s) => s.isLoading, 'isLoading', false),
+      isA<GlobalSettingsState>().having((s) => s.isLoading, 'isLoading', false),
     ],
   );
 
@@ -102,4 +101,3 @@ void main() {
     },
   );
 }
-

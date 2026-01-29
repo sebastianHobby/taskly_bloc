@@ -42,14 +42,20 @@ void main() {
       (_) async => [TestData.value(id: 'v-1', name: 'Value')],
     );
     when(
-      () => analyticsService.getRecentCompletionsByValue(days: any(named: 'days')),
+      () => analyticsService.getRecentCompletionsByValue(
+        days: any(named: 'days'),
+      ),
     ).thenAnswer((_) async => {'v-1': 3});
     when(() => analyticsService.getValuePrimarySecondaryStats()).thenAnswer(
       (_) async => const {},
     );
     when(
       () => analyticsService.getValueWeeklyTrends(weeks: any(named: 'weeks')),
-    ).thenAnswer((_) async => {'v-1': [0.2, 0.3]});
+    ).thenAnswer(
+      (_) async => {
+        'v-1': [0.2, 0.3],
+      },
+    );
     when(
       () => analyticsService.getMoodTrend(
         range: any(named: 'range'),
@@ -85,16 +91,31 @@ void main() {
     build: buildBloc,
     act: (bloc) => bloc.add(const StatisticsDashboardRequested()),
     expect: () => [
-      isA<StatisticsDashboardState>()
-          .having((s) => s.valuesFocus.status, 'valuesFocus', StatisticsSectionStatus.loading),
-      isA<StatisticsDashboardState>()
-          .having((s) => s.valuesFocus.status, 'valuesFocus', StatisticsSectionStatus.ready),
-      isA<StatisticsDashboardState>()
-          .having((s) => s.valueTrends.status, 'valueTrends', StatisticsSectionStatus.ready),
-      isA<StatisticsDashboardState>()
-          .having((s) => s.moodStats.status, 'moodStats', StatisticsSectionStatus.ready),
-      isA<StatisticsDashboardState>()
-          .having((s) => s.correlations.status, 'correlations', StatisticsSectionStatus.ready),
+      isA<StatisticsDashboardState>().having(
+        (s) => s.valuesFocus.status,
+        'valuesFocus',
+        StatisticsSectionStatus.loading,
+      ),
+      isA<StatisticsDashboardState>().having(
+        (s) => s.valuesFocus.status,
+        'valuesFocus',
+        StatisticsSectionStatus.ready,
+      ),
+      isA<StatisticsDashboardState>().having(
+        (s) => s.valueTrends.status,
+        'valueTrends',
+        StatisticsSectionStatus.ready,
+      ),
+      isA<StatisticsDashboardState>().having(
+        (s) => s.moodStats.status,
+        'moodStats',
+        StatisticsSectionStatus.ready,
+      ),
+      isA<StatisticsDashboardState>().having(
+        (s) => s.correlations.status,
+        'correlations',
+        StatisticsSectionStatus.ready,
+      ),
     ],
   );
 }

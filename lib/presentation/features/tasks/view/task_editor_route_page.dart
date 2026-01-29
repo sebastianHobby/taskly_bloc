@@ -7,6 +7,8 @@ import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_host_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 
 /// Route-backed entry point for the task editor.
 ///
@@ -66,6 +68,8 @@ class _TaskEditorFullPage extends StatelessWidget {
     final projectRepository = context.read<ProjectRepositoryContract>();
     final valueRepository = context.read<ValueRepositoryContract>();
     final taskWriteService = context.read<TaskWriteService>();
+    final demoModeService = context.read<DemoModeService>();
+    final demoDataProvider = context.read<DemoDataProvider>();
 
     return Scaffold(
       body: SafeArea(
@@ -77,6 +81,8 @@ class _TaskEditorFullPage extends StatelessWidget {
             valueRepository: valueRepository,
             taskWriteService: taskWriteService,
             errorReporter: context.read<AppErrorReporter>(),
+            demoModeService: demoModeService,
+            demoDataProvider: demoDataProvider,
           ),
           child: TaskDetailSheet(
             defaultProjectId: defaultProjectId,

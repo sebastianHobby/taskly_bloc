@@ -4,6 +4,7 @@ library;
 import '../../helpers/test_imports.dart';
 
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/feature_flags.dart';
 import 'package:taskly_domain/src/services/values/effective_values.dart';
 
 void main() {
@@ -105,12 +106,22 @@ void main() {
         overrideSecondaryValueId: null,
       );
 
-      expect(t.isOverridingValues, isTrue);
+      if (TasklyFeatureFlags.taskSecondaryValuesEnabled) {
+        expect(t.isOverridingValues, isTrue);
+      } else {
+        expect(t.isOverridingValues, isFalse);
+      }
       expect(t.isInheritingValues, isTrue);
       expect(t.effectivePrimaryValueId, 'v1');
-      expect(t.effectiveSecondaryValueId, 'v2');
-      expect(t.effectiveValues.map((v) => v.id).toList(), ['v1', 'v2']);
-      expect(t.effectiveSecondaryValues.map((v) => v.id).toList(), ['v2']);
+      if (TasklyFeatureFlags.taskSecondaryValuesEnabled) {
+        expect(t.effectiveSecondaryValueId, 'v2');
+        expect(t.effectiveValues.map((v) => v.id).toList(), ['v1', 'v2']);
+        expect(t.effectiveSecondaryValues.map((v) => v.id).toList(), ['v2']);
+      } else {
+        expect(t.effectiveSecondaryValueId, isNull);
+        expect(t.effectiveValues.map((v) => v.id).toList(), ['v1']);
+        expect(t.effectiveSecondaryValues, isEmpty);
+      }
     },
   );
 
@@ -123,7 +134,11 @@ void main() {
       overrideSecondaryValueId: null,
     );
 
-    expect(t.isOverridingValues, isTrue);
+    if (TasklyFeatureFlags.taskSecondaryValuesEnabled) {
+      expect(t.isOverridingValues, isTrue);
+    } else {
+      expect(t.isOverridingValues, isFalse);
+    }
     expect(t.isInheritingValues, isFalse);
     expect(t.effectivePrimaryValueId, isNull);
     expect(t.effectiveSecondaryValueId, isNull);
