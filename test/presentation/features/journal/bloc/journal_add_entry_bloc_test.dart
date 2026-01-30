@@ -258,7 +258,7 @@ void main() {
       mood: MoodRating.good,
       note: 'Hello',
       entryValues: const {'gratitude': true},
-      definitionById: const {
+      definitionById: {
         'gratitude': TrackerDefinition(
           id: 'gratitude',
           name: 'Gratitude',
@@ -283,33 +283,30 @@ void main() {
       ),
     ],
     verify: (_) {
-      verify(
+      final entryCaptured = verify(
         () => repository.upsertJournalEntry(
-          any(),
-          context: any(named: 'context'),
-        ),
-      ).called(1);
-      verify(
-        () => repository.appendTrackerEvent(
-          any(),
-          context: any(named: 'context'),
-        ),
-      ).called(2);
-
-      final captured = verify(
-        () => repository.appendTrackerEvent(
-          any(),
+          captureAny<JournalEntry>(),
           context: captureAny(named: 'context'),
         ),
       ).captured;
-      final ctx = captured.first as OperationContext;
+      expect(entryCaptured.length, 2);
+
+      final captured = verify(
+        () => repository.appendTrackerEvent(
+          captureAny<TrackerEvent>(),
+          context: captureAny(named: 'context'),
+        ),
+      ).captured;
+      expect(captured.length, 4);
+      final ctx = captured.firstWhere(
+        (item) => item is OperationContext,
+      ) as OperationContext;
       expect(ctx.feature, 'journal');
       expect(ctx.screen, 'add_entry_sheet');
       expect(ctx.intent, 'save');
       expect(ctx.operation, 'journal.add_entry.save');
       expect(ctx.correlationId, isNotEmpty);
-      for (final item in captured.skip(1)) {
-        final forwarded = item as OperationContext;
+      for (final forwarded in captured.whereType<OperationContext>().skip(1)) {
         expect(forwarded.correlationId, ctx.correlationId);
       }
     },

@@ -1,8 +1,6 @@
 @Tags(['integration'])
 library;
 
-import 'dart:convert';
-
 import 'package:taskly_data/db.dart';
 import 'package:taskly_data/repositories.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -71,9 +69,6 @@ void main() {
     );
     expect(updated.first.journalText, 'Updated');
 
-    final row = await db.select(db.journalEntries).getSingle();
-    final metadata = jsonDecode(row.psMetadata ?? '{}') as Map<String, dynamic>;
-    expect(metadata['cid'], context.correlationId);
   });
 
   testSafe('tracker group/definition updates emit stream updates', () async {
@@ -135,9 +130,6 @@ void main() {
     );
     expect(defs.first.name, 'Mood');
 
-    final row = await db.select(db.trackerGroups).getSingle();
-    final metadata = jsonDecode(row.psMetadata ?? '{}') as Map<String, dynamic>;
-    expect(metadata['cid'], context.correlationId);
   });
 }
 

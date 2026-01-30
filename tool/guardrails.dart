@@ -38,6 +38,10 @@ Future<void> main(List<String> args) async {
       name: 'Enforce test directory/tag contract',
       script: 'tool/no_test_directory_tag_violations.dart',
     ),
+    const _Guardrail(
+      name: 'Fail on expired architecture exceptions',
+      script: 'tool/no_expired_arch_exceptions.dart',
+    ),
   ];
 
   for (final guardrail in guardrails) {

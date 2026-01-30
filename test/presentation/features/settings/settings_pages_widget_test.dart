@@ -13,7 +13,7 @@ import 'package:taskly_bloc/presentation/features/settings/view/settings_languag
 import 'package:taskly_bloc/presentation/features/settings/view/settings_my_day_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_task_suggestions_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_weekly_review_page.dart';
-import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/allocation.dart';
 
 class MockGlobalSettingsBloc
     extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
@@ -119,7 +119,7 @@ void main() {
   testWidgetsSafe('task suggestions page shows content', (tester) async {
     const state = AllocationSettingsState(
       settings: AllocationConfig(
-        suggestionSignal: SuggestionSignal.valuesBased,
+        suggestionSignal: SuggestionSignal.ratingsBased,
       ),
       isLoading: false,
     );

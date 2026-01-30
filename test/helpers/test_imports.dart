@@ -49,6 +49,8 @@ export 'package:flutter_test/flutter_test.dart';
 
 /// Re-export bloc_test for BLoC testing utilities.
 export 'package:bloc_test/bloc_test.dart';
+/// Re-export flutter_bloc for repository/bloc providers in widget tests.
+export 'package:flutter_bloc/flutter_bloc.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Safe Test Functions & Pump Helpers

@@ -3,6 +3,7 @@ library;
 
 import '../../helpers/test_imports.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/feature_flags.dart';
 import 'package:taskly_domain/services.dart';
 
 void main() {
@@ -30,10 +31,19 @@ void main() {
         overrideSecondaryValueId: null,
       );
 
-      expect(task.isOverridingValues, isTrue);
+      if (TasklyFeatureFlags.taskSecondaryValuesEnabled) {
+        expect(task.isOverridingValues, isTrue);
+      } else {
+        expect(task.isOverridingValues, isFalse);
+      }
       expect(task.effectivePrimaryValueId, 'v1');
-      expect(task.effectiveSecondaryValueId, 'v2');
-      expect(task.effectiveValues, hasLength(2));
+      if (TasklyFeatureFlags.taskSecondaryValuesEnabled) {
+        expect(task.effectiveSecondaryValueId, 'v2');
+        expect(task.effectiveValues, hasLength(2));
+      } else {
+        expect(task.effectiveSecondaryValueId, isNull);
+        expect(task.effectiveValues, hasLength(1));
+      }
       expect(task.isEffectivelyValueless, isFalse);
     });
 

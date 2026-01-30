@@ -32,7 +32,7 @@ void main() {
   Future<void> pumpView(WidgetTester tester, Widget child) async {
     await tester.pumpWidgetWithBloc<RoutineDetailBloc>(
       bloc: bloc,
-      child: child,
+      child: Material(child: child),
     );
   }
 

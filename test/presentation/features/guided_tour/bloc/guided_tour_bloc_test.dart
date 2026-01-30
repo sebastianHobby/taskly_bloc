@@ -12,7 +12,10 @@ import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/settings.dart';
 
 void main() {
-  setUpAll(setUpAllTestEnvironment);
+  setUpAll(() {
+    setUpAllTestEnvironment();
+    registerFallbackValue(const GlobalSettings());
+  });
   setUp(setUpTestEnvironment);
 
   late MockSettingsRepositoryContract settingsRepository;
@@ -34,22 +37,27 @@ void main() {
   blocTestSafe<GuidedTourBloc, GuidedTourState>(
     'starts tour from the first step',
     build: buildBloc,
-    act: (bloc) => bloc.add(const GuidedTourStarted()),
+    act: (bloc) async {
+      bloc.add(const GuidedTourStarted());
+      await Future<void>.delayed(Duration.zero);
+      expect(demoModeService.isEnabled, isTrue);
+    },
     expect: () => [
       isA<GuidedTourState>()
           .having((s) => s.active, 'active', true)
           .having((s) => s.currentIndex, 'currentIndex', 0)
           .having((s) => s.navRequestId, 'navRequestId', 1),
     ],
-    verify: (_) => expect(demoModeService.isEnabled, isTrue),
   );
 
   blocTestSafe<GuidedTourBloc, GuidedTourState>(
     'disables demo mode when skipped',
     build: buildBloc,
-    act: (bloc) {
+    act: (bloc) async {
       bloc.add(const GuidedTourStarted());
       bloc.add(const GuidedTourSkipped());
+      await Future<void>.delayed(Duration.zero);
+      expect(demoModeService.isEnabled, isFalse);
     },
     expect: () => [
       isA<GuidedTourState>()
@@ -58,7 +66,6 @@ void main() {
           .having((s) => s.navRequestId, 'navRequestId', 1),
       isA<GuidedTourState>().having((s) => s.active, 'active', false),
     ],
-    verify: (_) => expect(demoModeService.isEnabled, isFalse),
   );
 
   blocTestSafe<GuidedTourBloc, GuidedTourState>(
@@ -89,7 +96,7 @@ void main() {
       when(
         () => settingsRepository.save(
           SettingsKey.global,
-          any(),
+          any<GlobalSettings>(),
           context: any(named: 'context'),
         ),
       ).thenAnswer((_) async {});
@@ -109,9 +116,9 @@ void main() {
     verify: (_) {
       verify(() => settingsRepository.load(SettingsKey.global)).called(1);
       final captured = verify(
-        () => settingsRepository.save(
+        () => settingsRepository.save<GlobalSettings>(
           SettingsKey.global,
-          captureAny(),
+          captureAny<GlobalSettings>(),
           context: any(named: 'context'),
         ),
       ).captured;

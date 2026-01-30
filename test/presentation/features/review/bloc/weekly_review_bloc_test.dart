@@ -8,12 +8,10 @@ import '../../../../mocks/feature_mocks.dart';
 import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/review/bloc/weekly_review_cubit.dart';
-import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_domain/settings.dart';
+import 'package:taskly_domain/telemetry.dart';
 
 void main() {
   setUpAll(() {
@@ -28,7 +26,6 @@ void main() {
   late MockValueRatingsRepositoryContract valueRatingsRepository;
   late ValueRatingsWriteService valueRatingsWriteService;
   late MockRoutineRepositoryContract routineRepository;
-  late MockSettingsRepositoryContract settingsRepository;
   late MockTaskRepositoryContract taskRepository;
   late MockNowService nowService;
 
@@ -40,7 +37,6 @@ void main() {
       valueRatingsRepository: valueRatingsRepository,
       valueRatingsWriteService: valueRatingsWriteService,
       routineRepository: routineRepository,
-      settingsRepository: settingsRepository,
       taskRepository: taskRepository,
       nowService: nowService,
     );
@@ -55,7 +51,6 @@ void main() {
       repository: valueRatingsRepository,
     );
     routineRepository = MockRoutineRepositoryContract();
-    settingsRepository = MockSettingsRepositoryContract();
     taskRepository = MockTaskRepositoryContract();
     nowService = MockNowService();
 
@@ -63,15 +58,6 @@ void main() {
     when(() => nowService.nowLocal()).thenReturn(DateTime(2025, 1, 15));
     when(() => valueRepository.getAll()).thenAnswer(
       (_) async => [TestData.value(id: 'v-1', name: 'Value')],
-    );
-    when(() => settingsRepository.load(SettingsKey.allocation)).thenAnswer(
-      (_) async => TestData.allocationConfig(
-        suggestionsPerBatch: 7,
-        focusMode: FocusMode.sustainable,
-        strategySettings: const StrategySettings(
-          suggestionSignal: SuggestionSignal.valuesBased,
-        ),
-      ),
     );
     when(
       () => analyticsService.getRecentCompletionsByValue(
@@ -105,7 +91,7 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(() => attentionEngine.watch(any())).thenAnswer(
-      (_) => const Stream<AttentionResults>.empty(),
+      (_) => const Stream<List<AttentionItem>>.empty(),
     );
     when(
       () => taskRepository.getSnoozeStats(

@@ -35,6 +35,14 @@ In practice:
 
 See: [exceptions/README.md](exceptions/README.md)
 
+## 4.1 Guardrail (descriptive)
+
+The repo includes a lightweight guardrail that flags missing or expired
+exceptions:
+
+- `dart run tool/no_expired_arch_exceptions.dart`
+- also run via `dart run tool/guardrails.dart`
+
 ## 5) Examples (format only)
 
 Example A: temporary deep import while extracting a public API

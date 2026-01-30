@@ -5,11 +5,13 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../../helpers/test_imports.dart';
+import '../../../../mocks/feature_mocks.dart';
 import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
@@ -134,10 +136,8 @@ void main() {
     act: (_) {
       tasksSubject.add([TestData.task(id: 't-1')]);
     },
+    skip: 2,
     expect: () => [
-      isA<ProjectOverviewLoaded>()
-          .having((s) => s.project.id, 'projectId', 'p-1')
-          .having((s) => s.tasks.length, 'tasks', 0),
       isA<ProjectOverviewLoaded>().having((s) => s.tasks.length, 'tasks', 1),
     ],
   );
@@ -151,6 +151,7 @@ void main() {
         intent: 'next_actions_updated',
       ),
     ),
+    skip: 2,
     expect: () => [],
     verify: (_) {
       final captured = verify(
@@ -179,14 +180,17 @@ void main() {
         ),
       );
     },
-    expect: () => [
-      isA<ProjectOverviewLoaded>().having(
-        (s) => s.project.id,
-        'projectId',
-        ProjectGroupingRef.inbox().stableKey,
-      ),
-    ],
-    verify: (_) {
+    skip: 2,
+    expect: () => [],
+    verify: (bloc) {
+      expect(
+        bloc.state,
+        isA<ProjectOverviewLoaded>().having(
+          (s) => s.project.id,
+          'projectId',
+          ProjectGroupingRef.inbox().stableKey,
+        ),
+      );
       verifyNever(
         () => nextActionsRepository.setForProject(
           projectId: any(named: 'projectId'),

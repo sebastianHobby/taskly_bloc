@@ -5,7 +5,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/feature_mocks.dart';
-import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_bloc.dart';
 import 'package:taskly_domain/telemetry.dart';
 

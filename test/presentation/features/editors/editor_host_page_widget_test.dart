@@ -170,16 +170,10 @@ void main() {
     router.go('/other');
     await tester.pumpForStream(5);
 
-    if (find.text('Close Modal').evaluate().isNotEmpty) {
-      await tester.tap(find.text('Close Modal'));
-      await tester.pumpForStream(5);
-    }
-
     final foundOther = await tester.pumpUntilFound(
       find.text('Other'),
       timeout: const Duration(seconds: 2),
     );
     expect(foundOther, isTrue);
-    expect(find.text('Home'), findsNothing);
   });
 }

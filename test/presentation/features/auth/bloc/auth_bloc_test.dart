@@ -67,6 +67,11 @@ void main() {
       isA<AppAuthState>()
           .having((s) => s.status, 'status', AuthStatus.authenticated)
           .having((s) => s.user?.id, 'user.id', 'user-1'),
+      isA<AppAuthState>().having(
+        (s) => s.status,
+        'status',
+        AuthStatus.unauthenticated,
+      ),
     ],
   );
 

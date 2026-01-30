@@ -12,6 +12,7 @@ import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_
 import 'package:taskly_bloc/presentation/theme/app_theme_mode.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/settings.dart';
 import 'package:taskly_domain/telemetry.dart';
 
 class MockAttentionRepositoryContract extends Mock
@@ -22,6 +23,7 @@ void main() {
     setUpAllTestEnvironment();
     registerAllFallbackValues();
     registerFallbackValue(TestData.dateRange());
+    registerFallbackValue(const GlobalSettings());
     registerFallbackValue(
       const OperationContext(
         correlationId: 'corr-1',
@@ -63,7 +65,7 @@ void main() {
     when(
       () => settingsRepository.save(
         SettingsKey.global,
-        any(),
+        any<GlobalSettings>(),
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
@@ -89,9 +91,9 @@ void main() {
     expect: () => [],
     verify: (_) {
       final captured = verify(
-        () => settingsRepository.save(
+        () => settingsRepository.save<GlobalSettings>(
           SettingsKey.global,
-          captureAny(),
+          captureAny<GlobalSettings>(),
           context: captureAny(named: 'context'),
         ),
       ).captured;

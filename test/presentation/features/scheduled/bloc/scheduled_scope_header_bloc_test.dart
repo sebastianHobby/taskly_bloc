@@ -91,6 +91,7 @@ void main() {
       isA<ScheduledScopeHeaderError>(),
       isA<ScheduledScopeHeaderLoading>(),
       isA<ScheduledScopeHeaderLoaded>(),
+      isA<ScheduledScopeHeaderLoaded>(),
     ],
   );
 }

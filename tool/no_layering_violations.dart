@@ -4,6 +4,7 @@ import 'dart:io';
 ///
 /// Rules (normative):
 /// - Presentation must not import Data.
+/// - Domain must not import Data.
 /// - Domain/Data must not import Presentation.
 ///
 /// Targets:
@@ -91,6 +92,17 @@ Future<void> main(List<String> args) async {
           );
         }
 
+        if (layer == _Layer.domain && importedLayer == _Layer.data) {
+          violations.add(
+            _Violation(
+              path: relativePath,
+              lineNumber: i + 1,
+              line: line.trimRight(),
+              reason: 'domain must not import data',
+            ),
+          );
+        }
+
         if ((layer == _Layer.domain || layer == _Layer.data) &&
             importedLayer == _Layer.presentation) {
           violations.add(
@@ -107,12 +119,14 @@ Future<void> main(List<String> args) async {
   }
 
   if (violations.isEmpty) {
-    stdout.writeln('✓ No layering import violations found.');
+    stdout.writeln('âœ“ No layering import violations found.');
     return;
   }
 
-  stderr.writeln('❌ Layering guardrail violations found:');
-  stderr.writeln('   (presentation ↛ data, domain/data ↛ presentation)');
+  stderr.writeln('Layering guardrail violations found:');
+  stderr.writeln(
+    '  (presentation -> data, domain -> data, domain/data -> presentation)',
+  );
   stderr.writeln('');
 
   for (final v in violations) {

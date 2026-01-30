@@ -81,6 +81,9 @@ void initializeLogging() {
     observer: observer,
     filter: TalkerFilter(
       enabledKeys: const <String>[
+        TalkerKey.verbose,
+        TalkerKey.debug,
+        TalkerKey.info,
         TalkerKey.warning,
         TalkerKey.error,
         TalkerKey.exception,

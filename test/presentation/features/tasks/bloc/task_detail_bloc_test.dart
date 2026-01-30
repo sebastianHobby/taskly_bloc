@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_imports.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_domain/taskly_domain.dart';
@@ -41,6 +43,8 @@ void main() {
   late MockOccurrenceCommandService occurrenceCommandService;
   late TaskWriteService taskWriteService;
   late AppErrorReporter errorReporter;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
 
   TaskDetailBloc buildBloc() {
     return TaskDetailBloc(
@@ -49,6 +53,8 @@ void main() {
       valueRepository: valueRepository,
       taskWriteService: taskWriteService,
       errorReporter: errorReporter,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
       autoLoad: false,
     );
   }
@@ -68,6 +74,10 @@ void main() {
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
     );
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
+
+    addTearDown(demoModeService.dispose);
   });
 
   blocTestSafe<TaskDetailBloc, TaskDetailState>(

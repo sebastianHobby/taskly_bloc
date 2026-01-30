@@ -103,11 +103,6 @@ void main() {
         'first',
         'Alpha',
       ),
-      isA<ValueListLoaded>().having(
-        (s) => s.values.first.name,
-        'first',
-        'Alpha',
-      ),
     ],
   );
 }

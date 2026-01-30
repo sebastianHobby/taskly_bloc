@@ -23,7 +23,7 @@ void main() {
           .having(
             (s) => s.sortOrder,
             'sortOrder',
-            AnytimeSortOrder.dueSoonest,
+            AnytimeSortOrder.recentlyUpdated,
           ),
     );
   });
