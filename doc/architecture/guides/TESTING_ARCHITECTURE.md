@@ -80,6 +80,9 @@ Use these as the starting point when creating new tests:
   - Demonstrates TG-002 for widget tests using `testWidgetsSafe`.
   - Demonstrates hermetic widget testing patterns (no repository access;
     Material wrapper; explicit semantics assertions).
+- `packages/taskly_data/test/unit/errors/failure_guard_seed_test.dart`
+  - Demonstrates data-layer failure mapping via `FailureGuard`.
+  - Uses safe wrappers: `testSafe` (TG-002).
 
 ## 5) Suites, tags, and presets
 

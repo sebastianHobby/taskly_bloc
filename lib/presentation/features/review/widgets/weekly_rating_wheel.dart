@@ -14,6 +14,7 @@ class WeeklyRatingWheel extends StatelessWidget {
     required this.onValueSelected,
     required this.onRatingChanged,
     super.key,
+    this.enableTap = true,
   });
 
   final List<WeeklyReviewRatingEntry> entries;
@@ -21,6 +22,7 @@ class WeeklyRatingWheel extends StatelessWidget {
   final String? selectedValueId;
   final ValueChanged<String> onValueSelected;
   final void Function(String valueId, int rating) onRatingChanged;
+  final bool enableTap;
 
   static const double _hubRadiusFactor = 0.18;
   static const double _sliceGapRadians = 0.08;
@@ -47,39 +49,42 @@ class WeeklyRatingWheel extends StatelessWidget {
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
 
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTapDown: (details) {
-            final hit = _hitTest(details.localPosition, size);
-            if (hit == null) return;
-            onValueSelected(hit.valueId);
-            if (hit.rating != null) {
-              onRatingChanged(hit.valueId, hit.rating!);
-            }
-          },
-          child: Stack(
-            fit: StackFit.expand,
-            clipBehavior: Clip.none,
-            children: [
-              CustomPaint(
-                painter: _WeeklyRatingWheelPainter(
-                  entries: entries,
-                  colors: colors,
-                  maxRating: maxRating,
-                  hubRadiusFactor: _hubRadiusFactor,
-                  ringGap: _ringGap,
-                  sliceGapRadians: _sliceGapRadians,
-                  selectedIndex: selectedIndex,
-                  hubColor: Theme.of(context).colorScheme.surface,
-                  hubBorderColor: Theme.of(context).colorScheme.outlineVariant,
+        return IgnorePointer(
+          ignoring: !enableTap,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (details) {
+              final hit = _hitTest(details.localPosition, size);
+              if (hit == null) return;
+              onValueSelected(hit.valueId);
+              if (hit.rating != null) {
+                onRatingChanged(hit.valueId, hit.rating!);
+              }
+            },
+            child: Stack(
+              fit: StackFit.expand,
+              clipBehavior: Clip.none,
+              children: [
+                CustomPaint(
+                  painter: _WeeklyRatingWheelPainter(
+                    entries: entries,
+                    colors: colors,
+                    maxRating: maxRating,
+                    hubRadiusFactor: _hubRadiusFactor,
+                    ringGap: _ringGap,
+                    sliceGapRadians: _sliceGapRadians,
+                    selectedIndex: selectedIndex,
+                    hubColor: Theme.of(context).colorScheme.surface,
+                    hubBorderColor: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
-              ),
-              ..._buildIconOverlays(
-                context,
-                size: size,
-                colors: colors,
-              ),
-            ],
+                ..._buildIconOverlays(
+                  context,
+                  size: size,
+                  colors: colors,
+                ),
+              ],
+            ),
           ),
         );
       },

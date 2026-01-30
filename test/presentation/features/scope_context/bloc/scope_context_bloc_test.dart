@@ -99,6 +99,10 @@ void main() {
       isA<ScopeContextLoaded>()
           .having((s) => s.title, 'title', 'Purpose')
           .having((s) => s.taskCount, 'taskCount', 2)
+          .having((s) => s.projectCount, 'projectCount', 0),
+      isA<ScopeContextLoaded>()
+          .having((s) => s.title, 'title', 'Purpose')
+          .having((s) => s.taskCount, 'taskCount', 2)
           .having((s) => s.projectCount, 'projectCount', 5),
     ],
   );
@@ -121,6 +125,7 @@ void main() {
       isA<ScopeContextLoaded>(),
       isA<ScopeContextError>(),
       isA<ScopeContextLoading>(),
+      isA<ScopeContextLoaded>().having((s) => s.taskCount, 'taskCount', 1),
       isA<ScopeContextLoaded>().having((s) => s.taskCount, 'taskCount', 1),
     ],
   );

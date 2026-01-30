@@ -3,6 +3,7 @@ library;
 
 import 'dart:convert';
 
+import 'package:async/async.dart';
 import 'package:taskly_data/db.dart';
 import 'package:taskly_data/id.dart';
 import 'package:taskly_data/repositories.dart';
@@ -29,6 +30,11 @@ void main() {
     final expander = MockOccurrenceStreamExpanderContract();
     final writeHelper = MockOccurrenceWriteHelperContract();
 
+    final valueRepository = ValueRepository(
+      driftDb: db,
+      idGenerator: idGenerator,
+      clock: clock,
+    );
     final projectRepository = ProjectRepository(
       driftDb: db,
       occurrenceExpander: expander,
@@ -44,7 +50,12 @@ void main() {
       clock: clock,
     );
 
-    await projectRepository.create(name: 'Project Alpha');
+    await valueRepository.create(name: 'Focus', color: '#FF0000');
+    final primaryValueId = idGenerator.valueId(name: 'Focus');
+    await projectRepository.create(
+      name: 'Project Alpha',
+      valueIds: [primaryValueId],
+    );
     final projectRow = await db.select(db.projectTable).getSingle();
 
     final context = const OperationContext(
@@ -103,17 +114,28 @@ void main() {
       clock: clock,
     );
 
+    final queue = StreamQueue(taskRepository.watchAll());
+    addTearDown(queue.cancel);
+
     await taskRepository.create(name: 'Delete Me', completed: false);
-    final created = await taskRepository.watchAll().firstWhere(
-      (tasks) => tasks.isNotEmpty,
-    );
+    List<Task>? created;
+    while (created == null || created.isEmpty) {
+      final next = await queue.next;
+      if (next.isNotEmpty) {
+        created = next;
+      }
+    }
     final taskId = created.single.id;
 
     await taskRepository.delete(taskId);
 
-    final afterDelete = await taskRepository.watchAll().firstWhere(
-      (tasks) => tasks.isEmpty,
-    );
+    List<Task>? afterDelete;
+    while (afterDelete == null || afterDelete.isNotEmpty) {
+      final next = await queue.next;
+      if (next.isEmpty) {
+        afterDelete = next;
+      }
+    }
     expect(afterDelete, isEmpty);
 
     final removed = await taskRepository.watchById(taskId).firstWhere(

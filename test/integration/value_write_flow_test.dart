@@ -3,6 +3,7 @@ library;
 
 import 'dart:convert';
 
+import 'package:async/async.dart';
 import 'package:taskly_data/db.dart';
 import 'package:taskly_data/repositories.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -30,6 +31,8 @@ void main() {
       idGenerator: idGenerator,
       clock: clock,
     );
+    final queue = StreamQueue(valueRepository.watchAll());
+    addTearDown(queue.cancel);
 
     final context = const OperationContext(
       correlationId: 'corr-1',
@@ -45,9 +48,13 @@ void main() {
       context: context,
     );
 
-    final created = await valueRepository.watchAll().firstWhere(
-      (values) => values.isNotEmpty,
-    );
+    List<Value>? created;
+    while (created == null || created.isEmpty) {
+      final next = await queue.next;
+      if (next.isNotEmpty) {
+        created = next;
+      }
+    }
     expect(created, hasLength(1));
     final valueId = created.single.id;
 
@@ -59,9 +66,14 @@ void main() {
       context: context,
     );
 
-    final updated = await valueRepository.watchAll().firstWhere(
-      (values) => values.any((v) => v.name == 'Health Updated'),
-    );
+    List<Value>? updated;
+    while (updated == null ||
+        !updated.any((value) => value.name == 'Health Updated')) {
+      final next = await queue.next;
+      if (next.any((value) => value.name == 'Health Updated')) {
+        updated = next;
+      }
+    }
     expect(updated.single.name, 'Health Updated');
 
     final row = await db.select(db.valueTable).getSingle();
@@ -81,6 +93,8 @@ void main() {
       idGenerator: idGenerator,
       clock: clock,
     );
+    final queue = StreamQueue(valueRepository.watchAll());
+    addTearDown(queue.cancel);
 
     await valueRepository.create(
       name: 'Delete Value',
@@ -88,16 +102,24 @@ void main() {
       priority: ValuePriority.high,
     );
 
-    final created = await valueRepository.watchAll().firstWhere(
-      (values) => values.isNotEmpty,
-    );
+    List<Value>? created;
+    while (created == null || created.isEmpty) {
+      final next = await queue.next;
+      if (next.isNotEmpty) {
+        created = next;
+      }
+    }
     final valueId = created.single.id;
 
     await valueRepository.delete(valueId);
 
-    final afterDelete = await valueRepository.watchAll().firstWhere(
-      (values) => values.isEmpty,
-    );
+    List<Value>? afterDelete;
+    while (afterDelete == null || afterDelete.isNotEmpty) {
+      final next = await queue.next;
+      if (next.isEmpty) {
+        afterDelete = next;
+      }
+    }
     expect(afterDelete, isEmpty);
 
     final removed = await valueRepository.watchById(valueId).firstWhere(

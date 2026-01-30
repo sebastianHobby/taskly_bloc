@@ -39,6 +39,8 @@ Use this when adding a new screen, flow, or domain capability.
 
 - Prefer typed failures/results over raw exceptions across boundaries.
 - Reactive streams should map failures into UI state, not terminate UI.
+- See: [ERROR_HANDLING_AND_FAILURES.md](ERROR_HANDLING_AND_FAILURES.md) for
+  mapping patterns and seed tests.
 
 ## 7) Tests (when added)
 
@@ -54,4 +56,6 @@ Use this when adding a new screen, flow, or domain capability.
 ## 9) Guardrails and exceptions
 
 - Run guardrail scripts when you touch boundaries or data rules.
+- Prefer the quickcheck script for a consistent local loop:
+  `powershell -File tool/Run-Quickcheck.ps1`
 - If an invariant must be violated, document an exception before coding.

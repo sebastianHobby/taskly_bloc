@@ -123,7 +123,7 @@ void main() {
   );
 
   blocTestSafe<InitialSyncGateBloc, InitialSyncGateState>(
-    'emits in progress then ready when sync completes',
+    'emits ready when sync completes without blocking',
     build: buildBloc,
     act: (bloc) async {
       bloc.add(const InitialSyncGateStarted());
@@ -131,8 +131,6 @@ void main() {
       progressController.emit(_progress(hasSynced: true));
     },
     expect: () => [
-      isA<InitialSyncGateInProgress>(),
-      isA<InitialSyncGateInProgress>(),
       isA<InitialSyncGateReady>(),
     ],
   );

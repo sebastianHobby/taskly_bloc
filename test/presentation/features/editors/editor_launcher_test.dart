@@ -4,7 +4,6 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
@@ -20,6 +19,28 @@ import '../../../mocks/feature_mocks.dart';
 import '../../../mocks/repository_mocks.dart';
 
 class MockNowService extends Mock implements NowService {}
+
+Widget _buildTestModal(BuildContext context, String label) {
+  return Material(
+    child: SizedBox(
+      width: 300,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _taskEditorBuilder(BuildContext context, TaskEditorLaunchArgs args) {
+  return _buildTestModal(context, 'Task Editor');
+}
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
@@ -47,8 +68,9 @@ void main() {
       () => nowService.nowLocal(),
     ).thenReturn(DateTime.utc(2025, 1, 15).toLocal());
     when(() => nowService.nowUtc()).thenReturn(DateTime.utc(2025, 1, 15));
-    await tester.pumpWidget(
-      MultiProvider(
+    await pumpTasklyApp(
+      tester,
+      home: MultiProvider(
         providers: [
           Provider<AppErrorReporter>.value(
             value: AppErrorReporter(
@@ -57,13 +79,11 @@ void main() {
           ),
           Provider<NowService>.value(value: nowService),
         ],
-        child: MaterialApp(
-          home: Builder(
-            builder: (ctx) {
-              context = ctx;
-              return const SizedBox.shrink();
-            },
-          ),
+        child: Builder(
+          builder: (ctx) {
+            context = ctx;
+            return const SizedBox.shrink();
+          },
         ),
       ),
     );
@@ -129,11 +149,13 @@ void main() {
       projectRepository: projectRepository,
       valueRepository: valueRepository,
       taskWriteService: taskWriteService,
+      taskEditorBuilder: _taskEditorBuilder,
     );
 
     late BuildContext context;
-    await tester.pumpWidget(
-      MultiProvider(
+    await pumpTasklyApp(
+      tester,
+      home: MultiProvider(
         providers: [
           Provider<AppErrorReporter>.value(
             value: AppErrorReporter(
@@ -142,16 +164,14 @@ void main() {
           ),
           Provider<NowService>.value(value: nowService),
         ],
-        child: MaterialApp(
-          home: Builder(
-            builder: (ctx) {
-              context = ctx;
-              return FilledButton(
-                onPressed: () => unawaited(launcher.openTaskEditor(context)),
-                child: const Text('Open Task Editor'),
-              );
-            },
-          ),
+        child: Builder(
+          builder: (ctx) {
+            context = ctx;
+            return FilledButton(
+              onPressed: () => unawaited(launcher.openTaskEditor(context)),
+              child: const Text('Open Task Editor'),
+            );
+          },
         ),
       ),
     );
@@ -209,11 +229,13 @@ void main() {
       projectRepository: projectRepository,
       valueRepository: valueRepository,
       taskWriteService: taskWriteService,
+      taskEditorBuilder: _taskEditorBuilder,
     );
 
     late BuildContext context;
-    await tester.pumpWidget(
-      MultiProvider(
+    await pumpTasklyApp(
+      tester,
+      home: MultiProvider(
         providers: [
           Provider<AppErrorReporter>.value(
             value: AppErrorReporter(
@@ -222,16 +244,14 @@ void main() {
           ),
           Provider<NowService>.value(value: nowService),
         ],
-        child: MaterialApp(
-          home: Builder(
-            builder: (ctx) {
-              context = ctx;
-              return FilledButton(
-                onPressed: () => unawaited(launcher.openTaskEditor(context)),
-                child: const Text('Open Task Editor'),
-              );
-            },
-          ),
+        child: Builder(
+          builder: (ctx) {
+            context = ctx;
+            return FilledButton(
+              onPressed: () => unawaited(launcher.openTaskEditor(context)),
+              child: const Text('Open Task Editor'),
+            );
+          },
         ),
       ),
     );

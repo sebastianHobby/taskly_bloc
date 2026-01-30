@@ -9,6 +9,7 @@ import '../../../../mocks/feature_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
@@ -146,7 +147,11 @@ void main() {
     build: buildBloc,
     act: (bloc) => bloc.add(
       const ProjectDetailEvent.create(
-        command: CreateProjectCommand(name: 'New', completed: false),
+        command: CreateProjectCommand(
+          name: 'New',
+          completed: false,
+          valueIds: ['v-1'],
+        ),
       ),
     ),
     expect: () => [
@@ -187,6 +192,7 @@ void main() {
           id: 'p-1',
           name: '',
           completed: false,
+          valueIds: ['v-1'],
         ),
       ),
     ),

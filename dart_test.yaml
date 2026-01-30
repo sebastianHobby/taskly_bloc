@@ -35,11 +35,21 @@ tags:
   
   # Tests for specific features
   analytics:
+  anytime:
+  app:
+  guided_tour:
+  onboarding:
+  projects:
+  review:
   reviews:
   journal:
+  scheduled:
+  scope_context:
+  values:
   tasks:
   my_day:
   parity:
+  settings:
 
   # Local-stack pipeline tests (Supabase + PowerSync + real network)
   pipeline:

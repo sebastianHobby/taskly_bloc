@@ -9,6 +9,8 @@ import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_feed_bloc
 import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/taskly_domain.dart';
@@ -36,6 +38,8 @@ void main() {
   late FakeAppLifecycleEvents lifecycleEvents;
   late SessionStreamCacheManager cacheManager;
   late SessionSharedDataService sharedDataService;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
   late AnytimeSessionQueryService queryService;
   late PublishSubject<List<Project>> projects;
   late PublishSubject<int> inboxCounts;
@@ -49,16 +53,22 @@ void main() {
     cacheManager = SessionStreamCacheManager(
       appLifecycleService: lifecycleEvents,
     );
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
     sharedDataService = SessionSharedDataService(
       cacheManager: cacheManager,
       valueRepository: valueRepository,
       projectRepository: projectRepository,
       taskRepository: taskRepository,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
     );
     queryService = AnytimeSessionQueryService(
       projectRepository: projectRepository,
       cacheManager: cacheManager,
       sharedDataService: sharedDataService,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
     );
 
     projects = PublishSubject<List<Project>>();
@@ -77,6 +87,7 @@ void main() {
     await inboxCounts.close();
     await values.close();
     await cacheManager.dispose();
+    await demoModeService.dispose();
     await lifecycleEvents.dispose();
   });
 
@@ -118,6 +129,8 @@ void main() {
     'emits error when the query stream fails',
     build: () => AnytimeFeedBloc(queryService: queryService),
     act: (_) {
+      inboxCounts.add(0);
+      values.add(const <Value>[]);
       projects.addError(StateError('boom'));
     },
     expect: () => [

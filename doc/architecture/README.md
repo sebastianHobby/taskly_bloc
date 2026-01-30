@@ -25,6 +25,7 @@ These are descriptive playbooks. They must not introduce new "must/shall" rules.
 - Screen actions + tile intents: [guides/SCREEN_ACTIONS_AND_TILE_INTENTS.md](guides/SCREEN_ACTIONS_AND_TILE_INTENTS.md)
 - Shared UI governance and patterns: [guides/TASKLY_UI_GOVERNANCE.md](guides/TASKLY_UI_GOVERNANCE.md)
 - "Style, not config" pattern: [guides/TASKLY_UI_STYLE_NOT_CONFIG.md](guides/TASKLY_UI_STYLE_NOT_CONFIG.md)
+- Error handling + failure mapping: [guides/ERROR_HANDLING_AND_FAILURES.md](guides/ERROR_HANDLING_AND_FAILURES.md)
 - Testing guide (policy + taxonomy; invariants live in INVARIANTS):
   [guides/TESTING_ARCHITECTURE.md](guides/TESTING_ARCHITECTURE.md)
 - New feature checklist: [guides/NEW_FEATURE_CHECKLIST.md](guides/NEW_FEATURE_CHECKLIST.md)

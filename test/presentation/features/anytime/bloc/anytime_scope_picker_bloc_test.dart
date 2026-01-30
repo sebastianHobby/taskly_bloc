@@ -137,6 +137,8 @@ void main() {
       isA<AnytimeScopePickerLoaded>(),
       isA<AnytimeScopePickerError>(),
       isA<AnytimeScopePickerLoading>(),
+      isA<AnytimeScopePickerError>(),
+      isA<AnytimeScopePickerLoaded>(),
       isA<AnytimeScopePickerLoaded>().having(
         (s) => s.values.length,
         'values.length',

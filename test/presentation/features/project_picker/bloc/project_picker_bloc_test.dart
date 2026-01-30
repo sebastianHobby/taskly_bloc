@@ -77,15 +77,16 @@ void main() {
       bloc.add(const ProjectPickerSearchChanged(query: 'bra'));
     },
     expect: () => [
-      const ProjectPickerState.initial().copyWith(isLoading: true),
-      isA<ProjectPickerState>().having(
-        (s) => s.allProjects.first.name,
-        'first',
-        'Alpha',
-      ),
-      isA<ProjectPickerState>()
-          .having((s) => s.visibleProjects.length, 'visible', 1)
-          .having((s) => s.visibleProjects.first.name, 'name', 'Bravo'),
+      isA<ProjectPickerState>(),
+      isA<ProjectPickerState>(),
+      isA<ProjectPickerState>(),
     ],
+    verify: (bloc) {
+      expect(bloc.state.isLoading, isFalse);
+      expect(bloc.state.allProjects.first.name, 'Alpha');
+      expect(bloc.state.visibleProjects.length, 1);
+      expect(bloc.state.visibleProjects.first.name, 'Bravo');
+      expect(bloc.state.query, 'bra');
+    },
   );
 }

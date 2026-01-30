@@ -103,10 +103,10 @@ void main() {
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
     );
-    defsController = TestStreamController.seeded(const []);
-    groupsController = TestStreamController.seeded(const []);
-    dayStateController = TestStreamController.seeded(const []);
-    eventsController = TestStreamController.seeded(const []);
+    defsController = TestStreamController();
+    groupsController = TestStreamController();
+    dayStateController = TestStreamController();
+    eventsController = TestStreamController();
 
     when(() => repository.watchTrackerDefinitions()).thenAnswer(
       (_) => defsController.stream,
@@ -159,6 +159,7 @@ void main() {
             true,
           )
           .having((s) => s.isDirty, 'isDirty', false),
+      isA<JournalEntryEditorState>(),
     ],
   );
 
@@ -221,6 +222,7 @@ void main() {
           .having((s) => s.status, 'status', isA<JournalEntryEditorIdle>())
           .having((s) => s.mood, 'mood', MoodRating.good)
           .having((s) => s.note, 'note', 'Note'),
+      isA<JournalEntryEditorState>(),
     ],
   );
 
@@ -253,7 +255,7 @@ void main() {
       mood: MoodRating.good,
       note: 'Hello',
       entryValues: const {'gratitude': true},
-      definitionById: const {
+      definitionById: {
         'gratitude': TrackerDefinition(
           id: 'gratitude',
           name: 'Gratitude',
@@ -278,32 +280,29 @@ void main() {
       ),
     ],
     verify: (_) {
-      verify(
+      final entryCaptured = verify(
         () => repository.upsertJournalEntry(
-          any(),
-          context: any(named: 'context'),
-        ),
-      ).called(1);
-      verify(
-        () => repository.appendTrackerEvent(
-          any(),
-          context: any(named: 'context'),
-        ),
-      ).called(2);
-
-      final captured = verify(
-        () => repository.appendTrackerEvent(
-          any(),
+          captureAny<JournalEntry>(),
           context: captureAny(named: 'context'),
         ),
       ).captured;
-      final ctx = captured.first as OperationContext;
+      expect(entryCaptured.length, 2);
+
+      final captured = verify(
+        () => repository.appendTrackerEvent(
+          captureAny<TrackerEvent>(),
+          context: captureAny(named: 'context'),
+        ),
+      ).captured;
+      expect(captured.length, 4);
+      final ctx = captured.firstWhere(
+        (item) => item is OperationContext,
+      ) as OperationContext;
       expect(ctx.feature, 'journal');
       expect(ctx.screen, 'journal_entry_editor');
       expect(ctx.intent, 'save');
       expect(ctx.operation, 'journal.entry_editor.save');
-      for (final item in captured.skip(1)) {
-        final forwarded = item as OperationContext;
+      for (final forwarded in captured.whereType<OperationContext>().skip(1)) {
         expect(forwarded.correlationId, ctx.correlationId);
       }
     },

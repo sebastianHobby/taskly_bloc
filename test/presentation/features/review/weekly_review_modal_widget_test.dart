@@ -8,12 +8,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_imports.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/review/view/weekly_review_modal.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/settings.dart';
 import 'package:taskly_domain/services.dart';
@@ -54,6 +57,7 @@ void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
     registerAllFallbackValues();
+    registerFallbackValue(const AttentionQuery());
   });
   setUp(setUpTestEnvironment);
 
@@ -121,7 +125,7 @@ void main() {
   });
 
   Future<void> pumpModal(WidgetTester tester) async {
-    await tester.pumpApp(
+    await tester.pumpWidget(
       MultiRepositoryProvider(
         providers: [
           RepositoryProvider<AnalyticsService>.value(value: analyticsService),
@@ -152,20 +156,25 @@ void main() {
         ],
         child: BlocProvider<GlobalSettingsBloc>.value(
           value: globalSettingsBloc,
-          child: Builder(
-            builder: (context) {
-              return Scaffold(
-                body: Center(
-                  child: ElevatedButton(
-                    onPressed: () => showWeeklyReviewModal(
-                      context,
-                      settings: const GlobalSettings(),
+          child: MaterialApp(
+            theme: AppTheme.lightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) {
+                return Scaffold(
+                  body: Center(
+                    child: ElevatedButton(
+                      onPressed: () => showWeeklyReviewModal(
+                        context,
+                        settings: const GlobalSettings(),
+                      ),
+                      child: const Text('Open'),
                     ),
-                    child: const Text('Open'),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -175,27 +184,25 @@ void main() {
   testWidgetsSafe('shows loading state while weekly review loads', (
     tester,
   ) async {
-    final completer = Completer<AllocationConfig>();
-    when(
-      () => settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
-    ).thenAnswer((_) => completer.future);
+    final completer = Completer<List<Value>>();
+    when(() => valueRepository.getAll()).thenAnswer((_) => completer.future);
 
     await pumpModal(tester);
     await tester.tap(find.text('Open'));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpForStream();
 
     expect(find.byType(CircularProgressIndicator), findsWidgets);
 
-    completer.complete(const AllocationConfig());
+    completer.complete(<Value>[]);
   });
 
   testWidgetsSafe('shows error state when weekly review fails', (tester) async {
-    when(
-      () => settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
-    ).thenThrow('review failed');
+    when(() => valueRepository.getAll()).thenThrow('review failed');
 
     await pumpModal(tester);
     await tester.tap(find.text('Open'));
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpForStream();
 
     expect(find.text('review failed'), findsOneWidget);
@@ -212,6 +219,7 @@ void main() {
 
     await pumpModal(tester);
     await tester.tap(find.text('Open'));
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpForStream();
 
     expect(find.text('Weekly Review'), findsOneWidget);

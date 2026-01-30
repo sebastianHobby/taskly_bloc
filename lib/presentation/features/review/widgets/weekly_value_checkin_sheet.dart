@@ -175,16 +175,6 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         _TopControlsRow(
-                          onBack: () {
-                            if (isFirst) {
-                              widget.onExit();
-                              return;
-                            }
-                            final previous = entries[stepIndex - 1];
-                            context.read<WeeklyReviewBloc>().add(
-                              WeeklyReviewValueSelected(previous.value.id),
-                            );
-                          },
                           onHistory: () => showWeeklyRatingDetailsSheet(
                             context,
                             entry: selected,
@@ -242,6 +232,7 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
                                       entries: entries,
                                       maxRating: maxRating,
                                       selectedValueId: selected.value.id,
+                                      enableTap: false,
                                       onValueSelected: (valueId) => context
                                           .read<WeeklyReviewBloc>()
                                           .add(
@@ -299,57 +290,74 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
                         ),
                         const Spacer(),
                         SizedBox(height: tokens.spaceLg),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: rating <= 0
-                                ? null
-                                : () {
-                                    if (rating != selected.rating) {
+                        Row(
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                if (isFirst) {
+                                  widget.onExit();
+                                  return;
+                                }
+                                final previous = entries[stepIndex - 1];
+                                context.read<WeeklyReviewBloc>().add(
+                                  WeeklyReviewValueSelected(previous.value.id),
+                                );
+                              },
+                              child: const Text('Back'),
+                            ),
+                            const Spacer(),
+                            FilledButton(
+                              onPressed: rating <= 0
+                                  ? null
+                                  : () {
+                                      if (rating != selected.rating) {
+                                        context.read<WeeklyReviewBloc>().add(
+                                          WeeklyReviewValueRatingChanged(
+                                            valueId: selected.value.id,
+                                            rating: rating,
+                                          ),
+                                        );
+                                      }
+                                      if (isLast) {
+                                        widget.onComplete();
+                                        return;
+                                      }
+                                      final next = entries[stepIndex + 1];
                                       context.read<WeeklyReviewBloc>().add(
-                                        WeeklyReviewValueRatingChanged(
-                                          valueId: selected.value.id,
-                                          rating: rating,
+                                        WeeklyReviewValueSelected(
+                                          next.value.id,
                                         ),
                                       );
-                                    }
-                                    if (isLast) {
-                                      widget.onComplete();
-                                      return;
-                                    }
-                                    final next = entries[stepIndex + 1];
-                                    context.read<WeeklyReviewBloc>().add(
-                                      WeeklyReviewValueSelected(next.value.id),
-                                    );
-                                  },
-                            style: FilledButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                vertical: tokens.spaceMd2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  tokens.radiusXxl,
+                                    },
+                              style: FilledButton.styleFrom(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: tokens.spaceMd2,
                                 ),
-                              ),
-                              backgroundColor: scheme.onSurface,
-                              foregroundColor: scheme.surface,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (isLast)
-                                  const Icon(Icons.check_circle)
-                                else
-                                  const Icon(Icons.arrow_forward),
-                                SizedBox(width: tokens.spaceSm),
-                                Text(
-                                  isLast
-                                      ? 'Complete Check-in'
-                                      : 'Next Value',
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    tokens.radiusXxl,
+                                  ),
                                 ),
-                              ],
+                                backgroundColor: scheme.onSurface,
+                                foregroundColor: scheme.surface,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (isLast)
+                                    const Icon(Icons.check_circle)
+                                  else
+                                    const Icon(Icons.arrow_forward),
+                                  SizedBox(width: tokens.spaceSm),
+                                  Text(
+                                    isLast
+                                        ? 'Complete Check-in'
+                                        : 'Next Value',
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -366,11 +374,9 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
 
 class _TopControlsRow extends StatelessWidget {
   const _TopControlsRow({
-    required this.onBack,
     required this.onHistory,
   });
 
-  final VoidCallback onBack;
   final VoidCallback onHistory;
 
   @override
@@ -380,10 +386,6 @@ class _TopControlsRow extends StatelessWidget {
 
     return Row(
       children: [
-        TextButton(
-          onPressed: onBack,
-          child: const Text('Back'),
-        ),
         const Spacer(),
         Container(
           width: tokens.iconButtonMinSize,

@@ -7,6 +7,7 @@ import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/feature_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_screen_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
 
@@ -31,11 +32,13 @@ void main() {
   late MockAllocationOrchestrator allocationOrchestrator;
   late MockOccurrenceCommandService occurrenceCommandService;
   late ProjectWriteService projectWriteService;
+  late DemoModeService demoModeService;
 
   ScheduledScreenBloc buildBloc() {
     return ScheduledScreenBloc(
       taskWriteService: taskWriteService,
       projectWriteService: projectWriteService,
+      demoModeService: demoModeService,
     );
   }
 
@@ -55,6 +58,7 @@ void main() {
       allocationOrchestrator: allocationOrchestrator,
       occurrenceCommandService: occurrenceCommandService,
     );
+    demoModeService = DemoModeService();
 
     when(
       () => taskRepository.bulkRescheduleDeadlines(
@@ -70,6 +74,8 @@ void main() {
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async => 1);
+
+    addTearDown(demoModeService.dispose);
   });
 
   blocTestSafe<ScheduledScreenBloc, ScheduledScreenState>(

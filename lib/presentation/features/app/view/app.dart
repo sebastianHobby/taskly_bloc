@@ -32,6 +32,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart'
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher_defaults.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_gate_query_service.dart';
@@ -57,7 +58,16 @@ import 'package:taskly_bloc/core/config/debug_bootstrap_flags.dart';
 class App extends StatelessWidget {
   const App({super.key});
 
+  /// Navigator key for the authenticated app shell (GoRouter).
   static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
+  /// Navigator key for the unauthenticated shell (sign-in/up flow).
+  static final GlobalKey<NavigatorState> unauthNavigatorKey =
+      GlobalKey<NavigatorState>();
+
+  /// Navigator key for the splash/loading shell.
+  static final GlobalKey<NavigatorState> splashNavigatorKey =
       GlobalKey<NavigatorState>();
   static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
@@ -153,7 +163,7 @@ class _ThemedApp extends StatelessWidget {
     return BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
       builder: (context, state) {
         return MaterialApp(
-          navigatorKey: App.navigatorKey,
+          navigatorKey: App.splashNavigatorKey,
           scaffoldMessengerKey: App.scaffoldMessengerKey,
           theme: AppTheme.lightTheme(seedColor: state.seedColor),
           darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
@@ -180,7 +190,7 @@ class _UnauthenticatedApp extends StatelessWidget {
     return BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
       builder: (context, state) {
         return MaterialApp(
-          navigatorKey: App.navigatorKey,
+          navigatorKey: App.unauthNavigatorKey,
           scaffoldMessengerKey: App.scaffoldMessengerKey,
           theme: AppTheme.lightTheme(seedColor: state.seedColor),
           darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
@@ -322,18 +332,18 @@ class _AuthenticatedApp extends StatelessWidget {
         Provider<ValueRatingsWriteService>(
           create: (_) => getIt<ValueRatingsWriteService>(),
         ),
-          Provider<RoutineWriteService>(
-            create: (_) => getIt<RoutineWriteService>(),
-          ),
-          Provider<EditorLauncher>(
-            create: (_) => EditorLauncher(
-              errorReporter: App.errorReporter,
-              demoModeService: getIt<DemoModeService>(),
-              demoDataProvider: getIt<DemoDataProvider>(),
-              taskRepository: getIt<TaskRepositoryContract>(),
-              projectRepository: getIt<ProjectRepositoryContract>(),
-              valueRepository: getIt<ValueRepositoryContract>(),
-              routineRepository: getIt<RoutineRepositoryContract>(),
+        Provider<RoutineWriteService>(
+          create: (_) => getIt<RoutineWriteService>(),
+        ),
+        Provider<EditorLauncher>(
+          create: (_) => buildDefaultEditorLauncher(
+            errorReporter: App.errorReporter,
+            demoModeService: getIt<DemoModeService>(),
+            demoDataProvider: getIt<DemoDataProvider>(),
+            taskRepository: getIt<TaskRepositoryContract>(),
+            projectRepository: getIt<ProjectRepositoryContract>(),
+            valueRepository: getIt<ValueRepositoryContract>(),
+            routineRepository: getIt<RoutineRepositoryContract>(),
             taskWriteService: getIt<TaskWriteService>(),
             projectWriteService: getIt<ProjectWriteService>(),
             valueWriteService: getIt<ValueWriteService>(),

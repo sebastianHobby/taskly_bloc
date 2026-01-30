@@ -16,6 +16,9 @@ class MockTaskRepositoryContract extends Mock
 class MockProjectRepositoryContract extends Mock
     implements ProjectRepositoryContract {}
 
+class MockProjectAnchorStateRepositoryContract extends Mock
+    implements ProjectAnchorStateRepositoryContract {}
+
 class MockValueRepositoryContract extends Mock
     implements ValueRepositoryContract {}
 

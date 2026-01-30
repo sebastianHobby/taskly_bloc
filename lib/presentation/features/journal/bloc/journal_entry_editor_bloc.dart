@@ -363,72 +363,70 @@ class JournalEntryEditorBloc
           return (defs: defs, groups: groups, dayStates: dayStates);
         });
 
-    unawaited(
-      emit.forEach(
-        combined$,
-        onData: (data) {
-          final groups =
-              data.groups.where((g) => g.isActive).toList(growable: false)
-                ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    await emit.forEach(
+      combined$,
+      onData: (data) {
+        final groups =
+            data.groups.where((g) => g.isActive).toList(growable: false)
+              ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-          final trackers =
-              data.defs
-                  .where((d) => d.isActive && d.deletedAt == null)
-                  .where((d) => !_isDailyScope(d))
-                  .where((d) => d.systemKey != 'mood')
-                  .toList(growable: false)
-                ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+        final trackers =
+            data.defs
+                .where((d) => d.isActive && d.deletedAt == null)
+                .where((d) => !_isDailyScope(d))
+                .where((d) => d.systemKey != 'mood')
+                .toList(growable: false)
+              ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-          String? moodTrackerId;
-          for (final d in data.defs) {
-            if (d.systemKey == 'mood') {
-              moodTrackerId = d.id;
-              break;
-            }
+        String? moodTrackerId;
+        for (final d in data.defs) {
+          if (d.systemKey == 'mood') {
+            moodTrackerId = d.id;
+            break;
           }
+        }
 
-          final definitionById = {
-            for (final d in data.defs) d.id: d,
-          };
+        final definitionById = {
+          for (final d in data.defs) d.id: d,
+        };
 
-          final dailySummaryItems = _buildDailySummaryItems(
-            defs: data.defs,
-            dayStates: data.dayStates,
-          );
+        final dailySummaryItems = _buildDailySummaryItems(
+          defs: data.defs,
+          dayStates: data.dayStates,
+        );
 
-          return state.copyWith(
-            status: const JournalEntryEditorIdle(),
-            groups: groups,
-            trackers: trackers,
-            definitionById: definitionById,
-            moodTrackerId: moodTrackerId,
-            dailySummaryItems: dailySummaryItems,
-          );
-        },
-        onError: (Object e, StackTrace st) {
-          final context = _newContext(
-            intent: 'trackers_stream_error',
-            operation: 'journal.watchTrackerDefinitions+groups+stateDay',
-            entryId: state.entryId,
-          );
+        return state.copyWith(
+          status: const JournalEntryEditorIdle(),
+          groups: groups,
+          trackers: trackers,
+          definitionById: definitionById,
+          moodTrackerId: moodTrackerId,
+          dailySummaryItems: dailySummaryItems,
+        );
+      },
+      onError: (Object e, StackTrace st) {
+        final context = _newContext(
+          intent: 'trackers_stream_error',
+          operation: 'journal.watchTrackerDefinitions+groups+stateDay',
+          entryId: state.entryId,
+        );
 
-          _reportIfUnexpectedOrUnmapped(
-            e,
-            st,
-            context: context,
-            message: '[JournalEntryEditorBloc] trackers stream error',
-          );
+        _reportIfUnexpectedOrUnmapped(
+          e,
+          st,
+          context: context,
+          message: '[JournalEntryEditorBloc] trackers stream error',
+        );
 
-          return state.copyWith(
-            status: JournalEntryEditorError(
-              _uiMessageFor(
-                e,
-                fallback: 'Failed to load trackers. Please try again.',
-              ),
+        return state.copyWith(
+          status: JournalEntryEditorError(
+            _uiMessageFor(
+              e,
+              fallback: 'Failed to load trackers. Please try again.',
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 

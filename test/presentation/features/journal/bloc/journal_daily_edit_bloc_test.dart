@@ -177,7 +177,7 @@ void main() {
     seed: () => JournalDailyEditState.initial().copyWith(
       status: const JournalDailyEditIdle(),
       selectedDayLocal: DateTime(2025, 1, 14),
-      definitionById: const {
+      definitionById: {
         'daily': TrackerDefinition(
           id: 'daily',
           name: 'Sleep',
@@ -226,7 +226,7 @@ void main() {
     seed: () => JournalDailyEditState.initial().copyWith(
       status: const JournalDailyEditIdle(),
       selectedDayLocal: DateTime(2025, 1, 14),
-      definitionById: const {
+      definitionById: {
         'daily': TrackerDefinition(
           id: 'daily',
           name: 'Steps',
@@ -280,7 +280,7 @@ void main() {
     seed: () => JournalDailyEditState.initial().copyWith(
       status: const JournalDailyEditIdle(),
       selectedDayLocal: DateTime(2025, 1, 14),
-      definitionById: const {
+      definitionById: {
         'daily': TrackerDefinition(
           id: 'daily',
           name: 'Sleep',

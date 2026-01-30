@@ -64,7 +64,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   late final PageController _controller = PageController();
   int _pageIndex = 0;
   bool _ratingsEnabled = false;
-  bool _useRatingWheel = false;
+  bool _useRatingWheel = true;
 
   int get _pageCount {
     var count = 0;
@@ -228,31 +228,32 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
                     children: pages,
                   ),
                 ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    TasklyTokens.of(context).spaceLg,
-                    TasklyTokens.of(context).spaceSm,
-                    TasklyTokens.of(context).spaceLg,
-                    TasklyTokens.of(context).spaceLg,
-                  ),
-                  child: Row(
-                    children: [
-                      if (_pageIndex > 0)
-                        TextButton(
-                          onPressed: () => _controller.previousPage(
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeOut,
+                if (!isCheckInPage)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      TasklyTokens.of(context).spaceLg,
+                      TasklyTokens.of(context).spaceSm,
+                      TasklyTokens.of(context).spaceLg,
+                      TasklyTokens.of(context).spaceLg,
+                    ),
+                    child: Row(
+                      children: [
+                        if (_pageIndex > 0)
+                          TextButton(
+                            onPressed: () => _controller.previousPage(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOut,
+                            ),
+                            child: const Text('Back'),
                           ),
-                          child: const Text('Back'),
+                        const Spacer(),
+                        FilledButton(
+                          onPressed: _goNext,
+                          child: Text(buttonLabel),
                         ),
-                      const Spacer(),
-                      FilledButton(
-                        onPressed: _goNext,
-                        child: Text(buttonLabel),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -262,9 +263,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   }
 
   String? _initialValueId(WeeklyReviewRatingsSummary summary) {
-    for (final entry in summary.entries) {
-      if (entry.rating <= 0) return entry.value.id;
-    }
     return summary.entries.isEmpty ? null : summary.entries.first.value.id;
   }
 }

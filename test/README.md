@@ -1,4 +1,4 @@
-# Test Directory
+﻿# Test Directory
 
 This directory contains all tests for the Taskly application, organized by the
 testing architecture directory contract.
@@ -7,17 +7,17 @@ testing architecture directory contract.
 
 ```
 test/
-├── core/               # Tests for core utilities and services
-├── data/               # Repository and data layer tests
-├── domain/             # Domain models, queries, and business logic tests
-├── presentation/       # BLoC and UI tests
-├── integration/        # Integration tests with real database
-├── integration_test/   # Local-stack pipeline tests (Supabase + PowerSync)
-├── contracts/          # Shared contract tests across implementations
-├── diagnosis/          # Debugging and investigation tests
-├── helpers/            # Shared test utilities and helpers
-├── mocks/              # Mock implementations
-└── fixtures/           # Test data builders
+â”œâ”€â”€ core/               # Tests for core utilities and services
+â”œâ”€â”€ data/               # Repository and data layer tests
+â”œâ”€â”€ domain/             # Domain models, queries, and business logic tests
+â”œâ”€â”€ presentation/       # BLoC and UI tests
+â”œâ”€â”€ integration/        # Integration tests with real database
+â”œâ”€â”€ integration_test/   # Local-stack pipeline tests (Supabase + PowerSync)
+â”œâ”€â”€ contracts/          # Shared contract tests across implementations
+â”œâ”€â”€ diagnosis/          # Debugging and investigation tests
+â”œâ”€â”€ helpers/            # Shared test utilities and helpers
+â”œâ”€â”€ mocks/              # Mock implementations
+â””â”€â”€ fixtures/           # Test data builders
 ```
 
 ## Test Types
@@ -131,10 +131,11 @@ suite and copies `test/last_run.json` to a dated file under `test/`.
 
 When adding a new test, start from one of the seed templates and adapt it:
 
-- `test/domain/test_data_seed_test.dart` — deterministic fixtures + `testSafe`.
-- `test/core/operation_context_seed_test.dart` — OperationContext propagation
+- `test/domain/test_data_seed_test.dart` â€” deterministic fixtures + `testSafe`.
+- `test/core/operation_context_seed_test.dart` â€” OperationContext propagation
   helpers + `testSafe`.
-- `test/presentation/ui/priority_flag_widget_test.dart` — widget test template
+- `test/presentation/ui/priority_flag_widget_test.dart` â€” widget test template
+- `packages/taskly_data/test/unit/errors/failure_guard_seed_test.dart` — data failure mapping template using `FailureGuard` + `testSafe`.
   using `testWidgetsSafe`.
 
 ### Mandatory tags (directory-driven)
@@ -175,9 +176,9 @@ Why:
 These tasks are defined in the workspace and are preferred over ad-hoc command
 variants:
 
-- `flutter_test_report` — runs tests and snapshots `test/last_run.json`
-- `flutter_test_machine` — raw `flutter test --machine`
-- `flutter_test_expanded` — human-readable failures
+- `flutter_test_report` â€” runs tests and snapshots `test/last_run.json`
+- `flutter_test_machine` â€” raw `flutter test --machine`
+- `flutter_test_expanded` â€” human-readable failures
   ready, and mocktail fallback values are registered.
 - `setUpTestEnvironment` keeps per-test setup small and consistent.
 
@@ -218,11 +219,11 @@ test('should update task name when valid input provided', () {
 
 ### Test Naming
 Use descriptive names that explain the test scenario:
-- ✅ `'updates task name when valid input provided'`
-- ✅ `'throws ValidationError when name is empty'`
-- ✅ `'emits [loading, success] when data loads successfully'`
-- ❌ `'test update'`
-- ❌ `'it works'`
+- âœ… `'updates task name when valid input provided'`
+- âœ… `'throws ValidationError when name is empty'`
+- âœ… `'emits [loading, success] when data loads successfully'`
+- âŒ `'test update'`
+- âŒ `'it works'`
 
 ### Using Test Helpers
 
@@ -299,7 +300,7 @@ class MyBlocTest extends BaseBlocTest<MyBloc, MyState> {
 }
 ```
 
-New tests must use the repo’s safe wrappers (see the target-state testing
+New tests must use the repoâ€™s safe wrappers (see the target-state testing
 architecture in `doc/architecture/TESTING_ARCHITECTURE.md`). The intent is to
 avoid hung tests and ensure consistent timeouts/diagnostics.
 ### Mock Setup
@@ -398,21 +399,21 @@ More configuration options:
 ## Best Practices
 
 ### DO
-- ✅ Write descriptive test names
-- ✅ Use TestData builders for test objects
-- ✅ Follow Arrange-Act-Assert pattern
-- ✅ Test both success and error scenarios
-- ✅ Use custom matchers for readability
-- ✅ Clean up resources in tearDown
-- ✅ Register fallback values for mocktail
+- âœ… Write descriptive test names
+- âœ… Use TestData builders for test objects
+- âœ… Follow Arrange-Act-Assert pattern
+- âœ… Test both success and error scenarios
+- âœ… Use custom matchers for readability
+- âœ… Clean up resources in tearDown
+- âœ… Register fallback values for mocktail
 
 ### DON'T
-- ❌ Share mutable state between tests
-- ❌ Use real network/file system in unit tests
-- ❌ Test implementation details
-- ❌ Write tests without clear assertions
-- ❌ Ignore flaky tests (fix them!)
-- ❌ Skip tearDown cleanup
+- âŒ Share mutable state between tests
+- âŒ Use real network/file system in unit tests
+- âŒ Test implementation details
+- âŒ Write tests without clear assertions
+- âŒ Ignore flaky tests (fix them!)
+- âŒ Skip tearDown cleanup
 
 ## Coverage
 

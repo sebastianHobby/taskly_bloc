@@ -12,6 +12,7 @@ import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 
 class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
@@ -77,7 +78,13 @@ void main() {
     'emits loaded state when prerequisites stream emits',
     build: () => MyDayGateBloc(queryService: queryService),
     act: (_) => valuesSubject.add(const <Value>[]),
-    expect: () => [const MyDayGateLoaded(needsValuesSetup: true)],
+    expect: () => [
+      isA<MyDayGateLoaded>().having(
+        (s) => s.needsValuesSetup,
+        'needsValuesSetup',
+        true,
+      ),
+    ],
   );
 
   blocTestSafe<MyDayGateBloc, MyDayGateState>(
@@ -92,9 +99,22 @@ void main() {
       valuesSubject.add(const <Value>[]);
     },
     expect: () => [
-      const MyDayGateLoaded(needsValuesSetup: false),
-      const MyDayGateLoading(),
-      const MyDayGateLoaded(needsValuesSetup: true),
+      isA<MyDayGateLoaded>().having(
+        (s) => s.needsValuesSetup,
+        'needsValuesSetup',
+        false,
+      ),
+      isA<MyDayGateLoading>(),
+      isA<MyDayGateLoaded>().having(
+        (s) => s.needsValuesSetup,
+        'needsValuesSetup',
+        true,
+      ),
+      isA<MyDayGateLoaded>().having(
+        (s) => s.needsValuesSetup,
+        'needsValuesSetup',
+        true,
+      ),
     ],
   );
 }

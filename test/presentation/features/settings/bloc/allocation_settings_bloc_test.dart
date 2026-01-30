@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/allocation_settings_bloc.dart';
+import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/telemetry.dart';
 

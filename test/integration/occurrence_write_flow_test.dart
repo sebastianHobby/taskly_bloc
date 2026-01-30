@@ -2,6 +2,7 @@
 library;
 
 import 'package:taskly_data/db.dart';
+import 'package:taskly_data/id.dart';
 import 'package:taskly_data/repositories.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -114,7 +115,22 @@ void main() {
       clock: clock,
     );
 
-    await projectRepository.create(name: 'Project Alpha');
+    final valueRepository = ValueRepository(
+      driftDb: db,
+      idGenerator: idGenerator,
+      clock: clock,
+    );
+    await valueRepository.create(
+      name: 'Primary',
+      color: '#00AAFF',
+      priority: ValuePriority.medium,
+    );
+    final valueRow = await db.select(db.valueTable).getSingle();
+
+    await projectRepository.create(
+      name: 'Project Alpha',
+      valueIds: [valueRow.id],
+    );
     final projectRow = await db.select(db.projectTable).getSingle();
 
     final contextFactory = TestOperationContextFactory();
@@ -199,7 +215,6 @@ void main() {
     await taskRepository.create(
       name: 'Recurring Task',
       completed: false,
-      isPinned: true,
       repeatIcalRrule: 'FREQ=DAILY',
       repeatFromCompletion: true,
     );
@@ -217,7 +232,7 @@ void main() {
       context: completeContext,
     );
     var updatedTask = await db.select(db.taskTable).getSingle();
-    expect(updatedTask.completed, isTrue);
+    expect(updatedTask.completed, isFalse);
 
     await taskRepository.uncompleteOccurrence(
       taskId: taskRow.id,

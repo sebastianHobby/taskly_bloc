@@ -13,7 +13,10 @@ import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
 void main() {
-  setUpAll(setUpAllTestEnvironment);
+  setUpAll(() {
+    setUpAllTestEnvironment();
+    registerFallbackValue(const AllocationConfig());
+  });
   setUp(setUpTestEnvironment);
 
   late MockAuthRepositoryContract authRepository;
@@ -47,7 +50,11 @@ void main() {
     build: buildBloc,
     act: (bloc) => bloc.add(const OnboardingNameChanged('Taylor')),
     expect: () => [
-      OnboardingState.initial().copyWith(displayName: 'Taylor'),
+      isA<OnboardingState>().having(
+        (s) => s.displayName,
+        'displayName',
+        'Taylor',
+      ),
     ],
   );
 
@@ -68,34 +75,41 @@ void main() {
       bloc.add(const OnboardingNextRequested());
     },
     expect: () => [
-      OnboardingState.initial().copyWith(step: OnboardingStep.name),
-      OnboardingState.initial().copyWith(
-        step: OnboardingStep.name,
-        displayName: 'Alex',
-      ),
-      OnboardingState.initial().copyWith(
-        step: OnboardingStep.name,
-        displayName: 'Alex',
-        isSavingName: true,
-      ),
-      OnboardingState.initial().copyWith(
-        step: OnboardingStep.suggestionSignal,
-        displayName: 'Alex',
-        isSavingName: false,
-      ),
+      isA<OnboardingState>().having((s) => s.step, 'step', OnboardingStep.name),
+      isA<OnboardingState>()
+          .having((s) => s.step, 'step', OnboardingStep.name)
+          .having((s) => s.displayName, 'displayName', 'Alex'),
+      isA<OnboardingState>()
+          .having((s) => s.step, 'step', OnboardingStep.name)
+          .having((s) => s.displayName, 'displayName', 'Alex')
+          .having((s) => s.isSavingName, 'isSavingName', true),
+      isA<OnboardingState>()
+          .having(
+            (s) => s.step,
+            'step',
+            OnboardingStep.suggestionSignal,
+          )
+          .having((s) => s.displayName, 'displayName', 'Alex')
+          .having((s) => s.isSavingName, 'isSavingName', false),
     ],
   );
 
   blocTestSafe<OnboardingBloc, OnboardingState>(
     'saves suggestion signal and moves to values setup',
     build: () {
+      when(
+        () => authRepository.updateUserProfile(
+          displayName: any(named: 'displayName'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async => const UserUpdateResponse());
       when(() => settingsRepository.load(SettingsKey.allocation)).thenAnswer(
         (_) async => const AllocationConfig(),
       );
       when(
         () => settingsRepository.save(
           SettingsKey.allocation,
-          any(),
+          any<AllocationConfig>(),
           context: any(named: 'context'),
         ),
       ).thenAnswer((_) async {});
@@ -113,38 +127,68 @@ void main() {
       bloc.add(const OnboardingNextRequested());
     },
     expect: () => [
-      OnboardingState.initial().copyWith(step: OnboardingStep.name),
-      OnboardingState.initial().copyWith(
-        step: OnboardingStep.name,
-        displayName: 'Sam',
-      ),
-      OnboardingState.initial().copyWith(
-        step: OnboardingStep.name,
-        displayName: 'Sam',
-        isSavingName: true,
-      ),
-      OnboardingState.initial().copyWith(
-        step: OnboardingStep.suggestionSignal,
-        displayName: 'Sam',
-        isSavingName: false,
-      ),
-      OnboardingState.initial().copyWith(
-        step: OnboardingStep.suggestionSignal,
-        displayName: 'Sam',
-        suggestionSignal: SuggestionSignal.behaviorBased,
-      ),
-      OnboardingState.initial().copyWith(
-        step: OnboardingStep.suggestionSignal,
-        displayName: 'Sam',
-        suggestionSignal: SuggestionSignal.behaviorBased,
-        isSavingSuggestionSignal: true,
-      ),
-      OnboardingState.initial().copyWith(
-        step: OnboardingStep.valuesSetup,
-        displayName: 'Sam',
-        suggestionSignal: SuggestionSignal.behaviorBased,
-        isSavingSuggestionSignal: false,
-      ),
+      isA<OnboardingState>().having((s) => s.step, 'step', OnboardingStep.name),
+      isA<OnboardingState>()
+          .having((s) => s.step, 'step', OnboardingStep.name)
+          .having((s) => s.displayName, 'displayName', 'Sam'),
+      isA<OnboardingState>()
+          .having((s) => s.step, 'step', OnboardingStep.name)
+          .having((s) => s.displayName, 'displayName', 'Sam')
+          .having((s) => s.isSavingName, 'isSavingName', true),
+      isA<OnboardingState>()
+          .having(
+            (s) => s.step,
+            'step',
+            OnboardingStep.suggestionSignal,
+          )
+          .having((s) => s.displayName, 'displayName', 'Sam')
+          .having((s) => s.isSavingName, 'isSavingName', false),
+      isA<OnboardingState>()
+          .having(
+            (s) => s.step,
+            'step',
+            OnboardingStep.suggestionSignal,
+          )
+          .having((s) => s.displayName, 'displayName', 'Sam')
+          .having(
+            (s) => s.suggestionSignal,
+            'suggestionSignal',
+            SuggestionSignal.behaviorBased,
+          ),
+      isA<OnboardingState>()
+          .having(
+            (s) => s.step,
+            'step',
+            OnboardingStep.suggestionSignal,
+          )
+          .having((s) => s.displayName, 'displayName', 'Sam')
+          .having(
+            (s) => s.suggestionSignal,
+            'suggestionSignal',
+            SuggestionSignal.behaviorBased,
+          )
+          .having(
+            (s) => s.isSavingSuggestionSignal,
+            'isSavingSuggestionSignal',
+            true,
+          ),
+      isA<OnboardingState>()
+          .having(
+            (s) => s.step,
+            'step',
+            OnboardingStep.valuesSetup,
+          )
+          .having((s) => s.displayName, 'displayName', 'Sam')
+          .having(
+            (s) => s.suggestionSignal,
+            'suggestionSignal',
+            SuggestionSignal.behaviorBased,
+          )
+          .having(
+            (s) => s.isSavingSuggestionSignal,
+            'isSavingSuggestionSignal',
+            false,
+          ),
     ],
   );
 }

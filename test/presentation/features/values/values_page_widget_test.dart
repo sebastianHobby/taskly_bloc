@@ -11,16 +11,21 @@ import 'package:rxdart/rxdart.dart';
 import '../../../helpers/test_imports.dart';
 import 'package:taskly_bloc/presentation/features/values/view/values_page.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/services.dart';
+
+import '../../../mocks/repository_mocks.dart';
 
 class MockAnalyticsService extends Mock implements AnalyticsService {}
 
 class MockValueRepository extends Mock implements ValueRepositoryContract {}
-
-class MockSharedDataService extends Mock implements SessionSharedDataService {}
+class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
 class FakeNowService implements NowService {
   FakeNowService(this.now);
@@ -43,15 +48,39 @@ void main() {
 
   late MockAnalyticsService analyticsService;
   late MockValueRepository valueRepository;
-  late MockSharedDataService sharedDataService;
+  late MockProjectRepositoryContract projectRepository;
+  late MockTaskRepositoryContract taskRepository;
+  late SessionSharedDataService sharedDataService;
+  late SessionStreamCacheManager cacheManager;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
+  late MockAppLifecycleEvents appLifecycleEvents;
   late BehaviorSubject<List<Value>> valuesSubject;
 
   setUp(() {
     analyticsService = MockAnalyticsService();
     valueRepository = MockValueRepository();
-    sharedDataService = MockSharedDataService();
+    projectRepository = MockProjectRepositoryContract();
+    taskRepository = MockTaskRepositoryContract();
+    appLifecycleEvents = MockAppLifecycleEvents();
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: appLifecycleEvents,
+    );
+    sharedDataService = SessionSharedDataService(
+      cacheManager: cacheManager,
+      valueRepository: valueRepository,
+      projectRepository: projectRepository,
+      taskRepository: taskRepository,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
+    );
     valuesSubject = BehaviorSubject<List<Value>>.seeded(const <Value>[]);
 
+    when(() => appLifecycleEvents.events).thenAnswer(
+      (_) => const Stream<AppLifecycleEvent>.empty(),
+    );
     when(
       () => analyticsService.getRecentCompletionsByValue(
         days: any(named: 'days'),
@@ -61,12 +90,14 @@ void main() {
       () => analyticsService.getValueActivityStats(),
     ).thenAnswer((_) async => <String, ValueActivityStats>{});
     when(
-      () => sharedDataService.watchValues(),
+      () => valueRepository.watchAll(),
     ).thenAnswer((_) => valuesSubject);
   });
 
   tearDown(() async {
     await valuesSubject.close();
+    await cacheManager.dispose();
+    await demoModeService.dispose();
   });
 
   Future<void> pumpPage(WidgetTester tester) async {

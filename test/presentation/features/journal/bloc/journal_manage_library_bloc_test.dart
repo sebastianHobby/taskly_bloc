@@ -64,8 +64,8 @@ void main() {
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
     );
-    groupsController = TestStreamController.seeded(const []);
-    defsController = TestStreamController.seeded(const []);
+    groupsController = TestStreamController();
+    defsController = TestStreamController();
 
     when(() => repository.watchTrackerGroups()).thenAnswer(
       (_) => groupsController.stream,
@@ -127,6 +127,9 @@ void main() {
           .having((s) => s.trackers, 'trackers', isEmpty),
       isA<JournalManageLibraryLoaded>()
           .having((s) => s.groups.length, 'groups', 1)
+          .having((s) => s.trackers.length, 'trackers', 0),
+      isA<JournalManageLibraryLoaded>()
+          .having((s) => s.groups.length, 'groups', 1)
           .having((s) => s.trackers.length, 'trackers', 1)
           .having((s) => s.status, 'status', isA<JournalManageLibraryIdle>()),
     ],
@@ -149,6 +152,8 @@ void main() {
       await bloc.createGroup('New Group');
     },
     expect: () => [
+      isA<JournalManageLibraryLoaded>(),
+      isA<JournalManageLibraryLoaded>(),
       isA<JournalManageLibraryLoaded>(),
       isA<JournalManageLibraryLoaded>().having(
         (s) => s.status,
@@ -211,6 +216,8 @@ void main() {
       );
     },
     expect: () => [
+      isA<JournalManageLibraryLoaded>(),
+      isA<JournalManageLibraryLoaded>(),
       isA<JournalManageLibraryLoaded>(),
       isA<JournalManageLibraryLoaded>().having(
         (s) => s.status,
