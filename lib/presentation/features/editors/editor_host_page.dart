@@ -48,15 +48,17 @@ class _EditorHostPageState extends State<EditorHostPage> {
     // Guard: widget can unmount before post-frame.
     if (!mounted) return;
 
-    _modalRouteLocation ??=
-        GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString();
+    _modalRouteLocation ??= GoRouter.of(
+      context,
+    ).routerDelegate.currentConfiguration.uri.toString();
 
     await widget.openModal(context);
 
     if (!mounted) return;
 
-    final currentLocation =
-        GoRouter.of(context).routerDelegate.currentConfiguration.uri.toString();
+    final currentLocation = GoRouter.of(
+      context,
+    ).routerDelegate.currentConfiguration.uri.toString();
     if (_modalRouteLocation != null && currentLocation != _modalRouteLocation) {
       return;
     }

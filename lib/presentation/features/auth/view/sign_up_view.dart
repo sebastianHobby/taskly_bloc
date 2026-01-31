@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -44,7 +45,7 @@ class _SignUpViewState extends State<SignUpView> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.go('/sign-in'),
         ),
       ),
       body: BlocListener<AuthBloc, AppAuthState>(
@@ -221,7 +222,7 @@ class _SignUpViewState extends State<SignUpView> {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         TextButton(
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: () => context.go('/sign-in'),
                           child: const Text('Sign In'),
                         ),
                       ],

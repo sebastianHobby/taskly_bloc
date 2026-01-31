@@ -526,8 +526,6 @@ class TaskRepository implements TaskRepositoryContract {
         final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
         final nextPinned = !completed && (isPinned ?? existing.isPinned);
-        final previousProjectId = existing.projectId;
-        final projectChanged = normalizedProjectId != previousProjectId;
 
         List<String>? normalizedValueIds;
         if (valueIds != null) {
@@ -603,14 +601,6 @@ class TaskRepository implements TaskRepositoryContract {
                   updatedAt: drift_pkg.Value(now),
                 ),
               );
-
-          if (projectChanged) {
-            await _removeNextActionForTask(
-              taskId: id,
-              now: now,
-              psMetadata: psMetadata,
-            );
-          }
         });
       },
       area: 'data.task',
@@ -807,16 +797,8 @@ class TaskRepository implements TaskRepositoryContract {
     await FailureGuard.run(
       () async {
         talker.debug('[TaskRepository] delete: id=$id');
-        final now = _clock.nowUtc();
-        final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
         await driftDb.transaction(() async {
-          await _removeNextActionForTask(
-            taskId: id,
-            now: now,
-            psMetadata: psMetadata,
-          );
-
           await driftDb
               .delete(driftDb.taskTable)
               .delete(TaskTableCompanion(id: drift_pkg.Value(id)));
@@ -1289,64 +1271,5 @@ class TaskRepository implements TaskRepositoryContract {
       _sharedUpcomingStream = stream.shareValue();
     }
     return _sharedUpcomingStream!;
-  }
-
-  Future<void> _removeNextActionForTask({
-    required String taskId,
-    required DateTime now,
-    required String? psMetadata,
-  }) async {
-    final rows = await (driftDb.select(
-      driftDb.projectNextActionsTable,
-    )..where((t) => t.taskId.equals(taskId))).get();
-
-    if (rows.isEmpty) return;
-
-    final projectIds = rows.map((row) => row.projectId).toSet();
-
-    await (driftDb.delete(
-      driftDb.projectNextActionsTable,
-    )..where((t) => t.taskId.equals(taskId))).go();
-
-    for (final projectId in projectIds) {
-      await _compactProjectNextActionRanks(
-        projectId: projectId,
-        now: now,
-        psMetadata: psMetadata,
-      );
-    }
-  }
-
-  Future<void> _compactProjectNextActionRanks({
-    required String projectId,
-    required DateTime now,
-    required String? psMetadata,
-  }) async {
-    final rows =
-        await (driftDb.select(driftDb.projectNextActionsTable)
-              ..where((t) => t.projectId.equals(projectId))
-              ..orderBy([(t) => drift_pkg.OrderingTerm(expression: t.rank)]))
-            .get();
-
-    var nextRank = 1;
-    for (final row in rows) {
-      if (row.rank == nextRank) {
-        nextRank += 1;
-        continue;
-      }
-
-      await (driftDb.update(
-        driftDb.projectNextActionsTable,
-      )..where((t) => t.id.equals(row.id))).write(
-        ProjectNextActionsTableCompanion(
-          rank: drift_pkg.Value(nextRank),
-          updatedAt: drift_pkg.Value(now),
-          psMetadata: psMetadata == null
-              ? const drift_pkg.Value.absent()
-              : drift_pkg.Value(psMetadata),
-        ),
-      );
-      nextRank += 1;
-    }
   }
 }

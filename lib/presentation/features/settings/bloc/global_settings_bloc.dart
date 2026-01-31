@@ -151,16 +151,6 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
     bool enabled,
   ) = GlobalSettingsMaintenanceFrequentSnoozedChanged;
 
-  /// User toggled missing next actions maintenance.
-  const factory GlobalSettingsEvent.maintenanceMissingNextActionsChanged(
-    bool enabled,
-  ) = GlobalSettingsMaintenanceMissingNextActionsChanged;
-
-  /// User adjusted missing next actions minimum open tasks.
-  const factory GlobalSettingsEvent.maintenanceMissingNextActionsMinOpenTasksChanged(
-    int count,
-  ) = GlobalSettingsMaintenanceMissingNextActionsMinOpenTasksChanged;
-
   /// User completed weekly review.
   const factory GlobalSettingsEvent.weeklyReviewCompleted(
     DateTime completedAt,
@@ -351,14 +341,6 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsMaintenanceFrequentSnoozedChanged>(
       _onMaintenanceFrequentSnoozedChanged,
-      transformer: sequential(),
-    );
-    on<GlobalSettingsMaintenanceMissingNextActionsChanged>(
-      _onMaintenanceMissingNextActionsChanged,
-      transformer: sequential(),
-    );
-    on<GlobalSettingsMaintenanceMissingNextActionsMinOpenTasksChanged>(
-      _onMaintenanceMissingNextActionsMinOpenTasksChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsWeeklyReviewCompleted>(
@@ -1103,51 +1085,6 @@ class GlobalSettingsBloc
       updated,
       intent: 'settings_maintenance_frequent_snoozed_changed',
       extraFields: <String, Object?>{'enabled': event.enabled},
-    );
-  }
-
-  Future<void> _onMaintenanceMissingNextActionsChanged(
-    GlobalSettingsMaintenanceMissingNextActionsChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final updated = state.settings.copyWith(
-      maintenanceMissingNextActionsEnabled: event.enabled,
-    );
-    final context = _newContext(
-      intent: 'settings_maintenance_missing_next_actions_changed',
-      operation: 'settings.save.global',
-      extraFields: <String, Object?>{'enabled': event.enabled},
-    );
-    await _persistSettingsWithContext(updated, context: context);
-    await _updateAttentionRuleActive(
-      'problem_project_missing_next_actions',
-      event.enabled,
-      context: context,
-    );
-  }
-
-  Future<void> _onMaintenanceMissingNextActionsMinOpenTasksChanged(
-    GlobalSettingsMaintenanceMissingNextActionsMinOpenTasksChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final clamped = event.count.clamp(
-      GlobalSettings.maintenanceMissingNextActionsMinOpenTasksMin,
-      GlobalSettings.maintenanceMissingNextActionsMinOpenTasksMax,
-    );
-    final updated = state.settings.copyWith(
-      maintenanceMissingNextActionsMinOpenTasks: clamped,
-    );
-    final context = _newContext(
-      intent:
-          'settings_maintenance_missing_next_actions_min_open_tasks_changed',
-      operation: 'settings.save.global',
-      extraFields: <String, Object?>{'count': clamped},
-    );
-    await _persistSettingsWithContext(updated, context: context);
-    await _updateAttentionRuleParams(
-      'problem_project_missing_next_actions',
-      <String, Object?>{'minOpenTasks': clamped},
-      context: context,
     );
   }
 

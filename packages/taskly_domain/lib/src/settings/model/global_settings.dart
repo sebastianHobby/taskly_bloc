@@ -71,9 +71,6 @@ abstract class GlobalSettings with _$GlobalSettings {
     @Default(GlobalSettings.defaultMaintenanceProjectIdleThresholdDays)
     int maintenanceProjectIdleThresholdDays,
     @Default(true) bool maintenanceFrequentSnoozedEnabled,
-    @Default(true) bool maintenanceMissingNextActionsEnabled,
-    @Default(GlobalSettings.defaultMaintenanceMissingNextActionsMinOpenTasks)
-    int maintenanceMissingNextActionsMinOpenTasks,
     @Default(1.0) double textScaleFactor,
     @Default(false) bool onboardingCompleted,
     @Default(false) bool guidedTourCompleted,
@@ -124,10 +121,6 @@ abstract class GlobalSettings with _$GlobalSettings {
     final rawMaintenanceProjectIdleThresholdDays =
         (json['maintenanceProjectIdleThresholdDays'] as num?)?.toInt() ??
         defaultMaintenanceProjectIdleThresholdDays;
-    final rawMaintenanceMissingNextActionsMinOpenTasks =
-        (json['maintenanceMissingNextActionsMinOpenTasks'] as num?)?.toInt() ??
-        defaultMaintenanceMissingNextActionsMinOpenTasks;
-
     return GlobalSettings(
       themeMode: AppThemeMode.fromName(json['themeMode'] as String?),
       colorSchemeSeedArgb: _rgbHexToArgb(
@@ -184,13 +177,6 @@ abstract class GlobalSettings with _$GlobalSettings {
           ),
       maintenanceFrequentSnoozedEnabled:
           json['maintenanceFrequentSnoozedEnabled'] as bool? ?? true,
-      maintenanceMissingNextActionsEnabled:
-          json['maintenanceMissingNextActionsEnabled'] as bool? ?? true,
-      maintenanceMissingNextActionsMinOpenTasks:
-          rawMaintenanceMissingNextActionsMinOpenTasks.clamp(
-            maintenanceMissingNextActionsMinOpenTasksMin,
-            maintenanceMissingNextActionsMinOpenTasksMax,
-          ),
       textScaleFactor: (json['textScaleFactor'] as num?)?.toDouble() ?? 1.0,
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
       guidedTourCompleted: json['guidedTourCompleted'] as bool? ?? false,
@@ -235,17 +221,12 @@ abstract class GlobalSettings with _$GlobalSettings {
   /// Default minimum unscheduled task count for deadline risk.
   static const int defaultMaintenanceDeadlineRiskMinUnscheduledCount = 5;
 
-  /// Default minimum open-task count for missing next actions.
-  static const int defaultMaintenanceMissingNextActionsMinOpenTasks = 1;
-
   static const int maintenanceStaleThresholdDaysMin = 1;
   static const int maintenanceStaleThresholdDaysMax = 90;
   static const int maintenanceDeadlineRiskDueWithinDaysMin = 1;
   static const int maintenanceDeadlineRiskDueWithinDaysMax = 30;
   static const int maintenanceDeadlineRiskMinUnscheduledCountMin = 1;
   static const int maintenanceDeadlineRiskMinUnscheduledCountMax = 20;
-  static const int maintenanceMissingNextActionsMinOpenTasksMin = 1;
-  static const int maintenanceMissingNextActionsMinOpenTasksMax = 10;
 
   /// Parses `#RRGGBB`, `RRGGBB`, `#RGB`, or `RGB` into an ARGB int.
   ///
@@ -328,13 +309,6 @@ extension GlobalSettingsJson on GlobalSettings {
           GlobalSettings.maintenanceStaleThresholdDaysMax,
         ),
     'maintenanceFrequentSnoozedEnabled': maintenanceFrequentSnoozedEnabled,
-    'maintenanceMissingNextActionsEnabled':
-        maintenanceMissingNextActionsEnabled,
-    'maintenanceMissingNextActionsMinOpenTasks':
-        maintenanceMissingNextActionsMinOpenTasks.clamp(
-          GlobalSettings.maintenanceMissingNextActionsMinOpenTasksMin,
-          GlobalSettings.maintenanceMissingNextActionsMinOpenTasksMax,
-        ),
     'textScaleFactor': textScaleFactor,
     'onboardingCompleted': onboardingCompleted,
     'guidedTourCompleted': guidedTourCompleted,

@@ -46,7 +46,6 @@ void main() {
   late MockRoutineRepositoryContract routineRepository;
   late MockValueRepositoryContract valueRepository;
   late MockProjectRepositoryContract projectRepository;
-  late MockProjectNextActionsRepositoryContract projectNextActionsRepository;
   late MockProjectAnchorStateRepositoryContract projectAnchorStateRepository;
   late MockSettingsRepositoryContract settingsRepository;
   late RoutineWriteService routineWriteService;
@@ -61,7 +60,6 @@ void main() {
     routineRepository = MockRoutineRepositoryContract();
     valueRepository = MockValueRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
-    projectNextActionsRepository = MockProjectNextActionsRepositoryContract();
     projectAnchorStateRepository = MockProjectAnchorStateRepositoryContract();
     settingsRepository = MockSettingsRepositoryContract();
     nowService = MockNowService();
@@ -105,7 +103,6 @@ void main() {
       allocationOrchestrator: MockAllocationOrchestrator(),
       taskRepository: taskRepository,
       projectRepository: projectRepository,
-      projectNextActionsRepository: projectNextActionsRepository,
       projectAnchorStateRepository: projectAnchorStateRepository,
       settingsRepository: settingsRepository,
       valueRepository: valueRepository,

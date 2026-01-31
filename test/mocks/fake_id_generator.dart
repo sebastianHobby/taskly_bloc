@@ -33,7 +33,6 @@ class FakeIdGenerator implements IdGenerator {
   int _trackerEventIdCounter = 0;
   int _trackerGroupIdCounter = 0;
   int _taskSnoozeEventIdCounter = 0;
-  int _projectNextActionIdCounter = 0;
   int _routineIdCounter = 0;
   int _routineCompletionIdCounter = 0;
   int _routineSkipIdCounter = 0;
@@ -78,10 +77,6 @@ class FakeIdGenerator implements IdGenerator {
 
   @override
   String taskSnoozeEventId() => 'task-snooze-${_taskSnoozeEventIdCounter++}';
-
-  @override
-  String projectNextActionId() =>
-      'project-next-action-${_projectNextActionIdCounter++}';
 
   @override
   String routineId() => 'routine-${_routineIdCounter++}';
@@ -223,7 +218,6 @@ class FakeIdGenerator implements IdGenerator {
     _trackerEventIdCounter = 0;
     _attentionResolutionIdCounter = 0;
     _taskSnoozeEventIdCounter = 0;
-    _projectNextActionIdCounter = 0;
     _routineIdCounter = 0;
     _routineCompletionIdCounter = 0;
     _routineSkipIdCounter = 0;

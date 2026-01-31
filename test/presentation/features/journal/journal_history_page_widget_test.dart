@@ -5,11 +5,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_history_page.dart';
 import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/services.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/feature_mocks.dart';
@@ -69,15 +72,27 @@ void main() {
   });
 
   Future<void> pumpPage(WidgetTester tester) async {
-    await tester.pumpApp(
-      MultiRepositoryProvider(
-        providers: [
-          RepositoryProvider.value(value: repository),
-          RepositoryProvider.value(value: homeDayKeyService),
-        ],
-        child: const JournalHistoryPage(),
-      ),
+    final router = GoRouter(
+      initialLocation: '/journal/history',
+      routes: [
+        GoRoute(
+          path: '/journal/history',
+          builder: (_, __) => MultiRepositoryProvider(
+            providers: [
+              RepositoryProvider<JournalRepositoryContract>.value(
+                value: repository,
+              ),
+              RepositoryProvider<HomeDayKeyService>.value(
+                value: homeDayKeyService,
+              ),
+            ],
+            child: const JournalHistoryPage(),
+          ),
+        ),
+      ],
     );
+
+    await tester.pumpWidgetWithRouter(router: router);
   }
 
   testWidgetsSafe('shows loading state before streams emit', (tester) async {

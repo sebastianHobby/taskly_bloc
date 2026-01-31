@@ -168,8 +168,6 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
           ),
         );
       }
-
-      await _removeNextActionForTask(taskId: taskId, now: now);
     });
   }
 
@@ -631,56 +629,5 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
   /// Normalize date to midnight (date-only).
   DateTime _normalizeDate(DateTime date) {
     return DateTime.utc(date.year, date.month, date.day);
-  }
-
-  Future<void> _removeNextActionForTask({
-    required String taskId,
-    required DateTime now,
-  }) async {
-    final rows = await (driftDb.select(
-      driftDb.projectNextActionsTable,
-    )..where((t) => t.taskId.equals(taskId))).get();
-
-    if (rows.isEmpty) return;
-
-    final projectIds = rows.map((row) => row.projectId).toSet();
-
-    await (driftDb.delete(
-      driftDb.projectNextActionsTable,
-    )..where((t) => t.taskId.equals(taskId))).go();
-
-    for (final projectId in projectIds) {
-      await _compactProjectNextActionRanks(projectId: projectId, now: now);
-    }
-  }
-
-  Future<void> _compactProjectNextActionRanks({
-    required String projectId,
-    required DateTime now,
-  }) async {
-    final rows =
-        await (driftDb.select(driftDb.projectNextActionsTable)
-              ..where((t) => t.projectId.equals(projectId))
-              ..orderBy([(t) => OrderingTerm(expression: t.rank)]))
-            .get();
-
-    var nextRank = 1;
-    for (final row in rows) {
-      if (row.rank == nextRank) {
-        nextRank += 1;
-        continue;
-      }
-
-      await (driftDb.update(
-        driftDb.projectNextActionsTable,
-      )..where((t) => t.id.equals(row.id))).write(
-        ProjectNextActionsTableCompanion(
-          rank: Value(nextRank),
-          updatedAt: Value(now),
-          psMetadata: const Value.absent(),
-        ),
-      );
-      nextRank += 1;
-    }
   }
 }

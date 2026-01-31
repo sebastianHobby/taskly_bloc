@@ -44,9 +44,9 @@ class TasklyTokens extends ThemeExtension<TasklyTokens> {
     required this.iconButtonMinSize,
     required this.iconButtonPadding,
     required this.iconButtonBackgroundAlpha,
-    required this.anytimeAppBarHeight,
+    required this.projectsAppBarHeight,
     required this.scheduledAppBarHeight,
-    required this.anytimeHeaderPadding,
+    required this.projectsHeaderPadding,
     required this.valueItemWidth,
     required this.filterRowSpacing,
     required this.filterPillPadding,
@@ -129,9 +129,9 @@ class TasklyTokens extends ThemeExtension<TasklyTokens> {
       iconButtonMinSize: 44,
       iconButtonPadding: EdgeInsets.all(spaceSm2),
       iconButtonBackgroundAlpha: 0.08,
-      anytimeAppBarHeight: 60,
+      projectsAppBarHeight: 60,
       scheduledAppBarHeight: 60,
-      anytimeHeaderPadding: EdgeInsets.fromLTRB(
+      projectsHeaderPadding: EdgeInsets.fromLTRB(
         spaceLg,
         spaceSm2,
         spaceLg,
@@ -205,9 +205,9 @@ class TasklyTokens extends ThemeExtension<TasklyTokens> {
   final EdgeInsets iconButtonPadding;
   final double iconButtonBackgroundAlpha;
 
-  final double anytimeAppBarHeight;
+  final double projectsAppBarHeight;
   final double scheduledAppBarHeight;
-  final EdgeInsets anytimeHeaderPadding;
+  final EdgeInsets projectsHeaderPadding;
   final double valueItemWidth;
   final double filterRowSpacing;
   final EdgeInsets filterPillPadding;
@@ -264,9 +264,9 @@ class TasklyTokens extends ThemeExtension<TasklyTokens> {
     double? iconButtonMinSize,
     EdgeInsets? iconButtonPadding,
     double? iconButtonBackgroundAlpha,
-    double? anytimeAppBarHeight,
+    double? projectsAppBarHeight,
     double? scheduledAppBarHeight,
-    EdgeInsets? anytimeHeaderPadding,
+    EdgeInsets? projectsHeaderPadding,
     double? valueItemWidth,
     double? filterRowSpacing,
     EdgeInsets? filterPillPadding,
@@ -324,10 +324,10 @@ class TasklyTokens extends ThemeExtension<TasklyTokens> {
       iconButtonPadding: iconButtonPadding ?? this.iconButtonPadding,
       iconButtonBackgroundAlpha:
           iconButtonBackgroundAlpha ?? this.iconButtonBackgroundAlpha,
-      anytimeAppBarHeight: anytimeAppBarHeight ?? this.anytimeAppBarHeight,
+      projectsAppBarHeight: projectsAppBarHeight ?? this.projectsAppBarHeight,
       scheduledAppBarHeight:
           scheduledAppBarHeight ?? this.scheduledAppBarHeight,
-      anytimeHeaderPadding: anytimeHeaderPadding ?? this.anytimeHeaderPadding,
+      projectsHeaderPadding: projectsHeaderPadding ?? this.projectsHeaderPadding,
       valueItemWidth: valueItemWidth ?? this.valueItemWidth,
       filterRowSpacing: filterRowSpacing ?? this.filterRowSpacing,
       filterPillPadding: filterPillPadding ?? this.filterPillPadding,
@@ -426,19 +426,19 @@ class TasklyTokens extends ThemeExtension<TasklyTokens> {
             t,
           ) ??
           iconButtonBackgroundAlpha,
-      anytimeAppBarHeight:
-          lerpDouble(anytimeAppBarHeight, other.anytimeAppBarHeight, t) ??
-          anytimeAppBarHeight,
+      projectsAppBarHeight:
+          lerpDouble(projectsAppBarHeight, other.projectsAppBarHeight, t) ??
+          projectsAppBarHeight,
       scheduledAppBarHeight:
           lerpDouble(scheduledAppBarHeight, other.scheduledAppBarHeight, t) ??
           scheduledAppBarHeight,
-      anytimeHeaderPadding:
+      projectsHeaderPadding:
           EdgeInsets.lerp(
-            anytimeHeaderPadding,
-            other.anytimeHeaderPadding,
+            projectsHeaderPadding,
+            other.projectsHeaderPadding,
             t,
           ) ??
-          anytimeHeaderPadding,
+          projectsHeaderPadding,
       valueItemWidth:
           lerpDouble(valueItemWidth, other.valueItemWidth, t) ?? valueItemWidth,
       filterRowSpacing:
@@ -471,3 +471,4 @@ class TasklyTokens extends ThemeExtension<TasklyTokens> {
     );
   }
 }
+

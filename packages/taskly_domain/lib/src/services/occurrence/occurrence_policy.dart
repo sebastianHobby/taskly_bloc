@@ -7,9 +7,9 @@ import 'package:taskly_domain/time.dart';
 /// the executor (PowerSync-safe writes, stream wiring) and Domain to own
 /// selection semantics + configuration defaults.
 abstract final class OccurrencePolicy {
-  /// Default preview window for non-date feeds (e.g. Anytime).
-  static const int anytimePreviewPastDays = 365;
-  static const int anytimePreviewFutureDays = 730;
+  /// Default preview window for non-date feeds (e.g. Projects).
+  static const int projectsPreviewPastDays = 365;
+  static const int projectsPreviewFutureDays = 730;
 
   /// Default resolution window for domain commands that must deterministically
   /// resolve an occurrence (e.g. “complete next occurrence”).
@@ -18,12 +18,12 @@ abstract final class OccurrencePolicy {
   static const int commandResolutionPastDays = 365;
   static const int commandResolutionFutureDays = 1825;
 
-  /// Default occurrence preview configuration for Anytime.
-  static OccurrencePreview anytimePreview({required DateTime asOfDayKey}) {
+  /// Default occurrence preview configuration for Projects.
+  static OccurrencePreview projectsPreview({required DateTime asOfDayKey}) {
     return OccurrencePreview(
       asOfDayKey: dateOnly(asOfDayKey),
-      pastDays: anytimePreviewPastDays,
-      futureDays: anytimePreviewFutureDays,
+      pastDays: projectsPreviewPastDays,
+      futureDays: projectsPreviewFutureDays,
     );
   }
 

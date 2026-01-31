@@ -68,7 +68,6 @@ void main() {
       (entries) => entries.first.journalText == 'Updated',
     );
     expect(updated.first.journalText, 'Updated');
-
   });
 
   testSafe('tracker group/definition updates emit stream updates', () async {
@@ -129,7 +128,6 @@ void main() {
       (rows) => rows.isNotEmpty,
     );
     expect(defs.first.name, 'Mood');
-
   });
 }
 

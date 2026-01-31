@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:talker_flutter/talker_flutter.dart';
@@ -8,6 +9,13 @@ import 'package:taskly_bloc/presentation/features/guided_tour/view/guided_tour_o
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/presentation/routing/not_found_route_page.dart';
 import 'package:taskly_bloc/presentation/routing/route_codec.dart';
+import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
+import 'package:taskly_bloc/presentation/features/app/view/initial_sync_gate_screen.dart';
+import 'package:taskly_bloc/presentation/features/app/view/splash_screen.dart';
+import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_bloc/presentation/features/auth/view/forgot_password_view.dart';
+import 'package:taskly_bloc/presentation/features/auth/view/sign_in_view.dart';
+import 'package:taskly_bloc/presentation/features/auth/view/sign_up_view.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
@@ -21,14 +29,15 @@ import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_p
 import 'package:taskly_bloc/presentation/features/values/view/value_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/values_page.dart';
 import 'package:taskly_bloc/presentation/features/statistics/view/statistics_dashboard_page.dart';
-import 'package:taskly_bloc/presentation/features/anytime/view/anytime_page.dart';
-import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
+import 'package:taskly_bloc/presentation/features/projects/view/projects_page.dart';
+import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
 import 'package:taskly_domain/taskly_domain.dart'
     show ProjectScheduledScope, ValueScheduledScope;
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_appearance_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_my_day_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_task_suggestions_page.dart';
@@ -40,24 +49,44 @@ import 'package:taskly_bloc/presentation/features/trackers/view/trackers_page.da
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 import 'package:taskly_bloc/presentation/features/onboarding/view/onboarding_flow_page.dart';
 
-/// Router for authenticated app shell.
+const _splashPath = '/splash';
+const _signInPath = '/sign-in';
+const _signUpPath = '/sign-up';
+const _forgotPasswordPath = '/forgot-password';
+const _initialSyncPath = '/initial-sync';
+const _onboardingPath = '/onboarding';
+
+bool _isAuthRoute(String path) {
+  return path == _signInPath ||
+      path == _signUpPath ||
+      path == _forgotPasswordPath;
+}
+
+bool _shouldBlockOnSync(InitialSyncGateState state) {
+  return switch (state) {
+    InitialSyncGateReady() => false,
+    InitialSyncGateFailure() => true,
+    InitialSyncGateInProgress(:final progress) =>
+      !(progress?.hasSynced ?? false) && progress?.lastSyncedAt == null,
+  };
+}
+
+/// Router for the app, including auth/sync gating and the authenticated shell.
 ///
 /// Uses convention-based routing with a small set of patterns:
-/// - **System screens (explicit)**: concrete paths like `/my-day`, `/anytime`,
+/// - **System screens (explicit)**: concrete paths like `/my-day`, `/projects`,
 ///   `/scheduled`, etc.
 /// - **Entity editors (NAV-01)**: `/<entityType>/new` and `/<entityType>/:id/edit`
 /// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
 ///
 /// Note: entity editor routes remain the canonical edit entrypoints.
 GoRouter createRouter({
-  required bool forceOnboarding,
   GlobalKey<NavigatorState>? navigatorKey,
+  Listenable? refreshListenable,
 }) {
   return GoRouter(
     navigatorKey: navigatorKey,
-    initialLocation: forceOnboarding
-        ? '/onboarding'
-        : Routing.screenPath('my_day'),
+    initialLocation: _splashPath,
     observers: [
       TalkerRouteObserver(talkerRaw),
       appRouteObserver,
@@ -66,21 +95,76 @@ GoRouter createRouter({
       message: 'Page not found',
       details: state.error?.toString(),
     ),
+    refreshListenable: refreshListenable,
     redirect: (context, state) {
       final path = state.uri.path;
-      if (forceOnboarding) {
-        if (path != '/onboarding') return '/onboarding';
-        return null;
+      final authState = context.read<AuthBloc>().state;
+      final settingsState = context.read<GlobalSettingsBloc>().state;
+      final syncState = context.read<InitialSyncGateBloc>().state;
+
+      final isSplashRoute = path == _splashPath;
+      final isAuthRoute = _isAuthRoute(path);
+      final isInitialSyncRoute = path == _initialSyncPath;
+      final isOnboardingRoute = path == _onboardingPath;
+
+      if (authState.status == AuthStatus.initial ||
+          authState.status == AuthStatus.loading) {
+        return isSplashRoute ? null : _splashPath;
       }
 
-      if (path == '/onboarding' && state.uri.queryParameters['debug'] != '1') {
-        return Routing.screenPath('someday');
+      if (authState.status == AuthStatus.unauthenticated) {
+        return isAuthRoute ? null : _signInPath;
       }
+
+      if (_shouldBlockOnSync(syncState)) {
+        return isInitialSyncRoute ? null : _initialSyncPath;
+      }
+
+      if (settingsState.isLoading) {
+        return isSplashRoute ? null : _splashPath;
+      }
+
+      final forceOnboarding = !settingsState.settings.onboardingCompleted;
+      final allowOnboarding =
+          forceOnboarding || state.uri.queryParameters['debug'] == '1';
+
+      if (allowOnboarding) {
+        return isOnboardingRoute ? null : _onboardingPath;
+      }
+
+      if (isOnboardingRoute) {
+        return Routing.screenPath('projects');
+      }
+
+      if (isSplashRoute || isAuthRoute || isInitialSyncRoute) {
+        return Routing.screenPath('my_day');
+      }
+
       return null;
     },
     routes: [
       GoRoute(
-        path: '/onboarding',
+        path: _splashPath,
+        builder: (_, __) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: _signInPath,
+        builder: (_, __) => const SignInView(),
+      ),
+      GoRoute(
+        path: _signUpPath,
+        builder: (_, __) => const SignUpView(),
+      ),
+      GoRoute(
+        path: _forgotPasswordPath,
+        builder: (_, __) => const ForgotPasswordView(),
+      ),
+      GoRoute(
+        path: _initialSyncPath,
+        builder: (_, __) => const InitialSyncGateScreen(),
+      ),
+      GoRoute(
+        path: _onboardingPath,
         builder: (_, __) => const OnboardingFlowPage(),
       ),
       ShellRoute(
@@ -97,12 +181,12 @@ GoRouter createRouter({
               ? candidate
               : null;
 
-          // Scoped Anytime routes should still highlight the Anytime destination.
-          final scopedAnytimeActiveScreenId =
+          // Scoped Projects routes should still highlight the Projects destination.
+          final scopedProjectsActiveScreenId =
               (segments.length == 3 &&
                   (segments.first == 'project' || segments.first == 'value') &&
-                  segments.last == 'anytime')
-              ? Routing.parseScreenKey('anytime')
+                  segments.last == 'projects')
+              ? Routing.parseScreenKey('projects')
               : null;
 
           // Scoped Scheduled routes should still highlight the Scheduled destination.
@@ -117,7 +201,7 @@ GoRouter createRouter({
             child: ScaffoldWithNestedNavigation(
               activeScreenId:
                   scopedScheduledActiveScreenId ??
-                  scopedAnytimeActiveScreenId ??
+                  scopedProjectsActiveScreenId ??
                   activeScreenId,
               child: child,
             ),
@@ -140,41 +224,35 @@ GoRouter createRouter({
             },
           ),
           GoRoute(
-            path: Routing.screenPath('someday'),
-            builder: (_, __) => const AnytimePage(),
+            path: Routing.screenPath('projects'),
+            builder: (_, __) => const ProjectsPage(),
+          ),
+          GoRoute(
+            path: Routing.screenPath('inbox'),
+            builder: (_, __) => ProjectDetailPage(
+              projectId: ProjectGroupingRef.inbox().stableKey,
+            ),
           ),
 
-          // Scoped Anytime feeds.
+          // Scoped Projects feeds.
           GoRoute(
-            path: '/project/:id/anytime',
-            redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
-              state,
-              paramName: 'id',
-              entityType: 'project',
-              operation: 'route_param_decode_project_anytime_scope',
-            ),
-            builder: (_, state) {
-              final id = state.pathParameters['id']!;
-              return ProjectDetailPage(projectId: id);
-            },
-          ),
-          GoRoute(
-            path: '/value/:id/anytime',
+            path: '/value/:id/projects',
             redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
               state,
               paramName: 'id',
               entityType: 'value',
-              operation: 'route_param_decode_value_anytime_scope',
+              operation: 'route_param_decode_value_projects_scope',
             ),
             builder: (_, state) {
               final id = state.pathParameters['id']!;
-              return AnytimePage(
-                scope: AnytimeScope.value(valueId: id),
+              return ProjectsPage(
+                scope: ProjectsScope.value(valueId: id),
               );
             },
           ),
           GoRoute(
             path: '/project/inbox/detail',
+            redirect: (_, __) => Routing.screenPath('inbox'),
             builder: (_, __) => ProjectDetailPage(
               projectId: ProjectGroupingRef.inbox().stableKey,
             ),

@@ -21,14 +21,6 @@ void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
     registerAllFallbackValues();
-    registerFallbackValue(
-      const OperationContext(
-        correlationId: 'corr-1',
-        feature: 'projects',
-        intent: 'test',
-        operation: 'test',
-      ),
-    );
   });
   setUp(setUpTestEnvironment);
 
@@ -36,7 +28,6 @@ void main() {
   late MockTaskRepositoryContract taskRepository;
   late MockSettingsRepositoryContract settingsRepository;
   late OccurrenceReadService occurrenceReadService;
-  late MockProjectNextActionsRepositoryContract nextActionsRepository;
   late SessionDayKeyService sessionDayKeyService;
   late MockHomeDayKeyService dayKeyService;
   late MockTemporalTriggerService temporalTriggerService;
@@ -44,7 +35,6 @@ void main() {
   late TestStreamController<TemporalTriggerEvent> temporalController;
   late BehaviorSubject<Project?> projectSubject;
   late BehaviorSubject<List<Task>> tasksSubject;
-  late BehaviorSubject<List<ProjectNextAction>> nextActionsSubject;
   late BehaviorSubject<List<CompletionHistoryData>> completionsSubject;
   late BehaviorSubject<List<RecurrenceExceptionData>> exceptionsSubject;
 
@@ -53,7 +43,6 @@ void main() {
       projectId: projectId,
       projectRepository: projectRepository,
       occurrenceReadService: occurrenceReadService,
-      projectNextActionsRepository: nextActionsRepository,
       sessionDayKeyService: sessionDayKeyService,
     );
   }
@@ -70,7 +59,6 @@ void main() {
         clock: FakeClock(DateTime.utc(2025, 1, 15)),
       ),
     );
-    nextActionsRepository = MockProjectNextActionsRepositoryContract();
     dayKeyService = MockHomeDayKeyService();
     temporalTriggerService = MockTemporalTriggerService();
     sessionDayKeyService = SessionDayKeyService(
@@ -83,7 +71,6 @@ void main() {
       TestData.project(id: 'p-1'),
     );
     tasksSubject = BehaviorSubject.seeded(<Task>[]);
-    nextActionsSubject = BehaviorSubject.seeded(<ProjectNextAction>[]);
     completionsSubject = BehaviorSubject.seeded(
       const <CompletionHistoryData>[],
     );
@@ -110,22 +97,11 @@ void main() {
     when(() => projectRepository.watchById('p-1')).thenAnswer(
       (_) => projectSubject.stream,
     );
-    when(() => nextActionsRepository.watchForProject('p-1')).thenAnswer(
-      (_) => nextActionsSubject.stream,
-    );
-    when(
-      () => nextActionsRepository.setForProject(
-        projectId: any(named: 'projectId'),
-        actions: any(named: 'actions'),
-        context: any(named: 'context'),
-      ),
-    ).thenAnswer((_) async {});
 
     addTearDown(temporalController.close);
     addTearDown(sessionDayKeyService.dispose);
     addTearDown(projectSubject.close);
     addTearDown(tasksSubject.close);
-    addTearDown(nextActionsSubject.close);
     addTearDown(completionsSubject.close);
     addTearDown(exceptionsSubject.close);
   });
@@ -143,43 +119,8 @@ void main() {
   );
 
   blocTestSafe<ProjectOverviewBloc, ProjectOverviewState>(
-    'next actions update forwards context',
-    build: () => buildBloc('p-1'),
-    act: (bloc) => bloc.add(
-      const ProjectOverviewNextActionsUpdated(
-        actions: [],
-        intent: 'next_actions_updated',
-      ),
-    ),
-    skip: 2,
-    expect: () => [],
-    verify: (_) {
-      final captured = verify(
-        () => nextActionsRepository.setForProject(
-          projectId: 'p-1',
-          actions: any(named: 'actions'),
-          context: captureAny(named: 'context'),
-        ),
-      ).captured;
-      final ctx = captured.single as OperationContext;
-      expect(ctx.feature, 'projects');
-      expect(ctx.screen, 'project_detail');
-      expect(ctx.intent, 'next_actions_updated');
-      expect(ctx.operation, 'project_next_actions.set');
-    },
-  );
-
-  blocTestSafe<ProjectOverviewBloc, ProjectOverviewState>(
-    'inbox project uses synthetic project and ignores next actions',
+    'inbox project uses synthetic project',
     build: () => buildBloc(ProjectGroupingRef.inbox().stableKey),
-    act: (bloc) {
-      bloc.add(
-        const ProjectOverviewNextActionsUpdated(
-          actions: [],
-          intent: 'next_actions_updated',
-        ),
-      );
-    },
     skip: 2,
     expect: () => [],
     verify: (bloc) {
@@ -189,13 +130,6 @@ void main() {
           (s) => s.project.id,
           'projectId',
           ProjectGroupingRef.inbox().stableKey,
-        ),
-      );
-      verifyNever(
-        () => nextActionsRepository.setForProject(
-          projectId: any(named: 'projectId'),
-          actions: any(named: 'actions'),
-          context: any(named: 'context'),
         ),
       );
     },

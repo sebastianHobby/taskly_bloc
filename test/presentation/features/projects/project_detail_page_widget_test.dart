@@ -12,15 +12,13 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 
 class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
-
-class MockProjectNextActionsRepository extends Mock
-    implements ProjectNextActionsRepositoryContract {}
 
 class MockEditorLauncher extends Mock implements EditorLauncher {}
 
@@ -33,6 +31,18 @@ class MockGlobalSettingsBloc
     extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
     implements GlobalSettingsBloc {}
 
+class FakeNowService implements NowService {
+  FakeNowService(this.now);
+
+  final DateTime now;
+
+  @override
+  DateTime nowLocal() => now;
+
+  @override
+  DateTime nowUtc() => now.toUtc();
+}
+
 void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
@@ -44,7 +54,6 @@ void main() {
   late MockTaskRepository taskRepository;
   late MockSettingsRepository settingsRepository;
   late OccurrenceReadService occurrenceReadService;
-  late MockProjectNextActionsRepository nextActionsRepository;
   late SessionDayKeyService sessionDayKeyService;
   late MockHomeDayKeyService dayKeyService;
   late MockTemporalTriggerService temporalTriggerService;
@@ -54,9 +63,9 @@ void main() {
   late TestStreamController<TemporalTriggerEvent> temporalController;
   late BehaviorSubject<Project?> projectSubject;
   late BehaviorSubject<List<Task>> tasksSubject;
-  late BehaviorSubject<List<ProjectNextAction>> nextActionsSubject;
   late BehaviorSubject<List<CompletionHistoryData>> completionsSubject;
   late BehaviorSubject<List<RecurrenceExceptionData>> exceptionsSubject;
+  const speedDialInitDelay = Duration(milliseconds: 1);
 
   setUp(() {
     projectRepository = MockProjectRepository();
@@ -70,7 +79,6 @@ void main() {
         clock: _FakeClock(DateTime.utc(2025, 1, 15)),
       ),
     );
-    nextActionsRepository = MockProjectNextActionsRepository();
     dayKeyService = MockHomeDayKeyService();
     temporalTriggerService = MockTemporalTriggerService();
     sessionDayKeyService = SessionDayKeyService(
@@ -83,9 +91,6 @@ void main() {
     temporalController = TestStreamController.seeded(const AppResumed());
     projectSubject = BehaviorSubject<Project?>();
     tasksSubject = BehaviorSubject<List<Task>>.seeded(const <Task>[]);
-    nextActionsSubject = BehaviorSubject<List<ProjectNextAction>>.seeded(
-      const <ProjectNextAction>[],
-    );
     completionsSubject = BehaviorSubject.seeded(
       const <CompletionHistoryData>[],
     );
@@ -116,9 +121,6 @@ void main() {
     when(
       () => taskRepository.watchRecurrenceExceptions(),
     ).thenAnswer((_) => exceptionsSubject.stream);
-    when(
-      () => nextActionsRepository.watchForProject(any()),
-    ).thenAnswer((_) => nextActionsSubject.stream);
   });
 
   tearDown(() async {
@@ -126,7 +128,6 @@ void main() {
     await sessionDayKeyService.dispose();
     await projectSubject.close();
     await tasksSubject.close();
-    await nextActionsSubject.close();
     await completionsSubject.close();
     await exceptionsSubject.close();
   });
@@ -141,13 +142,13 @@ void main() {
           RepositoryProvider<OccurrenceReadService>.value(
             value: occurrenceReadService,
           ),
-          RepositoryProvider<ProjectNextActionsRepositoryContract>.value(
-            value: nextActionsRepository,
-          ),
           RepositoryProvider<SessionDayKeyService>.value(
             value: sessionDayKeyService,
           ),
           RepositoryProvider<EditorLauncher>.value(value: editorLauncher),
+          RepositoryProvider<NowService>.value(
+            value: FakeNowService(DateTime(2025, 1, 15, 9)),
+          ),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -157,6 +158,7 @@ void main() {
         ),
       ),
     );
+    await tester.pump(speedDialInitDelay);
   }
 
   testWidgetsSafe('shows loading state before project loads', (tester) async {

@@ -12,11 +12,9 @@ import 'package:taskly_domain/core.dart';
 ///
 /// The app uses convention-based routing with a small set of patterns:
 ///
-/// - **System screens (explicit)**: concrete paths like `/my-day`, `/anytime`,
+/// - **System screens (explicit)**: concrete paths like `/my-day`, `/projects`,
 ///   `/scheduled`, etc.
 ///   - URL segments use hyphens (`my_day` ? `/my-day`).
-///   - The canonical Anytime URL segment is `anytime`, which maps to the
-///     legacy system screen key `someday`.
 /// - **Entity editors (NAV-01)**: `/<entityType>/new` and `/<entityType>/:id/edit`
 ///   - Tasks are editor-only: `/task/:id` redirects to `/task/:id/edit`.
 /// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
@@ -33,16 +31,11 @@ abstract final class Routing {
 
   /// Get screen route path for building navigation destinations.
   static String screenPath(String screenKey) {
-    // Canonical path alias: 'someday' has been renamed to the Anytime concept
-    // while keeping the underlying screenKey stable.
-    if (screenKey == 'someday') return '/anytime';
     return '/${screenKey.replaceAll('_', '-')}';
   }
 
   /// Parse URL segment back to screenKey.
   static String parseScreenKey(String segment) {
-    // Alias: '/anytime' maps to the legacy 'someday' system screen key.
-    if (segment == 'anytime') return 'someday';
     return segment.replaceAll('-', '_');
   }
 
@@ -52,8 +45,9 @@ abstract final class Routing {
   /// should count as an active navigation destination.
   static const Set<String> _navigationScreenKeys = {
     'my_day',
+    'inbox',
     'scheduled',
-    'someday',
+    'projects',
     'routines',
     'journal',
     'values',
@@ -145,10 +139,16 @@ abstract final class Routing {
   static void toProject(BuildContext context, Project project) =>
       GoRouter.of(context).push('/project/${project.id}/detail');
 
+  /// Navigate to project detail by ID (pushes onto nav stack).
+  static void pushProjectDetail(BuildContext context, String projectId) {
+    if (projectId.trim().isEmpty) return;
+    GoRouter.of(context).push('/project/$projectId/detail');
+  }
+
   /// Navigate to Inbox project detail (pushes onto nav stack).
   static void pushInboxProjectDetail(BuildContext context) => GoRouter.of(
     context,
-  ).push('/project/${ProjectGroupingRef.inbox().stableKey}/detail');
+  ).push(screenPath('inbox'));
 
   /// Navigate to value detail (pushes onto nav stack).
   static void toValue(BuildContext context, Value value) =>
@@ -202,16 +202,10 @@ abstract final class Routing {
 
   // === SCOPED FEED ROUTES (MVP) ===
 
-  /// Push the scoped Anytime feed for a project.
-  static void pushProjectAnytime(BuildContext context, String projectId) {
-    if (projectId.trim().isEmpty) return;
-    GoRouter.of(context).push('/project/$projectId/anytime');
-  }
-
-  /// Push the scoped Anytime feed for a value.
-  static void pushValueAnytime(BuildContext context, String valueId) {
+  /// Push the scoped Projects feed for a value.
+  static void pushValueProjects(BuildContext context, String valueId) {
     if (valueId.trim().isEmpty) return;
-    GoRouter.of(context).push('/value/$valueId/anytime');
+    GoRouter.of(context).push('/value/$valueId/projects');
   }
 
   static void toValueNew(BuildContext context) =>

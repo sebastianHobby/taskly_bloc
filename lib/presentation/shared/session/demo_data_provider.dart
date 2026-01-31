@@ -29,6 +29,13 @@ final class DemoDataProvider {
 
   static const String demoTaskEditId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
   static const String demoProjectDetailId = demoProjectJapaneseId;
+  static const String demoRoutineGymId = '14141414-1414-1414-1414-141414141414';
+  static const String demoRoutinePhotoShareId =
+      '15151515-1515-1515-1515-151515151515';
+  static const String demoRoutineVocabId =
+      '16161616-1616-1616-1616-161616161616';
+  static const String demoRoutineGuitarId =
+      '17171717-1717-1717-1717-171717171717';
 
   late final List<Value> _values = [
     Value(
@@ -232,7 +239,7 @@ final class DemoDataProvider {
 
   late final List<Routine> _routines = [
     Routine(
-      id: '14141414-1414-1414-1414-141414141414',
+      id: demoRoutineGymId,
       createdAt: demoDayKeyUtc,
       updatedAt: demoDayKeyUtc,
       name: 'Gym session',
@@ -243,7 +250,7 @@ final class DemoDataProvider {
       value: _valuesById['66666666-6666-6666-6666-666666666666'],
     ),
     Routine(
-      id: '15151515-1515-1515-1515-151515151515',
+      id: demoRoutinePhotoShareId,
       createdAt: demoDayKeyUtc,
       updatedAt: demoDayKeyUtc,
       name: 'Weekly photo share',
@@ -254,7 +261,7 @@ final class DemoDataProvider {
       value: _valuesById['77777777-7777-7777-7777-777777777777'],
     ),
     Routine(
-      id: '16161616-1616-1616-1616-161616161616',
+      id: demoRoutineVocabId,
       createdAt: demoDayKeyUtc,
       updatedAt: demoDayKeyUtc,
       name: '15-min vocab drill',
@@ -264,7 +271,7 @@ final class DemoDataProvider {
       value: _valuesById['55555555-5555-5555-5555-555555555555'],
     ),
     Routine(
-      id: '17171717-1717-1717-1717-171717171717',
+      id: demoRoutineGuitarId,
       createdAt: demoDayKeyUtc,
       updatedAt: demoDayKeyUtc,
       name: '20-min guitar practice',
@@ -278,7 +285,7 @@ final class DemoDataProvider {
   late final List<RoutineCompletion> _routineCompletions = [
     RoutineCompletion(
       id: '18181818-1818-1818-1818-181818181818',
-      routineId: '16161616-1616-1616-1616-161616161616',
+      routineId: demoRoutineVocabId,
       completedAtUtc: demoDayKeyUtc.subtract(const Duration(days: 2)),
       createdAtUtc: demoDayKeyUtc.subtract(const Duration(days: 2)),
     ),
@@ -310,28 +317,6 @@ final class DemoDataProvider {
         .toList(growable: false);
   }
 
-  List<ProjectNextAction> nextActionsForProject(String projectId) {
-    if (projectId != demoProjectJapaneseId) return const [];
-    return [
-      ProjectNextAction(
-        id: 'next-action-1',
-        projectId: projectId,
-        taskId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-        rank: 1,
-        createdAtUtc: demoDayKeyUtc,
-        updatedAtUtc: demoDayKeyUtc,
-      ),
-      ProjectNextAction(
-        id: 'next-action-2',
-        projectId: projectId,
-        taskId: demoTaskEditId,
-        rank: 2,
-        createdAtUtc: demoDayKeyUtc,
-        updatedAtUtc: demoDayKeyUtc,
-      ),
-    ];
-  }
-
   MyDayViewModel buildMyDayViewModel() {
     final dayKey = demoDayKeyUtc;
     final picks = <my_day.MyDayPick>[
@@ -350,7 +335,7 @@ final class DemoDataProvider {
         qualifyingValueId: '55555555-5555-5555-5555-555555555555',
       ),
       my_day.MyDayPick.routine(
-        routineId: '14141414-1414-1414-1414-141414141414',
+        routineId: demoRoutineGymId,
         bucket: my_day.MyDayPickBucket.routine,
         sortIndex: 2,
         pickedAtUtc: demoDayKeyUtc,
@@ -495,8 +480,8 @@ final class DemoDataProvider {
       'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
     };
     final selectedRoutineIds = {
-      '14141414-1414-1414-1414-141414141414',
-      '16161616-1616-1616-1616-161616161616',
+      demoRoutineGymId,
+      demoRoutineVocabId,
     };
 
     final groups = _buildValueSuggestionGroups(
@@ -626,8 +611,7 @@ final class DemoDataProvider {
       routine: routine,
       snapshot: snapshot,
       selected:
-          routine.id == '14141414-1414-1414-1414-141414141414' ||
-          routine.id == '16161616-1616-1616-1616-161616161616',
+          routine.id == demoRoutineGymId || routine.id == demoRoutineVocabId,
       completedToday: false,
       isCatchUpDay: false,
       isScheduled: isScheduled,

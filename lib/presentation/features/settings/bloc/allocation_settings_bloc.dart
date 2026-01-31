@@ -15,11 +15,6 @@ enum ProjectFocusStyle {
   stayFocused,
 }
 
-enum NextActionsPreference {
-  flexible,
-  preferNextActions,
-}
-
 enum SuggestionSignalOption {
   behaviorBased,
   ratingsBased,
@@ -49,13 +44,6 @@ final class AllocationProjectFocusStyleChanged extends AllocationSettingsEvent {
   const AllocationProjectFocusStyleChanged(this.style);
 
   final ProjectFocusStyle style;
-}
-
-final class AllocationNextActionsPreferenceChanged
-    extends AllocationSettingsEvent {
-  const AllocationNextActionsPreferenceChanged(this.preference);
-
-  final NextActionsPreference preference;
 }
 
 final class AllocationSuggestionSignalChanged extends AllocationSettingsEvent {
@@ -103,7 +91,6 @@ class AllocationSettingsBloc
     on<AllocationSettingsStreamUpdated>(_onStreamUpdated);
     on<AllocationValuesBalanceModeChanged>(_onValuesBalanceChanged);
     on<AllocationProjectFocusStyleChanged>(_onProjectFocusChanged);
-    on<AllocationNextActionsPreferenceChanged>(_onNextActionsChanged);
     on<AllocationSuggestionSignalChanged>(_onSuggestionSignalChanged);
   }
 
@@ -165,23 +152,6 @@ class AllocationSettingsBloc
     );
     emit(state.copyWith(settings: updated, isLoading: false));
     await _persist(updated, intent: 'allocation_project_focus_changed');
-  }
-
-  Future<void> _onNextActionsChanged(
-    AllocationNextActionsPreferenceChanged event,
-    Emitter<AllocationSettingsState> emit,
-  ) async {
-    final nextActionPolicy = switch (event.preference) {
-      NextActionsPreference.flexible => NextActionPolicy.off,
-      NextActionsPreference.preferNextActions => NextActionPolicy.prefer,
-    };
-    final updated = state.settings.copyWith(
-      strategySettings: state.settings.strategySettings.copyWith(
-        nextActionPolicy: nextActionPolicy,
-      ),
-    );
-    emit(state.copyWith(settings: updated, isLoading: false));
-    await _persist(updated, intent: 'allocation_next_actions_changed');
   }
 
   Future<void> _onSuggestionSignalChanged(

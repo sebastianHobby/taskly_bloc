@@ -56,8 +56,8 @@ TasklyTaskRowData buildTaskRowData(
   final primaryValueData = task.effectivePrimaryValue?.toChipData(context);
   final secondaryValueData = TasklyFeatureFlags.taskSecondaryValuesEnabled
       ? task.effectiveSecondaryValues
-          .map((value) => value.toChipData(context))
-          .toList(growable: false)
+            .map((value) => value.toChipData(context))
+            .toList(growable: false)
       : const <ValueChipData>[];
 
   final meta = TasklyEntityMetaData(

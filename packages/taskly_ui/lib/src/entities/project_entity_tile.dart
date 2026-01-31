@@ -177,18 +177,14 @@ class ProjectEntityTile extends StatelessWidget {
                                     ],
                                   ],
                                 ),
-                                if (model.taskCount != null) ...[
+                                if (_hasMetaRow(model)) ...[
                                   SizedBox(height: tokens.spaceXs2),
                                   _ProjectMetaRow(
                                     primary: model.leadingChip,
-                                    totalCount: model.taskCount!,
-                                    completedCount: model.completedTaskCount,
-                                    dueSoonCount: model.dueSoonCount,
                                     dueLabel: model.meta.deadlineDateLabel,
                                     isOverdue: model.meta.isOverdue,
                                     isDueToday: model.meta.isDueToday,
                                     priority: model.meta.priority,
-                                    showCompletionRatio: !_isInbox,
                                   ),
                                 ],
                               ],
@@ -217,25 +213,17 @@ class ProjectEntityTile extends StatelessWidget {
 class _ProjectMetaRow extends StatelessWidget {
   const _ProjectMetaRow({
     required this.primary,
-    required this.totalCount,
-    required this.completedCount,
-    required this.dueSoonCount,
     required this.dueLabel,
     required this.isOverdue,
     required this.isDueToday,
     required this.priority,
-    required this.showCompletionRatio,
   });
 
   final ValueChipData? primary;
-  final int totalCount;
-  final int? completedCount;
-  final int? dueSoonCount;
   final String? dueLabel;
   final bool isOverdue;
   final bool isDueToday;
   final int? priority;
-  final bool showCompletionRatio;
 
   @override
   Widget build(BuildContext context) {
@@ -260,50 +248,13 @@ class _ProjectMetaRow extends StatelessWidget {
       );
     }
 
-    if (showCompletionRatio && completedCount != null) {
-      children.add(
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.check_circle_rounded,
-              size: 14,
-              color: scheme.secondary,
-            ),
-            SizedBox(width: tokens.spaceXs),
-            Text('$completedCount/$totalCount tasks', style: textStyle),
-          ],
-        ),
-      );
-    } else {
-      children.add(
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              showCompletionRatio
-                  ? Icons.check_circle_rounded
-                  : Icons.inbox_outlined,
-              size: 14,
-              color: showCompletionRatio
-                  ? scheme.secondary
-                  : scheme.onSurfaceVariant.withValues(alpha: 0.8),
-            ),
-            SizedBox(width: tokens.spaceXs),
-            Text('$totalCount tasks', style: textStyle),
-          ],
-        ),
-      );
-    }
-
     if (priority != null) {
       children.add(PriorityPill(priority: priority!));
     }
 
-    final dueSoon = dueSoonCount ?? 0;
     final label = dueLabel?.trim();
     final showLabel = label != null && label.isNotEmpty;
-    final showDue = showLabel || dueSoon > 0;
+    final showDue = showLabel;
     if (showDue) {
       final dueColor = (isOverdue || isDueToday)
           ? scheme.error
@@ -311,7 +262,7 @@ class _ProjectMetaRow extends StatelessWidget {
       children.add(
         MetaIconLabel(
           icon: Icons.flag_rounded,
-          label: showLabel ? label : '$dueSoon due soon',
+          label: label,
           color: dueColor,
           textStyle: textStyle,
         ),
@@ -325,6 +276,14 @@ class _ProjectMetaRow extends StatelessWidget {
       children: children,
     );
   }
+}
+
+bool _hasMetaRow(TasklyProjectRowData model) {
+  final hasPrimary = model.leadingChip != null;
+  final deadlineLabel = model.meta.deadlineDateLabel?.trim();
+  final hasDeadline = deadlineLabel != null && deadlineLabel.isNotEmpty;
+  final hasPriority = model.meta.priority != null;
+  return hasPrimary || hasDeadline || hasPriority;
 }
 
 class _ValueInlineLabel extends StatelessWidget {

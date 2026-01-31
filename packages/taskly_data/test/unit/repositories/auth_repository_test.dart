@@ -45,9 +45,7 @@ void main() {
 
   testSafe('updateUserProfile maps user response', () async {
     when(
-      () => authClient.updateUser(
-        any(that: isA<supabase.UserAttributes>()),
-      ),
+      () => authClient.updateUser(any(that: isA<supabase.UserAttributes>())),
     ).thenAnswer(
       (_) async => supabase.UserResponse.fromJson({
         'id': 'user-1',

@@ -101,7 +101,7 @@ void main() {
     },
     expect: () => [
       isA<AnytimeFeedLoaded>()
-          .having((s) => s.rows.length, 'rows.length', 2)
+          .having((s) => s.rows.length, 'rows.length', 1)
           .having((s) => s.inboxTaskCount, 'inboxTaskCount', 3),
     ],
   );
@@ -212,7 +212,7 @@ void main() {
       projects.add([project]);
     },
     expect: () => [
-      isA<AnytimeFeedLoaded>().having((s) => s.rows.length, 'rows.length', 2),
+      isA<AnytimeFeedLoaded>().having((s) => s.rows.length, 'rows.length', 1),
     ],
   );
 }

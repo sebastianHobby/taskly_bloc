@@ -10,11 +10,13 @@ class RoutineEntityTile extends StatelessWidget {
   const RoutineEntityTile({
     required this.model,
     required this.actions,
+    this.style = const TasklyRoutineRowStyle.standard(),
     super.key,
   });
 
   final TasklyRoutineRowData model;
   final TasklyRoutineRowActions actions;
+  final TasklyRoutineRowStyle style;
 
   @override
   Widget build(BuildContext context) {
@@ -24,10 +26,24 @@ class RoutineEntityTile extends StatelessWidget {
 
     final labels = model.labels;
     final primaryLabelText = labels?.primaryActionLabel?.trim() ?? '';
+    final selectionAddLabelRaw = labels?.selectionTooltipLabel?.trim();
+    final selectionAddLabel =
+        (selectionAddLabelRaw != null && selectionAddLabelRaw.isNotEmpty)
+        ? selectionAddLabelRaw
+        : 'Add';
+    final selectionAddedLabelRaw = labels?.selectionTooltipSelectedLabel
+        ?.trim();
+    final selectionAddedLabel =
+        (selectionAddedLabelRaw != null && selectionAddedLabelRaw.isNotEmpty)
+        ? selectionAddedLabelRaw
+        : 'Added';
+    final isPlanPickStyle = style is TasklyRoutineRowStylePlanPick;
     final showPrimary =
+        !isPlanPickStyle &&
         primaryLabelText.isNotEmpty &&
         (actions.onPrimaryAction != null || model.completed);
     final showSelection = actions.onToggleSelected != null;
+    final showPicker = isPlanPickStyle && actions.onToggleSelected != null;
     final badges = model.badges;
     final hasBadges = badges.isNotEmpty;
 
@@ -68,6 +84,10 @@ class RoutineEntityTile extends StatelessWidget {
       fontWeight: FontWeight.w600,
     );
 
+    final VoidCallback? onTap = isPlanPickStyle
+        ? actions.onToggleSelected ?? actions.onTap
+        : actions.onTap;
+
     final tile = DecoratedBox(
       decoration: BoxDecoration(
         color: tileSurface,
@@ -86,7 +106,7 @@ class RoutineEntityTile extends StatelessWidget {
         child: Material(
           type: MaterialType.transparency,
           child: InkWell(
-            onTap: actions.onTap,
+            onTap: onTap,
             onLongPress: actions.onLongPress,
             child: Padding(
               padding: tokens.taskPadding,
@@ -168,7 +188,16 @@ class RoutineEntityTile extends StatelessWidget {
                       onPressed: actions.onPrimaryAction,
                     ),
                   ],
-                  if (showSelection) ...[
+                  if (showPicker) ...[
+                    SizedBox(width: tokens.spaceSm),
+                    _PickerActionButton(
+                      selected: model.selected,
+                      onPressed: actions.onToggleSelected,
+                      tooltip: model.selected
+                          ? selectionAddedLabel
+                          : selectionAddLabel,
+                    ),
+                  ] else if (showSelection) ...[
                     SizedBox(width: tokens.spaceSm),
                     _SelectionToggleButton(
                       selected: model.selected,
@@ -264,6 +293,38 @@ class _PrimaryActionButton extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: fg,
         ),
+      ),
+    );
+  }
+}
+
+class _PickerActionButton extends StatelessWidget {
+  const _PickerActionButton({
+    required this.selected,
+    required this.onPressed,
+    required this.tooltip,
+  });
+
+  final bool selected;
+  final VoidCallback? onPressed;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
+    final bg = selected ? scheme.primaryContainer : scheme.primary;
+    final fg = selected ? scheme.primary : scheme.onPrimary;
+
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: tooltip,
+      icon: Icon(selected ? Icons.check_rounded : Icons.add_rounded),
+      style: IconButton.styleFrom(
+        backgroundColor: bg,
+        foregroundColor: fg,
+        minimumSize: Size.square(tokens.minTapTargetSize),
+        padding: EdgeInsets.all(tokens.spaceXs2),
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -67,6 +68,7 @@ void main() {
   late BehaviorSubject<List<RoutineCompletion>> completionsSubject;
   late BehaviorSubject<List<RoutineSkip>> skipsSubject;
   late BehaviorSubject<List<Value>> valuesSubject;
+  const speedDialInitDelay = Duration(milliseconds: 1);
 
   setUp(() {
     routineRepository = MockRoutineRepository();
@@ -167,29 +169,38 @@ void main() {
   }
 
   Future<void> pumpPage(WidgetTester tester) async {
-    await tester.pumpApp(
-      MultiRepositoryProvider(
-        providers: [
-          RepositoryProvider<RoutineRepositoryContract>.value(
-            value: routineRepository,
+    final router = GoRouter(
+      initialLocation: '/routines',
+      routes: [
+        GoRoute(
+          path: '/routines',
+          builder: (_, __) => MultiRepositoryProvider(
+            providers: [
+              RepositoryProvider<RoutineRepositoryContract>.value(
+                value: routineRepository,
+              ),
+              RepositoryProvider<SessionDayKeyService>.value(
+                value: sessionDayKeyService,
+              ),
+              RepositoryProvider<AppErrorReporter>.value(value: errorReporter),
+              RepositoryProvider<SessionSharedDataService>.value(
+                value: sharedDataService,
+              ),
+              RepositoryProvider<RoutineWriteService>.value(
+                value: routineWriteService,
+              ),
+              RepositoryProvider<NowService>.value(
+                value: FakeNowService(DateTime(2025, 1, 15, 9)),
+              ),
+            ],
+            child: const RoutinesPage(),
           ),
-          RepositoryProvider<SessionDayKeyService>.value(
-            value: sessionDayKeyService,
-          ),
-          RepositoryProvider<AppErrorReporter>.value(value: errorReporter),
-          RepositoryProvider<SessionSharedDataService>.value(
-            value: sharedDataService,
-          ),
-          RepositoryProvider<RoutineWriteService>.value(
-            value: routineWriteService,
-          ),
-          RepositoryProvider<NowService>.value(
-            value: FakeNowService(DateTime(2025, 1, 15, 9)),
-          ),
-        ],
-        child: const RoutinesPage(),
-      ),
+        ),
+      ],
     );
+
+    await tester.pumpWidgetWithRouter(router: router);
+    await tester.pump(speedDialInitDelay);
   }
 
   testWidgetsSafe('shows loading state while routines load', (tester) async {
@@ -209,6 +220,7 @@ void main() {
     expect(find.byKey(const ValueKey('feed-loading')), findsOneWidget);
 
     completer.complete(const <Routine>[]);
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgetsSafe('shows error state when repository throws', (tester) async {
@@ -225,7 +237,11 @@ void main() {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    expect(find.textContaining('routine load failed'), findsOneWidget);
+    expect(
+      find.text('Something went wrong. Please try again.'),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgetsSafe('renders routine list content when loaded', (tester) async {
@@ -252,6 +268,7 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.text('Morning Walk'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgetsSafe('updates list when routines change', (tester) async {
@@ -284,5 +301,6 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.text('Read'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
   });
 }

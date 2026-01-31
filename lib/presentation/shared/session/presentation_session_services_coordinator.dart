@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:taskly_core/logging.dart';
-import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
+import 'package:taskly_bloc/presentation/features/projects/services/projects_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
@@ -21,14 +21,14 @@ final class PresentationSessionServicesCoordinator {
     required SessionAllocationCacheService allocationCacheService,
     required MyDaySessionQueryService myDaySessionQueryService,
     required ScheduledSessionQueryService scheduledSessionQueryService,
-    required AnytimeSessionQueryService anytimeSessionQueryService,
+    required ProjectsSessionQueryService projectsSessionQueryService,
   }) : _sessionDayKeyService = sessionDayKeyService,
        _sessionStreamCacheManager = sessionStreamCacheManager,
        _sharedDataService = sharedDataService,
        _allocationCacheService = allocationCacheService,
        _myDaySessionQueryService = myDaySessionQueryService,
        _scheduledSessionQueryService = scheduledSessionQueryService,
-       _anytimeSessionQueryService = anytimeSessionQueryService;
+       _projectsSessionQueryService = projectsSessionQueryService;
 
   final SessionDayKeyService _sessionDayKeyService;
   final SessionStreamCacheManager _sessionStreamCacheManager;
@@ -36,7 +36,7 @@ final class PresentationSessionServicesCoordinator {
   final SessionAllocationCacheService _allocationCacheService;
   final MyDaySessionQueryService _myDaySessionQueryService;
   final ScheduledSessionQueryService _scheduledSessionQueryService;
-  final AnytimeSessionQueryService _anytimeSessionQueryService;
+  final ProjectsSessionQueryService _projectsSessionQueryService;
 
   Future<void>? _startInFlight;
   bool _started = false;
@@ -57,7 +57,7 @@ final class PresentationSessionServicesCoordinator {
       _allocationCacheService.start();
       _myDaySessionQueryService.start();
       _scheduledSessionQueryService.start();
-      _anytimeSessionQueryService.start();
+      _projectsSessionQueryService.start();
       _started = true;
     } finally {
       _startInFlight = null;
@@ -78,7 +78,7 @@ final class PresentationSessionServicesCoordinator {
 
     talker.info('[PresentationSession] stopping session-hot services');
 
-    await _anytimeSessionQueryService.stop();
+    await _projectsSessionQueryService.stop();
     await _scheduledSessionQueryService.stop();
     await _myDaySessionQueryService.stop();
     await _allocationCacheService.stop();

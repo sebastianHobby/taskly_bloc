@@ -26,11 +26,6 @@ class MockOccurrenceCommandService extends Mock
 class MockJournalRepositoryContract extends Mock
     implements JournalRepositoryContract {}
 
-// === Project Feature ===
-
-class MockProjectNextActionsRepositoryContract extends Mock
-    implements ProjectNextActionsRepositoryContract {}
-
 // === Weekly Review / Ratings ===
 
 class MockAttentionEngineContract extends Mock

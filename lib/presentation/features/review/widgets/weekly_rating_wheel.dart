@@ -75,7 +75,9 @@ class WeeklyRatingWheel extends StatelessWidget {
                     sliceGapRadians: _sliceGapRadians,
                     selectedIndex: selectedIndex,
                     hubColor: Theme.of(context).colorScheme.surface,
-                    hubBorderColor: Theme.of(context).colorScheme.outlineVariant,
+                    hubBorderColor: Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant,
                   ),
                 ),
                 ..._buildIconOverlays(

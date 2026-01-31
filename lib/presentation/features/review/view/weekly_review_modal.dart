@@ -224,7 +224,8 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
                 Expanded(
                   child: PageView(
                     controller: _controller,
-                    onPageChanged: (index) => setState(() => _pageIndex = index),
+                    onPageChanged: (index) =>
+                        setState(() => _pageIndex = index),
                     children: pages,
                   ),
                 ),

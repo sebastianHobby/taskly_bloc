@@ -705,7 +705,6 @@ class _PlanRoutinesStepState extends State<_PlanRoutinesStep> {
             context,
             data: widget.data,
             item: item,
-            primaryActionLabel: l10n.routinePrimaryActionLabel,
           ),
         ),
       );
@@ -743,7 +742,6 @@ class _PlanRoutinesStepState extends State<_PlanRoutinesStep> {
             context,
             data: widget.data,
             item: item,
-            primaryActionLabel: l10n.routinePrimaryActionLabel,
           ),
         ),
       );
@@ -759,10 +757,10 @@ class _PlanRoutinesStepState extends State<_PlanRoutinesStep> {
       }
     }
 
-      return ListView(
-        padding: EdgeInsets.fromLTRB(
-          TasklyTokens.of(context).spaceLg,
-          TasklyTokens.of(context).spaceMd,
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceMd,
         TasklyTokens.of(context).spaceLg,
         TasklyTokens.of(context).spaceXl,
       ),
@@ -855,11 +853,11 @@ class _PlanTriageStepState extends State<_PlanTriageStep> {
         ),
     ];
 
-      return ListView(
-        key: GuidedTourAnchors.planMyDayTriage,
-        padding: EdgeInsets.fromLTRB(
-          TasklyTokens.of(context).spaceLg,
-          TasklyTokens.of(context).spaceMd,
+    return ListView(
+      key: GuidedTourAnchors.planMyDayTriage,
+      padding: EdgeInsets.fromLTRB(
+        TasklyTokens.of(context).spaceLg,
+        TasklyTokens.of(context).spaceMd,
         TasklyTokens.of(context).spaceLg,
         TasklyTokens.of(context).spaceXl,
       ),
@@ -1087,26 +1085,11 @@ TasklyRowSpec _buildRoutineRow(
   BuildContext context, {
   required PlanMyDayReady data,
   required PlanMyDayRoutineItem item,
-  required String primaryActionLabel,
-  String? badgeLabel,
-  bool allowRemove = false,
 }) {
   final routine = item.routine;
-  final badges = badgeLabel == null
-      ? const <TasklyBadgeData>[]
-      : [
-          TasklyBadgeData(
-            label: badgeLabel,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            tone: TasklyBadgeTone.outline,
-          ),
-        ];
-
-  final actionLabel = item.completedToday
-      ? context.l10n.doneLabel
-      : primaryActionLabel;
   final labels = TasklyRoutineRowLabels(
-    primaryActionLabel: actionLabel,
+    selectionTooltipLabel: context.l10n.myDayAddToMyDayAction,
+    selectionTooltipSelectedLabel: context.l10n.myDayAddedLabel,
   );
 
   final dataRow = buildRoutineRowData(
@@ -1121,28 +1104,20 @@ TasklyRowSpec _buildRoutineRow(
     showScheduleRow: routine.routineType == RoutineType.weeklyFixed,
     dayKeyUtc: data.dayKeyUtc,
     completionsInPeriod: item.completionsInPeriod,
-    badges: badges,
     labels: labels,
   );
 
   return TasklyRowSpec.routine(
     key: 'plan-routine-${routine.id}',
     data: dataRow,
+    style: const TasklyRoutineRowStyle.planPick(),
     actions: TasklyRoutineRowActions(
-      onTap: item.completedToday
+      onToggleSelected: item.completedToday
           ? null
           : () => context.read<PlanMyDayBloc>().add(
               PlanMyDayToggleRoutine(
                 routine.id,
                 selected: !item.selected,
-              ),
-            ),
-      onPrimaryAction: item.completedToday
-          ? null
-          : () => context.read<PlanMyDayBloc>().add(
-              PlanMyDayToggleRoutine(
-                routine.id,
-                selected: !allowRemove && !item.selected,
               ),
             ),
     ),
@@ -1237,8 +1212,6 @@ List<TasklyRowSpec> _buildSummaryRows(
               context,
               data: data,
               item: routineItemsById[routineId]!,
-              primaryActionLabel: context.l10n.myDayRemoveAction,
-              allowRemove: true,
             ),
     ];
 

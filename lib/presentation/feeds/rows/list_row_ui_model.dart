@@ -1,6 +1,6 @@
 import 'package:taskly_domain/core.dart';
 
-/// Shared flat list row UI models for feed screens (Anytime).
+/// Shared flat list row UI models for feed screens (Projects).
 ///
 /// The hierarchy is expressed via [depth] and by deterministic ordering of
 /// header rows before their children (DEC-072A).

@@ -43,18 +43,10 @@ class NavigationIconResolver {
       // Planned screen (renamed from upcoming)
       'planned' => (icon: Icons.event_outlined, selectedIcon: Icons.event),
       'scheduled' => (icon: Icons.event_outlined, selectedIcon: Icons.event),
-      'someday' => (
-        icon: Icons.list_alt_outlined,
-        selectedIcon: Icons.list_alt,
-      ),
+      'inbox' => (icon: Icons.inbox_outlined, selectedIcon: Icons.inbox),
       'routines' => (
         icon: Icons.repeat_outlined,
         selectedIcon: Icons.repeat,
-      ),
-      // Legacy screen key (map to my_day icon)
-      'next_actions' || 'next-actions' => (
-        icon: Icons.wb_sunny_outlined,
-        selectedIcon: Icons.wb_sunny,
       ),
       'projects' => (icon: Icons.folder_outlined, selectedIcon: Icons.folder),
       'labels' => (icon: Icons.label_outline, selectedIcon: Icons.label),
@@ -91,7 +83,6 @@ class NavigationIconResolver {
       // ─────────────────────────────────────────────────────────────────
       // Common icon names (for custom screen iconName overrides)
       // ─────────────────────────────────────────────────────────────────
-      'inbox' => (icon: Icons.inbox_outlined, selectedIcon: Icons.inbox),
       'folder' => (icon: Icons.folder_outlined, selectedIcon: Icons.folder),
       'label' => (icon: Icons.label_outline, selectedIcon: Icons.label),
       'star' => (icon: Icons.star_outline, selectedIcon: Icons.star),

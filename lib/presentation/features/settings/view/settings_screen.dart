@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -13,11 +14,15 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: const _SettingsAppBarTitle(),
+        centerTitle: false,
       ),
       body: ResponsiveBody(
         isExpandedLayout: context.isExpandedScreen,
         child: ListView(
+          padding: EdgeInsets.symmetric(
+            vertical: TasklyTokens.of(context).spaceSm,
+          ),
           children: [
             _SettingsNavItem(
               icon: Icons.palette_outlined,
@@ -70,7 +75,6 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: 'Logs, tile catalog, and template data',
                 onTap: () => Routing.pushSettingsDeveloper(context),
               ),
-            SizedBox(height: TasklyTokens.of(context).spaceSm),
           ],
         ),
       ),
@@ -99,6 +103,46 @@ class _SettingsNavItem extends StatelessWidget {
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
+    );
+  }
+}
+
+class _SettingsAppBarTitle extends StatelessWidget {
+  const _SettingsAppBarTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final iconSet = const NavigationIconResolver().resolve(
+      screenId: 'settings',
+      iconName: null,
+    );
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        tokens.spaceMd,
+        tokens.sectionPaddingH,
+        tokens.spaceSm,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            iconSet.selectedIcon,
+            color: scheme.primary,
+            size: tokens.spaceLg3,
+          ),
+          SizedBox(width: tokens.spaceSm),
+          Text(
+            'Settings',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

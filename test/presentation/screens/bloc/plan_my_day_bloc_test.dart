@@ -29,6 +29,7 @@ void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
     registerFallbackValue(TaskQuery.incomplete());
+    registerFallbackValue(DateTime.utc(2000, 1, 1));
   });
   setUp(setUpTestEnvironment);
 
@@ -67,6 +68,9 @@ void main() {
     temporalSubject = BehaviorSubject<TemporalTriggerEvent>();
 
     when(() => dayKeyService.todayDayKeyUtc()).thenReturn(dayKey);
+    when(
+      () => dayKeyService.todayDayKeyUtc(nowUtc: any(named: 'nowUtc')),
+    ).thenReturn(dayKey);
     when(() => temporalTriggerService.events).thenAnswer(
       (_) => temporalSubject.stream,
     );
@@ -138,6 +142,7 @@ void main() {
     );
 
     addTearDown(temporalSubject.close);
+    addTearDown(demoModeService.dispose);
   });
 
   PlanMyDayBloc buildBloc() {
@@ -167,7 +172,20 @@ void main() {
     'advances to next step when requested',
     build: () {
       final value = TestData.value(id: 'value-1', name: 'Health');
-      final task = TestData.task(id: 'task-1', values: [value]);
+      final project = Project(
+        id: 'project-1',
+        createdAt: dayKey,
+        updatedAt: dayKey,
+        name: 'Health Plan',
+        completed: false,
+        values: [value],
+        primaryValueId: value.id,
+      );
+      final task = TestData.task(
+        id: 'task-1',
+        projectId: project.id,
+        project: project,
+      );
       when(() => taskRepository.getAll(any())).thenAnswer((_) async => [task]);
 
       final allocation = AllocationResult(
@@ -204,7 +222,12 @@ void main() {
       ).thenAnswer((_) async => allocation);
       return buildBloc();
     },
-    act: (bloc) => bloc.add(const PlanMyDayStepNextRequested()),
+    act: (bloc) async {
+      if (bloc.state is! PlanMyDayReady) {
+        await bloc.stream.firstWhere((state) => state is PlanMyDayReady);
+      }
+      bloc.add(const PlanMyDayStepNextRequested());
+    },
     expect: () => [
       const PlanMyDayLoading(),
       isA<PlanMyDayReady>(),
@@ -213,6 +236,23 @@ void main() {
         'currentStep',
         PlanMyDayStep.summary,
       ),
+    ],
+  );
+
+  blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
+    'switches from demo data to live data when demo mode disables',
+    build: () {
+      demoModeService.enable();
+      return buildBloc();
+    },
+    act: (bloc) async {
+      await Future<void>.delayed(Duration.zero);
+      demoModeService.disable();
+    },
+    expect: () => [
+      isA<PlanMyDayReady>(),
+      const PlanMyDayLoading(),
+      isA<PlanMyDayReady>(),
     ],
   );
 }

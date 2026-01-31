@@ -115,47 +115,46 @@ class _MyDayDueWindowSliderState extends State<_MyDayDueWindowSlider> {
               Expanded(
                 child: Text(
                   'Due window',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              Text(
+                '$days days',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
-            ),
-            Text(
-              '$days days',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
-        ),
-        Text(
-          helperText,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ],
           ),
-        ),
-        Slider(
-          value: days.toDouble(),
-          min: _MyDayDueWindowSlider._min.toDouble(),
-          max: _MyDayDueWindowSlider._max.toDouble(),
-          divisions:
-              _MyDayDueWindowSlider._max - _MyDayDueWindowSlider._min,
-          label: '$days days',
-          onChanged: enabled
-              ? (value) => setState(() {
-                _draftDays = value.round();
-              })
-              : null,
-          onChangeEnd: enabled
-              ? (value) {
-                  context.read<GlobalSettingsBloc>().add(
-                    GlobalSettingsEvent.myDayDueWindowDaysChanged(
-                      value.round(),
-                    ),
-                  );
-                }
-              : null,
-        ),
-      ],
-    ),
-  );
-}
+          Text(
+            helperText,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Slider(
+            value: days.toDouble(),
+            min: _MyDayDueWindowSlider._min.toDouble(),
+            max: _MyDayDueWindowSlider._max.toDouble(),
+            divisions: _MyDayDueWindowSlider._max - _MyDayDueWindowSlider._min,
+            label: '$days days',
+            onChanged: enabled
+                ? (value) => setState(() {
+                    _draftDays = value.round();
+                  })
+                : null,
+            onChangeEnd: enabled
+                ? (value) {
+                    context.read<GlobalSettingsBloc>().add(
+                      GlobalSettingsEvent.myDayDueWindowDaysChanged(
+                        value.round(),
+                      ),
+                    );
+                  }
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _MyDayShowPlannedToggle extends StatelessWidget {

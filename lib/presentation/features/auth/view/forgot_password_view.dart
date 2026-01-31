@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -14,7 +15,7 @@ class ForgotPasswordView extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.go('/sign-in'),
         ),
       ),
       body: BlocListener<AuthBloc, AppAuthState>(
@@ -75,7 +76,7 @@ class ForgotPasswordView extends StatelessWidget {
                       // Navigate back to sign in after a delay
                       Future.delayed(const Duration(seconds: 2), () {
                         if (context.mounted) {
-                          Navigator.pop(context);
+                          context.go('/sign-in');
                         }
                       });
                     },
@@ -97,7 +98,7 @@ class ForgotPasswordView extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       TextButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => context.go('/sign-in'),
                         child: const Text('Sign In'),
                       ),
                     ],

@@ -40,7 +40,6 @@ void main() {
   late MockRoutineRepositoryContract routineRepository;
   late MockValueRepositoryContract valueRepository;
   late MockProjectRepositoryContract projectRepository;
-  late MockProjectNextActionsRepositoryContract projectNextActionsRepository;
   late MockProjectAnchorStateRepositoryContract projectAnchorStateRepository;
   late MockSettingsRepositoryContract settingsRepository;
   late MockAllocationOrchestrator allocationOrchestrator;
@@ -61,7 +60,6 @@ void main() {
   late TestStreamController<List<Value>> valuesController;
   late TestStreamController<List<Task>> tasksController;
   late TestStreamController<List<Project>> projectsController;
-  late TestStreamController<List<ProjectNextAction>> nextActionsController;
   late TestStreamController<List<ProjectAnchorState>>
   projectAnchorStateController;
   late TestStreamController<List<Routine>> routinesController;
@@ -77,7 +75,6 @@ void main() {
     routineRepository = MockRoutineRepositoryContract();
     valueRepository = MockValueRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
-    projectNextActionsRepository = MockProjectNextActionsRepositoryContract();
     projectAnchorStateRepository = MockProjectAnchorStateRepositoryContract();
     settingsRepository = MockSettingsRepositoryContract();
     allocationOrchestrator = MockAllocationOrchestrator();
@@ -94,9 +91,6 @@ void main() {
     valuesController = TestStreamController.seeded(const <Value>[]);
     tasksController = TestStreamController.seeded(const <Task>[]);
     projectsController = TestStreamController.seeded(const <Project>[]);
-    nextActionsController = TestStreamController.seeded(
-      const <ProjectNextAction>[],
-    );
     projectAnchorStateController = TestStreamController.seeded(
       const <ProjectAnchorState>[],
     );
@@ -141,7 +135,6 @@ void main() {
       allocationOrchestrator: allocationOrchestrator,
       taskRepository: taskRepository,
       projectRepository: projectRepository,
-      projectNextActionsRepository: projectNextActionsRepository,
       projectAnchorStateRepository: projectAnchorStateRepository,
       settingsRepository: settingsRepository,
       valueRepository: valueRepository,
@@ -171,11 +164,11 @@ void main() {
       () => taskRepository.watchAll(any()),
     ).thenAnswer((_) => tasksController.stream);
     when(
+      () => taskRepository.getAll(any()),
+    ).thenAnswer((_) async => const <Task>[]);
+    when(
       () => projectRepository.watchAll(),
     ).thenAnswer((_) => projectsController.stream);
-    when(
-      () => projectNextActionsRepository.watchAll(),
-    ).thenAnswer((_) => nextActionsController.stream);
     when(
       () => projectAnchorStateRepository.watchAll(),
     ).thenAnswer((_) => projectAnchorStateController.stream);
@@ -183,17 +176,39 @@ void main() {
       () => routineRepository.watchAll(includeInactive: true),
     ).thenAnswer((_) => routinesController.stream);
     when(
+      () => routineRepository.getAll(includeInactive: true),
+    ).thenAnswer((_) async => const <Routine>[]);
+    when(
       () => routineRepository.watchCompletions(),
     ).thenAnswer((_) => completionsController.stream);
     when(
+      () => routineRepository.getCompletions(),
+    ).thenAnswer((_) async => const <RoutineCompletion>[]);
+    when(
       () => routineRepository.watchSkips(),
     ).thenAnswer((_) => skipsController.stream);
+    when(
+      () => routineRepository.getSkips(),
+    ).thenAnswer((_) async => const <RoutineSkip>[]);
     when(
       () => taskRepository.watchCompletionHistory(),
     ).thenAnswer((_) => completionHistoryController.stream);
     when(
       () => settingsRepository.watch(SettingsKey.allocation),
     ).thenAnswer((_) => allocationConfigController.stream);
+    when(
+      () => allocationOrchestrator.getAllocationSnapshot(),
+    ).thenAnswer(
+      (_) async => const AllocationResult(
+        allocatedTasks: <AllocatedTask>[],
+        reasoning: AllocationReasoning(
+          strategyUsed: 'test',
+          categoryAllocations: <String, int>{},
+          categoryWeights: <String, double>{},
+        ),
+        excludedTasks: <ExcludedTask>[],
+      ),
+    );
 
     addTearDown(() async {
       await triggerController.close();
@@ -201,7 +216,6 @@ void main() {
       await valuesController.close();
       await tasksController.close();
       await projectsController.close();
-      await nextActionsController.close();
       await projectAnchorStateController.close();
       await routinesController.close();
       await completionsController.close();

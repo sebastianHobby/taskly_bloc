@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -11,6 +12,7 @@ import 'package:taskly_bloc/presentation/features/anytime/services/anytime_sessi
 import 'package:taskly_bloc/presentation/features/anytime/view/anytime_page.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
@@ -28,6 +30,18 @@ class FakeAppLifecycleEvents implements AppLifecycleEvents {
   Future<void> dispose() async {
     await _controller.close();
   }
+}
+
+class FakeNowService implements NowService {
+  FakeNowService(this.now);
+
+  final DateTime now;
+
+  @override
+  DateTime nowLocal() => now;
+
+  @override
+  DateTime nowUtc() => now.toUtc();
 }
 
 void main() {
@@ -50,6 +64,7 @@ void main() {
   late BehaviorSubject<List<Project>> projectsSubject;
   late BehaviorSubject<int> inboxCountSubject;
   late BehaviorSubject<List<Value>> valuesSubject;
+  const speedDialInitDelay = Duration(milliseconds: 1);
 
   setUp(() {
     projectRepository = MockProjectRepositoryContract();
@@ -102,23 +117,36 @@ void main() {
   });
 
   Future<void> pumpPage(WidgetTester tester) async {
-    await tester.pumpApp(
-      MultiRepositoryProvider(
-        providers: [
-          RepositoryProvider<AnytimeSessionQueryService>.value(
-            value: queryService,
+    final router = GoRouter(
+      initialLocation: '/anytime',
+      routes: [
+        GoRoute(
+          path: '/anytime',
+          builder: (_, __) => MultiRepositoryProvider(
+            providers: [
+              RepositoryProvider<AnytimeSessionQueryService>.value(
+                value: queryService,
+              ),
+              RepositoryProvider<EditorLauncher>.value(value: editorLauncher),
+              RepositoryProvider<NowService>.value(
+                value: FakeNowService(DateTime(2025, 1, 15, 9)),
+              ),
+            ],
+            child: const AnytimePage(),
           ),
-          RepositoryProvider<EditorLauncher>.value(value: editorLauncher),
-        ],
-        child: const AnytimePage(),
-      ),
+        ),
+      ],
     );
+
+    await tester.pumpWidgetWithRouter(router: router);
+    await tester.pump(speedDialInitDelay);
   }
 
   testWidgetsSafe('shows loading state before feed emits', (tester) async {
     await pumpPage(tester);
 
     expect(find.byKey(const ValueKey('feed-loading')), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgetsSafe('shows error state when feed stream errors', (tester) async {
@@ -130,6 +158,7 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.textContaining('boom'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgetsSafe('renders project content when loaded', (tester) async {
@@ -142,6 +171,7 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.text('Project Alpha'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgetsSafe('updates list when feed emits new data', (tester) async {
@@ -159,5 +189,6 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.text('Project B'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
   });
 }

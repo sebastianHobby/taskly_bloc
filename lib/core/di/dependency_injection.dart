@@ -22,7 +22,7 @@ import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_b
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/allocation_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_bloc.dart';
-import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
+import 'package:taskly_bloc/presentation/features/projects/services/projects_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 
@@ -79,9 +79,6 @@ Future<void> setupDependencies() async {
     )
     ..registerSingleton<ProjectRepositoryContract>(
       getIt<TasklyDataBindings>().projectRepository,
-    )
-    ..registerSingleton<ProjectNextActionsRepositoryContract>(
-      getIt<TasklyDataBindings>().projectNextActionsRepository,
     )
     ..registerSingleton<ProjectAnchorStateRepositoryContract>(
       getIt<TasklyDataBindings>().projectAnchorStateRepository,
@@ -180,8 +177,6 @@ Future<void> setupDependencies() async {
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
-        projectNextActionsRepository:
-            getIt<ProjectNextActionsRepositoryContract>(),
         projectAnchorStateRepository:
             getIt<ProjectAnchorStateRepositoryContract>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
@@ -201,8 +196,6 @@ Future<void> setupDependencies() async {
         settingsRepository: getIt<SettingsRepositoryContract>(),
         analyticsService: getIt<AnalyticsService>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
-        projectNextActionsRepository:
-            getIt<ProjectNextActionsRepositoryContract>(),
         projectAnchorStateRepository:
             getIt<ProjectAnchorStateRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
@@ -269,8 +262,6 @@ Future<void> setupDependencies() async {
             getIt<attention_repo_v2.AttentionRepositoryContract>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
-        projectNextActionsRepository:
-            getIt<ProjectNextActionsRepositoryContract>(),
         invalidations:
             getIt<AttentionTemporalInvalidationService>().invalidations,
         clock: getIt<Clock>(),
@@ -367,8 +358,8 @@ Future<void> setupDependencies() async {
         cacheManager: getIt<SessionStreamCacheManager>(),
       ),
     )
-    ..registerLazySingleton<AnytimeSessionQueryService>(
-      () => AnytimeSessionQueryService(
+    ..registerLazySingleton<ProjectsSessionQueryService>(
+      () => ProjectsSessionQueryService(
         projectRepository: getIt<ProjectRepositoryContract>(),
         cacheManager: getIt<SessionStreamCacheManager>(),
         sharedDataService: getIt<SessionSharedDataService>(),
@@ -384,7 +375,7 @@ Future<void> setupDependencies() async {
         allocationCacheService: getIt<SessionAllocationCacheService>(),
         myDaySessionQueryService: getIt<MyDaySessionQueryService>(),
         scheduledSessionQueryService: getIt<ScheduledSessionQueryService>(),
-        anytimeSessionQueryService: getIt<AnytimeSessionQueryService>(),
+        projectsSessionQueryService: getIt<ProjectsSessionQueryService>(),
       ),
     )
     ..registerFactory<MyDayBloc>(

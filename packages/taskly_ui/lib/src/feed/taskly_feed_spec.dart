@@ -245,6 +245,7 @@ sealed class TasklyRowSpec {
     required TasklyRoutineRowData data,
     required TasklyRoutineRowActions actions,
     Key? anchorKey,
+    TasklyRoutineRowStyle? style,
     int depth,
   }) = TasklyRoutineRowSpec;
 }
@@ -410,6 +411,24 @@ final class TasklyTaskRowStylePlanPick extends TasklyTaskRowStyle {
   const TasklyTaskRowStylePlanPick({required this.selected});
 
   final bool selected;
+}
+
+sealed class TasklyRoutineRowStyle {
+  const TasklyRoutineRowStyle();
+
+  const factory TasklyRoutineRowStyle.standard() =
+      TasklyRoutineRowStyleStandard;
+
+  const factory TasklyRoutineRowStyle.planPick() =
+      TasklyRoutineRowStylePlanPick;
+}
+
+final class TasklyRoutineRowStyleStandard extends TasklyRoutineRowStyle {
+  const TasklyRoutineRowStyleStandard();
+}
+
+final class TasklyRoutineRowStylePlanPick extends TasklyRoutineRowStyle {
+  const TasklyRoutineRowStylePlanPick();
 }
 
 @immutable
@@ -700,9 +719,13 @@ final class TasklyRoutineScheduleRowData {
 final class TasklyRoutineRowLabels {
   const TasklyRoutineRowLabels({
     this.primaryActionLabel,
+    this.selectionTooltipLabel,
+    this.selectionTooltipSelectedLabel,
   });
 
   final String? primaryActionLabel;
+  final String? selectionTooltipLabel;
+  final String? selectionTooltipSelectedLabel;
 }
 
 @immutable
@@ -726,13 +749,15 @@ final class TasklyRoutineRowSpec extends TasklyRowSpec {
     required this.data,
     required this.actions,
     this.anchorKey,
+    TasklyRoutineRowStyle? style,
     this.depth = 0,
-  });
+  }) : style = style ?? const TasklyRoutineRowStyle.standard();
 
   final String key;
   final TasklyRoutineRowData data;
   final TasklyRoutineRowActions actions;
   final Key? anchorKey;
+  final TasklyRoutineRowStyle style;
   final int depth;
 }
 

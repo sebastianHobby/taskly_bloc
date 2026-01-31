@@ -7,6 +7,9 @@
 
 ## Index
 
+- Product concept and messaging: [PRODUCT_CONCEPT.md](PRODUCT_CONCEPT.md)
+- Plan My Day concept: [PLAN_MY_DAY_CONCEPT.md](PLAN_MY_DAY_CONCEPT.md)
+- Routines concept: [ROUTINES_CONCEPT.md](ROUTINES_CONCEPT.md)
+- Project Detail concept: [PROJECT_DETAIL_CONCEPT.md](PROJECT_DETAIL_CONCEPT.md)
 - Screen meaning and contracts: [SCREEN_PURPOSE_CONCEPTS.md](SCREEN_PURPOSE_CONCEPTS.md)
 - Routines spec (Plan My Day): [SPEC_ROUTINES.md](SPEC_ROUTINES.md)
-- Project next actions + anchors: [SPEC_NEXT_ACTIONS_AND_ANCHORS.md](SPEC_NEXT_ACTIONS_AND_ANCHORS.md)

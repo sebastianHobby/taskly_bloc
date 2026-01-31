@@ -172,7 +172,7 @@ class TasklyTileCatalog extends StatelessWidget {
           windowLabel: '4 days left (Mon–Sun)',
           valueChip: valueHealth,
           labels: const TasklyRoutineRowLabels(
-            primaryActionLabel: 'Do today',
+            primaryActionLabel: 'Log today',
           ),
         ),
         actions: _routineActions,
@@ -192,7 +192,7 @@ class TasklyTileCatalog extends StatelessWidget {
             windowLabel: '4 days left',
           ),
           labels: const TasklyRoutineRowLabels(
-            primaryActionLabel: 'Do today',
+            primaryActionLabel: 'Log today',
           ),
         ),
         actions: _routineActions,
@@ -246,9 +246,49 @@ class TasklyTileCatalog extends StatelessWidget {
             ],
           ),
           labels: const TasklyRoutineRowLabels(
-            primaryActionLabel: 'Do today',
+            primaryActionLabel: 'Log today',
           ),
         ),
+        actions: _routineActions,
+      ),
+      TasklyRowSpec.header(
+        key: 'catalog-routines-plan-pick',
+        title: 'Routine · Plan pick',
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-plan-pick-selected',
+        data: TasklyRoutineRowData(
+          id: 'r-plan-pick-1',
+          title: 'Stretch session',
+          targetLabel: '3x/week',
+          remainingLabel: '2 left',
+          windowLabel: '4 days left',
+          valueChip: valueHealth,
+          selected: true,
+          labels: const TasklyRoutineRowLabels(
+            selectionTooltipLabel: 'Add',
+            selectionTooltipSelectedLabel: 'Added',
+          ),
+        ),
+        style: const TasklyRoutineRowStyle.planPick(),
+        actions: _routineActions,
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-plan-pick-unselected',
+        data: TasklyRoutineRowData(
+          id: 'r-plan-pick-2',
+          title: 'Reflect on the week',
+          targetLabel: '1x/week',
+          remainingLabel: '1 left',
+          windowLabel: '2 days left',
+          valueChip: valueKnowledge,
+          selected: false,
+          labels: const TasklyRoutineRowLabels(
+            selectionTooltipLabel: 'Add',
+            selectionTooltipSelectedLabel: 'Added',
+          ),
+        ),
+        style: const TasklyRoutineRowStyle.planPick(),
         actions: _routineActions,
       ),
       TasklyRowSpec.header(

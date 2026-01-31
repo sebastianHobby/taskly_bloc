@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -25,6 +26,7 @@ import '../../../mocks/repository_mocks.dart';
 class MockAnalyticsService extends Mock implements AnalyticsService {}
 
 class MockValueRepository extends Mock implements ValueRepositoryContract {}
+
 class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
 class FakeNowService implements NowService {
@@ -101,23 +103,33 @@ void main() {
   });
 
   Future<void> pumpPage(WidgetTester tester) async {
-    await tester.pumpApp(
-      MultiRepositoryProvider(
-        providers: [
-          RepositoryProvider<AnalyticsService>.value(value: analyticsService),
-          RepositoryProvider<ValueRepositoryContract>.value(
-            value: valueRepository,
+    final router = GoRouter(
+      initialLocation: '/values',
+      routes: [
+        GoRoute(
+          path: '/values',
+          builder: (_, __) => MultiRepositoryProvider(
+            providers: [
+              RepositoryProvider<AnalyticsService>.value(
+                value: analyticsService,
+              ),
+              RepositoryProvider<ValueRepositoryContract>.value(
+                value: valueRepository,
+              ),
+              RepositoryProvider<SessionSharedDataService>.value(
+                value: sharedDataService,
+              ),
+              RepositoryProvider<NowService>.value(
+                value: FakeNowService(DateTime(2025, 1, 15, 9)),
+              ),
+            ],
+            child: const ValuesPage(),
           ),
-          RepositoryProvider<SessionSharedDataService>.value(
-            value: sharedDataService,
-          ),
-          RepositoryProvider<NowService>.value(
-            value: FakeNowService(DateTime(2025, 1, 15, 9)),
-          ),
-        ],
-        child: const ValuesPage(),
-      ),
+        ),
+      ],
     );
+
+    await tester.pumpWidgetWithRouter(router: router);
   }
 
   testWidgetsSafe('shows loading state while values load', (tester) async {
@@ -137,7 +149,10 @@ void main() {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    expect(find.textContaining('load failed'), findsOneWidget);
+    expect(
+      find.text('Something went wrong. Please try again.'),
+      findsOneWidget,
+    );
   });
 
   testWidgetsSafe('renders values content when loaded', (tester) async {

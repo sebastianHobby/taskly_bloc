@@ -539,51 +539,6 @@
   "@projectNotFound": {
     "description": "Error shown when a project cannot be found"
   },
-  "projectNextActionsTitle": "Next actions",
-  "@projectNextActionsTitle": {
-    "description": "Section title for project next actions."
-  },
-  "projectNextActionsCountLabel": "{count} of {max}",
-  "@projectNextActionsCountLabel": {
-    "description": "Count label for project next actions.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "max": {
-        "type": "int"
-      }
-    }
-  },
-  "projectNextActionsChooseAction": "Choose next action...",
-  "@projectNextActionsChooseAction": {
-    "description": "Inline action label to pick a next action."
-  },
-  "projectNextActionsPickerTitle": "Choose next action",
-  "@projectNextActionsPickerTitle": {
-    "description": "Title for the next action picker sheet."
-  },
-  "projectNextActionsPickerSubtitle": "Pick a task to mark as next in this project.",
-  "@projectNextActionsPickerSubtitle": {
-    "description": "Subtitle for the next action picker sheet."
-  },
-  "projectNextActionsRankLabel": "Rank {rank}",
-  "@projectNextActionsRankLabel": {
-    "description": "Label for a next action rank option.",
-    "placeholders": {
-      "rank": {
-        "type": "int"
-      }
-    }
-  },
-  "projectNextActionsRemoveAction": "Remove from next actions",
-  "@projectNextActionsRemoveAction": {
-    "description": "Action label to remove a task from next actions."
-  },
-  "projectNextActionsEmptyLabel": "No next actions yet",
-  "@projectNextActionsEmptyLabel": {
-    "description": "Empty label when a project has no next actions."
-  },
     "labelNotFound": "Label not found.",
     "@labelNotFound": {
         "description": "Error shown when a label cannot be found"
@@ -707,10 +662,6 @@
     "upcomingTitle": "Upcoming",
     "@upcomingTitle": {
         "description": "Title for the Upcoming section"
-    },
-    "nextActionsTitle": "Next actions",
-    "@nextActionsTitle": {
-        "description": "Title for the Next actions section"
     },
     "taskCreatedSuccessfully": "Task created successfully.",
     "@taskCreatedSuccessfully": {
@@ -1882,10 +1833,6 @@
     "@sortFieldUpdatedDate": {
         "description": "Sort field: updated date"
     },
-    "sortFieldNextActionPriority": "Next action priority",
-    "@sortFieldNextActionPriority": {
-        "description": "Sort field: next action priority"
-    },
     "sortOrderHelp": "Choose how to order items",
     "@sortOrderHelp": {
         "description": "Help text for sort configuration"
@@ -2017,10 +1964,6 @@
     "notRankedDragToRank": "Not ranked - drag to rank",
     "@notRankedDragToRank": {
         "description": "Subtitle for unranked values"
-    },
-    "recommendedNextActionLabel": "Recommended Next Action",
-    "@recommendedNextActionLabel": {
-        "description": "Title for the recommended next task card in project detail"
     },
     "startLabel": "Start",
     "@startLabel": {
@@ -2245,6 +2188,30 @@
     "myDayTitle": "My Day",
     "@myDayTitle": {
         "description": "Title for the My Day screen"
+    },
+    "myDayGreetingWithName": "Hi {name}",
+    "@myDayGreetingWithName": {
+        "description": "Greeting shown at the top of My Day when the user name is available.",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alex"
+            }
+        }
+    },
+    "myDayGreetingWithoutName": "Hi",
+    "@myDayGreetingWithoutName": {
+        "description": "Greeting shown at the top of My Day when no user name is available."
+    },
+    "myDayHeaderTagline": "{date} - Here's today's plan.",
+    "@myDayHeaderTagline": {
+        "description": "Tagline shown under the greeting on My Day, including the formatted date.",
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "Sat, 31 Jan"
+            }
+        }
     },
     "myDayUpdatePlanTitle": "Plan today",
     "@myDayUpdatePlanTitle": {
@@ -3031,10 +2998,6 @@
         "type": "int"
       }
     }
-  },
-  "routinePrimaryActionLabel": "Do today",
-  "@routinePrimaryActionLabel": {
-    "description": "Primary action label for routine cards."
   },
   "routineLoggedLabel": "Logged",
   "@routineLoggedLabel": {

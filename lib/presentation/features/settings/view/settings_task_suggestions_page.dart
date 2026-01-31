@@ -32,7 +32,6 @@ class SettingsTaskSuggestionsPage extends StatelessWidget {
                   _SuggestionSignalSection(settings: state.settings),
                   _ValuesBalanceSection(settings: state.settings),
                   _ProjectFocusSection(settings: state.settings),
-                  _NextActionsSection(settings: state.settings),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                 ],
               ),
@@ -202,86 +201,6 @@ class _ProjectFocusSection extends StatelessWidget {
               AllocationProjectFocusStyleChanged(value),
             );
           },
-        ),
-      ],
-    );
-  }
-}
-
-class _NextActionsSection extends StatelessWidget {
-  const _NextActionsSection({required this.settings});
-
-  final AllocationConfig settings;
-
-  @override
-  Widget build(BuildContext context) {
-    final policy = settings.strategySettings.nextActionPolicy;
-    final preference = policy == NextActionPolicy.off
-        ? NextActionsPreference.flexible
-        : NextActionsPreference.preferNextActions;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionHeader(title: 'Next Actions emphasis'),
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            TasklyTokens.of(context).spaceLg,
-            0,
-            TasklyTokens.of(context).spaceLg,
-            TasklyTokens.of(context).spaceXs2,
-          ),
-          child: Text(
-            'Values decide which projects are selected. Within each project, '
-            'we either pick the highest-priority tasks or your Next Actions.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-        RadioListTile<NextActionsPreference>(
-          title: const Text('Flexible'),
-          subtitle: const Text(
-            'Suggest top-priority tasks in each selected project. '
-            'Next Actions are optional.',
-          ),
-          value: NextActionsPreference.flexible,
-          groupValue: preference,
-          onChanged: (value) {
-            if (value == null) return;
-            context.read<AllocationSettingsBloc>().add(
-              AllocationNextActionsPreferenceChanged(value),
-            );
-          },
-        ),
-        RadioListTile<NextActionsPreference>(
-          title: const Text('Prefer Next Actions'),
-          subtitle: const Text(
-            'Use your Next Actions when they\u2019re set; otherwise fall back '
-            'to top-priority tasks.',
-          ),
-          value: NextActionsPreference.preferNextActions,
-          groupValue: preference,
-          onChanged: (value) {
-            if (value == null) return;
-            context.read<AllocationSettingsBloc>().add(
-              AllocationNextActionsPreferenceChanged(value),
-            );
-          },
-        ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            TasklyTokens.of(context).spaceLg,
-            0,
-            TasklyTokens.of(context).spaceLg,
-            TasklyTokens.of(context).spaceSm,
-          ),
-          child: Text(
-            'Next Actions are chosen on each project\u2019s detail screen.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
         ),
       ],
     );

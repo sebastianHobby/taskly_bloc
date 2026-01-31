@@ -4,7 +4,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/queries.dart';
 
-import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
+import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
 
 sealed class ScopeContextEvent {
   const ScopeContextEvent();
@@ -46,7 +46,7 @@ final class ScopeContextError extends ScopeContextState {
 
 class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
   ScopeContextBloc({
-    required AnytimeScope scope,
+    required ProjectsScope scope,
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
@@ -64,7 +64,7 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
     add(const ScopeContextStarted());
   }
 
-  final AnytimeScope _scope;
+  final ProjectsScope _scope;
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
@@ -90,7 +90,7 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
     final title$ = _scopeTitleStream(_scope);
 
     final Stream<ScopeContextState> combined$ = switch (_scope) {
-      AnytimeValueScope(:final valueId) => () {
+      ProjectsValueScope(:final valueId) => () {
         final projectQuery = ProjectQuery(
           filter: QueryFilter<ProjectPredicate>(
             shared: [
@@ -137,15 +137,15 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
     );
   }
 
-  TaskQuery _scopeTaskQuery(TaskQuery base, AnytimeScope scope) {
+  TaskQuery _scopeTaskQuery(TaskQuery base, ProjectsScope scope) {
     return switch (scope) {
-      AnytimeProjectScope(:final projectId) => base.withAdditionalPredicates([
+      ProjectsProjectScope(:final projectId) => base.withAdditionalPredicates([
         TaskProjectPredicate(
           operator: ProjectOperator.matches,
           projectId: projectId,
         ),
       ]),
-      AnytimeValueScope(:final valueId) => base.withAdditionalPredicates([
+      ProjectsValueScope(:final valueId) => base.withAdditionalPredicates([
         TaskValuePredicate(
           operator: ValueOperator.hasAll,
           valueIds: [valueId],
@@ -155,13 +155,13 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
     };
   }
 
-  Stream<String> _scopeTitleStream(AnytimeScope scope) {
+  Stream<String> _scopeTitleStream(ProjectsScope scope) {
     return switch (scope) {
-      AnytimeProjectScope(:final projectId) =>
+      ProjectsProjectScope(:final projectId) =>
         _projectRepository
             .watchById(projectId)
             .map((project) => project?.name ?? 'Project'),
-      AnytimeValueScope(:final valueId) =>
+      ProjectsValueScope(:final valueId) =>
         _valueRepository
             .watchById(valueId)
             .map((value) => value?.name ?? 'Value'),

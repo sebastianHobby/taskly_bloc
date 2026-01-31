@@ -392,7 +392,8 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
         : GuidedTourAnchors.keyFor(anchorId);
     final anchorContext = anchorKey?.currentContext;
     if (anchorContext == null) return null;
-    final overlayContext = _rootOverlay?.context ??
+    final overlayContext =
+        _rootOverlay?.context ??
         Overlay.maybeOf(context, rootOverlay: true)?.context ??
         context;
     final overlayBox = overlayContext.findRenderObject();

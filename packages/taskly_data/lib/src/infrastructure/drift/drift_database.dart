@@ -186,9 +186,8 @@ class ValueRatingsWeeklyTable extends Table {
       .named('value_id')
       .references(ValueTable, #id, onDelete: KeyAction.cascade)();
 
-  TextColumn get weekStart => text()
-      .map(dateOnlyStringConverter)
-      .named('week_start')();
+  TextColumn get weekStart =>
+      text().map(dateOnlyStringConverter).named('week_start')();
 
   IntColumn get rating => integer().named('rating')();
 
@@ -494,35 +493,6 @@ class ProjectRecurrenceExceptionsTable extends Table {
   ];
 }
 
-class ProjectNextActionsTable extends Table {
-  @override
-  String get tableName => 'project_next_actions';
-
-  TextColumn get id => text().named('id')();
-  TextColumn get userId => text().nullable().named('user_id')();
-
-  TextColumn get projectId => text()
-      .named('project_id')
-      .references(ProjectTable, #id, onDelete: KeyAction.cascade)();
-
-  TextColumn get taskId => text()
-      .named('task_id')
-      .references(TaskTable, #id, onDelete: KeyAction.cascade)();
-
-  IntColumn get rank => integer().named('rank')();
-
-  DateTimeColumn get createdAt =>
-      dateTime().clientDefault(DateTime.now).named('created_at')();
-  DateTimeColumn get updatedAt =>
-      dateTime().clientDefault(DateTime.now).named('updated_at')();
-
-  /// Per-write metadata captured by PowerSync when `trackMetadata` is enabled.
-  TextColumn get psMetadata => text().nullable().named('_metadata')();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
 class ProjectAnchorStateTable extends Table {
   @override
   String get tableName => 'project_anchor_state';
@@ -654,7 +624,6 @@ class RoutineSkipsTable extends Table {
     ProjectCompletionHistoryTable,
     TaskRecurrenceExceptionsTable,
     ProjectRecurrenceExceptionsTable,
-    ProjectNextActionsTable,
     ProjectAnchorStateTable,
     RoutinesTable,
     RoutineCompletionsTable,

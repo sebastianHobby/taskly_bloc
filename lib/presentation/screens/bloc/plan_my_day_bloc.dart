@@ -416,9 +416,55 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       emit(
         _demoDataProvider.buildPlanMyDayReady(currentStep: _currentStep),
       );
-      return;
+    } else {
+      await _initializeRealMode(emit);
     }
 
+    final demoModeUpdates = emit.onEach<bool>(
+      _demoModeService.enabled.distinct(),
+      onData: (enabled) async {
+        if (enabled == _isDemoMode) return;
+        _isDemoMode = enabled;
+        if (_isDemoMode) {
+          emit(
+            _demoDataProvider.buildPlanMyDayReady(currentStep: _currentStep),
+          );
+          return;
+        }
+
+        await _initializeRealMode(emit);
+      },
+    );
+
+    final temporalUpdates = emit.onEach<TemporalTriggerEvent>(
+      _temporalTriggerService.events.where(
+        (e) => e is HomeDayBoundaryCrossed || e is AppResumed,
+      ),
+      onData: (event) async {
+        if (_isDemoMode) return;
+        final nextDay = _dayKeyService.todayDayKeyUtc();
+        final isDayChange = !_isSameDayUtc(nextDay, _dayKeyUtc);
+
+        if (isDayChange) {
+          _dayKeyUtc = nextDay;
+          await _refreshSnapshots(resetSelection: true);
+          if (emit.isDone || _isDemoMode) return;
+          _emitReady(emit);
+          return;
+        }
+
+        if (event is AppResumed && !_hasUserSelection) {
+          await _refreshSnapshots(resetSelection: false);
+          if (emit.isDone || _isDemoMode) return;
+          _emitReady(emit);
+        }
+      },
+    );
+
+    await Future.wait([demoModeUpdates, temporalUpdates]);
+  }
+
+  Future<void> _initializeRealMode(Emitter<PlanMyDayState> emit) async {
     _dayKeyUtc = _dayKeyService.todayDayKeyUtc();
     _suggestionBatchCount = 1;
     _dayPicks = my_day.MyDayDayPicks(
@@ -429,31 +475,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
     emit(const PlanMyDayLoading());
     await _refreshSnapshots(resetSelection: true);
+    if (emit.isDone || _isDemoMode) return;
     _emitReady(emit);
-
-    await emit.onEach<TemporalTriggerEvent>(
-      _temporalTriggerService.events.where(
-        (e) => e is HomeDayBoundaryCrossed || e is AppResumed,
-      ),
-      onData: (event) async {
-        final nextDay = _dayKeyService.todayDayKeyUtc();
-        final isDayChange = !_isSameDayUtc(nextDay, _dayKeyUtc);
-
-        if (isDayChange) {
-          _dayKeyUtc = nextDay;
-          await _refreshSnapshots(resetSelection: true);
-          if (emit.isDone) return;
-          _emitReady(emit);
-          return;
-        }
-
-        if (event is AppResumed && !_hasUserSelection) {
-          await _refreshSnapshots(resetSelection: false);
-          if (emit.isDone) return;
-          _emitReady(emit);
-        }
-      },
-    );
   }
 
   void _onStepRequested(

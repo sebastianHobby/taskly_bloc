@@ -70,19 +70,6 @@ Task taskFromTable(
   );
 }
 
-ProjectNextAction projectNextActionFromTable(
-  drift.ProjectNextActionsTableData t,
-) {
-  return ProjectNextAction(
-    id: t.id,
-    projectId: t.projectId,
-    taskId: t.taskId,
-    rank: t.rank,
-    createdAtUtc: t.createdAt,
-    updatedAtUtc: t.updatedAt,
-  );
-}
-
 ProjectAnchorState projectAnchorStateFromTable(
   drift.ProjectAnchorStateTableData t,
 ) {

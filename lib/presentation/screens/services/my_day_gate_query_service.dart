@@ -19,17 +19,20 @@ final class MyDayGateQueryService {
   final DemoModeService _demoModeService;
 
   Stream<bool> watchNeedsValuesSetup() {
-    return _demoModeService.enabled.distinct().switchMap((enabled) {
-      if (enabled) {
-        return Stream<bool>.value(false);
-      }
+    return _demoModeService.enabled
+        .distinct()
+        .switchMap((enabled) {
+          if (enabled) {
+            return Stream<bool>.value(false);
+          }
 
-      final Stream<List<Value>> values$ = (() async* {
-        yield await _valueRepository.getAll();
-        yield* _sharedDataService.watchValues();
-      })();
+          final Stream<List<Value>> values$ = (() async* {
+            yield await _valueRepository.getAll();
+            yield* _sharedDataService.watchValues();
+          })();
 
-      return values$.map((values) => values.isEmpty).distinct();
-    }).shareReplay(maxSize: 1);
+          return values$.map((values) => values.isEmpty).distinct();
+        })
+        .shareReplay(maxSize: 1);
   }
 }

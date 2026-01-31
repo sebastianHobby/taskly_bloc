@@ -62,7 +62,7 @@ Each routine row shows:
 - Supportive line on catch-up days: "Small steps still count."
 
 Primary action:
-- "Do today" (adds a planned pick for today; does not mark completion)
+- Picker icon (adds a planned pick for today; does not mark completion)
 
 Secondary actions:
 - "Pause routine" (hide until resumed)
@@ -241,7 +241,7 @@ Schema requirements:
 - Enforce bucket = routine for routine picks in app logic (no DB check).
 
 Pick behavior:
-- "Do today" inserts my_day_picks row with routine_id and bucket = routine.
+- Selecting a routine for today inserts my_day_picks row with routine_id and bucket = routine.
 - Completion inserts routine_completions and updates routine counts.
 - routine picks set qualifying_value_id = routines.value_id (for value quotas).
 
