@@ -14,7 +14,7 @@ abstract class SystemAttentionRules {
   SystemAttentionRules._();
 
   // ==========================================================================
-  // PROBLEM DETECTION RULES (2 rules)
+  // PROBLEM DETECTION RULES (3 rules)
   // ==========================================================================
 
   /// Detects stale tasks (no activity for 30+ days)
@@ -79,35 +79,15 @@ abstract class SystemAttentionRules {
     sortOrder: 40,
   );
 
-  /// Detects projects that have tasks but no next actions set.
-  static const problemProjectMissingNextActions = AttentionRuleTemplate(
-    ruleKey: 'problem_project_missing_next_actions',
-    bucket: AttentionBucket.action,
-    evaluator: 'project_predicate_v1',
-    evaluatorParams: {
-      'predicate': 'missingNextActions',
-      'minOpenTasks': 1,
-    },
-    severity: AttentionSeverity.info,
-    displayConfig: {
-      'title': 'Missing next actions',
-      'description': 'Projects with tasks but no next actions set.',
-      'icon': 'flag',
-    },
-    resolutionActions: ['reviewed', 'snoozed', 'dismissed'],
-    sortOrder: 35,
-  );
-
   // ==========================================================================
   // HELPERS
   // ==========================================================================
 
   /// All system rule templates
   static List<AttentionRuleTemplate> get all => [
-    // Problem detection (2)
+    // Problem detection (3)
     problemTaskStale,
     problemProjectIdle,
-    problemProjectMissingNextActions,
     problemProjectDeadlineRisk,
   ];
 

@@ -7,10 +7,8 @@ import 'package:taskly_domain/time.dart' show Clock, systemClock;
 /// Drift implementation of [PendingNotificationsRepositoryContract].
 class PendingNotificationsRepositoryImpl
     implements PendingNotificationsRepositoryContract {
-  PendingNotificationsRepositoryImpl(
-    this._db, {
-    Clock clock = systemClock,
-  }) : _clock = clock;
+  PendingNotificationsRepositoryImpl(this._db, {Clock clock = systemClock})
+    : _clock = clock;
 
   final db.AppDatabase _db;
   final Clock _clock;

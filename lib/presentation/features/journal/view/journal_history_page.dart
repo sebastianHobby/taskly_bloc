@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_daily_detail_sheet.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
@@ -213,7 +214,6 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
 
           return Scaffold(
             appBar: AppBar(
-              title: const Text('History'),
               actions: [
                 IconButton(
                   tooltip: 'Filters',
@@ -224,6 +224,7 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
             ),
             body: Column(
               children: [
+                const _JournalHistoryTitleHeader(),
                 Padding(
                   padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
                   child: TextField(
@@ -241,6 +242,46 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _JournalHistoryTitleHeader extends StatelessWidget {
+  const _JournalHistoryTitleHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final iconSet = const NavigationIconResolver().resolve(
+      screenId: 'journal',
+      iconName: null,
+    );
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        tokens.spaceMd,
+        tokens.sectionPaddingH,
+        tokens.spaceSm,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            iconSet.selectedIcon,
+            color: scheme.primary,
+            size: tokens.spaceLg3,
+          ),
+          SizedBox(width: tokens.spaceSm),
+          Text(
+            'History',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
       ),
     );
   }

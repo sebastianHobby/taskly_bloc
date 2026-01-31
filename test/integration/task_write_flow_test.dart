@@ -97,52 +97,57 @@ void main() {
     expect(metadata['cid'], context.correlationId);
   });
 
-  testSafe('task repository delete removes task and emits stream updates', () async {
-    final db = createTestDb();
-    addTearDown(() => closeTestDb(db));
+  testSafe(
+    'task repository delete removes task and emits stream updates',
+    () async {
+      final db = createTestDb();
+      addTearDown(() => closeTestDb(db));
 
-    final clock = _FixedClock(DateTime.utc(2025, 1, 15, 12));
-    final idGenerator = FakeIdGenerator('user-1');
-    final expander = MockOccurrenceStreamExpanderContract();
-    final writeHelper = MockOccurrenceWriteHelperContract();
+      final clock = _FixedClock(DateTime.utc(2025, 1, 15, 12));
+      final idGenerator = FakeIdGenerator('user-1');
+      final expander = MockOccurrenceStreamExpanderContract();
+      final writeHelper = MockOccurrenceWriteHelperContract();
 
-    final taskRepository = TaskRepository(
-      driftDb: db,
-      occurrenceExpander: expander,
-      occurrenceWriteHelper: writeHelper,
-      idGenerator: idGenerator,
-      clock: clock,
-    );
+      final taskRepository = TaskRepository(
+        driftDb: db,
+        occurrenceExpander: expander,
+        occurrenceWriteHelper: writeHelper,
+        idGenerator: idGenerator,
+        clock: clock,
+      );
 
-    final queue = StreamQueue(taskRepository.watchAll());
-    addTearDown(queue.cancel);
+      final queue = StreamQueue(taskRepository.watchAll());
+      addTearDown(queue.cancel);
 
-    await taskRepository.create(name: 'Delete Me', completed: false);
-    List<Task>? created;
-    while (created == null || created.isEmpty) {
-      final next = await queue.next;
-      if (next.isNotEmpty) {
-        created = next;
+      await taskRepository.create(name: 'Delete Me', completed: false);
+      List<Task>? created;
+      while (created == null || created.isEmpty) {
+        final next = await queue.next;
+        if (next.isNotEmpty) {
+          created = next;
+        }
       }
-    }
-    final taskId = created.single.id;
+      final taskId = created.single.id;
 
-    await taskRepository.delete(taskId);
+      await taskRepository.delete(taskId);
 
-    List<Task>? afterDelete;
-    while (afterDelete == null || afterDelete.isNotEmpty) {
-      final next = await queue.next;
-      if (next.isEmpty) {
-        afterDelete = next;
+      List<Task>? afterDelete;
+      while (afterDelete == null || afterDelete.isNotEmpty) {
+        final next = await queue.next;
+        if (next.isEmpty) {
+          afterDelete = next;
+        }
       }
-    }
-    expect(afterDelete, isEmpty);
+      expect(afterDelete, isEmpty);
 
-    final removed = await taskRepository.watchById(taskId).firstWhere(
-      (task) => task == null,
-    );
-    expect(removed, isNull);
-  });
+      final removed = await taskRepository
+          .watchById(taskId)
+          .firstWhere(
+            (task) => task == null,
+          );
+      expect(removed, isNull);
+    },
+  );
 
   testSafe('task repository rejects empty name', () async {
     final db = createTestDb();

@@ -61,7 +61,6 @@ final class PowerSyncUserDataWipeService implements UserDataWipeService {
       await _deleteAll('project_recurrence_exceptions');
 
       // Project helpers.
-      await _deleteAll('project_next_actions');
       await _deleteAll('project_anchor_state');
 
       // Routine history.

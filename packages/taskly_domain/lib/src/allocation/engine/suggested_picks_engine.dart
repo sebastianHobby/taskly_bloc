@@ -1,12 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:taskly_domain/src/allocation/engine/allocation_strategy.dart';
-import 'package:taskly_domain/src/allocation/model/allocation_config.dart';
 import 'package:taskly_domain/src/allocation/model/allocation_result.dart';
 import 'package:taskly_domain/src/core/model/project.dart';
 import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/projects/model/project_anchor_state.dart';
-import 'package:taskly_domain/src/projects/model/project_next_action.dart';
 import 'package:taskly_domain/src/services/values/effective_values.dart';
 import 'package:taskly_domain/time.dart';
 
@@ -18,7 +16,7 @@ final class SuggestedPicksEngine implements AllocationStrategy {
   @override
   String get description =>
       'Allocates anchor projects by value priority, then selects tasks within '
-      'each anchor (next actions first, then calm tie-break rules).';
+      'each anchor using calm tie-break rules.';
 
   @override
   AllocationResult allocate(AllocationParameters parameters) {
@@ -186,25 +184,18 @@ final class SuggestedPicksEngine implements AllocationStrategy {
     final selected = <_SelectedTask>[];
     final selectedTaskIds = <String>{};
 
-    final nextActionsByProject = _groupNextActions(
-      parameters.projectNextActions,
-    );
-
     var remainingAnchorSlots = maxAnchorTasks;
     for (final anchor in anchorSelection) {
       if (remainingAnchorSlots <= 0) break;
       final tasksForProject = tasksByProject[anchor.project.id] ?? const [];
       if (tasksForProject.isEmpty) continue;
 
-      final nextActions = nextActionsByProject[anchor.project.id] ?? const [];
       final limit = math.min(
         parameters.tasksPerAnchorMax,
         remainingAnchorSlots,
       );
       final selectedForProject = _selectTasksForProject(
         tasksForProject,
-        nextActions: nextActions,
-        policy: parameters.nextActionPolicy,
         maxCount: limit,
         todayDayKeyUtc: todayDayKeyUtc,
         urgencyThresholdDays: parameters.taskUrgencyThresholdDays,
@@ -650,66 +641,25 @@ final class SuggestedPicksEngine implements AllocationStrategy {
     return anchors;
   }
 
-  Map<String, List<ProjectNextAction>> _groupNextActions(
-    List<ProjectNextAction> actions,
-  ) {
-    final grouped = <String, List<ProjectNextAction>>{};
-    for (final action in actions) {
-      grouped.putIfAbsent(action.projectId, () => []).add(action);
-    }
-
-    for (final entry in grouped.entries) {
-      entry.value.sort((a, b) => a.rank.compareTo(b.rank));
-    }
-
-    return grouped;
-  }
-
   List<Task> _selectTasksForProject(
     List<Task> tasks, {
-    required List<ProjectNextAction> nextActions,
-    required NextActionPolicy policy,
     required int maxCount,
     required DateTime todayDayKeyUtc,
     required int urgencyThresholdDays,
   }) {
     if (maxCount <= 0 || tasks.isEmpty) return const [];
 
-    final tasksById = {for (final task in tasks) task.id: task};
-    final selected = <Task>[];
-    final selectedIds = <String>{};
+    final sorted = tasks.toList(growable: false)
+      ..sort(
+        (a, b) => _compareTasksCalm(
+          a,
+          b,
+          todayDayKeyUtc: todayDayKeyUtc,
+          urgencyThresholdDays: urgencyThresholdDays,
+        ),
+      );
 
-    final useNextActions =
-        policy != NextActionPolicy.off && nextActions.isNotEmpty;
-
-    if (useNextActions) {
-      for (final action in nextActions) {
-        final task = tasksById[action.taskId];
-        if (task == null) continue;
-        selected.add(task);
-        selectedIds.add(task.id);
-        if (selected.length >= maxCount) return selected;
-      }
-    }
-
-    final remaining =
-        tasks.where((t) => !selectedIds.contains(t.id)).toList(growable: false)
-          ..sort(
-            (a, b) => _compareTasksCalm(
-              a,
-              b,
-              todayDayKeyUtc: todayDayKeyUtc,
-              urgencyThresholdDays: urgencyThresholdDays,
-            ),
-          );
-
-    for (final task in remaining) {
-      if (selected.length >= maxCount) break;
-      selected.add(task);
-      selectedIds.add(task.id);
-    }
-
-    return selected;
+    return sorted.take(maxCount).toList(growable: false);
   }
 
   int _compareProjects(

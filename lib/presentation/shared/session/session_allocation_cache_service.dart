@@ -18,7 +18,6 @@ final class SessionAllocationCacheService {
     required AllocationOrchestrator allocationOrchestrator,
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
-    required ProjectNextActionsRepositoryContract projectNextActionsRepository,
     required ProjectAnchorStateRepositoryContract projectAnchorStateRepository,
     required SettingsRepositoryContract settingsRepository,
     required ValueRepositoryContract valueRepository,
@@ -27,7 +26,6 @@ final class SessionAllocationCacheService {
        _allocationOrchestrator = allocationOrchestrator,
        _taskRepository = taskRepository,
        _projectRepository = projectRepository,
-       _projectNextActionsRepository = projectNextActionsRepository,
        _projectAnchorStateRepository = projectAnchorStateRepository,
        _settingsRepository = settingsRepository,
        _valueRepository = valueRepository;
@@ -37,7 +35,6 @@ final class SessionAllocationCacheService {
   final AllocationOrchestrator _allocationOrchestrator;
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
-  final ProjectNextActionsRepositoryContract _projectNextActionsRepository;
   final ProjectAnchorStateRepositoryContract _projectAnchorStateRepository;
   final SettingsRepositoryContract _settingsRepository;
   final ValueRepositoryContract _valueRepository;
@@ -74,7 +71,6 @@ final class SessionAllocationCacheService {
       _taskRepository.watchAll(TaskQuery.incomplete()).map((_) {}),
       _taskRepository.watchCompletionHistory().map((_) {}),
       _projectRepository.watchAll().map((_) {}),
-      _projectNextActionsRepository.watchAll().map((_) {}),
       _projectAnchorStateRepository.watchAll().map((_) {}),
     ]).debounceTime(const Duration(milliseconds: 150));
 

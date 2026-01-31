@@ -36,10 +36,12 @@ void main() {
     weekEventsSubject = BehaviorSubject<List<TrackerEvent>>();
     dayStatesSubject = BehaviorSubject<List<TrackerStateDay>>();
 
-    when(() => repository.watchTrackerDefinitions())
-        .thenAnswer((_) => defsSubject);
-    when(() => repository.watchJournalEntriesByQuery(any()))
-        .thenAnswer((_) => entriesSubject);
+    when(
+      () => repository.watchTrackerDefinitions(),
+    ).thenAnswer((_) => defsSubject);
+    when(
+      () => repository.watchJournalEntriesByQuery(any()),
+    ).thenAnswer((_) => entriesSubject);
     when(
       () => repository.watchTrackerEvents(
         range: any(named: 'range'),
@@ -83,8 +85,9 @@ void main() {
   });
 
   testWidgetsSafe('shows error state when streams fail', (tester) async {
-    when(() => repository.watchTrackerDefinitions())
-        .thenAnswer((_) => Stream<List<TrackerDefinition>>.error('boom'));
+    when(
+      () => repository.watchTrackerDefinitions(),
+    ).thenAnswer((_) => Stream<List<TrackerDefinition>>.error('boom'));
 
     await pumpPage(tester);
     await tester.pumpForStream();

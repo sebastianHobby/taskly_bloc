@@ -9,7 +9,6 @@ library;
 export 'src/repositories/auth_repository.dart';
 export 'src/repositories/project_repository.dart';
 export 'src/repositories/project_anchor_state_repository.dart';
-export 'src/repositories/project_next_actions_repository.dart';
 export 'src/repositories/routine_repository.dart';
 export 'src/repositories/settings_repository.dart';
 export 'src/repositories/task_repository.dart';

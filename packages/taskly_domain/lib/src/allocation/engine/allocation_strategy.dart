@@ -1,9 +1,7 @@
-import 'package:taskly_domain/src/allocation/model/allocation_config.dart';
 import 'package:taskly_domain/src/allocation/model/allocation_result.dart';
 import 'package:taskly_domain/src/core/model/project.dart';
 import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/projects/model/project_anchor_state.dart';
-import 'package:taskly_domain/src/projects/model/project_next_action.dart';
 
 /// Interface for allocation strategies
 abstract class AllocationStrategy {
@@ -26,14 +24,12 @@ class AllocationParameters {
     required this.todayDayKeyUtc,
     required this.tasks,
     required this.projects,
-    required this.projectNextActions,
     required this.projectAnchorStates,
     required this.categories,
     required this.anchorCount,
     required this.tasksPerAnchorMin,
     required this.tasksPerAnchorMax,
     required this.freeSlots,
-    required this.nextActionPolicy,
     required this.rotationPressureDays,
     required this.readinessFilter,
     required this.maxTasks,
@@ -57,9 +53,6 @@ class AllocationParameters {
   /// Projects to allocate anchors from.
   final List<Project> projects;
 
-  /// Ranked next actions per project.
-  final List<ProjectNextAction> projectNextActions;
-
   /// Anchor state per project.
   final List<ProjectAnchorState> projectAnchorStates;
 
@@ -77,9 +70,6 @@ class AllocationParameters {
 
   /// Extra free slots beyond anchor allocation.
   final int freeSlots;
-
-  /// Next action policy for task selection within anchors.
-  final NextActionPolicy nextActionPolicy;
 
   /// Days since last progress to apply rotation pressure.
   final int rotationPressureDays;

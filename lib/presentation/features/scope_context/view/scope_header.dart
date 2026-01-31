@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_domain/contracts.dart';
 
 import 'package:taskly_bloc/presentation/features/scope_context/bloc/scope_context_bloc.dart';
-import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
+import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class ScopeHeader extends StatelessWidget {
@@ -12,7 +12,7 @@ class ScopeHeader extends StatelessWidget {
     super.key,
   });
 
-  final AnytimeScope scope;
+  final ProjectsScope scope;
 
   @override
   Widget build(BuildContext context) {

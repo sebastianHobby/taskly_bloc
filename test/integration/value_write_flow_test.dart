@@ -81,52 +81,57 @@ void main() {
     expect(metadata['cid'], context.correlationId);
   });
 
-  testSafe('value repository delete removes value and emits stream updates', () async {
-    final db = createTestDb();
-    addTearDown(() => closeTestDb(db));
+  testSafe(
+    'value repository delete removes value and emits stream updates',
+    () async {
+      final db = createTestDb();
+      addTearDown(() => closeTestDb(db));
 
-    final clock = _FixedClock(DateTime.utc(2025, 1, 15, 12));
-    final idGenerator = FakeIdGenerator('user-1');
+      final clock = _FixedClock(DateTime.utc(2025, 1, 15, 12));
+      final idGenerator = FakeIdGenerator('user-1');
 
-    final valueRepository = ValueRepository(
-      driftDb: db,
-      idGenerator: idGenerator,
-      clock: clock,
-    );
-    final queue = StreamQueue(valueRepository.watchAll());
-    addTearDown(queue.cancel);
+      final valueRepository = ValueRepository(
+        driftDb: db,
+        idGenerator: idGenerator,
+        clock: clock,
+      );
+      final queue = StreamQueue(valueRepository.watchAll());
+      addTearDown(queue.cancel);
 
-    await valueRepository.create(
-      name: 'Delete Value',
-      color: '#00CC66',
-      priority: ValuePriority.high,
-    );
+      await valueRepository.create(
+        name: 'Delete Value',
+        color: '#00CC66',
+        priority: ValuePriority.high,
+      );
 
-    List<Value>? created;
-    while (created == null || created.isEmpty) {
-      final next = await queue.next;
-      if (next.isNotEmpty) {
-        created = next;
+      List<Value>? created;
+      while (created == null || created.isEmpty) {
+        final next = await queue.next;
+        if (next.isNotEmpty) {
+          created = next;
+        }
       }
-    }
-    final valueId = created.single.id;
+      final valueId = created.single.id;
 
-    await valueRepository.delete(valueId);
+      await valueRepository.delete(valueId);
 
-    List<Value>? afterDelete;
-    while (afterDelete == null || afterDelete.isNotEmpty) {
-      final next = await queue.next;
-      if (next.isEmpty) {
-        afterDelete = next;
+      List<Value>? afterDelete;
+      while (afterDelete == null || afterDelete.isNotEmpty) {
+        final next = await queue.next;
+        if (next.isEmpty) {
+          afterDelete = next;
+        }
       }
-    }
-    expect(afterDelete, isEmpty);
+      expect(afterDelete, isEmpty);
 
-    final removed = await valueRepository.watchById(valueId).firstWhere(
-      (value) => value == null,
-    );
-    expect(removed, isNull);
-  });
+      final removed = await valueRepository
+          .watchById(valueId)
+          .firstWhere(
+            (value) => value == null,
+          );
+      expect(removed, isNull);
+    },
+  );
 
   testSafe('value repository rejects empty name', () async {
     final db = createTestDb();

@@ -102,7 +102,7 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
               context.read<GuidedTourBloc>().add(
                 const GuidedTourStarted(force: true),
               );
-              Routing.toScreenKey(context, 'someday');
+              Routing.toScreenKey(context, 'projects');
             }
 
             final targetPage = state.step.index;
@@ -298,11 +298,11 @@ class _NameStep extends StatelessWidget {
           TextField(
             controller: controller,
             textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                hintText: 'Sebastian',
-                border: OutlineInputBorder(),
-              ),
+            decoration: const InputDecoration(
+              labelText: 'Name',
+              hintText: 'Sebastian',
+              border: OutlineInputBorder(),
+            ),
           ),
         ],
       ),

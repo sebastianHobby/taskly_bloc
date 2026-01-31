@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_today_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -63,18 +64,6 @@ class _JournalHubPageState extends State<JournalHubPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: InkWell(
-          onTap: _pickDay,
-          borderRadius: BorderRadius.circular(
-            TasklyTokens.of(context).radiusMd,
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: TasklyTokens.of(context).spaceLg,
-            ),
-            child: Text(dateLabel),
-          ),
-        ),
         actions: TasklyAppBarActions.withAttentionBell(
           context,
           actions: [
@@ -97,7 +86,17 @@ class _JournalHubPageState extends State<JournalHubPage> {
           ],
         ),
       ),
-      body: JournalTodayPage(day: _selectedDay),
+      body: Column(
+        children: [
+          _JournalTitleHeader(
+            dateLabel: dateLabel,
+            onTap: _pickDay,
+          ),
+          Expanded(
+            child: JournalTodayPage(day: _selectedDay),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => AddLogSheet.show(
           context: context,
@@ -105,6 +104,73 @@ class _JournalHubPageState extends State<JournalHubPage> {
         ),
         icon: const Icon(Icons.add),
         label: const Text('Add entry'),
+      ),
+    );
+  }
+}
+
+class _JournalTitleHeader extends StatelessWidget {
+  const _JournalTitleHeader({
+    required this.dateLabel,
+    required this.onTap,
+  });
+
+  final String dateLabel;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final iconSet = const NavigationIconResolver().resolve(
+      screenId: 'journal',
+      iconName: null,
+    );
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        tokens.spaceMd,
+        tokens.sectionPaddingH,
+        tokens.spaceSm,
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(tokens.radiusSm),
+        child: Row(
+          children: [
+            Icon(
+              iconSet.selectedIcon,
+              color: scheme.primary,
+              size: tokens.spaceLg3,
+            ),
+            SizedBox(width: tokens.spaceSm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Journal',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    dateLabel,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.expand_more_rounded,
+              color: scheme.onSurfaceVariant,
+            ),
+          ],
+        ),
       ),
     );
   }

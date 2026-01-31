@@ -30,7 +30,6 @@ void main() {
         maintenanceDeadlineRiskEnabled: false,
         maintenanceTaskStaleThresholdDays: 10,
         maintenanceProjectIdleThresholdDays: 20,
-        maintenanceMissingNextActionsMinOpenTasks: 2,
       );
 
       await repository.save(SettingsKey.global, updated, context: context);

@@ -26,18 +26,6 @@ enum UrgentTaskBehavior {
   includeAll,
 }
 
-/// Controls how project next actions are used during allocation.
-enum NextActionPolicy {
-  @JsonValue('off')
-  off,
-
-  @JsonValue('prefer')
-  prefer,
-
-  @JsonValue('require')
-  require,
-}
-
 /// Controls the signal used for task suggestions.
 enum SuggestionSignal {
   @JsonValue('behavior')
@@ -73,8 +61,7 @@ abstract class AllocationConfig with _$AllocationConfig {
     @Default([]) List<AllocationExceptionRule> exceptionRules,
 
     /// What signal drives suggestion weighting.
-    @Default(SuggestionSignal.behaviorBased)
-    SuggestionSignal suggestionSignal,
+    @Default(SuggestionSignal.behaviorBased) SuggestionSignal suggestionSignal,
   }) = _AllocationConfig;
 
   factory AllocationConfig.fromJson(Map<String, dynamic> json) =>
@@ -108,9 +95,6 @@ abstract class StrategySettings with _$StrategySettings {
 
     /// Maximum tasks to select per anchor project.
     @Default(2) int tasksPerAnchorMax,
-
-    /// How next actions are used during selection.
-    @Default(NextActionPolicy.prefer) NextActionPolicy nextActionPolicy,
 
     /// Days since last progress before a project receives rotation pressure.
     @Default(7) int rotationPressureDays,

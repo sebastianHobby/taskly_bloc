@@ -506,6 +506,7 @@ class _RoutineRow extends StatelessWidget {
     return RoutineEntityTile(
       model: row.data,
       actions: row.actions,
+      style: row.style,
     );
   }
 }

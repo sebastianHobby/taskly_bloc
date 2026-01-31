@@ -628,51 +628,6 @@
     "@projectNotFound": {
         "description": "Error mostrado cuando no se encuentra un proyecto"
     },
-    "projectNextActionsTitle": "Next actions",
-    "@projectNextActionsTitle": {
-        "description": "Section title for project next actions."
-    },
-    "projectNextActionsCountLabel": "{count} of {max}",
-    "@projectNextActionsCountLabel": {
-        "description": "Count label for project next actions.",
-        "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "max": {
-                "type": "int"
-            }
-        }
-    },
-    "projectNextActionsChooseAction": "Choose next action...",
-    "@projectNextActionsChooseAction": {
-        "description": "Inline action label to pick a next action."
-    },
-    "projectNextActionsPickerTitle": "Choose next action",
-    "@projectNextActionsPickerTitle": {
-        "description": "Title for the next action picker sheet."
-    },
-    "projectNextActionsPickerSubtitle": "Pick a task to mark as next in this project.",
-    "@projectNextActionsPickerSubtitle": {
-        "description": "Subtitle for the next action picker sheet."
-    },
-    "projectNextActionsRankLabel": "Rank {rank}",
-    "@projectNextActionsRankLabel": {
-        "description": "Label for a next action rank option.",
-        "placeholders": {
-            "rank": {
-                "type": "int"
-            }
-        }
-    },
-    "projectNextActionsRemoveAction": "Remove from next actions",
-    "@projectNextActionsRemoveAction": {
-        "description": "Action label to remove a task from next actions."
-    },
-    "projectNextActionsEmptyLabel": "No next actions yet",
-    "@projectNextActionsEmptyLabel": {
-        "description": "Empty label when a project has no next actions."
-    },
     "labelNotFound": "No se encontrÃ³ la etiqueta.",
     "@labelNotFound": {
         "description": "Error mostrado cuando no se encuentra una etiqueta"
@@ -788,10 +743,6 @@
     "upcomingTitle": "PrÃ³ximas",
     "@upcomingTitle": {
         "description": "TÃ­tulo para la secciÃ³n de prÃ³ximas"
-    },
-    "nextActionsTitle": "Siguientes acciones",
-    "@nextActionsTitle": {
-        "description": "TÃ­tulo para la secciÃ³n de siguientes acciones"
     },
     "taskCreatedSuccessfully": "Tarea creada correctamente.",
     "@taskCreatedSuccessfully": {
@@ -1953,10 +1904,6 @@
     "@sortFieldUpdatedDate": {
         "description": "Campo de orden: fecha de actualizaciÃ³n"
     },
-    "sortFieldNextActionPriority": "Prioridad de prÃ³xima acciÃ³n",
-    "@sortFieldNextActionPriority": {
-        "description": "Campo de orden: prioridad de prÃ³xima acciÃ³n"
-    },
     "sortOrderHelp": "Elige cÃ³mo ordenar los elementos",
     "@sortOrderHelp": {
         "description": "Texto de ayuda para configuraciÃ³n de orden"
@@ -2088,10 +2035,6 @@
     "notRankedDragToRank": "Sin clasificar - arrastra para clasificar",
     "@notRankedDragToRank": {
         "description": "SubtÃ­tulo para valores sin clasificar"
-    },
-    "recommendedNextActionLabel": "PrÃ³xima AcciÃ³n Recomendada",
-    "@recommendedNextActionLabel": {
-        "description": "TÃ­tulo para la tarjeta de tarea recomendada en detalle de proyecto"
     },
     "startLabel": "Iniciar",
     "@startLabel": {
@@ -2371,6 +2314,30 @@
         }
     },
     "myDayTitle": "Mi dÃ­a",
+    "myDayGreetingWithName": "Hola {name}",
+    "@myDayGreetingWithName": {
+        "description": "Greeting shown at the top of My Day when the user name is available.",
+        "placeholders": {
+            "name": {
+                "type": "String",
+                "example": "Alex"
+            }
+        }
+    },
+    "myDayGreetingWithoutName": "Hola",
+    "@myDayGreetingWithoutName": {
+        "description": "Greeting shown at the top of My Day when no user name is available."
+    },
+    "myDayHeaderTagline": "{date} - Aqui tienes el plan de hoy.",
+    "@myDayHeaderTagline": {
+        "description": "Tagline shown under the greeting on My Day, including the formatted date.",
+        "placeholders": {
+            "date": {
+                "type": "String",
+                "example": "Sab, 31 Ene"
+            }
+        }
+    },
     "myDayUpdatePlanTitle": "Planificar hoy",
     "@myDayUpdatePlanTitle": {
         "description": "TÃ­tulo/etiqueta usada para actualizar el plan de hoy en Mi dÃ­a."
@@ -2947,10 +2914,6 @@
             }
         }
     },
-  "routinePrimaryActionLabel": "Do today",
-  "@routinePrimaryActionLabel": {
-    "description": "Primary action label for routine cards."
-  },
   "routineLoggedLabel": "Registrado",
   "@routineLoggedLabel": {
     "description": "Label shown when a routine has been logged for today."

@@ -18,7 +18,13 @@ class _MockTaskRepo extends Mock implements TaskRepositoryContract {}
 
 class _MockProjectRepo extends Mock implements ProjectRepositoryContract {}
 
+class _MockProjectAnchorStateRepo extends Mock
+    implements ProjectAnchorStateRepositoryContract {}
+
 class _MockValueRepo extends Mock implements ValueRepositoryContract {}
+
+class _MockValueRatingsRepo extends Mock
+    implements ValueRatingsRepositoryContract {}
 
 class _MockSettingsRepo extends Mock implements SettingsRepositoryContract {}
 
@@ -121,7 +127,9 @@ void main() {
     () async {
       final taskRepo = _MockTaskRepo();
       final projectRepo = _MockProjectRepo();
+      final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
       final valueRepo = _MockValueRepo();
+      final valueRatingsRepo = _MockValueRatingsRepo();
       final settingsRepo = _MockSettingsRepo();
       final analytics = _MockAnalyticsService();
       final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
@@ -134,16 +142,24 @@ void main() {
         () => projectRepo.getAll(),
       ).thenAnswer((_) async => <Project>[buildProject(id: 'p1')]);
       when(
+        () => projectAnchorStateRepo.getAll(),
+      ).thenAnswer((_) async => const <ProjectAnchorState>[]);
+      when(
         () => settingsRepo.load(SettingsKey.allocation),
       ).thenAnswer((_) async => const AllocationConfig());
       when(() => valueRepo.getAll()).thenAnswer((_) async => const <Value>[]);
+      when(
+        () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+      ).thenAnswer((_) async => const <ValueWeeklyRating>[]);
 
       final orchestrator = AllocationOrchestrator(
         taskRepository: taskRepo,
         valueRepository: valueRepo,
+        valueRatingsRepository: valueRatingsRepo,
         settingsRepository: settingsRepo,
         analyticsService: analytics,
         projectRepository: projectRepo,
+        projectAnchorStateRepository: projectAnchorStateRepo,
         dayKeyService: dayKeyService,
         clock: clock,
       );
@@ -158,7 +174,9 @@ void main() {
   testSafe('getAllocationSnapshot respects maxTasksOverride <= 0', () async {
     final taskRepo = _MockTaskRepo();
     final projectRepo = _MockProjectRepo();
+    final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
     final valueRepo = _MockValueRepo();
+    final valueRatingsRepo = _MockValueRatingsRepo();
     final settingsRepo = _MockSettingsRepo();
     final analytics = _MockAnalyticsService();
     final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
@@ -176,13 +194,21 @@ void main() {
         buildValue(id: 'v1'),
       ],
     );
+    when(
+      () => projectAnchorStateRepo.getAll(),
+    ).thenAnswer((_) async => const <ProjectAnchorState>[]);
+    when(
+      () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+    ).thenAnswer((_) async => const <ValueWeeklyRating>[]);
 
     final orchestrator = AllocationOrchestrator(
       taskRepository: taskRepo,
       valueRepository: valueRepo,
+      valueRatingsRepository: valueRatingsRepo,
       settingsRepository: settingsRepo,
       analyticsService: analytics,
       projectRepository: projectRepo,
+      projectAnchorStateRepository: projectAnchorStateRepo,
       dayKeyService: dayKeyService,
       clock: clock,
     );
@@ -201,29 +227,44 @@ void main() {
   testSafe('allocateRegularTasks excludes when no categories', () async {
     final taskRepo = _MockTaskRepo();
     final projectRepo = _MockProjectRepo();
+    final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
     final valueRepo = _MockValueRepo();
+    final valueRatingsRepo = _MockValueRatingsRepo();
     final settingsRepo = _MockSettingsRepo();
     final analytics = _MockAnalyticsService();
     final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
     final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
 
     when(() => valueRepo.getAll()).thenAnswer((_) async => const <Value>[]);
+    when(
+      () => projectAnchorStateRepo.getAll(),
+    ).thenAnswer((_) async => const <ProjectAnchorState>[]);
+    when(
+      () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+    ).thenAnswer((_) async => const <ValueWeeklyRating>[]);
 
     final orchestrator = AllocationOrchestrator(
       taskRepository: taskRepo,
       valueRepository: valueRepo,
+      valueRatingsRepository: valueRatingsRepo,
       settingsRepository: settingsRepo,
       analyticsService: analytics,
       projectRepository: projectRepo,
+      projectAnchorStateRepository: projectAnchorStateRepo,
       dayKeyService: dayKeyService,
       clock: clock,
     );
 
+    const allocationConfig = AllocationConfig();
     final result = await orchestrator.allocateRegularTasks(
       [buildTask(id: 't1'), buildTask(id: 't2')],
-      const AllocationConfig(),
+      projects: const <Project>[],
+      projectAnchorStates: const <ProjectAnchorState>[],
+      allocationConfig: allocationConfig,
       nowUtc: DateTime.utc(2026, 1, 1),
       todayDayKeyUtc: DateTime.utc(2026, 1, 1),
+      maxTasksOverride: allocationConfig.suggestionsPerBatch,
+      anchorCountOverride: allocationConfig.strategySettings.anchorCount,
     );
 
     expect(result.allocatedTasks, isEmpty);
@@ -239,7 +280,9 @@ void main() {
   testSafe('allocateRegularTasks allocates task with matching value', () async {
     final taskRepo = _MockTaskRepo();
     final projectRepo = _MockProjectRepo();
+    final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
     final valueRepo = _MockValueRepo();
+    final valueRatingsRepo = _MockValueRatingsRepo();
     final settingsRepo = _MockSettingsRepo();
     final analytics = _MockAnalyticsService();
     final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
@@ -247,6 +290,12 @@ void main() {
 
     final value = buildValue(id: 'v1');
     when(() => valueRepo.getAll()).thenAnswer((_) async => <Value>[value]);
+    when(
+      () => projectAnchorStateRepo.getAll(),
+    ).thenAnswer((_) async => const <ProjectAnchorState>[]);
+    when(
+      () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+    ).thenAnswer((_) async => const <ValueWeeklyRating>[]);
 
     final project = buildProject(
       id: 'p1',
@@ -261,18 +310,25 @@ void main() {
     final orchestrator = AllocationOrchestrator(
       taskRepository: taskRepo,
       valueRepository: valueRepo,
+      valueRatingsRepository: valueRatingsRepo,
       settingsRepository: settingsRepo,
       analyticsService: analytics,
       projectRepository: projectRepo,
+      projectAnchorStateRepository: projectAnchorStateRepo,
       dayKeyService: dayKeyService,
       clock: clock,
     );
 
+    const allocationConfig = AllocationConfig(suggestionsPerBatch: 1);
     final result = await orchestrator.allocateRegularTasks(
       [task],
-      const AllocationConfig(suggestionsPerBatch: 1),
+      projects: [project],
+      projectAnchorStates: const <ProjectAnchorState>[],
+      allocationConfig: allocationConfig,
       nowUtc: DateTime.utc(2026, 1, 1),
       todayDayKeyUtc: DateTime.utc(2026, 1, 1),
+      maxTasksOverride: allocationConfig.suggestionsPerBatch,
+      anchorCountOverride: allocationConfig.strategySettings.anchorCount,
     );
 
     expect(result.allocatedTasks, hasLength(1));
@@ -282,7 +338,9 @@ void main() {
   testSafe('pin/unpin task forwards to repository', () async {
     final taskRepo = _MockTaskRepo();
     final projectRepo = _MockProjectRepo();
+    final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
     final valueRepo = _MockValueRepo();
+    final valueRatingsRepo = _MockValueRatingsRepo();
     final settingsRepo = _MockSettingsRepo();
     final analytics = _MockAnalyticsService();
     final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
@@ -295,13 +353,18 @@ void main() {
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
+    when(
+      () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+    ).thenAnswer((_) async => const <ValueWeeklyRating>[]);
 
     final orchestrator = AllocationOrchestrator(
       taskRepository: taskRepo,
       valueRepository: valueRepo,
+      valueRatingsRepository: valueRatingsRepo,
       settingsRepository: settingsRepo,
       analyticsService: analytics,
       projectRepository: projectRepo,
+      projectAnchorStateRepository: projectAnchorStateRepo,
       dayKeyService: dayKeyService,
       clock: clock,
     );
@@ -320,7 +383,9 @@ void main() {
   testSafe('toggleTaskCompletion updates task when found', () async {
     final taskRepo = _MockTaskRepo();
     final projectRepo = _MockProjectRepo();
+    final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
     final valueRepo = _MockValueRepo();
+    final valueRatingsRepo = _MockValueRatingsRepo();
     final settingsRepo = _MockSettingsRepo();
     final analytics = _MockAnalyticsService();
     final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
@@ -340,15 +405,21 @@ void main() {
         priority: any(named: 'priority'),
         repeatIcalRrule: any(named: 'repeatIcalRrule'),
         repeatFromCompletion: any(named: 'repeatFromCompletion'),
+        seriesEnded: any(named: 'seriesEnded'),
+        valueIds: any(named: 'valueIds'),
+        isPinned: any(named: 'isPinned'),
+        context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
 
     final orchestrator = AllocationOrchestrator(
       taskRepository: taskRepo,
       valueRepository: valueRepo,
+      valueRatingsRepository: valueRatingsRepo,
       settingsRepository: settingsRepo,
       analyticsService: analytics,
       projectRepository: projectRepo,
+      projectAnchorStateRepository: projectAnchorStateRepo,
       dayKeyService: dayKeyService,
       clock: clock,
     );
@@ -366,7 +437,11 @@ void main() {
         projectId: task.projectId,
         priority: task.priority,
         repeatIcalRrule: task.repeatIcalRrule,
-        repeatFromCompletion: task.repeatFromCompletion,
+        repeatFromCompletion: null,
+        seriesEnded: null,
+        valueIds: null,
+        isPinned: null,
+        context: null,
       ),
     ).called(1);
   });
@@ -374,7 +449,9 @@ void main() {
   testSafe('toggleTaskCompletion no-ops when task missing', () async {
     final taskRepo = _MockTaskRepo();
     final projectRepo = _MockProjectRepo();
+    final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
     final valueRepo = _MockValueRepo();
+    final valueRatingsRepo = _MockValueRatingsRepo();
     final settingsRepo = _MockSettingsRepo();
     final analytics = _MockAnalyticsService();
     final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
@@ -385,9 +462,11 @@ void main() {
     final orchestrator = AllocationOrchestrator(
       taskRepository: taskRepo,
       valueRepository: valueRepo,
+      valueRatingsRepository: valueRatingsRepo,
       settingsRepository: settingsRepo,
       analyticsService: analytics,
       projectRepository: projectRepo,
+      projectAnchorStateRepository: projectAnchorStateRepo,
       dayKeyService: dayKeyService,
       clock: clock,
     );
@@ -406,6 +485,10 @@ void main() {
         priority: any(named: 'priority'),
         repeatIcalRrule: any(named: 'repeatIcalRrule'),
         repeatFromCompletion: any(named: 'repeatFromCompletion'),
+        seriesEnded: any(named: 'seriesEnded'),
+        valueIds: any(named: 'valueIds'),
+        isPinned: any(named: 'isPinned'),
+        context: any(named: 'context'),
       ),
     );
   });

@@ -1,8 +1,4 @@
-import 'dart:async';
-
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
@@ -13,6 +9,7 @@ import 'package:taskly_bloc/presentation/features/routines/selection/routine_sel
 import 'package:taskly_bloc/presentation/features/routines/selection/routine_selection_bloc.dart';
 import 'package:taskly_bloc/presentation/features/routines/selection/routine_selection_models.dart';
 import 'package:taskly_bloc/presentation/features/routines/widgets/routines_list.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
@@ -51,18 +48,27 @@ class _RoutinesPageState extends State<RoutinesPage> {
     setState(() => _showInactive = !_showInactive);
   }
 
-  Future<void> _showFilterSheet() async {
+  Future<void> _showFilterSheet({
+    required List<Value> values,
+    required List<RoutineListItem> routines,
+  }) async {
+    final sortedValues = values.toList(growable: false)..sort(_compareValues);
+    final counts = _countRoutinesByValue(routines);
+
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (sheetContext) {
+        final tokens = TasklyTokens.of(sheetContext);
+        final scheme = Theme.of(sheetContext).colorScheme;
+
         return SafeArea(
           child: Padding(
             padding: EdgeInsets.fromLTRB(
-              TasklyTokens.of(sheetContext).spaceLg,
-              TasklyTokens.of(sheetContext).spaceSm,
-              TasklyTokens.of(sheetContext).spaceLg,
-              TasklyTokens.of(sheetContext).spaceLg,
+              tokens.spaceLg,
+              tokens.spaceSm,
+              tokens.spaceLg,
+              tokens.spaceLg,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -72,7 +78,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
                   'Filter & sort',
                   style: Theme.of(sheetContext).textTheme.titleLarge,
                 ),
-                SizedBox(height: TasklyTokens.of(sheetContext).spaceSm),
+                SizedBox(height: tokens.spaceSm),
                 Text(
                   'Sort',
                   style: Theme.of(sheetContext).textTheme.titleSmall?.copyWith(
@@ -90,7 +96,66 @@ class _RoutinesPageState extends State<RoutinesPage> {
                       Navigator.of(sheetContext).pop();
                     },
                   ),
-                SizedBox(height: TasklyTokens.of(sheetContext).spaceSm),
+                SizedBox(height: tokens.spaceSm),
+                Text(
+                  'Values',
+                  style: Theme.of(sheetContext).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: tokens.spaceSm),
+                BlocSelector<RoutineListBloc, RoutineListState, String?>(
+                  selector: (state) => switch (state) {
+                    RoutineListLoaded(:final selectedValueId) =>
+                      selectedValueId,
+                    _ => null,
+                  },
+                  builder: (context, selectedValueId) {
+                    return Wrap(
+                      spacing: tokens.spaceSm,
+                      runSpacing: tokens.spaceSm,
+                      children: [
+                        _RoutineValueFilterChip(
+                          label: 'All values',
+                          count: counts.total,
+                          selected: selectedValueId == null,
+                          icon: Icons.filter_list_rounded,
+                          iconColor: scheme.onSurfaceVariant,
+                          onTap: () {
+                            if (selectedValueId == null) return;
+                            context.read<RoutineListBloc>().add(
+                              const RoutineListEvent.valueFilterChanged(),
+                            );
+                          },
+                        ),
+                        for (final value in sortedValues) ...[
+                          Builder(
+                            builder: (context) {
+                              final chip = value.toChipData(sheetContext);
+                              return _RoutineValueFilterChip(
+                                label: chip.label,
+                                count: counts.byValueId[value.id],
+                                selected: value.id == selectedValueId,
+                                icon: chip.icon,
+                                iconColor: chip.color,
+                                tintColor: chip.color,
+                                onTap: () {
+                                  if (value.id == selectedValueId) return;
+                                  context.read<RoutineListBloc>().add(
+                                    RoutineListEvent.valueFilterChanged(
+                                      valueId: value.id,
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+                SizedBox(height: tokens.spaceSm),
                 SwitchListTile(
                   title: const Text('Show inactive'),
                   value: _showInactive,
@@ -134,13 +199,21 @@ class _RoutinesPageState extends State<RoutinesPage> {
                         onExit: () {},
                       )
                     : AppBar(
-                        title: Text(context.l10n.routinesTitle),
                         actions: TasklyAppBarActions.withAttentionBell(
                           context,
                           actions: [
                             IconButton(
                               tooltip: 'Filter & sort',
-                              onPressed: _showFilterSheet,
+                              onPressed: () {
+                                final state = context
+                                    .read<RoutineListBloc>()
+                                    .state;
+                                if (state is! RoutineListLoaded) return;
+                                _showFilterSheet(
+                                  values: state.values,
+                                  routines: state.routines,
+                                );
+                              },
                               icon: const Icon(Icons.tune_rounded),
                             ),
                             TasklyOverflowMenuButton<_RoutinesMenuAction>(
@@ -168,64 +241,66 @@ class _RoutinesPageState extends State<RoutinesPage> {
                   onPressed: () => _createRoutine(context),
                   heroTag: 'create_routine_fab',
                 ),
-                body: BlocBuilder<RoutineListBloc, RoutineListState>(
-                  builder: (context, state) {
-                    return switch (state) {
-                      RoutineListInitial() ||
-                      RoutineListLoading() => const TasklyFeedRenderer(
-                        spec: TasklyFeedSpec.loading(),
-                      ),
-                      RoutineListError(:final error) => TasklyFeedRenderer(
-                        spec: TasklyFeedSpec.error(
-                          message: friendlyErrorMessageForUi(
-                            error,
-                            context.l10n,
-                          ),
-                          retryLabel: context.l10n.retryButton,
-                          onRetry: () => context.read<RoutineListBloc>().add(
-                            const RoutineListEvent.subscriptionRequested(),
-                          ),
-                        ),
-                      ),
-                      RoutineListLoaded(:final routines)
-                          when routines.isEmpty =>
-                        TasklyFeedRenderer(
-                          spec: TasklyFeedSpec.empty(
-                            empty: TasklyEmptyStateSpec(
-                              icon: Icons.auto_awesome,
-                              title: context.l10n.routineEmptyTitle,
-                              description: context.l10n.routineEmptyDescription,
-                              actionLabel: context.l10n.routineCreateCta,
-                              onAction: () => _createRoutine(context),
+                body: Column(
+                  children: [
+                    const _RoutinesTitleHeader(),
+                    Expanded(
+                      child: BlocBuilder<RoutineListBloc, RoutineListState>(
+                        builder: (context, state) {
+                          return switch (state) {
+                            RoutineListInitial() ||
+                            RoutineListLoading() => const TasklyFeedRenderer(
+                              spec: TasklyFeedSpec.loading(),
                             ),
-                          ),
-                        ),
-                      RoutineListLoaded(
-                        :final routines,
-                        :final values,
-                        :final selectedValueId,
-                      ) =>
-                        _RoutinesFilterLayout(
-                          routines: routines,
-                          values: values,
-                          selectedValueId: selectedValueId,
-                          showInactive: _showInactive,
-                          sortOrder: _sortOrder,
-                          onEditRoutine: (id) => _editRoutine(context, id),
-                          onLogRoutine: (id) =>
-                              context.read<RoutineListBloc>().add(
-                                RoutineListEvent.logRequested(routineId: id),
+                            RoutineListError(:final error) => TasklyFeedRenderer(
+                              spec: TasklyFeedSpec.error(
+                                message: friendlyErrorMessageForUi(
+                                  error,
+                                  context.l10n,
+                                ),
+                                retryLabel: context.l10n.retryButton,
+                                onRetry: () => context.read<RoutineListBloc>().add(
+                                  const RoutineListEvent.subscriptionRequested(),
+                                ),
                               ),
-                          onValueSelected: (valueId) {
-                            context.read<RoutineListBloc>().add(
-                              RoutineListEvent.valueFilterChanged(
-                                valueId: valueId,
+                            ),
+                            RoutineListLoaded(:final routines)
+                                when routines.isEmpty =>
+                              TasklyFeedRenderer(
+                                spec: TasklyFeedSpec.empty(
+                                  empty: TasklyEmptyStateSpec(
+                                    icon: Icons.auto_awesome,
+                                    title: context.l10n.routineEmptyTitle,
+                                    description:
+                                        context.l10n.routineEmptyDescription,
+                                    actionLabel: context.l10n.routineCreateCta,
+                                    onAction: () => _createRoutine(context),
+                                  ),
+                                ),
                               ),
-                            );
-                          },
-                        ),
-                    };
-                  },
+                            RoutineListLoaded(
+                              :final routines,
+                              :final selectedValueId,
+                            ) =>
+                              _RoutinesFilterLayout(
+                                routines: routines,
+                                selectedValueId: selectedValueId,
+                                showInactive: _showInactive,
+                                sortOrder: _sortOrder,
+                                onEditRoutine: (id) =>
+                                    _editRoutine(context, id),
+                                onLogRoutine: (id) =>
+                                    context.read<RoutineListBloc>().add(
+                                      RoutineListEvent.logRequested(
+                                        routineId: id,
+                                      ),
+                                    ),
+                              ),
+                          };
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -241,28 +316,22 @@ enum _RoutinesMenuAction { selectMultiple }
 class _RoutinesFilterLayout extends StatelessWidget {
   const _RoutinesFilterLayout({
     required this.routines,
-    required this.values,
     required this.selectedValueId,
     required this.showInactive,
     required this.sortOrder,
     required this.onEditRoutine,
     required this.onLogRoutine,
-    required this.onValueSelected,
   });
 
   final List<RoutineListItem> routines;
-  final List<Value> values;
   final String? selectedValueId;
   final bool showInactive;
   final RoutineSortOrder sortOrder;
   final ValueChanged<String> onEditRoutine;
   final ValueChanged<String> onLogRoutine;
-  final ValueChanged<String?> onValueSelected;
 
   @override
   Widget build(BuildContext context) {
-    final sortedValues = values.toList(growable: false)..sort(_compareValues);
-    final counts = _countRoutinesByValue(routines);
     final filteredByValue = _filterRoutinesByValue(routines, selectedValueId);
     final filtered = showInactive
         ? filteredByValue
@@ -270,130 +339,11 @@ class _RoutinesFilterLayout extends StatelessWidget {
               .where((item) => item.routine.isActive)
               .toList(growable: false);
 
-    return Column(
-      children: [
-        _RoutineValuesFilterRow(
-          values: sortedValues,
-          counts: counts,
-          selectedValueId: selectedValueId,
-          onSelected: onValueSelected,
-        ),
-        Expanded(
-          child: RoutinesListView(
-            items: filtered,
-            sortOrder: sortOrder,
-            onEditRoutine: onEditRoutine,
-            onLogRoutine: onLogRoutine,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RoutineValuesFilterRow extends StatefulWidget {
-  const _RoutineValuesFilterRow({
-    required this.values,
-    required this.counts,
-    required this.selectedValueId,
-    required this.onSelected,
-  });
-
-  final List<Value> values;
-  final _RoutineValueCounts counts;
-  final String? selectedValueId;
-  final ValueChanged<String?> onSelected;
-
-  @override
-  State<_RoutineValuesFilterRow> createState() =>
-      _RoutineValuesFilterRowState();
-}
-
-class _RoutineValuesFilterRowState extends State<_RoutineValuesFilterRow> {
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: tokens.spaceSm),
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(
-          dragDevices: const {
-            PointerDeviceKind.touch,
-            PointerDeviceKind.mouse,
-            PointerDeviceKind.trackpad,
-            PointerDeviceKind.stylus,
-            PointerDeviceKind.unknown,
-          },
-        ),
-        child: Listener(
-          onPointerSignal: (signal) {
-            if (signal is! PointerScrollEvent) return;
-            if (!_scrollController.hasClients) return;
-            final target = (_scrollController.offset + signal.scrollDelta.dy)
-                .clamp(
-                  0.0,
-                  _scrollController.position.maxScrollExtent,
-                );
-            _scrollController.jumpTo(target);
-          },
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: tokens.spaceXs),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _RoutineValueFilterChip(
-                    label: 'All',
-                    count: widget.counts.total,
-                    selected: widget.selectedValueId == null,
-                    icon: Icons.filter_list_rounded,
-                    iconColor: scheme.onSurfaceVariant,
-                    onTap: () {
-                      if (widget.selectedValueId == null) return;
-                      unawaited(HapticFeedback.lightImpact());
-                      widget.onSelected(null);
-                    },
-                  ),
-                  for (final value in widget.values) ...[
-                    SizedBox(width: tokens.filterRowSpacing),
-                    Builder(
-                      builder: (context) {
-                        final chip = value.toChipData(context);
-                        return _RoutineValueFilterChip(
-                          label: chip.label,
-                          count: widget.counts.byValueId[value.id],
-                          selected: value.id == widget.selectedValueId,
-                          icon: chip.icon,
-                          iconColor: chip.color,
-                          tintColor: chip.color,
-                          onTap: () {
-                            if (value.id == widget.selectedValueId) return;
-                            unawaited(HapticFeedback.lightImpact());
-                            widget.onSelected(value.id);
-                          },
-                        );
-                      },
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return RoutinesListView(
+      items: filtered,
+      sortOrder: sortOrder,
+      onEditRoutine: onEditRoutine,
+      onLogRoutine: onLogRoutine,
     );
   }
 }
@@ -543,4 +493,44 @@ class _RoutineValueCounts {
 
   final int total;
   final Map<String, int> byValueId;
+}
+
+class _RoutinesTitleHeader extends StatelessWidget {
+  const _RoutinesTitleHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final iconSet = const NavigationIconResolver().resolve(
+      screenId: 'routines',
+      iconName: null,
+    );
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        tokens.spaceMd,
+        tokens.sectionPaddingH,
+        tokens.spaceSm,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            iconSet.selectedIcon,
+            color: scheme.primary,
+            size: tokens.spaceLg3,
+          ),
+          SizedBox(width: tokens.spaceSm),
+          Text(
+            context.l10n.routinesTitle,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

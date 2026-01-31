@@ -20,6 +20,8 @@ Routing should be **explicit** and deep-link friendly.
 
 - Define concrete routes for top-level screens (e.g. `/my-day`, `/anytime`,
   `/scheduled`) and feature routes (e.g. `/settings/...`).
+- Use a single `MaterialApp.router`; splash/auth/main are routes gated via
+  router redirects rather than swapping entire app shells.
 - Avoid convention-based catch-all routes that map arbitrary segments to a
   dynamic screen composition system.
 - See [NAVIGATION_AND_SCREEN_KEYS.md](NAVIGATION_AND_SCREEN_KEYS.md) for

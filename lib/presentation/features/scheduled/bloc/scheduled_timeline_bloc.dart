@@ -163,11 +163,11 @@ final class ScheduledTimelineBloc
       final effectiveTodayUtc = demoEnabled
           ? DemoDataProvider.demoDayKeyUtc
           : (todayUtc ??
-              DateTime.utc(
-                fallbackNow.year,
-                fallbackNow.month,
-                fallbackNow.day,
-              ));
+                DateTime.utc(
+                  fallbackNow.year,
+                  fallbackNow.month,
+                  fallbackNow.day,
+                ));
 
       _latestTodayUtc = effectiveTodayUtc;
       _latestTodayLocal = _toLocalDay(effectiveTodayUtc);

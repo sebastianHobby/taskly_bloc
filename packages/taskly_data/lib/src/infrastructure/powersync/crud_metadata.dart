@@ -10,7 +10,10 @@ import 'package:taskly_domain/time.dart';
 ///
 /// Keep this payload small and stable; it is intended for correlation and
 /// debugging (not business logic).
-String? encodeCrudMetadata(OperationContext? context, {Clock clock = systemClock}) {
+String? encodeCrudMetadata(
+  OperationContext? context, {
+  Clock clock = systemClock,
+}) {
   if (context == null) return null;
 
   final nowUtcIso = clock.nowUtc().toIso8601String();

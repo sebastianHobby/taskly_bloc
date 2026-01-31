@@ -132,8 +132,7 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
           final stepIndex = selectedIndex < 0 ? 0 : selectedIndex;
           final isFirst = stepIndex == 0;
           final isLast = stepIndex == entries.length - 1;
-          final rating =
-              _draftRatings[selected.value.id] ?? selected.rating;
+          final rating = _draftRatings[selected.value.id] ?? selected.rating;
           final maxRating = summary.maxRating;
           final trend = _ratingTrendPercent(
             selected,
@@ -204,9 +203,7 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
                             children: [
                               Text(
                                 useRatingWheel ? 'Wheel' : 'Radar',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
+                                style: Theme.of(context).textTheme.labelMedium
                                     ?.copyWith(
                                       color: scheme.onSurfaceVariant,
                                       fontWeight: FontWeight.w600,
@@ -233,9 +230,8 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
                                       maxRating: maxRating,
                                       selectedValueId: selected.value.id,
                                       enableTap: false,
-                                      onValueSelected: (valueId) => context
-                                          .read<WeeklyReviewBloc>()
-                                          .add(
+                                      onValueSelected: (valueId) =>
+                                          context.read<WeeklyReviewBloc>().add(
                                             WeeklyReviewValueSelected(
                                               valueId,
                                             ),
@@ -350,9 +346,7 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
                                     const Icon(Icons.arrow_forward),
                                   SizedBox(width: tokens.spaceSm),
                                   Text(
-                                    isLast
-                                        ? 'Complete Check-in'
-                                        : 'Next Value',
+                                    isLast ? 'Complete Check-in' : 'Next Value',
                                   ),
                                 ],
                               ),

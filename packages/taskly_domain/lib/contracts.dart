@@ -14,7 +14,6 @@ export 'src/interfaces/occurrence_stream_expander_contract.dart';
 export 'src/interfaces/occurrence_write_helper_contract.dart';
 export 'src/interfaces/pending_notifications_repository_contract.dart';
 export 'src/interfaces/project_anchor_state_repository_contract.dart';
-export 'src/interfaces/project_next_actions_repository_contract.dart';
 export 'src/interfaces/project_repository_contract.dart';
 export 'src/interfaces/routine_repository_contract.dart';
 export 'src/interfaces/settings_repository_contract.dart';

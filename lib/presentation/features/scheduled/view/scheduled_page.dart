@@ -8,6 +8,7 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_timeline_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
@@ -288,15 +289,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
           return switch (state) {
             ScheduledTimelineLoading() => Scaffold(
               appBar: AppBar(
-                centerTitle: true,
-                title: const Text('Schedule'),
                 toolbarHeight: TasklyTokens.of(
                   context,
                 ).scheduledAppBarHeight,
-                leading: _CircleIconButton(
-                  icon: Icons.arrow_back,
-                  onPressed: () => Navigator.of(context).maybePop(),
-                ),
                 actions: TasklyAppBarActions.withAttentionBell(
                   context,
                   actions: [
@@ -349,21 +344,22 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 ),
               ),
               floatingActionButton: _buildAddSpeedDial(_fallbackTodayLocal()),
-              body: const TasklyFeedRenderer(
-                spec: TasklyFeedSpec.loading(),
+              body: Column(
+                children: const [
+                  _ScheduledTitleHeader(),
+                  Expanded(
+                    child: TasklyFeedRenderer(
+                      spec: TasklyFeedSpec.loading(),
+                    ),
+                  ),
+                ],
               ),
             ),
             ScheduledTimelineError(:final message) => Scaffold(
               appBar: AppBar(
-                centerTitle: true,
-                title: const Text('Schedule'),
                 toolbarHeight: TasklyTokens.of(
                   context,
                 ).scheduledAppBarHeight,
-                leading: _CircleIconButton(
-                  icon: Icons.arrow_back,
-                  onPressed: () => Navigator.of(context).maybePop(),
-                ),
                 actions: TasklyAppBarActions.withAttentionBell(
                   context,
                   actions: [
@@ -416,14 +412,22 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 ),
               ),
               floatingActionButton: _buildAddSpeedDial(_fallbackTodayLocal()),
-              body: TasklyFeedRenderer(
-                spec: TasklyFeedSpec.error(
-                  message: message,
-                  retryLabel: 'Retry',
-                  onRetry: () => context.read<ScheduledTimelineBloc>().add(
-                    const ScheduledTimelineStarted(),
+              body: Column(
+                children: [
+                  const _ScheduledTitleHeader(),
+                  Expanded(
+                    child: TasklyFeedRenderer(
+                      spec: TasklyFeedSpec.error(
+                        message: message,
+                        retryLabel: 'Retry',
+                        onRetry: () =>
+                            context.read<ScheduledTimelineBloc>().add(
+                              const ScheduledTimelineStarted(),
+                            ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
             ScheduledTimelineLoaded() => _buildLoaded(
@@ -570,15 +574,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
           appBar: selectionState.isSelectionMode
               ? SelectionAppBar(baseTitle: 'Schedule', onExit: () {})
               : AppBar(
-                  centerTitle: true,
-                  title: const Text('Schedule'),
                   toolbarHeight: TasklyTokens.of(
                     context,
                   ).scheduledAppBarHeight,
-                  leading: _CircleIconButton(
-                    icon: Icons.arrow_back,
-                    onPressed: () => Navigator.of(context).maybePop(),
-                  ),
                   actions: TasklyAppBarActions.withAttentionBell(
                     context,
                     actions: [
@@ -642,6 +640,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
               : _buildAddSpeedDial(today),
           body: Column(
             children: [
+              const _ScheduledTitleHeader(),
               if (showScopeHeader)
                 ScheduledScopeHeader(
                   scope: widget.scope,
@@ -890,7 +889,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
               selection.handleEntityTap(key);
               return;
             }
-            Routing.pushProjectAnytime(context, project.id);
+            Routing.pushProjectDetail(context, project.id);
           },
           onToggleSelected: selectionState.isSelectionMode
               ? () => selection.handleEntityTap(key)
@@ -926,6 +925,46 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
 
   static bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}
+
+class _ScheduledTitleHeader extends StatelessWidget {
+  const _ScheduledTitleHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final iconSet = const NavigationIconResolver().resolve(
+      screenId: 'scheduled',
+      iconName: null,
+    );
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        tokens.spaceMd,
+        tokens.sectionPaddingH,
+        tokens.spaceSm,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            iconSet.selectedIcon,
+            color: scheme.primary,
+            size: tokens.spaceLg3,
+          ),
+          SizedBox(width: tokens.spaceSm),
+          Text(
+            'Schedule',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

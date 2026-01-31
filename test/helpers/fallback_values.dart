@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
 import '../fixtures/test_data.dart';
 
 import 'package:taskly_domain/analytics.dart' as domain_analytics;
+import 'package:taskly_domain/attention.dart' as domain_attention;
 import 'package:taskly_domain/core.dart' as domain_core;
 import 'package:taskly_domain/queries.dart' as domain_queries;
 import 'package:taskly_domain/routines.dart' as domain_routines;
@@ -51,6 +52,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(domain_core.ValuePriority.medium);
   registerFallbackValue(domain_queries.TaskQuery.all());
   registerFallbackValue(domain_queries.JournalQuery());
+  registerFallbackValue(const domain_attention.AttentionQuery());
   registerFallbackValue(domain_routines.RoutineType.weeklyFixed);
   registerFallbackValue(PageKey.taskOverview);
   registerFallbackValue(DateTime(2025, 1, 1));

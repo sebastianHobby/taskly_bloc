@@ -364,8 +364,6 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
     final showDeadlineParams =
         enabled && settings.maintenanceDeadlineRiskEnabled;
     final showStaleParams = enabled && settings.maintenanceStaleEnabled;
-    final showMissingNextActionsParams =
-        enabled && settings.maintenanceMissingNextActionsEnabled;
 
     return Column(
       children: [
@@ -491,40 +489,6 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
                           onCommit: (value) {
                             context.read<GlobalSettingsBloc>().add(
                               GlobalSettingsEvent.maintenanceProjectIdleThresholdDaysChanged(
-                                value,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  SwitchListTile.adaptive(
-                    title: const Text('Missing next actions'),
-                    value: settings.maintenanceMissingNextActionsEnabled,
-                    onChanged: (value) {
-                      context.read<GlobalSettingsBloc>().add(
-                        GlobalSettingsEvent.maintenanceMissingNextActionsChanged(
-                          value,
-                        ),
-                      );
-                    },
-                  ),
-                  if (showMissingNextActionsParams)
-                    _RuleParamsSection(
-                      children: [
-                        _RuleSlider(
-                          label: 'Minimum open tasks',
-                          value: settings
-                              .maintenanceMissingNextActionsMinOpenTasks,
-                          min: GlobalSettings
-                              .maintenanceMissingNextActionsMinOpenTasksMin,
-                          max: GlobalSettings
-                              .maintenanceMissingNextActionsMinOpenTasksMax,
-                          valueLabel:
-                              '${settings.maintenanceMissingNextActionsMinOpenTasks} tasks',
-                          onCommit: (value) {
-                            context.read<GlobalSettingsBloc>().add(
-                              GlobalSettingsEvent.maintenanceMissingNextActionsMinOpenTasksChanged(
                                 value,
                               ),
                             );

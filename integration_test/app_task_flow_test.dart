@@ -142,20 +142,11 @@ Future<void> _waitForNavigation(WidgetTester tester) async {
 }
 
 Future<void> _openInboxProjectDetail(WidgetTester tester) async {
-  await tester.tap(find.text('Anytime'));
-  await tester.pumpForStream(20);
-
-  final foundInbox = await tester.pumpUntilFound(
-    find.text('Inbox'),
-    timeout: const Duration(seconds: 20),
-  );
-  expect(foundInbox, isTrue);
-
-  await tester.tap(find.text('Inbox'));
+  await tester.tap(find.text('Inbox').first);
   await tester.pumpForStream(20);
 
   final foundProjectDetail = await tester.pumpUntilFound(
-    find.text('Project details'),
+    find.text('Tasks'),
     timeout: const Duration(seconds: 20),
   );
   expect(foundProjectDetail, isTrue);

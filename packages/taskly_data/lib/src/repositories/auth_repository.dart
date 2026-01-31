@@ -27,8 +27,7 @@ class AuthRepository implements AuthRepositoryContract {
   }
 
   @override
-  AuthSession? get currentSession =>
-      _mapSession(_client.auth.currentSession);
+  AuthSession? get currentSession => _mapSession(_client.auth.currentSession);
 
   @override
   AuthUser? get currentUser => _mapUser(_client.auth.currentUser);
@@ -204,7 +203,8 @@ class AuthRepository implements AuthRepositoryContract {
       supabase.AuthChangeEvent.signedOut => AuthEventKind.signedOut,
       supabase.AuthChangeEvent.tokenRefreshed => AuthEventKind.tokenRefreshed,
       supabase.AuthChangeEvent.userUpdated => AuthEventKind.userUpdated,
-      supabase.AuthChangeEvent.passwordRecovery => AuthEventKind.passwordRecovery,
+      supabase.AuthChangeEvent.passwordRecovery =>
+        AuthEventKind.passwordRecovery,
       _ => AuthEventKind.unknown,
     };
   }
@@ -240,11 +240,7 @@ class AuthRepository implements AuthRepositoryContract {
     );
   }
 
-  static UserUpdateResponse _mapUserResponse(
-    supabase.UserResponse response,
-  ) {
-    return UserUpdateResponse(
-      user: _mapUser(response.user),
-    );
+  static UserUpdateResponse _mapUserResponse(supabase.UserResponse response) {
+    return UserUpdateResponse(user: _mapUser(response.user));
   }
 }

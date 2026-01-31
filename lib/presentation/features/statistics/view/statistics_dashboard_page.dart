@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/features/analytics/widgets/correlation_
 import 'package:taskly_bloc/presentation/features/analytics/widgets/distribution_chart.dart';
 import 'package:taskly_bloc/presentation/features/analytics/widgets/trend_chart.dart';
 import 'package:taskly_bloc/presentation/features/statistics/bloc/statistics_dashboard_bloc.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/sparkline_painter.dart';
@@ -26,7 +27,10 @@ class StatisticsDashboardPage extends StatelessWidget {
         nowService: context.read<NowService>(),
       )..add(const StatisticsDashboardRequested()),
       child: Scaffold(
-        appBar: AppBar(title: const Text('Stats')),
+        appBar: AppBar(
+          title: const _StatisticsAppBarTitle(),
+          centerTitle: false,
+        ),
         body: BlocBuilder<StatisticsDashboardBloc, StatisticsDashboardState>(
           builder: (context, state) {
             final tokens = TasklyTokens.of(context);
@@ -64,7 +68,6 @@ class StatisticsDashboardPage extends StatelessWidget {
                   subtitle: 'Early patterns shown with warnings',
                 ),
                 _CorrelationsSection(section: state.correlations),
-                SizedBox(height: tokens.spaceLg),
               ],
             );
           },
@@ -780,4 +783,36 @@ String _correlationInsight(CorrelationResult correlation) {
   }
 
   return '${correlation.sourceLabel} correlates with ${correlation.targetLabel} (n=$sampleSize).';
+}
+
+class _StatisticsAppBarTitle extends StatelessWidget {
+  const _StatisticsAppBarTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final iconSet = const NavigationIconResolver().resolve(
+      screenId: 'statistics',
+      iconName: null,
+    );
+
+    return Row(
+      children: [
+        Icon(
+          iconSet.selectedIcon,
+          color: scheme.primary,
+          size: tokens.spaceLg3,
+        ),
+        SizedBox(width: tokens.spaceSm),
+        Text(
+          'Stats',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
 }

@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_imports.dart';
@@ -54,6 +55,7 @@ void main() {
   late MockHomeDayKeyService dayKeyService;
   late MockTemporalTriggerService temporalTriggerService;
   late TestStreamController<TemporalTriggerEvent> temporalController;
+  const speedDialInitDelay = Duration(milliseconds: 1);
 
   setUp(() {
     demoModeService = DemoModeService()..enable();
@@ -100,7 +102,6 @@ void main() {
       () => dayKeyService.todayDayKeyUtc(),
     ).thenReturn(DateTime.utc(2025, 1, 15));
     sessionDayKeyService.start();
-
   });
 
   tearDown(() async {
@@ -110,29 +111,44 @@ void main() {
   });
 
   Future<void> pumpPage(WidgetTester tester) async {
-    await tester.pumpApp(
-      MultiRepositoryProvider(
-        providers: [
-          RepositoryProvider<ScheduledOccurrencesService>.value(
-            value: occurrencesService,
+    final router = GoRouter(
+      initialLocation: '/scheduled',
+      routes: [
+        GoRoute(
+          path: '/scheduled',
+          builder: (_, __) => MultiRepositoryProvider(
+            providers: [
+              RepositoryProvider<ScheduledOccurrencesService>.value(
+                value: occurrencesService,
+              ),
+              RepositoryProvider<TaskWriteService>.value(
+                value: taskWriteService,
+              ),
+              RepositoryProvider<ProjectWriteService>.value(
+                value: projectWriteService,
+              ),
+              RepositoryProvider<EditorLauncher>.value(value: editorLauncher),
+              RepositoryProvider<SessionDayKeyService>.value(
+                value: sessionDayKeyService,
+              ),
+              RepositoryProvider<NowService>.value(
+                value: FakeNowService(DateTime(2025, 1, 15, 9)),
+              ),
+              RepositoryProvider<DemoModeService>.value(
+                value: demoModeService,
+              ),
+              RepositoryProvider<DemoDataProvider>.value(
+                value: demoDataProvider,
+              ),
+            ],
+            child: const ScheduledPage(),
           ),
-          RepositoryProvider<TaskWriteService>.value(value: taskWriteService),
-          RepositoryProvider<ProjectWriteService>.value(
-            value: projectWriteService,
-          ),
-          RepositoryProvider<EditorLauncher>.value(value: editorLauncher),
-          RepositoryProvider<SessionDayKeyService>.value(
-            value: sessionDayKeyService,
-          ),
-          RepositoryProvider<NowService>.value(
-            value: FakeNowService(DateTime(2025, 1, 15, 9)),
-          ),
-          RepositoryProvider<DemoModeService>.value(value: demoModeService),
-          RepositoryProvider<DemoDataProvider>.value(value: demoDataProvider),
-        ],
-        child: const ScheduledPage(),
-      ),
+        ),
+      ],
     );
+
+    await tester.pumpWidgetWithRouter(router: router);
+    await tester.pump(speedDialInitDelay);
   }
 
   testWidgetsSafe('renders schedule header in demo mode', (tester) async {
@@ -140,6 +156,7 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.text('Schedule'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgetsSafe('renders demo scheduled items', (tester) async {
@@ -147,5 +164,6 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.text('Complete Lesson 3'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
   });
 }

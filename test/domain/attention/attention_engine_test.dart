@@ -200,7 +200,6 @@ void main() {
       final attentionRepo = FakeAttentionRepository(rules: [rule]);
       final taskRepo = FakeTaskRepository();
       final projectRepo = FakeProjectRepository();
-      final projectNextActionsRepository = FakeProjectNextActionsRepository();
       final invalidations = StreamController<void>.broadcast();
       addTearDown(invalidations.close);
 
@@ -216,7 +215,6 @@ void main() {
         attentionRepository: attentionRepo,
         taskRepository: taskRepo,
         projectRepository: projectRepo,
-        projectNextActionsRepository: projectNextActionsRepository,
         invalidations: invalidations.stream,
         clock: FakeClock(now),
       );
@@ -264,7 +262,6 @@ void main() {
 
       final taskRepo = FakeTaskRepository();
       final projectRepo = FakeProjectRepository();
-      final projectNextActionsRepository = FakeProjectNextActionsRepository();
       final invalidations = StreamController<void>.broadcast();
       addTearDown(invalidations.close);
 
@@ -280,7 +277,6 @@ void main() {
         attentionRepository: attentionRepo,
         taskRepository: taskRepo,
         projectRepository: projectRepo,
-        projectNextActionsRepository: projectNextActionsRepository,
         invalidations: invalidations.stream,
         clock: FakeClock(now),
       );

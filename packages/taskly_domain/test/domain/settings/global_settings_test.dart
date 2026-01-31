@@ -65,7 +65,6 @@ void main() {
       maintenanceDeadlineRiskMinUnscheduledCount: 0,
       maintenanceTaskStaleThresholdDays: 0,
       maintenanceProjectIdleThresholdDays: 200,
-      maintenanceMissingNextActionsMinOpenTasks: 42,
       textScaleFactor: 0.9,
       onboardingCompleted: true,
       guidedTourCompleted: true,
@@ -101,10 +100,9 @@ void main() {
       GlobalSettings.maintenanceStaleThresholdDaysMax,
     );
     expect(
-      decoded.maintenanceMissingNextActionsMinOpenTasks,
-      GlobalSettings.maintenanceMissingNextActionsMinOpenTasksMax,
+      decoded.textScaleFactor,
+      0.9,
     );
-    expect(decoded.textScaleFactor, 0.9);
     expect(decoded.onboardingCompleted, isTrue);
     expect(decoded.guidedTourCompleted, isTrue);
   });

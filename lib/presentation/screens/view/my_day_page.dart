@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/review/utils/weekly_review_schedule.dart';
 import 'package:taskly_bloc/presentation/features/review/view/weekly_review_modal.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
@@ -30,10 +32,12 @@ import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/my_day.dart' as my_day;
 import 'package:taskly_domain/routines.dart';
+import 'package:taskly_domain/auth.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_domain/time.dart';
@@ -129,7 +133,6 @@ class _MyDayPageState extends State<MyDayPage> {
   Widget build(BuildContext context) {
     final dayKeyUtc = context.read<HomeDayService>().todayDayKeyUtc();
     final today = dayKeyUtc.toLocal();
-    final tokens = TasklyTokens.of(context);
 
     return MultiBlocProvider(
       providers: [
@@ -202,28 +205,6 @@ class _MyDayPageState extends State<MyDayPage> {
                         )
                       : AppBar(
                           toolbarHeight: 56,
-                          title: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                context.l10n.myDayTitle,
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                              ),
-                              SizedBox(height: tokens.spaceXxs2),
-                              Text(
-                                context.l10n.myDaySubtitleChosenForToday,
-                                style: Theme.of(context).textTheme.labelMedium
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                    ),
-                              ),
-                            ],
-                          ),
                           actions: [
                             IconButton(
                               tooltip: context.l10n.settingsTitle,
@@ -298,88 +279,203 @@ class _MyDayLoadedBody extends StatelessWidget {
     final settings = context.watch<GlobalSettingsBloc>().state.settings;
     final nowLocal = context.read<NowService>().nowLocal();
     final reviewReady = isWeeklyReviewReady(settings, nowLocal);
-    final showDueSoon = settings.myDayDueSoonEnabled;
-    final showPlanned = settings.myDayShowAvailableToStart;
-
-    return BlocBuilder<MyDayBloc, MyDayState>(
-      builder: (context, state) {
-        return switch (state) {
-          MyDayLoading() => Center(
-            child: AppLoadingContent(
-              title: 'Preparing a calm list for today...',
-              subtitle: '',
-              icon: Icons.auto_awesome,
-            ),
-          ),
-          MyDayError() => _MyDayErrorState(
-            onRetry: () => context.read<MyDayBloc>().add(const MyDayStarted()),
-          ),
-          MyDayLoaded(
-            :final plannedItems,
-            :final pinnedTasks,
-          ) =>
-            SafeArea(
-              bottom: false,
-              child: ListView(
-                padding: EdgeInsets.fromLTRB(
-                  TasklyTokens.of(context).spaceLg,
-                  TasklyTokens.of(context).spaceXs2,
-                  TasklyTokens.of(context).spaceLg,
-                  0,
-                ),
-                children: [
-                  if (reviewReady) ...[
-                    _WeeklyReviewBanner(
-                      onReview: () => showWeeklyReviewModal(
-                        context,
-                        settings: settings,
-                      ),
-                      onSettings: () =>
-                          Routing.toScreenKey(context, 'settings'),
-                    ),
-                    SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  ],
-                  _MyDayHeaderRow(
-                    today: today,
-                    showDueSoon: showDueSoon,
-                    showPlanned: showPlanned,
-                    onUpdatePlan: onOpenPlan,
-                  ),
-                  SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  _MyDayTaskList(
-                    today: today,
-                    dayKeyUtc: dayKeyUtc,
-                    plannedItems: plannedItems,
-                    pinnedTasks: pinnedTasks,
-                    showCompleted: showCompleted,
-                  ),
-                ],
-              ),
-            ),
-        };
-      },
+    final iconSet = const NavigationIconResolver().resolve(
+      screenId: 'my_day',
+      iconName: null,
     );
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final dateLabel = DateFormat('EEE, d MMM', locale).format(today);
+    final header = _buildGreetingHeader(
+      context,
+      icon: iconSet.selectedIcon,
+      dateLabel: dateLabel,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        header,
+        Expanded(
+          child: BlocBuilder<MyDayBloc, MyDayState>(
+            builder: (context, state) {
+              return switch (state) {
+                MyDayLoading() => Center(
+                  child: AppLoadingContent(
+                    title: 'Preparing a calm list for today...',
+                    subtitle: '',
+                    icon: Icons.auto_awesome,
+                  ),
+                ),
+                MyDayError() => _MyDayErrorState(
+                  onRetry: () =>
+                      context.read<MyDayBloc>().add(const MyDayStarted()),
+                ),
+                MyDayLoaded(
+                  :final plannedItems,
+                  :final pinnedTasks,
+                ) =>
+                  SafeArea(
+                    bottom: false,
+                    child: ListView(
+                      padding: EdgeInsets.fromLTRB(
+                        TasklyTokens.of(context).spaceLg,
+                        TasklyTokens.of(context).spaceXs2,
+                        TasklyTokens.of(context).spaceLg,
+                        0,
+                      ),
+                      children: [
+                        if (reviewReady) ...[
+                          _WeeklyReviewBanner(
+                            onReview: () => showWeeklyReviewModal(
+                              context,
+                              settings: settings,
+                            ),
+                            onSettings: () =>
+                                Routing.toScreenKey(context, 'settings'),
+                          ),
+                          SizedBox(height: TasklyTokens.of(context).spaceSm),
+                        ],
+                        _MyDayHeaderRow(
+                          dateLabel: dateLabel,
+                          onUpdatePlan: onOpenPlan,
+                        ),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
+                        _MyDayTaskList(
+                          today: today,
+                          dayKeyUtc: dayKeyUtc,
+                          plannedItems: plannedItems,
+                          pinnedTasks: pinnedTasks,
+                          showCompleted: showCompleted,
+                        ),
+                      ],
+                    ),
+                  ),
+              };
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+Widget _buildGreetingHeader(
+  BuildContext context, {
+  required IconData icon,
+  required String dateLabel,
+}) {
+  final l10n = context.l10n;
+  final tagline = l10n.myDayHeaderTagline(dateLabel);
+
+  Widget buildHeader(String? displayName) {
+    final resolvedName = displayName?.trim();
+    final greeting = resolvedName == null || resolvedName.isEmpty
+        ? l10n.myDayGreetingWithoutName
+        : l10n.myDayGreetingWithName(resolvedName);
+    return _ScreenTitleHeader(
+      icon: icon,
+      greeting: greeting,
+      tagline: tagline,
+    );
+  }
+
+  final authBloc = _maybeReadAuthBloc(context);
+  if (authBloc == null) {
+    return buildHeader(null);
+  }
+
+  return BlocBuilder<AuthBloc, AppAuthState>(
+    buildWhen: (previous, current) => previous.user != current.user,
+    builder: (context, state) {
+      return buildHeader(_displayNameFromAuthUser(state.user));
+    },
+  );
+}
+
+class _ScreenTitleHeader extends StatelessWidget {
+  const _ScreenTitleHeader({
+    required this.icon,
+    required this.greeting,
+    required this.tagline,
+  });
+
+  final IconData icon;
+  final String greeting;
+  final String tagline;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        tokens.spaceMd,
+        tokens.sectionPaddingH,
+        tokens.spaceSm,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: scheme.primary, size: tokens.spaceLg3),
+          SizedBox(width: tokens.spaceSm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  greeting,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  tagline,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String? _displayNameFromAuthUser(AuthUser? user) {
+  final metadata = user?.metadata;
+  final displayName =
+      metadata?['display_name'] as String? ??
+      metadata?['full_name'] as String? ??
+      metadata?['name'] as String?;
+  if (displayName == null) return null;
+  final trimmed = displayName.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+AuthBloc? _maybeReadAuthBloc(BuildContext context) {
+  try {
+    return BlocProvider.of<AuthBloc>(context, listen: false);
+  } on ProviderNotFoundException {
+    return null;
   }
 }
 
 class _MyDayHeaderRow extends StatelessWidget {
   const _MyDayHeaderRow({
-    required this.today,
-    required this.showDueSoon,
-    required this.showPlanned,
+    required this.dateLabel,
     required this.onUpdatePlan,
   });
 
-  final DateTime today;
-  final bool showDueSoon;
-  final bool showPlanned;
+  final String dateLabel;
   final VoidCallback onUpdatePlan;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    final dateLabel = DateFormat('EEE, d MMM', locale).format(today);
     final l10n = context.l10n;
 
     return Column(
@@ -767,7 +863,6 @@ List<TasklyRowSpec> _buildTaskRows(
         _buildTaskRowSpec(
           context,
           task,
-          anchorKey: index == 0 ? GuidedTourAnchors.myDayFocusTask1 : null,
           depthOffset: 0,
         ),
       );
@@ -1048,7 +1143,6 @@ TasklyRowSpec _buildRoutineRow(
 TasklyRowSpec _buildTaskRowSpec(
   BuildContext context,
   Task task, {
-  Key? anchorKey,
   int depthOffset = 0,
 }) {
   final selection = context.read<SelectionBloc>();
@@ -1085,7 +1179,6 @@ TasklyRowSpec _buildTaskRowSpec(
 
   return TasklyRowSpec.task(
     key: 'myday-accepted-${task.id}',
-    anchorKey: anchorKey,
     data: updatedData,
     depth: depthOffset,
     style: selectionMode

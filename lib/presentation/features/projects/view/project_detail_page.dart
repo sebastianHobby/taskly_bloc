@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fleather/fleather.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
@@ -38,9 +42,15 @@ class ProjectDetailPage extends StatelessWidget {
             projectId: projectId,
             projectRepository: context.read<ProjectRepositoryContract>(),
             occurrenceReadService: context.read<OccurrenceReadService>(),
-            projectNextActionsRepository: context
-                .read<ProjectNextActionsRepositoryContract>(),
             sessionDayKeyService: context.read<SessionDayKeyService>(),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => ProjectDetailBloc(
+            projectRepository: context.read<ProjectRepositoryContract>(),
+            valueRepository: context.read<ValueRepositoryContract>(),
+            projectWriteService: context.read<ProjectWriteService>(),
+            errorReporter: context.read<AppErrorReporter>(),
           ),
         ),
         BlocProvider(create: (_) => SelectionBloc()),
@@ -50,14 +60,24 @@ class ProjectDetailPage extends StatelessWidget {
   }
 }
 
-class _ProjectDetailView extends StatelessWidget {
+class _ProjectDetailView extends StatefulWidget {
   const _ProjectDetailView({required this.projectId});
 
   final String projectId;
 
+  @override
+  State<_ProjectDetailView> createState() => _ProjectDetailViewState();
+}
+
+class _ProjectDetailViewState extends State<_ProjectDetailView> {
+  _ProjectTaskSortOrder _sortOrder = _ProjectTaskSortOrder.listOrder;
+  bool _showCompleted = false;
+
   Future<void> _openNewTaskEditor(BuildContext context) {
     final inboxId = ProjectGroupingRef.inbox().stableKey;
-    final defaultProjectId = projectId == inboxId ? null : projectId;
+    final defaultProjectId = widget.projectId == inboxId
+        ? null
+        : widget.projectId;
 
     return context.read<EditorLauncher>().openTaskEditor(
       context,
@@ -75,8 +95,84 @@ class _ProjectDetailView extends StatelessWidget {
     );
   }
 
+  void _updateSortOrder(_ProjectTaskSortOrder order) {
+    if (_sortOrder == order) return;
+    setState(() => _sortOrder = order);
+  }
+
+  void _toggleShowCompleted(bool value) {
+    if (_showCompleted == value) return;
+    setState(() => _showCompleted = value);
+  }
+
+  Future<void> _showFilterSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final tokens = TasklyTokens.of(sheetContext);
+        final theme = Theme.of(sheetContext);
+
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spaceLg,
+              tokens.spaceSm,
+              tokens.spaceLg,
+              tokens.spaceLg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Filter & sort',
+                  style: theme.textTheme.titleLarge,
+                ),
+                SizedBox(height: tokens.spaceSm),
+                Text(
+                  'Sort',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                for (final order in _ProjectTaskSortOrder.values)
+                  RadioListTile<_ProjectTaskSortOrder>(
+                    value: order,
+                    groupValue: _sortOrder,
+                    title: Text(order.label),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      _updateSortOrder(value);
+                      Navigator.of(sheetContext).pop();
+                    },
+                  ),
+                SizedBox(height: tokens.spaceSm),
+                Text(
+                  'Filter',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SwitchListTile(
+                  value: _showCompleted,
+                  onChanged: _toggleShowCompleted,
+                  title: const Text('Show completed'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final inboxId = ProjectGroupingRef.inbox().stableKey;
+    final isInbox = widget.projectId == inboxId;
+    final appBarTitle = isInbox ? '' : 'Project details';
     final chrome = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
     final iconButtonStyle = IconButton.styleFrom(
@@ -91,28 +187,31 @@ class _ProjectDetailView extends StatelessWidget {
 
     return BlocBuilder<SelectionBloc, SelectionState>(
       builder: (context, selectionState) {
+        final canPop = Navigator.of(context).canPop();
         return Scaffold(
           appBar: selectionState.isSelectionMode
               ? SelectionAppBar(
-                  baseTitle: 'Project details',
+                  baseTitle: appBarTitle,
                   onExit: () {},
                 )
               : AppBar(
                   centerTitle: true,
-                  toolbarHeight: chrome.anytimeAppBarHeight,
-                  title: const Text('Project details'),
-                  leading: IconButton(
-                    tooltip: 'Back',
-                    icon: const Icon(Icons.arrow_back),
-                    style: iconButtonStyle,
-                    onPressed: () => Navigator.of(context).maybePop(),
-                  ),
+                  toolbarHeight: chrome.projectsAppBarHeight,
+                  title: appBarTitle.isEmpty ? null : Text(appBarTitle),
+                  leading: canPop
+                      ? IconButton(
+                          tooltip: 'Back',
+                          icon: const Icon(Icons.arrow_back),
+                          style: iconButtonStyle,
+                          onPressed: () => Navigator.of(context).maybePop(),
+                        )
+                      : null,
                   actions: [
                     IconButton(
-                      tooltip: 'Search',
-                      icon: const Icon(Icons.search),
+                      tooltip: 'Filter & sort',
+                      icon: const Icon(Icons.tune_rounded),
                       style: iconButtonStyle,
-                      onPressed: () {},
+                      onPressed: _showFilterSheet,
                     ),
                   ],
                 ),
@@ -136,14 +235,14 @@ class _ProjectDetailView extends StatelessWidget {
                   :final project,
                   :final tasks,
                   :final todayDayKeyUtc,
-                  :final nextActions,
                 ) =>
                   _ProjectDetailBody(
                     project: project,
                     tasks: tasks,
                     todayDayKeyUtc: todayDayKeyUtc,
-                    nextActions: nextActions,
                     selectionState: selectionState,
+                    sortOrder: _sortOrder,
+                    showCompleted: _showCompleted,
                   ),
               };
             },
@@ -159,15 +258,17 @@ class _ProjectDetailBody extends StatelessWidget {
     required this.project,
     required this.tasks,
     required this.todayDayKeyUtc,
-    required this.nextActions,
     required this.selectionState,
+    required this.sortOrder,
+    required this.showCompleted,
   });
 
   final Project project;
   final List<Task> tasks;
   final DateTime todayDayKeyUtc;
-  final List<ProjectNextAction> nextActions;
   final SelectionState selectionState;
+  final _ProjectTaskSortOrder sortOrder;
+  final bool showCompleted;
 
   @override
   Widget build(BuildContext context) {
@@ -188,19 +289,11 @@ class _ProjectDetailBody extends StatelessWidget {
         .where((task) => !(task.occurrence?.isCompleted ?? task.completed))
         .toList();
 
-    final orderedNextActions = List<ProjectNextAction>.from(nextActions)
-      ..sort((a, b) => a.rank.compareTo(b.rank));
-    final tasksById = {for (final task in tasks) task.id: task};
-    final nextActionEntries = _buildNextActionEntries(
-      orderedNextActions,
-      tasksById: tasksById,
-    );
-    final nextActionTaskIds = nextActionEntries
-        .map((entry) => entry.task.id)
-        .toSet();
-    final remainingOpen = open
-        .where((task) => !nextActionTaskIds.contains(task.id))
-        .toList(growable: false);
+    final remainingOpen = open;
+    final orderedOpen = _sortTasks(remainingOpen, sortOrder);
+    final orderedCompleted = showCompleted
+        ? _sortTasks(completed, sortOrder)
+        : const <Task>[];
 
     final headerData = buildProjectRowData(
       context,
@@ -218,28 +311,56 @@ class _ProjectDetailBody extends StatelessWidget {
     }
 
     final selection = context.read<SelectionBloc>();
-    final visibleTasks = [
-      ...nextActionEntries.map((entry) => entry.task),
-      ...remainingOpen,
-      ...completed,
-    ];
+    final visibleTasks = [...orderedOpen, ...orderedCompleted];
     _registerVisibleTasks(selection, visibleTasks);
+
+    final normalizedDescription = serializeParchmentDocument(
+      parseParchmentDocument(project.description),
+    );
+
+    void updateDescription(String nextDescription) {
+      if (normalizedDescription == nextDescription || isInbox) return;
+
+      final valueIds = project.values.isNotEmpty
+          ? project.values.map((value) => value.id).toList(growable: false)
+          : project.primaryValueId != null
+          ? <String>[project.primaryValueId!]
+          : const <String>[];
+
+      context.read<ProjectDetailBloc>().add(
+        ProjectDetailEvent.update(
+          command: UpdateProjectCommand(
+            id: project.id,
+            name: project.name,
+            completed: project.completed,
+            description: nextDescription,
+            startDate: project.startDate,
+            deadlineDate: project.deadlineDate,
+            priority: project.priority,
+            repeatIcalRrule: project.repeatIcalRrule,
+            repeatFromCompletion: project.repeatFromCompletion,
+            seriesEnded: project.seriesEnded,
+            valueIds: valueIds,
+          ),
+        ),
+      );
+    }
 
     final rows = <TasklyRowSpec>[
       TasklyRowSpec.header(
         key: 'project-detail-open-header',
         title: 'Tasks',
-        trailingLabel: '${remainingOpen.length} remaining',
+        trailingLabel: '${orderedOpen.length} remaining',
       ),
-      ...remainingOpen.map(
+      ...orderedOpen.map(
         (task) => _buildProjectTaskRow(context, task, selectionState),
       ),
-      if (completed.isNotEmpty) ...[
+      if (orderedCompleted.isNotEmpty) ...[
         TasklyRowSpec.header(
           key: 'project-detail-completed-header',
           title: 'Completed',
         ),
-        ...completed.map(
+        ...orderedCompleted.map(
           (task) => _buildProjectTaskRow(context, task, selectionState),
         ),
       ],
@@ -258,32 +379,18 @@ class _ProjectDetailBody extends StatelessWidget {
           children: [
             _ProjectDetailHeader(
               data: headerData,
-              description: project.description,
               isInbox: isInbox,
-              onEditRequested: openEdit,
+              onEditRequested: isInbox ? null : openEdit,
             ),
-            SizedBox(height: TasklyTokens.of(context).spaceSm),
-            if (!isInbox)
-              _ProjectNextActionsSection(
-                entries: nextActionEntries,
-                selectionState: selectionState,
-                onPickRequested: () => _showNextActionPicker(
-                  context,
-                  availableTasks: remainingOpen,
-                  existingActions: orderedNextActions,
-                  tasksById: tasksById,
-                ),
-                onRemoveRequested: (taskId) => _removeNextAction(
-                  context,
-                  taskId: taskId,
-                  existingActions: orderedNextActions,
-                ),
-                onReorderRequested: (entries) => _reorderNextActions(
-                  context,
-                  entries: entries,
-                ),
+            if (!isInbox) ...[
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
+              _ProjectNotesEditor(
+                rawNotes: normalizedDescription,
+                hintText: context.l10n.projectFormDescriptionHint,
+                onNotesChanged: updateDescription,
               ),
-            if (!isInbox) SizedBox(height: TasklyTokens.of(context).spaceSm),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
+            ],
             TasklyFeedRenderer.buildSection(
               TasklySectionSpec.standardList(id: 'project-detail', rows: rows),
             ),
@@ -292,254 +399,18 @@ class _ProjectDetailBody extends StatelessWidget {
       ],
     );
   }
-
-  List<_NextActionEntry> _buildNextActionEntries(
-    List<ProjectNextAction> actions, {
-    required Map<String, Task> tasksById,
-  }) {
-    final entries = <_NextActionEntry>[];
-    for (final action in actions) {
-      final task = tasksById[action.taskId];
-      if (task == null) continue;
-      if (task.occurrence?.isCompleted ?? task.completed) continue;
-      entries.add(_NextActionEntry(action: action, task: task));
-    }
-    return entries;
-  }
-
-  Future<void> _showNextActionPicker(
-    BuildContext context, {
-    required List<Task> availableTasks,
-    required List<ProjectNextAction> existingActions,
-    required Map<String, Task> tasksById,
-  }) async {
-    final l10n = context.l10n;
-    final parentContext = context;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        final rows = availableTasks
-            .map((task) {
-              final data = buildTaskRowData(
-                sheetContext,
-                task: task,
-                tileCapabilities: EntityTileCapabilitiesResolver.forTask(task),
-              );
-
-              final rowData = TasklyTaskRowData(
-                id: data.id,
-                title: data.title,
-                completed: data.completed,
-                meta: data.meta,
-                leadingChip: data.leadingChip,
-                secondaryChips: data.secondaryChips,
-                deemphasized: data.deemphasized,
-                checkboxSemanticLabel: data.checkboxSemanticLabel,
-                labels: data.labels,
-                pinned: data.pinned,
-              );
-
-              return TasklyRowSpec.task(
-                key: 'project-next-action-pick-${task.id}',
-                data: rowData,
-                style: const TasklyTaskRowStyle.planPick(selected: false),
-                actions: TasklyTaskRowActions(
-                  onToggleSelected: () async {
-                    Navigator.of(sheetContext).pop();
-                    final rank = await _showNextActionRankPicker(
-                      parentContext,
-                      existingActions: existingActions,
-                      tasksById: tasksById,
-                    );
-                    if (rank == null) return;
-                    final drafts = _draftsForAddOrReplace(
-                      actions: existingActions,
-                      taskId: task.id,
-                      rank: rank,
-                    );
-                    if (!parentContext.mounted) return;
-                    parentContext.read<ProjectOverviewBloc>().add(
-                      ProjectOverviewNextActionsUpdated(
-                        actions: drafts,
-                        intent: 'add_next_action',
-                      ),
-                    );
-                  },
-                ),
-              );
-            })
-            .toList(growable: false);
-
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            padding: EdgeInsets.fromLTRB(
-              TasklyTokens.of(context).spaceLg,
-              0,
-              TasklyTokens.of(context).spaceLg,
-              TasklyTokens.of(context).spaceXl,
-            ),
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.projectNextActionsPickerTitle),
-                subtitle: Text(l10n.projectNextActionsPickerSubtitle),
-              ),
-              if (rows.isEmpty)
-                Padding(
-                  padding: EdgeInsets.only(
-                    bottom: TasklyTokens.of(context).spaceSm,
-                  ),
-                  child: Text(
-                    l10n.projectNextActionsEmptyLabel,
-                    style: Theme.of(sheetContext).textTheme.bodyMedium
-                        ?.copyWith(
-                          color: Theme.of(
-                            sheetContext,
-                          ).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                )
-              else
-                for (final row in rows) ...[
-                  TasklyFeedRenderer.buildRow(row, context: sheetContext),
-                  SizedBox(height: TasklyTokens.of(context).spaceSm),
-                ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<int?> _showNextActionRankPicker(
-    BuildContext context, {
-    required List<ProjectNextAction> existingActions,
-    required Map<String, Task> tasksById,
-  }) {
-    final l10n = context.l10n;
-    final actionsByRank = {
-      for (final action in existingActions) action.rank: action,
-    };
-
-    return showModalBottomSheet<int>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return ListView(
-          shrinkWrap: true,
-          children: [
-            for (var rank = 1; rank <= 3; rank += 1)
-              ListTile(
-                title: Text(l10n.projectNextActionsRankLabel(rank)),
-                subtitle: actionsByRank[rank] == null
-                    ? null
-                    : Text(
-                        tasksById[actionsByRank[rank]!.taskId]?.name ?? 'Task',
-                      ),
-                onTap: () => Navigator.of(sheetContext).pop(rank),
-              ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _removeNextAction(
-    BuildContext context, {
-    required String taskId,
-    required List<ProjectNextAction> existingActions,
-  }) {
-    final drafts = _draftsForRemoval(existingActions, taskId);
-    context.read<ProjectOverviewBloc>().add(
-      ProjectOverviewNextActionsUpdated(
-        actions: drafts,
-        intent: 'remove_next_action',
-      ),
-    );
-  }
-
-  void _reorderNextActions(
-    BuildContext context, {
-    required List<_NextActionEntry> entries,
-  }) {
-    final drafts = _draftsForReorder(entries);
-    context.read<ProjectOverviewBloc>().add(
-      ProjectOverviewNextActionsUpdated(
-        actions: drafts,
-        intent: 'reorder_next_actions',
-      ),
-    );
-  }
-
-  List<ProjectNextActionDraft> _draftsForReorder(
-    List<_NextActionEntry> entries,
-  ) {
-    return [
-      for (var i = 0; i < entries.length; i += 1)
-        ProjectNextActionDraft(
-          taskId: entries[i].task.id,
-          rank: i + 1,
-        ),
-    ];
-  }
-
-  List<ProjectNextActionDraft> _draftsForRemoval(
-    List<ProjectNextAction> actions,
-    String taskId,
-  ) {
-    final remaining =
-        actions
-            .where((action) => action.taskId != taskId)
-            .toList(growable: false)
-          ..sort((a, b) => a.rank.compareTo(b.rank));
-
-    return [
-      for (var i = 0; i < remaining.length; i += 1)
-        ProjectNextActionDraft(
-          taskId: remaining[i].taskId,
-          rank: i + 1,
-        ),
-    ];
-  }
-
-  List<ProjectNextActionDraft> _draftsForAddOrReplace({
-    required List<ProjectNextAction> actions,
-    required String taskId,
-    required int rank,
-  }) {
-    final filtered = actions
-        .where((action) => action.rank != rank && action.taskId != taskId)
-        .map(
-          (action) => ProjectNextActionDraft(
-            taskId: action.taskId,
-            rank: action.rank,
-          ),
-        )
-        .toList(growable: false);
-
-    return [
-      ...filtered,
-      ProjectNextActionDraft(taskId: taskId, rank: rank),
-    ]..sort((a, b) => a.rank.compareTo(b.rank));
-  }
 }
 
 class _ProjectDetailHeader extends StatelessWidget {
   const _ProjectDetailHeader({
     required this.data,
-    required this.description,
     required this.isInbox,
     required this.onEditRequested,
   });
 
   final TasklyProjectRowData data;
-  final String? description;
   final bool isInbox;
-  final VoidCallback onEditRequested;
+  final VoidCallback? onEditRequested;
 
   @override
   Widget build(BuildContext context) {
@@ -559,6 +430,17 @@ class _ProjectDetailHeader extends StatelessWidget {
     final completedCount = data.completedTaskCount;
 
     final metaChildren = <Widget>[];
+
+    if (isInbox) {
+      metaChildren.add(
+        MetaIconLabel(
+          icon: Icons.inbox_outlined,
+          label: 'Inbox',
+          color: scheme.onSurfaceVariant,
+          textStyle: metaStyle,
+        ),
+      );
+    }
 
     if (primaryValue != null) {
       metaChildren.add(
@@ -620,49 +502,57 @@ class _ProjectDetailHeader extends StatelessWidget {
       metaChildren.add(PriorityPill(priority: data.meta.priority!));
     }
 
-    return Column(
+    final canEdit = onEditRequested != null;
+    final titleRow = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          onTap: onEditRequested,
-          borderRadius: BorderRadius.circular(tokens.radiusMd),
-          child: Padding(
-            padding: EdgeInsets.only(bottom: tokens.spaceXs2),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    data.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: titleStyle?.copyWith(
-                      color: scheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                      decoration: data.completed
-                          ? TextDecoration.lineThrough
-                          : null,
-                      decorationColor: scheme.onSurface.withValues(alpha: 0.55),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Edit project',
-                  onPressed: onEditRequested,
-                  icon: const Icon(Icons.edit_rounded),
-                  style: IconButton.styleFrom(
-                    foregroundColor: scheme.onSurfaceVariant,
-                    backgroundColor: scheme.surfaceContainerHighest.withValues(
-                      alpha: tokens.iconButtonBackgroundAlpha,
-                    ),
-                    minimumSize: Size.square(tokens.minTapTargetSize),
-                    padding: EdgeInsets.all(tokens.spaceXs2),
-                  ),
-                ),
-              ],
+        Expanded(
+          child: Text(
+            data.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: titleStyle?.copyWith(
+              color: scheme.onSurface,
+              fontWeight: FontWeight.w600,
+              decoration: data.completed ? TextDecoration.lineThrough : null,
+              decorationColor: scheme.onSurface.withValues(alpha: 0.55),
             ),
           ),
         ),
+        if (canEdit)
+          IconButton(
+            tooltip: 'Edit project',
+            onPressed: onEditRequested,
+            icon: const Icon(Icons.edit_rounded),
+            style: IconButton.styleFrom(
+              foregroundColor: scheme.onSurfaceVariant,
+              backgroundColor: scheme.surfaceContainerHighest.withValues(
+                alpha: tokens.iconButtonBackgroundAlpha,
+              ),
+              minimumSize: Size.square(tokens.minTapTargetSize),
+              padding: EdgeInsets.all(tokens.spaceXs2),
+            ),
+          ),
+      ],
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (canEdit)
+          InkWell(
+            onTap: onEditRequested,
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
+            child: Padding(
+              padding: EdgeInsets.only(bottom: tokens.spaceXs2),
+              child: titleRow,
+            ),
+          )
+        else
+          Padding(
+            padding: EdgeInsets.only(bottom: tokens.spaceXs2),
+            child: titleRow,
+          ),
         if (metaChildren.isNotEmpty)
           Wrap(
             spacing: tokens.spaceSm2,
@@ -670,26 +560,38 @@ class _ProjectDetailHeader extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: metaChildren,
           ),
-        if (richTextHasContent(description)) ...[
-          SizedBox(height: tokens.spaceSm),
-          _ProjectNotesView(rawNotes: description),
-        ],
       ],
     );
   }
 }
 
-class _ProjectNotesView extends StatefulWidget {
-  const _ProjectNotesView({required this.rawNotes});
+class _ProjectNotesEditor extends StatefulWidget {
+  const _ProjectNotesEditor({
+    required this.rawNotes,
+    required this.hintText,
+    required this.onNotesChanged,
+  });
 
-  final String? rawNotes;
+  final String rawNotes;
+  final String hintText;
+  final ValueChanged<String> onNotesChanged;
 
   @override
-  State<_ProjectNotesView> createState() => _ProjectNotesViewState();
+  State<_ProjectNotesEditor> createState() => _ProjectNotesEditorState();
 }
 
-class _ProjectNotesViewState extends State<_ProjectNotesView> {
+class _ProjectNotesEditorState extends State<_ProjectNotesEditor> {
+  static const _debounceDuration = Duration(milliseconds: 450);
+
   late FleatherController _controller;
+  final FocusNode _focusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
+  Timer? _debounceTimer;
+  bool _isEmpty = true;
+  bool _syncing = false;
+  String? _lastSerialized;
+  String? _lastCommitted;
+  String? _pendingSerialized;
 
   @override
   void initState() {
@@ -697,44 +599,142 @@ class _ProjectNotesViewState extends State<_ProjectNotesView> {
     _controller = FleatherController(
       document: parseParchmentDocument(widget.rawNotes),
     );
+    _lastSerialized = serializeParchmentDocument(_controller.document);
+    _lastCommitted = _lastSerialized;
+    _isEmpty = _controller.document.toPlainText().trim().isEmpty;
+    _controller.addListener(_handleDocumentChanged);
+    _focusNode.addListener(_handleFocusChanged);
   }
 
   @override
-  void didUpdateWidget(covariant _ProjectNotesView oldWidget) {
+  void didUpdateWidget(covariant _ProjectNotesEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.rawNotes != widget.rawNotes) {
-      _controller.dispose();
-      _controller = FleatherController(
-        document: parseParchmentDocument(widget.rawNotes),
-      );
+      _replaceDocument(widget.rawNotes);
     }
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_handleDocumentChanged);
     _controller.dispose();
+    _focusNode.removeListener(_handleFocusChanged);
+    _focusNode.dispose();
+    _scrollController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
+  }
+
+  void _handleDocumentChanged() {
+    if (_syncing) return;
+    final serialized = serializeParchmentDocument(_controller.document);
+    if (serialized != _lastSerialized) {
+      _lastSerialized = serialized;
+      _pendingSerialized = serialized;
+      _scheduleCommit();
+    }
+
+    final emptyNow = _controller.document.toPlainText().trim().isEmpty;
+    if (emptyNow != _isEmpty && mounted) {
+      setState(() => _isEmpty = emptyNow);
+    }
+  }
+
+  void _handleFocusChanged() {
+    if (!_focusNode.hasFocus) {
+      _commitPending();
+    }
+  }
+
+  void _scheduleCommit() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(_debounceDuration, _commitPending);
+  }
+
+  void _commitPending() {
+    _debounceTimer?.cancel();
+    final next = _pendingSerialized;
+    if (next == null || next == _lastCommitted) return;
+    _lastCommitted = next;
+    _pendingSerialized = null;
+    widget.onNotesChanged(next);
+  }
+
+  void _replaceDocument(String rawNotes) {
+    if (rawNotes == _lastSerialized) return;
+
+    _syncing = true;
+    _debounceTimer?.cancel();
+    _controller.removeListener(_handleDocumentChanged);
+    _controller.dispose();
+    _controller = FleatherController(
+      document: parseParchmentDocument(rawNotes),
+    );
+    _lastSerialized = serializeParchmentDocument(_controller.document);
+    _lastCommitted = _lastSerialized;
+    _pendingSerialized = null;
+    _isEmpty = _controller.document.toPlainText().trim().isEmpty;
+    _controller.addListener(_handleDocumentChanged);
+    _syncing = false;
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
+    final editorHeight = isCompact ? 160.0 : 200.0;
+    final contentPadding = EdgeInsets.all(tokens.spaceSm);
 
-    return Container(
-      padding: EdgeInsets.all(tokens.spaceSm),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(tokens.radiusMd),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: FleatherEditor(
-        controller: _controller,
-        readOnly: true,
-        showCursor: false,
-        padding: EdgeInsets.zero,
-        scrollable: false,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FleatherToolbar.basic(
+          controller: _controller,
+          hideStrikeThrough: true,
+          hideBackgroundColor: true,
+          hideInlineCode: true,
+          hideIndentation: true,
+          hideCodeBlock: true,
+          hideHorizontalRule: true,
+          hideDirection: true,
+          hideAlignment: true,
+        ),
+        SizedBox(height: tokens.spaceSm),
+        Container(
+          height: editorHeight,
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
+            border: Border.all(color: scheme.outlineVariant),
+          ),
+          child: Stack(
+            children: [
+              FleatherEditor(
+                controller: _controller,
+                focusNode: _focusNode,
+                scrollController: _scrollController,
+                padding: contentPadding,
+              ),
+              if (_isEmpty)
+                IgnorePointer(
+                  child: Padding(
+                    padding: contentPadding,
+                    child: Text(
+                      widget.hintText,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -780,199 +780,6 @@ String? _formatLabel(String label, int maxChars) {
   if (maxChars <= 3) return trimmed.substring(0, maxChars);
   final keep = maxChars - 3;
   return '${trimmed.substring(0, keep)}...';
-}
-
-class _ProjectNextActionsSection extends StatefulWidget {
-  const _ProjectNextActionsSection({
-    required this.entries,
-    required this.selectionState,
-    required this.onPickRequested,
-    required this.onRemoveRequested,
-    required this.onReorderRequested,
-  });
-
-  final List<_NextActionEntry> entries;
-  final SelectionState selectionState;
-  final VoidCallback onPickRequested;
-  final ValueChanged<String> onRemoveRequested;
-  final ValueChanged<List<_NextActionEntry>> onReorderRequested;
-
-  @override
-  State<_ProjectNextActionsSection> createState() =>
-      _ProjectNextActionsSectionState();
-}
-
-class _ProjectNextActionsSectionState
-    extends State<_ProjectNextActionsSection> {
-  late List<_NextActionEntry> _entries;
-
-  @override
-  void initState() {
-    super.initState();
-    _entries = List<_NextActionEntry>.from(widget.entries);
-  }
-
-  @override
-  void didUpdateWidget(covariant _ProjectNextActionsSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!_hasSameEntries(widget.entries, _entries)) {
-      _entries = List<_NextActionEntry>.from(widget.entries);
-    }
-  }
-
-  bool _hasSameEntries(
-    List<_NextActionEntry> incoming,
-    List<_NextActionEntry> current,
-  ) {
-    if (incoming.length != current.length) return false;
-    for (var i = 0; i < incoming.length; i += 1) {
-      final a = incoming[i];
-      final b = current[i];
-      if (a.action.taskId != b.action.taskId ||
-          a.action.rank != b.action.rank) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  void _handleReorder(int oldIndex, int newIndex) {
-    setState(() {
-      final effectiveIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
-      final entry = _entries.removeAt(oldIndex);
-      _entries.insert(effectiveIndex, entry);
-    });
-    widget.onReorderRequested(List<_NextActionEntry>.from(_entries));
-  }
-
-  Future<void> _showActionSheet(_NextActionEntry entry) async {
-    final l10n = context.l10n;
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.push_pin_outlined),
-                title: Text(l10n.projectNextActionsRemoveAction),
-                onTap: () => Navigator.of(sheetContext).pop(true),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (result ?? false) {
-      widget.onRemoveRequested(entry.task.id);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final scheme = Theme.of(context).colorScheme;
-
-    final countLabel = l10n.projectNextActionsCountLabel(
-      _entries.length,
-      3,
-    );
-
-    final header = TasklyRowSpec.header(
-      key: 'project-next-actions-header',
-      title: l10n.projectNextActionsTitle,
-      trailingLabel: countLabel,
-    );
-
-    final pickerRow = TasklyRowSpec.inlineAction(
-      key: 'project-next-actions-picker',
-      label: l10n.projectNextActionsChooseAction,
-      onTap: widget.onPickRequested,
-    );
-
-    final rows = _entries
-        .asMap()
-        .entries
-        .map((entry) {
-          final index = entry.key;
-          final item = entry.value;
-          final rowSpec = _buildProjectTaskRow(
-            context,
-            item.task,
-            widget.selectionState,
-            onLongPressOverride: widget.selectionState.isSelectionMode
-                ? null
-                : () => _showActionSheet(item),
-          );
-          final row = TasklyFeedRenderer.buildRow(
-            rowSpec,
-            context: context,
-          );
-
-          return Container(
-            key: ValueKey('project-next-action-${item.task.id}'),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: EdgeInsets.only(
-                    left: TasklyTokens.of(context).spaceXs,
-                    top: TasklyTokens.of(context).spaceLg,
-                  ),
-                  child: ReorderableDragStartListener(
-                    index: index,
-                    child: Icon(
-                      Icons.drag_handle,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                SizedBox(width: TasklyTokens.of(context).spaceSm),
-                Expanded(child: row),
-              ],
-            ),
-          );
-        })
-        .toList(growable: false);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        TasklyFeedRenderer.buildRow(header, context: context),
-        TasklyFeedRenderer.buildRow(pickerRow, context: context),
-        SizedBox(height: TasklyTokens.of(context).spaceSm),
-        if (rows.isEmpty)
-          TasklyFeedRenderer.buildRow(
-            TasklyRowSpec.subheader(
-              key: 'project-next-actions-empty',
-              title: l10n.projectNextActionsEmptyLabel,
-            ),
-            context: context,
-          )
-        else
-          ReorderableListView(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            buildDefaultDragHandles: false,
-            onReorder: _handleReorder,
-            children: rows,
-          ),
-      ],
-    );
-  }
-}
-
-class _NextActionEntry {
-  const _NextActionEntry({
-    required this.action,
-    required this.task,
-  });
-
-  final ProjectNextAction action;
-  final Task task;
 }
 
 TasklyRowSpec _buildProjectTaskRow(
@@ -1102,4 +909,72 @@ int _countDueSoon(
     }
   }
   return count;
+}
+
+enum _ProjectTaskSortOrder {
+  listOrder,
+  recentlyUpdated,
+  alphabetical,
+  priority,
+  dueDate,
+}
+
+extension _ProjectTaskSortOrderLabels on _ProjectTaskSortOrder {
+  String get label {
+    return switch (this) {
+      _ProjectTaskSortOrder.listOrder => 'Default',
+      _ProjectTaskSortOrder.recentlyUpdated => 'Recently updated',
+      _ProjectTaskSortOrder.alphabetical => 'A–Z',
+      _ProjectTaskSortOrder.priority => 'Priority',
+      _ProjectTaskSortOrder.dueDate => 'Due date',
+    };
+  }
+}
+
+List<Task> _sortTasks(List<Task> tasks, _ProjectTaskSortOrder order) {
+  if (order == _ProjectTaskSortOrder.listOrder) {
+    return tasks.toList(growable: false);
+  }
+
+  int byName(Task a, Task b) {
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  }
+
+  int byUpdated(Task a, Task b) {
+    final byUpdated = b.updatedAt.compareTo(a.updatedAt);
+    if (byUpdated != 0) return byUpdated;
+    return byName(a, b);
+  }
+
+  int byPriority(Task a, Task b) {
+    final aPriority = a.priority ?? 999;
+    final bPriority = b.priority ?? 999;
+    final byPriority = aPriority.compareTo(bPriority);
+    if (byPriority != 0) return byPriority;
+    return byName(a, b);
+  }
+
+  int byDueDate(Task a, Task b) {
+    final aDate = a.occurrence?.deadline ?? a.deadlineDate;
+    final bDate = b.occurrence?.deadline ?? b.deadlineDate;
+    if (aDate != null && bDate != null) {
+      final byDate = aDate.compareTo(bDate);
+      if (byDate != 0) return byDate;
+    } else if (aDate != null || bDate != null) {
+      return aDate != null ? -1 : 1;
+    }
+    return byName(a, b);
+  }
+
+  final sorted = tasks.toList(growable: false);
+  sorted.sort(
+    switch (order) {
+      _ProjectTaskSortOrder.recentlyUpdated => byUpdated,
+      _ProjectTaskSortOrder.alphabetical => byName,
+      _ProjectTaskSortOrder.priority => byPriority,
+      _ProjectTaskSortOrder.dueDate => byDueDate,
+      _ProjectTaskSortOrder.listOrder => byName,
+    },
+  );
+  return sorted;
 }

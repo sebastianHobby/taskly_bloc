@@ -23,8 +23,6 @@ class WeeklyReviewConfig {
     required this.projectIdleThresholdDays,
     required this.deadlineRiskDueWithinDays,
     required this.deadlineRiskMinUnscheduledCount,
-    required this.showMissingNextActions,
-    required this.missingNextActionsMinOpenTasks,
     required this.showFrequentSnoozed,
   });
 
@@ -42,9 +40,6 @@ class WeeklyReviewConfig {
       deadlineRiskDueWithinDays: settings.maintenanceDeadlineRiskDueWithinDays,
       deadlineRiskMinUnscheduledCount:
           settings.maintenanceDeadlineRiskMinUnscheduledCount,
-      showMissingNextActions: settings.maintenanceMissingNextActionsEnabled,
-      missingNextActionsMinOpenTasks:
-          settings.maintenanceMissingNextActionsMinOpenTasks,
       showFrequentSnoozed: settings.maintenanceFrequentSnoozedEnabled,
     );
   }
@@ -60,8 +55,6 @@ class WeeklyReviewConfig {
   final int projectIdleThresholdDays;
   final int deadlineRiskDueWithinDays;
   final int deadlineRiskMinUnscheduledCount;
-  final bool showMissingNextActions;
-  final int missingNextActionsMinOpenTasks;
   final bool showFrequentSnoozed;
 }
 
@@ -741,22 +734,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       );
     }
 
-    if (config.showMissingNextActions) {
-      final missingItems = items.where(
-        (i) => i.ruleKey == 'problem_project_missing_next_actions',
-      );
-      sections.add(
-        WeeklyReviewMaintenanceSection(
-          id: 'missing-next-actions',
-          title: 'Missing Next Actions',
-          emptyMessage: 'No projects are missing next actions.',
-          items: missingItems
-              .map(_mapMissingNextActionsItem)
-              .toList(growable: false),
-        ),
-      );
-    }
-
     if (config.showFrequentSnoozed) {
       sections.add(_buildFrequentSnoozedSection(state.maintenanceSections));
     }
@@ -909,18 +886,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     return WeeklyReviewMaintenanceItem(
       title: name,
       description: 'No activity in $thresholdDays days.',
-    );
-  }
-
-  WeeklyReviewMaintenanceItem _mapMissingNextActionsItem(AttentionItem item) {
-    final name =
-        item.metadata?['project_name'] as String? ??
-        item.metadata?['entity_display_name'] as String? ??
-        'Project';
-
-    return WeeklyReviewMaintenanceItem(
-      title: name,
-      description: item.description,
     );
   }
 

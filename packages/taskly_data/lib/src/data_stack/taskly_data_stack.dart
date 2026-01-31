@@ -21,7 +21,6 @@ import 'package:taskly_data/src/infrastructure/powersync/api_connector.dart';
 import 'package:taskly_data/src/infrastructure/supabase/supabase.dart';
 import 'package:taskly_data/src/repositories/auth_repository.dart';
 import 'package:taskly_data/src/repositories/project_anchor_state_repository.dart';
-import 'package:taskly_data/src/repositories/project_next_actions_repository.dart';
 import 'package:taskly_data/src/repositories/project_repository.dart';
 import 'package:taskly_data/src/repositories/routine_repository.dart';
 import 'package:taskly_data/src/repositories/settings_repository.dart';
@@ -44,7 +43,6 @@ final class TasklyDataBindings {
     required this.localDataMaintenanceService,
     required this.userDataWipeService,
     required this.projectRepository,
-    required this.projectNextActionsRepository,
     required this.projectAnchorStateRepository,
     required this.taskRepository,
     required this.valueRepository,
@@ -71,7 +69,6 @@ final class TasklyDataBindings {
   final UserDataWipeService userDataWipeService;
 
   final ProjectRepositoryContract projectRepository;
-  final ProjectNextActionsRepositoryContract projectNextActionsRepository;
   final ProjectAnchorStateRepositoryContract projectAnchorStateRepository;
   final TaskRepositoryContract taskRepository;
   final ValueRepositoryContract valueRepository;
@@ -283,12 +280,6 @@ final class TasklyDataStack implements SyncAnomalyStream {
       clock: clock,
     );
 
-    final projectNextActionsRepository = ProjectNextActionsRepository(
-      driftDb: driftDb,
-      idGenerator: idGenerator,
-      clock: clock,
-    );
-
     final projectAnchorStateRepository = ProjectAnchorStateRepository(
       driftDb: driftDb,
       idGenerator: idGenerator,
@@ -388,7 +379,6 @@ final class TasklyDataStack implements SyncAnomalyStream {
       localDataMaintenanceService: localDataMaintenanceService,
       userDataWipeService: userDataWipeService,
       projectRepository: projectRepository,
-      projectNextActionsRepository: projectNextActionsRepository,
       projectAnchorStateRepository: projectAnchorStateRepository,
       taskRepository: taskRepository,
       valueRepository: valueRepository,

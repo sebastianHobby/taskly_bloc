@@ -21,10 +21,8 @@ import 'package:taskly_domain/time.dart' show Clock, systemClock;
 /// Debounces the user profile stream to reduce PowerSync CDC "bounce" where an
 /// older snapshot may briefly appear after a local save.
 class SettingsRepository implements SettingsRepositoryContract {
-  SettingsRepository({
-    required this.driftDb,
-    Clock clock = systemClock,
-  }) : _clock = clock;
+  SettingsRepository({required this.driftDb, Clock clock = systemClock})
+    : _clock = clock;
 
   final AppDatabase driftDb;
   final Clock _clock;

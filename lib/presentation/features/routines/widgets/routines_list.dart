@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/routines/model/routine_list_item.dart';
 import 'package:taskly_bloc/presentation/features/routines/model/routine_sort_order.dart';
 import 'package:taskly_bloc/presentation/features/routines/selection/routine_selection_bloc.dart';
 import 'package:taskly_bloc/presentation/features/routines/selection/routine_selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
@@ -29,6 +33,11 @@ class RoutinesListView extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final selection = context.read<RoutineSelectionBloc>();
+    final tourActive = context.select(
+      (GuidedTourBloc bloc) => bloc.state.active,
+    );
+    final demoEnabled = context.read<DemoModeService>().isEnabled;
+    final showTourAnchors = tourActive && demoEnabled;
 
     final List<RoutineListItem> visibleItems;
     final List<TasklySectionSpec> sections;
@@ -43,6 +52,7 @@ class RoutinesListView extends StatelessWidget {
         onEditRoutine: onEditRoutine,
         onLogRoutine: onLogRoutine,
         selection: selection,
+        showTourAnchors: showTourAnchors,
       );
     } else {
       final sorted = _sortItems(items, sortOrder);
@@ -53,6 +63,7 @@ class RoutinesListView extends StatelessWidget {
         onEditRoutine: onEditRoutine,
         onLogRoutine: onLogRoutine,
         selection: selection,
+        showTourAnchors: showTourAnchors,
       );
     }
 
@@ -109,6 +120,7 @@ List<TasklySectionSpec> _buildScheduledSections(
   required ValueChanged<String> onEditRoutine,
   required ValueChanged<String> onLogRoutine,
   required RoutineSelectionBloc selection,
+  required bool showTourAnchors,
 }) {
   return <TasklySectionSpec>[
     if (scheduled.isNotEmpty)
@@ -127,6 +139,7 @@ List<TasklySectionSpec> _buildScheduledSections(
               onEditRoutine: onEditRoutine,
               onLogRoutine: onLogRoutine,
               selection: selection,
+              showTourAnchors: showTourAnchors,
             ),
         ],
       ),
@@ -146,6 +159,7 @@ List<TasklySectionSpec> _buildScheduledSections(
               onEditRoutine: onEditRoutine,
               onLogRoutine: onLogRoutine,
               selection: selection,
+              showTourAnchors: showTourAnchors,
             ),
         ],
       ),
@@ -158,6 +172,7 @@ List<TasklySectionSpec> _buildFlatSection(
   required ValueChanged<String> onEditRoutine,
   required ValueChanged<String> onLogRoutine,
   required RoutineSelectionBloc selection,
+  required bool showTourAnchors,
 }) {
   if (items.isEmpty) return const <TasklySectionSpec>[];
   return [
@@ -176,6 +191,7 @@ List<TasklySectionSpec> _buildFlatSection(
             onEditRoutine: onEditRoutine,
             onLogRoutine: onLogRoutine,
             selection: selection,
+            showTourAnchors: showTourAnchors,
           ),
       ],
     ),
@@ -188,10 +204,15 @@ TasklyRowSpec _buildRow(
   required ValueChanged<String> onEditRoutine,
   required ValueChanged<String> onLogRoutine,
   required RoutineSelectionBloc selection,
+  required bool showTourAnchors,
 }) {
   final key = RoutineSelectionKey(item.routine.id);
   final selectionMode = selection.isSelectionMode;
   final isSelected = selection.isSelected(key);
+  final anchorKey = _guidedTourAnchorForRoutine(
+    item,
+    showTourAnchors: showTourAnchors,
+  );
 
   void handleTap() {
     if (selection.shouldInterceptTapAsSelection()) {
@@ -232,7 +253,22 @@ TasklyRowSpec _buildRow(
       onToggleSelected: () =>
           selection.toggleSelection(key, extendRange: false),
     ),
+    anchorKey: anchorKey,
   );
+}
+
+Key? _guidedTourAnchorForRoutine(
+  RoutineListItem item, {
+  required bool showTourAnchors,
+}) {
+  if (!showTourAnchors) return null;
+  return switch (item.routine.id) {
+    DemoDataProvider.demoRoutineGymId =>
+      GuidedTourAnchors.routinesScheduledExample,
+    DemoDataProvider.demoRoutineGuitarId =>
+      GuidedTourAnchors.routinesFlexibleExample,
+    _ => null,
+  };
 }
 
 List<RoutineListItem> _sortItems(

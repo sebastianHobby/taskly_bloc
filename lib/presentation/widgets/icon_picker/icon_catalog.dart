@@ -25,7 +25,6 @@ const Map<String, IconData> _legacyIconOverrides = {
   'my_day': Icons.wb_sunny,
   'today': Icons.today,
   'upcoming': Icons.event,
-  'next_actions': Icons.playlist_play,
   'checklist': Icons.checklist,
   'task': Icons.task_alt,
   'done': Icons.done_all,

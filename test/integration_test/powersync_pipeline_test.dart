@@ -217,8 +217,9 @@ void main() {
         scheduleDays: const [1, 3, 5],
       );
 
-      final routineId =
-          (await routines.getAll(includeInactive: true)).single.id;
+      final routineId = (await routines.getAll(
+        includeInactive: true,
+      )).single.id;
 
       await _startSessionAndWaitForSync(stack, bindings);
 
@@ -245,8 +246,9 @@ void main() {
         scheduleDays: const [2, 4],
       );
 
-      final routineId =
-          (await routines.getAll(includeInactive: true)).single.id;
+      final routineId = (await routines.getAll(
+        includeInactive: true,
+      )).single.id;
 
       await _startSessionAndWaitForSync(stack, bindings);
 
@@ -304,7 +306,6 @@ void main() {
         maintenanceDeadlineRiskEnabled: false,
         maintenanceTaskStaleThresholdDays: 10,
         maintenanceProjectIdleThresholdDays: 20,
-        maintenanceMissingNextActionsMinOpenTasks: 2,
       );
 
       await settings.save(SettingsKey.global, updated);
@@ -353,13 +354,14 @@ Future<void> _startSessionAndWaitForSync(
   TasklyDataBindings bindings,
 ) async {
   await stack.startSession();
-  await bindings.initialSyncService
-      .waitForFirstSync()
-      .timeout(_initialSyncTimeout, onTimeout: () {
-        throw TimeoutException(
-          'Timed out waiting for the initial PowerSync sync checkpoint.',
-        );
-      });
+  await bindings.initialSyncService.waitForFirstSync().timeout(
+    _initialSyncTimeout,
+    onTimeout: () {
+      throw TimeoutException(
+        'Timed out waiting for the initial PowerSync sync checkpoint.',
+      );
+    },
+  );
 }
 
 Future<void> _ensureSignedIn(
@@ -388,10 +390,7 @@ Future<void> _ensureSignedIn(
 }
 
 Future<void> _clearRemoteData(SupabaseClient client) async {
-  await client
-      .from('task_recurrence_exceptions')
-      .delete()
-      .neq('id', _zeroUuid);
+  await client.from('task_recurrence_exceptions').delete().neq('id', _zeroUuid);
   await client
       .from('project_recurrence_exceptions')
       .delete()

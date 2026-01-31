@@ -111,6 +111,7 @@ void main() {
     when(() => valueRepository.getAll()).thenAnswer((_) => completer.future);
 
     await pumpPage(tester);
+    await tester.pumpForStream();
 
     expect(find.text('Loading...'), findsWidgets);
 

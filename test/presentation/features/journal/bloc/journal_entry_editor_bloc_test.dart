@@ -295,9 +295,11 @@ void main() {
         ),
       ).captured;
       expect(captured.length, 4);
-      final ctx = captured.firstWhere(
-        (item) => item is OperationContext,
-      ) as OperationContext;
+      final ctx =
+          captured.firstWhere(
+                (item) => item is OperationContext,
+              )
+              as OperationContext;
       expect(ctx.feature, 'journal');
       expect(ctx.screen, 'journal_entry_editor');
       expect(ctx.intent, 'save');

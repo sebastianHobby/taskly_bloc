@@ -67,7 +67,6 @@ class IdGenerator {
     'analytics_insights',
     'attention_resolutions',
     'task_snooze_events',
-    'project_next_actions',
     'routines',
     'routine_completions',
     'routine_skips',
@@ -117,9 +116,6 @@ class IdGenerator {
 
   /// Generate random ID for a task snooze event.
   String taskSnoozeEventId() => _uuid.v4();
-
-  /// Generate random ID for a project next action.
-  String projectNextActionId() => _uuid.v4();
 
   /// Generate random ID for a routine.
   String routineId() => _uuid.v4();

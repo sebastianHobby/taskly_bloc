@@ -119,8 +119,6 @@ void main() {
           projectIdleThresholdDays: 14,
           deadlineRiskDueWithinDays: 3,
           deadlineRiskMinUnscheduledCount: 2,
-          showMissingNextActions: false,
-          missingNextActionsMinOpenTasks: 2,
           showFrequentSnoozed: false,
         ),
       ),

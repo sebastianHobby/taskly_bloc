@@ -22,9 +22,6 @@ bucket_definitions:
       - SELECT * FROM my_day_days WHERE user_id = bucket.user_id
       - SELECT * FROM my_day_picks WHERE user_id = bucket.user_id
 
-      # Project next actions (ranked per project)
-      - SELECT * FROM project_next_actions WHERE user_id = bucket.user_id
-
       # Project anchor state (last anchored time)
       - SELECT * FROM project_anchor_state WHERE user_id = bucket.user_id
 

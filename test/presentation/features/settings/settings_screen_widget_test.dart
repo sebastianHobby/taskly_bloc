@@ -42,7 +42,7 @@ void main() {
     expect(find.text('Language & Region'), findsOneWidget);
     expect(find.text('Account'), findsOneWidget);
     if (kDebugMode) {
-      expect(find.text('Developer'), findsOneWidget);
+      expect(find.text('Developer', skipOffstage: false), findsOneWidget);
     }
   });
 }

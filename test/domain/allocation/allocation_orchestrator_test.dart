@@ -19,7 +19,6 @@ void main() {
     late FakeValueRatingsRepository valueRatingsRepository;
     late FakeSettingsRepository settingsRepository;
     late FakeProjectRepository projectRepository;
-    late FakeProjectNextActionsRepository projectNextActionsRepository;
     late FakeProjectAnchorStateRepository projectAnchorStateRepository;
     late MockAnalyticsService analyticsService;
     late HomeDayKeyService dayKeyService;
@@ -32,7 +31,6 @@ void main() {
         allocation: const AllocationConfig(suggestionsPerBatch: 2),
       );
       projectRepository = FakeProjectRepository();
-      projectNextActionsRepository = FakeProjectNextActionsRepository();
       projectAnchorStateRepository = FakeProjectAnchorStateRepository();
       analyticsService = MockAnalyticsService();
       dayKeyService = HomeDayKeyService(settingsRepository: settingsRepository);
@@ -52,7 +50,6 @@ void main() {
         settingsRepository: settingsRepository,
         analyticsService: analyticsService,
         projectRepository: projectRepository,
-        projectNextActionsRepository: projectNextActionsRepository,
         projectAnchorStateRepository: projectAnchorStateRepository,
         dayKeyService: dayKeyService,
       );
@@ -95,7 +92,6 @@ void main() {
         settingsRepository: settingsRepository,
         analyticsService: analyticsService,
         projectRepository: projectRepository,
-        projectNextActionsRepository: projectNextActionsRepository,
         projectAnchorStateRepository: projectAnchorStateRepository,
         dayKeyService: dayKeyService,
       );
@@ -129,7 +125,6 @@ void main() {
         settingsRepository: settingsRepository,
         analyticsService: analyticsService,
         projectRepository: projectRepository,
-        projectNextActionsRepository: projectNextActionsRepository,
         projectAnchorStateRepository: projectAnchorStateRepository,
         dayKeyService: dayKeyService,
       );

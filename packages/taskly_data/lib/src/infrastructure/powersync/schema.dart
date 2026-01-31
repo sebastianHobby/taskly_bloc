@@ -43,14 +43,6 @@ const schema = Schema([
     Column.integer('pinned'),
     Column.text('primary_value_id'),
   ], trackMetadata: true),
-  Table('project_next_actions', [
-    Column.text('user_id'),
-    Column.text('project_id'),
-    Column.text('task_id'),
-    Column.integer('rank'),
-    Column.text('created_at'),
-    Column.text('updated_at'),
-  ], trackMetadata: true),
   Table('project_anchor_state', [
     Column.text('user_id'),
     Column.text('project_id'),

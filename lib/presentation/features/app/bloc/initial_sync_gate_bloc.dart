@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
 import 'package:taskly_domain/core.dart';
@@ -49,7 +50,7 @@ final class InitialSyncGateBloc
        _initialSyncService = initialSyncService,
        _sharedDataService = sharedDataService,
        super(const InitialSyncGateInProgress(progress: null)) {
-    on<InitialSyncGateStarted>(_onStarted);
+    on<InitialSyncGateStarted>(_onStarted, transformer: restartable());
     on<InitialSyncGateRetryRequested>(_onRetryRequested);
   }
 
@@ -61,6 +62,7 @@ final class InitialSyncGateBloc
     InitialSyncGateStarted event,
     Emitter<InitialSyncGateState> emit,
   ) async {
+    emit(const InitialSyncGateInProgress(progress: null));
     await emit.forEach<InitialSyncGateState>(
       _gateStateStream(),
       onData: (state) => state,
@@ -77,7 +79,7 @@ final class InitialSyncGateBloc
     InitialSyncGateRetryRequested event,
     Emitter<InitialSyncGateState> emit,
   ) async {
-    await _onStarted(const InitialSyncGateStarted(), emit);
+    add(const InitialSyncGateStarted());
   }
 
   Stream<InitialSyncGateState> _gateStateStream() async* {

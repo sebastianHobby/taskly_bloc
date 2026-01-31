@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
@@ -47,10 +48,12 @@ void main() {
     weekEventsSubject = BehaviorSubject<List<TrackerEvent>>();
     dayStatesSubject = BehaviorSubject<List<TrackerStateDay>>();
 
-    when(() => repository.watchTrackerDefinitions())
-        .thenAnswer((_) => defsSubject);
-    when(() => repository.watchJournalEntriesByQuery(any()))
-        .thenAnswer((_) => entriesSubject);
+    when(
+      () => repository.watchTrackerDefinitions(),
+    ).thenAnswer((_) => defsSubject);
+    when(
+      () => repository.watchJournalEntriesByQuery(any()),
+    ).thenAnswer((_) => entriesSubject);
     when(
       () => repository.watchTrackerEvents(
         range: any(named: 'range'),
@@ -80,17 +83,27 @@ void main() {
   });
 
   Future<void> pumpPage(WidgetTester tester) async {
-    await tester.pumpApp(
-      MultiRepositoryProvider(
-        providers: [
-          RepositoryProvider<JournalRepositoryContract>.value(value: repository),
-          RepositoryProvider<NowService>.value(
-            value: FakeNowService(DateTime(2025, 1, 15, 9)),
+    final router = GoRouter(
+      initialLocation: '/journal',
+      routes: [
+        GoRoute(
+          path: '/journal',
+          builder: (_, __) => MultiRepositoryProvider(
+            providers: [
+              RepositoryProvider<JournalRepositoryContract>.value(
+                value: repository,
+              ),
+              RepositoryProvider<NowService>.value(
+                value: FakeNowService(DateTime(2025, 1, 15, 9)),
+              ),
+            ],
+            child: const JournalHubPage(),
           ),
-        ],
-        child: const JournalHubPage(),
-      ),
+        ),
+      ],
     );
+
+    await tester.pumpWidgetWithRouter(router: router);
   }
 
   testWidgetsSafe('shows loading state before streams emit', (tester) async {

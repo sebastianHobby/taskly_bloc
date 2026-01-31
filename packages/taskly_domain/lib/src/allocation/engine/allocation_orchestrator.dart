@@ -4,7 +4,6 @@ import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/src/interfaces/value_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/project_anchor_state_repository_contract.dart';
-import 'package:taskly_domain/src/interfaces/project_next_actions_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/settings_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/value_ratings_repository_contract.dart';
@@ -14,7 +13,6 @@ import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/core/model/project.dart';
 import 'package:taskly_domain/src/core/model/value.dart';
 import 'package:taskly_domain/src/projects/model/project_anchor_state.dart';
-import 'package:taskly_domain/src/projects/model/project_next_action.dart';
 import 'package:taskly_domain/src/allocation/model/allocation_result.dart';
 import 'package:taskly_domain/src/queries/task_query.dart';
 import 'package:taskly_domain/src/allocation/engine/allocation_strategy.dart';
@@ -39,7 +37,6 @@ class AllocationOrchestrator {
     required SettingsRepositoryContract settingsRepository,
     required AnalyticsService analyticsService,
     required ProjectRepositoryContract projectRepository,
-    required ProjectNextActionsRepositoryContract projectNextActionsRepository,
     required ProjectAnchorStateRepositoryContract projectAnchorStateRepository,
     required HomeDayKeyService dayKeyService,
     Clock clock = systemClock,
@@ -49,7 +46,6 @@ class AllocationOrchestrator {
        _settingsRepository = settingsRepository,
        _analyticsService = analyticsService,
        _projectRepository = projectRepository,
-       _projectNextActionsRepository = projectNextActionsRepository,
        _projectAnchorStateRepository = projectAnchorStateRepository,
        _dayKeyService = dayKeyService,
        _clock = clock;
@@ -60,7 +56,6 @@ class AllocationOrchestrator {
   final SettingsRepositoryContract _settingsRepository;
   final AnalyticsService _analyticsService;
   final ProjectRepositoryContract _projectRepository;
-  final ProjectNextActionsRepositoryContract _projectNextActionsRepository;
   final ProjectAnchorStateRepositoryContract _projectAnchorStateRepository;
   final HomeDayKeyService _dayKeyService;
   final Clock _clock;
@@ -95,21 +90,18 @@ class AllocationOrchestrator {
     final results = await Future.wait([
       _taskRepository.getAll(TaskQuery.incomplete()),
       _projectRepository.getAll(),
-      _projectNextActionsRepository.getAll(),
       _projectAnchorStateRepository.getAll(),
       _settingsRepository.load(SettingsKey.allocation),
     ]);
 
     final tasks = results[0] as List<Task>;
     final projects = results[1] as List<Project>;
-    final projectNextActions = results[2] as List<ProjectNextAction>;
-    final projectAnchorStates = results[3] as List<ProjectAnchorState>;
-    final allocationConfig = results[4] as AllocationConfig;
+    final projectAnchorStates = results[2] as List<ProjectAnchorState>;
+    final allocationConfig = results[3] as AllocationConfig;
 
     return _computeAllocation(
       tasks: tasks,
       projects: projects,
-      projectNextActions: projectNextActions,
       projectAnchorStates: projectAnchorStates,
       allocationConfig: allocationConfig,
       nowUtc: resolvedNowUtc,
@@ -142,16 +134,14 @@ class AllocationOrchestrator {
     final results = await Future.wait([
       _taskRepository.getAll(TaskQuery.incomplete()),
       _projectRepository.getAll(),
-      _projectNextActionsRepository.getAll(),
       _projectAnchorStateRepository.getAll(),
       _settingsRepository.load(SettingsKey.allocation),
     ]);
 
     final tasks = results[0] as List<Task>;
     final projects = results[1] as List<Project>;
-    final projectNextActions = results[2] as List<ProjectNextAction>;
-    final projectAnchorStates = results[3] as List<ProjectAnchorState>;
-    final allocationConfig = results[4] as AllocationConfig;
+    final projectAnchorStates = results[2] as List<ProjectAnchorState>;
+    final allocationConfig = results[3] as AllocationConfig;
 
     final safeBatchCount = batchCount.clamp(1, 50);
     final safeAnchorCount = allocationConfig.strategySettings.anchorCount.clamp(
@@ -163,7 +153,6 @@ class AllocationOrchestrator {
     return _computeAllocation(
       tasks: tasks,
       projects: projects,
-      projectNextActions: projectNextActions,
       projectAnchorStates: projectAnchorStates,
       allocationConfig: allocationConfig,
       nowUtc: resolvedNowUtc,
@@ -196,16 +185,14 @@ class AllocationOrchestrator {
     final results = await Future.wait([
       _taskRepository.getAll(TaskQuery.incomplete()),
       _projectRepository.getAll(),
-      _projectNextActionsRepository.getAll(),
       _projectAnchorStateRepository.getAll(),
       _settingsRepository.load(SettingsKey.allocation),
     ]);
 
     final tasks = results[0] as List<Task>;
     final projects = results[1] as List<Project>;
-    final projectNextActions = results[2] as List<ProjectNextAction>;
-    final projectAnchorStates = results[3] as List<ProjectAnchorState>;
-    final allocationConfig = results[4] as AllocationConfig;
+    final projectAnchorStates = results[2] as List<ProjectAnchorState>;
+    final allocationConfig = results[3] as AllocationConfig;
 
     final strategy = allocationConfig.strategySettings;
     final tasksPerAnchorMax = strategy.tasksPerAnchorMax.clamp(1, 50);
@@ -222,7 +209,6 @@ class AllocationOrchestrator {
     return _computeAllocation(
       tasks: tasks,
       projects: projects,
-      projectNextActions: projectNextActions,
       projectAnchorStates: projectAnchorStates,
       allocationConfig: allocationConfig,
       nowUtc: resolvedNowUtc,
@@ -236,7 +222,6 @@ class AllocationOrchestrator {
   Future<AllocationResult> _computeAllocation({
     required List<Task> tasks,
     required List<Project> projects,
-    required List<ProjectNextAction> projectNextActions,
     required List<ProjectAnchorState> projectAnchorStates,
     required AllocationConfig allocationConfig,
     required DateTime nowUtc,
@@ -309,7 +294,6 @@ class AllocationOrchestrator {
     final allocatedRegularTasks = await allocateRegularTasks(
       regularTasks,
       projects: projects,
-      projectNextActions: projectNextActions,
       projectAnchorStates: projectAnchorStates,
       allocationConfig: allocationConfig,
       nowUtc: nowUtc,
@@ -357,7 +341,6 @@ class AllocationOrchestrator {
   Future<AllocationResult> allocateRegularTasks(
     List<Task> tasks, {
     required List<Project> projects,
-    required List<ProjectNextAction> projectNextActions,
     required List<ProjectAnchorState> projectAnchorStates,
     required AllocationConfig allocationConfig,
     required DateTime nowUtc,
@@ -475,7 +458,6 @@ class AllocationOrchestrator {
       todayDayKeyUtc: todayDayKeyUtc,
       tasks: tasks,
       projects: projects,
-      projectNextActions: projectNextActions,
       projectAnchorStates: projectAnchorStates,
       categories: categories,
       maxTasks: maxTasks,
@@ -483,7 +465,6 @@ class AllocationOrchestrator {
       tasksPerAnchorMin: settings.tasksPerAnchorMin,
       tasksPerAnchorMax: settings.tasksPerAnchorMax,
       freeSlots: settings.freeSlots,
-      nextActionPolicy: settings.nextActionPolicy,
       rotationPressureDays: settings.rotationPressureDays,
       readinessFilter: settings.readinessFilter,
       taskUrgencyThresholdDays: settings.taskUrgencyThresholdDays,

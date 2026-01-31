@@ -11,6 +11,7 @@ import 'package:rxdart/rxdart.dart';
 import '../../helpers/test_imports.dart';
 import '../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_gate_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_query_service.dart';
@@ -41,15 +42,15 @@ class MockEditorLauncher extends Mock implements EditorLauncher {}
 
 class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
+class MockGuidedTourBloc extends MockBloc<GuidedTourEvent, GuidedTourState>
+    implements GuidedTourBloc {}
+
 class MockHomeDayKeyService extends Mock implements HomeDayKeyService {}
 
 class MockTemporalTriggerService extends Mock
     implements TemporalTriggerService {}
 
 class MockNowService extends Mock implements NowService {}
-
-class MockProjectNextActionsRepositoryContract extends Mock
-    implements ProjectNextActionsRepositoryContract {}
 
 class MockProjectAnchorStateRepositoryContract extends Mock
     implements ProjectAnchorStateRepositoryContract {}
@@ -61,7 +62,10 @@ class MockOccurrenceCommandService extends Mock
     implements OccurrenceCommandService {}
 
 void main() {
-  setUpAll(setUpAllTestEnvironment);
+  setUpAll(() {
+    setUpAllTestEnvironment();
+    debugPrint('[my_day_test] setUpAll');
+  });
   setUp(setUpTestEnvironment);
 
   late MyDaySessionQueryService myDaySessionQueryService;
@@ -87,12 +91,12 @@ void main() {
   late MockTaskRepositoryContract taskRepository;
   late MockProjectRepositoryContract projectRepository;
   late MockRoutineRepositoryContract routineRepository;
-  late MockProjectNextActionsRepositoryContract projectNextActionsRepository;
   late MockProjectAnchorStateRepositoryContract projectAnchorStateRepository;
   late MockMyDayRepositoryContract myDayRepository;
   late MockSettingsRepositoryContract settingsRepository;
   late MockEditorLauncher editorLauncher;
   late MockGlobalSettingsBloc globalSettingsBloc;
+  late MockGuidedTourBloc guidedTourBloc;
 
   late BehaviorSubject<List<Value>> valuesSubject;
   late BehaviorSubject<List<Task>> tasksSubject;
@@ -111,6 +115,7 @@ void main() {
   const speedDialInitDelay = Duration(milliseconds: 1);
 
   setUp(() {
+    debugPrint('[my_day_test] setUp');
     nowService = MockNowService();
     dayKeyService = MockHomeDayKeyService();
     temporalTriggerService = MockTemporalTriggerService();
@@ -119,7 +124,6 @@ void main() {
     taskRepository = MockTaskRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
     routineRepository = MockRoutineRepositoryContract();
-    projectNextActionsRepository = MockProjectNextActionsRepositoryContract();
     projectAnchorStateRepository = MockProjectAnchorStateRepositoryContract();
     allocationOrchestrator = MockAllocationOrchestrator();
     occurrenceCommandService = MockOccurrenceCommandService();
@@ -127,6 +131,7 @@ void main() {
     settingsRepository = MockSettingsRepositoryContract();
     editorLauncher = MockEditorLauncher();
     globalSettingsBloc = MockGlobalSettingsBloc();
+    guidedTourBloc = MockGuidedTourBloc();
     demoModeService = DemoModeService();
     demoDataProvider = DemoDataProvider();
 
@@ -232,12 +237,6 @@ void main() {
     when(() => projectRepository.watchAll()).thenAnswer(
       (_) => Stream.value(const <Project>[]),
     );
-    when(() => projectNextActionsRepository.getAll()).thenAnswer(
-      (_) async => [],
-    );
-    when(() => projectNextActionsRepository.watchAll()).thenAnswer(
-      (_) => Stream.value(const <ProjectNextAction>[]),
-    );
     when(() => projectAnchorStateRepository.getAll()).thenAnswer(
       (_) async => [],
     );
@@ -291,6 +290,18 @@ void main() {
         excludedTasks: const <ExcludedTask>[],
       ),
     );
+    when(() => allocationOrchestrator.getAllocationSnapshot()).thenAnswer(
+      (_) async => const AllocationResult(
+        allocatedTasks: <AllocatedTask>[],
+        reasoning: AllocationReasoning(
+          strategyUsed: 'none',
+          categoryAllocations: <String, int>{},
+          categoryWeights: <String, double>{},
+          explanation: 'test',
+        ),
+        excludedTasks: <ExcludedTask>[],
+      ),
+    );
 
     taskWriteService = TaskWriteService(
       taskRepository: taskRepository,
@@ -333,7 +344,6 @@ void main() {
       allocationOrchestrator: allocationOrchestrator,
       taskRepository: taskRepository,
       projectRepository: projectRepository,
-      projectNextActionsRepository: projectNextActionsRepository,
       projectAnchorStateRepository: projectAnchorStateRepository,
       settingsRepository: settingsRepository,
       valueRepository: valueRepository,
@@ -377,6 +387,13 @@ void main() {
       Stream.value(globalState),
       initialState: globalState,
     );
+    final guidedTourState = GuidedTourState.initial();
+    when(() => guidedTourBloc.state).thenReturn(guidedTourState);
+    whenListen(
+      guidedTourBloc,
+      Stream.value(guidedTourState),
+      initialState: guidedTourState,
+    );
 
     addTearDown(valuesSubject.close);
     addTearDown(tasksSubject.close);
@@ -390,6 +407,7 @@ void main() {
     addTearDown(sessionStreamCacheManager.dispose);
     addTearDown(demoModeService.dispose);
     addTearDown(globalSettingsBloc.close);
+    addTearDown(guidedTourBloc.close);
   });
 
   Widget buildSubject() {
@@ -429,13 +447,17 @@ void main() {
         ),
         RepositoryProvider<TaskWriteService>.value(value: taskWriteService),
         RepositoryProvider<DemoModeService>.value(value: demoModeService),
+        RepositoryProvider<DemoDataProvider>.value(value: demoDataProvider),
         RepositoryProvider<TemporalTriggerService>.value(
           value: temporalTriggerService,
         ),
         RepositoryProvider<EditorLauncher>.value(value: editorLauncher),
       ],
-      child: BlocProvider<GlobalSettingsBloc>.value(
-        value: globalSettingsBloc,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<GlobalSettingsBloc>.value(value: globalSettingsBloc),
+          BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
+        ],
         child: const MyDayPage(),
       ),
     );
@@ -449,14 +471,19 @@ void main() {
   }
 
   Future<void> pumpMyDay(WidgetTester tester) async {
+    debugPrint('[my_day_test] pumpMyDay start');
     await tester.pumpApp(buildSubject());
+    debugPrint('[my_day_test] pumpMyDay after pumpApp');
     await tester.pumpForStream();
+    debugPrint('[my_day_test] pumpMyDay after pumpForStream');
     await tester.pump(speedDialInitDelay);
+    debugPrint('[my_day_test] pumpMyDay after speedDial');
   }
 
   testWidgetsSafe('my day shows loading state while waiting for data', (
     tester,
   ) async {
+    debugPrint('[my_day_test] loading state test start');
     final completer = Completer<my_day.MyDayDayPicks>();
     when(() => myDayRepository.loadDay(any())).thenAnswer(
       (_) => completer.future,
@@ -479,11 +506,23 @@ void main() {
       find.text('Preparing a calm list for today...'),
       findsOneWidget,
     );
+
+    completer.complete(
+      my_day.MyDayDayPicks(
+        dayKeyUtc: dayKeyUtc,
+        ritualCompletedAtUtc: nowUtc,
+        picks: const <my_day.MyDayPick>[],
+      ),
+    );
+    await tester.pumpForStream();
+
+    await myDaySessionQueryService.stop();
   });
 
   testWidgetsSafe(
     'my day keeps content when watch stream errors after load',
     (tester) async {
+      debugPrint('[my_day_test] watch error test start');
       final task = TestData.task(id: 'task-err-1', name: 'Still Here');
       seedDailyStreams();
       tasksSubject.add([task]);
@@ -507,15 +546,18 @@ void main() {
         (_) => Stream<my_day.MyDayDayPicks>.error(Exception('boom')),
       );
 
-      await pumpMyDay(tester);
-      await tester.pumpForStream();
+    await pumpMyDay(tester);
+    await tester.pumpForStream();
 
-      expect(find.byKey(ValueKey('myday-accepted-${task.id}')), findsOneWidget);
-      expect(find.text("Couldn't load your list."), findsNothing);
-    },
+    expect(find.byKey(ValueKey('myday-accepted-${task.id}')), findsOneWidget);
+    expect(find.text("Couldn't load your list."), findsNothing);
+
+    await myDaySessionQueryService.stop();
+  },
   );
 
   testWidgetsSafe('my day renders and updates planned tasks', (tester) async {
+    debugPrint('[my_day_test] renders/updates test start');
     final task = TestData.task(id: 'task-1', name: 'Plan Something');
     final task2 = TestData.task(
       id: 'task-2',
@@ -567,5 +609,7 @@ void main() {
 
     final secondTaskKey = ValueKey('myday-accepted-${task2.id}');
     expect(find.byKey(secondTaskKey), findsOneWidget);
+
+    await myDaySessionQueryService.stop();
   });
 }

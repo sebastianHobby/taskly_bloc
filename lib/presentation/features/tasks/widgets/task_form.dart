@@ -9,7 +9,6 @@ import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/feature_flags.dart';
 import 'package:taskly_domain/time.dart';
@@ -707,38 +706,35 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                         .where((p) => p.id == field.value)
                         .firstOrNull;
 
-                    return Container(
-                      key: GuidedTourAnchors.taskProjectAndValue,
-                      child: KeyedSubtree(
-                        key: _projectKey,
-                        child: Builder(
-                          builder: (chipContext) => TasklyFormProjectRow(
-                            label:
-                                selectedProject?.name ??
-                                context.l10n.addProjectAction,
-                            hasValue: selectedProject != null,
-                            onTap: () async {
-                              final result = await _showProjectPicker(
-                                anchorContext: chipContext,
-                                currentProjectId: field.value ?? '',
-                              );
-                              if (result == null) return;
+                    return KeyedSubtree(
+                      key: _projectKey,
+                      child: Builder(
+                        builder: (chipContext) => TasklyFormProjectRow(
+                          label:
+                              selectedProject?.name ??
+                              context.l10n.addProjectAction,
+                          hasValue: selectedProject != null,
+                          onTap: () async {
+                            final result = await _showProjectPicker(
+                              anchorContext: chipContext,
+                              currentProjectId: field.value ?? '',
+                            );
+                            if (result == null) return;
 
-                              switch (result) {
-                                case _ProjectPickerResultCleared():
-                                  field.didChange('');
-                                case _ProjectPickerResultSelected(
-                                  :final project,
-                                ):
-                                  field.didChange(project.id);
-                                  _recordRecentProjectId(project.id);
-                              }
+                            switch (result) {
+                              case _ProjectPickerResultCleared():
+                                field.didChange('');
+                              case _ProjectPickerResultSelected(
+                                :final project,
+                              ):
+                                field.didChange(project.id);
+                                _recordRecentProjectId(project.id);
+                            }
 
-                              markDirty();
-                              _clearTagsIfNotAllowed();
-                              setState(() {});
-                            },
-                          ),
+                            markDirty();
+                            _clearTagsIfNotAllowed();
+                            setState(() {});
+                          },
                         ),
                       ),
                     );
