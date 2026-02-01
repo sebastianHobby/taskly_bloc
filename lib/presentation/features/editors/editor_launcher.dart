@@ -228,6 +228,19 @@ class EditorLauncher {
     bool openToValues = false,
     bool? showDragHandle,
   }) {
+    final projectWriteService = _projectWriteService;
+    if (projectWriteService == null) {
+      throw StateError(
+        'EditorLauncher.openProjectEditor requires a ProjectWriteService.',
+      );
+    }
+    final projectEditorBuilder = _projectEditorBuilder;
+    if (projectEditorBuilder == null) {
+      throw StateError(
+        'EditorLauncher.openProjectEditor requires a ProjectEditorBuilder.',
+      );
+    }
+
     final windowSizeClass = WindowSizeClass.of(context);
     final effectiveShowDragHandle =
         windowSizeClass.isCompact && (showDragHandle ?? true);
@@ -236,18 +249,6 @@ class EditorLauncher {
       context: context,
       showDragHandle: effectiveShowDragHandle,
       childBuilder: (modalContext) {
-        final projectWriteService = _projectWriteService;
-        if (projectWriteService == null) {
-          throw StateError(
-            'EditorLauncher.openProjectEditor requires a ProjectWriteService.',
-          );
-        }
-        final projectEditorBuilder = _projectEditorBuilder;
-        if (projectEditorBuilder == null) {
-          throw StateError(
-            'EditorLauncher.openProjectEditor requires a ProjectEditorBuilder.',
-          );
-        }
         return projectEditorBuilder(
           modalContext,
           ProjectEditorLaunchArgs(
@@ -270,6 +271,19 @@ class EditorLauncher {
     void Function(String valueId)? onSaved,
     bool? showDragHandle,
   }) {
+    final valueWriteService = _valueWriteService;
+    if (valueWriteService == null) {
+      throw StateError(
+        'EditorLauncher.openValueEditor requires a ValueWriteService.',
+      );
+    }
+    final valueEditorBuilder = _valueEditorBuilder;
+    if (valueEditorBuilder == null) {
+      throw StateError(
+        'EditorLauncher.openValueEditor requires a ValueEditorBuilder.',
+      );
+    }
+
     final windowSizeClass = WindowSizeClass.of(context);
     final effectiveShowDragHandle =
         windowSizeClass.isCompact && (showDragHandle ?? true);
@@ -278,18 +292,6 @@ class EditorLauncher {
       context: context,
       showDragHandle: effectiveShowDragHandle,
       childBuilder: (modalContext) {
-        final valueWriteService = _valueWriteService;
-        if (valueWriteService == null) {
-          throw StateError(
-            'EditorLauncher.openValueEditor requires a ValueWriteService.',
-          );
-        }
-        final valueEditorBuilder = _valueEditorBuilder;
-        if (valueEditorBuilder == null) {
-          throw StateError(
-            'EditorLauncher.openValueEditor requires a ValueEditorBuilder.',
-          );
-        }
         return valueEditorBuilder(
           modalContext,
           ValueEditorLaunchArgs(

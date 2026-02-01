@@ -36,7 +36,6 @@ void main() {
     late MockTaskRepositoryContract taskRepository;
     late MockProjectRepositoryContract projectRepository;
     late MockValueRepositoryContract valueRepository;
-    late MockAllocationOrchestrator allocationOrchestrator;
     late MockOccurrenceCommandService occurrenceCommandService;
     late TaskWriteService taskWriteService;
     late ProjectWriteService projectWriteService;
@@ -47,17 +46,14 @@ void main() {
       taskRepository = MockTaskRepositoryContract();
       projectRepository = MockProjectRepositoryContract();
       valueRepository = MockValueRepositoryContract();
-      allocationOrchestrator = MockAllocationOrchestrator();
       occurrenceCommandService = MockOccurrenceCommandService();
       taskWriteService = TaskWriteService(
         taskRepository: taskRepository,
         projectRepository: projectRepository,
-        allocationOrchestrator: allocationOrchestrator,
         occurrenceCommandService: occurrenceCommandService,
       );
       projectWriteService = ProjectWriteService(
         projectRepository: projectRepository,
-        allocationOrchestrator: allocationOrchestrator,
         occurrenceCommandService: occurrenceCommandService,
       );
       valueWriteService = ValueWriteService(valueRepository: valueRepository);
@@ -170,49 +166,6 @@ void main() {
     );
 
     blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
-      'pins task when pinned=true',
-      build: () {
-        when(
-          () => allocationOrchestrator.pinTask(
-            any(),
-            context: any(named: 'context'),
-          ),
-        ).thenAnswer((_) async {});
-
-        return ScreenActionsBloc(
-          taskWriteService: taskWriteService,
-          projectWriteService: projectWriteService,
-          valueWriteService: valueWriteService,
-          errorReporter: errorReporter,
-        );
-      },
-      act: (bloc) {
-        bloc.add(
-          const ScreenActionsTaskPinnedChanged(
-            taskId: 'task-1',
-            pinned: true,
-          ),
-        );
-      },
-      expect: () => const <dynamic>[],
-      verify: (bloc) {
-        final captured =
-            verify(
-                  () => allocationOrchestrator.pinTask(
-                    'task-1',
-                    context: captureAny(named: 'context'),
-                  ),
-                ).captured.single
-                as OperationContext?;
-
-        expect(captured, isNotNull);
-        expect(captured!.intent, 'task_pinned_changed');
-        expect(captured.operation, 'pin');
-        expect(captured.extraFields['pinned'], true);
-      },
-    );
-
-    blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
       'completes task occurrence when completed=true',
       build: () {
         when(
@@ -300,131 +253,6 @@ void main() {
 
         expect(captured, isNotNull);
         expect(captured!.operation, 'uncomplete_occurrence');
-      },
-    );
-
-    blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
-      'unpins task when pinned=false',
-      build: () {
-        when(
-          () => allocationOrchestrator.unpinTask(
-            any(),
-            context: any(named: 'context'),
-          ),
-        ).thenAnswer((_) async {});
-
-        return ScreenActionsBloc(
-          taskWriteService: taskWriteService,
-          projectWriteService: projectWriteService,
-          valueWriteService: valueWriteService,
-          errorReporter: errorReporter,
-        );
-      },
-      act: (bloc) {
-        bloc.add(
-          const ScreenActionsTaskPinnedChanged(
-            taskId: 'task-1',
-            pinned: false,
-          ),
-        );
-      },
-      expect: () => const <dynamic>[],
-      verify: (bloc) {
-        final captured =
-            verify(
-                  () => allocationOrchestrator.unpinTask(
-                    'task-1',
-                    context: captureAny(named: 'context'),
-                  ),
-                ).captured.single
-                as OperationContext?;
-
-        expect(captured, isNotNull);
-        expect(captured!.operation, 'unpin');
-        expect(captured.extraFields['pinned'], false);
-      },
-    );
-
-    blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
-      'pins project when pinned=true',
-      build: () {
-        when(
-          () => allocationOrchestrator.pinProject(
-            any(),
-            context: any(named: 'context'),
-          ),
-        ).thenAnswer((_) async {});
-
-        return ScreenActionsBloc(
-          taskWriteService: taskWriteService,
-          projectWriteService: projectWriteService,
-          valueWriteService: valueWriteService,
-          errorReporter: errorReporter,
-        );
-      },
-      act: (bloc) {
-        bloc.add(
-          const ScreenActionsProjectPinnedChanged(
-            projectId: 'project-1',
-            pinned: true,
-          ),
-        );
-      },
-      expect: () => const <dynamic>[],
-      verify: (bloc) {
-        final captured =
-            verify(
-                  () => allocationOrchestrator.pinProject(
-                    'project-1',
-                    context: captureAny(named: 'context'),
-                  ),
-                ).captured.single
-                as OperationContext?;
-
-        expect(captured, isNotNull);
-        expect(captured!.operation, 'pin');
-        expect(captured.intent, 'project_pinned_changed');
-      },
-    );
-
-    blocTestSafe<ScreenActionsBloc, ScreenActionsState>(
-      'unpins project when pinned=false',
-      build: () {
-        when(
-          () => allocationOrchestrator.unpinProject(
-            any(),
-            context: any(named: 'context'),
-          ),
-        ).thenAnswer((_) async {});
-
-        return ScreenActionsBloc(
-          taskWriteService: taskWriteService,
-          projectWriteService: projectWriteService,
-          valueWriteService: valueWriteService,
-          errorReporter: errorReporter,
-        );
-      },
-      act: (bloc) {
-        bloc.add(
-          const ScreenActionsProjectPinnedChanged(
-            projectId: 'project-1',
-            pinned: false,
-          ),
-        );
-      },
-      expect: () => const <dynamic>[],
-      verify: (bloc) {
-        final captured =
-            verify(
-                  () => allocationOrchestrator.unpinProject(
-                    'project-1',
-                    context: captureAny(named: 'context'),
-                  ),
-                ).captured.single
-                as OperationContext?;
-
-        expect(captured, isNotNull);
-        expect(captured!.operation, 'unpin');
       },
     );
 

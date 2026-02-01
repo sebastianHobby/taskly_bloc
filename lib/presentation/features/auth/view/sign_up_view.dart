@@ -214,8 +214,9 @@ class _SignUpViewState extends State<SignUpView> {
                       },
                     ),
                     SizedBox(height: TasklyTokens.of(context).spaceSm),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           'Already have an account? ',

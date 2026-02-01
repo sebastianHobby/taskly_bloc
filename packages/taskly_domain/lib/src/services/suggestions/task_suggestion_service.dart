@@ -4,7 +4,7 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/src/services/values/effective_values.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
-import 'package:taskly_domain/time.dart';
+import 'package:taskly_domain/src/time/clock.dart';
 
 final class SuggestedTask {
   const SuggestedTask({
@@ -24,8 +24,6 @@ final class TaskSuggestionSnapshot {
   const TaskSuggestionSnapshot({
     required this.dayKeyUtc,
     required this.suggested,
-    required this.dueSoonNotSuggested,
-    required this.availableToStartNotSuggested,
     required this.snoozed,
     required this.requiresValueSetup,
     required this.requiresRatings,
@@ -35,8 +33,6 @@ final class TaskSuggestionSnapshot {
 
   final DateTime dayKeyUtc;
   final List<SuggestedTask> suggested;
-  final List<Task> dueSoonNotSuggested;
-  final List<Task> availableToStartNotSuggested;
   final List<Task> snoozed;
   final bool requiresValueSetup;
   final bool requiresRatings;
@@ -66,9 +62,6 @@ final class TaskSuggestionService {
   static const int _poolExtraCount = _showMoreIncrement * 2;
 
   Future<TaskSuggestionSnapshot> getSnapshot({
-    required int dueWindowDays,
-    required bool includeDueSoon,
-    required bool includeAvailableToStart,
     required int batchCount,
     int? suggestedTargetCount,
     List<Task>? tasksOverride,
@@ -82,10 +75,6 @@ final class TaskSuggestionService {
 
     final snoozed = _buildSnoozed(tasks, nowUtc: resolvedNowUtc);
     final snoozedIds = snoozed.map((t) => t.id).toSet();
-
-    final activeTasks = tasks
-        .where((t) => !snoozedIds.contains(t.id) && !t.isPinned)
-        .toList(growable: false);
 
     final allocation = suggestedTargetCount != null && suggestedTargetCount > 0
         ? await _allocationOrchestrator.getSuggestedSnapshotForTargetCount(
@@ -118,30 +107,10 @@ final class TaskSuggestionService {
       suggested,
       spotlightValueId: spotlightValueId,
     );
-    final suggestedIds = suggested.map((s) => s.task.id).toSet();
-
-    final dueSoonNotSuggested = includeDueSoon
-        ? _filterDueSoon(
-            activeTasks,
-            dayKeyUtc: dayKeyUtc,
-            dueWindowDays: dueWindowDays,
-            excludedIds: suggestedIds,
-          )
-        : const <Task>[];
-
-    final availableToStartNotSuggested = includeAvailableToStart
-        ? _filterAvailableToStart(
-            activeTasks,
-            dayKeyUtc: dayKeyUtc,
-            excludedIds: suggestedIds,
-          )
-        : const <Task>[];
 
     return TaskSuggestionSnapshot(
       dayKeyUtc: dayKeyUtc,
       suggested: suggested,
-      dueSoonNotSuggested: dueSoonNotSuggested,
-      availableToStartNotSuggested: availableToStartNotSuggested,
       snoozed: snoozed,
       requiresValueSetup: allocation.requiresValueSetup,
       requiresRatings: allocation.requiresRatings,
@@ -293,59 +262,5 @@ final class TaskSuggestionService {
       }
     }
     return null;
-  }
-
-  List<Task> _filterDueSoon(
-    List<Task> tasks, {
-    required DateTime dayKeyUtc,
-    required int dueWindowDays,
-    required Set<String> excludedIds,
-  }) {
-    final today = dateOnly(dayKeyUtc);
-    final days = dueWindowDays.clamp(1, 30);
-    final dueLimit = today.add(Duration(days: days - 1));
-
-    return tasks
-        .where(
-          (task) =>
-              !excludedIds.contains(task.id) &&
-              _isDueWithinWindow(task, dueLimit),
-        )
-        .toList(growable: false);
-  }
-
-  List<Task> _filterAvailableToStart(
-    List<Task> tasks, {
-    required DateTime dayKeyUtc,
-    required Set<String> excludedIds,
-  }) {
-    final today = dateOnly(dayKeyUtc);
-    return tasks
-        .where(
-          (task) =>
-              !excludedIds.contains(task.id) &&
-              _isAvailableToStart(task, today),
-        )
-        .toList(growable: false);
-  }
-
-  DateTime? _deadlineDateOnly(Task task) {
-    final raw = task.occurrence?.deadline ?? task.deadlineDate;
-    return dateOnlyOrNull(raw);
-  }
-
-  DateTime? _startDateOnly(Task task) {
-    final raw = task.occurrence?.date ?? task.startDate;
-    return dateOnlyOrNull(raw);
-  }
-
-  bool _isAvailableToStart(Task task, DateTime today) {
-    final start = _startDateOnly(task);
-    return start != null && !start.isAfter(today);
-  }
-
-  bool _isDueWithinWindow(Task task, DateTime dueLimit) {
-    final deadline = _deadlineDateOnly(task);
-    return deadline != null && !deadline.isAfter(dueLimit);
   }
 }

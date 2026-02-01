@@ -42,11 +42,10 @@ Screen BLoC -> screen query service -> session shared service -> cache manager
 
 Examples:
 - `lib/presentation/screens/services/my_day_query_service.dart`
-- `lib/presentation/features/anytime/services/anytime_session_query_service.dart`
+- `lib/presentation/features/projects/services/projects_session_query_service.dart`
 - `lib/presentation/features/scheduled/services/scheduled_session_query_service.dart`
 
 ## 5) Notes
 
 - Prefer cache-managed streams for cross-screen shared data.
 - Keep stream lifecycle owned by presentation services, not widgets.
-

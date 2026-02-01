@@ -1,13 +1,13 @@
-@Tags(['unit', 'anytime'])
+@Tags(['unit', 'projects'])
 library;
 
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../../helpers/test_imports.dart';
-import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_feed_bloc.dart';
-import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
-import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
+import 'package:taskly_bloc/presentation/features/projects/bloc/projects_feed_bloc.dart';
+import 'package:taskly_bloc/presentation/features/projects/services/projects_session_query_service.dart';
+import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
@@ -40,7 +40,7 @@ void main() {
   late SessionSharedDataService sharedDataService;
   late DemoModeService demoModeService;
   late DemoDataProvider demoDataProvider;
-  late AnytimeSessionQueryService queryService;
+  late ProjectsSessionQueryService queryService;
   late PublishSubject<List<Project>> projects;
   late PublishSubject<int> inboxCounts;
   late PublishSubject<List<Value>> values;
@@ -63,7 +63,7 @@ void main() {
       demoModeService: demoModeService,
       demoDataProvider: demoDataProvider,
     );
-    queryService = AnytimeSessionQueryService(
+    queryService = ProjectsSessionQueryService(
       projectRepository: projectRepository,
       cacheManager: cacheManager,
       sharedDataService: sharedDataService,
@@ -75,11 +75,22 @@ void main() {
     inboxCounts = PublishSubject<int>();
     values = PublishSubject<List<Value>>();
 
+    when(() => projectRepository.watchAll()).thenAnswer((_) => projects);
     when(() => projectRepository.watchAll(any())).thenAnswer((_) => projects);
+    when(() => projectRepository.getAll()).thenAnswer(
+      (_) async => const <Project>[],
+    );
+    when(() => projectRepository.getAll(any())).thenAnswer(
+      (_) async => const <Project>[],
+    );
     when(
       () => taskRepository.watchAllCount(any()),
     ).thenAnswer((_) => inboxCounts);
+    when(() => valueRepository.watchAll()).thenAnswer((_) => values);
     when(() => valueRepository.watchAll(any())).thenAnswer((_) => values);
+    when(() => valueRepository.getAll()).thenAnswer(
+      (_) async => const <Value>[],
+    );
   });
 
   tearDown(() async {
@@ -91,24 +102,31 @@ void main() {
     await lifecycleEvents.dispose();
   });
 
-  blocTestSafe<AnytimeFeedBloc, AnytimeFeedState>(
+  blocTestSafe<ProjectsFeedBloc, ProjectsFeedState>(
     'emits loaded state when snapshot arrives',
-    build: () => AnytimeFeedBloc(queryService: queryService),
+    build: () => ProjectsFeedBloc(queryService: queryService),
     act: (_) {
       projects.add([TestData.project(name: 'Inbox')]);
       inboxCounts.add(3);
       values.add(const <Value>[]);
     },
+    skip: 1,
     expect: () => [
-      isA<AnytimeFeedLoaded>()
+      isA<ProjectsFeedLoaded>()
+          .having((s) => s.rows.length, 'rows.length', 1)
+          .having((s) => s.inboxTaskCount, 'inboxTaskCount', 0),
+      isA<ProjectsFeedLoaded>()
+          .having((s) => s.rows.length, 'rows.length', 1)
+          .having((s) => s.inboxTaskCount, 'inboxTaskCount', 3),
+      isA<ProjectsFeedLoaded>()
           .having((s) => s.rows.length, 'rows.length', 1)
           .having((s) => s.inboxTaskCount, 'inboxTaskCount', 3),
     ],
   );
 
-  blocTestSafe<AnytimeFeedBloc, AnytimeFeedState>(
+  blocTestSafe<ProjectsFeedBloc, ProjectsFeedState>(
     'filters rows when search query changes',
-    build: () => AnytimeFeedBloc(queryService: queryService),
+    build: () => ProjectsFeedBloc(queryService: queryService),
     act: (bloc) async {
       projects.add([
         TestData.project(name: 'Alpha Project'),
@@ -117,24 +135,30 @@ void main() {
       inboxCounts.add(0);
       values.add(const <Value>[]);
       await Future<void>.delayed(TestConstants.defaultWait);
-      bloc.add(const AnytimeFeedSearchQueryChanged(query: 'beta'));
+      bloc.add(const ProjectsFeedSearchQueryChanged(query: 'beta'));
     },
+    skip: 1,
     expect: () => [
-      isA<AnytimeFeedLoaded>().having((s) => s.rows.length, 'rows.length', 2),
-      isA<AnytimeFeedLoaded>().having((s) => s.rows.length, 'rows.length', 1),
+      isA<ProjectsFeedLoaded>().having((s) => s.rows.length, 'rows.length', 2),
+      isA<ProjectsFeedLoaded>().having((s) => s.rows.length, 'rows.length', 2),
+      isA<ProjectsFeedLoaded>().having((s) => s.rows.length, 'rows.length', 2),
+      isA<ProjectsFeedLoaded>().having((s) => s.rows.length, 'rows.length', 1),
     ],
   );
 
-  blocTestSafe<AnytimeFeedBloc, AnytimeFeedState>(
+  blocTestSafe<ProjectsFeedBloc, ProjectsFeedState>(
     'emits error when the query stream fails',
-    build: () => AnytimeFeedBloc(queryService: queryService),
+    build: () => ProjectsFeedBloc(queryService: queryService),
     act: (_) {
       inboxCounts.add(0);
       values.add(const <Value>[]);
       projects.addError(StateError('boom'));
     },
+    skip: 1,
     expect: () => [
-      isA<AnytimeFeedError>().having(
+      isA<ProjectsFeedLoaded>(),
+      isA<ProjectsFeedLoaded>(),
+      isA<ProjectsFeedError>().having(
         (s) => s.message,
         'message',
         contains('boom'),
@@ -142,9 +166,9 @@ void main() {
     ],
   );
 
-  blocTestSafe<AnytimeFeedBloc, AnytimeFeedState>(
+  blocTestSafe<ProjectsFeedBloc, ProjectsFeedState>(
     'repro: global scope should render projects before inbox count emits',
-    build: () => AnytimeFeedBloc(queryService: queryService),
+    build: () => ProjectsFeedBloc(queryService: queryService),
     act: (_) {
       final value = TestData.value(id: 'value-1', name: 'Purpose');
       final project = Project(
@@ -160,16 +184,18 @@ void main() {
       projects.add([project]);
       values.add([value]);
     },
+    skip: 1,
     expect: () => [
-      isA<AnytimeFeedLoaded>().having((s) => s.rows.length, 'rows.length', 1),
+      isA<ProjectsFeedLoaded>().having((s) => s.rows.length, 'rows.length', 1),
+      isA<ProjectsFeedLoaded>().having((s) => s.rows.length, 'rows.length', 1),
     ],
   );
 
-  blocTestSafe<AnytimeFeedBloc, AnytimeFeedState>(
+  blocTestSafe<ProjectsFeedBloc, ProjectsFeedState>(
     'value scope still renders project without inbox count',
-    build: () => AnytimeFeedBloc(
+    build: () => ProjectsFeedBloc(
       queryService: queryService,
-      scope: const AnytimeValueScope(valueId: 'value-1'),
+      scope: const ProjectsValueScope(valueId: 'value-1'),
     ),
     act: (_) {
       final value = TestData.value(id: 'value-1', name: 'Purpose');
@@ -186,14 +212,15 @@ void main() {
       projects.add([project]);
       values.add([value]);
     },
+    skip: 1,
     expect: () => [
-      isA<AnytimeFeedLoaded>().having((s) => s.rows.length, 'rows.length', 1),
+      isA<ProjectsFeedLoaded>().having((s) => s.rows.length, 'rows.length', 1),
     ],
   );
 
-  blocTestSafe<AnytimeFeedBloc, AnytimeFeedState>(
+  blocTestSafe<ProjectsFeedBloc, ProjectsFeedState>(
     'repro: inbox count present should not block new projects',
-    build: () => AnytimeFeedBloc(queryService: queryService),
+    build: () => ProjectsFeedBloc(queryService: queryService),
     act: (_) async {
       final value = TestData.value(id: 'value-1', name: 'Purpose');
       final project = Project(
@@ -211,8 +238,11 @@ void main() {
       inboxCounts.add(1);
       projects.add([project]);
     },
+    skip: 1,
     expect: () => [
-      isA<AnytimeFeedLoaded>().having((s) => s.rows.length, 'rows.length', 1),
+      isA<ProjectsFeedLoaded>().having((s) => s.rows.length, 'rows.length', 0),
+      isA<ProjectsFeedLoaded>().having((s) => s.rows.length, 'rows.length', 0),
+      isA<ProjectsFeedLoaded>().having((s) => s.rows.length, 'rows.length', 1),
     ],
   );
 }

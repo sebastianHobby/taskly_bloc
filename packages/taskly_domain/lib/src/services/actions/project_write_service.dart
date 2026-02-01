@@ -1,4 +1,3 @@
-import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
@@ -10,17 +9,14 @@ import 'package:taskly_domain/telemetry.dart';
 final class ProjectWriteService {
   ProjectWriteService({
     required ProjectRepositoryContract projectRepository,
-    required AllocationOrchestrator allocationOrchestrator,
     required OccurrenceCommandService occurrenceCommandService,
   }) : _projectRepository = projectRepository,
-       _allocationOrchestrator = allocationOrchestrator,
        _occurrenceCommandService = occurrenceCommandService,
        _commandHandler = ProjectCommandHandler(
          projectRepository: projectRepository,
        );
 
   final ProjectRepositoryContract _projectRepository;
-  final AllocationOrchestrator _allocationOrchestrator;
   final OccurrenceCommandService _occurrenceCommandService;
   final ProjectCommandHandler _commandHandler;
 
@@ -40,18 +36,6 @@ final class ProjectWriteService {
 
   Future<void> delete(String projectId, {OperationContext? context}) {
     return _projectRepository.delete(projectId, context: context);
-  }
-
-  Future<void> setPinned(
-    String projectId, {
-    required bool isPinned,
-    OperationContext? context,
-  }) async {
-    if (isPinned) {
-      await _allocationOrchestrator.pinProject(projectId, context: context);
-    } else {
-      await _allocationOrchestrator.unpinProject(projectId, context: context);
-    }
   }
 
   Future<void> complete(

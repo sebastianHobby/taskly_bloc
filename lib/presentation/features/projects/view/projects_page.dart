@@ -288,7 +288,9 @@ class _ProjectsViewState extends State<_ProjectsView> {
               prev.inboxCollapsed != next.inboxCollapsed,
           listener: (context, state) {
             context.read<ProjectsFeedBloc>().add(
-              ProjectsFeedInboxCollapsedChanged(collapsed: state.inboxCollapsed),
+              ProjectsFeedInboxCollapsedChanged(
+                collapsed: state.inboxCollapsed,
+              ),
             );
           },
         ),
@@ -316,7 +318,9 @@ class _ProjectsViewState extends State<_ProjectsView> {
                 _openNewProjectEditor(context, openToValues: openToValues);
             }
 
-            context.read<ProjectsScreenBloc>().add(const ProjectsEffectHandled());
+            context.read<ProjectsScreenBloc>().add(
+              const ProjectsEffectHandled(),
+            );
           },
         ),
       ],
@@ -352,7 +356,9 @@ class _ProjectsViewState extends State<_ProjectsView> {
                           icon: const Icon(Icons.tune_rounded),
                           style: iconButtonStyle,
                           onPressed: () {
-                            final state = context.read<ProjectsFeedBloc>().state;
+                            final state = context
+                                .read<ProjectsFeedBloc>()
+                                .state;
                             if (state is! ProjectsFeedLoaded) return;
                             _showFilterSheet(
                               values: state.values,
@@ -382,11 +388,13 @@ class _ProjectsViewState extends State<_ProjectsView> {
                             CheckedPopupMenuItem(
                               value: _ProjectsMenuAction.showCompleted,
                               checked: _showCompleted,
-                              child: const Text('Show completed'),
+                              child: const TasklyMenuItemLabel(
+                                'Show completed',
+                              ),
                             ),
                             const PopupMenuItem(
                               value: _ProjectsMenuAction.selectMultiple,
-                              child: Text('Select multiple'),
+                              child: TasklyMenuItemLabel('Select multiple'),
                             ),
                           ],
                           onSelected: (action) {
@@ -409,9 +417,10 @@ class _ProjectsViewState extends State<_ProjectsView> {
                     key: GuidedTourAnchors.projectsCreateProject,
                     child: EntityAddSpeedDial(
                       heroTag: 'add_speed_dial_projects',
-                      onCreateTask: () => context.read<ProjectsScreenBloc>().add(
-                        const ProjectsCreateTaskRequested(),
-                      ),
+                      onCreateTask: () =>
+                          context.read<ProjectsScreenBloc>().add(
+                            const ProjectsCreateTaskRequested(),
+                          ),
                       onCreateProject: () =>
                           context.read<ProjectsScreenBloc>().add(
                             const ProjectsCreateProjectRequested(),
@@ -535,7 +544,7 @@ TasklyEmptyStateSpec _buildEmptySpec(
         ProjectsValueScope() =>
           'Add a project or assign this value to get started.',
         ProjectsProjectScope() =>
-          "Add tasks so My Day can pull from this project.",
+          'Add tasks so My Day can pull from this project.',
       },
       actionLabel: 'Create project',
       onAction: () => context.read<ProjectsScreenBloc>().add(
@@ -575,7 +584,6 @@ List<TasklyRowSpec> _buildStandardRows(
           displayName: r.project?.name ?? 'Inbox',
           canDelete: r.project != null,
           completed: r.project?.completed ?? false,
-          pinned: r.project?.isPinned ?? false,
         ),
       ),
     ].toList(growable: false),
@@ -836,4 +844,3 @@ class _ProjectsTitleHeader extends StatelessWidget {
     );
   }
 }
-

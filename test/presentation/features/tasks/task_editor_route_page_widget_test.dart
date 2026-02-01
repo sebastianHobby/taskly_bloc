@@ -11,6 +11,9 @@ import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_form.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
@@ -20,6 +23,18 @@ class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
 class MockValueRepository extends Mock implements ValueRepositoryContract {}
+
+class FakeNowService implements NowService {
+  FakeNowService(this.now);
+
+  final DateTime now;
+
+  @override
+  DateTime nowLocal() => now;
+
+  @override
+  DateTime nowUtc() => now.toUtc();
+}
 
 void main() {
   setUpAll(() {
@@ -33,6 +48,8 @@ void main() {
   late MockValueRepository valueRepository;
   late TaskWriteService taskWriteService;
   late AppErrorReporter errorReporter;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
 
   setUp(() {
     taskRepository = MockTaskRepository();
@@ -41,15 +58,20 @@ void main() {
     taskWriteService = TaskWriteService(
       taskRepository: taskRepository,
       projectRepository: projectRepository,
-      allocationOrchestrator: MockAllocationOrchestrator(),
       occurrenceCommandService: MockOccurrenceCommandService(),
     );
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
     );
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
 
     when(() => projectRepository.getAll()).thenAnswer((_) async => const []);
     when(() => valueRepository.getAll()).thenAnswer((_) async => const []);
+  });
+
+  tearDown(() async {
+    await demoModeService.dispose();
   });
 
   Future<void> pumpRoute(WidgetTester tester) async {
@@ -79,6 +101,11 @@ void main() {
           ),
           RepositoryProvider<TaskWriteService>.value(value: taskWriteService),
           RepositoryProvider<AppErrorReporter>.value(value: errorReporter),
+          RepositoryProvider<DemoModeService>.value(value: demoModeService),
+          RepositoryProvider<DemoDataProvider>.value(value: demoDataProvider),
+          RepositoryProvider<NowService>.value(
+            value: FakeNowService(DateTime(2025, 1, 15, 9)),
+          ),
         ],
         child: MaterialApp.router(
           theme: AppTheme.lightTheme(),

@@ -11,7 +11,7 @@ void main() {
   testWidgetsSafe('my day values gate shows setup copy', (tester) async {
     await tester.pumpApp(const MyDayValuesGate());
 
-    expect(find.text('Unlock suggestions'), findsOneWidget);
-    expect(find.text('Start setup'), findsOneWidget);
+    expect(find.text('No values yet.'), findsOneWidget);
+    expect(find.text('Set up values'), findsOneWidget);
   });
 }

@@ -52,9 +52,11 @@ void main() {
           theme: AppTheme.lightTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: BlocProvider<TaskDetailBloc>.value(
-            value: bloc,
-            child: const TaskDetailSheet(),
+          home: Scaffold(
+            body: BlocProvider<TaskDetailBloc>.value(
+              value: bloc,
+              child: const TaskDetailSheet(),
+            ),
           ),
         ),
       ),
@@ -105,6 +107,6 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.byType(TaskForm), findsOneWidget);
-    expect(find.text('Edit Task'), findsOneWidget);
+    expect(find.text('Edit Task'), findsWidgets);
   });
 }

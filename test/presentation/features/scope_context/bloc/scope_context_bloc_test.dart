@@ -6,7 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/bloc/scope_context_bloc.dart';
-import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
+import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
 import 'package:taskly_domain/core.dart';
 
 void main() {
@@ -61,7 +61,7 @@ void main() {
   blocTestSafe<ScopeContextBloc, ScopeContextState>(
     'loads project scope title and task count',
     build: () => ScopeContextBloc(
-      scope: const AnytimeProjectScope(projectId: 'p1'),
+      scope: const ProjectsProjectScope(projectId: 'p1'),
       taskRepository: taskRepository,
       projectRepository: projectRepository,
       valueRepository: valueRepository,
@@ -82,7 +82,7 @@ void main() {
   blocTestSafe<ScopeContextBloc, ScopeContextState>(
     'loads value scope title with project counts',
     build: () => ScopeContextBloc(
-      scope: const AnytimeValueScope(valueId: 'v1'),
+      scope: const ProjectsValueScope(valueId: 'v1'),
       taskRepository: taskRepository,
       projectRepository: projectRepository,
       valueRepository: valueRepository,
@@ -110,7 +110,7 @@ void main() {
   blocTestSafe<ScopeContextBloc, ScopeContextState>(
     'retry exits loading after error',
     build: () => ScopeContextBloc(
-      scope: const AnytimeProjectScope(projectId: 'p1'),
+      scope: const ProjectsProjectScope(projectId: 'p1'),
       taskRepository: taskRepository,
       projectRepository: projectRepository,
       valueRepository: valueRepository,

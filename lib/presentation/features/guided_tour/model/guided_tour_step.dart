@@ -69,13 +69,15 @@ List<GuidedTourStep> buildGuidedTourSteps() {
     GuidedTourStep(
       id: 'plan_my_day_triage',
       route: '/my-day',
-      title: "What's due",
-      body: 'Choose the time-sensitive tasks you want to handle today.',
+      title: 'Time-sensitive tasks',
+      body:
+          "Review overdue and due-today items and choose what you'll handle now.",
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
         targetId: 'plan_my_day_triage',
-        title: "What's due",
-        body: 'Choose the time-sensitive tasks you want to handle today.',
+        title: 'Time-sensitive tasks',
+        body:
+            "Review overdue and due-today items and choose what you'll handle now.",
       ),
     ),
     GuidedTourStep(
@@ -105,13 +107,13 @@ List<GuidedTourStep> buildGuidedTourSteps() {
     GuidedTourStep(
       id: 'plan_my_day_values',
       route: '/my-day',
-      title: 'What matters',
-      body: 'Add value-aligned tasks to balance deadlines with what matters.',
+      title: 'Value-based tasks',
+      body: "Add tasks that support your values to balance today's plan.",
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
         targetId: 'plan_my_day_values_card',
-        title: 'What matters',
-        body: 'Add value-aligned tasks to balance deadlines with what matters.',
+        title: 'Value-based tasks',
+        body: "Add tasks that support your values to balance today's plan.",
       ),
     ),
     GuidedTourStep(
@@ -161,12 +163,12 @@ List<GuidedTourStep> buildGuidedTourSteps() {
       id: 'projects_create_project',
       route: '/projects',
       title: 'Create a project',
-      body: "Start a project so My Day can pull from it.",
+      body: 'Start a project so My Day can pull from it.',
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
         targetId: 'projects_create_project',
         title: 'Create a project',
-        body: "Start a project so My Day can pull from it.",
+        body: 'Start a project so My Day can pull from it.',
       ),
     ),
     GuidedTourStep(
@@ -202,8 +204,7 @@ List<GuidedTourStep> buildGuidedTourSteps() {
       id: 'finish',
       route: '/projects',
       title: 'All set',
-      body:
-          "You're ready to plan and act. Replay the tour anytime in Settings.",
+      body: "You're ready to plan and act. Replay the tour in Settings.",
       kind: GuidedTourStepKind.card,
     ),
   ];

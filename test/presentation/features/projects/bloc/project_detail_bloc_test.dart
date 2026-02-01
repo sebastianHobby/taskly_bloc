@@ -30,7 +30,6 @@ void main() {
 
   late MockProjectRepositoryContract projectRepository;
   late MockValueRepositoryContract valueRepository;
-  late MockAllocationOrchestrator allocationOrchestrator;
   late MockOccurrenceCommandService occurrenceCommandService;
   late ProjectWriteService projectWriteService;
   late AppErrorReporter errorReporter;
@@ -47,11 +46,9 @@ void main() {
   setUp(() {
     projectRepository = MockProjectRepositoryContract();
     valueRepository = MockValueRepositoryContract();
-    allocationOrchestrator = MockAllocationOrchestrator();
     occurrenceCommandService = MockOccurrenceCommandService();
     projectWriteService = ProjectWriteService(
       projectRepository: projectRepository,
-      allocationOrchestrator: allocationOrchestrator,
       occurrenceCommandService: occurrenceCommandService,
     );
     errorReporter = AppErrorReporter(
@@ -90,18 +87,6 @@ void main() {
         repeatFromCompletion: any(named: 'repeatFromCompletion'),
         seriesEnded: any(named: 'seriesEnded'),
         valueIds: any(named: 'valueIds'),
-        context: any(named: 'context'),
-      ),
-    ).thenAnswer((_) async {});
-    when(
-      () => allocationOrchestrator.pinProject(
-        any(),
-        context: any(named: 'context'),
-      ),
-    ).thenAnswer((_) async {});
-    when(
-      () => allocationOrchestrator.unpinProject(
-        any(),
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
@@ -199,29 +184,5 @@ void main() {
     expect: () => [
       isA<ProjectDetailValidationFailure>(),
     ],
-  );
-
-  blocTestSafe<ProjectDetailBloc, ProjectDetailState>(
-    'setPinned emits inline success then reloads project',
-    build: buildBloc,
-    act: (bloc) => bloc.add(
-      const ProjectDetailEvent.setPinned(id: 'p-1', isPinned: true),
-    ),
-    expect: () => [
-      isA<ProjectDetailInlineActionSuccess>().having(
-        (s) => s.message,
-        'message',
-        'Pinned',
-      ),
-      isA<ProjectDetailLoadSuccess>(),
-    ],
-    verify: (_) {
-      verify(
-        () => allocationOrchestrator.pinProject(
-          'p-1',
-          context: any(named: 'context'),
-        ),
-      ).called(1);
-    },
   );
 }

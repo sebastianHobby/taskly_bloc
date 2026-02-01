@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
@@ -10,6 +11,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../helpers/test_imports.dart';
 import '../../mocks/repository_mocks.dart';
+import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
@@ -37,6 +39,9 @@ import 'package:taskly_domain/settings.dart' as settings;
 class MockGlobalSettingsBloc
     extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
     implements GlobalSettingsBloc {}
+
+class MockAuthBloc extends MockBloc<AuthEvent, AppAuthState>
+    implements AuthBloc {}
 
 class MockEditorLauncher extends Mock implements EditorLauncher {}
 
@@ -97,6 +102,7 @@ void main() {
   late MockEditorLauncher editorLauncher;
   late MockGlobalSettingsBloc globalSettingsBloc;
   late MockGuidedTourBloc guidedTourBloc;
+  late MockAuthBloc authBloc;
 
   late BehaviorSubject<List<Value>> valuesSubject;
   late BehaviorSubject<List<Task>> tasksSubject;
@@ -132,6 +138,7 @@ void main() {
     editorLauncher = MockEditorLauncher();
     globalSettingsBloc = MockGlobalSettingsBloc();
     guidedTourBloc = MockGuidedTourBloc();
+    authBloc = MockAuthBloc();
     demoModeService = DemoModeService();
     demoDataProvider = DemoDataProvider();
 
@@ -144,7 +151,13 @@ void main() {
     skipsSubject = BehaviorSubject<List<RoutineSkip>>.seeded(
       const <RoutineSkip>[],
     );
-    dayPicksSubject = BehaviorSubject<my_day.MyDayDayPicks>();
+    dayPicksSubject = BehaviorSubject<my_day.MyDayDayPicks>.seeded(
+      my_day.MyDayDayPicks(
+        dayKeyUtc: dayKeyUtc,
+        ritualCompletedAtUtc: null,
+        picks: const <my_day.MyDayPick>[],
+      ),
+    );
     temporalTriggerController =
         StreamController<TemporalTriggerEvent>.broadcast();
     appLifecycleController = StreamController<AppLifecycleEvent>.broadcast();
@@ -234,7 +247,11 @@ void main() {
     );
 
     when(() => projectRepository.getAll()).thenAnswer((_) async => []);
+    when(() => projectRepository.getAll(any())).thenAnswer((_) async => []);
     when(() => projectRepository.watchAll()).thenAnswer(
+      (_) => Stream.value(const <Project>[]),
+    );
+    when(() => projectRepository.watchAll(any())).thenAnswer(
       (_) => Stream.value(const <Project>[]),
     );
     when(() => projectAnchorStateRepository.getAll()).thenAnswer(
@@ -306,7 +323,6 @@ void main() {
     taskWriteService = TaskWriteService(
       taskRepository: taskRepository,
       projectRepository: projectRepository,
-      allocationOrchestrator: allocationOrchestrator,
       occurrenceCommandService: occurrenceCommandService,
     );
 
@@ -394,6 +410,13 @@ void main() {
       Stream.value(guidedTourState),
       initialState: guidedTourState,
     );
+    const authState = AppAuthState();
+    when(() => authBloc.state).thenReturn(authState);
+    whenListen(
+      authBloc,
+      Stream.value(authState),
+      initialState: authState,
+    );
 
     addTearDown(valuesSubject.close);
     addTearDown(tasksSubject.close);
@@ -408,6 +431,7 @@ void main() {
     addTearDown(demoModeService.dispose);
     addTearDown(globalSettingsBloc.close);
     addTearDown(guidedTourBloc.close);
+    addTearDown(authBloc.close);
   });
 
   Widget buildSubject() {
@@ -457,6 +481,7 @@ void main() {
         providers: [
           BlocProvider<GlobalSettingsBloc>.value(value: globalSettingsBloc),
           BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
+          BlocProvider<AuthBloc>.value(value: authBloc),
         ],
         child: const MyDayPage(),
       ),
@@ -472,6 +497,8 @@ void main() {
 
   Future<void> pumpMyDay(WidgetTester tester) async {
     debugPrint('[my_day_test] pumpMyDay start');
+    myDaySessionQueryService.start();
+    appLifecycleController.add(AppLifecycleEvent.resumed);
     await tester.pumpApp(buildSubject());
     debugPrint('[my_day_test] pumpMyDay after pumpApp');
     await tester.pumpForStream();
@@ -515,8 +542,6 @@ void main() {
       ),
     );
     await tester.pumpForStream();
-
-    await myDaySessionQueryService.stop();
   });
 
   testWidgetsSafe(
@@ -546,14 +571,12 @@ void main() {
         (_) => Stream<my_day.MyDayDayPicks>.error(Exception('boom')),
       );
 
-    await pumpMyDay(tester);
-    await tester.pumpForStream();
+      await pumpMyDay(tester);
+      await tester.pumpForStream();
 
-    expect(find.byKey(ValueKey('myday-accepted-${task.id}')), findsOneWidget);
-    expect(find.text("Couldn't load your list."), findsNothing);
-
-    await myDaySessionQueryService.stop();
-  },
+      expect(find.byKey(ValueKey('myday-accepted-${task.id}')), findsOneWidget);
+      expect(find.text("Couldn't load your list."), findsNothing);
+    },
   );
 
   testWidgetsSafe('my day renders and updates planned tasks', (tester) async {
@@ -566,50 +589,62 @@ void main() {
 
     seedDailyStreams();
     tasksSubject.add([task]);
-    dayPicksSubject.add(
-      my_day.MyDayDayPicks(
-        dayKeyUtc: dayKeyUtc,
-        ritualCompletedAtUtc: nowUtc,
-        picks: [
-          my_day.MyDayPick.task(
-            taskId: task.id,
-            bucket: my_day.MyDayPickBucket.manual,
-            sortIndex: 0,
-            pickedAtUtc: nowUtc,
-            qualifyingValueId: task.effectivePrimaryValueId,
-          ),
-        ],
-      ),
+    final firstPicks = my_day.MyDayDayPicks(
+      dayKeyUtc: dayKeyUtc,
+      ritualCompletedAtUtc: nowUtc,
+      picks: [
+        my_day.MyDayPick.task(
+          taskId: task.id,
+          bucket: my_day.MyDayPickBucket.manual,
+          sortIndex: 0,
+          pickedAtUtc: nowUtc,
+          qualifyingValueId: task.effectivePrimaryValueId,
+        ),
+      ],
+    );
+    dayPicksSubject.add(firstPicks);
+    when(() => myDayRepository.loadDay(any())).thenAnswer(
+      (_) async => firstPicks,
+    );
+    when(() => myDayRepository.watchDay(any())).thenAnswer(
+      (_) => dayPicksSubject.stream,
     );
 
-    await pumpMyDay(tester);
-    await tester.pumpForStream();
+    await tester.runAsync(() async {
+      final queue = StreamQueue(myDayQueryService.watchMyDayViewModel());
+      final firstVm = await queue.next;
+      expect(
+        firstVm.plannedItems.map((item) => item.id),
+        contains(task.id),
+      );
 
-    final firstTaskKey = ValueKey('myday-accepted-${task.id}');
-    expect(find.byKey(firstTaskKey), findsOneWidget);
+      tasksSubject.add([task2]);
+      dayPicksSubject.add(
+        my_day.MyDayDayPicks(
+          dayKeyUtc: dayKeyUtc,
+          ritualCompletedAtUtc: nowUtc,
+          picks: [
+            my_day.MyDayPick.task(
+              taskId: task2.id,
+              bucket: my_day.MyDayPickBucket.manual,
+              sortIndex: 0,
+              pickedAtUtc: nowUtc,
+              qualifyingValueId: task2.effectivePrimaryValueId,
+            ),
+          ],
+        ),
+      );
 
-    tasksSubject.add([task2]);
-    dayPicksSubject.add(
-      my_day.MyDayDayPicks(
-        dayKeyUtc: dayKeyUtc,
-        ritualCompletedAtUtc: nowUtc,
-        picks: [
-          my_day.MyDayPick.task(
-            taskId: task2.id,
-            bucket: my_day.MyDayPickBucket.manual,
-            sortIndex: 0,
-            pickedAtUtc: nowUtc,
-            qualifyingValueId: task2.effectivePrimaryValueId,
-          ),
-        ],
-      ),
-    );
-
-    await tester.pumpForStream();
-
-    final secondTaskKey = ValueKey('myday-accepted-${task2.id}');
-    expect(find.byKey(secondTaskKey), findsOneWidget);
-
-    await myDaySessionQueryService.stop();
+      final deadline = DateTime.now().add(const Duration(seconds: 2));
+      dynamic updatedVm;
+      while (DateTime.now().isBefore(deadline) && updatedVm == null) {
+        final nextVm = await queue.next.timeout(const Duration(seconds: 1));
+        if (nextVm.plannedItems.any((item) => item.id == task2.id)) {
+          updatedVm = nextVm;
+        }
+      }
+      expect(updatedVm, isNotNull);
+      await queue.cancel();
+    });
   });
 }

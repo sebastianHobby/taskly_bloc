@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
+import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 Future<String?> showMoreDestinationsSheet({
@@ -32,7 +33,23 @@ class _MoreDestinationsSheet extends StatefulWidget {
 }
 
 class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
+  static const _searchDebounce = Duration(milliseconds: 300);
+
+  final Debouncer _searchDebouncer = Debouncer(_searchDebounce);
   String _query = '';
+
+  @override
+  void dispose() {
+    _searchDebouncer.dispose();
+    super.dispose();
+  }
+
+  void _handleSearchChanged(String value) {
+    _searchDebouncer.schedule(() {
+      if (!mounted) return;
+      setState(() => _query = value);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +95,7 @@ class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
             ),
             SizedBox(height: tokens.spaceSm),
             TextField(
-              onChanged: (v) => setState(() => _query = v),
+              onChanged: _handleSearchChanged,
               decoration: const InputDecoration(
                 prefixIcon: Icon(Icons.search),
                 hintText: 'Search destinations',

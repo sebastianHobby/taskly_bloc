@@ -34,6 +34,7 @@ void main() {
       idGenerator: idGenerator,
       clock: clock,
     );
+    final valueId = await _createPrimaryValue(db, idGenerator, clock);
 
     final context = const OperationContext(
       correlationId: 'corr-1',
@@ -44,6 +45,7 @@ void main() {
 
     await projectRepository.create(
       name: 'Project A',
+      valueIds: [valueId],
       context: context,
     );
 
@@ -88,19 +90,28 @@ void main() {
         idGenerator: idGenerator,
         clock: clock,
       );
+      final valueId = await _createPrimaryValue(db, idGenerator, clock);
 
-      await projectRepository.create(name: 'Delete Project');
-      final created = await projectRepository.watchAll().firstWhere(
+      final projectsStream = projectRepository.watchAll();
+      final updates = expectLater(
+        projectsStream,
+        emitsInOrder([
+          isEmpty,
+          isNotEmpty,
+          isEmpty,
+        ]),
+      );
+
+      await projectRepository.create(
+        name: 'Delete Project',
+        valueIds: [valueId],
+      );
+      final created = await projectsStream.firstWhere(
         (projects) => projects.isNotEmpty,
       );
       final projectId = created.single.id;
 
       await projectRepository.delete(projectId);
-
-      final afterDelete = await projectRepository.watchAll().firstWhere(
-        (projects) => projects.isEmpty,
-      );
-      expect(afterDelete, isEmpty);
 
       final removed = await projectRepository
           .watchById(projectId)
@@ -108,6 +119,7 @@ void main() {
             (project) => project == null,
           );
       expect(removed, isNull);
+      await updates;
     },
   );
 
@@ -127,12 +139,28 @@ void main() {
       idGenerator: idGenerator,
       clock: clock,
     );
+    final valueId = await _createPrimaryValue(db, idGenerator, clock);
 
     await expectLater(
-      projectRepository.create(name: ''),
+      projectRepository.create(name: '', valueIds: [valueId]),
       throwsA(isA<Exception>()),
     );
   });
+}
+
+Future<String> _createPrimaryValue(
+  AppDatabase db,
+  FakeIdGenerator idGenerator,
+  Clock clock,
+) async {
+  final valueRepository = ValueRepository(
+    driftDb: db,
+    idGenerator: idGenerator,
+    clock: clock,
+  );
+  await valueRepository.create(name: 'Primary', color: '#00AAFF');
+  final values = await valueRepository.getAll();
+  return values.single.id;
 }
 
 final class _FixedClock implements Clock {

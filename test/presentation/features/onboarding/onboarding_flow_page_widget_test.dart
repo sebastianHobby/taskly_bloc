@@ -13,6 +13,7 @@ import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_b
 import 'package:taskly_bloc/presentation/features/onboarding/view/onboarding_flow_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_domain/auth.dart';
+import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
@@ -35,6 +36,7 @@ void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
     registerAllFallbackValues();
+    registerFallbackValue(const AllocationConfig());
   });
   setUp(setUpTestEnvironment);
 
@@ -61,6 +63,16 @@ void main() {
       const GlobalSettingsState(isLoading: false),
     );
     when(() => guidedTourBloc.state).thenReturn(GuidedTourState.initial());
+    when(() => settingsRepository.load(SettingsKey.allocation)).thenAnswer(
+      (_) async => const AllocationConfig(),
+    );
+    when(
+      () => settingsRepository.save(
+        SettingsKey.allocation,
+        any<AllocationConfig>(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   Future<void> pumpPage(WidgetTester tester) async {
@@ -110,6 +122,8 @@ void main() {
 
     await tester.tap(find.text('Get started'));
     await tester.pump();
+    final found = await tester.pumpUntilFound(find.byType(TextField));
+    expect(found, isTrue);
 
     await tester.enterText(find.byType(TextField), 'Jordan');
     await tester.pump();
@@ -134,6 +148,8 @@ void main() {
 
     await tester.tap(find.text('Get started'));
     await tester.pump();
+    final found = await tester.pumpUntilFound(find.byType(TextField));
+    expect(found, isTrue);
 
     await tester.enterText(find.byType(TextField), 'Jordan');
     await tester.pump();

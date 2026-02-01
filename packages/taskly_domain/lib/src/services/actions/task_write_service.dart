@@ -1,4 +1,3 @@
-import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
@@ -11,10 +10,8 @@ final class TaskWriteService {
   TaskWriteService({
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
-    required AllocationOrchestrator allocationOrchestrator,
     required OccurrenceCommandService occurrenceCommandService,
   }) : _taskRepository = taskRepository,
-       _allocationOrchestrator = allocationOrchestrator,
        _occurrenceCommandService = occurrenceCommandService,
        _commandHandler = TaskCommandHandler(
          taskRepository: taskRepository,
@@ -22,7 +19,6 @@ final class TaskWriteService {
        );
 
   final TaskRepositoryContract _taskRepository;
-  final AllocationOrchestrator _allocationOrchestrator;
   final OccurrenceCommandService _occurrenceCommandService;
   final TaskCommandHandler _commandHandler;
 
@@ -42,18 +38,6 @@ final class TaskWriteService {
 
   Future<void> delete(String taskId, {OperationContext? context}) {
     return _taskRepository.delete(taskId, context: context);
-  }
-
-  Future<void> setPinned(
-    String taskId, {
-    required bool isPinned,
-    OperationContext? context,
-  }) async {
-    if (isPinned) {
-      await _allocationOrchestrator.pinTask(taskId, context: context);
-    } else {
-      await _allocationOrchestrator.unpinTask(taskId, context: context);
-    }
   }
 
   Future<void> complete(
@@ -120,6 +104,18 @@ final class TaskWriteService {
     return _taskRepository.bulkRescheduleDeadlines(
       taskIds: taskIds,
       deadlineDate: newDeadlineDate,
+      context: context,
+    );
+  }
+
+  Future<int> bulkRescheduleStarts(
+    Iterable<String> taskIds,
+    DateTime newStartDate, {
+    OperationContext? context,
+  }) {
+    return _taskRepository.bulkRescheduleStarts(
+      taskIds: taskIds,
+      startDate: newStartDate,
       context: context,
     );
   }

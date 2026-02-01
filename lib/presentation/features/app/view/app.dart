@@ -668,7 +668,6 @@ class _ScreenActionsFailureSnackBarListenerState
   ) {
     return switch (kind) {
       ScreenActionsFailureKind.completionFailed => l10n.snackCompletionFailed,
-      ScreenActionsFailureKind.pinFailed => l10n.snackPinFailed,
       ScreenActionsFailureKind.deleteFailed => l10n.snackDeleteFailed,
       ScreenActionsFailureKind.moveFailed => l10n.snackMoveFailed,
       ScreenActionsFailureKind.invalidOccurrenceData =>

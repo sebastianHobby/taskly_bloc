@@ -8,6 +8,7 @@ import '../fixtures/test_data.dart';
 import 'package:taskly_domain/analytics.dart' as domain_analytics;
 import 'package:taskly_domain/attention.dart' as domain_attention;
 import 'package:taskly_domain/core.dart' as domain_core;
+import 'package:taskly_domain/journal.dart' as domain_journal;
 import 'package:taskly_domain/queries.dart' as domain_queries;
 import 'package:taskly_domain/routines.dart' as domain_routines;
 import 'package:taskly_domain/services.dart' as domain_services;
@@ -62,6 +63,50 @@ void registerAllFallbackValues() {
       asOfDayKey: DateTime(2025, 1, 1),
       pastDays: 30,
       futureDays: 30,
+    ),
+  );
+  registerFallbackValue(
+    domain_journal.TrackerDefinition(
+      id: 'tracker-1',
+      name: 'Tracker',
+      scope: 'daily',
+      valueType: 'int',
+      createdAt: DateTime(2025, 1, 1),
+      updatedAt: DateTime(2025, 1, 1),
+    ),
+  );
+  registerFallbackValue(
+    domain_journal.TrackerDefinitionChoice(
+      id: 'choice-1',
+      trackerId: 'tracker-1',
+      choiceKey: 'choice',
+      label: 'Choice',
+      createdAt: DateTime(2025, 1, 1),
+      updatedAt: DateTime(2025, 1, 1),
+    ),
+  );
+  registerFallbackValue(
+    domain_journal.JournalEntry(
+      id: 'entry-1',
+      entryDate: DateTime(2025, 1, 1),
+      entryTime: DateTime(2025, 1, 1, 9),
+      occurredAt: DateTime(2025, 1, 1, 9),
+      localDate: DateTime(2025, 1, 1),
+      createdAt: DateTime(2025, 1, 1),
+      updatedAt: DateTime(2025, 1, 1),
+      journalText: 'Note',
+    ),
+  );
+  registerFallbackValue(
+    domain_journal.TrackerEvent(
+      id: 'event-1',
+      trackerId: 'tracker-1',
+      anchorType: 'entry',
+      op: 'set',
+      occurredAt: DateTime(2025, 1, 1),
+      recordedAt: DateTime(2025, 1, 1),
+      entryId: 'entry-1',
+      value: 1,
     ),
   );
   registerFallbackValue(

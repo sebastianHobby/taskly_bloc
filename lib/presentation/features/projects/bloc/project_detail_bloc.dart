@@ -18,10 +18,6 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
   const factory ProjectDetailEvent.update({
     required UpdateProjectCommand command,
   }) = _ProjectDetailUpdate;
-  const factory ProjectDetailEvent.setPinned({
-    required String id,
-    required bool isPinned,
-  }) = _ProjectDetailSetPinned;
 
   const factory ProjectDetailEvent.create({
     required CreateProjectCommand command,
@@ -84,7 +80,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     );
     on<_ProjectDetailCreate>(_onCreate, transformer: droppable());
     on<_ProjectDetailUpdate>(_onUpdate, transformer: droppable());
-    on<_ProjectDetailSetPinned>(_onSetPinned, transformer: droppable());
     on<_ProjectDetailLoadInitialData>(
       (event, emit) => _onLoadInitialData(emit),
       transformer: restartable(),
@@ -246,68 +241,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
       () => _projectWriteService.create(event.command, context: context),
       context: context,
     );
-  }
-
-  Future<void> _onSetPinned(
-    _ProjectDetailSetPinned event,
-    Emitter<ProjectDetailState> emit,
-  ) async {
-    final context = _newContext(
-      intent: 'project_set_pinned_requested',
-      operation: 'projects.setPinned',
-      entityId: event.id,
-      extraFields: <String, Object?>{'isPinned': event.isPinned},
-    );
-
-    try {
-      await _projectWriteService.setPinned(
-        event.id,
-        isPinned: event.isPinned,
-        context: context,
-      );
-
-      emit(
-        ProjectDetailState.inlineActionSuccess(
-          message: event.isPinned ? 'Pinned' : 'Unpinned',
-        ),
-      );
-
-      // Refresh entity (keep editor open)
-      final values = await _valueRepository.getAll();
-      final project = await _projectRepository.getById(event.id);
-      if (project == null) {
-        emit(
-          const ProjectDetailState.operationFailure(
-            errorDetails: DetailBlocError<Project>(
-              error: NotFoundEntity.project,
-            ),
-          ),
-        );
-        return;
-      }
-
-      emit(
-        ProjectDetailState.loadSuccess(
-          availableValues: values,
-          project: project,
-        ),
-      );
-    } catch (error, stackTrace) {
-      _reportIfUnexpectedOrUnmapped(
-        error,
-        stackTrace,
-        context: context,
-        message: 'Project setPinned failed',
-      );
-      emit(
-        ProjectDetailState.operationFailure(
-          errorDetails: DetailBlocError<Project>(
-            error: error is AppFailure ? error.uiMessage() : error,
-            stackTrace: stackTrace,
-          ),
-        ),
-      );
-    }
   }
 
   Future<void> _executeValidatedCommand(

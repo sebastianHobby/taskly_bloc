@@ -8,24 +8,17 @@ import 'package:taskly_domain/src/settings/model/app_theme_mode.dart';
 
 void main() {
   testSafe(
-    'GlobalSettings.fromJson parses theme and clamps myDayDueWindowDays',
+    'GlobalSettings.fromJson parses theme and defaults',
     () async {
       final settings = GlobalSettings.fromJson(<String, dynamic>{
         'themeMode': 'dark',
-        'myDayDueWindowDays': 100,
-        'myDayShowAvailableToStart': false,
         'textScaleFactor': 1.25,
         'onboardingCompleted': true,
         'guidedTourCompleted': true,
       });
 
       expect(settings.themeMode, AppThemeMode.dark);
-      expect(settings.myDayDueWindowDays, 30);
-      expect(settings.myDayDueSoonEnabled, isTrue);
-      expect(settings.myDayShowAvailableToStart, isFalse);
       expect(settings.myDayShowRoutines, isTrue);
-      expect(settings.myDayCountTriagePicksAgainstValueQuotas, isTrue);
-      expect(settings.myDayCountRoutinePicksAgainstValueQuotas, isTrue);
       expect(settings.textScaleFactor, 1.25);
       expect(settings.onboardingCompleted, isTrue);
       expect(settings.guidedTourCompleted, isTrue);
@@ -55,12 +48,7 @@ void main() {
       colorSchemeSeedArgb: 0xFF112233,
       localeCode: 'en',
       homeTimeZoneOffsetMinutes: -60,
-      myDayDueWindowDays: 0, // should clamp on write
-      myDayDueSoonEnabled: false,
-      myDayShowAvailableToStart: true,
       myDayShowRoutines: false,
-      myDayCountTriagePicksAgainstValueQuotas: false,
-      myDayCountRoutinePicksAgainstValueQuotas: false,
       maintenanceDeadlineRiskDueWithinDays: 99,
       maintenanceDeadlineRiskMinUnscheduledCount: 0,
       maintenanceTaskStaleThresholdDays: 0,
@@ -77,12 +65,7 @@ void main() {
     expect(decoded.colorSchemeSeedArgb, 0xFF112233);
     expect(decoded.localeCode, 'en');
     expect(decoded.homeTimeZoneOffsetMinutes, -60);
-    expect(decoded.myDayDueWindowDays, 1);
-    expect(decoded.myDayDueSoonEnabled, isFalse);
-    expect(decoded.myDayShowAvailableToStart, isTrue);
     expect(decoded.myDayShowRoutines, isFalse);
-    expect(decoded.myDayCountTriagePicksAgainstValueQuotas, isFalse);
-    expect(decoded.myDayCountRoutinePicksAgainstValueQuotas, isFalse);
     expect(
       decoded.maintenanceDeadlineRiskDueWithinDays,
       GlobalSettings.maintenanceDeadlineRiskDueWithinDaysMax,

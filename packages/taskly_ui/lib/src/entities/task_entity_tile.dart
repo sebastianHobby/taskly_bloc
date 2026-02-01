@@ -32,6 +32,8 @@ class TaskEntityTile extends StatelessWidget {
 
   bool get _isPlanPickStyle => style is TasklyTaskRowStylePlanPick;
 
+  bool get _isCompactStyle => style is TasklyTaskRowStyleCompact;
+
   bool get _isPickerLikeStyle => _isPlanPickStyle;
 
   bool? get _selected => switch (style) {
@@ -72,7 +74,7 @@ class TaskEntityTile extends StatelessWidget {
     final showCompletionControl = !_isBulkSelectionStyle && !_isPickerLikeStyle;
 
     final VoidCallback? onTap = switch (style) {
-      TasklyTaskRowStylePlanPick() => actions.onToggleSelected ?? actions.onTap,
+      TasklyTaskRowStylePlanPick() => actions.onTap ?? actions.onToggleSelected,
       TasklyTaskRowStyleBulkSelection() =>
         actions.onToggleSelected ?? actions.onTap,
       _ => actions.onTap,
@@ -81,6 +83,11 @@ class TaskEntityTile extends StatelessWidget {
     final addTooltipLabel = (_selected ?? false)
         ? (model.labels?.selectionPillSelectedLabel ?? 'Added')
         : (model.labels?.selectionPillLabel ?? 'Add');
+    final swapTooltip = model.labels?.swapTooltip?.trim();
+    final effectiveSwapTooltip = (swapTooltip != null && swapTooltip.isNotEmpty)
+        ? swapTooltip
+        : 'Swap';
+    final showSwapAction = actions.onSwapRequested != null;
 
     final baseOpacity = model.deemphasized ? 0.6 : 1.0;
     final completedOpacity = model.completed ? 0.75 : 1.0;
@@ -97,6 +104,8 @@ class TaskEntityTile extends StatelessWidget {
             ? theme.textTheme.titleMedium
             : theme.textTheme.titleSmall) ??
         const TextStyle();
+
+    final useCompactLayout = _isCompactStyle || _isPlanPickStyle;
 
     final tile = DecoratedBox(
       decoration: BoxDecoration(
@@ -124,112 +133,155 @@ class TaskEntityTile extends StatelessWidget {
                   padding: effectivePadding.copyWith(
                     left: effectivePadding.left,
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (showCompletionControl) ...[
-                        _CompletionControl(
-                          completed: model.completed,
-                          enabled: completionEnabled,
-                          size: tokens.checkboxSize,
-                          checkedFill: scheme.primary,
-                          semanticLabel: model.checkboxSemanticLabel,
-                          onToggle: completionEnabled
-                              ? () {
-                                  HapticFeedback.lightImpact();
-                                  actions.onToggleCompletion?.call(
-                                    !model.completed,
-                                  );
-                                }
-                              : null,
-                        ),
-                        SizedBox(
-                          width: effectiveCompact
-                              ? tokens.spaceXs2
-                              : tokens.spaceSm,
-                        ),
-                      ] else if (_isBulkSelectionStyle) ...[
-                        SizedBox(width: tokens.spaceXl, height: tokens.spaceXl),
-                        SizedBox(
-                          width: effectiveCompact
-                              ? tokens.spaceXs2
-                              : tokens.spaceSm,
-                        ),
-                      ],
-                      Expanded(
-                        child: Column(
+                  child: useCompactLayout
+                      ? _CompactTaskRow(
+                          model: model,
+                          tokens: tokens,
+                          scheme: scheme,
+                          titleStyle: titleStyle,
+                          showCompletionControl: showCompletionControl,
+                          completionEnabled: completionEnabled,
+                          onToggleCompletion: actions.onToggleCompletion,
+                          showPicker: _isPickerLikeStyle,
+                          selected: _selected ?? false,
+                          pickerEnabled: actions.onToggleSelected != null,
+                          onToggleSelected: actions.onToggleSelected,
+                          pickerTooltip: addTooltipLabel,
+                          showSwapAction: showSwapAction,
+                          onSwapRequested: actions.onSwapRequested,
+                          swapTooltip: effectiveSwapTooltip,
+                        )
+                      : Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    model.title,
-                                    maxLines: effectiveCompact ? 1 : 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: titleStyle.copyWith(
-                                      color: scheme.onSurface,
-                                      decoration: model.completed
-                                          ? TextDecoration.lineThrough
-                                          : null,
-                                      decorationColor: scheme.onSurface
-                                          .withValues(alpha: 0.55),
-                                    ),
-                                  ),
-                                ),
-                                if (model.pinned) ...[
-                                  SizedBox(width: tokens.spaceXs2),
-                                  _PinnedTrailingIcon(
-                                    label: model.labels?.pinnedSemanticLabel,
-                                  ),
-                                ],
-                                if (_isBulkSelectionStyle) ...[
-                                  SizedBox(width: tokens.spaceXs2),
-                                  IconButton(
-                                    tooltip: (_selected ?? false)
-                                        ? 'Deselect'
-                                        : 'Select',
-                                    onPressed: actions.onToggleSelected,
-                                    icon: Icon(
-                                      (_selected ?? false)
-                                          ? Icons.check_circle_rounded
-                                          : Icons
-                                                .radio_button_unchecked_rounded,
-                                      color: (_selected ?? false)
-                                          ? scheme.primary
-                                          : scheme.onSurfaceVariant,
-                                    ),
-                                    style: IconButton.styleFrom(
-                                      minimumSize: Size.square(
-                                        tokens.minTapTargetSize,
+                            if (showCompletionControl) ...[
+                              _CompletionControl(
+                                completed: model.completed,
+                                enabled: completionEnabled,
+                                size: tokens.checkboxSize,
+                                checkedFill: scheme.primary,
+                                semanticLabel: model.checkboxSemanticLabel,
+                                onToggle: completionEnabled
+                                    ? () {
+                                        HapticFeedback.lightImpact();
+                                        actions.onToggleCompletion?.call(
+                                          !model.completed,
+                                        );
+                                      }
+                                    : null,
+                              ),
+                              SizedBox(
+                                width: effectiveCompact
+                                    ? tokens.spaceXs2
+                                    : tokens.spaceSm,
+                              ),
+                            ] else if (_isBulkSelectionStyle) ...[
+                              SizedBox(
+                                width: tokens.spaceXl,
+                                height: tokens.spaceXl,
+                              ),
+                              SizedBox(
+                                width: effectiveCompact
+                                    ? tokens.spaceXs2
+                                    : tokens.spaceSm,
+                              ),
+                            ],
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          model.title,
+                                          maxLines: effectiveCompact ? 1 : 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: titleStyle.copyWith(
+                                            color: scheme.onSurface,
+                                            decoration: model.completed
+                                                ? TextDecoration.lineThrough
+                                                : null,
+                                            decorationColor: scheme.onSurface
+                                                .withValues(alpha: 0.55),
+                                          ),
+                                        ),
                                       ),
-                                      padding: EdgeInsets.all(tokens.spaceSm),
-                                    ),
+                                      if (model.pinned) ...[
+                                        SizedBox(width: tokens.spaceXs2),
+                                        _PinnedTrailingIcon(
+                                          label:
+                                              model.labels?.pinnedSemanticLabel,
+                                        ),
+                                      ],
+                                      if (showSwapAction) ...[
+                                        SizedBox(width: tokens.spaceXs2),
+                                        IconButton(
+                                          tooltip: effectiveSwapTooltip,
+                                          onPressed: actions.onSwapRequested,
+                                          icon: const Icon(
+                                            Icons.swap_horiz_rounded,
+                                          ),
+                                          style: IconButton.styleFrom(
+                                            minimumSize: Size.square(
+                                              tokens.minTapTargetSize,
+                                            ),
+                                            padding: EdgeInsets.all(
+                                              tokens.spaceSm,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                      if (_isBulkSelectionStyle) ...[
+                                        SizedBox(width: tokens.spaceXs2),
+                                        IconButton(
+                                          tooltip: (_selected ?? false)
+                                              ? 'Deselect'
+                                              : 'Select',
+                                          onPressed: actions.onToggleSelected,
+                                          icon: Icon(
+                                            (_selected ?? false)
+                                                ? Icons.check_circle_rounded
+                                                : Icons
+                                                      .radio_button_unchecked_rounded,
+                                            color: (_selected ?? false)
+                                                ? scheme.primary
+                                                : scheme.onSurfaceVariant,
+                                          ),
+                                          style: IconButton.styleFrom(
+                                            minimumSize: Size.square(
+                                              tokens.minTapTargetSize,
+                                            ),
+                                            padding: EdgeInsets.all(
+                                              tokens.spaceSm,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  SizedBox(height: tokens.spaceXs2),
+                                  _MetaRow(
+                                    model: model,
+                                    tokens: tokens,
+                                    compactPriorityPill: _isPlanPickStyle,
                                   ),
                                 ],
-                              ],
+                              ),
                             ),
-                            SizedBox(height: tokens.spaceXs2),
-                            _MetaRow(
-                              model: model,
-                              tokens: tokens,
-                              compactPriorityPill: _isPlanPickStyle,
-                            ),
+                            if (_isPickerLikeStyle) ...[
+                              SizedBox(width: tokens.spaceSm),
+                              _PickerActionButton(
+                                selected: _selected ?? false,
+                                enabled: actions.onToggleSelected != null,
+                                onPressed: actions.onToggleSelected,
+                                tooltip: addTooltipLabel,
+                              ),
+                            ],
                           ],
                         ),
-                      ),
-                      if (_isPickerLikeStyle) ...[
-                        SizedBox(width: tokens.spaceSm),
-                        _PickerActionButton(
-                          selected: _selected ?? false,
-                          enabled: actions.onToggleSelected != null,
-                          onPressed: actions.onToggleSelected,
-                          tooltip: addTooltipLabel,
-                        ),
-                      ],
-                    ],
-                  ),
                 ),
               ],
             ),
@@ -463,6 +515,163 @@ class _ValueMetaDot extends StatelessWidget {
         color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
         shape: BoxShape.circle,
       ),
+    );
+  }
+}
+
+class _CompactTaskRow extends StatelessWidget {
+  const _CompactTaskRow({
+    required this.model,
+    required this.tokens,
+    required this.scheme,
+    required this.titleStyle,
+    required this.showCompletionControl,
+    required this.completionEnabled,
+    required this.onToggleCompletion,
+    required this.showPicker,
+    required this.selected,
+    required this.pickerEnabled,
+    required this.onToggleSelected,
+    required this.pickerTooltip,
+    required this.showSwapAction,
+    required this.onSwapRequested,
+    required this.swapTooltip,
+  });
+
+  final TasklyTaskRowData model;
+  final TasklyTokens tokens;
+  final ColorScheme scheme;
+  final TextStyle titleStyle;
+  final bool showCompletionControl;
+  final bool completionEnabled;
+  final ValueChanged<bool>? onToggleCompletion;
+  final bool showPicker;
+  final bool selected;
+  final bool pickerEnabled;
+  final VoidCallback? onToggleSelected;
+  final String? pickerTooltip;
+  final bool showSwapAction;
+  final VoidCallback? onSwapRequested;
+  final String? swapTooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final deadlineLabel = model.meta.deadlineDateLabel?.trim() ?? '';
+    final startLabel = model.meta.startDateLabel?.trim() ?? '';
+    final hasDeadline = deadlineLabel.isNotEmpty;
+    final hasStart = !hasDeadline && startLabel.isNotEmpty;
+    final label = hasDeadline ? deadlineLabel : (hasStart ? startLabel : '');
+    final showLabel = label.isNotEmpty;
+    final isUrgent =
+        hasDeadline && (model.meta.isOverdue || model.meta.isDueToday);
+    final labelColor = isUrgent ? scheme.error : scheme.onSurfaceVariant;
+    final icon = hasDeadline
+        ? Icons.flag_rounded
+        : (hasStart ? Icons.calendar_today_rounded : null);
+
+    final valueChip =
+        model.leadingChip ??
+        (model.secondaryChips.isNotEmpty ? model.secondaryChips.first : null);
+    final showValueIcon = valueChip != null;
+
+    final completionControl = showCompletionControl
+        ? _CompletionControl(
+            completed: model.completed,
+            enabled: completionEnabled,
+            size: tokens.checkboxSize,
+            checkedFill: scheme.primary,
+            semanticLabel: model.checkboxSemanticLabel,
+            onToggle: completionEnabled
+                ? () => onToggleCompletion?.call(!model.completed)
+                : null,
+          )
+        : const SizedBox.shrink();
+
+    final titleText = Text(
+      model.title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: titleStyle.copyWith(
+        color: scheme.onSurface,
+        decoration: model.completed ? TextDecoration.lineThrough : null,
+        decorationColor: scheme.onSurface.withValues(alpha: 0.55),
+      ),
+    );
+    final inlineValueIcon = showPicker;
+    final titleContent = inlineValueIcon && showValueIcon
+        ? Row(
+            children: [
+              Icon(
+                valueChip.icon,
+                size: tokens.spaceMd2,
+                color: valueChip.color,
+              ),
+              SizedBox(width: tokens.spaceXs2),
+              Expanded(child: titleText),
+            ],
+          )
+        : titleText;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (showCompletionControl) ...[
+          completionControl,
+          SizedBox(width: tokens.spaceSm),
+        ],
+        Expanded(child: titleContent),
+        if (model.pinned) ...[
+          SizedBox(width: tokens.spaceXs2),
+          _PinnedTrailingIcon(label: model.labels?.pinnedSemanticLabel),
+        ],
+        if (showLabel && icon != null) ...[
+          SizedBox(width: tokens.spaceSm),
+          Icon(
+            icon,
+            size: tokens.spaceMd2,
+            color: labelColor,
+          ),
+          SizedBox(width: tokens.spaceXxs2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: labelColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+        if (showValueIcon && !inlineValueIcon) ...[
+          SizedBox(width: tokens.spaceSm),
+          Icon(
+            valueChip.icon,
+            size: tokens.spaceMd2,
+            color: valueChip.color,
+          ),
+        ],
+        if (showSwapAction) ...[
+          SizedBox(width: tokens.spaceSm),
+          IconButton(
+            tooltip: swapTooltip,
+            onPressed: onSwapRequested,
+            icon: const Icon(Icons.swap_horiz_rounded),
+            style: IconButton.styleFrom(
+              minimumSize: Size.square(tokens.minTapTargetSize),
+              padding: EdgeInsets.all(tokens.spaceSm),
+            ),
+          ),
+        ],
+        if (showPicker) ...[
+          SizedBox(width: tokens.spaceSm),
+          _PickerActionButton(
+            selected: selected,
+            enabled: pickerEnabled,
+            onPressed: onToggleSelected,
+            tooltip: pickerTooltip,
+          ),
+        ],
+      ],
     );
   }
 }

@@ -63,7 +63,6 @@ final class MyDayViewModel {
     required this.ritualStatus,
     required this.summary,
     required this.mix,
-    required this.pinnedTasks,
     required this.completedPicks,
     required this.selectedTotalCount,
     required this.todaySelectedTaskIds,
@@ -76,7 +75,6 @@ final class MyDayViewModel {
   final MyDaySummary summary;
   final MyDayMixVm mix;
 
-  final List<Task> pinnedTasks;
   final List<Task> completedPicks;
 
   final int selectedTotalCount;

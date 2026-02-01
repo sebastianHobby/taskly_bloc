@@ -28,6 +28,13 @@ void main() {
   });
 
   Future<void> pumpView(WidgetTester tester, Widget child) async {
+    tester.binding.window.physicalSizeTestValue = const Size(1200, 1800);
+    tester.binding.window.devicePixelRatioTestValue = 1.0;
+    addTearDown(() {
+      tester.binding.window.clearPhysicalSizeTestValue();
+      tester.binding.window.clearDevicePixelRatioTestValue();
+    });
+    await tester.pump();
     await tester.pumpWidgetWithBloc<AuthBloc>(
       bloc: bloc,
       child: child,
@@ -40,6 +47,7 @@ void main() {
     whenListen(bloc, Stream.value(state), initialState: state);
 
     await pumpView(tester, const SignInView());
+    await tester.pumpForStream();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
@@ -50,6 +58,7 @@ void main() {
     whenListen(bloc, Stream.value(state), initialState: state);
 
     await pumpView(tester, const SignUpView());
+    await tester.pumpForStream();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
@@ -60,20 +69,27 @@ void main() {
     whenListen(bloc, Stream.value(state), initialState: state);
 
     await pumpView(tester, const ForgotPasswordView());
+    await tester.pumpForStream();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
   testWidgetsSafe('sign in shows error snack bar', (tester) async {
-    const state = AppAuthState(
+    const initialState = AppAuthState(status: AuthStatus.unauthenticated);
+    const errorState = AppAuthState(
       status: AuthStatus.unauthenticated,
       error: 'Invalid credentials',
     );
-    when(() => bloc.state).thenReturn(state);
-    whenListen(bloc, Stream.value(state), initialState: state);
+    when(() => bloc.state).thenReturn(initialState);
+    whenListen(
+      bloc,
+      Stream.fromIterable([initialState, errorState]),
+      initialState: initialState,
+    );
 
     await pumpView(tester, const SignInView());
     await tester.pumpForStream();
+    await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Invalid credentials'), findsOneWidget);
   });

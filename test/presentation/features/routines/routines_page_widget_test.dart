@@ -13,6 +13,7 @@ import '../../../helpers/test_imports.dart';
 import '../../../mocks/presentation_mocks.dart';
 import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routines_page.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
@@ -22,8 +23,10 @@ import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/settings.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/preferences.dart';
 
 class MockRoutineRepository extends Mock implements RoutineRepositoryContract {}
 
@@ -56,6 +59,8 @@ void main() {
   late SessionStreamCacheManager cacheManager;
   late DemoModeService demoModeService;
   late DemoDataProvider demoDataProvider;
+  late GuidedTourBloc guidedTourBloc;
+  late MockSettingsRepositoryContract settingsRepository;
   late MockAppLifecycleEvents appLifecycleEvents;
   late MockHomeDayKeyService dayKeyService;
   late MockTemporalTriggerService temporalTriggerService;
@@ -80,6 +85,7 @@ void main() {
     taskRepository = MockTaskRepositoryContract();
     demoModeService = DemoModeService();
     demoDataProvider = DemoDataProvider();
+    settingsRepository = MockSettingsRepositoryContract();
     cacheManager = SessionStreamCacheManager(
       appLifecycleService: appLifecycleEvents,
     );
@@ -92,6 +98,10 @@ void main() {
     );
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
+    );
+    guidedTourBloc = GuidedTourBloc(
+      settingsRepository: settingsRepository,
+      demoModeService: demoModeService,
     );
 
     temporalController = TestStreamController.seeded(const AppResumed());
@@ -127,6 +137,15 @@ void main() {
     when(
       () => valueRepository.watchAll(),
     ).thenAnswer((_) => valuesSubject.stream);
+    when(() => valueRepository.getAll()).thenAnswer(
+      (_) async => valuesSubject.valueOrNull ?? const <Value>[],
+    );
+    when(
+      () => settingsRepository.watch(SettingsKey.global),
+    ).thenAnswer((_) => Stream.value(const GlobalSettings()));
+    when(
+      () => settingsRepository.load(SettingsKey.global),
+    ).thenAnswer((_) async => const GlobalSettings());
 
     sharedDataService = SessionSharedDataService(
       cacheManager: cacheManager,
@@ -147,6 +166,7 @@ void main() {
     await valuesSubject.close();
     await sessionDayKeyService.dispose();
     await cacheManager.dispose();
+    await guidedTourBloc.close();
     await demoModeService.dispose();
   });
 
@@ -192,8 +212,16 @@ void main() {
               RepositoryProvider<NowService>.value(
                 value: FakeNowService(DateTime(2025, 1, 15, 9)),
               ),
+              RepositoryProvider<DemoModeService>.value(
+                value: demoModeService,
+              ),
             ],
-            child: const RoutinesPage(),
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
+              ],
+              child: const RoutinesPage(),
+            ),
           ),
         ),
       ],
@@ -270,6 +298,43 @@ void main() {
     expect(find.text('Morning Walk'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });
+
+  testWidgetsSafe(
+    'shows log today by default and swaps to selection in multi-select mode',
+    (tester) async {
+      final value = TestData.value(name: 'Health');
+      final routine = buildRoutine(
+        id: 'routine-1',
+        name: 'Morning Walk',
+        value: value,
+      );
+
+      when(
+        () => routineRepository.getAll(includeInactive: true),
+      ).thenAnswer((_) async => [routine]);
+      when(
+        () => routineRepository.getCompletions(),
+      ).thenAnswer((_) async => const <RoutineCompletion>[]);
+      when(
+        () => routineRepository.getSkips(),
+      ).thenAnswer((_) async => const <RoutineSkip>[]);
+
+      await pumpPage(tester);
+      routinesSubject.add([routine]);
+      valuesSubject.add([value]);
+      await tester.pumpForStream();
+
+      expect(find.text('Log today'), findsOneWidget);
+      expect(find.byTooltip('Select'), findsNothing);
+      expect(find.byTooltip('Deselect'), findsNothing);
+
+      await tester.longPress(find.text('Morning Walk'));
+      await tester.pump();
+
+      expect(find.text('Log today'), findsNothing);
+      expect(find.byTooltip('Deselect'), findsOneWidget);
+    },
+  );
 
   testWidgetsSafe('updates list when routines change', (tester) async {
     final value = TestData.value(name: 'Focus');

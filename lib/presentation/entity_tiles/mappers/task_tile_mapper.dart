@@ -90,7 +90,7 @@ TasklyTaskRowData buildTaskRowData(
     checkboxSemanticLabel: isCompleted
         ? 'Mark "${task.name}" as incomplete'
         : 'Mark "${task.name}" as complete',
-    pinned: task.isPinned,
+    pinned: false,
   );
 }
 
@@ -137,28 +137,6 @@ ValueChanged<bool?>? buildTaskToggleCompletionHandler(
           scope: tileCapabilities.completionScope,
           occurrenceDate: occurrenceDate,
           originalOccurrenceDate: originalOccurrenceDate,
-        ),
-      ),
-    );
-  };
-}
-
-ValueChanged<bool>? buildTaskTogglePinnedHandler(
-  BuildContext context, {
-  required Task task,
-  required EntityTileCapabilities tileCapabilities,
-}) {
-  if (!tileCapabilities.canTogglePinned) return null;
-
-  return (isPinned) {
-    final dispatcher = context.read<TileIntentDispatcher>();
-    unawaited(
-      dispatcher.dispatch(
-        context,
-        TileIntentSetPinned(
-          entityType: EntityType.task,
-          entityId: task.id,
-          isPinned: isPinned,
         ),
       ),
     );

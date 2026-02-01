@@ -32,37 +32,43 @@ Future<bool> prePush() async {
     return false;
   }
 
-  // 3. Block deep imports into local package internals (lib/src)
+  // 3. Enforce seeded subjects in widget tests
+  if (!await _checkNoUnseededWidgetSubjects()) {
+    _printFailure();
+    return false;
+  }
+
+  // 4. Block deep imports into local package internals (lib/src)
   if (!await _checkNoLocalPackageSrcDeepImports()) {
     _printFailure();
     return false;
   }
 
-  // 4. Block DateTime.now() usage in presentation
+  // 5. Block DateTime.now() usage in presentation
   if (!await _checkNoDateTimeNowInPresentation()) {
     _printFailure();
     return false;
   }
 
-  // 5. Enforce USM tile action guardrails (no DI/mutations/SnackBars in tiles)
+  // 6. Enforce USM tile action guardrails (no DI/mutations/SnackBars in tiles)
   if (!await _runUsmTileActionGuardrail()) {
     _printFailure();
     return false;
   }
 
-  // 6. Run flutter analyze (no warnings allowed)
+  // 7. Run flutter analyze (no warnings allowed)
   if (!await _runAnalyze()) {
     _printFailure();
     return false;
   }
 
-  // 7. Validate IdGenerator table registration
+  // 8. Validate IdGenerator table registration
   if (!await _validateTableRegistration()) {
     _printFailure();
     return false;
   }
 
-  // 8. Run tests (no coverage gate)
+  // 9. Run tests (no coverage gate)
   if (!await _runTests()) {
     _printFailure();
     return false;
@@ -512,6 +518,41 @@ Future<bool> _checkRawStreamController() async {
   } catch (e) {
     print('   ⚠️  Could not check for raw StreamController: $e');
     return true; // Don't block on check failure
+  }
+}
+
+Future<bool> _checkNoUnseededWidgetSubjects() async {
+  print('🧪 Checking for unseeded subjects in widget tests...');
+
+  try {
+    final result = await Process.run(
+      'dart',
+      ['run', 'tool/no_unseeded_subjects_in_widget_tests.dart'],
+      runInShell: true,
+    );
+
+    final stdout = (result.stdout as String).trim();
+    final stderr = (result.stderr as String).trim();
+
+    if (result.exitCode != 0) {
+      print('   ❌ Unseeded subject check failed:\n');
+      if (stdout.isNotEmpty) {
+        final indented = stdout.split('\n').map((l) => '   $l').join('\n');
+        print(indented);
+      }
+      if (stderr.isNotEmpty) {
+        final indented = stderr.split('\n').map((l) => '   $l').join('\n');
+        print(indented);
+      }
+      print('');
+      return false;
+    }
+
+    print('   ✓ No unseeded subjects found in widget tests.');
+    return true;
+  } catch (e) {
+    print('   ⚠️  Could not run unseeded subject guardrail: $e');
+    return false;
   }
 }
 

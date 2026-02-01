@@ -81,12 +81,7 @@ final class ProjectsSessionQueryService {
 
     return switch (scope) {
       null =>
-        Rx.combineLatest3<
-          List<Project>,
-          int,
-          List<Value>,
-          ProjectsSnapshot
-        >(
+        Rx.combineLatest3<List<Project>, int, List<Value>, ProjectsSnapshot>(
           projects$,
           _sharedDataService.watchInboxTaskCount(),
           values$,
@@ -96,16 +91,15 @@ final class ProjectsSessionQueryService {
             values: values,
           ),
         ),
-      _ =>
-        Rx.combineLatest2<List<Project>, List<Value>, ProjectsSnapshot>(
-          projects$,
-          values$,
-          (projects, values) => ProjectsSnapshot(
-            projects: projects,
-            inboxTaskCount: null,
-            values: values,
-          ),
+      _ => Rx.combineLatest2<List<Project>, List<Value>, ProjectsSnapshot>(
+        projects$,
+        values$,
+        (projects, values) => ProjectsSnapshot(
+          projects: projects,
+          inboxTaskCount: null,
+          values: values,
         ),
+      ),
     };
   }
 

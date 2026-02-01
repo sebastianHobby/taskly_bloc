@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -64,81 +65,93 @@ class TrackerChoiceInput extends StatelessWidget {
 
   Future<void> _showChoiceSheet(BuildContext context) async {
     final controller = TextEditingController();
+    final debouncer = Debouncer(const Duration(milliseconds: 300));
+    var isOpen = true;
     String? next = selectedKey;
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            final query = controller.text.trim().toLowerCase();
-            final filtered = query.isEmpty
-                ? choices
-                : choices
-                      .where(
-                        (c) => c.label.toLowerCase().contains(query),
-                      )
-                      .toList(growable: false);
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (context) {
+          return StatefulBuilder(
+            builder: (context, setState) {
+              final query = controller.text.trim().toLowerCase();
+              final filtered = query.isEmpty
+                  ? choices
+                  : choices
+                        .where(
+                          (c) => c.label.toLowerCase().contains(query),
+                        )
+                        .toList(growable: false);
 
-            return Padding(
-              padding: EdgeInsets.only(
-                left: TasklyTokens.of(context).spaceLg,
-                right: TasklyTokens.of(context).spaceLg,
-                top: TasklyTokens.of(context).spaceLg,
-                bottom:
-                    MediaQuery.viewInsetsOf(context).bottom +
-                    TasklyTokens.of(context).spaceLg,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: controller,
-                    decoration: const InputDecoration(
-                      labelText: 'Search options',
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  if (selectedKey != null)
-                    ListTile(
-                      leading: const Icon(Icons.clear),
-                      title: const Text('Clear selection'),
-                      onTap: () {
-                        next = null;
-                        Navigator.of(context).pop();
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: TasklyTokens.of(context).spaceLg,
+                  right: TasklyTokens.of(context).spaceLg,
+                  top: TasklyTokens.of(context).spaceLg,
+                  bottom:
+                      MediaQuery.viewInsetsOf(context).bottom +
+                      TasklyTokens.of(context).spaceLg,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: controller,
+                      decoration: const InputDecoration(
+                        labelText: 'Search options',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (_) {
+                        debouncer.schedule(() {
+                          if (!isOpen) return;
+                          setState(() {});
+                        });
                       },
                     ),
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final choice = filtered[index];
-                        final selected = choice.choiceKey == selectedKey;
-                        return ListTile(
-                          title: Text(choice.label),
-                          trailing: selected ? const Icon(Icons.check) : null,
-                          onTap: () {
-                            next = choice.choiceKey;
-                            Navigator.of(context).pop();
-                          },
-                        );
-                      },
+                    SizedBox(height: TasklyTokens.of(context).spaceSm),
+                    if (selectedKey != null)
+                      ListTile(
+                        leading: const Icon(Icons.clear),
+                        title: const Text('Clear selection'),
+                        onTap: () {
+                          next = null;
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final choice = filtered[index];
+                          final selected = choice.choiceKey == selectedKey;
+                          return ListTile(
+                            title: Text(choice.label),
+                            trailing: selected ? const Icon(Icons.check) : null,
+                            onTap: () {
+                              next = choice.choiceKey;
+                              Navigator.of(context).pop();
+                            },
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      isOpen = false;
+      debouncer.dispose();
+      controller.dispose();
+    }
 
     onSelected(next);
-    controller.dispose();
   }
 }
 
@@ -223,62 +236,66 @@ class TrackerQuantityInput extends StatelessWidget {
     final controller = TextEditingController(text: '${value ?? 0}');
     int? nextValue = value ?? 0;
 
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: TasklyTokens.of(context).spaceLg,
-            right: TasklyTokens.of(context).spaceLg,
-            top: TasklyTokens.of(context).spaceLg,
-            bottom:
-                MediaQuery.viewInsetsOf(context).bottom +
-                TasklyTokens.of(context).spaceLg,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Edit value',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              SizedBox(height: TasklyTokens.of(context).spaceSm),
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Value'),
-                onChanged: (value) => nextValue = int.tryParse(value),
-              ),
-              SizedBox(height: TasklyTokens.of(context).spaceSm),
-              Row(
-                children: [
-                  if (onClear != null)
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (context) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: TasklyTokens.of(context).spaceLg,
+              right: TasklyTokens.of(context).spaceLg,
+              top: TasklyTokens.of(context).spaceLg,
+              bottom:
+                  MediaQuery.viewInsetsOf(context).bottom +
+                  TasklyTokens.of(context).spaceLg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Edit value',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Value'),
+                  onChanged: (value) => nextValue = int.tryParse(value),
+                ),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
+                Row(
+                  children: [
+                    if (onClear != null)
+                      TextButton(
+                        onPressed: () {
+                          nextValue = null;
+                          Navigator.of(context).pop();
+                        },
+                        child: const Text('Clear'),
+                      ),
+                    const Spacer(),
                     TextButton(
-                      onPressed: () {
-                        nextValue = null;
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('Clear'),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
                     ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel'),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Save'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
+                    FilledButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } finally {
+      controller.dispose();
+    }
 
     if (nextValue != null) {
       var output = nextValue!;
@@ -288,7 +305,5 @@ class TrackerQuantityInput extends StatelessWidget {
     } else {
       onClear?.call();
     }
-
-    controller.dispose();
   }
 }

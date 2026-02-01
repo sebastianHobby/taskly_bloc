@@ -166,7 +166,7 @@ void verifyUniqueMapping<TSource, TResult>({
 ///
 /// ```dart
 /// verifyRoundTrip(
-///   source: <String>['my_day', 'someday', 'scheduled'],
+///   source: <String>['my_day', 'projects', 'scheduled'],
 ///   encode: Routing.screenPath,
 ///   decode: (path) => Routing.parseScreenKey(path.substring(1)),
 ///   itemLabel: (key) => key,

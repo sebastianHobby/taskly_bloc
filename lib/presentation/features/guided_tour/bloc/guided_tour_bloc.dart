@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/model/guided_tour_step.dart';
@@ -26,6 +28,20 @@ final class GuidedTourBackRequested extends GuidedTourEvent {
 
 final class GuidedTourSkipped extends GuidedTourEvent {
   const GuidedTourSkipped();
+}
+
+enum GuidedTourAbortReason {
+  watchdogTimeout,
+  appPaused,
+  routeTimeout,
+  anchorTimeout,
+  planMyDayTimeout,
+}
+
+final class GuidedTourAborted extends GuidedTourEvent {
+  const GuidedTourAborted({required this.reason});
+
+  final GuidedTourAbortReason reason;
 }
 
 @immutable
@@ -74,19 +90,24 @@ class GuidedTourBloc extends Bloc<GuidedTourEvent, GuidedTourState> {
   GuidedTourBloc({
     required SettingsRepositoryContract settingsRepository,
     required DemoModeService demoModeService,
+    Duration watchdogTimeout = const Duration(minutes: 10),
   }) : _settingsRepository = settingsRepository,
        _demoModeService = demoModeService,
+       _watchdogTimeout = watchdogTimeout,
        super(GuidedTourState.initial()) {
     on<GuidedTourStarted>(_onStarted);
     on<GuidedTourNextRequested>(_onNextRequested);
     on<GuidedTourBackRequested>(_onBackRequested);
     on<GuidedTourSkipped>(_onSkipped);
+    on<GuidedTourAborted>(_onAborted);
   }
 
   final SettingsRepositoryContract _settingsRepository;
   final DemoModeService _demoModeService;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
+  final Duration _watchdogTimeout;
+  Timer? _watchdog;
 
   void _onStarted(
     GuidedTourStarted event,
@@ -94,6 +115,7 @@ class GuidedTourBloc extends Bloc<GuidedTourEvent, GuidedTourState> {
   ) {
     if (state.active && !event.force) return;
     _demoModeService.enable();
+    _resetWatchdog();
     emit(
       state.copyWith(
         active: true,
@@ -112,6 +134,7 @@ class GuidedTourBloc extends Bloc<GuidedTourEvent, GuidedTourState> {
       await _complete(emit);
       return;
     }
+    _resetWatchdog();
     emit(
       state.copyWith(
         currentIndex: state.currentIndex + 1,
@@ -125,6 +148,7 @@ class GuidedTourBloc extends Bloc<GuidedTourEvent, GuidedTourState> {
     Emitter<GuidedTourState> emit,
   ) {
     if (!state.active || !state.hasPrevious) return;
+    _resetWatchdog();
     emit(
       state.copyWith(
         currentIndex: state.currentIndex - 1,
@@ -141,8 +165,27 @@ class GuidedTourBloc extends Bloc<GuidedTourEvent, GuidedTourState> {
     await _complete(emit);
   }
 
+  Future<void> _onAborted(
+    GuidedTourAborted event,
+    Emitter<GuidedTourState> emit,
+  ) async {
+    if (!state.active) return;
+    _stopWatchdog();
+    _demoModeService.disable();
+    emit(
+      state.copyWith(
+        active: false,
+        navRequestId: state.navRequestId + 1,
+      ),
+    );
+    if (kDebugMode) {
+      debugPrint('[GuidedTourBloc] Aborted: ${event.reason}');
+    }
+  }
+
   Future<void> _complete(Emitter<GuidedTourState> emit) async {
     emit(state.copyWith(active: false));
+    _stopWatchdog();
     _demoModeService.disable();
 
     final context = _contextFactory.create(
@@ -173,7 +216,22 @@ class GuidedTourBloc extends Bloc<GuidedTourEvent, GuidedTourState> {
 
   @override
   Future<void> close() {
+    _stopWatchdog();
     _demoModeService.disable();
     return super.close();
+  }
+
+  void _resetWatchdog() {
+    _stopWatchdog();
+    _watchdog = Timer(_watchdogTimeout, () {
+      add(
+        const GuidedTourAborted(reason: GuidedTourAbortReason.watchdogTimeout),
+      );
+    });
+  }
+
+  void _stopWatchdog() {
+    _watchdog?.cancel();
+    _watchdog = null;
   }
 }

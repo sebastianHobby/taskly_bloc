@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 /// Configuration for computing a single “next” virtual occurrence per entity.
 ///
-/// This is used by non-date feeds (like Anytime) that want to render a single
+/// This is used by non-date feeds (like Projects) that want to render a single
 /// representative occurrence for repeating entities without expanding them into
 /// multiple rows.
 @immutable

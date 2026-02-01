@@ -6,9 +6,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_imports.dart';
+import '../../../mocks/presentation_mocks.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_form.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/core.dart';
 
 class MockProjectDetailBloc
@@ -23,15 +25,22 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockProjectDetailBloc bloc;
+  late MockNowService nowService;
 
   setUp(() {
     bloc = MockProjectDetailBloc();
+    nowService = MockNowService();
+    when(() => nowService.nowLocal()).thenReturn(DateTime(2025, 1, 15, 9));
+    when(() => nowService.nowUtc()).thenReturn(DateTime.utc(2025, 1, 15, 9));
   });
 
   Future<void> pumpView(WidgetTester tester, Widget child) async {
     await tester.pumpWidgetWithBloc<ProjectDetailBloc>(
       bloc: bloc,
-      child: child,
+      child: RepositoryProvider<NowService>.value(
+        value: nowService,
+        child: child,
+      ),
     );
   }
 

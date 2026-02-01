@@ -36,8 +36,6 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
     switch (intent) {
       case TileIntentSetCompletion():
         return _setCompletion(context, intent);
-      case TileIntentSetPinned():
-        return _setPinned(context, intent);
       case TileIntentCompleteSeries():
         return _completeSeries(context, intent);
       case TileIntentRequestDelete():
@@ -101,32 +99,6 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
         );
       case EntityType.value:
         // Not supported.
-        break;
-    }
-  }
-
-  Future<void> _setPinned(
-    BuildContext context,
-    TileIntentSetPinned intent,
-  ) async {
-    final bloc = context.read<ScreenActionsBloc>();
-
-    switch (intent.entityType) {
-      case EntityType.task:
-        bloc.add(
-          ScreenActionsTaskPinnedChanged(
-            taskId: intent.entityId,
-            pinned: intent.isPinned,
-          ),
-        );
-      case EntityType.project:
-        bloc.add(
-          ScreenActionsProjectPinnedChanged(
-            projectId: intent.entityId,
-            pinned: intent.isPinned,
-          ),
-        );
-      case EntityType.value:
         break;
     }
   }

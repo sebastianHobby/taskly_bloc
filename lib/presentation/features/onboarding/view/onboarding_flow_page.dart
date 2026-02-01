@@ -14,7 +14,6 @@ import 'package:taskly_bloc/presentation/shared/validation/form_builder_validato
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_color_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
-import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
@@ -120,7 +119,6 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
             final primaryLabel = _primaryLabelFor(state.step);
             final isPrimaryBusy =
                 state.isSavingName ||
-                state.isSavingSuggestionSignal ||
                 state.isCreatingValue ||
                 state.isCompleting;
 
@@ -133,9 +131,6 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
                     children: [
                       _WelcomeStep(tokens: tokens),
                       _NameStep(controller: _nameController),
-                      _SuggestionSignalStep(
-                        signal: state.suggestionSignal,
-                      ),
                       _ValuesStep(
                         selectedValues: state.selectedValues,
                         isBusy: state.isCreatingValue,
@@ -219,7 +214,6 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
     return switch (step) {
       OnboardingStep.welcome => 'Get started',
       OnboardingStep.name => 'Continue',
-      OnboardingStep.suggestionSignal => 'Continue',
       OnboardingStep.valuesSetup => 'Finish',
     };
   }
@@ -305,187 +299,6 @@ class _NameStep extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SuggestionSignalStep extends StatelessWidget {
-  const _SuggestionSignalStep({
-    required this.signal,
-  });
-
-  final SuggestionSignal signal;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = TasklyTokens.of(context);
-    final scheme = theme.colorScheme;
-
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        tokens.spaceLg,
-        tokens.spaceXl,
-        tokens.spaceLg,
-        tokens.spaceLg,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'How should Taskly suggest tasks?',
-            style: theme.textTheme.displaySmall,
-          ),
-          SizedBox(height: tokens.spaceSm),
-          Text(
-            'Choose the signal Taskly uses for daily suggestions. '
-            'You can change this later.',
-            style: theme.textTheme.bodyLarge,
-          ),
-          SizedBox(height: tokens.spaceLg),
-          _SuggestionSignalCard(
-            title: 'Values + check-ins',
-            subtitle: 'Based on your value check-ins',
-            body:
-                'Your check-ins keep suggestions grounded in what matters to '
-                'you now.',
-            selected: signal == SuggestionSignal.ratingsBased,
-            recommended: true,
-            accentColor: scheme.primary,
-            onTap: () => context.read<OnboardingBloc>().add(
-              const OnboardingSuggestionSignalChanged(
-                SuggestionSignal.ratingsBased,
-              ),
-            ),
-          ),
-          SizedBox(height: tokens.spaceSm),
-          _SuggestionSignalCard(
-            title: 'Task completions',
-            subtitle: 'Based on what you finish',
-            body:
-                "Your completions keep suggestions grounded in what you're "
-                'actually doing now.',
-            selected: signal == SuggestionSignal.behaviorBased,
-            recommended: false,
-            accentColor: scheme.secondary,
-            onTap: () => context.read<OnboardingBloc>().add(
-              const OnboardingSuggestionSignalChanged(
-                SuggestionSignal.behaviorBased,
-              ),
-            ),
-          ),
-          SizedBox(height: tokens.spaceMd),
-          Text(
-            'Ratings mode uses weekly check-ins to keep suggestions aligned '
-            'over time.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SuggestionSignalCard extends StatelessWidget {
-  const _SuggestionSignalCard({
-    required this.title,
-    required this.subtitle,
-    required this.body,
-    required this.selected,
-    required this.recommended,
-    required this.accentColor,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final String body;
-  final bool selected;
-  final bool recommended;
-  final Color accentColor;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-
-    final borderColor = selected
-        ? accentColor.withValues(alpha: 0.55)
-        : scheme.outlineVariant.withValues(alpha: 0.6);
-    final background = selected
-        ? Color.alphaBlend(
-            accentColor.withValues(alpha: 0.12),
-            scheme.surfaceContainerLow,
-          )
-        : scheme.surfaceContainerLow;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(tokens.radiusLg),
-      child: Container(
-        padding: EdgeInsets.all(tokens.spaceMd),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(tokens.radiusLg),
-          border: Border.all(color: borderColor, width: selected ? 1.6 : 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                if (recommended)
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: tokens.spaceSm,
-                      vertical: tokens.spaceXxs2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: accentColor.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(tokens.radiusPill),
-                      border: Border.all(
-                        color: accentColor.withValues(alpha: 0.4),
-                      ),
-                    ),
-                    child: Text(
-                      'Recommended',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: accentColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            SizedBox(height: tokens.spaceXs),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: tokens.spaceXs2),
-            Text(
-              body,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

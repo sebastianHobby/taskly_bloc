@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_today_page.dart';
 import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/queries.dart';
 
@@ -72,7 +73,7 @@ void main() {
 
   Future<void> pumpPage(WidgetTester tester) async {
     await tester.pumpApp(
-      RepositoryProvider.value(
+      RepositoryProvider<JournalRepositoryContract>.value(
         value: repository,
         child: JournalTodayPage(day: DateTime(2025, 1, 15)),
       ),

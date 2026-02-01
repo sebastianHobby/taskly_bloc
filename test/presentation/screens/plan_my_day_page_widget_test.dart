@@ -47,36 +47,33 @@ void main() {
     required List<PlanMyDayValueSuggestionGroup> valueGroups,
     bool requiresValueSetup = false,
     bool requiresRatings = false,
+    List<Task> dueTodayTasks = const <Task>[],
+    List<Task> plannedTasks = const <Task>[],
+    Set<String> selectedTaskIds = const <String>{},
   }) {
     return PlanMyDayReady(
       needsPlan: true,
       dayKeyUtc: DateTime.utc(2025, 1, 15),
       globalSettings: const settings.GlobalSettings(),
       suggestionSignal: SuggestionSignal.behaviorBased,
-      steps: const [
-        PlanMyDayStep.valuesStep,
-        PlanMyDayStep.summary,
-      ],
-      currentStep: PlanMyDayStep.valuesStep,
-      dueWindowDays: 3,
-      showAvailableToStart: true,
-      showDueSoon: true,
+      dailyLimit: 8,
       requiresValueSetup: requiresValueSetup,
       requiresRatings: requiresRatings,
-      countRoutinesAgainstValues: false,
       suggested: const <Task>[],
-      triageDue: const <Task>[],
-      triageStarts: const <Task>[],
+      dueTodayTasks: dueTodayTasks,
+      plannedTasks: plannedTasks,
       scheduledRoutines: const <PlanMyDayRoutineItem>[],
       flexibleRoutines: const <PlanMyDayRoutineItem>[],
       allRoutines: const <PlanMyDayRoutineItem>[],
-      selectedTaskIds: const <String>{},
+      selectedTaskIds: selectedTaskIds,
       selectedRoutineIds: const <String>{},
       allTasks: const <Task>[],
       routineSelectionsByValue: const <String, int>{},
       valueSuggestionGroups: valueGroups,
       valueSort: PlanMyDayValueSort.attentionFirst,
       spotlightTaskId: null,
+      overCapacity: false,
+      toastRequestId: 0,
     );
   }
 
@@ -169,5 +166,48 @@ void main() {
 
     expect(find.text('Health'), findsOneWidget);
     expect(find.text('Morning walk'), findsOneWidget);
+  });
+
+  testWidgetsSafe('plan my day shows due and planned shelves', (tester) async {
+    final dueTask = TestData.task(
+      id: 'task-due',
+      name: 'Pay rent',
+      deadlineDate: DateTime(2025, 1, 15),
+    );
+    final plannedTask = TestData.task(
+      id: 'task-plan',
+      name: 'Prep meeting notes',
+      startDate: DateTime(2025, 1, 15),
+    );
+
+    final state = buildReady(
+      valueGroups: const [],
+      dueTodayTasks: [dueTask],
+      plannedTasks: [plannedTask],
+      selectedTaskIds: {dueTask.id, plannedTask.id},
+    );
+    const gateState = MyDayGateLoaded(needsValuesSetup: false);
+
+    when(() => planBloc.state).thenReturn(state);
+    whenListen(planBloc, Stream.value(state), initialState: state);
+    when(() => gateBloc.state).thenReturn(gateState);
+    whenListen(gateBloc, Stream.value(gateState), initialState: gateState);
+
+    await tester.pumpWidgetWithBlocs(
+      providers: [
+        BlocProvider<PlanMyDayBloc>.value(value: planBloc),
+        BlocProvider<MyDayGateBloc>.value(value: gateBloc),
+      ],
+      child: RepositoryProvider<NowService>.value(
+        value: nowService,
+        child: PlanMyDayPage(onCloseRequested: () {}),
+      ),
+    );
+    await tester.pumpForStream();
+
+    expect(find.text('Due Today'), findsOneWidget);
+    expect(find.text('Planned'), findsOneWidget);
+    expect(find.text('Pay rent'), findsOneWidget);
+    expect(find.text('Prep meeting notes'), findsOneWidget);
   });
 }

@@ -33,7 +33,7 @@ class SettingsScreen extends StatelessWidget {
             _SettingsNavItem(
               icon: Icons.today_outlined,
               title: 'My Day',
-              subtitle: 'Triage, due windows, routines, and quotas',
+              subtitle: 'Routines',
               onTap: () => Routing.pushSettingsMyDay(context),
             ),
             _SettingsNavItem(

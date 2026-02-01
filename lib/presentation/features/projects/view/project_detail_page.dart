@@ -10,7 +10,6 @@ import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.d
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
-import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
@@ -272,15 +271,8 @@ class _ProjectDetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.select(
-      (GlobalSettingsBloc bloc) => bloc.state.settings,
-    );
     final isInbox = project.id == ProjectGroupingRef.inbox().stableKey;
-    final dueSoonCount = _countDueSoon(
-      tasks,
-      todayDayKeyUtc,
-      settings.myDayDueWindowDays,
-    );
+    final dueSoonCount = _countDueSoon(tasks, todayDayKeyUtc);
 
     final completed = tasks
         .where((task) => task.occurrence?.isCompleted ?? task.completed)
@@ -815,7 +807,7 @@ TasklyRowSpec _buildProjectTaskRow(
     deemphasized: data.deemphasized,
     checkboxSemanticLabel: data.checkboxSemanticLabel,
     labels: data.labels,
-    pinned: data.pinned,
+    pinned: false,
   );
 
   final style = selectionState.isSelectionMode
@@ -872,7 +864,6 @@ void _registerVisibleTasks(
             displayName: task.name,
             canDelete: true,
             completed: task.completed,
-            pinned: task.isPinned,
             canCompleteSeries: task.isRepeating && !task.seriesEnded,
           ),
         )
@@ -883,8 +874,8 @@ void _registerVisibleTasks(
 int _countDueSoon(
   List<Task> tasks,
   DateTime todayDayKeyUtc,
-  int dueWindowDays,
 ) {
+  const dueWindowDays = 7;
   final today = DateTime.utc(
     todayDayKeyUtc.year,
     todayDayKeyUtc.month,

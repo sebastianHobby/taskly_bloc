@@ -54,3 +54,20 @@ class TasklyOverflowMenuButton<T> extends StatelessWidget {
     );
   }
 }
+
+class TasklyMenuItemLabel extends StatelessWidget {
+  const TasklyMenuItemLabel(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(text),
+      ),
+    );
+  }
+}

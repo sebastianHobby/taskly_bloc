@@ -593,7 +593,7 @@ class _CompletionPage extends StatelessWidget {
             ),
             SizedBox(height: TasklyTokens.of(context).spaceSm),
             Text(
-              'Run again anytime.',
+              'Run again whenever.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),

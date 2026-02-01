@@ -89,7 +89,8 @@ void main() {
     globalSettingsBloc = MockGlobalSettingsBloc();
 
     temporalController = TestStreamController.seeded(const AppResumed());
-    projectSubject = BehaviorSubject<Project?>();
+    projectSubject =
+        BehaviorSubject<Project?>(); // ignore-unseeded-subject (loading test)
     tasksSubject = BehaviorSubject<List<Task>>.seeded(const <Task>[]);
     completionsSubject = BehaviorSubject.seeded(
       const <CompletionHistoryData>[],

@@ -90,6 +90,9 @@ void main() {
     when(() => valueRepository.watchAll()).thenAnswer(
       (_) => valuesController.stream,
     );
+    when(() => valueRepository.getAll()).thenAnswer(
+      (_) async => const <Value>[],
+    );
 
     cacheManager = SessionStreamCacheManager(
       appLifecycleService: appLifecycleEvents,
@@ -118,6 +121,7 @@ void main() {
     },
     act: (bloc) => bloc.add(const InitialSyncGateStarted()),
     expect: () => [
+      isA<InitialSyncGateInProgress>(),
       isA<InitialSyncGateReady>(),
     ],
   );
@@ -131,6 +135,7 @@ void main() {
       progressController.emit(_progress(hasSynced: true));
     },
     expect: () => [
+      isA<InitialSyncGateInProgress>(),
       isA<InitialSyncGateReady>(),
     ],
   );
@@ -149,7 +154,9 @@ void main() {
       progressController.emit(_progress(hasSynced: true));
     },
     expect: () => [
+      isA<InitialSyncGateInProgress>(),
       isA<InitialSyncGateFailure>(),
+      isA<InitialSyncGateInProgress>(),
       isA<InitialSyncGateReady>(),
     ],
   );

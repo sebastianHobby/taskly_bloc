@@ -19,7 +19,7 @@ void main() {
   setUp(setUpTestEnvironment);
 
   testSafe(
-    'task repository setPinned and setMyDaySnoozedUntil persist updates',
+    'task repository setMyDaySnoozedUntil persists updates',
     () async {
       final db = createTestDb();
       addTearDown(() => closeTestDb(db));
@@ -44,23 +44,6 @@ void main() {
       );
 
       final taskRow = await db.select(db.taskTable).getSingle();
-
-      final pinContext = contextFactory.create(
-        feature: 'tasks',
-        intent: 'test',
-        operation: 'tasks.pin',
-      );
-      await taskRepository.setPinned(
-        id: taskRow.id,
-        isPinned: true,
-        context: pinContext,
-      );
-
-      final pinnedRow = await db.select(db.taskTable).getSingle();
-      expect(pinnedRow.isPinned, isTrue);
-      final pinMeta =
-          jsonDecode(pinnedRow.psMetadata ?? '{}') as Map<String, dynamic>;
-      expect(pinMeta['cid'], pinContext.correlationId);
 
       final snoozeContext = contextFactory.create(
         feature: 'tasks',

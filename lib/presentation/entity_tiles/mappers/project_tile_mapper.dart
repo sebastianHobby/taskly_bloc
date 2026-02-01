@@ -72,7 +72,7 @@ TasklyProjectRowData buildProjectRowData(
     id: project.id,
     title: project.name,
     completed: project.completed,
-    pinned: project.isPinned,
+    pinned: false,
     meta: meta,
     leadingChip: primaryValueData,
     subtitle: subtitle,

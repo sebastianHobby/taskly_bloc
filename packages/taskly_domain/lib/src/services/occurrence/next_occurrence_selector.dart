@@ -3,7 +3,7 @@ import 'package:taskly_domain/time.dart';
 
 /// Selects the "next" (single) virtual occurrence per entity.
 ///
-/// This is intended for non-date feeds (like Anytime) that want to render one
+/// This is intended for non-date feeds (like Projects) that want to render one
 /// representative occurrence (and completion state) for repeating entities.
 abstract final class NextOccurrenceSelector {
   /// Returns the next *uncompleted* occurrence per task id.

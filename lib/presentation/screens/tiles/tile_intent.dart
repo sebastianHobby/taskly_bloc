@@ -24,18 +24,6 @@ final class TileIntentSetCompletion extends TileIntent {
   final DateTime? originalOccurrenceDate;
 }
 
-final class TileIntentSetPinned extends TileIntent {
-  const TileIntentSetPinned({
-    required this.entityType,
-    required this.entityId,
-    required this.isPinned,
-  });
-
-  final EntityType entityType;
-  final String entityId;
-  final bool isPinned;
-}
-
 final class TileIntentCompleteSeries extends TileIntent {
   const TileIntentCompleteSeries({
     required this.entityType,

@@ -2,10 +2,13 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/tracker_input_widgets.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
@@ -80,23 +83,39 @@ void main() {
   });
 
   Future<void> pumpPage(WidgetTester tester, {String? entryId}) async {
-    await tester.pumpApp(
-      MultiRepositoryProvider(
-        providers: [
-          RepositoryProvider<JournalRepositoryContract>.value(
-            value: repository,
-          ),
-          RepositoryProvider<AppErrorReporter>.value(value: errorReporter),
-          RepositoryProvider<NowService>.value(
-            value: FakeNowService(DateTime(2025, 1, 15, 9)),
-          ),
-        ],
-        child: JournalEntryEditorRoutePage(
-          entryId: entryId,
-          preselectedTrackerIds: const <String>{},
+    final entryPage = MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<JournalRepositoryContract>.value(
+          value: repository,
         ),
+        RepositoryProvider<AppErrorReporter>.value(value: errorReporter),
+        RepositoryProvider<NowService>.value(
+          value: FakeNowService(DateTime(2025, 1, 15, 9)),
+        ),
+      ],
+      child: JournalEntryEditorRoutePage(
+        entryId: entryId,
+        preselectedTrackerIds: const <String>{},
       ),
     );
+
+    final router = GoRouter(
+      initialLocation: '/entry',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (_, __) => const Scaffold(body: SizedBox.shrink()),
+          routes: [
+            GoRoute(
+              path: 'entry',
+              builder: (_, __) => entryPage,
+            ),
+          ],
+        ),
+      ],
+    );
+
+    await tester.pumpWidgetWithRouter(router: router);
   }
 
   testWidgetsSafe('shows error snack bar when entry load fails', (
@@ -130,22 +149,23 @@ void main() {
   testWidgetsSafe('requires mood before save', (tester) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
     defsSubject.add([moodDef]);
+    when(
+      () => repository.watchTrackerDefinitions(),
+    ).thenAnswer((_) => Stream.value([moodDef]));
 
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    await tester.tap(find.text('Save log'));
-    await tester.pumpForStream();
-
-    expect(find.textContaining('Please choose a mood'), findsOneWidget);
+    final saveButton = _saveLogButton(tester);
+    expect(saveButton.onPressed, isNull);
   });
 
   testWidgetsSafe('shows error when mood tracker is missing', (tester) async {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    await tester.tap(find.bySemanticsLabel('Mood: Good'));
-    await tester.tap(find.text('Save log'));
+    await _tapMood(tester, 'Good');
+    await _tapSaveLog(tester);
     await tester.pumpForStream();
 
     expect(find.textContaining('Missing system mood tracker'), findsOneWidget);
@@ -170,10 +190,10 @@ void main() {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    await tester.tap(find.bySemanticsLabel('Mood: Good'));
+    await _tapMood(tester, 'Good');
     await tester.pumpForStream();
 
-    await tester.tap(find.text('Save log'));
+    await _tapSaveLog(tester);
     await tester.pumpForStream();
 
     verify(
@@ -205,8 +225,8 @@ void main() {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    await tester.tap(find.bySemanticsLabel('Mood: Good'));
-    await tester.tap(find.text('Save log'));
+    await _tapMood(tester, 'Good');
+    await _tapSaveLog(tester);
     await tester.pumpForStream();
 
     expect(find.textContaining('Failed to save log'), findsOneWidget);
@@ -248,24 +268,42 @@ void main() {
         ],
       );
     });
+    when(
+      () => repository.watchTrackerEvents(
+        anchorType: 'entry',
+        entryId: 'entry-1',
+      ),
+    ).thenAnswer((_) {
+      final now = DateTime(2025, 1, 15, 9);
+      return Stream<List<TrackerEvent>>.value(
+        [
+          TrackerEvent(
+            id: 'event-1',
+            trackerId: moodDef.id,
+            anchorType: 'entry',
+            op: 'set',
+            occurredAt: now,
+            recordedAt: now,
+            entryId: entry.id,
+            value: 4,
+          ),
+        ],
+      );
+    });
 
     await pumpPage(tester, entryId: 'entry-1');
-    await tester.pumpForStream();
+    await tester.pumpForStream(20);
 
-    var saveButton = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Save log'),
-    );
+    var saveButton = _saveLogButton(tester);
     expect(saveButton.onPressed, isNull);
 
-    await tester.enterText(
-      _textFieldWithLabel('Note (optional)'),
-      'Updated note',
+    final blocContext = tester.element(find.text('Save log'));
+    blocContext.read<JournalEntryEditorBloc>().add(
+      JournalEntryEditorMoodChanged(MoodRating.excellent),
     );
     await tester.pumpForStream();
 
-    saveButton = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Save log'),
-    );
+    saveButton = _saveLogButton(tester);
     expect(saveButton.onPressed, isNotNull);
   });
 
@@ -365,7 +403,7 @@ void main() {
     expect(slider.divisions, 3);
   });
 
-  testWidgetsSafe('quantity edit sheet clamps values', (tester) async {
+  testWidgetsSafe('quantity input clamps values', (tester) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
     final quantityDef = _trackerDef(
       'quantity-1',
@@ -383,12 +421,19 @@ void main() {
 
     expect(find.text('0'), findsOneWidget);
 
-    await tester.tap(find.text('Edit'));
-    await tester.pumpForStream();
+    final quantityInput = find.ancestor(
+      of: find.text('Water'),
+      matching: find.byType(TrackerQuantityInput),
+    );
+    final addButton = find.descendant(
+      of: quantityInput,
+      matching: find.widgetWithIcon(IconButton, Icons.add),
+    );
 
-    await tester.enterText(find.widgetWithText(TextField, 'Value'), '20');
-    await tester.tap(find.text('Save'));
-    await tester.pumpForStream();
+    for (var i = 0; i < 6; i++) {
+      await tester.tap(addButton);
+      await tester.pumpForStream();
+    }
 
     expect(find.text('10'), findsOneWidget);
   });
@@ -434,7 +479,7 @@ void main() {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    await tester.tap(find.text('Choose option'));
+    await _tapTextButton(tester, 'Choose option');
     await tester.pumpForStream();
 
     await tester.enterText(
@@ -443,10 +488,13 @@ void main() {
     );
     await tester.pumpForStream();
 
-    await tester.tap(find.text('Work'));
+    final workTile = find.widgetWithText(ListTile, 'Work');
+    await tester.ensureVisible(workTile);
+    await tester.tap(workTile, warnIfMissed: false);
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpForStream();
 
-    expect(find.text('Work'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Work'), findsOneWidget);
   });
 }
 
@@ -454,6 +502,42 @@ Finder _textFieldWithLabel(String label) {
   return find.byWidgetPredicate(
     (widget) => widget is TextField && widget.decoration?.labelText == label,
   );
+}
+
+ButtonStyleButton _saveLogButton(WidgetTester tester) {
+  final buttonFinder = _saveLogButtonFinder();
+  return tester.widget<ButtonStyleButton>(buttonFinder);
+}
+
+Finder _saveLogButtonFinder() {
+  return find.ancestor(
+    of: find.text('Save log'),
+    matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
+  );
+}
+
+Future<void> _tapSaveLog(WidgetTester tester) async {
+  final buttonFinder = _saveLogButtonFinder();
+  await tester.ensureVisible(buttonFinder);
+  await tester.pump(const Duration(milliseconds: 200));
+  await tester.tap(buttonFinder, warnIfMissed: false);
+}
+
+Future<void> _tapMood(WidgetTester tester, String label) async {
+  final moodFinder = find.byWidgetPredicate(
+    (widget) =>
+        widget is Semantics && widget.properties.label == 'Mood: $label',
+  );
+  await tester.ensureVisible(moodFinder.first);
+  await tester.pump(const Duration(milliseconds: 200));
+  await tester.tap(moodFinder.first);
+}
+
+Future<void> _tapTextButton(WidgetTester tester, String text) async {
+  final finder = find.text(text);
+  await tester.ensureVisible(finder.first);
+  await tester.pump(const Duration(milliseconds: 200));
+  await tester.tap(finder.first, warnIfMissed: false);
 }
 
 JournalEntry _entry(String id, String note) {

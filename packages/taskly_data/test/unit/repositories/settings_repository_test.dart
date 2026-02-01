@@ -34,8 +34,6 @@ void main() {
         colorSchemeSeedArgb: 0xFF00FF00,
         localeCode: 'en',
         homeTimeZoneOffsetMinutes: 120,
-        myDayDueWindowDays: 5,
-        myDayShowAvailableToStart: false,
         textScaleFactor: 1.1,
         onboardingCompleted: true,
         guidedTourCompleted: true,

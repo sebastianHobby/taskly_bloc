@@ -121,9 +121,6 @@ class SelectionBloc extends Bloc<SelectionEvent, SelectionState> {
     final canComplete = !onlyDelete && anyWhere((m) => m.completed == false);
     final canUncomplete = !onlyDelete && anyWhere((m) => m.completed ?? false);
 
-    final canPin = !onlyDelete && anyWhere((m) => m.pinned == false);
-    final canUnpin = !onlyDelete && anyWhere((m) => m.pinned ?? false);
-
     final canCompleteSeries =
         !onlyDelete && anyWhere((m) => m.canCompleteSeries);
 
@@ -143,8 +140,6 @@ class SelectionBloc extends Bloc<SelectionEvent, SelectionState> {
         kind: BulkActionKind.uncomplete,
         enabled: canUncomplete,
       ),
-      BulkActionAvailability(kind: BulkActionKind.pin, enabled: canPin),
-      BulkActionAvailability(kind: BulkActionKind.unpin, enabled: canUnpin),
       BulkActionAvailability(
         kind: BulkActionKind.completeSeries,
         enabled: canCompleteSeries,

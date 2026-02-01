@@ -29,9 +29,6 @@ abstract class EntityTileCapabilities with _$EntityTileCapabilities {
     /// For expanded recurring occurrences, this is [CompletionScope.occurrence].
     @Default(CompletionScope.entity) CompletionScope completionScope,
 
-    /// Whether the tile can toggle the entity's pinned status.
-    @Default(false) bool canTogglePinned,
-
     /// Whether the tile can request deletion.
     @Default(false) bool canDelete,
 
@@ -61,7 +58,6 @@ abstract class EntityTileCapabilitiesOverride
     with _$EntityTileCapabilitiesOverride {
   const factory EntityTileCapabilitiesOverride({
     bool? canToggleCompletion,
-    bool? canTogglePinned,
     bool? canDelete,
     bool? canOpenEditor,
     bool? canOpenDetails,
@@ -80,7 +76,6 @@ extension EntityTileCapabilitiesOverrideX on EntityTileCapabilities {
     if (override == null) return this;
     return copyWith(
       canToggleCompletion: override.canToggleCompletion ?? canToggleCompletion,
-      canTogglePinned: override.canTogglePinned ?? canTogglePinned,
       canDelete: override.canDelete ?? canDelete,
       canOpenEditor: override.canOpenEditor ?? canOpenEditor,
       canOpenDetails: override.canOpenDetails ?? canOpenDetails,

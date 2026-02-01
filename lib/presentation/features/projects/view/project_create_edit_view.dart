@@ -346,14 +346,6 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                   ),
                 );
               },
-              onTogglePinned: (isPinned) {
-                context.read<ProjectDetailBloc>().add(
-                  ProjectDetailEvent.setPinned(
-                    id: project.id,
-                    isPinned: isPinned,
-                  ),
-                );
-              },
               submitTooltip: context.l10n.actionUpdate,
               trailingActions: _buildDetailActions(
                 context,

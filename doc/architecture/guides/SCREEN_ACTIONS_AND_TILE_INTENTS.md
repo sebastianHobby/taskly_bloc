@@ -8,7 +8,7 @@
 ## 1) Why this exists
 
 Entity tiles appear across screens. Taskly routes their user actions through a
-shared **tile intent** pipeline so completion, pinning, delete, and navigation
+shared **tile intent** pipeline so completion, delete, and navigation
 behave consistently and remain BLoC-owned.
 
 ## 2) Key pieces
@@ -37,4 +37,3 @@ Tile tap -> TileIntent -> TileIntentDispatcher
 - Mutations create `OperationContext` in the BLoC (see invariants).
 - Occurrence-aware completion requires explicit occurrence keys.
 - Navigation side-effects are triggered from presentation (not domain/data).
-

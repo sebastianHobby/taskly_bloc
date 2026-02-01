@@ -117,6 +117,9 @@ void main() {
     when(() => valueRepository.watchAll()).thenAnswer(
       (_) => valuesSubject.stream,
     );
+    when(() => valueRepository.getAll()).thenAnswer(
+      (_) async => valuesSubject.valueOrNull ?? const <Value>[],
+    );
 
     when(() => nowService.nowUtc()).thenReturn(DateTime.utc(2025, 1, 15, 12));
 

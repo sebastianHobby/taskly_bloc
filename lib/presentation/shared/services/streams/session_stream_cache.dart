@@ -87,6 +87,8 @@ final class SessionStreamCacheManager {
           _foreground = true;
           _resumeAll();
         case AppLifecycleEvent.inactive:
+          // Treat inactive as transient; do not pause streams.
+          break;
         case AppLifecycleEvent.paused:
         case AppLifecycleEvent.detached:
           _foreground = false;
@@ -140,8 +142,16 @@ final class _CacheEntry<T> {
   }
 
   Future<void> dispose() async {
-    await _subscription?.cancel();
+    final subscription = _subscription;
     _subscription = null;
-    await subject.close();
+    if (subscription != null) {
+      try {
+        await subscription.cancel().timeout(const Duration(seconds: 1));
+      } on TimeoutException {
+        // Defensive: do not block teardown on a stuck cancel.
+      }
+    }
+    // Avoid hanging if listeners are still attached (e.g., widget tests).
+    unawaited(subject.close());
   }
 }

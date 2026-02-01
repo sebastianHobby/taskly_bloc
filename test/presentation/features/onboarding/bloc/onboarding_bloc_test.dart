@@ -67,6 +67,16 @@ void main() {
           context: any(named: 'context'),
         ),
       ).thenAnswer((_) async => const UserUpdateResponse());
+      when(() => settingsRepository.load(SettingsKey.allocation)).thenAnswer(
+        (_) async => const AllocationConfig(),
+      );
+      when(
+        () => settingsRepository.save(
+          SettingsKey.allocation,
+          any<AllocationConfig>(),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async {});
       return buildBloc();
     },
     act: (bloc) async {
@@ -87,7 +97,7 @@ void main() {
           .having(
             (s) => s.step,
             'step',
-            OnboardingStep.suggestionSignal,
+            OnboardingStep.valuesSetup,
           )
           .having((s) => s.displayName, 'displayName', 'Alex')
           .having((s) => s.isSavingName, 'isSavingName', false),
@@ -95,7 +105,7 @@ void main() {
   );
 
   blocTestSafe<OnboardingBloc, OnboardingState>(
-    'saves suggestion signal and moves to values setup',
+    'saves default suggestion signal and moves to values setup',
     build: () {
       when(
         () => authRepository.updateUserProfile(
@@ -119,12 +129,6 @@ void main() {
       bloc.add(const OnboardingNextRequested());
       bloc.add(const OnboardingNameChanged('Sam'));
       bloc.add(const OnboardingNextRequested());
-      bloc.add(
-        const OnboardingSuggestionSignalChanged(
-          SuggestionSignal.behaviorBased,
-        ),
-      );
-      bloc.add(const OnboardingNextRequested());
     },
     expect: () => [
       isA<OnboardingState>().having((s) => s.step, 'step', OnboardingStep.name),
@@ -139,56 +143,21 @@ void main() {
           .having(
             (s) => s.step,
             'step',
-            OnboardingStep.suggestionSignal,
-          )
-          .having((s) => s.displayName, 'displayName', 'Sam')
-          .having((s) => s.isSavingName, 'isSavingName', false),
-      isA<OnboardingState>()
-          .having(
-            (s) => s.step,
-            'step',
-            OnboardingStep.suggestionSignal,
-          )
-          .having((s) => s.displayName, 'displayName', 'Sam')
-          .having(
-            (s) => s.suggestionSignal,
-            'suggestionSignal',
-            SuggestionSignal.behaviorBased,
-          ),
-      isA<OnboardingState>()
-          .having(
-            (s) => s.step,
-            'step',
-            OnboardingStep.suggestionSignal,
-          )
-          .having((s) => s.displayName, 'displayName', 'Sam')
-          .having(
-            (s) => s.suggestionSignal,
-            'suggestionSignal',
-            SuggestionSignal.behaviorBased,
-          )
-          .having(
-            (s) => s.isSavingSuggestionSignal,
-            'isSavingSuggestionSignal',
-            true,
-          ),
-      isA<OnboardingState>()
-          .having(
-            (s) => s.step,
-            'step',
             OnboardingStep.valuesSetup,
           )
           .having((s) => s.displayName, 'displayName', 'Sam')
-          .having(
-            (s) => s.suggestionSignal,
-            'suggestionSignal',
-            SuggestionSignal.behaviorBased,
-          )
-          .having(
-            (s) => s.isSavingSuggestionSignal,
-            'isSavingSuggestionSignal',
-            false,
-          ),
+          .having((s) => s.isSavingName, 'isSavingName', false),
     ],
+    verify: (_) {
+      final captured = verify(
+        () => settingsRepository.save(
+          SettingsKey.allocation,
+          captureAny<AllocationConfig>(),
+          context: any(named: 'context'),
+        ),
+      ).captured;
+      final saved = captured.single as AllocationConfig;
+      expect(saved.suggestionSignal, SuggestionSignal.behaviorBased);
+    },
   );
 }

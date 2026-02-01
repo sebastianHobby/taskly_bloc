@@ -324,11 +324,11 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                         CheckedPopupMenuItem(
                           value: _ScheduledMenuAction.showCompleted,
                           checked: _showCompleted,
-                          child: const Text('Show completed'),
+                          child: const TasklyMenuItemLabel('Show completed'),
                         ),
                         const PopupMenuItem(
                           value: _ScheduledMenuAction.selectMultiple,
-                          child: Text('Select multiple'),
+                          child: TasklyMenuItemLabel('Select multiple'),
                         ),
                       ],
                       onSelected: (action) {
@@ -392,11 +392,11 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                         CheckedPopupMenuItem(
                           value: _ScheduledMenuAction.showCompleted,
                           checked: _showCompleted,
-                          child: const Text('Show completed'),
+                          child: const TasklyMenuItemLabel('Show completed'),
                         ),
                         const PopupMenuItem(
                           value: _ScheduledMenuAction.selectMultiple,
-                          child: Text('Select multiple'),
+                          child: TasklyMenuItemLabel('Select multiple'),
                         ),
                       ],
                       onSelected: (action) {
@@ -486,7 +486,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 displayName: t.name,
                 canDelete: true,
                 completed: completed,
-                pinned: t.isPinned,
                 canCompleteSeries: t.isRepeating && !t.seriesEnded,
               ),
             );
@@ -501,7 +500,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 displayName: p.name,
                 canDelete: true,
                 completed: p.completed,
-                pinned: p.isPinned,
               ),
             );
           }
@@ -527,7 +525,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   displayName: t.name,
                   canDelete: true,
                   completed: completed,
-                  pinned: t.isPinned,
                   canCompleteSeries: t.isRepeating && !t.seriesEnded,
                 ),
               );
@@ -543,7 +540,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   displayName: p.name,
                   canDelete: true,
                   completed: p.completed,
-                  pinned: p.isPinned,
                 ),
               );
             }
@@ -614,11 +610,11 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                           CheckedPopupMenuItem(
                             value: _ScheduledMenuAction.showCompleted,
                             checked: _showCompleted,
-                            child: const Text('Show completed'),
+                            child: const TasklyMenuItemLabel('Show completed'),
                           ),
                           const PopupMenuItem(
                             value: _ScheduledMenuAction.selectMultiple,
-                            child: Text('Select multiple'),
+                            child: TasklyMenuItemLabel('Select multiple'),
                           ),
                         ],
                         onSelected: (action) {

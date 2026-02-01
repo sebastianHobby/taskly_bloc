@@ -134,6 +134,7 @@ Enforcement targets include:
 - Directory <-> tag contract (TG-005-A)
 - No `src/` deep imports (TG-007-A)
 - Preset exclusions for `flaky` and `slow` (TG-008-A, TG-009-A)
+- Seeded streams in widget tests (TG-011-A)
 
 Layering invariants are already enforced by repo guardrails (see
 `tool/no_layering_violations.dart`).

@@ -443,6 +443,9 @@ Policy:
   `// safe:` and you are confident the test cannot hang.
 - Avoid `pumpAndSettle()` for stream/BLoC-driven widgets; prefer
   `tester.pumpForStream()` or `tester.pumpUntilFound(...)`.
+- Seed stream sources used by widget tests (`TestStreamController.seeded(...)`
+  or `BehaviorSubject.seeded(...)`). If an unseeded stream is required to
+  assert loading, add `// ignore-unseeded-subject` on that line.
 
 ### Testing Bloc State Transitions
 ```dart

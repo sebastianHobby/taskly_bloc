@@ -204,16 +204,10 @@ Monthly flexible:
 - If window is "next week" or "later this month": hide until the first day
   of that window.
 
-## Value Slot Interaction (Optional)
+## Value Slot Interaction
 
-Setting:
-- "Count routine selections against value quotas" (global allocation setting)
-
-Behavior:
-- If enabled, routine selections for today decrement the value quotas used by
-  the suggestion engine.
-- If disabled, routine selections do not affect suggestion quotas.
-- Only routines selected for today are counted (not all routines listed).
+Routine selections for today decrement the value quotas used by the suggestion
+engine. Only routines selected for today are counted (not all routines listed).
 
 ## Data Model (Decision Needed)
 

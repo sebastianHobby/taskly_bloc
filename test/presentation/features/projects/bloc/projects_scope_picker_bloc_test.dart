@@ -1,11 +1,11 @@
-@Tags(['unit', 'anytime'])
+@Tags(['unit', 'projects'])
 library;
 
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/repository_mocks.dart';
-import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_scope_picker_bloc.dart';
+import 'package:taskly_bloc/presentation/features/projects/bloc/projects_scope_picker_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
@@ -33,8 +33,8 @@ void main() {
   late TestStreamController<List<Value>> valuesController;
   late TestStreamController<List<Project>> projectsController;
 
-  AnytimeScopePickerBloc buildBloc() {
-    return AnytimeScopePickerBloc(sharedDataService: sharedDataService);
+  ProjectsScopePickerBloc buildBloc() {
+    return ProjectsScopePickerBloc(sharedDataService: sharedDataService);
   }
 
   setUp(() {
@@ -62,6 +62,15 @@ void main() {
     when(() => projectRepository.watchAll()).thenAnswer(
       (_) => projectsController.stream,
     );
+    when(() => valueRepository.getAll()).thenAnswer(
+      (_) async => valuesController.value ?? const <Value>[],
+    );
+    when(() => projectRepository.getAll()).thenAnswer(
+      (_) async => projectsController.value ?? const <Project>[],
+    );
+    when(() => projectRepository.getAll(any())).thenAnswer(
+      (_) async => projectsController.value ?? const <Project>[],
+    );
 
     cacheManager = SessionStreamCacheManager(
       appLifecycleService: appLifecycleEvents,
@@ -81,11 +90,12 @@ void main() {
     addTearDown(demoModeService.dispose);
   });
 
-  blocTestSafe<AnytimeScopePickerBloc, AnytimeScopePickerState>(
+  blocTestSafe<ProjectsScopePickerBloc, ProjectsScopePickerState>(
     'emits loaded state with sorted values and projects',
     build: buildBloc,
+    skip: 2,
     expect: () => [
-      isA<AnytimeScopePickerLoaded>()
+      isA<ProjectsScopePickerLoaded>()
           .having(
             (s) => s.values.first.priority,
             'value.priority',
@@ -95,7 +105,7 @@ void main() {
     ],
   );
 
-  blocTestSafe<AnytimeScopePickerBloc, AnytimeScopePickerState>(
+  blocTestSafe<ProjectsScopePickerBloc, ProjectsScopePickerState>(
     'updates when streams emit new values',
     build: buildBloc,
     act: (_) {
@@ -112,9 +122,10 @@ void main() {
         ),
       ]);
     },
+    skip: 2,
     expect: () => [
-      isA<AnytimeScopePickerLoaded>(),
-      isA<AnytimeScopePickerLoaded>().having(
+      isA<ProjectsScopePickerLoaded>(),
+      isA<ProjectsScopePickerLoaded>().having(
         (s) => s.values.length,
         'values.length',
         2,
@@ -122,24 +133,24 @@ void main() {
     ],
   );
 
-  blocTestSafe<AnytimeScopePickerBloc, AnytimeScopePickerState>(
+  blocTestSafe<ProjectsScopePickerBloc, ProjectsScopePickerState>(
     'retry exits loading after stream error',
     build: buildBloc,
     act: (bloc) async {
       valuesController.emitError(StateError('boom'));
       await Future<void>.delayed(TestConstants.defaultWait);
-      bloc.add(const AnytimeScopePickerRetryRequested());
+      bloc.add(const ProjectsScopePickerRetryRequested());
       valuesController.emit([
         TestData.value(id: 'v-ok', name: 'Ok', priority: ValuePriority.medium),
       ]);
     },
+    skip: 3,
     expect: () => [
-      isA<AnytimeScopePickerLoaded>(),
-      isA<AnytimeScopePickerError>(),
-      isA<AnytimeScopePickerLoading>(),
-      isA<AnytimeScopePickerError>(),
-      isA<AnytimeScopePickerLoaded>(),
-      isA<AnytimeScopePickerLoaded>().having(
+      isA<ProjectsScopePickerError>(),
+      isA<ProjectsScopePickerLoading>(),
+      isA<ProjectsScopePickerError>(),
+      isA<ProjectsScopePickerLoaded>(),
+      isA<ProjectsScopePickerLoaded>().having(
         (s) => s.values.length,
         'values.length',
         1,

@@ -53,7 +53,7 @@ void main() {
     }
   }
 
-  testWidgetsSafe('navigates to anytime and shows coachmark overlay', (
+  testWidgetsSafe('navigates to projects and shows coachmark overlay', (
     tester,
   ) async {
     final guidedTourBloc = MockGuidedTourBloc();
@@ -63,15 +63,15 @@ void main() {
 
     final steps = [
       GuidedTourStep(
-        id: 'anytime_overview',
-        route: '/anytime',
-        title: 'Anytime',
-        body: 'Anytime intro',
+        id: 'projects_overview',
+        route: '/projects',
+        title: 'Projects',
+        body: 'Projects intro',
         kind: GuidedTourStepKind.coachmark,
         coachmark: const GuidedTourCoachmark(
-          targetId: 'anytime_create_project',
-          title: 'Anytime',
-          body: 'Anytime intro',
+          targetId: 'projects_create_project',
+          title: 'Projects',
+          body: 'Projects intro',
         ),
       ),
     ];
@@ -117,17 +117,17 @@ void main() {
               ),
             ),
             GoRoute(
-              path: '/anytime',
+              path: '/projects',
               builder: (_, __) => Scaffold(
                 body: Center(
                   child: SizedBox(
-                    key: const Key('anytime-screen'),
+                    key: const Key('projects-screen'),
                     child: ColoredBox(
                       color: Colors.transparent,
                       child: SizedBox(
                         width: 10,
                         height: 10,
-                        key: GuidedTourAnchors.anytimeCreateProject,
+                        key: GuidedTourAnchors.projectsCreateProject,
                       ),
                     ),
                   ),
@@ -155,12 +155,12 @@ void main() {
     await tester.pumpForStream();
     await pumpUntilFound(
       tester,
-      find.byKey(const Key('guided-tour-coachmark-anytime_overview')),
+      find.byKey(const Key('guided-tour-coachmark-projects_overview')),
     );
 
-    expect(find.byKey(const Key('anytime-screen')), findsOneWidget);
+    expect(find.byKey(const Key('projects-screen')), findsOneWidget);
     expect(
-      find.byKey(const Key('guided-tour-coachmark-anytime_overview')),
+      find.byKey(const Key('guided-tour-coachmark-projects_overview')),
       findsOneWidget,
     );
   });
@@ -183,15 +183,15 @@ void main() {
 
       final steps = [
         GuidedTourStep(
-          id: 'anytime_overview',
-          route: '/anytime',
-          title: 'Anytime',
-          body: 'Anytime intro',
+          id: 'projects_overview',
+          route: '/projects',
+          title: 'Projects',
+          body: 'Projects intro',
           kind: GuidedTourStepKind.coachmark,
           coachmark: const GuidedTourCoachmark(
-            targetId: 'anytime_create_project',
-            title: 'Anytime',
-            body: 'Anytime intro',
+            targetId: 'projects_create_project',
+            title: 'Projects',
+            body: 'Projects intro',
           ),
         ),
       ];
@@ -225,17 +225,17 @@ void main() {
       );
 
       final router = GoRouter(
-        initialLocation: '/anytime',
+        initialLocation: '/projects',
         routes: [
           ShellRoute(
             builder: (_, __, child) => GuidedTourOverlayHost(child: child),
             routes: [
               GoRoute(
-                path: '/anytime',
+                path: '/projects',
                 builder: (_, __) => Scaffold(
                   body: Stack(
                     children: [
-                      const Center(child: Text('Anytime Screen')),
+                      const Center(child: Text('Projects Screen')),
                       Align(
                         alignment: Alignment.bottomRight,
                         child: Padding(
@@ -243,7 +243,7 @@ void main() {
                           child: SizedBox(
                             width: 56,
                             height: 56,
-                            key: GuidedTourAnchors.anytimeCreateProject,
+                            key: GuidedTourAnchors.projectsCreateProject,
                           ),
                         ),
                       ),
@@ -272,11 +272,11 @@ void main() {
       await tester.pumpForStream();
       await pumpUntilFound(
         tester,
-        find.byKey(const Key('guided-tour-coachmark-anytime_overview')),
+        find.byKey(const Key('guided-tour-coachmark-projects_overview')),
       );
 
       final cardFinder = find.byKey(
-        const Key('guided-tour-coachmark-anytime_overview'),
+        const Key('guided-tour-coachmark-projects_overview'),
       );
       expect(cardFinder, findsOneWidget);
 
@@ -294,9 +294,7 @@ void main() {
       final planMyDayBloc = MockPlanMyDayBloc();
 
       const settingsState = GlobalSettingsState();
-      final readyState = DemoDataProvider().buildPlanMyDayReady(
-        currentStep: PlanMyDayStep.triage,
-      );
+      final readyState = DemoDataProvider().buildPlanMyDayReady();
       final planStates = TestStreamController<PlanMyDayState>.seeded(
         readyState,
       );
@@ -450,9 +448,7 @@ void main() {
       );
       addTearDown(tourStates.close);
 
-      final readyState = DemoDataProvider().buildPlanMyDayReady(
-        currentStep: PlanMyDayStep.triage,
-      );
+      final readyState = DemoDataProvider().buildPlanMyDayReady();
       final planStates = TestStreamController<PlanMyDayState>.seeded(
         const PlanMyDayLoading(),
       );

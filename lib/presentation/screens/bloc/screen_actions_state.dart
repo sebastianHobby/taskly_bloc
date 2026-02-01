@@ -10,7 +10,6 @@ final class ScreenActionsIdleState extends ScreenActionsState {
 
 enum ScreenActionsFailureKind {
   completionFailed,
-  pinFailed,
   deleteFailed,
   moveFailed,
   invalidOccurrenceData,

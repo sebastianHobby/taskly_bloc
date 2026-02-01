@@ -18,7 +18,7 @@ Canonical boundary:
 
 Routing should be **explicit** and deep-link friendly.
 
-- Define concrete routes for top-level screens (e.g. `/my-day`, `/anytime`,
+- Define concrete routes for top-level screens (e.g. `/my-day`, `/projects`,
   `/scheduled`) and feature routes (e.g. `/settings/...`).
 - Use a single `MaterialApp.router`; splash/auth/main are routes gated via
   router redirects rather than swapping entire app shells.
@@ -28,9 +28,8 @@ Routing should be **explicit** and deep-link friendly.
   screen-key conventions and app shell behavior.
 
 Naming note:
-- The Anytime screen is implemented under the historical system screen key
-  `someday`, but the canonical route path is `/anytime` (see
-  `doc/product/SCREEN_PURPOSE_CONCEPTS.md`).
+- The Projects screen uses the screen key `projects` and routes to `/projects`
+  (see `doc/product/SCREEN_PURPOSE_CONCEPTS.md`).
 
 ## 3) Screen Composition Pattern
 

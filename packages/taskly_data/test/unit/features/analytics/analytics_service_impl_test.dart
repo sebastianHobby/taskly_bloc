@@ -396,6 +396,13 @@ class _FakeTaskRepository implements TaskRepositoryContract {
   }) async => throw UnimplementedError();
 
   @override
+  Future<int> bulkRescheduleStarts({
+    required Iterable<String> taskIds,
+    required DateTime startDate,
+    OperationContext? context,
+  }) async => throw UnimplementedError();
+
+  @override
   Future<void> setPinned({
     required String id,
     required bool isPinned,

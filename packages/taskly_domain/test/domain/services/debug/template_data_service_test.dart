@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart';
@@ -173,6 +174,28 @@ class _InMemoryTaskRepo extends Fake implements TaskRepositoryContract {
   }
 
   @override
+  Future<void> setMyDaySnoozedUntil({
+    required String id,
+    required DateTime? untilUtc,
+    OperationContext? context,
+  }) async {
+    // No-op for template seeding tests.
+  }
+
+  @override
+  Future<void> completeOccurrence({
+    required String taskId,
+    DateTime? occurrenceDate,
+    DateTime? originalOccurrenceDate,
+    String? notes,
+    OperationContext? context,
+  }) async {
+    final index = _tasks.indexWhere((task) => task.id == taskId);
+    if (index == -1) return;
+    _tasks[index] = _tasks[index].copyWith(completed: true);
+  }
+
+  @override
   Future<void> delete(String id, {OperationContext? context}) async {
     _tasks.removeWhere((task) => task.id == id);
   }
@@ -225,7 +248,6 @@ class _InMemoryRoutineRepo extends Fake implements RoutineRepositoryContract {
     required String valueId,
     required RoutineType routineType,
     required int targetCount,
-    String? projectId,
     List<int> scheduleDays = const <int>[],
     int? minSpacingDays,
     int? restDayBuffer,
@@ -247,7 +269,6 @@ class _InMemoryRoutineRepo extends Fake implements RoutineRepositoryContract {
         valueId: valueId,
         routineType: routineType,
         targetCount: targetCount,
-        projectId: projectId,
         scheduleDays: scheduleDays,
         minSpacingDays: minSpacingDays,
         restDayBuffer: restDayBuffer,
@@ -256,7 +277,7 @@ class _InMemoryRoutineRepo extends Fake implements RoutineRepositoryContract {
         fixedWeekday: fixedWeekday,
         fixedWeekOfMonth: fixedWeekOfMonth,
         isActive: isActive,
-        pausedUntilUtc: pausedUntilUtc,
+        pausedUntil: pausedUntilUtc,
       ),
     );
   }
@@ -345,11 +366,15 @@ class _FixedClock implements Clock {
 }
 
 class _RecordingUserDataWipeService implements UserDataWipeService {
+  _RecordingUserDataWipeService({this.onWipe});
+
+  final void Function()? onWipe;
   int wipeCalls = 0;
 
   @override
   Future<void> wipeAllUserData({Duration? timeout}) async {
     wipeCalls += 1;
+    onWipe?.call();
   }
 }
 
@@ -461,7 +486,13 @@ void main() {
       );
 
       final routineRepo = _InMemoryRoutineRepo();
-      final wipeService = _RecordingUserDataWipeService();
+      final wipeService = _RecordingUserDataWipeService(
+        onWipe: () {
+          valueRepo._values.clear();
+          projectRepo._projects.clear();
+          taskRepo._tasks.clear();
+        },
+      );
       final ratingsRepo = _InMemoryValueRatingsRepository();
       final ratingsWriteService = ValueRatingsWriteService(
         repository: ratingsRepo,
@@ -486,22 +517,19 @@ void main() {
       final tasks = await taskRepo.getAll();
       final routines = await routineRepo.getAll();
 
-      expect(values, hasLength(6));
+      expect(values, hasLength(4));
       expect(
         values.map((v) => v.name),
         containsAll(<String>[
-          'Life Admin',
-          'Home & Comfort',
-          'Relationships',
-          'Health & Energy',
-          'Finance & Security',
-          'Focus & Clarity',
+          'Learning',
+          'Health',
+          'Career',
+          'Social',
         ]),
       );
       expect(projects, hasLength(4));
-      expect(tasks, hasLength(30));
-      expect(routines, hasLength(6));
-      expect(tasks.where((t) => t.isPinned), hasLength(1));
+      expect(tasks, hasLength(12));
+      expect(routines, hasLength(2));
       expect(wipeService.wipeCalls, 1);
       expect(ratingsRepo.getAll(), completion(isNotEmpty));
       expect(settingsRepo.settings.weeklyReviewLastCompletedAt, isNull);

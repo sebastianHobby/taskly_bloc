@@ -10,9 +10,6 @@ enum ReviewType {
 
   @JsonValue('balance')
   balance,
-
-  @JsonValue('pinnedTasksCheck')
-  pinnedTasksCheck,
 }
 
 /// Extension for ReviewType display and configuration.
@@ -21,7 +18,6 @@ extension ReviewTypeX on ReviewType {
   String get displayName => switch (this) {
     ReviewType.valuesAlignment => 'Values Alignment',
     ReviewType.balance => 'Balance',
-    ReviewType.pinnedTasksCheck => 'Pinned Tasks Check',
   };
 
   /// Description of what this review covers.
@@ -29,14 +25,12 @@ extension ReviewTypeX on ReviewType {
     ReviewType.valuesAlignment =>
       'Reflect on whether tasks align with your values',
     ReviewType.balance => 'Assess value distribution and neglect',
-    ReviewType.pinnedTasksCheck => 'Review and update pinned tasks',
   };
 
   /// Default frequency in days for this review type.
   int get defaultFrequencyDays => switch (this) {
     ReviewType.valuesAlignment => 14,
     ReviewType.balance => 14,
-    ReviewType.pinnedTasksCheck => 7,
   };
 }
 
@@ -71,10 +65,6 @@ abstract class ReviewSettings with _$ReviewSettings {
 
     /// Configuration for balance review.
     @Default(ReviewTypeConfig(frequencyDays: 14)) ReviewTypeConfig balance,
-
-    /// Configuration for pinned tasks check.
-    @Default(ReviewTypeConfig(frequencyDays: 7))
-    ReviewTypeConfig pinnedTasksCheck,
   }) = _ReviewSettings;
   const ReviewSettings._();
 
@@ -85,7 +75,6 @@ abstract class ReviewSettings with _$ReviewSettings {
   ReviewTypeConfig getConfig(ReviewType type) => switch (type) {
     ReviewType.valuesAlignment => valuesAlignment,
     ReviewType.balance => balance,
-    ReviewType.pinnedTasksCheck => pinnedTasksCheck,
   };
 
   /// Checks if a specific review type is due based on last completion.
@@ -115,11 +104,6 @@ abstract class ReviewSettings with _$ReviewSettings {
       ReviewType.balance => copyWith(
         balance: balance.copyWith(lastCompletedAt: completedAt),
       ),
-      ReviewType.pinnedTasksCheck => copyWith(
-        pinnedTasksCheck: pinnedTasksCheck.copyWith(
-          lastCompletedAt: completedAt,
-        ),
-      ),
     };
   }
 
@@ -128,7 +112,6 @@ abstract class ReviewSettings with _$ReviewSettings {
     return switch (type) {
       ReviewType.valuesAlignment => copyWith(valuesAlignment: config),
       ReviewType.balance => copyWith(balance: config),
-      ReviewType.pinnedTasksCheck => copyWith(pinnedTasksCheck: config),
     };
   }
 }

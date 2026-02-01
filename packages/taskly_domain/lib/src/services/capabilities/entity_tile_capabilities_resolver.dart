@@ -47,7 +47,6 @@ class EntityTileCapabilitiesResolver {
       completionScope: hasOccurrence
           ? CompletionScope.occurrence
           : CompletionScope.entity,
-      canTogglePinned: true,
       canDelete: true,
       canOpenEditor: true,
       canOpenMoveToProject: true,

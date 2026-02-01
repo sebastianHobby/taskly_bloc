@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
 
@@ -66,17 +67,24 @@ void testWidgetsSafe(
     skip: skip,
     tags: tags,
     (tester) async {
-      await callback(tester).timeout(
-        timeout,
-        onTimeout: () {
-          throw TimeoutException(
-            'Test "$description" exceeded ${timeout.inSeconds}s total duration. '
-            'Check for: pumpAndSettle() with streams, unclosed subscriptions, '
-            'or infinite animations. Use pumpForStream() instead.',
-            timeout,
-          );
-        },
-      );
+      try {
+        await callback(tester).timeout(
+          timeout,
+          onTimeout: () {
+            throw TimeoutException(
+              'Test "$description" exceeded ${timeout.inSeconds}s total duration. '
+              'Check for: pumpAndSettle() with streams, unclosed subscriptions, '
+              'or infinite animations. Use pumpForStream() instead.',
+              timeout,
+            );
+          },
+        );
+      } finally {
+        // Flush short-lived timers, then dispose widgets before tearDown.
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump(const Duration(milliseconds: 200));
+      }
     },
   );
 }

@@ -1,4 +1,4 @@
-# Screen Purpose Concepts (My Day / Anytime / Scheduled)
+# Screen Purpose Concepts (My Day / Projects / Scheduled)
 
 > Audience: product + design + engineering
 >
@@ -11,27 +11,27 @@
 that still respects deadlines. It is the execution view for today.
 
 **Description line (UI copy)**
-- "Your plan for today - what matters and what's due."
+- "Your plan for today - values and due dates."
 
 **Key question it answers**
-- "What matters and what's due?"
+- "What should I focus on today?"
 
 **What it shows**
 - My Day shows the tasks and routines you've chosen for today.
 
-## Anytime (Project Planning)
+## Projects (Planning Source)
 
-**Primary purpose**: Anytime is the place you record everything you plan to
-work on - a project-first view of tasks that My Day draws from.
+**Primary purpose**: Projects is where you build your project list - the
+source for today's plan in My Day.
 
 **Description line (UI copy)**
-- "Project-first planning for tasks you'll work on (and the source for My Day)."
+- "Source for today's plan."
 
 **Key question it answers**
-- "What's in my projects right now?"
+- "What should My Day pull from?"
 
 **What it shows**
-- Anytime shows project groups first, with their tasks beneath - everything you
+- Projects shows project groups first, with their tasks beneath - everything you
   intend to work on.
 
 ## Scheduled (Date Lens)

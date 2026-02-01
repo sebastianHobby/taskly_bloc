@@ -252,11 +252,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                     ),
                   );
                 },
-                onTogglePinned: (isPinned) {
-                  context.read<TaskDetailBloc>().add(
-                    TaskDetailEvent.setPinned(id: task.id, isPinned: isPinned),
-                  );
-                },
                 trailingActions: _buildDetailActions(
                   context,
                   taskId: task.id,

@@ -60,9 +60,6 @@ Ritual flow (Presentation)
 ```
 
 Notes:
-
-- Allocation excludes pinned tasks; pinned items are surfaced by My Day
-  presentation composition (not the allocator).
 - Allocation executes synchronously; any async inputs are pre-fetched in the
   orchestrator and passed into `AllocationParameters`.
 - Suggested picks are **not persisted** as an allocation snapshot.
@@ -154,10 +151,10 @@ Implementation notes:
 - Analytics lookback is a fixed window (currently 14 days) to avoid exposing
   tuning knobs.
 
-My Day selection settings (global):
+My Day selection behavior (global):
 
-- **Count triage picks against value quotas** -> `GlobalSettings.myDayCountTriagePicksAgainstValueQuotas`
-- **Count routine picks against value quotas** -> `GlobalSettings.myDayCountRoutinePicksAgainstValueQuotas`
+- Due/planned picks and routine picks always count against value quotas when
+  suggestions are generated (no user-facing toggle).
 
 Urgency settings:
 

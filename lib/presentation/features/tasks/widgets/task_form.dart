@@ -8,6 +8,7 @@ import 'package:taskly_bloc/presentation/shared/validation/form_builder_validato
 import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/feature_flags.dart';
@@ -38,7 +39,6 @@ class TaskForm extends StatefulWidget {
     this.defaultDeadlineDate,
     this.openToValues = false,
     this.openToProjectPicker = false,
-    this.onTogglePinned,
     this.onClose,
     this.trailingActions = const <Widget>[],
     super.key,
@@ -66,11 +66,6 @@ class TaskForm extends StatefulWidget {
   /// When true, scrolls to the project picker and opens the picker dialog.
   final bool openToProjectPicker;
 
-  /// Called when the user toggles pinned state from the header.
-  ///
-  /// Only shown when editing (initialData != null).
-  final ValueChanged<bool>? onTogglePinned;
-
   /// Called when the user wants to close the form.
   /// If null, no close button is shown.
   final VoidCallback? onClose;
@@ -83,6 +78,8 @@ class TaskForm extends StatefulWidget {
 }
 
 class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
+  static const _draftSyncDebounce = Duration(milliseconds: 400);
+
   bool get _taskSecondaryValuesEnabled =>
       TasklyFeatureFlags.taskSecondaryValuesEnabled;
 
@@ -92,7 +89,9 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
   final _scrollController = ScrollController();
   final GlobalKey<State<StatefulWidget>> _valuesKey = GlobalKey();
   final GlobalKey<State<StatefulWidget>> _projectKey = GlobalKey();
+  final Debouncer _draftSyncDebouncer = Debouncer(_draftSyncDebounce);
   bool _didAutoOpen = false;
+  bool _submitEnabled = false;
   final List<String> _recentProjectIds = <String>[];
   String? _recurrenceLabel;
   String? _lastRecurrenceRrule;
@@ -169,6 +168,30 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       if (!mounted || _lastRecurrenceRrule != requestRrule) return;
       setState(() => _recurrenceLabel = label);
     });
+  }
+
+  void _handleFormChanged() {
+    markDirty();
+    _scheduleDraftSync();
+    _refreshSubmitEnabled();
+  }
+
+  void _scheduleDraftSync() {
+    final onChanged = widget.onChanged;
+    if (onChanged == null) return;
+    _draftSyncDebouncer.schedule(() {
+      if (!mounted) return;
+      final values = widget.formKey.currentState?.value;
+      if (values != null) {
+        onChanged(values);
+      }
+    });
+  }
+
+  void _refreshSubmitEnabled() {
+    final next = isDirty && (widget.formKey.currentState?.isValid ?? false);
+    if (next == _submitEnabled || !mounted) return;
+    setState(() => _submitEnabled = next);
   }
 
   @override
@@ -278,6 +301,13 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
         setState(() {});
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _draftSyncDebouncer.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -520,8 +550,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       TaskFieldKeys.seriesEnded.id: widget.initialData?.seriesEnded ?? false,
     };
 
-    final submitEnabled =
-        isDirty && (widget.formKey.currentState?.isValid ?? false);
+    final submitEnabled = _submitEnabled;
 
     final sectionGap = isCompact ? 12.0 : 16.0;
     final denseFieldPadding = EdgeInsets.symmetric(
@@ -563,24 +592,6 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
             style: headerActionStyle,
             child: Text(l10n.cancelLabel),
           ),
-        if (widget.initialData != null && widget.onTogglePinned != null)
-          IconButton(
-            onPressed: () {
-              final nextPinned = !(widget.initialData?.isPinned ?? false);
-              widget.onTogglePinned?.call(nextPinned);
-            },
-            icon: Icon(
-              (widget.initialData?.isPinned ?? false)
-                  ? Icons.push_pin
-                  : Icons.push_pin_outlined,
-              color: (widget.initialData?.isPinned ?? false)
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-            ),
-            tooltip: (widget.initialData?.isPinned ?? false)
-                ? l10n.unpinAction
-                : l10n.pinAction,
-          ),
       ],
       trailingActions: [
         ...widget.trailingActions,
@@ -609,23 +620,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
           key: widget.formKey,
           initialValue: initialValues,
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          onChanged: () {
-            markDirty();
-            setState(() {});
-            _clearTagsIfNotAllowed();
-            final rrule =
-                widget
-                        .formKey
-                        .currentState
-                        ?.fields[TaskFieldKeys.repeatIcalRrule.id]
-                        ?.value
-                    as String?;
-            _updateRecurrenceLabel(rrule);
-            final values = widget.formKey.currentState?.value;
-            if (values != null) {
-              widget.onChanged?.call(values);
-            }
-          },
+          onChanged: _handleFormChanged,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -1518,11 +1513,15 @@ class _ProjectPickerDialog extends StatefulWidget {
 }
 
 class _ProjectPickerDialogState extends State<_ProjectPickerDialog> {
+  static const _searchDebounce = Duration(milliseconds: 300);
+
   final _searchController = TextEditingController();
+  final Debouncer _searchDebouncer = Debouncer(_searchDebounce);
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchDebouncer.dispose();
     super.dispose();
   }
 
@@ -1598,7 +1597,12 @@ class _ProjectPickerDialogState extends State<_ProjectPickerDialog> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                onChanged: (_) => setState(() {}),
+                onChanged: (_) {
+                  _searchDebouncer.schedule(() {
+                    if (!mounted) return;
+                    setState(() {});
+                  });
+                },
               ),
             ),
             const Divider(height: 1),

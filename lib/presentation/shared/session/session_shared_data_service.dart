@@ -101,7 +101,10 @@ final class SessionSharedDataService {
       if (enabled) {
         return Stream<List<Value>>.value(_demoDataProvider.values);
       }
-      return _valueRepository.watchAll();
+      return _watchWithInitial<List<Value>>(
+        getAll: _valueRepository.getAll,
+        watchAll: _valueRepository.watchAll,
+      );
     });
   }
 
@@ -110,7 +113,10 @@ final class SessionSharedDataService {
       if (enabled) {
         return Stream<List<Project>>.value(_demoDataProvider.projects);
       }
-      return _projectRepository.watchAll();
+      return _watchWithInitial<List<Project>>(
+        getAll: _projectRepository.getAll,
+        watchAll: _projectRepository.watchAll,
+      );
     });
   }
 
@@ -122,7 +128,11 @@ final class SessionSharedDataService {
             .toList(growable: false);
         return Stream<List<Project>>.value(projects);
       }
-      return _projectRepository.watchAll(ProjectQuery.incomplete());
+      final query = ProjectQuery.incomplete();
+      return _watchWithInitial<List<Project>>(
+        getAll: () => _projectRepository.getAll(query),
+        watchAll: () => _projectRepository.watchAll(query),
+      );
     });
   }
 
@@ -150,5 +160,14 @@ final class SessionSharedDataService {
     await _cacheManager.evict(_projectsIncompleteKey);
     await _cacheManager.evict(_inboxCountKey);
     await _cacheManager.evict(_tasksAllCountKey);
+  }
+
+  Stream<T> _watchWithInitial<T>({
+    required Future<T> Function() getAll,
+    required Stream<T> Function() watchAll,
+  }) {
+    final watch$ = watchAll().shareReplay(maxSize: 1);
+    final initial$ = Stream.fromFuture(getAll()).takeUntil(watch$);
+    return Rx.merge([watch$, initial$]);
   }
 }

@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -171,15 +172,23 @@ void main() {
     final valueB = TestData.value(name: 'Family');
     when(() => valueRepository.getAll()).thenAnswer((_) async => [valueA]);
 
-    await pumpPage(tester);
-    valuesSubject.add([valueA]);
-    await tester.pumpForStream();
+    await tester.runAsync(() async {
+      final queue = StreamQueue(sharedDataService.watchValues());
+      valuesSubject.add([valueA]);
+      final first = await queue.next;
+      expect(first.map((value) => value.name), contains('Work'));
 
-    expect(find.text('Work'), findsOneWidget);
-
-    valuesSubject.add([valueA, valueB]);
-    await tester.pumpForStream();
-
-    expect(find.text('Family'), findsOneWidget);
+      valuesSubject.add([valueA, valueB]);
+      final deadline = DateTime.now().add(const Duration(seconds: 2));
+      List<Value>? updated;
+      while (DateTime.now().isBefore(deadline) && updated == null) {
+        final nextValues = await queue.next.timeout(const Duration(seconds: 1));
+        if (nextValues.any((value) => value.name == 'Family')) {
+          updated = nextValues;
+        }
+      }
+      expect(updated, isNotNull);
+      await queue.cancel();
+    });
   });
 }

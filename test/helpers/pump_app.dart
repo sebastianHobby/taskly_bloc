@@ -46,7 +46,7 @@ Future<void> pumpTasklyApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       locale: locale,
-      home: home,
+      home: Material(child: home),
     ),
   );
 }

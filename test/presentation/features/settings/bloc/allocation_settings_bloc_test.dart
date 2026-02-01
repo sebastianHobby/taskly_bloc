@@ -43,9 +43,9 @@ void main() {
       (_) => allocationController.stream,
     );
     when(
-      () => settingsRepository.save(
+      () => settingsRepository.save<AllocationConfig>(
         SettingsKey.allocation,
-        any(),
+        any<AllocationConfig>(),
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
@@ -83,7 +83,7 @@ void main() {
     ],
     verify: (_) {
       final captured = verify(
-        () => settingsRepository.save(
+        () => settingsRepository.save<AllocationConfig>(
           SettingsKey.allocation,
           captureAny(),
           context: captureAny(named: 'context'),
