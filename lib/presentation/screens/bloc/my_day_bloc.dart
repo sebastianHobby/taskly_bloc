@@ -45,7 +45,6 @@ final class MyDayLoaded extends MyDayState {
     required this.mix,
     required this.tasks,
     required this.plannedItems,
-    required this.pinnedTasks,
     required this.completedPicks,
     required this.selectedTotalCount,
     required this.todaySelectedTaskIds,
@@ -57,7 +56,6 @@ final class MyDayLoaded extends MyDayState {
   final MyDayMixVm mix;
   final List<Task> tasks;
   final List<MyDayPlannedItem> plannedItems;
-  final List<Task> pinnedTasks;
 
   /// Tasks selected for today that are already completed.
   final List<Task> completedPicks;
@@ -122,7 +120,6 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         mix: vm.mix,
         tasks: vm.tasks,
         plannedItems: vm.plannedItems,
-        pinnedTasks: vm.pinnedTasks,
         completedPicks: vm.completedPicks,
         selectedTotalCount: vm.selectedTotalCount,
         todaySelectedTaskIds: vm.todaySelectedTaskIds,

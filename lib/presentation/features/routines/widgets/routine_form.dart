@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
+import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
@@ -39,8 +40,12 @@ class RoutineForm extends StatefulWidget {
 }
 
 class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
+  static const _draftSyncDebounce = Duration(milliseconds: 400);
+
   late RoutineType _currentType;
   final _scrollController = ScrollController();
+  final Debouncer _draftSyncDebouncer = Debouncer(_draftSyncDebounce);
+  bool _submitEnabled = false;
 
   @override
   VoidCallback? get onClose => widget.onClose;
@@ -58,6 +63,13 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
       RoutineType.monthlyFixed => RoutineType.monthlyFlexible,
       _ => rawType,
     };
+  }
+
+  @override
+  void dispose() {
+    _draftSyncDebouncer.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _onRoutineTypeChanged(
@@ -97,6 +109,38 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
       return;
     }
     markDirty();
+  }
+
+  void _handleFormChanged() {
+    _markDirtySafely();
+    _scheduleDraftSync();
+    _refreshSubmitEnabled();
+  }
+
+  void _scheduleDraftSync() {
+    final onChanged = widget.onChanged;
+    if (onChanged == null) return;
+    _draftSyncDebouncer.schedule(() {
+      if (!mounted) return;
+      final values = widget.formKey.currentState?.value;
+      if (values != null) {
+        onChanged(values);
+      }
+    });
+  }
+
+  void _refreshSubmitEnabled() {
+    final next = isDirty && (widget.formKey.currentState?.isValid ?? false);
+    if (next == _submitEnabled || !mounted) return;
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _submitEnabled = next);
+      });
+      return;
+    }
+    setState(() => _submitEnabled = next);
   }
 
   @override
@@ -146,8 +190,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
           widget.initialData?.isActive ?? draft?.isActive ?? true,
     };
 
-    final submitEnabled =
-        isDirty && (widget.formKey.currentState?.isValid ?? false);
+    final submitEnabled = _submitEnabled;
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -222,22 +265,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
           key: widget.formKey,
           initialValue: initialValues,
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          onChanged: () {
-            _markDirtySafely();
-            if (SchedulerBinding.instance.schedulerPhase ==
-                SchedulerPhase.persistentCallbacks) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!mounted) return;
-                setState(() {});
-              });
-            } else {
-              setState(() {});
-            }
-            final values = widget.formKey.currentState?.value;
-            if (values != null) {
-              widget.onChanged?.call(values);
-            }
-          },
+          onChanged: _handleFormChanged,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

@@ -669,6 +669,65 @@ class TaskRepository implements TaskRepositoryContract {
   }
 
   @override
+  Future<int> bulkRescheduleStarts({
+    required Iterable<String> taskIds,
+    required DateTime startDate,
+    OperationContext? context,
+  }) async {
+    final ids = taskIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (ids.isEmpty) return 0;
+
+    return FailureGuard.run(
+      () async {
+        final normalizedStart = dateOnlyOrNull(startDate);
+        final now = _clock.nowUtc();
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
+
+        return driftDb.transaction(() async {
+          final existingIds =
+              await (driftDb.selectOnly(driftDb.taskTable)
+                    ..addColumns([driftDb.taskTable.id])
+                    ..where(driftDb.taskTable.id.isIn(ids)))
+                  .map((row) => row.read(driftDb.taskTable.id)!)
+                  .get();
+
+          if (existingIds.length != ids.length) {
+            throw RepositoryNotFoundException(
+              'Some tasks were not found for bulk start update',
+            );
+          }
+
+          final updated =
+              await (driftDb.update(
+                driftDb.taskTable,
+              )..where((t) => t.id.isIn(ids))).write(
+                TaskTableCompanion(
+                  startDate: drift_pkg.Value(normalizedStart),
+                  updatedAt: drift_pkg.Value(now),
+                  psMetadata: psMetadata == null
+                      ? const drift_pkg.Value<String?>.absent()
+                      : drift_pkg.Value(psMetadata),
+                ),
+              );
+
+          if (updated != ids.length) {
+            throw RepositoryException('Bulk task start update failed');
+          }
+
+          return updated;
+        });
+      },
+      area: 'data.task',
+      opName: 'bulk_update_start',
+      context: context,
+    );
+  }
+
+  @override
   Future<void> setPinned({
     required String id,
     required bool isPinned,

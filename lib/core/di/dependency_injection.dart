@@ -221,14 +221,12 @@ Future<void> setupDependencies() async {
       () => TaskWriteService(
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
-        allocationOrchestrator: getIt<AllocationOrchestrator>(),
         occurrenceCommandService: getIt<OccurrenceCommandService>(),
       ),
     )
     ..registerLazySingleton<ProjectWriteService>(
       () => ProjectWriteService(
         projectRepository: getIt<ProjectRepositoryContract>(),
-        allocationOrchestrator: getIt<AllocationOrchestrator>(),
         occurrenceCommandService: getIt<OccurrenceCommandService>(),
       ),
     )

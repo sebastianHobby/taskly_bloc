@@ -29,7 +29,6 @@ void main() {
   late MockTaskRepositoryContract taskRepository;
   late TaskWriteService taskWriteService;
   late MockProjectRepositoryContract projectRepository;
-  late MockAllocationOrchestrator allocationOrchestrator;
   late MockOccurrenceCommandService occurrenceCommandService;
   late ProjectWriteService projectWriteService;
   late DemoModeService demoModeService;
@@ -45,17 +44,14 @@ void main() {
   setUp(() {
     taskRepository = MockTaskRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
-    allocationOrchestrator = MockAllocationOrchestrator();
     occurrenceCommandService = MockOccurrenceCommandService();
     taskWriteService = TaskWriteService(
       taskRepository: taskRepository,
       projectRepository: projectRepository,
-      allocationOrchestrator: allocationOrchestrator,
       occurrenceCommandService: occurrenceCommandService,
     );
     projectWriteService = ProjectWriteService(
       projectRepository: projectRepository,
-      allocationOrchestrator: allocationOrchestrator,
       occurrenceCommandService: occurrenceCommandService,
     );
     demoModeService = DemoModeService();

@@ -327,7 +327,8 @@ class TasklyTokens extends ThemeExtension<TasklyTokens> {
       projectsAppBarHeight: projectsAppBarHeight ?? this.projectsAppBarHeight,
       scheduledAppBarHeight:
           scheduledAppBarHeight ?? this.scheduledAppBarHeight,
-      projectsHeaderPadding: projectsHeaderPadding ?? this.projectsHeaderPadding,
+      projectsHeaderPadding:
+          projectsHeaderPadding ?? this.projectsHeaderPadding,
       valueItemWidth: valueItemWidth ?? this.valueItemWidth,
       filterRowSpacing: filterRowSpacing ?? this.filterRowSpacing,
       filterPillPadding: filterPillPadding ?? this.filterPillPadding,
@@ -471,4 +472,3 @@ class TasklyTokens extends ThemeExtension<TasklyTokens> {
     );
   }
 }
-

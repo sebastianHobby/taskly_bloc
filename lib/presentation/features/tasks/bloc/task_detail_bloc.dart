@@ -20,10 +20,6 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
   const factory TaskDetailEvent.update({
     required UpdateTaskCommand command,
   }) = _TaskDetailUpdate;
-  const factory TaskDetailEvent.setPinned({
-    required String id,
-    required bool isPinned,
-  }) = _TaskDetailSetPinned;
 
   const factory TaskDetailEvent.create({
     required CreateTaskCommand command,
@@ -94,7 +90,6 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     on<_TaskDetailLoadById>(_onGet, transformer: restartable());
     on<_TaskDetailCreate>(_onCreate, transformer: droppable());
     on<_TaskDetailUpdate>(_onUpdate, transformer: droppable());
-    on<_TaskDetailSetPinned>(_onSetPinned, transformer: droppable());
 
     if (autoLoad) {
       if (taskId != null && taskId.isNotEmpty) {
@@ -289,68 +284,6 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
       () => _taskWriteService.update(event.command, context: context),
       context: context,
     );
-  }
-
-  Future<void> _onSetPinned(
-    _TaskDetailSetPinned event,
-    Emitter<TaskDetailState> emit,
-  ) async {
-    final context = _newContext(
-      intent: 'task_set_pinned_requested',
-      operation: 'tasks.setPinned',
-      entityId: event.id,
-      extraFields: <String, Object?>{'isPinned': event.isPinned},
-    );
-
-    try {
-      await _taskWriteService.setPinned(
-        event.id,
-        isPinned: event.isPinned,
-        context: context,
-      );
-
-      emit(
-        TaskDetailState.inlineActionSuccess(
-          message: event.isPinned ? 'Pinned' : 'Unpinned',
-        ),
-      );
-
-      // Refresh entity (keep editor open)
-      final task = await _taskRepository.getById(event.id);
-      if (task == null) {
-        emit(
-          const TaskDetailState.operationFailure(
-            errorDetails: DetailBlocError<Task>(error: NotFoundEntity.task),
-          ),
-        );
-        return;
-      }
-
-      final projects = await _projectRepository.getAll();
-      final values = await _valueRepository.getAll();
-      emit(
-        TaskDetailState.loadSuccess(
-          task: task,
-          availableProjects: projects,
-          availableValues: values,
-        ),
-      );
-    } catch (error, stackTrace) {
-      _reportIfUnexpectedOrUnmapped(
-        error,
-        stackTrace,
-        context: context,
-        message: 'Task setPinned failed',
-      );
-      emit(
-        TaskDetailState.operationFailure(
-          errorDetails: DetailBlocError<Task>(
-            error: error is AppFailure ? error.uiMessage() : error,
-            stackTrace: stackTrace,
-          ),
-        ),
-      );
-    }
   }
 
   Future<void> _executeValidatedCommand(

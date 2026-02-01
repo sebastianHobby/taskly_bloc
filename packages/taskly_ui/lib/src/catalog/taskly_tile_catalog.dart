@@ -41,7 +41,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-standard',
-        title: 'Task Â· Standard',
+        title: 'Task Ã‚Â· Standard',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-standard-1',
@@ -61,8 +61,26 @@ class TasklyTileCatalog extends StatelessWidget {
         actions: _taskActions,
       ),
       TasklyRowSpec.header(
+        key: 'catalog-tasks-compact',
+        title: 'Task · Compact',
+      ),
+      TasklyRowSpec.task(
+        key: 'catalog-task-compact',
+        data: _taskData(
+          id: 't-compact-1',
+          title: 'Review milestone risks',
+          meta: TasklyEntityMetaData(
+            deadlineDateLabel: 'Sep 18',
+            isDueToday: true,
+          ),
+          leadingChip: valueFinance,
+        ),
+        style: const TasklyTaskRowStyle.compact(),
+        actions: _taskActions,
+      ),
+      TasklyRowSpec.header(
         key: 'catalog-tasks-primary-icon-only',
-        title: 'Task · Primary icon-only',
+        title: 'Task Â· Primary icon-only',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-primary-icon-only',
@@ -96,7 +114,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-bulk',
-        title: 'Task Â· Bulk selection',
+        title: 'Task Ã‚Â· Bulk selection',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-bulk-selected',
@@ -123,7 +141,7 @@ class TasklyTileCatalog extends StatelessWidget {
 
       TasklyRowSpec.header(
         key: 'catalog-tasks-plan-pick',
-        title: 'Task · Plan pick',
+        title: 'Task Â· Plan pick',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-plan-pick-selected',
@@ -167,9 +185,9 @@ class TasklyTileCatalog extends StatelessWidget {
         data: TasklyRoutineRowData(
           id: 'r-standard-1',
           title: 'Gym session',
-          targetLabel: '3×/week',
+          targetLabel: '3Ã—/week',
           remainingLabel: '2 left',
-          windowLabel: '4 days left (Mon–Sun)',
+          windowLabel: '4 days left (Monâ€“Sun)',
           valueChip: valueHealth,
           labels: const TasklyRoutineRowLabels(
             primaryActionLabel: 'Log today',
@@ -253,7 +271,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-routines-plan-pick',
-        title: 'Routine · Plan pick',
+        title: 'Routine Â· Plan pick',
       ),
       TasklyRowSpec.routine(
         key: 'catalog-routine-plan-pick-selected',
@@ -298,7 +316,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-projects-standard',
-        title: 'Project Â· Standard',
+        title: 'Project Ã‚Â· Standard',
       ),
       TasklyRowSpec.project(
         key: 'catalog-project-standard-1',
@@ -355,7 +373,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-projects-bulk',
-        title: 'Project Â· Bulk selection',
+        title: 'Project Ã‚Â· Bulk selection',
       ),
       TasklyRowSpec.project(
         key: 'catalog-project-bulk-selected',
@@ -386,7 +404,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-values-standard',
-        title: 'Value Â· Standard',
+        title: 'Value Ã‚Â· Standard',
       ),
       TasklyRowSpec.value(
         key: 'catalog-value-standard',
@@ -401,7 +419,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-values-hero',
-        title: 'Value Â· Hero',
+        title: 'Value Ã‚Â· Hero',
       ),
       TasklyRowSpec.value(
         key: 'catalog-value-hero',
@@ -443,7 +461,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-values-bulk',
-        title: 'Value Â· Bulk selection',
+        title: 'Value Ã‚Â· Bulk selection',
       ),
       TasklyRowSpec.value(
         key: 'catalog-value-bulk-selected',

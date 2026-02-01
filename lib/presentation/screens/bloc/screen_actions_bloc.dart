@@ -66,30 +66,6 @@ final class ScreenActionsProjectSeriesCompleted extends ScreenActionsEvent {
   final Completer<void>? completer;
 }
 
-final class ScreenActionsTaskPinnedChanged extends ScreenActionsEvent {
-  const ScreenActionsTaskPinnedChanged({
-    required this.taskId,
-    required this.pinned,
-    this.completer,
-  });
-
-  final String taskId;
-  final bool pinned;
-  final Completer<void>? completer;
-}
-
-final class ScreenActionsProjectPinnedChanged extends ScreenActionsEvent {
-  const ScreenActionsProjectPinnedChanged({
-    required this.projectId,
-    required this.pinned,
-    this.completer,
-  });
-
-  final String projectId;
-  final bool pinned;
-  final Completer<void>? completer;
-}
-
 final class ScreenActionsDeleteEntity extends ScreenActionsEvent {
   const ScreenActionsDeleteEntity({
     required this.entityType,
@@ -158,14 +134,6 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     );
     on<ScreenActionsProjectSeriesCompleted>(
       _onProjectSeriesCompleted,
-      transformer: sequential(),
-    );
-    on<ScreenActionsTaskPinnedChanged>(
-      _onTaskPinnedChanged,
-      transformer: sequential(),
-    );
-    on<ScreenActionsProjectPinnedChanged>(
-      _onProjectPinnedChanged,
       transformer: sequential(),
     );
     on<ScreenActionsDeleteEntity>(
@@ -426,96 +394,6 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.completionFailed,
           fallbackMessage: 'Series completion failed',
-          shouldShowSnackBar: shouldShowSnackBar,
-          entityType: EntityType.project,
-          entityId: event.projectId,
-          error: e,
-        ),
-      );
-      event.completer?.completeError(e, st);
-      emit(const ScreenActionsIdleState());
-    }
-  }
-
-  Future<void> _onTaskPinnedChanged(
-    ScreenActionsTaskPinnedChanged event,
-    Emitter<ScreenActionsState> emit,
-  ) async {
-    final context = _newContext(
-      intent: 'task_pinned_changed',
-      operation: event.pinned ? 'pin' : 'unpin',
-      entityType: EntityType.task,
-      entityId: event.taskId,
-      extraFields: <String, Object?>{'pinned': event.pinned},
-    );
-
-    try {
-      await _taskWriteService.setPinned(
-        event.taskId,
-        isPinned: event.pinned,
-        context: context,
-      );
-      event.completer?.complete();
-    } catch (e, st) {
-      _reportIfUnexpectedOrUnmapped(
-        e,
-        st,
-        context: context,
-        message: 'Task pin change failed',
-      );
-
-      talker.handle(e, st, '[ScreenActionsBloc] task pin failed');
-
-      final shouldShowSnackBar = !_isUnexpectedOrUnmapped(e);
-      emit(
-        ScreenActionsFailureState(
-          failureKind: ScreenActionsFailureKind.pinFailed,
-          fallbackMessage: 'Task pin failed',
-          shouldShowSnackBar: shouldShowSnackBar,
-          entityType: EntityType.task,
-          entityId: event.taskId,
-          error: e,
-        ),
-      );
-      event.completer?.completeError(e, st);
-      emit(const ScreenActionsIdleState());
-    }
-  }
-
-  Future<void> _onProjectPinnedChanged(
-    ScreenActionsProjectPinnedChanged event,
-    Emitter<ScreenActionsState> emit,
-  ) async {
-    final context = _newContext(
-      intent: 'project_pinned_changed',
-      operation: event.pinned ? 'pin' : 'unpin',
-      entityType: EntityType.project,
-      entityId: event.projectId,
-      extraFields: <String, Object?>{'pinned': event.pinned},
-    );
-
-    try {
-      await _projectWriteService.setPinned(
-        event.projectId,
-        isPinned: event.pinned,
-        context: context,
-      );
-      event.completer?.complete();
-    } catch (e, st) {
-      _reportIfUnexpectedOrUnmapped(
-        e,
-        st,
-        context: context,
-        message: 'Project pin change failed',
-      );
-
-      talker.handle(e, st, '[ScreenActionsBloc] project pin failed');
-
-      final shouldShowSnackBar = !_isUnexpectedOrUnmapped(e);
-      emit(
-        ScreenActionsFailureState(
-          failureKind: ScreenActionsFailureKind.pinFailed,
-          fallbackMessage: 'Project pin failed',
           shouldShowSnackBar: shouldShowSnackBar,
           entityType: EntityType.project,
           entityId: event.projectId,

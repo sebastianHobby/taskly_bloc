@@ -3,13 +3,11 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
 
 enum TileOverflowActionGroup {
-  pin,
   edit,
   destructive,
 }
 
 enum TileOverflowActionId {
-  togglePinnedToMyDay,
   edit,
   moveToProject,
   completeSeries,
@@ -79,7 +77,6 @@ abstract final class TileOverflowActionCatalog {
   static List<TileOverflowActionEntry> forTask({
     required String taskId,
     required String taskName,
-    required bool isPinnedToMyDay,
     required bool isRepeating,
     required bool seriesEnded,
     required EntityTileCapabilities tileCapabilities,
@@ -87,18 +84,6 @@ abstract final class TileOverflowActionCatalog {
     final canCompleteSeries =
         tileCapabilities.canToggleCompletion && isRepeating && !seriesEnded;
     return [
-      TileOverflowActionEntry(
-        id: TileOverflowActionId.togglePinnedToMyDay,
-        group: TileOverflowActionGroup.pin,
-        label: isPinnedToMyDay ? 'Unpin from My Day' : 'Pin to My Day',
-        enabled: tileCapabilities.canTogglePinned,
-        destructive: false,
-        intent: TileIntentSetPinned(
-          entityType: EntityType.task,
-          entityId: taskId,
-          isPinned: !isPinnedToMyDay,
-        ),
-      ),
       TileOverflowActionEntry(
         id: TileOverflowActionId.edit,
         group: TileOverflowActionGroup.edit,
@@ -153,7 +138,6 @@ abstract final class TileOverflowActionCatalog {
   static List<TileOverflowActionEntry> forProject({
     required String projectId,
     required String projectName,
-    required bool isPinnedToMyDay,
     required bool isRepeating,
     required bool seriesEnded,
     required EntityTileCapabilities tileCapabilities,
@@ -161,18 +145,6 @@ abstract final class TileOverflowActionCatalog {
     final canCompleteSeries =
         tileCapabilities.canToggleCompletion && isRepeating && !seriesEnded;
     return [
-      TileOverflowActionEntry(
-        id: TileOverflowActionId.togglePinnedToMyDay,
-        group: TileOverflowActionGroup.pin,
-        label: isPinnedToMyDay ? 'Unpin from My Day' : 'Pin to My Day',
-        enabled: tileCapabilities.canTogglePinned,
-        destructive: false,
-        intent: TileIntentSetPinned(
-          entityType: EntityType.project,
-          entityId: projectId,
-          isPinned: !isPinnedToMyDay,
-        ),
-      ),
       TileOverflowActionEntry(
         id: TileOverflowActionId.edit,
         group: TileOverflowActionGroup.edit,

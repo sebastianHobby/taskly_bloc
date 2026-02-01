@@ -88,6 +88,36 @@ void main() {
   );
 
   blocTestSafe<GuidedTourBloc, GuidedTourState>(
+    'aborts and disables demo mode without persisting completion',
+    build: buildBloc,
+    act: (bloc) async {
+      bloc.add(const GuidedTourStarted());
+      bloc.add(
+        const GuidedTourAborted(reason: GuidedTourAbortReason.routeTimeout),
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(demoModeService.isEnabled, isFalse);
+    },
+    expect: () => [
+      isA<GuidedTourState>()
+          .having((s) => s.active, 'active', true)
+          .having((s) => s.currentIndex, 'currentIndex', 0)
+          .having((s) => s.navRequestId, 'navRequestId', 1),
+      isA<GuidedTourState>().having((s) => s.active, 'active', false),
+    ],
+    verify: (_) {
+      verifyNever(() => settingsRepository.load(SettingsKey.global));
+      verifyNever(
+        () => settingsRepository.save<GlobalSettings>(
+          SettingsKey.global,
+          any<GlobalSettings>(),
+          context: any(named: 'context'),
+        ),
+      );
+    },
+  );
+
+  blocTestSafe<GuidedTourBloc, GuidedTourState>(
     'completes and persists on the last step',
     build: () {
       when(() => settingsRepository.load(SettingsKey.global)).thenAnswer(

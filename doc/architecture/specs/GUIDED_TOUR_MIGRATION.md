@@ -41,7 +41,7 @@ The tour is deterministic by enabling demo-mode data while active, so the same d
 ### Tour Sequence (Final)
 
 1. Welcome (card)
-2. Anytime overview (card)
+2. Projects overview (card)
 3. Add via FAB (coachmark)
 4. Inbox capture (coachmark)
 5. Task project + value (coachmark)
@@ -68,9 +68,9 @@ Use the following copy in the tour steps:
 - Title: "Welcome to Taskly"
 - Body: "You are seeing a demo workspace for this tour. You will return to your real tasks when the tour ends."
 
-2) Anytime overview (card)
-- Title: "Anytime shows every project"
-- Body: "Anytime is your home base. It keeps every project visible so you always know what is in motion."
+2) Projects overview (card)
+- Title: "Build your project list"
+- Body: "Projects is the source for today's plan in My Day."
 
 3) Add via FAB (coachmark)
 - Title: "Add tasks here..."
@@ -109,8 +109,8 @@ Use the following copy in the tour steps:
 - Body: "Review suggestions and pick the tasks you want to focus on today."
 
 12) Plan My Day - time sensitive (coachmark)
-- Title: "Start with time-sensitive"
-- Body: "Start with what's time-sensitive. Choose the items you want to handle today."
+- Title: "Time-sensitive tasks"
+- Body: "Review overdue and due-today items and choose what you'll handle now."
 
 13) Plan My Day - scheduled routines (coachmark)
 - Title: "Scheduled routines"
@@ -121,8 +121,8 @@ Use the following copy in the tour steps:
 - Body: "Pick flexible routines to make progress on your weekly targets."
 
 15) Plan My Day - value picks (coachmark)
-- Title: "Value-aligned picks"
-- Body: "Choose value-aligned tasks to round out your plan. Suggestions follow task completions by default, or weekly check-ins if you want a more reflective approach."
+- Title: "Value-based tasks"
+- Body: "Add tasks that support your values to balance today's plan. Suggestions follow task completions by default, or weekly check-ins if you want a more reflective approach."
 
 16) Plan My Day - summary (card)
 - Title: "Review and confirm"
@@ -138,7 +138,7 @@ Use the following copy in the tour steps:
 
 19) Finish
 - Title: "You are ready"
-- Body: "The tour is done. Open Settings > Guided tour anytime to replay it."
+- Body: "The tour is done. Open Settings > Guided tour to replay it."
 
 ## Demo Data Requirements
 
@@ -201,7 +201,7 @@ normal presentation services/BLoCs (not demo-only widgets).
 
 Use existing authenticated routes (no demo-only routes):
 
-- `/anytime`
+- `/projects`
 - `/task/new`
 - `/project/inbox/detail`
 - `/values`
@@ -224,6 +224,10 @@ step).
   - `step.kind` (card or coachmark)
   - `step.coachmark.targetId` (only for coachmarks)
 - When the tour starts, enable demo mode; disable it on finish/skip.
+- Guardrails:
+  - Auto-disable demo mode on app background/paused.
+  - Abort and disable demo mode if a step cannot resolve (route/anchor/plan).
+  - Use a watchdog timeout to avoid stuck demo mode in-session.
 
 ### Host (Overlay Controller)
 - Replace the legacy overlay with a new host that:
@@ -236,8 +240,8 @@ step).
 ### Coachmark Targets
 
 Target IDs and anchors:
-- `anytime_create_project`
-- `anytime_inbox_row`
+- `projects_create_project`
+- `projects_inbox_row`
 - `task_project_value`
 - `values_list`
 - `scheduled_section_today`
@@ -253,8 +257,8 @@ Target IDs and anchors:
 Anchors are added to existing screens (no demo pages). Each target ID maps to a
 stable widget key on the live screen:
 
-- `anytime_create_project` → Anytime add FAB/speed dial
-- `anytime_inbox_row` → Anytime inbox row
+- `projects_create_project` → Projects add FAB/speed dial
+- `projects_inbox_row` → Projects inbox row
 - `task_project_value` → Task editor project/value section
 - `values_list` → first Values list row
 - `scheduled_section_today` → Scheduled “Today” section

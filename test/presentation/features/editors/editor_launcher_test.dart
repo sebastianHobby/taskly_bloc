@@ -118,12 +118,10 @@ void main() {
     final taskRepository = MockTaskRepositoryContract();
     final projectRepository = MockProjectRepositoryContract();
     final valueRepository = MockValueRepositoryContract();
-    final allocationOrchestrator = MockAllocationOrchestrator();
     final occurrenceCommandService = MockOccurrenceCommandService();
     final taskWriteService = TaskWriteService(
       taskRepository: taskRepository,
       projectRepository: projectRepository,
-      allocationOrchestrator: allocationOrchestrator,
       occurrenceCommandService: occurrenceCommandService,
     );
     final nowService = MockNowService();
@@ -198,12 +196,10 @@ void main() {
     final taskRepository = MockTaskRepositoryContract();
     final projectRepository = MockProjectRepositoryContract();
     final valueRepository = MockValueRepositoryContract();
-    final allocationOrchestrator = MockAllocationOrchestrator();
     final occurrenceCommandService = MockOccurrenceCommandService();
     final taskWriteService = TaskWriteService(
       taskRepository: taskRepository,
       projectRepository: projectRepository,
-      allocationOrchestrator: allocationOrchestrator,
       occurrenceCommandService: occurrenceCommandService,
     );
     final nowService = MockNowService();

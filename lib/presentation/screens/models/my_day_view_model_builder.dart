@@ -122,10 +122,6 @@ final class MyDayViewModelBuilder {
         .map((item) => item.task!)
         .toList(growable: false);
 
-    final pinnedTasks = tasks
-        .where((task) => !_isCompleted(task) && task.isPinned)
-        .toList(growable: false);
-
     final completedPicks = plannedItems
         .where(
           (item) =>
@@ -152,12 +148,11 @@ final class MyDayViewModelBuilder {
     }
 
     return _buildViewModel(
-      tasks: [...pinnedTasks, ...orderedTasks],
+      tasks: orderedTasks,
       plannedItems: plannedItems,
       values: values,
       qualifyingByTaskId: qualifyingByTaskId,
       ritualStatus: ritualStatus,
-      pinnedTasks: pinnedTasks,
       completedPicks: completedPicks,
       selectedTotalCount: plannedItems.length,
       todaySelectedTaskIds: todaySelectedTaskIds,
@@ -190,7 +185,6 @@ final class MyDayViewModelBuilder {
     required List<Value> values,
     required Map<String, String?> qualifyingByTaskId,
     required MyDayRitualStatus ritualStatus,
-    List<Task> pinnedTasks = const <Task>[],
     List<Task> completedPicks = const <Task>[],
     int selectedTotalCount = 0,
     Set<String> todaySelectedTaskIds = const <String>{},
@@ -220,7 +214,6 @@ final class MyDayViewModelBuilder {
         qualifyingByTaskId: qualifyingByTaskId,
         valueById: valueById,
       ),
-      pinnedTasks: pinnedTasks,
       completedPicks: completedPicks,
       selectedTotalCount: selectedTotalCount,
       todaySelectedTaskIds: todaySelectedTaskIds,

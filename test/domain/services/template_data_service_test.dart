@@ -166,8 +166,7 @@ void main() {
 
       expect(values.length, greaterThan(0));
       expect(projects.length, equals(4));
-      expect(tasks.length, greaterThanOrEqualTo(30));
-      expect(tasks.where((t) => t.isPinned).length, 1);
+      expect(tasks.length, equals(12));
       expect(wipeService.wipeCalls, 1);
       expect(ratingsRepo.getAll(), completion(isNotEmpty));
       expect(settingsRepo.settings.weeklyReviewLastCompletedAt, isNull);

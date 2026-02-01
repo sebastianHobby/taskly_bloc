@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_imports.dart';
-import 'package:taskly_bloc/presentation/features/settings/bloc/allocation_settings_bloc.dart';
+import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_appearance_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_language_region_page.dart';
@@ -14,14 +14,12 @@ import 'package:taskly_bloc/presentation/features/settings/view/settings_my_day_
 import 'package:taskly_bloc/presentation/features/settings/view/settings_task_suggestions_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_weekly_review_page.dart';
 import 'package:taskly_domain/allocation.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/preferences.dart';
 
 class MockGlobalSettingsBloc
     extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
     implements GlobalSettingsBloc {}
-
-class MockAllocationSettingsBloc
-    extends MockBloc<AllocationSettingsEvent, AllocationSettingsState>
-    implements AllocationSettingsBloc {}
 
 void main() {
   setUpAll(() {
@@ -31,11 +29,11 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockGlobalSettingsBloc globalBloc;
-  late MockAllocationSettingsBloc allocationBloc;
+  late MockSettingsRepositoryContract settingsRepository;
 
   setUp(() {
     globalBloc = MockGlobalSettingsBloc();
-    allocationBloc = MockAllocationSettingsBloc();
+    settingsRepository = MockSettingsRepositoryContract();
   });
 
   testWidgetsSafe('appearance page shows loading state', (tester) async {
@@ -104,32 +102,35 @@ void main() {
   });
 
   testWidgetsSafe('task suggestions page shows loading', (tester) async {
-    final state = AllocationSettingsState.loading();
-    when(() => allocationBloc.state).thenReturn(state);
-    whenListen(allocationBloc, Stream.value(state), initialState: state);
+    when(
+      () => settingsRepository.watch(SettingsKey.allocation),
+    ).thenAnswer((_) => Stream<AllocationConfig>.empty());
 
-    await tester.pumpWidgetWithBloc<AllocationSettingsBloc>(
-      bloc: allocationBloc,
-      child: const SettingsTaskSuggestionsPage(),
+    await tester.pumpApp(
+      RepositoryProvider<SettingsRepositoryContract>.value(
+        value: settingsRepository,
+        child: const SettingsTaskSuggestionsPage(),
+      ),
     );
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
 
   testWidgetsSafe('task suggestions page shows content', (tester) async {
-    const state = AllocationSettingsState(
-      settings: AllocationConfig(
-        suggestionSignal: SuggestionSignal.ratingsBased,
-      ),
-      isLoading: false,
+    const settings = AllocationConfig(
+      suggestionSignal: SuggestionSignal.ratingsBased,
     );
-    when(() => allocationBloc.state).thenReturn(state);
-    whenListen(allocationBloc, Stream.value(state), initialState: state);
+    when(
+      () => settingsRepository.watch(SettingsKey.allocation),
+    ).thenAnswer((_) => Stream.value(settings));
 
-    await tester.pumpWidgetWithBloc<AllocationSettingsBloc>(
-      bloc: allocationBloc,
-      child: const SettingsTaskSuggestionsPage(),
+    await tester.pumpApp(
+      RepositoryProvider<SettingsRepositoryContract>.value(
+        value: settingsRepository,
+        child: const SettingsTaskSuggestionsPage(),
+      ),
     );
+    await tester.pumpForStream();
 
     expect(find.text('Task Suggestions'), findsOneWidget);
   });

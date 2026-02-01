@@ -48,6 +48,12 @@ void main() {
     when(() => projectRepository.watchAll()).thenAnswer(
       (_) => projectsSubject.stream,
     );
+    when(() => projectRepository.getAll()).thenAnswer(
+      (_) async => const <Project>[],
+    );
+    when(() => projectRepository.getAll(any())).thenAnswer(
+      (_) async => const <Project>[],
+    );
 
     cacheManager = SessionStreamCacheManager(
       appLifecycleService: appLifecycleEvents,
@@ -77,6 +83,7 @@ void main() {
       bloc.add(const ProjectPickerSearchChanged(query: 'bra'));
     },
     expect: () => [
+      isA<ProjectPickerState>(),
       isA<ProjectPickerState>(),
       isA<ProjectPickerState>(),
       isA<ProjectPickerState>(),

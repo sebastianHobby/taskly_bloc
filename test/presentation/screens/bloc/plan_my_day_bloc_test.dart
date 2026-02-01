@@ -65,7 +65,9 @@ void main() {
     nowService = MockNowService();
     demoModeService = DemoModeService();
     demoDataProvider = DemoDataProvider();
-    temporalSubject = BehaviorSubject<TemporalTriggerEvent>();
+    temporalSubject = BehaviorSubject<TemporalTriggerEvent>.seeded(
+      const AppResumed(),
+    );
 
     when(() => dayKeyService.todayDayKeyUtc()).thenReturn(dayKey);
     when(
@@ -93,6 +95,9 @@ void main() {
 
     when(() => taskRepository.getAll(any())).thenAnswer((_) async => []);
     when(() => taskRepository.getByIds(any())).thenAnswer((_) async => []);
+    when(() => taskRepository.watchAll(any())).thenAnswer(
+      (_) => Stream.value(const <Task>[]),
+    );
     when(
       () => routineRepository.getAll(includeInactive: true),
     ).thenAnswer((_) async => []);
@@ -133,7 +138,6 @@ void main() {
     taskWriteService = TaskWriteService(
       taskRepository: taskRepository,
       projectRepository: projectRepository,
-      allocationOrchestrator: allocationOrchestrator,
       occurrenceCommandService: occurrenceCommandService,
     );
 
@@ -165,33 +169,51 @@ void main() {
   blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
     'emits ready state after initial refresh',
     build: buildBloc,
-    expect: () => [const PlanMyDayLoading(), isA<PlanMyDayReady>()],
+    expect: () => [
+      const PlanMyDayLoading(),
+      isA<PlanMyDayReady>(),
+      isA<PlanMyDayReady>(),
+    ],
   );
 
+  late Task dueTask;
+  late Task plannedTask;
+  String? swapFromId;
+  String? swapToId;
+
   blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
-    'advances to next step when requested',
+    'auto-includes due and planned tasks in selection',
     build: () {
       final value = TestData.value(id: 'value-1', name: 'Health');
-      final project = Project(
-        id: 'project-1',
-        createdAt: dayKey,
-        updatedAt: dayKey,
-        name: 'Health Plan',
-        completed: false,
+      dueTask = TestData.task(
+        id: 'task-due',
+        name: 'Due Today',
+        deadlineDate: dayKey,
         values: [value],
-        primaryValueId: value.id,
       );
-      final task = TestData.task(
-        id: 'task-1',
-        projectId: project.id,
-        project: project,
+      plannedTask = TestData.task(
+        id: 'task-planned',
+        name: 'Planned Today',
+        startDate: dayKey,
+        values: [value],
       );
-      when(() => taskRepository.getAll(any())).thenAnswer((_) async => [task]);
+      final suggestedTask = TestData.task(
+        id: 'task-suggested',
+        name: 'Suggested',
+        values: [value],
+      );
+
+      when(() => taskRepository.getAll(any())).thenAnswer(
+        (_) async => [dueTask, plannedTask, suggestedTask],
+      );
+      when(() => taskRepository.watchAll(any())).thenAnswer(
+        (_) => Stream.value([dueTask, plannedTask, suggestedTask]),
+      );
 
       final allocation = AllocationResult(
         allocatedTasks: [
           AllocatedTask(
-            task: task,
+            task: suggestedTask,
             qualifyingValueId: value.id,
             allocationScore: 0.9,
             reasonCodes: const [],
@@ -220,23 +242,63 @@ void main() {
           routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
         ),
       ).thenAnswer((_) async => allocation);
+
+      return buildBloc();
+    },
+    expect: () => [
+      const PlanMyDayLoading(),
+      isA<PlanMyDayReady>(),
+      isA<PlanMyDayReady>()
+          .having(
+            (s) => s.dueTodayTasks.map((t) => t.id).toList(),
+            'dueTodayTasks',
+            contains(dueTask.id),
+          )
+          .having(
+            (s) => s.plannedTasks.map((t) => t.id).toList(),
+            'plannedTasks',
+            contains(plannedTask.id),
+          )
+          .having(
+            (s) => s.selectedTaskIds,
+            'selectedTaskIds',
+            containsAll([dueTask.id, plannedTask.id]),
+          ),
+    ],
+  );
+
+  blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
+    'swaps a selected suggestion for another option',
+    build: () {
+      demoModeService.enable();
       return buildBloc();
     },
     act: (bloc) async {
       if (bloc.state is! PlanMyDayReady) {
         await bloc.stream.firstWhere((state) => state is PlanMyDayReady);
       }
-      bloc.add(const PlanMyDayStepNextRequested());
+      final ready = bloc.state as PlanMyDayReady;
+      final group = ready.valueSuggestionGroups.first;
+      final fromTaskId = group.tasks
+          .firstWhere((task) => ready.selectedTaskIds.contains(task.id))
+          .id;
+      final toTaskId = group.tasks
+          .firstWhere((task) => !ready.selectedTaskIds.contains(task.id))
+          .id;
+      swapFromId = fromTaskId;
+      swapToId = toTaskId;
+      bloc.add(
+        PlanMyDaySwapSuggestionRequested(
+          fromTaskId: fromTaskId,
+          toTaskId: toTaskId,
+        ),
+      );
     },
-    expect: () => [
-      const PlanMyDayLoading(),
-      isA<PlanMyDayReady>(),
-      isA<PlanMyDayReady>().having(
-        (s) => s.currentStep,
-        'currentStep',
-        PlanMyDayStep.summary,
-      ),
-    ],
+    verify: (bloc) {
+      final ready = bloc.state as PlanMyDayReady;
+      expect(ready.selectedTaskIds, contains(swapToId));
+      expect(ready.selectedTaskIds, isNot(contains(swapFromId)));
+    },
   );
 
   blocTestSafe<PlanMyDayBloc, PlanMyDayState>(

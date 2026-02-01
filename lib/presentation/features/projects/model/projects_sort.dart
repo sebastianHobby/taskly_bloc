@@ -15,4 +15,3 @@ extension ProjectsSortOrderLabels on ProjectsSortOrder {
     };
   }
 }
-

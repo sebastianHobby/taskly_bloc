@@ -55,7 +55,7 @@ Domain APIs must not expose screen-specific models or UI-ready DTOs.
 Normative rules:
 
 - Domain must not return models named after screens/routes (for example
-  `AnytimeScreenModel`, `MyDayViewModel`, `TaskTileModel`).
+  `ProjectsScreenModel`, `MyDayViewModel`, `TaskTileModel`).
 - Domain must not return localized strings, UI copy, or accessibility labels.
 - Domain may expose view-neutral facts (booleans/flags), identifiers, domain
   entities, and pure functions/selectors that are stable across screens.
@@ -371,6 +371,23 @@ Forbidden:
 
 - Writes per keystroke or per slider tick.
 
+### 2.1.4 Form rebuild hygiene (strict)
+
+- Forms must not trigger full-form rebuilds on every keystroke.
+- Form-level `onChanged` handlers are allowed only when they do not call
+  `setState()` or emit BLoC events on each keystroke.
+- UI updates driven by input must be scoped to the smallest subtree
+  (field-level listeners, localized `setState`, or `ValueListenableBuilder`).
+- Any exception must document why full-form rebuilds are required and include
+  a measured performance rationale.
+
+### 2.1.5 Draft sync throttling (strict)
+
+- Draft synchronization from forms to BLoC or view models must be debounced
+  (300–500ms) unless triggered by an explicit commit action.
+- Immediate per-keystroke sync is allowed only for local UI state and must not
+  trigger global rebuilds or writes.
+
 ### 2.2 `taskly_ui` shared surface governance (strict)
 
 Changes to `packages/taskly_ui` are governed by shared-surface rules.
@@ -548,6 +565,30 @@ Examples (non-exhaustive):
 Cleanup must be registered immediately using `addTearDown(...)` (or test helper
 APIs built on top of it).
 
+#### TG-011-A -- Seeded streams in widget tests (strict)
+
+Widget tests that depend on streams must ensure those streams emit at least
+one value before assertions.
+
+Normative rules:
+
+- Use `TestStreamController.seeded(...)` or `BehaviorSubject.seeded(...)` for
+  stream sources that back widget tests.
+- If a widget test intentionally verifies a loading state by **not** emitting,
+  the unseeded stream must include an explicit inline exemption comment:
+  `// ignore-unseeded-subject`.
+
+#### TG-012-A -- No pumpAndSettle in widget tests (strict)
+
+Widget tests must not use `pumpAndSettle()` by default.
+
+Normative rules:
+
+- Prefer `pumpForStream()`, `pumpUntilFound(...)`, or explicit timed pumps.
+- If a widget test is **purely static** and genuinely needs `pumpAndSettle()`,
+  add an inline exemption comment:
+  `// ignore-pump-and-settle`
+
 #### TG-004-A -- Presentation boundary holds in tests
 
 Widget tests must not call repositories/services directly and must not
@@ -665,7 +706,7 @@ Normative rules:
   performing a write.
   - If a screen already has explicit occurrence data (for example, Scheduled
     agenda rows), it may pass those occurrence keys through.
-  - If a screen does **not** have occurrence keys (for example, Anytime feeds
+  - If a screen does **not** have occurrence keys (for example, Projects feeds
     that list base entities), it must call a domain command service that
     resolves the target occurrence before writing.
 - Default completion semantics for recurring entities are:
@@ -692,7 +733,7 @@ Normative rules:
 
 - Occurrence-aware read orchestration must live in `taskly_domain`.
   - Use `OccurrenceReadService` for:
-    - "Anytime-style" next-occurrence preview decoration.
+    - "Projects-style" next-occurrence preview decoration.
     - "Scheduled-style" window expansion with two-phase filtering.
 - Callers (presentation, analytics, other services) must not set
   `occurrenceExpansion` / `occurrencePreview` on `TaskQuery`/`ProjectQuery`.

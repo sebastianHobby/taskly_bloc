@@ -7,14 +7,14 @@
 
 ## Core promise
 
-"Taskly captures everything you need to do, ties it to your values, and
-surfaces the right task at the right time -- so you hit deadlines while keeping
-what matters in focus."
+"Taskly captures everything you need to do, ties it to your values, and turns
+your projects into today's plan -- so you hit deadlines while keeping your
+values in focus."
 
 ## Support line
 
-"Capture everything once, then Taskly brings forward what matters and what's
-due -- keeping you focused and grounded."
+"Capture everything once, then Taskly brings forward your values and due dates
+-- with Projects as the source for My Day."
 
 ## Benefits (3)
 
@@ -24,9 +24,8 @@ due -- keeping you focused and grounded."
 
 ## Feature callouts (My Day framing)
 
-- Capture everything you need to do, then My Day surfaces what matters and
-  what's due.
-- Values-based suggestions that keep what matters in focus.
+- Projects is the source for today's plan; My Day surfaces values and due dates.
+- Values-based suggestions that keep your values in focus.
 - Routines that support a steadier week.
 
 ## Target user
@@ -42,5 +41,4 @@ due -- keeping you focused and grounded."
 
 ## Language guardrails
 
-- Do not use the word "backlog" in user-facing copy.
 - Avoid "ritual" as a framing term.

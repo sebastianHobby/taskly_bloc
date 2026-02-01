@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -30,15 +31,15 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
 
     const iconResolver = NavigationIconResolver();
 
-    const primaryNavigationKeys = <String>[
+    final primaryNavigationKeys = <String>[
       'my_day',
       'scheduled',
       'projects',
       'routines',
       'inbox',
-      'journal',
+      if (kDebugMode) 'journal',
       'values',
-      'statistics',
+      if (kDebugMode) 'statistics',
       'settings',
     ];
 

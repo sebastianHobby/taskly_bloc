@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_color_picker.dart';
@@ -52,10 +53,45 @@ class ValueForm extends StatefulWidget {
 }
 
 class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
+  static const _draftSyncDebounce = Duration(milliseconds: 400);
+
   @override
   VoidCallback? get onClose => widget.onClose;
 
   final _scrollController = ScrollController();
+  final Debouncer _draftSyncDebouncer = Debouncer(_draftSyncDebounce);
+  bool _submitEnabled = false;
+
+  void _handleFormChanged() {
+    markDirty();
+    _scheduleDraftSync();
+    _refreshSubmitEnabled();
+  }
+
+  void _scheduleDraftSync() {
+    final onChanged = widget.onChanged;
+    if (onChanged == null) return;
+    _draftSyncDebouncer.schedule(() {
+      if (!mounted) return;
+      final values = widget.formKey.currentState?.value;
+      if (values != null) {
+        onChanged(values);
+      }
+    });
+  }
+
+  void _refreshSubmitEnabled() {
+    final next = isDirty && (widget.formKey.currentState?.isValid ?? false);
+    if (next == _submitEnabled || !mounted) return;
+    setState(() => _submitEnabled = next);
+  }
+
+  @override
+  void dispose() {
+    _draftSyncDebouncer.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,8 +121,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
           widget.initialData?.priority ?? createDraft?.priority,
     };
 
-    final submitEnabled =
-        isDirty && (widget.formKey.currentState?.isValid ?? false);
+    final submitEnabled = _submitEnabled;
 
     final sectionGap = isCompact ? 12.0 : 16.0;
 
@@ -166,14 +201,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
           key: widget.formKey,
           initialValue: initialValues,
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          onChanged: () {
-            markDirty();
-            setState(() {});
-            final values = widget.formKey.currentState?.value;
-            if (values != null) {
-              widget.onChanged?.call(values);
-            }
-          },
+          onChanged: _handleFormChanged,
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: TasklyTokens.of(context).spaceLg,
@@ -261,8 +289,6 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                                 ? null
                                 : ValuePriority.values[value];
                             field.didChange(priority);
-                            markDirty();
-                            setState(() {});
                           },
                         ),
                         SizedBox(height: TasklyTokens.of(context).spaceSm),

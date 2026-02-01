@@ -160,6 +160,9 @@ void main() {
     when(
       () => valueRepository.watchAll(),
     ).thenAnswer((_) => valuesController.stream);
+    when(() => valueRepository.getAll()).thenAnswer(
+      (_) async => valuesController.value ?? const <Value>[],
+    );
     when(
       () => taskRepository.watchAll(any()),
     ).thenAnswer((_) => tasksController.stream);
@@ -169,6 +172,12 @@ void main() {
     when(
       () => projectRepository.watchAll(),
     ).thenAnswer((_) => projectsController.stream);
+    when(() => projectRepository.getAll()).thenAnswer(
+      (_) async => projectsController.value ?? const <Project>[],
+    );
+    when(() => projectRepository.getAll(any())).thenAnswer(
+      (_) async => projectsController.value ?? const <Project>[],
+    );
     when(
       () => projectAnchorStateRepository.watchAll(),
     ).thenAnswer((_) => projectAnchorStateController.stream);

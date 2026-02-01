@@ -31,6 +31,16 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
   int _navToken = 0;
   String? _pendingRoute;
   OverlayState? _rootOverlay;
+  AppLifecycleListener? _lifecycleListener;
+  bool _abortRequested = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycleListener = AppLifecycleListener(
+      onStateChange: _onAppLifecycleChanged,
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -42,6 +52,7 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
 
   @override
   void dispose() {
+    _lifecycleListener?.dispose();
     _dismissCoachMark();
     super.dispose();
   }
@@ -80,6 +91,7 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
   void _onTourStateChanged(BuildContext context, GuidedTourState state) {
     _dismissCoachMark();
     if (!state.active) {
+      _abortRequested = false;
       _cancelPendingNavigation();
       return;
     }
@@ -100,6 +112,11 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
     _scheduleShow(step);
   }
 
+  void _onAppLifecycleChanged(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) return;
+    _abortTour(GuidedTourAbortReason.appPaused);
+  }
+
   void _scheduleShow(GuidedTourStep step) {
     final token = ++_showToken;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -117,6 +134,8 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
           if (!mounted) return;
           _attemptShow(step, attempt + 1);
         });
+      } else {
+        _abortTour(GuidedTourAbortReason.routeTimeout);
       }
       return;
     }
@@ -133,6 +152,8 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
           if (!mounted) return;
           _attemptShow(step, attempt + 1);
         });
+      } else {
+        _abortTour(GuidedTourAbortReason.planMyDayTimeout);
       }
       return;
     }
@@ -155,6 +176,8 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
             if (!mounted) return;
             _attemptShow(step, attempt + 1);
           });
+        } else {
+          _abortTour(GuidedTourAbortReason.anchorTimeout);
         }
         return;
       }
@@ -172,6 +195,8 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
             if (!mounted) return;
             _attemptShow(step, attempt + 1);
           });
+        } else {
+          _abortTour(GuidedTourAbortReason.anchorTimeout);
         }
         return;
       }
@@ -181,8 +206,7 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
   }
 
   bool _shouldWaitForPlanMyDay(GuidedTourStep step) {
-    final planStep = _planMyDayStepFor(step.id);
-    if (planStep == null) return false;
+    if (!step.id.startsWith('plan_my_day_')) return false;
 
     PlanMyDayBloc bloc;
     try {
@@ -195,22 +219,10 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
     if (kDebugMode) {
       debugPrint(
         '[GuidedTourOverlay] plan state check '
-        '(step=${step.id}, current=${state.runtimeType}, planStep=$planStep)',
+        '(step=${step.id}, current=${state.runtimeType})',
       );
     }
-    if (state is! PlanMyDayReady) return true;
-    return state.currentStep != planStep;
-  }
-
-  PlanMyDayStep? _planMyDayStepFor(String stepId) {
-    return switch (stepId) {
-      'plan_my_day_triage' => PlanMyDayStep.triage,
-      'plan_my_day_scheduled_routines' => PlanMyDayStep.routines,
-      'plan_my_day_flexible_routines' => PlanMyDayStep.routines,
-      'plan_my_day_values' => PlanMyDayStep.valuesStep,
-      'plan_my_day_summary' => PlanMyDayStep.summary,
-      _ => null,
-    };
+    return state is! PlanMyDayReady;
   }
 
   void _showCoachMark(GuidedTourStep step, GuidedTourState state) {
@@ -270,6 +282,8 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
         if (!mounted) return;
         _waitForRouteAndShow(step, attempt + 1, token);
       });
+    } else {
+      _abortTour(GuidedTourAbortReason.routeTimeout);
     }
   }
 
@@ -509,6 +523,14 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
       '(step=${step.id}, target=$targetId, attempt=$attempt, '
       'type=${renderObject.runtimeType})',
     );
+  }
+
+  void _abortTour(GuidedTourAbortReason reason) {
+    if (!mounted || _abortRequested) return;
+    final bloc = context.read<GuidedTourBloc>();
+    if (!bloc.state.active) return;
+    _abortRequested = true;
+    bloc.add(GuidedTourAborted(reason: reason));
   }
 }
 

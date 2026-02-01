@@ -35,6 +35,14 @@ Future<void> main(List<String> args) async {
       script: 'tool/no_raw_test_wrappers.dart',
     ),
     const _Guardrail(
+      name: 'Block pumpAndSettle usage in widget tests',
+      script: 'tool/no_pump_and_settle_in_widget_tests.dart',
+    ),
+    const _Guardrail(
+      name: 'Enforce seeded streams in widget tests',
+      script: 'tool/no_unseeded_subjects_in_widget_tests.dart',
+    ),
+    const _Guardrail(
       name: 'Enforce test directory/tag contract',
       script: 'tool/no_test_directory_tag_violations.dart',
     ),

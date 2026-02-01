@@ -33,7 +33,7 @@ void main() {
   }) async {
     await tester.pumpWidgetWithBloc<ValueDetailBloc>(
       bloc: bloc,
-      child: child,
+      child: Scaffold(body: child),
     );
   }
 

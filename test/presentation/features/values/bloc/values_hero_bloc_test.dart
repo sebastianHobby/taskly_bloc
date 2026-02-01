@@ -71,7 +71,9 @@ void main() {
       (_) => valuesController.stream,
     );
     when(
-      () => analyticsService.getRecentCompletionsByValue(days: any()),
+      () => analyticsService.getRecentCompletionsByValue(
+        days: any(named: 'days'),
+      ),
     ).thenAnswer((_) async => {'v1': 3});
     when(() => analyticsService.getValueActivityStats()).thenAnswer(
       (_) async => {
@@ -103,6 +105,7 @@ void main() {
     expect: () => [
       isA<ValuesHeroLoading>(),
       isA<ValuesHeroLoaded>().having((s) => s.items.length, 'items.length', 1),
+      isA<ValuesHeroLoaded>(),
     ],
   );
 
@@ -131,7 +134,9 @@ void main() {
     'emits error when analytics fails',
     build: () {
       when(
-        () => analyticsService.getRecentCompletionsByValue(days: any()),
+        () => analyticsService.getRecentCompletionsByValue(
+          days: any(named: 'days'),
+        ),
       ).thenThrow(StateError('boom'));
       return buildBloc();
     },

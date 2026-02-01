@@ -65,16 +65,6 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
               onSelected: (item) => _handleMenuAction(context, item),
               itemBuilder: (context) {
                 return <PopupMenuEntry<_SelectionMenuItem>>[
-                  if (actions.isEnabled(BulkActionKind.pin))
-                    const PopupMenuItem(
-                      value: _SelectionMenuItem.pin,
-                      child: Text('Pin to My Day'),
-                    ),
-                  if (actions.isEnabled(BulkActionKind.unpin))
-                    const PopupMenuItem(
-                      value: _SelectionMenuItem.unpin,
-                      child: Text('Unpin from My Day'),
-                    ),
                   if (actions.isEnabled(BulkActionKind.moveToProject))
                     const PopupMenuItem(
                       value: _SelectionMenuItem.moveToProject,
@@ -142,10 +132,6 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
     _SelectionMenuItem item,
   ) async {
     switch (item) {
-      case _SelectionMenuItem.pin:
-        return _pinOrUnpin(context, pinned: true);
-      case _SelectionMenuItem.unpin:
-        return _pinOrUnpin(context, pinned: false);
       case _SelectionMenuItem.moveToProject:
         return _moveToProject(context);
       case _SelectionMenuItem.completeSeries:
@@ -153,44 +139,6 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
       case _SelectionMenuItem.delete:
         return _deleteSelected(context);
     }
-  }
-
-  Future<void> _pinOrUnpin(
-    BuildContext context, {
-    required bool pinned,
-  }) async {
-    final selection = context.read<SelectionBloc>();
-    final screenActions = context.read<ScreenActionsBloc>();
-
-    await selection.runSequential((key) async {
-      final completer = Completer<void>();
-
-      switch (key.entityType) {
-        case EntityType.task:
-          screenActions.add(
-            ScreenActionsTaskPinnedChanged(
-              taskId: key.entityId,
-              pinned: pinned,
-              completer: completer,
-            ),
-          );
-        case EntityType.project:
-          screenActions.add(
-            ScreenActionsProjectPinnedChanged(
-              projectId: key.entityId,
-              pinned: pinned,
-              completer: completer,
-            ),
-          );
-        case EntityType.value:
-          completer.complete();
-      }
-
-      await completer.future;
-    });
-
-    selection.exitSelectionMode();
-    onExit();
   }
 
   Future<void> _completeSeries(BuildContext context) async {
@@ -312,8 +260,6 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
 }
 
 enum _SelectionMenuItem {
-  pin,
-  unpin,
   moveToProject,
   completeSeries,
   delete,

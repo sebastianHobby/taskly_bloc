@@ -127,6 +127,16 @@ abstract class TaskRepositoryContract {
     OperationContext? context,
   });
 
+  /// Bulk update task start dates.
+  ///
+  /// This operation is atomic: either all tasks are updated or the call fails.
+  /// Returns the number of updated tasks.
+  Future<int> bulkRescheduleStarts({
+    required Iterable<String> taskIds,
+    required DateTime startDate,
+    OperationContext? context,
+  });
+
   /// Set the pinned status of a task.
   Future<void> setPinned({
     required String id,

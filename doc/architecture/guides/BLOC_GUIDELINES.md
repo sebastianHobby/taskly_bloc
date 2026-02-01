@@ -132,7 +132,7 @@ Repeatable *screen-shaped* logic belongs in **presentation query services**
 
 Anti-goal:
 
-- Do not push screen models ("AnytimeScreenModel", tile models, UI copy) into
+- Do not push screen models ("ProjectsScreenModel", tile models, UI copy) into
   Domain. See: [../INVARIANTS.md](../INVARIANTS.md#011-domain-outputs-must-be-view-neutral-strict)
 
 ## 3) Using RxDart (where it helps)

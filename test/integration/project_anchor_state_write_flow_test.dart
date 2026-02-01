@@ -35,13 +35,24 @@ void main() {
       idGenerator: idGenerator,
       clock: clock,
     );
+    final valueRepository = ValueRepository(
+      driftDb: db,
+      idGenerator: idGenerator,
+      clock: clock,
+    );
     final anchorRepository = ProjectAnchorStateRepository(
       driftDb: db,
       idGenerator: idGenerator,
       clock: clock,
     );
 
-    await projectRepository.create(name: 'Project Alpha');
+    await valueRepository.create(name: 'Primary', color: '#00AAFF');
+    final valueRow = await db.select(db.valueTable).getSingle();
+
+    await projectRepository.create(
+      name: 'Project Alpha',
+      valueIds: [valueRow.id],
+    );
     final projectRow = await db.select(db.projectTable).getSingle();
 
     final context = contextFactory.create(

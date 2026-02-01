@@ -238,7 +238,7 @@ TasklyRowSpec _buildRow(
       dayKeyUtc: item.dayKeyUtc,
       completionsInPeriod: item.completionsInPeriod,
       labels: selectionMode
-          ? const TasklyRoutineRowLabels(primaryActionLabel: '')
+          ? null
           : buildRoutineExecutionLabels(
               context,
               completed: _completedToday(item),
@@ -250,8 +250,9 @@ TasklyRowSpec _buildRow(
           ? null
           : () => onLogRoutine(item.routine.id),
       onLongPress: () => selection.enterSelectionMode(initialSelection: key),
-      onToggleSelected: () =>
-          selection.toggleSelection(key, extendRange: false),
+      onToggleSelected: selectionMode
+          ? () => selection.toggleSelection(key, extendRange: false)
+          : null,
     ),
     anchorKey: anchorKey,
   );

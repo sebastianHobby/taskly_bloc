@@ -46,8 +46,6 @@ My Day screen (Presentation)
 ```
 
 Notes:
-- Pinned tasks are not part of the allocator; they are surfaced by My Day
-  presentation composition.
 - Focus (My Day) is an overlay state; items may appear in other screens.
 
 ### 3.2 Plan My Day ritual (selection)
@@ -117,4 +115,3 @@ Key integration facts:
 - Recurrence occurrence selection and occurrence-aware reads are domain-owned.
 
 See: [../INVARIANTS.md](../INVARIANTS.md)
-

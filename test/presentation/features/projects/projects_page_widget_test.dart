@@ -1,4 +1,4 @@
-@Tags(['widget', 'anytime'])
+@Tags(['widget', 'projects'])
 library;
 
 import 'package:flutter/material.dart';
@@ -8,8 +8,8 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/repository_mocks.dart';
-import 'package:taskly_bloc/presentation/features/anytime/services/anytime_session_query_service.dart';
-import 'package:taskly_bloc/presentation/features/anytime/view/anytime_page.dart';
+import 'package:taskly_bloc/presentation/features/projects/services/projects_session_query_service.dart';
+import 'package:taskly_bloc/presentation/features/projects/view/projects_page.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
@@ -22,7 +22,9 @@ import 'package:taskly_domain/taskly_domain.dart';
 class MockEditorLauncher extends Mock implements EditorLauncher {}
 
 class FakeAppLifecycleEvents implements AppLifecycleEvents {
-  final _controller = BehaviorSubject<AppLifecycleEvent>();
+  final _controller = BehaviorSubject<AppLifecycleEvent>.seeded(
+    AppLifecycleEvent.resumed,
+  );
 
   @override
   Stream<AppLifecycleEvent> get events => _controller.stream;
@@ -59,7 +61,7 @@ void main() {
   late DemoModeService demoModeService;
   late DemoDataProvider demoDataProvider;
   late SessionSharedDataService sharedDataService;
-  late AnytimeSessionQueryService queryService;
+  late ProjectsSessionQueryService queryService;
   late MockEditorLauncher editorLauncher;
   late BehaviorSubject<List<Project>> projectsSubject;
   late BehaviorSubject<int> inboxCountSubject;
@@ -84,7 +86,7 @@ void main() {
       demoModeService: demoModeService,
       demoDataProvider: demoDataProvider,
     );
-    queryService = AnytimeSessionQueryService(
+    queryService = ProjectsSessionQueryService(
       projectRepository: projectRepository,
       cacheManager: cacheManager,
       sharedDataService: sharedDataService,
@@ -92,18 +94,33 @@ void main() {
       demoDataProvider: demoDataProvider,
     );
     editorLauncher = MockEditorLauncher();
-    projectsSubject = BehaviorSubject<List<Project>>();
-    inboxCountSubject = BehaviorSubject<int>();
-    valuesSubject = BehaviorSubject<List<Value>>();
+    projectsSubject = BehaviorSubject<List<Project>>.seeded(
+      const <Project>[],
+    );
+    inboxCountSubject = BehaviorSubject<int>.seeded(0);
+    valuesSubject = BehaviorSubject<List<Value>>.seeded(const <Value>[]);
 
+    when(() => projectRepository.watchAll()).thenAnswer(
+      (_) => projectsSubject,
+    );
     when(() => projectRepository.watchAll(any())).thenAnswer(
       (_) => projectsSubject,
+    );
+    when(() => projectRepository.getAll()).thenAnswer(
+      (_) async => const <Project>[],
+    );
+    when(() => projectRepository.getAll(any())).thenAnswer(
+      (_) async => const <Project>[],
     );
     when(
       () => taskRepository.watchAllCount(any()),
     ).thenAnswer((_) => inboxCountSubject);
+    when(() => valueRepository.watchAll()).thenAnswer((_) => valuesSubject);
     when(() => valueRepository.watchAll(any())).thenAnswer(
       (_) => valuesSubject,
+    );
+    when(() => valueRepository.getAll()).thenAnswer(
+      (_) async => const <Value>[],
     );
   });
 
@@ -118,13 +135,13 @@ void main() {
 
   Future<void> pumpPage(WidgetTester tester) async {
     final router = GoRouter(
-      initialLocation: '/anytime',
+      initialLocation: '/projects',
       routes: [
         GoRoute(
-          path: '/anytime',
+          path: '/projects',
           builder: (_, __) => MultiRepositoryProvider(
             providers: [
-              RepositoryProvider<AnytimeSessionQueryService>.value(
+              RepositoryProvider<ProjectsSessionQueryService>.value(
                 value: queryService,
               ),
               RepositoryProvider<EditorLauncher>.value(value: editorLauncher),
@@ -132,7 +149,7 @@ void main() {
                 value: FakeNowService(DateTime(2025, 1, 15, 9)),
               ),
             ],
-            child: const AnytimePage(),
+            child: const ProjectsPage(),
           ),
         ),
       ],
@@ -142,10 +159,13 @@ void main() {
     await tester.pump(speedDialInitDelay);
   }
 
-  testWidgetsSafe('shows loading state before feed emits', (tester) async {
+  testWidgetsSafe('shows empty state when no projects are available', (
+    tester,
+  ) async {
     await pumpPage(tester);
 
-    expect(find.byKey(const ValueKey('feed-loading')), findsOneWidget);
+    expect(find.text('Build your project list'), findsOneWidget);
+    expect(find.text('Add project'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });
 

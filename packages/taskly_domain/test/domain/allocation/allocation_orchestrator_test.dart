@@ -335,51 +335,6 @@ void main() {
     expect(result.allocatedTasks.first.task.id, 't1');
   });
 
-  testSafe('pin/unpin task forwards to repository', () async {
-    final taskRepo = _MockTaskRepo();
-    final projectRepo = _MockProjectRepo();
-    final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
-    final valueRepo = _MockValueRepo();
-    final valueRatingsRepo = _MockValueRatingsRepo();
-    final settingsRepo = _MockSettingsRepo();
-    final analytics = _MockAnalyticsService();
-    final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
-    final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
-
-    when(
-      () => taskRepo.setPinned(
-        id: any(named: 'id'),
-        isPinned: any(named: 'isPinned'),
-        context: any(named: 'context'),
-      ),
-    ).thenAnswer((_) async {});
-    when(
-      () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
-    ).thenAnswer((_) async => const <ValueWeeklyRating>[]);
-
-    final orchestrator = AllocationOrchestrator(
-      taskRepository: taskRepo,
-      valueRepository: valueRepo,
-      valueRatingsRepository: valueRatingsRepo,
-      settingsRepository: settingsRepo,
-      analyticsService: analytics,
-      projectRepository: projectRepo,
-      projectAnchorStateRepository: projectAnchorStateRepo,
-      dayKeyService: dayKeyService,
-      clock: clock,
-    );
-
-    await orchestrator.pinTask('t1');
-    await orchestrator.unpinTask('t1');
-
-    verify(
-      () => taskRepo.setPinned(id: 't1', isPinned: true, context: null),
-    ).called(1);
-    verify(
-      () => taskRepo.setPinned(id: 't1', isPinned: false, context: null),
-    ).called(1);
-  });
-
   testSafe('toggleTaskCompletion updates task when found', () async {
     final taskRepo = _MockTaskRepo();
     final projectRepo = _MockProjectRepo();

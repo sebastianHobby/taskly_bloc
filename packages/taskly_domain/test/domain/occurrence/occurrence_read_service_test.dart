@@ -190,12 +190,14 @@ void main() {
       );
 
       final query = TaskQuery.all().withOccurrencePreview(
-        OccurrencePolicy.anytimePreview(asOfDayKey: DateTime.utc(2026, 1, 10)),
+        OccurrencePolicy.projectsPreview(
+          asOfDayKey: DateTime.utc(2026, 1, 10),
+        ),
       );
 
       final stream = service.watchTasksWithOccurrencePreview(
         query: query,
-        preview: OccurrencePolicy.anytimePreview(
+        preview: OccurrencePolicy.projectsPreview(
           asOfDayKey: DateTime.utc(2026, 1, 10),
         ),
       );

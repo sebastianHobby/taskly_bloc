@@ -80,14 +80,22 @@ void main() {
   }
 
   testWidgetsSafe('shows error state when streams fail', (tester) async {
+    final errorSubject = BehaviorSubject<List<TrackerGroup>>.seeded(
+      const <TrackerGroup>[],
+    );
+    addTearDown(errorSubject.close);
+
     when(
       () => repository.watchTrackerGroups(),
-    ).thenAnswer((_) => Stream<List<TrackerGroup>>.error('boom'));
+    ).thenAnswer((_) => errorSubject);
 
     await pumpPage(tester);
+    errorSubject.addError('boom');
     await tester.pumpForStream();
-
-    expect(find.textContaining('Failed to load trackers'), findsOneWidget);
+    final found = await tester.pumpUntilFound(
+      find.textContaining('Failed to load trackers'),
+    );
+    expect(found, isTrue);
   });
 
   testWidgetsSafe('renders groups and trackers when loaded', (tester) async {

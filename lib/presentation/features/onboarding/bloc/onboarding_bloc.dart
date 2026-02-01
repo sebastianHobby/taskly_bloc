@@ -10,7 +10,7 @@ import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/preferences.dart';
 
-enum OnboardingStep { welcome, name, suggestionSignal, valuesSetup }
+enum OnboardingStep { welcome, name, valuesSetup }
 
 @immutable
 final class OnboardingValueSelection {
@@ -78,10 +78,8 @@ final class OnboardingState {
   const OnboardingState({
     required this.step,
     required this.displayName,
-    required this.suggestionSignal,
     required this.selectedValues,
     required this.isSavingName,
-    required this.isSavingSuggestionSignal,
     required this.isCreatingValue,
     required this.isCompleting,
     required this.effect,
@@ -90,10 +88,8 @@ final class OnboardingState {
   factory OnboardingState.initial() => const OnboardingState(
     step: OnboardingStep.welcome,
     displayName: '',
-    suggestionSignal: SuggestionSignal.ratingsBased,
     selectedValues: <OnboardingValueSelection>[],
     isSavingName: false,
-    isSavingSuggestionSignal: false,
     isCreatingValue: false,
     isCompleting: false,
     effect: null,
@@ -101,10 +97,8 @@ final class OnboardingState {
 
   final OnboardingStep step;
   final String displayName;
-  final SuggestionSignal suggestionSignal;
   final List<OnboardingValueSelection> selectedValues;
   final bool isSavingName;
-  final bool isSavingSuggestionSignal;
   final bool isCreatingValue;
   final bool isCompleting;
   final OnboardingEffect? effect;
@@ -114,10 +108,8 @@ final class OnboardingState {
   OnboardingState copyWith({
     OnboardingStep? step,
     String? displayName,
-    SuggestionSignal? suggestionSignal,
     List<OnboardingValueSelection>? selectedValues,
     bool? isSavingName,
-    bool? isSavingSuggestionSignal,
     bool? isCreatingValue,
     bool? isCompleting,
     OnboardingEffect? effect,
@@ -125,11 +117,8 @@ final class OnboardingState {
     return OnboardingState(
       step: step ?? this.step,
       displayName: displayName ?? this.displayName,
-      suggestionSignal: suggestionSignal ?? this.suggestionSignal,
       selectedValues: selectedValues ?? this.selectedValues,
       isSavingName: isSavingName ?? this.isSavingName,
-      isSavingSuggestionSignal:
-          isSavingSuggestionSignal ?? this.isSavingSuggestionSignal,
       isCreatingValue: isCreatingValue ?? this.isCreatingValue,
       isCompleting: isCompleting ?? this.isCompleting,
       effect: effect,
@@ -149,11 +138,6 @@ final class OnboardingNameChanged extends OnboardingEvent {
 
 final class OnboardingNextRequested extends OnboardingEvent {
   const OnboardingNextRequested();
-}
-
-final class OnboardingSuggestionSignalChanged extends OnboardingEvent {
-  const OnboardingSuggestionSignalChanged(this.signal);
-  final SuggestionSignal signal;
 }
 
 final class OnboardingBackRequested extends OnboardingEvent {
@@ -203,7 +187,6 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
        super(OnboardingState.initial()) {
     on<OnboardingNameChanged>(_onNameChanged);
     on<OnboardingNextRequested>(_onNextRequested);
-    on<OnboardingSuggestionSignalChanged>(_onSuggestionSignalChanged);
     on<OnboardingBackRequested>(_onBackRequested);
     on<OnboardingQuickPickConfirmed>(_onQuickPickConfirmed);
     on<OnboardingCustomValueConfirmed>(_onCustomValueConfirmed);
@@ -246,8 +229,6 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
           return;
         }
         await _saveDisplayName(trimmed, emit);
-      case OnboardingStep.suggestionSignal:
-        await _saveSuggestionSignal(state.suggestionSignal, emit);
       case OnboardingStep.valuesSetup:
         if (!state.hasMinimumValues) {
           emit(
@@ -276,37 +257,23 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
     );
   }
 
-  void _onSuggestionSignalChanged(
-    OnboardingSuggestionSignalChanged event,
-    Emitter<OnboardingState> emit,
-  ) {
-    emit(state.copyWith(suggestionSignal: event.signal, effect: null));
-  }
-
   Future<void> _saveDisplayName(
     String name,
     Emitter<OnboardingState> emit,
   ) async {
     emit(state.copyWith(isSavingName: true, effect: null));
 
-    final context = _newContext(
+    final profileContext = _newContext(
       intent: 'onboarding_name_set',
       operation: 'auth.update_profile',
     );
     try {
       await _authRepository.updateUserProfile(
         displayName: name,
-        context: context,
-      );
-      emit(
-        state.copyWith(
-          isSavingName: false,
-          step: OnboardingStep.suggestionSignal,
-          effect: null,
-        ),
+        context: profileContext,
       );
     } catch (error, stackTrace) {
-      _reportUnexpected(error, stackTrace, context);
+      _reportUnexpected(error, stackTrace, profileContext);
       emit(
         state.copyWith(
           isSavingName: false,
@@ -315,42 +282,37 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
           ),
         ),
       );
+      return;
     }
-  }
 
-  Future<void> _saveSuggestionSignal(
-    SuggestionSignal signal,
-    Emitter<OnboardingState> emit,
-  ) async {
-    emit(state.copyWith(isSavingSuggestionSignal: true, effect: null));
-
-    final context = _newContext(
+    final settingsContext = _newContext(
       intent: 'onboarding_suggestion_signal_set',
       operation: 'settings.allocation_signal',
     );
-
     try {
       final allocation = await _settingsRepository.load(SettingsKey.allocation);
-      final updated = allocation.copyWith(suggestionSignal: signal);
+      final updated = allocation.copyWith(
+        suggestionSignal: SuggestionSignal.behaviorBased,
+      );
       await _settingsRepository.save(
         SettingsKey.allocation,
         updated,
-        context: context,
+        context: settingsContext,
       );
       emit(
         state.copyWith(
-          isSavingSuggestionSignal: false,
+          isSavingName: false,
           step: OnboardingStep.valuesSetup,
           effect: null,
         ),
       );
     } catch (error, stackTrace) {
-      _reportUnexpected(error, stackTrace, context);
+      _reportUnexpected(error, stackTrace, settingsContext);
       emit(
         state.copyWith(
-          isSavingSuggestionSignal: false,
+          isSavingName: false,
           effect: const OnboardingEffect.error(
-            'Could not save your preference. Please try again.',
+            'Could not save your preferences. Please try again.',
           ),
         ),
       );

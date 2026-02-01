@@ -14,7 +14,7 @@ import 'package:taskly_domain/src/queries/task_filter_evaluator.dart';
 /// This is the single place that implements:
 /// - two-phase filtering for occurrence expansion (SQL candidate set +
 ///   post-expansion filter on occurrence dates)
-/// - next-occurrence preview decoration (Anytime-style single next occurrence)
+/// - next-occurrence preview decoration (Projects-style single next occurrence)
 final class OccurrenceReadService {
   OccurrenceReadService({
     required TaskRepositoryContract taskRepository,

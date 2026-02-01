@@ -20,25 +20,8 @@ abstract class GlobalSettings with _$GlobalSettings {
     @Default(GlobalSettings.defaultHomeTimeZoneOffsetMinutes)
     int homeTimeZoneOffsetMinutes,
 
-    /// My Day ritual: include tasks due within this many days.
-    ///
-    /// Clamped to 1-30 days.
-    @Default(GlobalSettings.defaultMyDayDueWindowDays) int myDayDueWindowDays,
-
-    /// My Day ritual: show the time-sensitive (triage) step.
-    @Default(true) bool myDayDueSoonEnabled,
-
-    /// My Day ritual: show planned tasks within the triage step.
-    @Default(false) bool myDayShowAvailableToStart,
-
     /// My Day ritual: show the routines step.
     @Default(true) bool myDayShowRoutines,
-
-    /// My Day ritual: count triage picks against value quotas.
-    @Default(true) bool myDayCountTriagePicksAgainstValueQuotas,
-
-    /// My Day ritual: count routine picks against value quotas.
-    @Default(true) bool myDayCountRoutinePicksAgainstValueQuotas,
 
     /// Weekly review scheduling.
     @Default(true) bool weeklyReviewEnabled,
@@ -77,18 +60,7 @@ abstract class GlobalSettings with _$GlobalSettings {
   }) = _GlobalSettings;
 
   factory GlobalSettings.fromJson(Map<String, dynamic> json) {
-    final rawMyDayDueWindowDays =
-        (json['myDayDueWindowDays'] as num?)?.toInt() ??
-        defaultMyDayDueWindowDays;
-
-    final rawMyDayDueSoonEnabled = json['myDayDueSoonEnabled'] as bool?;
-    final rawMyDayShowAvailableToStart =
-        json['myDayShowAvailableToStart'] as bool?;
     final rawMyDayShowRoutines = json['myDayShowRoutines'] as bool?;
-    final rawMyDayCountTriagePicksAgainstValueQuotas =
-        json['myDayCountTriagePicksAgainstValueQuotas'] as bool?;
-    final rawMyDayCountRoutinePicksAgainstValueQuotas =
-        json['myDayCountRoutinePicksAgainstValueQuotas'] as bool?;
 
     final rawWeeklyReviewDay =
         (json['weeklyReviewDayOfWeek'] as num?)?.toInt() ??
@@ -131,14 +103,7 @@ abstract class GlobalSettings with _$GlobalSettings {
       homeTimeZoneOffsetMinutes:
           (json['homeTimeZoneOffsetMinutes'] as num?)?.toInt() ??
           defaultHomeTimeZoneOffsetMinutes,
-      myDayDueWindowDays: rawMyDayDueWindowDays.clamp(1, 30),
-      myDayDueSoonEnabled: rawMyDayDueSoonEnabled ?? true,
-      myDayShowAvailableToStart: rawMyDayShowAvailableToStart ?? false,
       myDayShowRoutines: rawMyDayShowRoutines ?? true,
-      myDayCountTriagePicksAgainstValueQuotas:
-          rawMyDayCountTriagePicksAgainstValueQuotas ?? true,
-      myDayCountRoutinePicksAgainstValueQuotas:
-          rawMyDayCountRoutinePicksAgainstValueQuotas ?? true,
       weeklyReviewEnabled: json['weeklyReviewEnabled'] as bool? ?? true,
       weeklyReviewDayOfWeek: rawWeeklyReviewDay.clamp(1, 7),
       weeklyReviewTimeMinutes: rawWeeklyReviewTimeMinutes.clamp(0, 1439),
@@ -190,9 +155,6 @@ abstract class GlobalSettings with _$GlobalSettings {
 
   /// Default seed color (Material Purple).
   static const int defaultSeedArgb = 0xFF6750A4;
-
-  /// Default My Day due window (days).
-  static const int defaultMyDayDueWindowDays = 7;
 
   /// Default weekly review day (Monday).
   static const int defaultWeeklyReviewDayOfWeek = DateTime.monday;
@@ -266,14 +228,7 @@ extension GlobalSettingsJson on GlobalSettings {
     ),
     'locale': localeCode,
     'homeTimeZoneOffsetMinutes': homeTimeZoneOffsetMinutes,
-    'myDayDueWindowDays': myDayDueWindowDays.clamp(1, 30),
-    'myDayDueSoonEnabled': myDayDueSoonEnabled,
-    'myDayShowAvailableToStart': myDayShowAvailableToStart,
     'myDayShowRoutines': myDayShowRoutines,
-    'myDayCountTriagePicksAgainstValueQuotas':
-        myDayCountTriagePicksAgainstValueQuotas,
-    'myDayCountRoutinePicksAgainstValueQuotas':
-        myDayCountRoutinePicksAgainstValueQuotas,
     'weeklyReviewEnabled': weeklyReviewEnabled,
     'weeklyReviewDayOfWeek': weeklyReviewDayOfWeek.clamp(1, 7),
     'weeklyReviewTimeMinutes': weeklyReviewTimeMinutes.clamp(0, 1439),

@@ -7,7 +7,7 @@ import 'package:taskly_domain/telemetry.dart';
 ///
 /// This service exists to keep recurrence semantics consistent across screens:
 /// - Screens that *already have* occurrence keys may pass them through.
-/// - Screens that *do not have* occurrence keys (e.g. Anytime) can call
+/// - Screens that *do not have* occurrence keys (e.g. Projects) can call
 ///   "complete next occurrence" without guessing dates.
 ///
 /// Storage + sync invariants are still enforced by the repositories/write-helper.

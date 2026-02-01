@@ -270,7 +270,6 @@ void main() {
 
       await taskRepository.completeSeries(taskRow.id);
       updatedTask = await db.select(db.taskTable).getSingle();
-      expect(updatedTask.isPinned, isFalse);
 
       final remainingExceptions = await db
           .select(db.taskRecurrenceExceptionsTable)
@@ -324,18 +323,7 @@ void main() {
       repeatFromCompletion: true,
       valueIds: [valueRow.id],
     );
-    var projectRow = await db.select(db.projectTable).getSingle();
-    await projectRepository.setPinned(
-      id: projectRow.id,
-      isPinned: true,
-      context: const OperationContext(
-        correlationId: 'corr-pin',
-        feature: 'projects',
-        intent: 'test',
-        operation: 'projects.pin',
-      ),
-    );
-    projectRow = await db.select(db.projectTable).getSingle();
+    final projectRow = await db.select(db.projectTable).getSingle();
 
     final originalDate = DateTime.utc(2025, 1, 16);
     await projectRepository.skipOccurrence(
@@ -355,7 +343,6 @@ void main() {
 
     await projectRepository.completeSeries(projectRow.id);
     updatedProject = await db.select(db.projectTable).getSingle();
-    expect(updatedProject.isPinned, isFalse);
 
     final remainingExceptions = await db
         .select(db.projectRecurrenceExceptionsTable)

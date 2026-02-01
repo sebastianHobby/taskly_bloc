@@ -415,7 +415,6 @@ final class DemoDataProvider {
     final selectedRoutineIds = dayPicks.selectedRoutineIds;
 
     final completedPicks = <Task>[];
-    final pinnedTasks = <Task>[];
 
     final summary = MyDaySummary(
       doneCount: 0,
@@ -441,7 +440,6 @@ final class DemoDataProvider {
       ritualStatus: ritualStatus,
       summary: summary,
       mix: mix,
-      pinnedTasks: pinnedTasks,
       completedPicks: completedPicks,
       selectedTotalCount: plannedItems.length,
       todaySelectedTaskIds: selectedTaskIds,
@@ -449,20 +447,18 @@ final class DemoDataProvider {
     );
   }
 
-  PlanMyDayReady buildPlanMyDayReady({
-    PlanMyDayStep? currentStep,
-  }) {
+  PlanMyDayReady buildPlanMyDayReady() {
     final dayKeyUtc = demoDayKeyUtc;
     final suggestedTasks = [
       _tasksById['bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb']!,
       _tasksById[demoTaskEditId]!,
       _tasksById['eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee']!,
     ];
-    final triageDue = [
+    final dueTodayTasks = [
       _tasksById['eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee']!,
       _tasksById['ffffffff-ffff-ffff-ffff-ffffffffffff']!,
     ];
-    final triageStarts = [
+    final plannedTasks = [
       _tasksById['13131313-1313-1313-1313-131313131313']!,
     ];
 
@@ -478,6 +474,8 @@ final class DemoDataProvider {
     final selectedTaskIds = {
       'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
       'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+      'ffffffff-ffff-ffff-ffff-ffffffffffff',
+      '13131313-1313-1313-1313-131313131313',
     };
     final selectedRoutineIds = {
       demoRoutineGymId,
@@ -489,29 +487,17 @@ final class DemoDataProvider {
       selectedTaskIds: selectedTaskIds,
     );
 
-    const steps = [
-      PlanMyDayStep.triage,
-      PlanMyDayStep.routines,
-      PlanMyDayStep.valuesStep,
-      PlanMyDayStep.summary,
-    ];
-
     return PlanMyDayReady(
       needsPlan: true,
       dayKeyUtc: dayKeyUtc,
       globalSettings: const settings.GlobalSettings(),
       suggestionSignal: SuggestionSignal.behaviorBased,
-      steps: steps,
-      currentStep: currentStep ?? PlanMyDayStep.triage,
-      dueWindowDays: settings.GlobalSettings.defaultMyDayDueWindowDays,
-      showAvailableToStart: true,
-      showDueSoon: true,
+      dailyLimit: 8,
       requiresValueSetup: false,
       requiresRatings: false,
-      countRoutinesAgainstValues: true,
+      dueTodayTasks: dueTodayTasks,
+      plannedTasks: plannedTasks,
       suggested: suggestedTasks,
-      triageDue: triageDue,
-      triageStarts: triageStarts,
       scheduledRoutines: scheduledRoutines,
       flexibleRoutines: flexibleRoutines,
       allRoutines: [...scheduledRoutines, ...flexibleRoutines],
@@ -522,6 +508,8 @@ final class DemoDataProvider {
       valueSuggestionGroups: groups,
       valueSort: PlanMyDayValueSort.attentionFirst,
       spotlightTaskId: suggestedTasks.first.id,
+      overCapacity: false,
+      toastRequestId: 0,
     );
   }
 
@@ -670,7 +658,7 @@ final class DemoDataProvider {
           tasks: entry.value,
           attentionNeeded: value.priority == ValuePriority.high,
           neglectScore: value.priority == ValuePriority.high ? 0.4 : 0.1,
-          visibleCount: entry.value.length.clamp(1, 4),
+          visibleCount: entry.value.length.clamp(1, 3),
           expanded: true,
         ),
       );

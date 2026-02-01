@@ -113,11 +113,15 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                     }
                   },
             controlsBuilder: (context, details) {
+              if (!details.isActive) {
+                return const SizedBox.shrink();
+              }
               return Padding(
                 padding: EdgeInsets.only(top: tokens.spaceSm),
                 child: Row(
                   children: [
                     FilledButton(
+                      key: ValueKey('journal_tracker_wizard_next_step_$step'),
                       onPressed: canContinue() ? details.onStepContinue : null,
                       child: isSaving && step == 2
                           ? SizedBox(

@@ -1,9 +1,5 @@
-﻿{
-    "pinAction": "Pin",
-    "unpinAction": "Unpin",
+{
     "selectedCountLabel": "{count} selected",
-    "pinToMyDayAction": "Pin to My Day",
-    "unpinFromMyDayAction": "Unpin from My Day",
     "moveToProjectAction": "Move to project",
     "completeSeriesAction": "Complete series",
     "selectValuesHint": "Select values",
@@ -281,37 +277,37 @@
     "@allLabel": {
         "description": "Generic label meaning all items/scopes."
     },
-    "anytimeScopePickerTitle": "Choose scope",
-    "@anytimeScopePickerTitle": {
-        "description": "Title for the Anytime scope picker sheet."
+    "projectsScopePickerTitle": "Choose scope",
+    "@projectsScopePickerTitle": {
+        "description": "Title for the Projects scope picker sheet."
     },
-    "anytimeScopePickerSearchHint": "Search values and projects",
-    "@anytimeScopePickerSearchHint": {
-        "description": "Hint text for searching values and projects in the Anytime scope picker."
+    "projectsScopePickerSearchHint": "Search values and projects",
+    "@projectsScopePickerSearchHint": {
+        "description": "Hint text for searching values and projects in the Projects scope picker."
     },
-    "anytimeScopePickerNoMatchesTitle": "No matches",
-    "@anytimeScopePickerNoMatchesTitle": {
-        "description": "Title shown when the Anytime scope picker search has no matches."
+    "projectsScopePickerNoMatchesTitle": "No matches",
+    "@projectsScopePickerNoMatchesTitle": {
+        "description": "Title shown when the Projects scope picker search has no matches."
     },
-    "anytimeScopePickerNoMatchesBody": "Try a different search.",
-    "@anytimeScopePickerNoMatchesBody": {
-        "description": "Body text shown when the Anytime scope picker search has no matches."
+    "projectsScopePickerNoMatchesBody": "Try a different search.",
+    "@projectsScopePickerNoMatchesBody": {
+        "description": "Body text shown when the Projects scope picker search has no matches."
     },
-    "anytimeScopePickerNoValuesTitle": "No values yet",
-    "@anytimeScopePickerNoValuesTitle": {
-        "description": "Title shown when there are no values to pick in the Anytime scope picker."
+    "projectsScopePickerNoValuesTitle": "No values yet",
+    "@projectsScopePickerNoValuesTitle": {
+        "description": "Title shown when there are no values to pick in the Projects scope picker."
     },
-    "anytimeScopePickerNoValuesBody": "Create a value to filter by it.",
-    "@anytimeScopePickerNoValuesBody": {
-        "description": "Body text shown when there are no values to pick in the Anytime scope picker."
+    "projectsScopePickerNoValuesBody": "Create a value to filter by it.",
+    "@projectsScopePickerNoValuesBody": {
+        "description": "Body text shown when there are no values to pick in the Projects scope picker."
     },
-    "anytimeScopePickerNoProjectsTitle": "No projects yet",
-    "@anytimeScopePickerNoProjectsTitle": {
-        "description": "Title shown when there are no projects to pick in the Anytime scope picker."
+    "projectsScopePickerNoProjectsTitle": "No projects yet",
+    "@projectsScopePickerNoProjectsTitle": {
+        "description": "Title shown when there are no projects to pick in the Projects scope picker."
     },
-    "anytimeScopePickerNoProjectsBody": "Create a project to filter by it.",
-    "@anytimeScopePickerNoProjectsBody": {
-        "description": "Body text shown when there are no projects to pick in the Anytime scope picker."
+    "projectsScopePickerNoProjectsBody": "Create a project to filter by it.",
+    "@projectsScopePickerNoProjectsBody": {
+        "description": "Body text shown when there are no projects to pick in the Projects scope picker."
     },
     "deleteLabel": "Delete",
     "@deleteLabel": {
@@ -715,10 +711,6 @@
     "@snackCompletionFailed": {
         "description": "Snackbar message shown when a completion mutation fails"
     },
-    "snackPinFailed": "Couldn't update pin.",
-    "@snackPinFailed": {
-        "description": "Snackbar message shown when a pin mutation fails"
-    },
     "snackDeleteFailed": "Couldn't delete.",
     "@snackDeleteFailed": {
         "description": "Snackbar message shown when a delete mutation fails"
@@ -1005,9 +997,9 @@
     "@myDayTimeSensitiveSheetSubtitle": {
         "description": "Subtitle for the time-sensitive bottom sheet."
     },
-    "myDayAnytimeLabel": "Anytime",
-    "@myDayAnytimeLabel": {
-        "description": "Label for the Anytime subsection within Values aligned."
+    "myDayProjectsLabel": "Projects",
+    "@myDayProjectsLabel": {
+        "description": "Label for the Projects subsection within Values aligned."
     },
     "myDayValuesDueEmptyTitle": "No value-aligned due-soon tasks",
     "@myDayValuesDueEmptyTitle": {
@@ -1025,13 +1017,13 @@
     "@myDayValuesPlannedEmptyBody": {
         "description": "Empty state body for the Values aligned planned subsection."
     },
-    "myDayValuesAnytimeEmptyTitle": "No value-aligned anytime tasks",
-    "@myDayValuesAnytimeEmptyTitle": {
-        "description": "Empty state title for the Values aligned anytime subsection."
+    "myDayValuesProjectsEmptyTitle": "No value-aligned projects",
+    "@myDayValuesProjectsEmptyTitle": {
+        "description": "Empty state title for the Values aligned Projects subsection."
     },
-    "myDayValuesAnytimeEmptyBody": "Nothing suggested outside due or planned.",
-    "@myDayValuesAnytimeEmptyBody": {
-        "description": "Empty state body for the Values aligned anytime subsection."
+    "myDayValuesProjectsEmptyBody": "Nothing suggested outside due or planned.",
+    "@myDayValuesProjectsEmptyBody": {
+        "description": "Empty state body for the Values aligned Projects subsection."
     },
     "myDayExecuteValuesEmptyTitle": "Values aligned is empty",
     "@myDayExecuteValuesEmptyTitle": {
@@ -1288,14 +1280,6 @@
             }
         }
     },
-    "myDayShowAvailableToStartSettingTitle": "Show planned tasks",
-    "@myDayShowAvailableToStartSettingTitle": {
-        "description": "Title for the switch that toggles the planned tasks lane in the My Day ritual suggestion settings."
-    },
-    "myDayShowAvailableToStartSettingSubtitle": "Tasks with a planned date of today or earlier.",
-    "@myDayShowAvailableToStartSettingSubtitle": {
-        "description": "Subtitle for the switch that toggles the planned tasks lane in the My Day ritual suggestion settings."
-    },
     "myDayShowAllPicksLabel": "Show all picks",
     "@myDayShowAllPicksLabel": {
         "description": "Collapsed label for expanding the full list of suggested picks in the My Day ritual."
@@ -1355,10 +1339,6 @@
     "myDayMyDaySnoozeSheetSubtitle": "Hide this task from My Day until...",
     "@myDayMyDaySnoozeSheetSubtitle": {
         "description": "Subtitle for the My Day snooze-until sheet (does not change schedule dates)."
-    },
-    "pinnedSemanticLabel": "Pinned",
-    "@pinnedSemanticLabel": {
-        "description": "Semantics label for a pinned marker icon (screen reader)."
     },
     "pickDateButton": "Pick date...",
     "@pickDateButton": {
@@ -1615,22 +1595,6 @@
     "noTasksToFocusOn": "No tasks to focus on",
     "@noTasksToFocusOn": {
         "description": "Empty state message when no tasks are allocated"
-    },
-    "pinnedTasksSection": "Pinned Tasks",
-    "@pinnedTasksSection": {
-        "description": "Section title for pinned tasks"
-    },
-    "myDayPinnedSectionSubtitle": "Pinned by you. Stays here until unpinned or completed. Tap the pin to toggle.",
-    "@myDayPinnedSectionSubtitle": {
-        "description": "Subtitle for the pinned tasks section in My Day and Plan My Day."
-    },
-    "unpinTask": "Unpin task",
-    "@unpinTask": {
-        "description": "Action to remove pin from a task"
-    },
-    "pinTask": "Pin task",
-    "@pinTask": {
-        "description": "Action to pin a task to top"
     },
     "taskUrgentExcludedWarning": "{count, plural, =1{1 urgent task excluded from Focus} other{{count} urgent tasks excluded from Focus}}",
     "@taskUrgentExcludedWarning": {
@@ -1973,16 +1937,6 @@
     "@projectNextTaskPrefix": {
         "description": "Prefix shown before the next task name in project list"
     },
-    "taskPinnedToFocus": "'{taskName}' pinned to Focus",
-    "@taskPinnedToFocus": {
-        "description": "Snackbar message shown when a task is pinned to Focus",
-        "placeholders": {
-            "taskName": {
-                "type": "String",
-                "example": "Review budget"
-            }
-        }
-    },
     "deadlineFormatDays": "{days, plural, =0{Due today} =1{Due tomorrow} other{Due in {days} days}}",
     "@deadlineFormatDays": {
         "description": "Format string for due date relative to today",
@@ -2095,7 +2049,7 @@
     "@focusSetupFinalizeTitle": {
         "description": "Title shown on the finalize step of the Focus Setup wizard."
     },
-    "focusSetupFinalizeSubtitle": "You can change this anytime in settings.",
+    "focusSetupFinalizeSubtitle": "You can change this at any time in settings.",
     "@focusSetupFinalizeSubtitle": {
         "description": "Subtitle shown on the finalize step of the Focus Setup wizard."
     },
@@ -2213,9 +2167,21 @@
             }
         }
     },
-    "myDayUpdatePlanTitle": "Plan today",
+    "myDayPlanMyDayTitle": "Build today's plan",
+    "@myDayPlanMyDayTitle": {
+        "description": "Title/label used for starting Plan My Day from My Day when no plan exists."
+    },
+    "myDayUpdatePlanTitle": "Edit today's plan",
     "@myDayUpdatePlanTitle": {
         "description": "Title/label used for updating today's plan in My Day."
+    },
+    "myDaySavePlanLabel": "Save plan",
+    "@myDaySavePlanLabel": {
+        "description": "Primary action label for saving the Plan My Day selections."
+    },
+    "myDayAddTaskAction": "Add a task",
+    "@myDayAddTaskAction": {
+        "description": "CTA label shown in My Day when no tasks exist."
     },
     "myDayPlanCardTitle": "Plan for today",
     "@myDayPlanCardTitle": {
@@ -2528,19 +2494,19 @@
     "@myDayGenerateLabel": {
         "description": "Short button label to generate more suggestions in My Day."
     },
-    "myDayStartSetupLabel": "Start setup",
+    "myDayStartSetupLabel": "Set up values",
     "@myDayStartSetupLabel": {
         "description": "Button label to start setup when suggestions are gated in My Day."
     },
-    "myDayUnlockSuggestionsTitle": "Unlock suggestions",
+    "myDayUnlockSuggestionsTitle": "No values yet.",
     "@myDayUnlockSuggestionsTitle": {
         "description": "Title shown in the My Day suggestions setup card when suggestions are gated."
     },
-    "myDayUnlockSuggestionsBody": "Set up a focus mode and add your first value to get tailored picks here.",
+    "myDayUnlockSuggestionsBody": "Set up values to get balanced suggestions.",
     "@myDayUnlockSuggestionsBody": {
         "description": "Body text shown in the My Day suggestions setup card when suggestions are gated."
     },
-    "myDayChooseFocusModeLabel": "Choose a focus mode",
+    "myDayChooseFocusModeLabel": "Set up values",
     "@myDayChooseFocusModeLabel": {
         "description": "Label for the focus-mode setup requirement row in the My Day suggestions setup card."
     },
@@ -3157,6 +3123,8 @@
         "description": "Toast message when routine is deleted"
     }
 }
+
+
 
 
 

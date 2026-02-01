@@ -64,34 +64,50 @@ class ForgotPasswordView extends StatelessWidget {
                         TasklyTokens.of(context).spaceXxl +
                         TasklyTokens.of(context).spaceLg,
                   ),
-                  SupaResetPassword(
-                    onSuccess: (response) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Password reset email sent! Please check your inbox.',
+                  BlocBuilder<AuthBloc, AppAuthState>(
+                    builder: (context, state) {
+                      if (state.isLoading) {
+                        return const Center(
+                          child: SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           ),
-                        ),
-                      );
-                      // Navigate back to sign in after a delay
-                      Future.delayed(const Duration(seconds: 2), () {
-                        if (context.mounted) {
-                          context.go('/sign-in');
-                        }
-                      });
-                    },
-                    onError: (error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(error.toString()),
-                          backgroundColor: Theme.of(context).colorScheme.error,
-                        ),
+                        );
+                      }
+                      return SupaResetPassword(
+                        onSuccess: (response) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Password reset email sent! Please check your inbox.',
+                              ),
+                            ),
+                          );
+                          // Navigate back to sign in after a delay
+                          Future.delayed(const Duration(seconds: 2), () {
+                            if (context.mounted) {
+                              context.go('/sign-in');
+                            }
+                          });
+                        },
+                        onError: (error) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(error.toString()),
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.error,
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         'Remember your password? ',

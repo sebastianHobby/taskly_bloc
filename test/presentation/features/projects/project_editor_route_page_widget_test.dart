@@ -7,10 +7,12 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/feature_mocks.dart';
+import '../../../mocks/presentation_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_form.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
@@ -28,24 +30,25 @@ void main() {
 
   late MockProjectRepository projectRepository;
   late MockValueRepository valueRepository;
-  late MockAllocationOrchestrator allocationOrchestrator;
   late MockOccurrenceCommandService occurrenceCommandService;
   late ProjectWriteService projectWriteService;
   late AppErrorReporter errorReporter;
+  late MockNowService nowService;
 
   setUp(() {
     projectRepository = MockProjectRepository();
     valueRepository = MockValueRepository();
-    allocationOrchestrator = MockAllocationOrchestrator();
     occurrenceCommandService = MockOccurrenceCommandService();
     projectWriteService = ProjectWriteService(
       projectRepository: projectRepository,
-      allocationOrchestrator: allocationOrchestrator,
       occurrenceCommandService: occurrenceCommandService,
     );
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
     );
+    nowService = MockNowService();
+    when(() => nowService.nowLocal()).thenReturn(DateTime(2025, 1, 15, 9));
+    when(() => nowService.nowUtc()).thenReturn(DateTime.utc(2025, 1, 15, 9));
 
     when(() => valueRepository.getAll()).thenAnswer((_) async => const []);
   });
@@ -76,6 +79,7 @@ void main() {
             value: projectWriteService,
           ),
           RepositoryProvider<AppErrorReporter>.value(value: errorReporter),
+          RepositoryProvider<NowService>.value(value: nowService),
         ],
         child: MaterialApp.router(
           theme: AppTheme.lightTheme(),

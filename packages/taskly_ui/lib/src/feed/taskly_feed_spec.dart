@@ -388,6 +388,8 @@ sealed class TasklyTaskRowStyle {
 
   const factory TasklyTaskRowStyle.standard() = TasklyTaskRowStyleStandard;
 
+  const factory TasklyTaskRowStyle.compact() = TasklyTaskRowStyleCompact;
+
   const factory TasklyTaskRowStyle.bulkSelection({
     required bool selected,
   }) = TasklyTaskRowStyleBulkSelection;
@@ -399,6 +401,10 @@ sealed class TasklyTaskRowStyle {
 
 final class TasklyTaskRowStyleStandard extends TasklyTaskRowStyle {
   const TasklyTaskRowStyleStandard();
+}
+
+final class TasklyTaskRowStyleCompact extends TasklyTaskRowStyle {
+  const TasklyTaskRowStyleCompact();
 }
 
 final class TasklyTaskRowStyleBulkSelection extends TasklyTaskRowStyle {
@@ -438,6 +444,7 @@ final class TasklyTaskRowActions {
     this.onToggleCompletion,
     this.onToggleSelected,
     this.onSnoozeRequested,
+    this.onSwapRequested,
     this.onLongPress,
   });
 
@@ -445,6 +452,7 @@ final class TasklyTaskRowActions {
   final ValueChanged<bool?>? onToggleCompletion;
   final VoidCallback? onToggleSelected;
   final VoidCallback? onSnoozeRequested;
+  final VoidCallback? onSwapRequested;
   final VoidCallback? onLongPress;
 }
 
@@ -593,12 +601,14 @@ final class TasklyTaskRowLabels {
   const TasklyTaskRowLabels({
     this.pinnedSemanticLabel,
     this.snoozeTooltip,
+    this.swapTooltip,
     this.selectionPillLabel,
     this.selectionPillSelectedLabel,
   });
 
   final String? pinnedSemanticLabel;
   final String? snoozeTooltip;
+  final String? swapTooltip;
   final String? selectionPillLabel;
   final String? selectionPillSelectedLabel;
 }

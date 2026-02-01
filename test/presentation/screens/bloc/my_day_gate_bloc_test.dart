@@ -50,6 +50,18 @@ void main() {
     when(() => valueRepository.watchAll()).thenAnswer(
       (_) => valuesSubject.stream,
     );
+    when(() => projectRepository.getAll()).thenAnswer(
+      (_) async => const <Project>[],
+    );
+    when(() => projectRepository.getAll(any())).thenAnswer(
+      (_) async => const <Project>[],
+    );
+    when(() => projectRepository.watchAll()).thenAnswer(
+      (_) => const Stream<List<Project>>.empty(),
+    );
+    when(() => projectRepository.watchAll(any())).thenAnswer(
+      (_) => const Stream<List<Project>>.empty(),
+    );
 
     cacheManager = SessionStreamCacheManager(
       appLifecycleService: appLifecycleEvents,

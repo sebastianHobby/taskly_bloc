@@ -85,8 +85,207 @@ class RoutineEntityTile extends StatelessWidget {
     );
 
     final VoidCallback? onTap = isPlanPickStyle
-        ? actions.onToggleSelected ?? actions.onTap
+        ? actions.onTap ?? actions.onToggleSelected
         : actions.onTap;
+
+    final tile = isPlanPickStyle
+        ? _PlanPickTile(
+            model: model,
+            actions: actions,
+            opacity: opacity,
+            titleStyle: titleStyle,
+            metaStyle: metaStyle,
+            tileSurface: tileSurface,
+            showProgress: showProgress,
+            showScheduleRow: showScheduleRow,
+            showMeta: showMeta,
+            metaLabel: metaLabel,
+            showPrimary: showPrimary,
+            showPicker: showPicker,
+            showSelection: showSelection,
+            selectionAddLabel: selectionAddLabel,
+            selectionAddedLabel: selectionAddedLabel,
+          )
+        : DecoratedBox(
+            decoration: BoxDecoration(
+              color: tileSurface,
+              borderRadius: BorderRadius.circular(tokens.taskRadius),
+              border: Border.all(
+                color: scheme.outlineVariant.withValues(alpha: 0.7),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: scheme.shadow.withValues(alpha: 0.05),
+                  blurRadius: tokens.cardShadowBlur,
+                  offset: tokens.cardShadowOffset,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(tokens.taskRadius),
+              child: Material(
+                type: MaterialType.transparency,
+                child: InkWell(
+                  onTap: onTap,
+                  onLongPress: actions.onLongPress,
+                  child: Padding(
+                    padding: tokens.taskPadding,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                model.title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: titleStyle,
+                              ),
+                              if (!showProgress &&
+                                  !showScheduleRow &&
+                                  (valueChip != null || showMeta)) ...[
+                                SizedBox(height: tokens.spaceXs2),
+                                Wrap(
+                                  spacing: tokens.spaceXs2,
+                                  runSpacing: tokens.spaceXs2,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: [
+                                    if (valueChip != null)
+                                      _ValueInlineLabel(
+                                        data: valueChip,
+                                        textColor: scheme.onSurfaceVariant,
+                                      ),
+                                    if (showMeta) ...[
+                                      if (valueChip != null)
+                                        _ValueMetaDot(tokens: tokens),
+                                      Text(metaLabel, style: metaStyle),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                              if ((showProgress || showScheduleRow) &&
+                                  valueChip != null) ...[
+                                SizedBox(height: tokens.spaceXs2),
+                                _ValueInlineLabel(
+                                  data: valueChip,
+                                  textColor: scheme.onSurfaceVariant,
+                                ),
+                              ],
+                              if (showProgress && model.progress != null) ...[
+                                SizedBox(height: tokens.spaceSm2),
+                                _RoutineProgressRow(data: model.progress!),
+                              ],
+                              if (showScheduleRow &&
+                                  model.scheduleRow != null) ...[
+                                SizedBox(height: tokens.spaceSm2),
+                                _RoutineScheduleRow(data: model.scheduleRow!),
+                              ],
+                              if (hasBadges) ...[
+                                SizedBox(height: tokens.spaceXs2),
+                                Wrap(
+                                  spacing: tokens.spaceXs2,
+                                  runSpacing: tokens.spaceXs2,
+                                  children: [
+                                    for (final badge in badges)
+                                      TasklyBadge(
+                                        label: badge.label,
+                                        icon: badge.icon,
+                                        color: badge.color,
+                                        style: _badgeStyle(badge.tone),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        if (showPrimary) ...[
+                          SizedBox(width: tokens.spaceSm),
+                          _PrimaryActionButton(
+                            label: primaryLabelText,
+                            completed: model.completed,
+                            onPressed: actions.onPrimaryAction,
+                          ),
+                        ],
+                        if (showPicker) ...[
+                          SizedBox(width: tokens.spaceSm),
+                          _PickerActionButton(
+                            selected: model.selected,
+                            onPressed: actions.onToggleSelected,
+                            tooltip: model.selected
+                                ? selectionAddedLabel
+                                : selectionAddLabel,
+                          ),
+                        ] else if (showSelection) ...[
+                          SizedBox(width: tokens.spaceSm),
+                          _SelectionToggleButton(
+                            selected: model.selected,
+                            onPressed: actions.onToggleSelected,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+    return Opacity(
+      key: Key('routine-${model.id}'),
+      opacity: opacity,
+      child: tile,
+    );
+  }
+}
+
+class _PlanPickTile extends StatelessWidget {
+  const _PlanPickTile({
+    required this.model,
+    required this.actions,
+    required this.opacity,
+    required this.titleStyle,
+    required this.metaStyle,
+    required this.tileSurface,
+    required this.showProgress,
+    required this.showScheduleRow,
+    required this.showMeta,
+    required this.metaLabel,
+    required this.showPrimary,
+    required this.showPicker,
+    required this.showSelection,
+    required this.selectionAddLabel,
+    required this.selectionAddedLabel,
+  });
+
+  final TasklyRoutineRowData model;
+  final TasklyRoutineRowActions actions;
+  final double opacity;
+  final TextStyle? titleStyle;
+  final TextStyle? metaStyle;
+  final Color tileSurface;
+  final bool showProgress;
+  final bool showScheduleRow;
+  final bool showMeta;
+  final String metaLabel;
+  final bool showPrimary;
+  final bool showPicker;
+  final bool showSelection;
+  final String selectionAddLabel;
+  final String selectionAddedLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
+    final valueChip = model.valueChip;
+    final targetLabel = model.targetLabel.trim();
+    final hasTargetLabel = targetLabel.isNotEmpty;
+
+    final VoidCallback? onTap = actions.onTap ?? actions.onToggleSelected;
 
     final tile = DecoratedBox(
       decoration: BoxDecoration(
@@ -113,77 +312,57 @@ class RoutineEntityTile extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Icon(
+                    Icons.repeat_outlined,
+                    size: tokens.spaceLg2,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  SizedBox(width: tokens.spaceSm),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          model.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: titleStyle,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                model.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: titleStyle,
+                              ),
+                            ),
+                            if (valueChip != null) ...[
+                              SizedBox(width: tokens.spaceXs2),
+                              _ValueIconOnly(data: valueChip),
+                            ],
+                            if (hasTargetLabel) ...[
+                              SizedBox(width: tokens.spaceSm2),
+                              Text(
+                                targetLabel,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: scheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
-                        if (!showProgress &&
-                            !showScheduleRow &&
-                            (valueChip != null || showMeta)) ...[
-                          SizedBox(height: tokens.spaceXs2),
-                          Wrap(
-                            spacing: tokens.spaceXs2,
-                            runSpacing: tokens.spaceXs2,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              if (valueChip != null)
-                                _ValueInlineLabel(
-                                  data: valueChip,
-                                  textColor: scheme.onSurfaceVariant,
-                                ),
-                              if (showMeta) ...[
-                                if (valueChip != null)
-                                  _ValueMetaDot(tokens: tokens),
-                                Text(metaLabel, style: metaStyle),
-                              ],
-                            ],
-                          ),
-                        ],
-                        if ((showProgress || showScheduleRow) &&
-                            valueChip != null) ...[
-                          SizedBox(height: tokens.spaceXs2),
-                          _ValueInlineLabel(
-                            data: valueChip,
-                            textColor: scheme.onSurfaceVariant,
-                          ),
-                        ],
-                        if (showProgress && model.progress != null) ...[
-                          SizedBox(height: tokens.spaceSm2),
-                          _RoutineProgressRow(data: model.progress!),
-                        ],
-                        if (showScheduleRow && model.scheduleRow != null) ...[
-                          SizedBox(height: tokens.spaceSm2),
-                          _RoutineScheduleRow(data: model.scheduleRow!),
-                        ],
-                        if (hasBadges) ...[
-                          SizedBox(height: tokens.spaceXs2),
-                          Wrap(
-                            spacing: tokens.spaceXs2,
-                            runSpacing: tokens.spaceXs2,
-                            children: [
-                              for (final badge in badges)
-                                TasklyBadge(
-                                  label: badge.label,
-                                  icon: badge.icon,
-                                  color: badge.color,
-                                  style: _badgeStyle(badge.tone),
-                                ),
-                            ],
-                          ),
-                        ],
+                        SizedBox(height: tokens.spaceXs2),
+                        if (showProgress && model.progress != null)
+                          _RoutineProgressRow(data: model.progress!)
+                        else if (showScheduleRow && model.scheduleRow != null)
+                          _RoutineScheduleRow(data: model.scheduleRow!)
+                        else if (showMeta)
+                          Text(metaLabel, style: metaStyle),
                       ],
                     ),
                   ),
                   if (showPrimary) ...[
                     SizedBox(width: tokens.spaceSm),
                     _PrimaryActionButton(
-                      label: primaryLabelText,
+                      label: model.completed ? 'Logged' : 'Do today',
                       completed: model.completed,
                       onPressed: actions.onPrimaryAction,
                     ),
@@ -217,6 +396,18 @@ class RoutineEntityTile extends StatelessWidget {
       opacity: opacity,
       child: tile,
     );
+  }
+}
+
+class _ValueIconOnly extends StatelessWidget {
+  const _ValueIconOnly({required this.data});
+
+  final ValueChipData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    return Icon(data.icon, size: tokens.spaceMd2, color: data.color);
   }
 }
 

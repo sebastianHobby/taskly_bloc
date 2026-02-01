@@ -16,6 +16,7 @@ import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart'
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/app_loading_screen.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 
 class MockAuthenticatedAppServicesCoordinator extends Mock
@@ -71,6 +72,12 @@ void main() {
       taskRepository: taskRepository,
       demoModeService: demoModeService,
       demoDataProvider: demoDataProvider,
+    );
+    when(() => valueRepository.getAll()).thenAnswer(
+      (_) async => const <Value>[],
+    );
+    when(() => valueRepository.watchAll()).thenAnswer(
+      (_) => const Stream<List<Value>>.empty(),
     );
 
     addTearDown(cacheManager.dispose);

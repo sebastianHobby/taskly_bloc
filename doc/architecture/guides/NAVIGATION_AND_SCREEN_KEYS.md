@@ -16,11 +16,10 @@ Related guide:
 
 ## 2) Key concepts
 
-- **Screen key**: stable identifier like `my_day` or legacy `someday`.
-- **Route path**: user-facing path like `/my-day` or `/anytime`.
-- **Alias**: `someday` is the legacy screen key for the Anytime concept.
+- **Screen key**: stable identifier like `my_day` or `projects`.
+- **Route path**: user-facing path like `/my-day` or `/projects`.
 
-Route rules and aliases are defined centrally (see `Routing` below).
+Route rules are defined centrally (see `Routing` below).
 
 ## 3) Where things live
 
@@ -54,5 +53,3 @@ This is a descriptive checklist; follow existing patterns for your feature:
 
 - Route segments use hyphens; screen keys use underscores.
 - `Routing.screenPath(...)` is the single source of truth for screen paths.
-- Anytime uses the legacy key `someday` but routes to `/anytime`.
-

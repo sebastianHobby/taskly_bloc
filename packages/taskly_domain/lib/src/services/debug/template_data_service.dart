@@ -221,40 +221,28 @@ class TemplateDataService {
     // 2) Create Values.
     const seeds = <_TemplateValueSeed>[
       _TemplateValueSeed(
-        name: 'Life Admin',
+        name: 'Learning',
         color: '#3B82F6',
         priority: ValuePriority.high,
-        iconName: 'checklist',
+        iconName: 'lightbulb',
       ),
       _TemplateValueSeed(
-        name: 'Home & Comfort',
-        color: '#EC4899',
-        priority: ValuePriority.medium,
-        iconName: 'home',
-      ),
-      _TemplateValueSeed(
-        name: 'Health & Energy',
+        name: 'Health',
         color: '#F59E0B',
         priority: ValuePriority.high,
         iconName: 'health',
       ),
       _TemplateValueSeed(
-        name: 'Focus & Clarity',
+        name: 'Career',
         color: '#8B5CF6',
         priority: ValuePriority.medium,
-        iconName: 'target',
+        iconName: 'work',
       ),
       _TemplateValueSeed(
-        name: 'Relationships',
+        name: 'Social',
         color: '#10B981',
         priority: ValuePriority.medium,
         iconName: 'group',
-      ),
-      _TemplateValueSeed(
-        name: 'Finance & Security',
-        color: '#06B6D4',
-        priority: ValuePriority.medium,
-        iconName: 'business',
       ),
     ];
 
@@ -281,39 +269,39 @@ class TemplateDataService {
     DateTime day(int offset) => today.add(Duration(days: offset));
 
     await _projectRepository.create(
-      name: 'Home Systems',
-      description: 'Maintenance, cleaning, and household upkeep',
-      priority: 2,
-      startDate: day(-21),
-      deadlineDate: day(45),
-      valueIds: [valueIdByName['Home & Comfort']!],
-      context: context,
-    );
-    await _projectRepository.create(
-      name: 'Personal Admin',
-      description: 'Docs, renewals, and planning',
+      name: 'Learning',
+      description: 'Courses, reading, and study sessions',
       priority: 1,
       startDate: day(-7),
-      deadlineDate: day(30),
-      valueIds: [valueIdByName['Life Admin']!],
+      deadlineDate: day(21),
+      valueIds: [valueIdByName['Learning']!],
       context: context,
     );
     await _projectRepository.create(
-      name: 'Health Stack',
-      description: 'Fitness, recovery, and energy routines',
+      name: 'Self-care',
+      description: 'Appointments, movement, and daily energy',
       priority: 2,
-      startDate: day(-14),
-      deadlineDate: day(60),
-      valueIds: [valueIdByName['Health & Energy']!],
+      startDate: day(-10),
+      deadlineDate: day(30),
+      valueIds: [valueIdByName['Health']!],
       context: context,
     );
     await _projectRepository.create(
-      name: 'Social Plans',
-      description: 'Plans, events, and celebrations',
-      priority: 3,
+      name: 'Work',
+      description: 'Planning, updates, and delivery',
+      priority: 1,
       startDate: day(-5),
-      deadlineDate: day(20),
-      valueIds: [valueIdByName['Relationships']!],
+      deadlineDate: day(14),
+      valueIds: [valueIdByName['Career']!],
+      context: context,
+    );
+    await _projectRepository.create(
+      name: 'People',
+      description: 'Family, friends, and invites',
+      priority: 3,
+      startDate: day(-3),
+      deadlineDate: day(10),
+      valueIds: [valueIdByName['Social']!],
       context: context,
     );
 
@@ -335,7 +323,6 @@ class TemplateDataService {
       );
     }
 
-    final pinnedTaskNames = <String>[];
     final completedTaskNames = <String>[];
 
     for (final seed in _templateTaskSeeds) {
@@ -361,14 +348,12 @@ class TemplateDataService {
         context: context,
       );
 
-      if (seed.pin) pinnedTaskNames.add(seed.name);
       if (seed.complete) completedTaskNames.add(seed.name);
     }
 
     await _completeTasksByName(completedTaskNames, context: context);
-    await _pinTasksByName(pinnedTaskNames.take(1).toList(), context: context);
     await _snoozeTaskRepeatedly(
-      'Laundry + bedding',
+      'Grocery list',
       days: const <int>[2, 10, 18],
       context: context,
     );
@@ -463,24 +448,6 @@ class TemplateDataService {
     return {for (final p in projects) p.id: p.primaryValueId};
   }
 
-  Future<void> _pinTasksByName(
-    List<String> names, {
-    OperationContext? context,
-  }) async {
-    final tasks = await _taskRepository.getAll(TaskQuery.all());
-    final idByName = <String, String>{for (final t in tasks) t.name: t.id};
-
-    for (final name in names) {
-      final id = idByName[name];
-      if (id == null) continue;
-      await _taskRepository.setPinned(
-        id: id,
-        isPinned: true,
-        context: context,
-      );
-    }
-  }
-
   Future<void> _seedWeeklyRatings({
     required Map<String, String> valueIdByName,
     required Map<String, ValuePriority> priorityByValueName,
@@ -569,262 +536,118 @@ class TemplateDataService {
 
 const _templateRoutineSeeds = <_TemplateRoutineSeed>[
   _TemplateRoutineSeed(
-    name: 'Morning reset',
-    valueName: 'Home & Comfort',
-    routineType: RoutineType.weeklyFixed,
-    targetCount: 7,
-    scheduleDays: [1, 2, 3, 4, 5, 6, 7],
-  ),
-  _TemplateRoutineSeed(
-    name: 'Weekly review prep',
-    valueName: 'Focus & Clarity',
-    routineType: RoutineType.weeklyFixed,
-    targetCount: 1,
-    scheduleDays: [5],
-  ),
-  _TemplateRoutineSeed(
-    name: 'Workout block',
-    valueName: 'Health & Energy',
-    routineType: RoutineType.weeklyFixed,
-    targetCount: 2,
-    scheduleDays: [2, 4],
-  ),
-  _TemplateRoutineSeed(
-    name: 'Hydration check-in',
-    valueName: 'Health & Energy',
-    routineType: RoutineType.weeklyFlexible,
-    targetCount: 5,
-    minSpacingDays: 0,
-  ),
-  _TemplateRoutineSeed(
-    name: 'Tidy 10 minutes',
-    valueName: 'Home & Comfort',
+    name: 'Text a friend',
+    valueName: 'Social',
     routineType: RoutineType.weeklyFlexible,
     targetCount: 3,
-    minSpacingDays: 1,
+    minSpacingDays: 0,
   ),
   _TemplateRoutineSeed(
-    name: 'Read 15 minutes',
-    valueName: 'Focus & Clarity',
-    routineType: RoutineType.weeklyFlexible,
-    targetCount: 4,
-    minSpacingDays: 0,
+    name: 'Study session',
+    valueName: 'Learning',
+    routineType: RoutineType.weeklyFixed,
+    targetCount: 1,
+    scheduleDays: [6],
   ),
 ];
 
 const _templateTaskSeeds = <_TemplateTaskSeed>[
   _TemplateTaskSeed(
-    name: 'Laundry + bedding',
-    projectName: 'Home Systems',
-    startOffset: -3,
-    deadlineOffset: 1,
-    priority: 3,
-    valueNames: ['Health & Energy'],
-    repeatIcalRrule: 'FREQ=WEEKLY;BYDAY=SA',
-  ),
-  _TemplateTaskSeed(
-    name: 'Reset pantry inventory',
-    projectName: 'Home Systems',
-    startOffset: -2,
-    deadlineOffset: 3,
-    priority: 2,
-  ),
-  _TemplateTaskSeed(
-    name: 'Replace air filters',
-    projectName: 'Home Systems',
-    deadlineOffset: 7,
-    priority: 2,
-  ),
-  _TemplateTaskSeed(
-    name: 'Deep clean kitchen',
-    projectName: 'Home Systems',
-    deadlineOffset: 14,
-    priority: 2,
-  ),
-  _TemplateTaskSeed(
-    name: 'Declutter entryway',
-    projectName: 'Home Systems',
-    startOffset: 5,
-    priority: 3,
-  ),
-  _TemplateTaskSeed(
-    name: 'Schedule home maintenance check',
-    projectName: 'Home Systems',
-    startOffset: 12,
-    deadlineOffset: 30,
-    priority: 3,
-    valueNames: ['Finance & Security'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Organize cleaning supplies',
-    projectName: 'Home Systems',
+    name: 'Read module 2',
+    projectName: 'Learning',
     startOffset: 1,
+    deadlineOffset: 3,
     priority: 3,
-    valueNames: ['Life Admin'],
+    valueNames: ['Learning'],
   ),
   _TemplateTaskSeed(
-    name: 'Renew car registration',
-    projectName: 'Personal Admin',
+    name: 'Quiz prep',
+    projectName: 'Learning',
     startOffset: -4,
-    deadlineOffset: 10,
+    deadlineOffset: -1,
     priority: 2,
-    pin: true,
+    valueNames: ['Learning'],
   ),
   _TemplateTaskSeed(
-    name: 'Update insurance documents',
-    projectName: 'Personal Admin',
-    deadlineOffset: 20,
-    priority: 2,
-  ),
-  _TemplateTaskSeed(
-    name: 'Back up important files',
-    projectName: 'Personal Admin',
-    startOffset: 1,
-    priority: 3,
-    complete: true,
-  ),
-  _TemplateTaskSeed(
-    name: 'Plan quarterly budgeting session',
-    projectName: 'Personal Admin',
-    startOffset: 3,
-    deadlineOffset: 7,
-    priority: 2,
-    valueNames: ['Finance & Security'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Review subscriptions',
-    projectName: 'Personal Admin',
-    deadlineOffset: 12,
-    priority: 2,
-    valueNames: ['Finance & Security'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Set up tax folder',
-    projectName: 'Personal Admin',
-    priority: 4,
-    valueNames: ['Life Admin'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Consolidate account logins',
-    projectName: 'Personal Admin',
-    priority: 3,
-    valueNames: ['Focus & Clarity'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Book annual checkup',
-    projectName: 'Health Stack',
-    deadlineOffset: 21,
-    priority: 2,
-  ),
-  _TemplateTaskSeed(
-    name: 'Plan workouts for next week',
-    projectName: 'Health Stack',
-    startOffset: 1,
-    deadlineOffset: 3,
-    priority: 2,
-    repeatIcalRrule: 'FREQ=WEEKLY;BYDAY=MO',
-    valueNames: ['Focus & Clarity'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Morning mobility check-in',
-    projectName: 'Health Stack',
+    name: 'Watch lesson 3',
+    projectName: 'Learning',
     startOffset: 0,
-    repeatIcalRrule: 'FREQ=DAILY',
-    valueNames: ['Health & Energy'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Strength session (biweekly)',
-    projectName: 'Health Stack',
-    startOffset: 5,
-    repeatIcalRrule: 'FREQ=WEEKLY;INTERVAL=2;BYDAY=FR',
-    priority: 3,
-    valueNames: ['Health & Energy'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Grocery list: high-protein staples',
-    projectName: 'Health Stack',
-    startOffset: -1,
-    deadlineOffset: 2,
-    priority: 3,
-    valueNames: ['Life Admin'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Meal prep plan (Sun)',
-    projectName: 'Health Stack',
-    startOffset: 4,
-    deadlineOffset: 5,
-    priority: 3,
-    valueNames: ['Health & Energy'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Hydration target setup',
-    projectName: 'Health Stack',
-    priority: 3,
-    valueNames: ['Focus & Clarity'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Rest day walk',
-    projectName: 'Health Stack',
-    startOffset: 2,
-    priority: 4,
-    valueNames: ['Health & Energy'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Confirm weekend plans with Sam',
-    projectName: 'Social Plans',
-    startOffset: -1,
     deadlineOffset: 1,
-    priority: 2,
-  ),
-  _TemplateTaskSeed(
-    name: 'Pick a birthday gift',
-    projectName: 'Social Plans',
-    deadlineOffset: 9,
-    priority: 2,
-    valueNames: ['Relationships', 'Life Admin'],
-  ),
-  _TemplateTaskSeed(
-    name: 'Draft invite message',
-    projectName: 'Social Plans',
     priority: 3,
+    valueNames: ['Learning'],
   ),
   _TemplateTaskSeed(
-    name: 'Book dinner reservation',
-    projectName: 'Social Plans',
-    startOffset: 2,
-    deadlineOffset: 5,
+    name: 'Book checkup',
+    projectName: 'Self-care',
+    startOffset: -3,
+    deadlineOffset: -1,
     priority: 2,
+    valueNames: ['Health'],
+  ),
+  _TemplateTaskSeed(
+    name: 'Grocery list',
+    projectName: 'Self-care',
+    startOffset: 0,
+    deadlineOffset: 1,
+    priority: 3,
+    valueNames: ['Health'],
+  ),
+  _TemplateTaskSeed(
+    name: 'Morning walk',
+    projectName: 'Self-care',
+    repeatIcalRrule: 'FREQ=DAILY',
+    priority: 4,
+    valueNames: ['Health'],
     complete: true,
   ),
   _TemplateTaskSeed(
-    name: 'Create shared itinerary',
-    projectName: 'Social Plans',
-    startOffset: 6,
-    deadlineOffset: 10,
-    priority: 3,
-    valueNames: ['Focus & Clarity'],
+    name: 'Send status update',
+    projectName: 'Work',
+    startOffset: 0,
+    deadlineOffset: 0,
+    priority: 1,
+    valueNames: ['Career'],
   ),
   _TemplateTaskSeed(
-    name: 'Collect gift ideas from group',
-    projectName: 'Social Plans',
-    startOffset: -2,
-    deadlineOffset: 4,
-    priority: 3,
-  ),
-  _TemplateTaskSeed(
-    name: 'Buy tickets for event',
-    projectName: 'Social Plans',
-    startOffset: 7,
-    deadlineOffset: 12,
+    name: 'Review PR comments',
+    projectName: 'Work',
+    startOffset: 1,
+    deadlineOffset: 2,
     priority: 2,
-    valueNames: ['Finance & Security'],
+    valueNames: ['Career'],
   ),
   _TemplateTaskSeed(
-    name: 'Check venue accessibility',
-    projectName: 'Social Plans',
-    startOffset: 5,
+    name: 'Plan next week',
+    projectName: 'Work',
+    startOffset: 4,
     deadlineOffset: 8,
     priority: 3,
+    valueNames: ['Career'],
+  ),
+  _TemplateTaskSeed(
+    name: 'Call parent',
+    projectName: 'People',
+    startOffset: -1,
+    deadlineOffset: 0,
+    priority: 2,
+    valueNames: ['Social'],
+  ),
+  _TemplateTaskSeed(
+    name: 'Book dinner',
+    projectName: 'People',
+    startOffset: 1,
+    deadlineOffset: 4,
+    priority: 3,
+    valueNames: ['Social'],
+  ),
+  _TemplateTaskSeed(
+    name: 'RSVP to invite',
+    projectName: 'People',
+    startOffset: 0,
+    deadlineOffset: 1,
+    priority: 2,
+    complete: true,
+    valueNames: ['Social'],
   ),
 ];
 
@@ -856,7 +679,6 @@ final class _TemplateTaskSeed {
     this.deadlineOffset,
     this.priority,
     this.valueNames,
-    this.pin = false,
     this.complete = false,
     this.repeatIcalRrule,
   });
@@ -867,7 +689,6 @@ final class _TemplateTaskSeed {
   final int? deadlineOffset;
   final int? priority;
   final List<String>? valueNames;
-  final bool pin;
   final bool complete;
   final String? repeatIcalRrule;
 }

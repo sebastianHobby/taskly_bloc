@@ -159,6 +159,31 @@ class FakeTaskRepository implements TaskRepositoryContract {
   }
 
   @override
+  Future<int> bulkRescheduleStarts({
+    required Iterable<String> taskIds,
+    required DateTime startDate,
+    OperationContext? context,
+  }) async {
+    final ids = taskIds.toSet();
+    if (ids.isEmpty) return 0;
+    if (_last.where((t) => ids.contains(t.id)).length != ids.length) {
+      throw StateError('Missing task in bulk update');
+    }
+
+    final updatedTasks = _last
+        .map(
+          (task) => ids.contains(task.id)
+              ? task.copyWith(startDate: startDate, updatedAt: _now())
+              : task,
+        )
+        .toList(growable: false);
+
+    _last = updatedTasks;
+    _controller.add(_last);
+    return ids.length;
+  }
+
+  @override
   Future<void> setPinned({
     required String id,
     required bool isPinned,

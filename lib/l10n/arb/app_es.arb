@@ -1,9 +1,5 @@
 ﻿{
-    "pinAction": "Fijar",
-    "unpinAction": "Desfijar",
     "selectedCountLabel": "{count, plural, one{1 seleccionado} other{{count} seleccionados}}",
-    "pinToMyDayAction": "Fijar en Mi dÃ­a",
-    "unpinFromMyDayAction": "Desfijar de Mi dÃ­a",
     "moveToProjectAction": "Mover al proyecto",
     "completeSeriesAction": "Completar serie",
     "selectValuesHint": "Selecciona valores",
@@ -20,7 +16,7 @@
     "recurrenceSeriesEndedLabel": "Finalizar serie",
 
     
-    "valuesAlignedToTitle": "Alineación de valores",
+    "valuesAlignedToTitle": "AlineaciÃ³n de valores",
     "valuesNoneSelected": "No hay valores seleccionados.",
     "valuesNoneInherited": "No hay valores heredados.",
     "valuesExplicitSelectionLabel": "Valores seleccionados",
@@ -28,7 +24,7 @@
     "valuesInheritLabel": "Heredar",
     "valuesOverrideLabel": "Anular",
     "valuesInheritHelp": "Usa los valores del proyecto seleccionado.",
-    "valuesOverrideHelp": "Elige valores para esta tarea. Se ignorarán los del proyecto.",
+    "valuesOverrideHelp": "Elige valores para esta tarea. Se ignorarÃ¡n los del proyecto.",
     "valuesProjectHelp": "Elige al menos un valor. El primero es el principal.",
     "valuesNoProjectSelected": "No hay proyecto seleccionado.",
     "valuesInheritedFromProject": "Heredado del proyecto",
@@ -378,37 +374,37 @@
     "@allLabel": {
         "description": "Etiqueta genÃ©rica que significa todos los elementos/alcances."
     },
-    "anytimeScopePickerTitle": "Elegir alcance",
-    "@anytimeScopePickerTitle": {
-        "description": "TÃ­tulo para la hoja de selecciÃ³n de alcance de Anytime."
+    "projectsScopePickerTitle": "Elegir alcance",
+    "@projectsScopePickerTitle": {
+        "description": "TÃ­tulo para la hoja de selecciÃ³n de alcance de Proyectos."
     },
-    "anytimeScopePickerSearchHint": "Buscar valores y proyectos",
-    "@anytimeScopePickerSearchHint": {
-        "description": "Texto de ayuda para buscar valores y proyectos en el selector de alcance de Anytime."
+    "projectsScopePickerSearchHint": "Buscar valores y proyectos",
+    "@projectsScopePickerSearchHint": {
+        "description": "Texto de ayuda para buscar valores y proyectos en el selector de alcance de Proyectos."
     },
-    "anytimeScopePickerNoMatchesTitle": "Sin coincidencias",
-    "@anytimeScopePickerNoMatchesTitle": {
-        "description": "TÃ­tulo mostrado cuando la bÃºsqueda del selector de alcance de Anytime no tiene resultados."
+    "projectsScopePickerNoMatchesTitle": "Sin coincidencias",
+    "@projectsScopePickerNoMatchesTitle": {
+        "description": "TÃ­tulo mostrado cuando la bÃºsqueda del selector de alcance de Proyectos no tiene resultados."
     },
-    "anytimeScopePickerNoMatchesBody": "Prueba con otra bÃºsqueda.",
-    "@anytimeScopePickerNoMatchesBody": {
-        "description": "Texto mostrado cuando la bÃºsqueda del selector de alcance de Anytime no tiene resultados."
+    "projectsScopePickerNoMatchesBody": "Prueba con otra bÃºsqueda.",
+    "@projectsScopePickerNoMatchesBody": {
+        "description": "Texto mostrado cuando la bÃºsqueda del selector de alcance de Proyectos no tiene resultados."
     },
-    "anytimeScopePickerNoValuesTitle": "AÃºn no hay valores",
-    "@anytimeScopePickerNoValuesTitle": {
-        "description": "TÃ­tulo mostrado cuando no hay valores para elegir en el selector de alcance de Anytime."
+    "projectsScopePickerNoValuesTitle": "AÃºn no hay valores",
+    "@projectsScopePickerNoValuesTitle": {
+        "description": "TÃ­tulo mostrado cuando no hay valores para elegir en el selector de alcance de Proyectos."
     },
-    "anytimeScopePickerNoValuesBody": "Crea un valor para poder filtrar por Ã©l.",
-    "@anytimeScopePickerNoValuesBody": {
-        "description": "Texto mostrado cuando no hay valores para elegir en el selector de alcance de Anytime."
+    "projectsScopePickerNoValuesBody": "Crea un valor para poder filtrar por Ã©l.",
+    "@projectsScopePickerNoValuesBody": {
+        "description": "Texto mostrado cuando no hay valores para elegir en el selector de alcance de Proyectos."
     },
-    "anytimeScopePickerNoProjectsTitle": "AÃºn no hay proyectos",
-    "@anytimeScopePickerNoProjectsTitle": {
-        "description": "TÃ­tulo mostrado cuando no hay proyectos para elegir en el selector de alcance de Anytime."
+    "projectsScopePickerNoProjectsTitle": "AÃºn no hay proyectos",
+    "@projectsScopePickerNoProjectsTitle": {
+        "description": "TÃ­tulo mostrado cuando no hay proyectos para elegir en el selector de alcance de Proyectos."
     },
-    "anytimeScopePickerNoProjectsBody": "Crea un proyecto para poder filtrar por Ã©l.",
-    "@anytimeScopePickerNoProjectsBody": {
-        "description": "Texto mostrado cuando no hay proyectos para elegir en el selector de alcance de Anytime."
+    "projectsScopePickerNoProjectsBody": "Crea un proyecto para poder filtrar por Ã©l.",
+    "@projectsScopePickerNoProjectsBody": {
+        "description": "Texto mostrado cuando no hay proyectos para elegir en el selector de alcance de Proyectos."
     },
     "deleteLabel": "Eliminar",
     "@deleteLabel": {
@@ -580,7 +576,7 @@
     "@valueMissingLabel": {
         "description": "Etiqueta mostrada cuando una entidad no tiene un valor asociado."
     },
-    "valuePriorityHelper": "Esto ayuda a Taskly a sugerir un enfoque equilibrado, dando más espacio a tus valores principales.",
+    "valuePriorityHelper": "Esto ayuda a Taskly a sugerir un enfoque equilibrado, dando mÃ¡s espacio a tus valores principales.",
     "@valuePriorityHelper": {
         "description": "Texto de ayuda que se muestra debajo del selector de prioridad en el formulario de valores."
     },
@@ -796,10 +792,6 @@
     "@snackCompletionFailed": {
         "description": "Mensaje mostrado cuando falla una actualizaciÃ³n de completado"
     },
-    "snackPinFailed": "No se pudo actualizar el fijado.",
-    "@snackPinFailed": {
-        "description": "Mensaje mostrado cuando falla una actualizaciÃ³n de fijado"
-    },
     "snackDeleteFailed": "No se pudo eliminar.",
     "@snackDeleteFailed": {
         "description": "Mensaje mostrado cuando falla una eliminaciÃ³n"
@@ -916,33 +908,33 @@
     "@addProjectAction": {
         "description": "Texto del botÃ³n de acciÃ³n para aÃ±adir un proyecto"
     },
-    "taskFormNameHint": "¿Qué hay que hacer?",
+    "taskFormNameHint": "Â¿QuÃ© hay que hacer?",
     "@taskFormNameHint": {
         "description": "Texto de sugerencia para el campo de nombre de tarea"
     },
-    "taskFormNotesHint": "Añadir notas...",
+    "taskFormNotesHint": "AÃ±adir notas...",
     "@taskFormNotesHint": {
         "description": "Texto de sugerencia para el campo de notas de tarea"
     },
     "taskFormNewTitle": "Nueva tarea",
     "@taskFormNewTitle": {
-        "description": "Título del formulario de tarea en modo crear"
+        "description": "TÃ­tulo del formulario de tarea en modo crear"
     },
     "taskFormEditTitle": "Editar tarea",
     "@taskFormEditTitle": {
-        "description": "Título del formulario de tarea en modo edición"
+        "description": "TÃ­tulo del formulario de tarea en modo ediciÃ³n"
     },
     "projectFormNewTitle": "Nuevo proyecto",
     "@projectFormNewTitle": {
-        "description": "Título del formulario de proyecto en modo crear"
+        "description": "TÃ­tulo del formulario de proyecto en modo crear"
     },
     "projectFormEditTitle": "Editar proyecto",
     "@projectFormEditTitle": {
-        "description": "Título del formulario de proyecto en modo edición"
+        "description": "TÃ­tulo del formulario de proyecto en modo ediciÃ³n"
     },
     "projectLabel": "Proyecto",
     "@projectLabel": {
-        "description": "Etiqueta de sección para seleccionar un proyecto"
+        "description": "Etiqueta de secciÃ³n para seleccionar un proyecto"
     },
     "plannedLabel": "Planificado",
     "@plannedLabel": {
@@ -952,13 +944,13 @@
     "@dueLabel": {
         "description": "Etiqueta para filas de fecha de entrega"
     },
-    "repeatAddLabel": "Añadir repetición",
+    "repeatAddLabel": "AÃ±adir repeticiÃ³n",
     "@repeatAddLabel": {
-        "description": "Etiqueta de marcador para añadir repetición"
+        "description": "Etiqueta de marcador para aÃ±adir repeticiÃ³n"
     },
-    "moreOptionsLabel": "Más opciones",
+    "moreOptionsLabel": "MÃ¡s opciones",
     "@moreOptionsLabel": {
-        "description": "Etiqueta de tooltip para menús de más opciones"
+        "description": "Etiqueta de tooltip para menÃºs de mÃ¡s opciones"
     },
 
     "taskFormStartDateHint": "DÃ­a planificado",
@@ -966,11 +958,11 @@
         "description": "Texto de sugerencia para el campo de fecha de inicio de tarea"
     },
     "taskFormDeadlineDateHint": "Fecha de entrega",
-    "dateChipAddPlannedDay": "Añadir planificado",
+    "dateChipAddPlannedDay": "AÃ±adir planificado",
     "@dateChipAddPlannedDay": {
         "description": "Etiqueta mostrada en los chips de fecha cuando no se ha establecido el dÃ­a planificado"
     },
-    "dateChipAddDueDate": "Añadir fecha límite",
+    "dateChipAddDueDate": "AÃ±adir fecha lÃ­mite",
     "@dateChipAddDueDate": {
         "description": "Etiqueta mostrada en los chips de fecha cuando no se ha establecido la fecha de entrega"
     },
@@ -1087,9 +1079,9 @@
     "@myDayTimeSensitiveSheetSubtitle": {
         "description": "Subtitle for the time-sensitive bottom sheet."
     },
-    "myDayAnytimeLabel": "En cualquier momento",
-    "@myDayAnytimeLabel": {
-        "description": "Label for the Anytime subsection within Values aligned."
+    "myDayProjectsLabel": "Proyectos",
+    "@myDayProjectsLabel": {
+        "description": "Label for the Proyectos subsection within Values aligned."
     },
     "myDayValuesDueEmptyTitle": "No hay tareas alineadas con valores que venzan pronto",
     "@myDayValuesDueEmptyTitle": {
@@ -1107,13 +1099,13 @@
     "@myDayValuesPlannedEmptyBody": {
         "description": "Empty state body for the Values aligned planned subsection."
     },
-    "myDayValuesAnytimeEmptyTitle": "No hay tareas alineadas con valores en cualquier momento",
-    "@myDayValuesAnytimeEmptyTitle": {
-        "description": "Empty state title for the Values aligned anytime subsection."
+    "myDayValuesProjectsEmptyTitle": "No hay proyectos alineados con valores",
+    "@myDayValuesProjectsEmptyTitle": {
+        "description": "Empty state title for the Values aligned Proyectos subsection."
     },
-    "myDayValuesAnytimeEmptyBody": "Nada sugerido fuera de lo debido o planificado.",
-    "@myDayValuesAnytimeEmptyBody": {
-        "description": "Empty state body for the Values aligned anytime subsection."
+    "myDayValuesProjectsEmptyBody": "Nada sugerido fuera de lo debido o planificado.",
+    "@myDayValuesProjectsEmptyBody": {
+        "description": "Empty state body for the Values aligned Proyectos subsection."
     },
     "myDayExecuteValuesEmptyTitle": "Valores alineados vacÃ­o",
     "@myDayExecuteValuesEmptyTitle": {
@@ -1185,11 +1177,11 @@
             },
             "availablePart": {
                 "type": "String",
-                "example": " â€¢ 3 disponibles para empezar"
+                "example": "  Â·  3 disponibles para empezar"
             }
         }
     },
-    "myDayAvailableToStartCountPart": " â€¢ {count} disponibles para empezar",
+    "myDayAvailableToStartCountPart": "  Â·  {count} disponibles para empezar",
     "@myDayAvailableToStartCountPart": {
         "description": "Suffix part appended to the heads-up summary when the 'available to start' lane is enabled.",
         "placeholders": {
@@ -1243,7 +1235,7 @@
     },
     "myDayWhyTheseWhatsWaitingBody": "Sensible al tiempo te ayuda a evitar sorpresas. VerÃ¡s tareas que vencen pronto (en los prÃ³ximos {days} dÃ­as) y tareas que estÃ¡n disponibles para empezar.",
     "@myDayWhyTheseWhatsWaitingBody": {
-        "description": "Body text for the 'Why these?' sheet for the Whatâ€™s waiting section.",
+        "description": "Body text for the 'Why these?' sheet for the What's waiting section.",
         "placeholders": {
             "days": {
                 "type": "int",
@@ -1289,11 +1281,11 @@
     },
     "myDayCustomizeSuggestionsAction": "Personalizar sugerencias",
     "@myDayCustomizeSuggestionsAction": {
-        "description": "Etiqueta de acción que abre la configuración de sugerencias en Mi día."
+        "description": "Etiqueta de acciÃ³n que abre la configuraciÃ³n de sugerencias en Mi dÃ­a."
     },
     "myDayWhatsWaitingSubtitle": "Vencen pronto o estÃ¡n listas para empezar.",
     "@myDayWhatsWaitingSubtitle": {
-        "description": "Subtitle for the Whatâ€™s waiting section in the My Day ritual."
+        "description": "Subtitle for the What's waiting section in the My Day ritual."
     },
     "myDayValueAlignedLabel": "Alineada con valores",
     "@myDayValueAlignedLabel": {
@@ -1359,14 +1351,6 @@
             }
         }
     },
-    "myDayShowAvailableToStartSettingTitle": "Mostrar \"Disponible para empezar\"",
-    "@myDayShowAvailableToStartSettingTitle": {
-        "description": "Title for the switch that toggles the available-to-start lane in the My Day ritual suggestion settings."
-    },
-    "myDayShowAvailableToStartSettingSubtitle": "Tareas con fecha de inicio hoy o anterior.",
-    "@myDayShowAvailableToStartSettingSubtitle": {
-        "description": "Subtitle for the switch that toggles the available-to-start lane in the My Day ritual suggestion settings."
-    },
     "myDayShowAllPicksLabel": "Mostrar todas las selecciones",
     "@myDayShowAllPicksLabel": {
         "description": "Collapsed label for expanding the full list of suggested picks in the My Day ritual."
@@ -1415,23 +1399,19 @@
     "@myDayUnsnoozeAction": {
         "description": "Menu label to unsnooze (show again) a task in the My Day ritual."
     },
-    "myDayChangeSnoozeAction": "Cambiarâ€¦",
+    "myDayChangeSnoozeAction": "Cambiar...",
     "@myDayChangeSnoozeAction": {
         "description": "Menu label to change the snooze-until date in the My Day ritual."
     },
     "myDayMyDaySnoozeSheetTitle": "Ocultar de Mi DÃ­a",
     "@myDayMyDaySnoozeSheetTitle": {
-        "description": "Title for the My Day snooze-until sheet (hide from My Day untilâ€¦)."
+        "description": "Title for the My Day snooze-until sheet (hide from My Day until...)."
     },
-    "myDayMyDaySnoozeSheetSubtitle": "Oculta esta tarea de Mi DÃ­a hastaâ€¦",
+    "myDayMyDaySnoozeSheetSubtitle": "Oculta esta tarea de Mi DÃ­a hasta...",
     "@myDayMyDaySnoozeSheetSubtitle": {
         "description": "Subtitle for the My Day snooze-until sheet (does not change schedule dates)."
     },
-    "pinnedSemanticLabel": "Fijada",
-    "@pinnedSemanticLabel": {
-        "description": "Semantics label for a pinned marker icon (screen reader)."
-    },
-    "pickDateButton": "Elegir fechaâ€¦",
+    "pickDateButton": "Elegir fecha...",
     "@pickDateButton": {
         "description": "Etiqueta de botÃ³n/fila que abre un selector de fecha"
     },
@@ -1686,22 +1666,6 @@
     "noTasksToFocusOn": "No hay tareas en las que enfocarse",
     "@noTasksToFocusOn": {
         "description": "Mensaje de estado vacÃ­o cuando no hay tareas asignadas"
-    },
-    "pinnedTasksSection": "Tareas Fijadas",
-    "@pinnedTasksSection": {
-        "description": "TÃ­tulo de secciÃ³n para tareas fijadas"
-    },
-    "myDayPinnedSectionSubtitle": "Fijadas por ti. Se quedan aquí hasta que las desfijes o completes. Toca el pin para alternar.",
-    "@myDayPinnedSectionSubtitle": {
-        "description": "Subtitle for the pinned tasks section in My Day and Plan My Day."
-    },
-    "unpinTask": "Desfijar tarea",
-    "@unpinTask": {
-        "description": "AcciÃ³n para quitar el fijado de una tarea"
-    },
-    "pinTask": "Fijar tarea",
-    "@pinTask": {
-        "description": "AcciÃ³n para fijar una tarea arriba"
     },
     "taskUrgentExcludedWarning": "{count, plural, =1{1 tarea urgente excluida de Focus} other{{count} tareas urgentes excluidas de Focus}}",
     "@taskUrgentExcludedWarning": {
@@ -2040,19 +2004,9 @@
     "@startLabel": {
         "description": "Etiqueta para el botÃ³n de inicio que fija una tarea en Focus"
     },
-    "projectNextTaskPrefix": "â†’ Siguiente:",
+    "projectNextTaskPrefix": "-> Siguiente:",
     "@projectNextTaskPrefix": {
         "description": "Prefijo mostrado antes del nombre de la siguiente tarea en la lista de proyectos"
-    },
-    "taskPinnedToFocus": "'{taskName}' fijada en Focus",
-    "@taskPinnedToFocus": {
-        "description": "Mensaje de snackbar mostrado cuando una tarea se fija en Focus",
-        "placeholders": {
-            "taskName": {
-                "type": "String",
-                "example": "Revisar presupuesto"
-            }
-        }
     },
     "deadlineFormatDays": "{days, plural, =0{Vence hoy} =1{Vence maÃ±ana} other{Vence en {days} dÃ­as}}",
     "@deadlineFormatDays": {
@@ -2226,7 +2180,7 @@
     "@focusSetupValuesCtaTitle": {
         "description": "TÃ­tulo del paso de invitaciÃ³n a configurar valores en Focus."
     },
-    "focusSetupValuesCtaBody": "Agrega al menos un valor (Salud, Familia, Oficio, Aprendizajeâ€¦) para que los modos basados en valores puedan tomar decisiones inteligentes.",
+    "focusSetupValuesCtaBody": "Agrega al menos un valor (Salud, Familia, Oficio, Aprendizaje...) para que los modos basados en valores puedan tomar decisiones inteligentes.",
     "@focusSetupValuesCtaBody": {
         "description": "Texto del paso de invitaciÃ³n a configurar valores en Focus."
     },
@@ -2338,9 +2292,21 @@
             }
         }
     },
-    "myDayUpdatePlanTitle": "Planificar hoy",
+        "myDayPlanMyDayTitle": "Crea el plan de hoy",
+    "@myDayPlanMyDayTitle": {
+        "description": "Titulo/etiqueta usada para iniciar Planificar mi dia desde Mi dia cuando no hay un plan."
+    },
+    "myDayUpdatePlanTitle": "Edita el plan de hoy",
     "@myDayUpdatePlanTitle": {
-        "description": "TÃ­tulo/etiqueta usada para actualizar el plan de hoy en Mi dÃ­a."
+        "description": "Titulo/etiqueta usada para actualizar el plan de hoy en Mi dia."
+    },
+    "myDaySavePlanLabel": "Guardar plan",
+    "@myDaySavePlanLabel": {
+        "description": "Primary action label for saving the Plan My Day selections."
+    },
+    "myDayAddTaskAction": "Añadir una tarea",
+    "@myDayAddTaskAction": {
+        "description": "CTA label shown in My Day when no tasks exist."
     },
     "myDayPlanCardTitle": "Plan para hoy",
     "@myDayPlanCardTitle": {
@@ -2367,7 +2333,7 @@
         "description": "SubtÃ­tulo mostrado mientras Mi dÃ­a se estÃ¡ preparando/cargando."
     },
     "myDayPreparingTitle": "Preparando mi dÃ­a",
-    "myDayPreparingSubtitle": "Cargando tus sugerencias y el contexto de hoyâ€¦",
+    "myDayPreparingSubtitle": "Cargando tus sugerencias y el contexto de hoy...",
     "myDayAddedToFocusSnackbar": "AÃ±adido al foco de hoy.",
     "@myDayAddedToFocusSnackbar": {
         "description": "Mensaje mostrado tras aÃ±adir una tarea al bloque Focus de hoy desde Mi dÃ­a."
@@ -2400,11 +2366,11 @@
     "@myDayPlanSubtitle": {
         "description": "SubtÃ­tulo mostrado en la parte superior del asistente del ritual de Mi dÃ­a al planificar."
     },
-    "myDayUpdatePlanSubtitle": "Pick what matters next—values-led focus plus what’s due soon.",
+    "myDayUpdatePlanSubtitle": "Elige lo que importa ahoraâ€”enfoque guiado por valores mÃ¡s lo que vence pronto.",
     "@myDayUpdatePlanSubtitle": {
         "description": "SubtÃ­tulo mostrado al reanudar el plan y no hay selecciones completadas."
     },
-    "myDayUpdatePlanSubtitleWithCompleted": "Pick what matters next—values-led focus plus what’s due soon. Completed items are shown below.",
+    "myDayUpdatePlanSubtitleWithCompleted": "Elige lo que importa ahoraâ€”enfoque guiado por valores mÃ¡s lo que vence pronto. Los elementos completados se muestran abajo.",
     "@myDayUpdatePlanSubtitleWithCompleted": {
         "description": "SubtÃ­tulo mostrado al reanudar el plan y hay selecciones completadas."
     },
@@ -2414,17 +2380,17 @@
     },
     "myDayMetadataDueSoonOffLabel": "Due soon off",
     "@myDayMetadataDueSoonOffLabel": {
-        "description": "Etiqueta que indica que las sugerencias con fecha de vencimiento están desactivadas."
+        "description": "Etiqueta que indica que las sugerencias con fecha de vencimiento estÃ¡n desactivadas."
     },
     "myDayMetadataPlannedIncludedLabel": "Planned tasks included",
     "@myDayMetadataPlannedIncludedLabel": {
-        "description": "Etiqueta que indica que las tareas planificadas están incluidas en el enfoque."
+        "description": "Etiqueta que indica que las tareas planificadas estÃ¡n incluidas en el enfoque."
     },
     "myDayClearMyDayLabel": "Borrar Mi dÃ­a",
     "@myDayClearMyDayLabel": {
         "description": "Etiqueta del botÃ³n inferior para borrar el plan de hoy (flujo de reanudar con cero selecciones)."
     },
-    "myDayUpdateMyDayLabel": "Actualizar el plan de hoy · {count}",
+    "myDayUpdateMyDayLabel": "Actualizar el plan de hoy Â· {count}",
     "@myDayUpdateMyDayLabel": {
         "description": "Etiqueta del botÃ³n inferior para actualizar el plan de hoy (flujo de reanudar).",
         "placeholders": {
@@ -2518,7 +2484,7 @@
     "@myDayTimePlanSheetTitle": {
         "description": "TÃ­tulo de la hoja inferior abierta desde el banner de tiempo/plan en el ritual de Mi dÃ­a."
     },
-    "myDayTimePlanBannerSubtitle": "{dueCount} crÃ­ticas por tiempo â€¢ {plannedCount} planificadas",
+    "myDayTimePlanBannerSubtitle": "{dueCount} crÃ­ticas por tiempo  Â·  {plannedCount} planificadas",
     "@myDayTimePlanBannerSubtitle": {
         "description": "SubtÃ­tulo mostrado en el banner y la hoja de tiempo/plan, resumiendo cantidades.",
         "placeholders": {
@@ -2596,23 +2562,23 @@
     "@myDayGenerateLabel": {
         "description": "Etiqueta corta del botÃ³n para generar mÃ¡s sugerencias en Mi dÃ­a."
     },
-    "myDayStartSetupLabel": "Iniciar configuraciÃ³n",
+    "myDayStartSetupLabel": "Configura tus valores",
     "@myDayStartSetupLabel": {
         "description": "Etiqueta del botÃ³n para iniciar configuraciÃ³n cuando las sugerencias estÃ¡n bloqueadas en Mi dÃ­a."
     },
-    "myDayUnlockSuggestionsTitle": "Desbloquear sugerencias",
+    "myDayUnlockSuggestionsTitle": "AÃºn no hay valores.",
     "@myDayUnlockSuggestionsTitle": {
         "description": "TÃ­tulo de la tarjeta de configuraciÃ³n de sugerencias en Mi dÃ­a cuando estÃ¡n bloqueadas."
     },
-    "myDayUnlockSuggestionsBody": "Configura un modo de enfoque y agrega tu primer valor para ver sugerencias personalizadas aquÃ­.",
+    "myDayUnlockSuggestionsBody": "Configura tus valores para obtener sugerencias equilibradas.",
     "@myDayUnlockSuggestionsBody": {
         "description": "Texto de la tarjeta de configuraciÃ³n de sugerencias en Mi dÃ­a cuando estÃ¡n bloqueadas."
     },
-    "myDayChooseFocusModeLabel": "Elige un modo de enfoque",
+    "myDayChooseFocusModeLabel": "Configura tus valores",
     "@myDayChooseFocusModeLabel": {
         "description": "Etiqueta para el requisito de modo de enfoque en la tarjeta de configuraciÃ³n de sugerencias de Mi dÃ­a."
     },
-    "myDayAddFirstValueLabel": "Agrega tu primer valor",
+    "myDayAddFirstValueLabel": "AÃ±ade tu primer valor",
     "@myDayAddFirstValueLabel": {
         "description": "Etiqueta para el requisito de valores en la tarjeta de configuraciÃ³n de sugerencias de Mi dÃ­a."
     },
@@ -2886,7 +2852,7 @@
     },
   "routineWindowScheduledDays": "Esta semana ({daysLabel})",
   "@routineWindowScheduledDays": {
-    "description": "Etiqueta de ventana para rutinas semanales programadas; incluye la lista de días seleccionados.",
+    "description": "Etiqueta de ventana para rutinas semanales programadas; incluye la lista de dÃ­as seleccionados.",
     "placeholders": {
       "daysLabel": {
         "type": "String"
@@ -2895,14 +2861,14 @@
   },
   "routineWindowMonthlyEnds": "La ventana termina {endLabel}",
   "@routineWindowMonthlyEnds": {
-    "description": "Etiqueta de ventana para rutinas mensuales sin detalle de días restantes.",
+    "description": "Etiqueta de ventana para rutinas mensuales sin detalle de dÃ­as restantes.",
     "placeholders": {
       "endLabel": {
         "type": "String"
       }
     }
   },
-  "routineWindowMonthlyByDate": "Window ends {endLabel} · {daysLeft} days left",
+  "routineWindowMonthlyByDate": "Window ends {endLabel} Â· {daysLeft} days left",
     "@routineWindowMonthlyByDate": {
         "description": "Window label for monthly routines using an end date.",
         "placeholders": {
@@ -2942,7 +2908,7 @@
   "@routinePanelFlexibleTitle": {
     "description": "Panel title for flexible routines in Plan My Day."
   },
-  "routineCatchUpSupportLine": "Los pasos pequeños cuentan.",
+  "routineCatchUpSupportLine": "Los pasos pequeÃ±os cuentan.",
   "@routineCatchUpSupportLine": {
     "description": "Supportive line shown on catch-up routine days."
   },
@@ -2954,7 +2920,7 @@
     "@routineStatusTightWeek": {
         "description": "Status label when routine has a tight week."
     },
-  "routineStatusCatchUp": "Día de recuperación",
+  "routineStatusCatchUp": "DÃ­a de recuperaciÃ³n",
   "@routineStatusCatchUp": {
     "description": "Status label when routine needs a catch-up window."
   },
@@ -2977,9 +2943,9 @@
     "@routineTypeWeeklyScheduled": {
         "description": "Etiqueta para tipo de rutina semanal programada"
     },
-    "routineFormScheduledDaysLabel": "Días programados",
+    "routineFormScheduledDaysLabel": "DÃ­as programados",
     "@routineFormScheduledDaysLabel": {
-        "description": "Etiqueta para seleccionar días programados en rutinas semanales programadas."
+        "description": "Etiqueta para seleccionar dÃ­as programados en rutinas semanales programadas."
     },
     "routineTypeMonthlyFlexible": "Mensual (flexible)",
     "@routineTypeMonthlyFlexible": {
@@ -2987,15 +2953,15 @@
     },
     "routineFormTargetWeeklyLabel": "Veces por semana",
     "@routineFormTargetWeeklyLabel": {
-        "description": "Etiqueta para selección de objetivo semanal"
+        "description": "Etiqueta para selecciÃ³n de objetivo semanal"
     },
     "routineFormTargetMonthlyLabel": "Veces por mes",
     "@routineFormTargetMonthlyLabel": {
-        "description": "Etiqueta para selección de objetivo mensual"
+        "description": "Etiqueta para selecciÃ³n de objetivo mensual"
     },
     "routineFormPreferredWeeksLabel": "Semanas preferidas",
     "@routineFormPreferredWeeksLabel": {
-        "description": "Etiqueta para selección de semanas preferidas"
+        "description": "Etiqueta para selecciÃ³n de semanas preferidas"
     },
     "myDayDueSoonToggleTitle": "Due soon",
     "@myDayDueSoonToggleTitle": {
@@ -3092,13 +3058,16 @@
     "routineWeek2Label": "Semana 2",
     "routineWeek3Label": "Semana 3",
     "routineWeek4Label": "Semana 4",
-    "routineWeekLastLabel": "Última semana",
+    "routineWeekLastLabel": "Ãšltima semana",
     "routineDeleteTitle": "Eliminar rutina",
-    "routineDeleteDescription": "Esta rutina y su historial se eliminarán.",
+    "routineDeleteDescription": "Esta rutina y su historial se eliminarÃ¡n.",
     "routineCreatedSuccessfully": "Rutina creada",
     "routineUpdatedSuccessfully": "Rutina actualizada",
     "routineDeletedSuccessfully": "Rutina eliminada"
 }
+
+
+
 
 
 

@@ -7,17 +7,18 @@
 ## Primary purpose
 
 "Plan My Day helps you turn your values into today's plan, selecting tasks and
-routines that balance what matters and what's due."
+routines that balance values and due dates. Suggestions are compact, with a
+swap flow to browse more options within a value."
 
 ## Description line (UI copy)
 
-"Build today's plan around your values and deadlines - what matters and what's
-due."
+"Build today's plan around your values and due dates."
 
 ## Key question it answers
 
-"What matters most today?"
+"What should I prioritize today?"
 
 ## What it shows
 
-"Plan My Day shows today's tasks and routines - what's due and what matters."
+"Plan My Day shows today's tasks and routines - due items and value-aligned
+picks, with capped suggestion visibility and a swap-only full list per value."

@@ -5,6 +5,7 @@ import 'package:taskly_bloc/presentation/features/projects/bloc/projects_scope_p
 import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class ProjectsScopePickerSheet {
@@ -39,12 +40,23 @@ class _ProjectsScopePickerView extends StatefulWidget {
 }
 
 class _ProjectsScopePickerViewState extends State<_ProjectsScopePickerView> {
+  static const _searchDebounce = Duration(milliseconds: 300);
+
   final TextEditingController _searchController = TextEditingController();
+  final Debouncer _searchDebouncer = Debouncer(_searchDebounce);
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchDebouncer.dispose();
     super.dispose();
+  }
+
+  void _scheduleSearchRefresh() {
+    _searchDebouncer.schedule(() {
+      if (!mounted) return;
+      setState(() {});
+    });
   }
 
   @override
@@ -99,12 +111,15 @@ class _ProjectsScopePickerViewState extends State<_ProjectsScopePickerView> {
                 prefixIcon: const Icon(Icons.search),
                 hintText: l10n.projectsScopePickerSearchHint,
               ),
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) => _scheduleSearchRefresh(),
             ),
             SizedBox(height: TasklyTokens.of(context).spaceSm),
             Expanded(
               child:
-                  BlocBuilder<ProjectsScopePickerBloc, ProjectsScopePickerState>(
+                  BlocBuilder<
+                    ProjectsScopePickerBloc,
+                    ProjectsScopePickerState
+                  >(
                     builder: (context, state) {
                       return switch (state) {
                         ProjectsScopePickerLoading() => const Center(

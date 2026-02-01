@@ -30,7 +30,8 @@ void main() {
   setUp(() {
     projectRepository = MockProjectRepository();
     valueRepository = MockValueRepository();
-    projectSubject = BehaviorSubject<Project?>();
+    projectSubject =
+        BehaviorSubject<Project?>(); // ignore-unseeded-subject (loading test)
 
     when(
       () => projectRepository.watchById(any()),

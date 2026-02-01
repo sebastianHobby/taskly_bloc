@@ -22,9 +22,8 @@ import 'package:taskly_domain/src/services/analytics/analytics_service.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/time/clock.dart';
 import 'package:taskly_domain/time.dart' show dateOnly;
-import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
-/// Orchestrates task allocation using pinned labels and allocation strategies.
+/// Orchestrates task allocation using allocation strategies.
 ///
 /// Now uses settings-based allocation configuration instead of separate
 /// database tables. Allocation preferences and value rankings are stored
@@ -67,7 +66,7 @@ class AllocationOrchestrator {
   static const double _ratingsSmoothingAlpha = 0.40;
   static const int _ratingsMax = 8;
 
-  /// Compute a single allocation snapshot (pinned + allocated tasks).
+  /// Compute a single allocation snapshot.
   ///
   /// This intentionally does **not** keep a live stream subscription.
   /// Callers should re-trigger this explicitly (e.g. on ritual open, day
@@ -289,10 +288,8 @@ class AllocationOrchestrator {
       );
     }
 
-    final regularTasks = tasks.where((t) => !t.isPinned).toList();
-
     final allocatedRegularTasks = await allocateRegularTasks(
-      regularTasks,
+      tasks,
       projects: projects,
       projectAnchorStates: projectAnchorStates,
       allocationConfig: allocationConfig,
@@ -306,7 +303,7 @@ class AllocationOrchestrator {
     // Best-effort logging: urgent valueless tasks are a key signal for UX.
     final urgencyDetector = UrgencyDetector.fromConfig(allocationConfig);
     final urgentValueless = urgencyDetector.findUrgentValuelessTasks(
-      regularTasks,
+      tasks,
       todayDayKeyUtc: todayDayKeyUtc,
     );
     if (urgentValueless.isNotEmpty) {
@@ -335,9 +332,9 @@ class AllocationOrchestrator {
     return result;
   }
 
-  /// Allocate regular (non-pinned) tasks using the configured strategy.
+  /// Allocate tasks using the configured strategy.
   ///
-  /// Regular allocation uses a single engine: [SuggestedPicksEngine].
+  /// Allocation uses a single engine: [SuggestedPicksEngine].
   Future<AllocationResult> allocateRegularTasks(
     List<Task> tasks, {
     required List<Project> projects,
@@ -560,49 +557,6 @@ class AllocationOrchestrator {
   DateTime _weekStartFor(DateTime dayKeyUtc) {
     final today = dateOnly(dayKeyUtc);
     return today.subtract(Duration(days: today.weekday - 1));
-  }
-
-  /// Pin a task
-  Future<void> pinTask(String taskId, {OperationContext? context}) async {
-    talker.debug('[AllocationOrchestrator] Pinning task: $taskId');
-    await _taskRepository.setPinned(
-      id: taskId,
-      isPinned: true,
-      context: context,
-    );
-  }
-
-  /// Unpin a task
-  Future<void> unpinTask(String taskId, {OperationContext? context}) async {
-    talker.debug('[AllocationOrchestrator] Unpinning task: $taskId');
-    await _taskRepository.setPinned(
-      id: taskId,
-      isPinned: false,
-      context: context,
-    );
-  }
-
-  /// Pin a project
-  Future<void> pinProject(String projectId, {OperationContext? context}) async {
-    talker.debug('[AllocationOrchestrator] Pinning project: $projectId');
-    await _projectRepository.setPinned(
-      id: projectId,
-      isPinned: true,
-      context: context,
-    );
-  }
-
-  /// Unpin a project
-  Future<void> unpinProject(
-    String projectId, {
-    OperationContext? context,
-  }) async {
-    talker.debug('[AllocationOrchestrator] Unpinning project: $projectId');
-    await _projectRepository.setPinned(
-      id: projectId,
-      isPinned: false,
-      context: context,
-    );
   }
 
   /// Toggle task completion state

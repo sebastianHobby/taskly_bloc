@@ -47,34 +47,10 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
   const factory GlobalSettingsEvent.textScaleChanged(double textScaleFactor) =
       GlobalSettingsTextScaleChanged;
 
-  /// User changed the My Day due-window days.
-  const factory GlobalSettingsEvent.myDayDueWindowDaysChanged(int days) =
-      GlobalSettingsMyDayDueWindowDaysChanged;
-
-  /// User toggled whether My Day should show due-soon picks.
-  const factory GlobalSettingsEvent.myDayDueSoonEnabledChanged(
-    bool enabled,
-  ) = GlobalSettingsMyDayDueSoonEnabledChanged;
-
-  /// User toggled whether to show the "Available to start" lane.
-  const factory GlobalSettingsEvent.myDayShowAvailableToStartChanged(
-    bool enabled,
-  ) = GlobalSettingsMyDayShowAvailableToStartChanged;
-
   /// User toggled whether to show the routines step.
   const factory GlobalSettingsEvent.myDayShowRoutinesChanged(
     bool enabled,
   ) = GlobalSettingsMyDayShowRoutinesChanged;
-
-  /// User toggled whether triage picks count against value quotas.
-  const factory GlobalSettingsEvent.myDayCountTriagePicksAgainstValueQuotasChanged(
-    bool enabled,
-  ) = GlobalSettingsMyDayCountTriagePicksAgainstValueQuotasChanged;
-
-  /// User toggled whether routine picks count against value quotas.
-  const factory GlobalSettingsEvent.myDayCountRoutinePicksAgainstValueQuotasChanged(
-    bool enabled,
-  ) = GlobalSettingsMyDayCountRoutinePicksAgainstValueQuotasChanged;
 
   /// User toggled weekly review scheduling.
   const factory GlobalSettingsEvent.weeklyReviewEnabledChanged(bool enabled) =
@@ -255,28 +231,8 @@ class GlobalSettingsBloc
       _onTextScaleChanged,
       transformer: sequential(),
     );
-    on<GlobalSettingsMyDayDueWindowDaysChanged>(
-      _onMyDayDueWindowDaysChanged,
-      transformer: sequential(),
-    );
-    on<GlobalSettingsMyDayDueSoonEnabledChanged>(
-      _onMyDayDueSoonEnabledChanged,
-      transformer: sequential(),
-    );
-    on<GlobalSettingsMyDayShowAvailableToStartChanged>(
-      _onMyDayShowAvailableToStartChanged,
-      transformer: sequential(),
-    );
     on<GlobalSettingsMyDayShowRoutinesChanged>(
       _onMyDayShowRoutinesChanged,
-      transformer: sequential(),
-    );
-    on<GlobalSettingsMyDayCountTriagePicksAgainstValueQuotasChanged>(
-      _onMyDayCountTriagePicksAgainstValueQuotasChanged,
-      transformer: sequential(),
-    );
-    on<GlobalSettingsMyDayCountRoutinePicksAgainstValueQuotasChanged>(
-      _onMyDayCountRoutinePicksAgainstValueQuotasChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsWeeklyReviewEnabledChanged>(
@@ -697,82 +653,6 @@ class GlobalSettingsBloc
     }
   }
 
-  Future<void> _onMyDayDueWindowDaysChanged(
-    GlobalSettingsMyDayDueWindowDaysChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final clampedDays = event.days.clamp(1, 30);
-    final updated = state.settings.copyWith(myDayDueWindowDays: clampedDays);
-    final context = _newContext(
-      intent: 'settings_my_day_due_window_days_changed',
-      operation: 'settings.save.global',
-      extraFields: <String, Object?>{'days': clampedDays},
-    );
-    try {
-      await _settingsRepository.save(
-        SettingsKey.global,
-        updated,
-        context: context,
-      );
-    } catch (e, st) {
-      talker.error('[settings.global] My Day due window persist FAILED', e, st);
-      _reportIfUnexpectedOrUnmapped(
-        e,
-        st,
-        context: context,
-        message: '[GlobalSettingsBloc] my day due window persist failed',
-      );
-    }
-  }
-
-  Future<void> _onMyDayDueSoonEnabledChanged(
-    GlobalSettingsMyDayDueSoonEnabledChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final updated = state.settings.copyWith(
-      myDayDueSoonEnabled: event.enabled,
-    );
-    await _persistSettings(
-      updated,
-      intent: 'settings_my_day_due_soon_enabled_changed',
-      extraFields: <String, Object?>{'enabled': event.enabled},
-    );
-  }
-
-  Future<void> _onMyDayShowAvailableToStartChanged(
-    GlobalSettingsMyDayShowAvailableToStartChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final updated = state.settings.copyWith(
-      myDayShowAvailableToStart: event.enabled,
-    );
-    final context = _newContext(
-      intent: 'settings_my_day_show_available_to_start_changed',
-      operation: 'settings.save.global',
-      extraFields: <String, Object?>{'enabled': event.enabled},
-    );
-    try {
-      await _settingsRepository.save(
-        SettingsKey.global,
-        updated,
-        context: context,
-      );
-    } catch (e, st) {
-      talker.error(
-        '[settings.global] My Day show available-to-start persist FAILED',
-        e,
-        st,
-      );
-      _reportIfUnexpectedOrUnmapped(
-        e,
-        st,
-        context: context,
-        message:
-            '[GlobalSettingsBloc] my day show available-to-start persist failed',
-      );
-    }
-  }
-
   Future<void> _onMyDayShowRoutinesChanged(
     GlobalSettingsMyDayShowRoutinesChanged event,
     Emitter<GlobalSettingsState> emit,
@@ -781,35 +661,6 @@ class GlobalSettingsBloc
     await _persistSettings(
       updated,
       intent: 'settings_my_day_show_routines_changed',
-      extraFields: <String, Object?>{'enabled': event.enabled},
-    );
-  }
-
-  Future<void> _onMyDayCountTriagePicksAgainstValueQuotasChanged(
-    GlobalSettingsMyDayCountTriagePicksAgainstValueQuotasChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final updated = state.settings.copyWith(
-      myDayCountTriagePicksAgainstValueQuotas: event.enabled,
-    );
-    await _persistSettings(
-      updated,
-      intent: 'settings_my_day_count_triage_picks_against_value_quotas_changed',
-      extraFields: <String, Object?>{'enabled': event.enabled},
-    );
-  }
-
-  Future<void> _onMyDayCountRoutinePicksAgainstValueQuotasChanged(
-    GlobalSettingsMyDayCountRoutinePicksAgainstValueQuotasChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final updated = state.settings.copyWith(
-      myDayCountRoutinePicksAgainstValueQuotas: event.enabled,
-    );
-    await _persistSettings(
-      updated,
-      intent:
-          'settings_my_day_count_routine_picks_against_value_quotas_changed',
       extraFields: <String, Object?>{'enabled': event.enabled},
     );
   }

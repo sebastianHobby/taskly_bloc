@@ -25,7 +25,6 @@ class SelectionEntityMeta {
     required this.displayName,
     required this.canDelete,
     this.completed,
-    this.pinned,
     this.canCompleteSeries = false,
   });
 
@@ -33,15 +32,12 @@ class SelectionEntityMeta {
   final String displayName;
   final bool canDelete;
   final bool? completed;
-  final bool? pinned;
   final bool canCompleteSeries;
 }
 
 enum BulkActionKind {
   complete,
   uncomplete,
-  pin,
-  unpin,
   completeSeries,
   moveToProject,
   delete,

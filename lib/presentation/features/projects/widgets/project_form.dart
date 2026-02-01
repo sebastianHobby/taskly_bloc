@@ -4,6 +4,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 // import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_tag_picker.dart'; // Removed
 import 'package:taskly_bloc/presentation/shared/utils/date_display_utils.dart';
+import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rich_text_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rrule_label_utils.dart';
@@ -34,7 +35,6 @@ class ProjectForm extends StatefulWidget {
     this.onChanged,
     this.availableValues = const <Value>[],
     this.openToValues = false,
-    this.onTogglePinned,
     this.onClose,
     this.trailingActions = const <Widget>[],
     super.key,
@@ -51,11 +51,6 @@ class ProjectForm extends StatefulWidget {
   /// sheet on first build.
   final bool openToValues;
 
-  /// Called when the user toggles pinned state from the header.
-  ///
-  /// Only shown when editing (initialData != null).
-  final ValueChanged<bool>? onTogglePinned;
-
   /// Called when the user wants to close the form.
   /// If null, no close button is shown.
   final VoidCallback? onClose;
@@ -68,12 +63,16 @@ class ProjectForm extends StatefulWidget {
 }
 
 class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
+  static const _draftSyncDebounce = Duration(milliseconds: 400);
+
   @override
   VoidCallback? get onClose => widget.onClose;
 
   final _scrollController = ScrollController();
   final GlobalKey<State<StatefulWidget>> _valuesKey = GlobalKey();
+  final Debouncer _draftSyncDebouncer = Debouncer(_draftSyncDebounce);
   bool _didAutoOpen = false;
+  bool _submitEnabled = false;
   String? _recurrenceLabel;
   String? _lastRecurrenceRrule;
 
@@ -99,6 +98,30 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       if (!mounted || _lastRecurrenceRrule != requestRrule) return;
       setState(() => _recurrenceLabel = label);
     });
+  }
+
+  void _handleFormChanged() {
+    markDirty();
+    _scheduleDraftSync();
+    _refreshSubmitEnabled();
+  }
+
+  void _scheduleDraftSync() {
+    final onChanged = widget.onChanged;
+    if (onChanged == null) return;
+    _draftSyncDebouncer.schedule(() {
+      if (!mounted) return;
+      final values = widget.formKey.currentState?.value;
+      if (values != null) {
+        onChanged(values);
+      }
+    });
+  }
+
+  void _refreshSubmitEnabled() {
+    final next = isDirty && (widget.formKey.currentState?.isValid ?? false);
+    if (next == _submitEnabled || !mounted) return;
+    setState(() => _submitEnabled = next);
   }
 
   @override
@@ -148,6 +171,13 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       markDirty();
       setState(() {});
     });
+  }
+
+  @override
+  void dispose() {
+    _draftSyncDebouncer.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -349,8 +379,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
     };
     final initialDescription = normalizedDescription;
 
-    final submitEnabled =
-        isDirty && (widget.formKey.currentState?.isValid ?? false);
+    final submitEnabled = _submitEnabled;
 
     final sectionGap = isCompact ? 12.0 : 16.0;
     final denseFieldPadding = EdgeInsets.symmetric(
@@ -392,24 +421,6 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
             style: headerActionStyle,
             child: Text(l10n.cancelLabel),
           ),
-        if (widget.initialData != null && widget.onTogglePinned != null)
-          IconButton(
-            onPressed: () {
-              final nextPinned = !(widget.initialData?.isPinned ?? false);
-              widget.onTogglePinned?.call(nextPinned);
-            },
-            icon: Icon(
-              (widget.initialData?.isPinned ?? false)
-                  ? Icons.push_pin
-                  : Icons.push_pin_outlined,
-              color: (widget.initialData?.isPinned ?? false)
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-            ),
-            tooltip: (widget.initialData?.isPinned ?? false)
-                ? l10n.unpinAction
-                : l10n.pinAction,
-          ),
       ],
       trailingActions: [
         ...widget.trailingActions,
@@ -438,22 +449,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
           key: widget.formKey,
           initialValue: initialValues,
           autovalidateMode: AutovalidateMode.onUserInteraction,
-          onChanged: () {
-            markDirty();
-            setState(() {});
-            final rrule =
-                widget
-                        .formKey
-                        .currentState
-                        ?.fields[ProjectFieldKeys.repeatIcalRrule.id]
-                        ?.value
-                    as String?;
-            _updateRecurrenceLabel(rrule);
-            final values = widget.formKey.currentState?.value;
-            if (values != null) {
-              widget.onChanged?.call(values);
-            }
-          },
+          onChanged: _handleFormChanged,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
