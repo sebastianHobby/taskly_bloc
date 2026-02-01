@@ -62,6 +62,26 @@ void main() {
       expect(cleared, matcher.isNull);
     });
 
+    testSafe('save and load page display preferences', () async {
+      final db = createAutoClosingDb();
+      final repo = SettingsRepository(driftDb: db);
+
+      const prefs = DisplayPreferences(density: DisplayDensity.compact);
+
+      await repo.save(SettingsKey.pageDisplay(PageKey.projectOverview), prefs);
+      final loaded = await repo.load(
+        SettingsKey.pageDisplay(PageKey.projectOverview),
+      );
+
+      expect(loaded, equals(prefs));
+
+      await repo.save(SettingsKey.pageDisplay(PageKey.projectOverview), null);
+      final cleared = await repo.load(
+        SettingsKey.pageDisplay(PageKey.projectOverview),
+      );
+      expect(cleared, matcher.isNull);
+    });
+
     testSafe('invalid JSON triggers repair and defaults', () async {
       final db = createAutoClosingDb();
       final repo = SettingsRepository(driftDb: db);

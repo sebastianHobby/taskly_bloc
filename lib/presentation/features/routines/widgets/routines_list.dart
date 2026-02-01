@@ -231,9 +231,8 @@ TasklyRowSpec _buildRow(
       selected: isSelected,
       completed: _completedToday(item),
       showScheduleRow: item.routine.routineType == RoutineType.weeklyFixed,
-      showProgress:
-          item.routine.routineType == RoutineType.weeklyFlexible ||
-          item.routine.routineType == RoutineType.monthlyFlexible,
+      showProgress: true,
+      forceProgress: true,
       highlightCompleted: false,
       dayKeyUtc: item.dayKeyUtc,
       completionsInPeriod: item.completionsInPeriod,

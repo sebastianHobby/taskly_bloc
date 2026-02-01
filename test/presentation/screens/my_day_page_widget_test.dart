@@ -186,6 +186,11 @@ void main() {
     when(() => settingsRepository.load(SettingsKey.allocation)).thenAnswer(
       (_) async => const AllocationConfig(),
     );
+    when(
+      () => settingsRepository.load(
+        SettingsKey.pageDisplay(PageKey.myDay),
+      ),
+    ).thenAnswer((_) async => null);
 
     when(() => settingsRepository.watch(SettingsKey.allocation)).thenAnswer(
       (_) => Stream.value(const AllocationConfig()),

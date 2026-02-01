@@ -18,8 +18,12 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
+import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -38,6 +42,10 @@ class ProjectsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompactScreen = Breakpoints.isCompact(
+      MediaQuery.sizeOf(context).width,
+    );
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => ProjectsScreenBloc(scope: scope)),
@@ -46,6 +54,15 @@ class ProjectsPage extends StatelessWidget {
             queryService: context.read<ProjectsSessionQueryService>(),
             scope: scope,
           ),
+        ),
+        BlocProvider(
+          create: (context) => DisplayDensityBloc(
+            settingsRepository: context.read<SettingsRepositoryContract>(),
+            pageKey: PageKey.projectOverview,
+            defaultDensity: isCompactScreen
+                ? DisplayDensity.compact
+                : DisplayDensity.standard,
+          )..add(const DisplayDensityStarted()),
         ),
         BlocProvider(create: (_) => SelectionBloc()),
       ],
@@ -263,6 +280,9 @@ class _ProjectsViewState extends State<_ProjectsView> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final chrome = TasklyTokens.of(context);
+    final density = context.select(
+      (DisplayDensityBloc bloc) => bloc.state.density,
+    );
     final iconButtonStyle = IconButton.styleFrom(
       backgroundColor: scheme.surfaceContainerHighest.withValues(
         alpha: chrome.iconButtonBackgroundAlpha,
@@ -380,6 +400,24 @@ class _ProjectsViewState extends State<_ProjectsView> {
                             style: iconButtonStyle,
                             onPressed: () => _setSearchActive(false),
                           ),
+                        BlocBuilder<DisplayDensityBloc, DisplayDensityState>(
+                          builder: (context, densityState) {
+                            final isCompact =
+                                densityState.density == DisplayDensity.compact;
+                            return IconButton(
+                              tooltip: 'Row density',
+                              icon: Icon(
+                                isCompact
+                                    ? Icons.view_agenda_rounded
+                                    : Icons.view_week_rounded,
+                              ),
+                              style: iconButtonStyle,
+                              onPressed: () => context
+                                  .read<DisplayDensityBloc>()
+                                  .add(const DisplayDensityToggled()),
+                            );
+                          },
+                        ),
                         TasklyOverflowMenuButton<_ProjectsMenuAction>(
                           tooltip: 'More',
                           icon: Icons.more_vert,
@@ -479,6 +517,7 @@ class _ProjectsViewState extends State<_ProjectsView> {
                                   rows: _buildStandardRows(
                                     context,
                                     visibleRows,
+                                    density: density,
                                   ),
                                 ),
                               );
@@ -566,8 +605,9 @@ TasklyEmptyStateSpec _buildEmptySpec(
 
 List<TasklyRowSpec> _buildStandardRows(
   BuildContext context,
-  List<ListRowUiModel> rows,
-) {
+  List<ListRowUiModel> rows, {
+  required DisplayDensity density,
+}) {
   final selection = context.read<SelectionBloc>();
 
   final projectRowCache = rows.whereType<ProjectRowUiModel>().toList(
@@ -603,7 +643,9 @@ List<TasklyRowSpec> _buildStandardRows(
       dueSoonCount: row.dueSoonCount,
     );
 
-    const preset = TasklyProjectRowPreset.standard();
+    final preset = density == DisplayDensity.compact
+        ? const TasklyProjectRowPreset.compact()
+        : const TasklyProjectRowPreset.standard();
 
     final actions = TasklyProjectRowActions(
       onTap: () => Routing.toProject(context, row.project!),

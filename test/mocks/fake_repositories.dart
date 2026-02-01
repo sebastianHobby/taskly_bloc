@@ -9,6 +9,7 @@ import 'package:rxdart/rxdart.dart';
 
 /// Minimal in-memory fake repository for task operations.
 import 'package:taskly_domain/taskly_domain.dart';
+import 'package:taskly_domain/preferences.dart';
 
 DateTime _defaultNow() => DateTime(2025, 1, 15, 12);
 
@@ -389,14 +390,18 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
     GlobalSettings global = const GlobalSettings(),
     AllocationConfig allocation = const AllocationConfig(),
     Map<String, SortPreferences> pageSort = const <String, SortPreferences>{},
+    Map<String, DisplayPreferences> pageDisplay =
+        const <String, DisplayPreferences>{},
   }) : _global = global,
        _allocation = allocation,
-       _pageSort = Map<String, SortPreferences>.from(pageSort);
+       _pageSort = Map<String, SortPreferences>.from(pageSort),
+       _pageDisplay = Map<String, DisplayPreferences>.from(pageDisplay);
 
   final _controller = StreamController<void>.broadcast();
   GlobalSettings _global;
   AllocationConfig _allocation;
   final Map<String, SortPreferences> _pageSort;
+  final Map<String, DisplayPreferences> _pageDisplay;
 
   @override
   Stream<T> watch<T>(SettingsKey<T> key) async* {
@@ -432,6 +437,7 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
 
     return switch (name) {
       'pageSort' => _pageSort[subKey] as T,
+      'pageDisplay' => _pageDisplay[subKey] as T,
       _ => throw ArgumentError('Unknown keyed key: $name'),
     };
   }
@@ -456,6 +462,14 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
           _pageSort.remove(subKey);
         } else {
           _pageSort[subKey] = prefs;
+        }
+        return;
+      case 'pageDisplay':
+        final prefs = value as DisplayPreferences?;
+        if (prefs == null) {
+          _pageDisplay.remove(subKey);
+        } else {
+          _pageDisplay[subKey] = prefs;
         }
         return;
       default:

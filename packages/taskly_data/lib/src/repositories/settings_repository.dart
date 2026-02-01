@@ -335,6 +335,13 @@ class SettingsRepository implements SettingsRepositoryContract {
               pageKey: subKey,
             )
             as T,
+      'pageDisplay' =>
+        _decodePageDisplay(
+              profileId: profileId,
+              overrides: overrides,
+              pageKey: subKey,
+            )
+            as T,
       _ => throw ArgumentError('Unknown keyed key: $name'),
     };
   }
@@ -379,6 +386,49 @@ class SettingsRepository implements SettingsRepositoryContract {
     }
 
     return SortPreferences.fromJson(value);
+  }
+
+  DisplayPreferences? _decodePageDisplay({
+    required String profileId,
+    required Map<String, dynamic> overrides,
+    required String pageKey,
+  }) {
+    final group = overrides['pageDisplay'];
+    if (group == null) return null;
+    if (group is! Map<String, dynamic>) {
+      final repaired =
+          Map<String, dynamic>.from(overrides)..remove('pageDisplay');
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          repaired,
+          repairKey: 'pageDisplay',
+          repairedFrom: group,
+          reason: 'pageDisplay_not_a_map',
+        ),
+      );
+      return null;
+    }
+
+    final value = group[pageKey];
+    if (value == null) return null;
+    if (value is! Map<String, dynamic>) {
+      final repairedGroup = Map<String, dynamic>.from(group)..remove(pageKey);
+      final repaired = Map<String, dynamic>.from(overrides)
+        ..['pageDisplay'] = repairedGroup;
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          repaired,
+          repairKey: 'pageDisplay:$pageKey',
+          repairedFrom: value,
+          reason: 'pageDisplay_entry_not_a_map',
+        ),
+      );
+      return null;
+    }
+
+    return DisplayPreferences.fromJson(value);
   }
 
   T _decodeSingleton<T>({
@@ -457,6 +507,23 @@ class SettingsRepository implements SettingsRepositoryContract {
           updated['pageSort'] = group;
         }
         return updated;
+      case 'pageDisplay':
+        final group = Map<String, dynamic>.from(
+          (updated['pageDisplay'] as Map<String, dynamic>?) ??
+              const <String, dynamic>{},
+        );
+        final prefs = value as DisplayPreferences?;
+        if (prefs == null) {
+          group.remove(subKey);
+        } else {
+          group[subKey] = prefs.toJson();
+        }
+        if (group.isEmpty) {
+          updated.remove('pageDisplay');
+        } else {
+          updated['pageDisplay'] = group;
+        }
+        return updated;
 
       default:
         throw ArgumentError('Unknown keyed key: $name');
@@ -473,6 +540,7 @@ class SettingsRepository implements SettingsRepositoryContract {
     final name = keyedKey.name as String;
     return switch (name) {
       'pageSort' => null as T,
+      'pageDisplay' => null as T,
       _ => throw ArgumentError('Unknown SettingsKey default: $key'),
     };
   }

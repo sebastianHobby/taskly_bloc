@@ -22,10 +22,14 @@ void main() {
       final a = SettingsKey.pageSort(PageKey.tasksInbox);
       final b = SettingsKey.pageSort(PageKey.tasksInbox);
       final c = SettingsKey.pageSort(PageKey.tasksToday);
+      final d = SettingsKey.pageDisplay(PageKey.projectOverview);
+      final e = SettingsKey.pageDisplay(PageKey.projectOverview);
 
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
       expect(a.toString(), contains('(tasks_inbox)'));
+      expect(d, equals(e));
+      expect(d.toString(), contains('(project_overview)'));
     },
   );
 }

@@ -38,11 +38,14 @@ class RoutineEntityTile extends StatelessWidget {
         ? selectionAddedLabelRaw
         : 'Added';
     final isPlanPickStyle = style is TasklyRoutineRowStylePlanPick;
+    final isCompactStyle = style is TasklyRoutineRowStyleCompact;
+    final useCompactLayout = isPlanPickStyle || isCompactStyle;
+    final showSelection = actions.onToggleSelected != null;
     final showPrimary =
         !isPlanPickStyle &&
+        !showSelection &&
         primaryLabelText.isNotEmpty &&
         (actions.onPrimaryAction != null || model.completed);
-    final showSelection = actions.onToggleSelected != null;
     final showPicker = isPlanPickStyle && actions.onToggleSelected != null;
     final badges = model.badges;
     final hasBadges = badges.isNotEmpty;
@@ -62,8 +65,17 @@ class RoutineEntityTile extends StatelessWidget {
             .join(' \u00b7 ');
     final showMeta = metaLabel.isNotEmpty && !showProgress && !showScheduleRow;
 
-    final baseOpacity = model.completed ? 0.7 : 1.0;
-    final opacity = baseOpacity.clamp(0.0, 1.0);
+    final progress = model.progress;
+    final progressLabel = progress == null
+        ? ''
+        : '${progress.completedCount}/${progress.targetCount}';
+    final windowLabel = progress?.windowLabel.trim() ?? '';
+    final compactMetaLabel = progress == null
+        ? metaLabel
+        : [
+            progressLabel,
+            windowLabel,
+          ].where((text) => text.isNotEmpty).join(' \u00b7 ');
 
     final isSelected =
         model.selected || (model.completed && model.highlightCompleted);
@@ -88,18 +100,14 @@ class RoutineEntityTile extends StatelessWidget {
         ? actions.onTap ?? actions.onToggleSelected
         : actions.onTap;
 
-    final tile = isPlanPickStyle
-        ? _PlanPickTile(
+    final tile = useCompactLayout
+        ? _CompactRoutineTile(
             model: model,
             actions: actions,
-            opacity: opacity,
             titleStyle: titleStyle,
-            metaStyle: metaStyle,
             tileSurface: tileSurface,
-            showProgress: showProgress,
             showScheduleRow: showScheduleRow,
-            showMeta: showMeta,
-            metaLabel: metaLabel,
+            metaLabel: compactMetaLabel,
             showPrimary: showPrimary,
             showPicker: showPicker,
             showSelection: showSelection,
@@ -233,25 +241,17 @@ class RoutineEntityTile extends StatelessWidget {
             ),
           );
 
-    return Opacity(
-      key: Key('routine-${model.id}'),
-      opacity: opacity,
-      child: tile,
-    );
+    return tile;
   }
 }
 
-class _PlanPickTile extends StatelessWidget {
-  const _PlanPickTile({
+class _CompactRoutineTile extends StatelessWidget {
+  const _CompactRoutineTile({
     required this.model,
     required this.actions,
-    required this.opacity,
     required this.titleStyle,
-    required this.metaStyle,
     required this.tileSurface,
-    required this.showProgress,
     required this.showScheduleRow,
-    required this.showMeta,
     required this.metaLabel,
     required this.showPrimary,
     required this.showPicker,
@@ -262,13 +262,9 @@ class _PlanPickTile extends StatelessWidget {
 
   final TasklyRoutineRowData model;
   final TasklyRoutineRowActions actions;
-  final double opacity;
   final TextStyle? titleStyle;
-  final TextStyle? metaStyle;
   final Color tileSurface;
-  final bool showProgress;
   final bool showScheduleRow;
-  final bool showMeta;
   final String metaLabel;
   final bool showPrimary;
   final bool showPicker;
@@ -282,8 +278,8 @@ class _PlanPickTile extends StatelessWidget {
     final scheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
     final valueChip = model.valueChip;
-    final targetLabel = model.targetLabel.trim();
-    final hasTargetLabel = targetLabel.isNotEmpty;
+    final trimmedMetaLabel = metaLabel.trim();
+    final hasMetaLabel = trimmedMetaLabel.isNotEmpty;
 
     final VoidCallback? onTap = actions.onTap ?? actions.onToggleSelected;
 
@@ -310,7 +306,7 @@ class _PlanPickTile extends StatelessWidget {
             child: Padding(
               padding: tokens.taskPadding,
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.repeat_outlined,
@@ -337,10 +333,12 @@ class _PlanPickTile extends StatelessWidget {
                               SizedBox(width: tokens.spaceXs2),
                               _ValueIconOnly(data: valueChip),
                             ],
-                            if (hasTargetLabel) ...[
+                            if (hasMetaLabel) ...[
                               SizedBox(width: tokens.spaceSm2),
                               Text(
-                                targetLabel,
+                                trimmedMetaLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   color: scheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w600,
@@ -349,13 +347,10 @@ class _PlanPickTile extends StatelessWidget {
                             ],
                           ],
                         ),
-                        SizedBox(height: tokens.spaceXs2),
-                        if (showProgress && model.progress != null)
-                          _RoutineProgressRow(data: model.progress!)
-                        else if (showScheduleRow && model.scheduleRow != null)
-                          _RoutineScheduleRow(data: model.scheduleRow!)
-                        else if (showMeta)
-                          Text(metaLabel, style: metaStyle),
+                        if (showScheduleRow && model.scheduleRow != null) ...[
+                          SizedBox(height: tokens.spaceXs2),
+                          _RoutineScheduleRow(data: model.scheduleRow!),
+                        ],
                       ],
                     ),
                   ),
@@ -393,7 +388,7 @@ class _PlanPickTile extends StatelessWidget {
 
     return Opacity(
       key: Key('routine-${model.id}'),
-      opacity: opacity,
+      opacity: (model.completed ? 0.7 : 1.0).clamp(0.0, 1.0),
       child: tile,
     );
   }

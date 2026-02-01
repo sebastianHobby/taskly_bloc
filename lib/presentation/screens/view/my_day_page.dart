@@ -30,6 +30,8 @@ import 'package:taskly_bloc/presentation/screens/view/plan_my_day_page.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
@@ -38,6 +40,7 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/auth.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
@@ -122,6 +125,9 @@ class _MyDayPageState extends State<MyDayPage> {
   Widget build(BuildContext context) {
     final dayKeyUtc = context.read<HomeDayService>().todayDayKeyUtc();
     final today = dayKeyUtc.toLocal();
+    final isCompactScreen = Breakpoints.isCompact(
+      MediaQuery.sizeOf(context).width,
+    );
 
     return MultiBlocProvider(
       providers: [
@@ -153,6 +159,15 @@ class _MyDayPageState extends State<MyDayPage> {
             demoModeService: context.read<DemoModeService>(),
             demoDataProvider: context.read<DemoDataProvider>(),
           ),
+        ),
+        BlocProvider(
+          create: (context) => DisplayDensityBloc(
+            settingsRepository: context.read<SettingsRepositoryContract>(),
+            pageKey: PageKey.myDay,
+            defaultDensity: isCompactScreen
+                ? DisplayDensity.compact
+                : DisplayDensity.standard,
+          )..add(const DisplayDensityStarted()),
         ),
         BlocProvider(create: (_) => SelectionBloc()),
       ],
@@ -195,6 +210,27 @@ class _MyDayPageState extends State<MyDayPage> {
                       : AppBar(
                           toolbarHeight: 56,
                           actions: [
+                            BlocBuilder<
+                              DisplayDensityBloc,
+                              DisplayDensityState
+                            >(
+                              builder: (context, densityState) {
+                                final isCompact =
+                                    densityState.density ==
+                                    DisplayDensity.compact;
+                                return IconButton(
+                                  tooltip: 'Row density',
+                                  icon: Icon(
+                                    isCompact
+                                        ? Icons.view_agenda_rounded
+                                        : Icons.view_week_rounded,
+                                  ),
+                                  onPressed: () => context
+                                      .read<DisplayDensityBloc>()
+                                      .add(const DisplayDensityToggled()),
+                                );
+                              },
+                            ),
                             IconButton(
                               tooltip: context.l10n.settingsTitle,
                               icon: const Icon(Icons.settings_outlined),
@@ -267,6 +303,9 @@ class _MyDayLoadedBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final density = context.select(
+      (DisplayDensityBloc bloc) => bloc.state.density,
+    );
     final settings = context.watch<GlobalSettingsBloc>().state.settings;
     final nowLocal = context.read<NowService>().nowLocal();
     final reviewReady = isWeeklyReviewReady(settings, nowLocal);
@@ -344,6 +383,7 @@ class _MyDayLoadedBody extends StatelessWidget {
                         tasks: state.tasks,
                         showCompleted: showCompleted,
                         onOpenPlan: onOpenPlan,
+                        density: density,
                       ),
                     ],
                   ),
@@ -524,6 +564,7 @@ class _MyDayTaskList extends StatefulWidget {
     required this.tasks,
     required this.showCompleted,
     required this.onOpenPlan,
+    required this.density,
   });
 
   final DateTime today;
@@ -532,6 +573,7 @@ class _MyDayTaskList extends StatefulWidget {
   final List<Task> tasks;
   final bool showCompleted;
   final VoidCallback onOpenPlan;
+  final DisplayDensity density;
 
   @override
   State<_MyDayTaskList> createState() => _MyDayTaskListState();
@@ -592,12 +634,14 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
       context,
       activeRoutineEntries,
       dayKeyUtc: widget.dayKeyUtc,
+      density: widget.density,
     );
     final completedRoutineRows = widget.showCompleted
         ? _buildRoutineRows(
             context,
             completedRoutineEntries,
             dayKeyUtc: widget.dayKeyUtc,
+            density: widget.density,
           )
         : const <TasklyRowSpec>[];
     final routineRows = [...activeRoutineRows, ...completedRoutineRows];
@@ -605,12 +649,14 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
       context,
       activeTaskEntriesCombined,
       todayDate: todayDate,
+      density: widget.density,
     );
     final completedTaskRows = widget.showCompleted
         ? _buildTaskRows(
             context,
             completedTaskEntriesCombined,
             todayDate: todayDate,
+            density: widget.density,
           )
         : const <TasklyRowSpec>[];
 
@@ -668,6 +714,7 @@ List<TasklyRowSpec> _buildRoutineRows(
   BuildContext context,
   List<_MyDayListEntry> entries, {
   required DateTime dayKeyUtc,
+  required DisplayDensity density,
 }) {
   final routineEntries = entries
       .where((entry) => entry.item.type == MyDayPlannedItemType.routine)
@@ -699,6 +746,9 @@ List<TasklyRowSpec> _buildRoutineRows(
         completed: item.completed,
         dayKeyUtc: dayKeyUtc,
         completionsInPeriod: item.completionsInPeriod,
+        style: density == DisplayDensity.compact
+            ? const TasklyRoutineRowStyle.compact()
+            : const TasklyRoutineRowStyle.standard(),
         depthOffset: 0,
       ),
     );
@@ -711,6 +761,7 @@ List<TasklyRowSpec> _buildTaskRows(
   BuildContext context,
   List<_MyDayListEntry> entries, {
   required DateTime todayDate,
+  required DisplayDensity density,
 }) {
   final rows = <TasklyRowSpec>[];
 
@@ -744,6 +795,7 @@ List<TasklyRowSpec> _buildTaskRows(
         context,
         task,
         todayDate: todayDate,
+        density: density,
         depthOffset: 0,
       ),
     );
@@ -887,6 +939,7 @@ TasklyRowSpec _buildRoutineRow(
   required bool completed,
   required DateTime dayKeyUtc,
   required List<RoutineCompletion> completionsInPeriod,
+  required TasklyRoutineRowStyle style,
   int depthOffset = 0,
 }) {
   final data = buildRoutineRowData(
@@ -895,10 +948,9 @@ TasklyRowSpec _buildRoutineRow(
     snapshot: snapshot,
     completed: completed,
     highlightCompleted: false,
-    showProgress:
-        routine.routineType == RoutineType.weeklyFlexible ||
-        routine.routineType == RoutineType.monthlyFlexible,
-    showScheduleRow: false,
+    showProgress: true,
+    forceProgress: true,
+    showScheduleRow: routine.routineType == RoutineType.weeklyFixed,
     dayKeyUtc: dayKeyUtc,
     completionsInPeriod: completionsInPeriod,
     labels: buildRoutineExecutionLabels(
@@ -911,6 +963,7 @@ TasklyRowSpec _buildRoutineRow(
     key: 'myday-routine-${routine.id}',
     data: data,
     depth: depthOffset,
+    style: style,
     actions: TasklyRoutineRowActions(
       onTap: () => Routing.toRoutineEdit(context, routine.id),
       onPrimaryAction: () => context.read<MyDayBloc>().add(
@@ -928,6 +981,7 @@ TasklyRowSpec _buildTaskRowSpec(
   BuildContext context,
   Task task, {
   required DateTime todayDate,
+  required DisplayDensity density,
   int depthOffset = 0,
 }) {
   final selection = context.read<SelectionBloc>();
@@ -939,15 +993,21 @@ TasklyRowSpec _buildTaskRowSpec(
   );
   final isSelected = selection.isSelected(key);
 
+  final useCompactDensity = density == DisplayDensity.compact;
+  final labels = useCompactDensity
+      ? _compactDateLabels(
+          context,
+          task: task,
+          today: todayDate,
+        )
+      : (startLabel: null, deadlineLabel: null);
+
   final data = buildTaskRowData(
     context,
     task: task,
     tileCapabilities: tileCapabilities,
-    overrideDeadlineDateLabel: _compactDueLabel(
-      context,
-      task: task,
-      today: todayDate,
-    ),
+    overrideStartDateLabel: labels.startLabel,
+    overrideDeadlineDateLabel: labels.deadlineLabel,
     overrideIsOverdue: _isOverdue(task, todayDate),
     overrideIsDueToday: _isDueToday(task, todayDate),
   );
@@ -958,7 +1018,9 @@ TasklyRowSpec _buildTaskRowSpec(
     depth: depthOffset,
     style: selectionMode
         ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
-        : const TasklyTaskRowStyle.compact(),
+        : (useCompactDensity
+              ? const TasklyTaskRowStyle.compact()
+              : const TasklyTaskRowStyle.standard()),
     actions: TasklyTaskRowActions(
       onTap: () {
         if (selection.shouldInterceptTapAsSelection()) {
@@ -1028,17 +1090,33 @@ class _MyDaySummaryStrip extends StatelessWidget {
   }
 }
 
-String? _compactDueLabel(
+({String? startLabel, String? deadlineLabel}) _compactDateLabels(
   BuildContext context, {
   required Task task,
   required DateTime today,
 }) {
   final deadline = task.occurrence?.deadline ?? task.deadlineDate;
   final dateOnlyDeadline = dateOnlyOrNull(deadline);
-  if (dateOnlyDeadline == null) return null;
-  if (dateOnlyDeadline.isBefore(today)) return 'Overdue';
-  if (dateOnlyDeadline.isAtSameMomentAs(today)) return 'Due today';
-  return MaterialLocalizations.of(context).formatMediumDate(deadline!);
+  String? deadlineLabel;
+  if (dateOnlyDeadline != null) {
+    if (dateOnlyDeadline.isBefore(today)) {
+      deadlineLabel = 'Overdue';
+    } else if (dateOnlyDeadline.isAtSameMomentAs(today)) {
+      deadlineLabel = 'Due today';
+    } else {
+      deadlineLabel = MaterialLocalizations.of(context).formatMediumDate(
+        deadline!,
+      );
+    }
+  }
+
+  final start = task.occurrence?.date ?? task.startDate;
+  final startDay = dateOnlyOrNull(start);
+  final startLabel = startDay == null || startDay.isBefore(today)
+      ? null
+      : MaterialLocalizations.of(context).formatMediumDate(start!);
+
+  return (startLabel: startLabel, deadlineLabel: deadlineLabel);
 }
 
 bool _isOverdue(Task task, DateTime today) {

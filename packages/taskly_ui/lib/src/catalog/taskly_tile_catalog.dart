@@ -180,6 +180,91 @@ class TasklyTileCatalog extends StatelessWidget {
         title: 'Routines',
         trailingLabel: 'Rows',
       ),
+      TasklyRowSpec.header(
+        key: 'catalog-routines-compact',
+        title: 'Routine \u00b7 Compact',
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-compact-flex',
+        data: TasklyRoutineRowData(
+          id: 'r-compact-1',
+          title: 'Mobility flow',
+          targetLabel: '3x/week',
+          remainingLabel: '2 left',
+          windowLabel: '4 days left',
+          valueChip: valueHealth,
+          progress: const TasklyRoutineProgressData(
+            completedCount: 1,
+            targetCount: 3,
+            windowLabel: '4 days left',
+          ),
+          labels: const TasklyRoutineRowLabels(
+            primaryActionLabel: 'Log today',
+          ),
+        ),
+        style: const TasklyRoutineRowStyle.compact(),
+        actions: _routineActions,
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-compact-scheduled',
+        data: TasklyRoutineRowData(
+          id: 'r-compact-2',
+          title: 'Morning routine',
+          targetLabel: 'Scheduled',
+          remainingLabel: '2 left',
+          windowLabel: 'Mon-Sun',
+          valueChip: valueKnowledge,
+          progress: const TasklyRoutineProgressData(
+            completedCount: 2,
+            targetCount: 4,
+            windowLabel: 'Mon-Sun',
+          ),
+          scheduleRow: const TasklyRoutineScheduleRowData(
+            days: [
+              TasklyRoutineScheduleDay(
+                label: 'M',
+                isToday: false,
+                state: TasklyRoutineScheduleDayState.missedScheduled,
+              ),
+              TasklyRoutineScheduleDay(
+                label: 'T',
+                isToday: false,
+                state: TasklyRoutineScheduleDayState.none,
+              ),
+              TasklyRoutineScheduleDay(
+                label: 'W',
+                isToday: true,
+                state: TasklyRoutineScheduleDayState.loggedScheduled,
+              ),
+              TasklyRoutineScheduleDay(
+                label: 'T',
+                isToday: false,
+                state: TasklyRoutineScheduleDayState.loggedUnscheduled,
+              ),
+              TasklyRoutineScheduleDay(
+                label: 'F',
+                isToday: false,
+                state: TasklyRoutineScheduleDayState.scheduled,
+              ),
+              TasklyRoutineScheduleDay(
+                label: 'S',
+                isToday: false,
+                state: TasklyRoutineScheduleDayState.none,
+              ),
+              TasklyRoutineScheduleDay(
+                label: 'S',
+                isToday: false,
+                state: TasklyRoutineScheduleDayState.scheduled,
+              ),
+            ],
+          ),
+          labels: const TasklyRoutineRowLabels(
+            primaryActionLabel: 'Log today',
+          ),
+        ),
+        style: const TasklyRoutineRowStyle.compact(),
+        actions: _routineActions,
+      ),
       TasklyRowSpec.routine(
         key: 'catalog-routine-standard',
         data: TasklyRoutineRowData(
@@ -282,6 +367,11 @@ class TasklyTileCatalog extends StatelessWidget {
           remainingLabel: '2 left',
           windowLabel: '4 days left',
           valueChip: valueHealth,
+          progress: const TasklyRoutineProgressData(
+            completedCount: 1,
+            targetCount: 3,
+            windowLabel: '4 days left',
+          ),
           selected: true,
           labels: const TasklyRoutineRowLabels(
             selectionTooltipLabel: 'Add',
@@ -300,6 +390,11 @@ class TasklyTileCatalog extends StatelessWidget {
           remainingLabel: '1 left',
           windowLabel: '2 days left',
           valueChip: valueKnowledge,
+          progress: const TasklyRoutineProgressData(
+            completedCount: 0,
+            targetCount: 1,
+            windowLabel: '2 days left',
+          ),
           selected: false,
           labels: const TasklyRoutineRowLabels(
             selectionTooltipLabel: 'Add',
@@ -352,6 +447,26 @@ class TasklyTileCatalog extends StatelessWidget {
           dueSoonCount: 1,
         ),
         preset: const TasklyProjectRowPreset.standard(),
+        actions: _projectActions,
+      ),
+      TasklyRowSpec.header(
+        key: 'catalog-projects-compact',
+        title: 'Project \u00b7 Compact',
+      ),
+      TasklyRowSpec.project(
+        key: 'catalog-project-compact',
+        data: _projectData(
+          id: 'p-compact-1',
+          title: 'Client launch prep',
+          meta: TasklyEntityMetaData(
+            startDateLabel: 'Sep 20',
+          ),
+          leadingChip: valueCareer,
+          taskCount: 8,
+          completedTaskCount: 3,
+          dueSoonCount: 1,
+        ),
+        preset: const TasklyProjectRowPreset.compact(),
         actions: _projectActions,
       ),
       TasklyRowSpec.header(

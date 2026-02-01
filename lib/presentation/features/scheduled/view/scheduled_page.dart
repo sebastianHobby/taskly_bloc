@@ -19,10 +19,16 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -33,6 +39,10 @@ class ScheduledPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompactScreen = Breakpoints.isCompact(
+      MediaQuery.sizeOf(context).width,
+    );
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -51,6 +61,15 @@ class ScheduledPage extends StatelessWidget {
             demoDataProvider: context.read<DemoDataProvider>(),
             scope: scope,
           ),
+        ),
+        BlocProvider(
+          create: (context) => DisplayDensityBloc(
+            settingsRepository: context.read<SettingsRepositoryContract>(),
+            pageKey: PageKey.scheduled,
+            defaultDensity: isCompactScreen
+                ? DisplayDensity.compact
+                : DisplayDensity.standard,
+          )..add(const DisplayDensityStarted()),
         ),
         BlocProvider(create: (_) => SelectionBloc()),
       ],
@@ -299,6 +318,20 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                       icon: Icons.calendar_month_rounded,
                       onPressed: null,
                     ),
+                    BlocBuilder<DisplayDensityBloc, DisplayDensityState>(
+                      builder: (context, densityState) {
+                        final isCompact =
+                            densityState.density == DisplayDensity.compact;
+                        return _CircleIconButton(
+                          icon: isCompact
+                              ? Icons.view_agenda_rounded
+                              : Icons.view_week_rounded,
+                          onPressed: () => context
+                              .read<DisplayDensityBloc>()
+                              .add(const DisplayDensityToggled()),
+                        );
+                      },
+                    ),
                     TasklyOverflowMenuButton<_ScheduledMenuAction>(
                       tooltip: 'More',
                       icon: Icons.more_vert,
@@ -366,6 +399,20 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                     _CircleIconButton(
                       icon: Icons.calendar_month_rounded,
                       onPressed: null,
+                    ),
+                    BlocBuilder<DisplayDensityBloc, DisplayDensityState>(
+                      builder: (context, densityState) {
+                        final isCompact =
+                            densityState.density == DisplayDensity.compact;
+                        return _CircleIconButton(
+                          icon: isCompact
+                              ? Icons.view_agenda_rounded
+                              : Icons.view_week_rounded,
+                          onPressed: () => context
+                              .read<DisplayDensityBloc>()
+                              .add(const DisplayDensityToggled()),
+                        );
+                      },
                     ),
                     TasklyOverflowMenuButton<_ScheduledMenuAction>(
                       tooltip: 'More',
@@ -453,6 +500,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
       state.today.year,
       state.today.month,
       state.today.day,
+    );
+    final density = context.select(
+      (DisplayDensityBloc bloc) => bloc.state.density,
     );
 
     final overdueOffset = state.overdue.isEmpty ? 0 : 1;
@@ -554,6 +604,8 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 context,
                 o,
                 selectionState: selectionState,
+                density: density,
+                todayDate: today,
               ),
             )
             .whereType<TasklyRowSpec>()
@@ -582,6 +634,20 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                           await _pickDateAndJump(
                             today: today,
                             initialDay: _lastVisibleDay ?? today,
+                          );
+                        },
+                      ),
+                      BlocBuilder<DisplayDensityBloc, DisplayDensityState>(
+                        builder: (context, densityState) {
+                          final isCompact =
+                              densityState.density == DisplayDensity.compact;
+                          return _CircleIconButton(
+                            icon: isCompact
+                                ? Icons.view_agenda_rounded
+                                : Icons.view_week_rounded,
+                            onPressed: () => context
+                                .read<DisplayDensityBloc>()
+                                .add(const DisplayDensityToggled()),
                           );
                         },
                       ),
@@ -720,6 +786,8 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                             context,
                             o,
                             selectionState: selectionState,
+                            density: density,
+                            todayDate: today,
                           ),
                         )
                         .whereType<TasklyRowSpec>()
@@ -804,10 +872,53 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     return false;
   }
 
+  static ({String? startLabel, String? deadlineLabel}) _compactTaskDateLabels(
+    BuildContext context, {
+    required Task task,
+    required DateTime today,
+  }) {
+    final deadline = task.occurrence?.deadline ?? task.deadlineDate;
+    final dateOnlyDeadline = dateOnlyOrNull(deadline);
+    String? deadlineLabel;
+    if (dateOnlyDeadline != null) {
+      if (dateOnlyDeadline.isBefore(today)) {
+        deadlineLabel = 'Overdue';
+      } else if (dateOnlyDeadline.isAtSameMomentAs(today)) {
+        deadlineLabel = 'Due today';
+      } else {
+        deadlineLabel = MaterialLocalizations.of(context).formatMediumDate(
+          deadline!,
+        );
+      }
+    }
+
+    final start = task.occurrence?.date ?? task.startDate;
+    final startDay = dateOnlyOrNull(start);
+    final startLabel = startDay == null || startDay.isBefore(today)
+        ? null
+        : MaterialLocalizations.of(context).formatMediumDate(start!);
+
+    return (startLabel: startLabel, deadlineLabel: deadlineLabel);
+  }
+
+  static bool _isTaskOverdue(Task task, DateTime today) {
+    final deadline = task.occurrence?.deadline ?? task.deadlineDate;
+    if (deadline == null) return false;
+    return dateOnly(deadline).isBefore(today);
+  }
+
+  static bool _isTaskDueToday(Task task, DateTime today) {
+    final deadline = task.occurrence?.deadline ?? task.deadlineDate;
+    if (deadline == null) return false;
+    return dateOnly(deadline).isAtSameMomentAs(today);
+  }
+
   static TasklyRowSpec? _buildOccurrenceRow(
     BuildContext context,
     ScheduledOccurrence occurrence, {
     required SelectionState selectionState,
+    required DisplayDensity density,
+    required DateTime todayDate,
   }) {
     final selection = context.read<SelectionBloc>();
 
@@ -823,11 +934,18 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         task: task,
         tileCapabilities: tileCapabilities,
       );
+      final compactLabels = density == DisplayDensity.compact
+          ? _compactTaskDateLabels(context, task: task, today: todayDate)
+          : null;
 
       final data = buildTaskRowData(
         context,
         task: task,
         tileCapabilities: tileCapabilities,
+        overrideStartDateLabel: compactLabels?.startLabel,
+        overrideDeadlineDateLabel: compactLabels?.deadlineLabel,
+        overrideIsOverdue: _isTaskOverdue(task, todayDate),
+        overrideIsDueToday: _isTaskDueToday(task, todayDate),
       );
 
       final openEditor = buildTaskOpenEditorHandler(context, task: task);
@@ -838,7 +956,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         data: data,
         style: selectionState.isSelectionMode
             ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
-            : const TasklyTaskRowStyle.standard(),
+            : (density == DisplayDensity.compact
+                  ? const TasklyTaskRowStyle.compact()
+                  : const TasklyTaskRowStyle.standard()),
         actions: TasklyTaskRowActions(
           onTap: () {
             if (selection.shouldInterceptTapAsSelection()) {
@@ -878,7 +998,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         data: data,
         preset: selectionState.isSelectionMode
             ? TasklyProjectRowPreset.bulkSelection(selected: isSelected)
-            : const TasklyProjectRowPreset.standard(),
+            : (density == DisplayDensity.compact
+                  ? const TasklyProjectRowPreset.compact()
+                  : const TasklyProjectRowPreset.standard()),
         actions: TasklyProjectRowActions(
           onTap: () {
             if (selection.shouldInterceptTapAsSelection()) {

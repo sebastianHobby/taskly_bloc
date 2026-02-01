@@ -1,5 +1,6 @@
 import 'package:taskly_domain/src/settings/settings.dart';
 import 'package:taskly_domain/src/preferences/model/page_key.dart';
+import 'package:taskly_domain/src/preferences/model/display_preferences.dart';
 import 'package:taskly_domain/src/preferences/model/sort_preferences.dart';
 
 /// Type-safe key for accessing settings.
@@ -27,6 +28,10 @@ sealed class SettingsKey<T> {
   /// Sort preferences for a specific page.
   static SettingsKey<SortPreferences?> pageSort(PageKey page) =>
       _KeyedKey<SortPreferences?>('pageSort', page.key);
+
+  /// Display preferences (row density) for a specific page.
+  static SettingsKey<DisplayPreferences?> pageDisplay(PageKey page) =>
+      _KeyedKey<DisplayPreferences?>('pageDisplay', page.key);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Aggregate keys

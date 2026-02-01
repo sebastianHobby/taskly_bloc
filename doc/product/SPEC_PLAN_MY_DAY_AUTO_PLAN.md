@@ -154,6 +154,21 @@ in Plan My Day to support bulk actions, but list items themselves are compact.
 - CTA (always visible):
   - No plan: primary "Build today's plan"
   - Plan exists: secondary/ghost "Edit today's plan"
+- Row density toggle (compact/standard) in the app bar.
+
+## Row density toggles (global)
+
+- User-adjustable on:
+  - My Day
+  - Scheduled
+  - Projects
+- Not user-adjustable on:
+  - Plan My Day
+  - Values
+- Persist per screen.
+- Default density:
+  - Compact on mobile widths
+  - Standard on larger screens
 
 ### Empty state logic
 
@@ -175,6 +190,9 @@ If no tasks exist:
 - Value icon appears before the title to balance the add/check affordance.
 - Uses add/check icon (no checkbox).
 - Swipe to snooze remains available.
+- Dates:
+  - Flag icon before deadline.
+  - Calendar icon before start/planned (only when no deadline).
 
 ### My Day task row (compact, single line)
 
@@ -185,17 +203,19 @@ If no tasks exist:
 - Actions:
   - My Day: completion toggle only (no trailing action slot)
 
-### Routine row (two lines)
+### Routine rows
 
-Line 1:
-- Routine icon (repeat/nav icon) on left
-- Name (1 line)
-- Value icon only (no label)
-- Optional subtle label: "Scheduled" or "Flexible"
+Compact / Plan-pick:
+- Single-line title row with value icon + progress text (e.g., "1/3 · 4 days left").
+- Scheduled routines add a second line of day circles (Mon–Sun).
 
-Line 2:
-- Progress text: "1/3 this week" or "2/4 this month"
-- Tiny progress bar (compact)
+Standard:
+- Title line with value icon.
+- Progress row (bar + counts) for flexible and scheduled routines.
+- Scheduled routines show a second line of day circles.
+
+Notes:
+- Selection mode hides the primary "Log today" action and shows selection.
 
 Notes:
 - If behind, meta line may switch to "Catch-up day".

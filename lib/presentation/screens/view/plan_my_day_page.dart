@@ -848,11 +848,14 @@ List<TasklyRowSpec> _buildTaskRows(
       .map((task) {
         final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
         final isSelected = selectedTaskIds.contains(task.id);
+        final labels = _compactDateLabels(context, task: task, today: today);
 
         final data = buildTaskRowData(
           context,
           task: task,
           tileCapabilities: tileCapabilities,
+          overrideStartDateLabel: labels.startLabel,
+          overrideDeadlineDateLabel: labels.deadlineLabel,
           overrideIsOverdue: _isOverdue(task, today),
           overrideIsDueToday: _isDueToday(task, today),
         );
@@ -902,12 +905,13 @@ List<TasklyRowSpec> _buildSwapRows(
   return tasks
       .map((task) {
         final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
-        final dueLabel = _compactDueLabel(context, task: task, today: today);
+        final labels = _compactDateLabels(context, task: task, today: today);
         final data = buildTaskRowData(
           context,
           task: task,
           tileCapabilities: tileCapabilities,
-          overrideDeadlineDateLabel: dueLabel,
+          overrideStartDateLabel: labels.startLabel,
+          overrideDeadlineDateLabel: labels.deadlineLabel,
           overrideIsOverdue: _isOverdue(task, today),
           overrideIsDueToday: _isDueToday(task, today),
         );
@@ -943,11 +947,9 @@ TasklyRowSpec _buildRoutineRow(
     snapshot: item.snapshot,
     selected: item.selected,
     completed: item.completedToday,
-    showProgress:
-        routine.routineType == RoutineType.weeklyFlexible ||
-        routine.routineType == RoutineType.monthlyFlexible,
+    showProgress: true,
     forceProgress: true,
-    showScheduleRow: false,
+    showScheduleRow: routine.routineType == RoutineType.weeklyFixed,
     dayKeyUtc: data.dayKeyUtc,
     completionsInPeriod: item.completionsInPeriod,
     labels: labels,
@@ -971,17 +973,33 @@ TasklyRowSpec _buildRoutineRow(
   );
 }
 
-String? _compactDueLabel(
+({String? startLabel, String? deadlineLabel}) _compactDateLabels(
   BuildContext context, {
   required Task task,
   required DateTime today,
 }) {
   final deadline = task.occurrence?.deadline ?? task.deadlineDate;
   final dateOnlyDeadline = dateOnlyOrNull(deadline);
-  if (dateOnlyDeadline == null) return null;
-  if (dateOnlyDeadline.isBefore(today)) return 'Overdue';
-  if (dateOnlyDeadline.isAtSameMomentAs(today)) return 'Due today';
-  return MaterialLocalizations.of(context).formatMediumDate(deadline!);
+  String? deadlineLabel;
+  if (dateOnlyDeadline != null) {
+    if (dateOnlyDeadline.isBefore(today)) {
+      deadlineLabel = 'Overdue';
+    } else if (dateOnlyDeadline.isAtSameMomentAs(today)) {
+      deadlineLabel = 'Due today';
+    } else {
+      deadlineLabel = MaterialLocalizations.of(context).formatMediumDate(
+        deadline!,
+      );
+    }
+  }
+
+  final start = task.occurrence?.date ?? task.startDate;
+  final startDay = dateOnlyOrNull(start);
+  final startLabel = startDay == null || startDay.isBefore(today)
+      ? null
+      : MaterialLocalizations.of(context).formatMediumDate(start!);
+
+  return (startLabel: startLabel, deadlineLabel: deadlineLabel);
 }
 
 bool _isOverdue(Task task, DateTime today) {

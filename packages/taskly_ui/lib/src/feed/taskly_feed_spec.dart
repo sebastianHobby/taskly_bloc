@@ -424,6 +424,7 @@ sealed class TasklyRoutineRowStyle {
 
   const factory TasklyRoutineRowStyle.standard() =
       TasklyRoutineRowStyleStandard;
+  const factory TasklyRoutineRowStyle.compact() = TasklyRoutineRowStyleCompact;
 
   const factory TasklyRoutineRowStyle.planPick() =
       TasklyRoutineRowStylePlanPick;
@@ -431,6 +432,10 @@ sealed class TasklyRoutineRowStyle {
 
 final class TasklyRoutineRowStyleStandard extends TasklyRoutineRowStyle {
   const TasklyRoutineRowStyleStandard();
+}
+
+final class TasklyRoutineRowStyleCompact extends TasklyRoutineRowStyle {
+  const TasklyRoutineRowStyleCompact();
 }
 
 final class TasklyRoutineRowStylePlanPick extends TasklyRoutineRowStyle {
@@ -462,6 +467,9 @@ sealed class TasklyProjectRowPreset {
   const factory TasklyProjectRowPreset.standard() =
       TasklyProjectRowPresetStandard;
 
+  const factory TasklyProjectRowPreset.compact() =
+      TasklyProjectRowPresetCompact;
+
   const factory TasklyProjectRowPreset.inbox() = TasklyProjectRowPresetInbox;
 
   const factory TasklyProjectRowPreset.bulkSelection({
@@ -471,6 +479,10 @@ sealed class TasklyProjectRowPreset {
 
 final class TasklyProjectRowPresetStandard extends TasklyProjectRowPreset {
   const TasklyProjectRowPresetStandard();
+}
+
+final class TasklyProjectRowPresetCompact extends TasklyProjectRowPreset {
+  const TasklyProjectRowPresetCompact();
 }
 
 final class TasklyProjectRowPresetInbox extends TasklyProjectRowPreset {

@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../../helpers/test_imports.dart';
+import '../../../mocks/fake_repositories.dart';
 import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/projects/services/projects_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/projects_page.dart';
@@ -17,6 +18,7 @@ import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart'
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
 class MockEditorLauncher extends Mock implements EditorLauncher {}
@@ -147,6 +149,9 @@ void main() {
               RepositoryProvider<EditorLauncher>.value(value: editorLauncher),
               RepositoryProvider<NowService>.value(
                 value: FakeNowService(DateTime(2025, 1, 15, 9)),
+              ),
+              RepositoryProvider<SettingsRepositoryContract>.value(
+                value: FakeSettingsRepository(),
               ),
             ],
             child: const ProjectsPage(),

@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/feature_mocks.dart';
 import '../../../mocks/presentation_mocks.dart';
+import '../../../mocks/fake_repositories.dart';
 import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
@@ -16,6 +17,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 
 class MockEditorLauncher extends Mock implements EditorLauncher {}
@@ -135,6 +137,9 @@ void main() {
               ),
               RepositoryProvider<DemoDataProvider>.value(
                 value: demoDataProvider,
+              ),
+              RepositoryProvider<SettingsRepositoryContract>.value(
+                value: FakeSettingsRepository(),
               ),
             ],
             child: const ScheduledPage(),

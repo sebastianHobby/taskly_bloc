@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
-import 'package:taskly_ui/src/models/value_chip_data.dart';
 import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 import 'package:taskly_ui/src/primitives/meta_badges.dart';
-import 'package:taskly_ui/src/primitives/value_tag.dart';
 
 /// Canonical Project tile aligned to Stitch mockups.
 ///
@@ -28,6 +26,7 @@ class ProjectEntityTile extends StatelessWidget {
   };
 
   bool get _isInbox => preset is TasklyProjectRowPresetInbox;
+  bool get _isCompact => preset is TasklyProjectRowPresetCompact;
 
   double? get _progress {
     final total = model.taskCount;
@@ -48,11 +47,35 @@ class ProjectEntityTile extends StatelessWidget {
         actions.onLongPress == null &&
         actions.onToggleSelected == null;
 
-    final padding = tokens.projectPadding;
+    final padding = _isCompact
+        ? tokens.projectPadding.copyWith(
+            top: tokens.spaceSm2,
+            bottom: tokens.spaceSm2,
+          )
+        : tokens.projectPadding;
 
     final pinnedPrefix = model.pinned ? const _PinnedGlyph() : null;
-
     final Widget? titlePrefix = pinnedPrefix;
+
+    final valueChip = model.leadingChip;
+    final showValueIcon = valueChip != null;
+
+    final startLabel = model.meta.startDateLabel?.trim() ?? '';
+    final deadlineLabel = model.meta.deadlineDateLabel?.trim() ?? '';
+    final hasDeadline = deadlineLabel.isNotEmpty;
+    final hasStart = !model.meta.showOnlyDeadlineDate && startLabel.isNotEmpty;
+    final compactLabel = hasDeadline
+        ? (model.meta.isOverdue
+              ? 'Overdue'
+              : (model.meta.isDueToday ? 'Due today' : deadlineLabel))
+        : (hasStart ? startLabel : '');
+    final compactIcon = hasDeadline
+        ? Icons.flag_rounded
+        : (hasStart ? Icons.calendar_today_rounded : null);
+    final compactLabelColor =
+        hasDeadline && (model.meta.isOverdue || model.meta.isDueToday)
+        ? scheme.error
+        : scheme.onSurfaceVariant;
 
     final baseOpacity = model.deemphasized ? 0.6 : 1.0;
     final completedOpacity = model.completed ? 0.75 : 1.0;
@@ -63,6 +86,14 @@ class ProjectEntityTile extends StatelessWidget {
         actions.onToggleSelected ?? actions.onTap,
       _ => actions.onTap,
     };
+
+    final titleStyle =
+        (isReadOnlyHeader
+            ? theme.textTheme.headlineSmall
+            : (_isCompact
+                  ? theme.textTheme.titleSmall
+                  : theme.textTheme.titleMedium)) ??
+        const TextStyle();
 
     final card = DecoratedBox(
       decoration: BoxDecoration(
@@ -84,118 +115,135 @@ class ProjectEntityTile extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             onLongPress: actions.onLongPress,
-            child: Stack(
-              children: [
-                Padding(
-                  padding: padding.copyWith(
-                    left: padding.left,
-                  ),
-                  child: Column(
+            child: Padding(
+              padding: padding.copyWith(
+                left: padding.left,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_isInbox) ...[
-                            _InboxGlyph(tokens: tokens),
-                            SizedBox(width: tokens.spaceMd),
-                          ] else ...[
-                            _ProgressRing(
-                              progress: _progress ?? 0.0,
-                              tokens: tokens,
-                            ),
-                            SizedBox(width: tokens.spaceMd),
-                          ],
-                          Expanded(
-                            child: Column(
+                      if (_isInbox) ...[
+                        _InboxGlyph(tokens: tokens),
+                        SizedBox(width: tokens.spaceMd),
+                      ] else ...[
+                        _ProjectGlyph(tokens: tokens),
+                        SizedBox(width: tokens.spaceMd),
+                      ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (titlePrefix != null) ...[
-                                      Padding(
-                                        padding: EdgeInsets.only(
-                                          top: tokens.spaceXxs,
-                                        ),
-                                        child: titlePrefix,
+                                if (titlePrefix != null) ...[
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      top: tokens.spaceXxs,
+                                    ),
+                                    child: titlePrefix,
+                                  ),
+                                  SizedBox(width: tokens.spaceXs2),
+                                ],
+                                Expanded(
+                                  child: Text(
+                                    model.title,
+                                    maxLines: _isCompact ? 1 : 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: titleStyle.copyWith(
+                                      color: scheme.onSurface,
+                                      decoration: model.completed
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                      decorationColor: scheme.onSurface
+                                          .withValues(alpha: 0.55),
+                                    ),
+                                  ),
+                                ),
+                                if (_isCompact &&
+                                    compactLabel.isNotEmpty &&
+                                    compactIcon != null) ...[
+                                  SizedBox(width: tokens.spaceSm),
+                                  Icon(
+                                    compactIcon,
+                                    size: tokens.spaceMd2,
+                                    color: compactLabelColor,
+                                  ),
+                                  SizedBox(width: tokens.spaceXxs2),
+                                  Text(
+                                    compactLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: compactLabelColor,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                                if (showValueIcon) ...[
+                                  SizedBox(width: tokens.spaceSm),
+                                  Icon(
+                                    valueChip.icon,
+                                    size: tokens.spaceMd2,
+                                    color: valueChip.color,
+                                  ),
+                                ],
+                                if (_selected != null) ...[
+                                  SizedBox(width: tokens.spaceXs2),
+                                  IconButton(
+                                    tooltip: (_selected ?? false)
+                                        ? 'Deselect'
+                                        : 'Select',
+                                    onPressed: actions.onToggleSelected,
+                                    icon: Icon(
+                                      (_selected ?? false)
+                                          ? Icons.check_circle_rounded
+                                          : Icons
+                                                .radio_button_unchecked_rounded,
+                                      color: (_selected ?? false)
+                                          ? scheme.primary
+                                          : scheme.onSurfaceVariant,
+                                    ),
+                                    style: IconButton.styleFrom(
+                                      minimumSize: Size.square(
+                                        tokens.minTapTargetSize,
                                       ),
-                                      SizedBox(width: tokens.spaceXs2),
-                                    ],
-                                    Expanded(
-                                      child: Text(
-                                        model.title,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style:
-                                            (isReadOnlyHeader
-                                                    ? theme
-                                                          .textTheme
-                                                          .headlineSmall
-                                                    : theme
-                                                          .textTheme
-                                                          .titleMedium)
-                                                ?.copyWith(
-                                                  color: scheme.onSurface,
-                                                  decoration: model.completed
-                                                      ? TextDecoration
-                                                            .lineThrough
-                                                      : null,
-                                                  decorationColor: scheme
-                                                      .onSurface
-                                                      .withValues(
-                                                        alpha: 0.55,
-                                                      ),
-                                                ),
+                                      padding: EdgeInsets.all(
+                                        tokens.spaceSm,
                                       ),
                                     ),
-                                    if (_selected != null) ...[
-                                      SizedBox(width: tokens.spaceXs2),
-                                      IconButton(
-                                        tooltip: (_selected ?? false)
-                                            ? 'Deselect'
-                                            : 'Select',
-                                        onPressed: actions.onToggleSelected,
-                                        icon: Icon(
-                                          (_selected ?? false)
-                                              ? Icons.check_circle_rounded
-                                              : Icons
-                                                    .radio_button_unchecked_rounded,
-                                          color: (_selected ?? false)
-                                              ? scheme.primary
-                                              : scheme.onSurfaceVariant,
-                                        ),
-                                        style: IconButton.styleFrom(
-                                          minimumSize: Size.square(
-                                            tokens.minTapTargetSize,
-                                          ),
-                                          padding: EdgeInsets.all(
-                                            tokens.spaceSm,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                if (_hasMetaRow(model)) ...[
-                                  SizedBox(height: tokens.spaceXs2),
-                                  _ProjectMetaRow(
-                                    primary: model.leadingChip,
-                                    dueLabel: model.meta.deadlineDateLabel,
-                                    isOverdue: model.meta.isOverdue,
-                                    isDueToday: model.meta.isDueToday,
-                                    priority: model.meta.priority,
                                   ),
                                 ],
                               ],
                             ),
-                          ),
-                        ],
+                            if (!_isCompact && _hasMetaRow(model)) ...[
+                              SizedBox(height: tokens.spaceXs2),
+                              _ProjectMetaRow(
+                                startLabel: model.meta.startDateLabel,
+                                deadlineLabel: model.meta.deadlineDateLabel,
+                                showOnlyDeadline:
+                                    model.meta.showOnlyDeadlineDate,
+                                isOverdue: model.meta.isOverdue,
+                                isDueToday: model.meta.isDueToday,
+                                priority: model.meta.priority,
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                  if (_showProgressBar(model)) ...[
+                    SizedBox(height: tokens.spaceSm),
+                    _ProjectProgressBar(
+                      progress: _progress ?? 0.0,
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
@@ -212,15 +260,17 @@ class ProjectEntityTile extends StatelessWidget {
 
 class _ProjectMetaRow extends StatelessWidget {
   const _ProjectMetaRow({
-    required this.primary,
-    required this.dueLabel,
+    required this.startLabel,
+    required this.deadlineLabel,
+    required this.showOnlyDeadline,
     required this.isOverdue,
     required this.isDueToday,
     required this.priority,
   });
 
-  final ValueChipData? primary;
-  final String? dueLabel;
+  final String? startLabel;
+  final String? deadlineLabel;
+  final bool showOnlyDeadline;
   final bool isOverdue;
   final bool isDueToday;
   final int? priority;
@@ -238,31 +288,34 @@ class _ProjectMetaRow extends StatelessWidget {
 
     final children = <Widget>[];
 
-    if (primary != null) {
-      children.add(
-        _ValueInlineLabel(
-          data: primary!,
-          maxLabelChars: 18,
-          textColor: scheme.onSurfaceVariant,
-        ),
-      );
-    }
-
     if (priority != null) {
       children.add(PriorityPill(priority: priority!));
     }
 
-    final label = dueLabel?.trim();
-    final showLabel = label != null && label.isNotEmpty;
-    final showDue = showLabel;
-    if (showDue) {
+    final start = showOnlyDeadline ? '' : (startLabel?.trim() ?? '');
+    final deadline = deadlineLabel?.trim() ?? '';
+    final showStart = start.isNotEmpty;
+    final showDeadline = deadline.isNotEmpty;
+
+    if (showStart) {
+      children.add(
+        MetaIconLabel(
+          icon: Icons.calendar_today_rounded,
+          label: start,
+          color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+          textStyle: textStyle,
+        ),
+      );
+    }
+
+    if (showDeadline) {
       final dueColor = (isOverdue || isDueToday)
           ? scheme.error
           : scheme.onSurfaceVariant;
       children.add(
         MetaIconLabel(
           icon: Icons.flag_rounded,
-          label: label,
+          label: deadline,
           color: dueColor,
           textStyle: textStyle,
         ),
@@ -279,92 +332,81 @@ class _ProjectMetaRow extends StatelessWidget {
 }
 
 bool _hasMetaRow(TasklyProjectRowData model) {
-  final hasPrimary = model.leadingChip != null;
+  final startLabel = model.meta.startDateLabel?.trim();
   final deadlineLabel = model.meta.deadlineDateLabel?.trim();
   final hasDeadline = deadlineLabel != null && deadlineLabel.isNotEmpty;
+  final hasStart =
+      !model.meta.showOnlyDeadlineDate &&
+      startLabel != null &&
+      startLabel.isNotEmpty;
   final hasPriority = model.meta.priority != null;
-  return hasPrimary || hasDeadline || hasPriority;
+  return hasStart || hasDeadline || hasPriority;
 }
 
-class _ValueInlineLabel extends StatelessWidget {
-  const _ValueInlineLabel({
-    required this.data,
-    required this.maxLabelChars,
-    required this.textColor,
-  });
+bool _showProgressBar(TasklyProjectRowData model) {
+  final total = model.taskCount ?? 0;
+  return total > 0;
+}
 
-  final ValueChipData data;
-  final int maxLabelChars;
-  final Color textColor;
+class _ProjectProgressBar extends StatelessWidget {
+  const _ProjectProgressBar({required this.progress});
+
+  final double progress;
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
-    final label = ValueTagLayout.formatLabel(
-      data.label,
-      maxChars: maxLabelChars,
-    );
-    if (label == null || label.isEmpty) return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(data.icon, size: tokens.spaceMd2, color: data.color),
-        SizedBox(width: tokens.spaceXxs2),
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: (Theme.of(context).textTheme.labelSmall ?? const TextStyle())
-              .copyWith(color: textColor, fontWeight: FontWeight.w500),
+    final trackColor = scheme.surfaceContainerHighest.withValues(alpha: 0.9);
+    final barColor = scheme.primary;
+    final height = tokens.spaceXs2;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(tokens.radiusPill),
+      child: SizedBox(
+        height: height,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            DecoratedBox(decoration: BoxDecoration(color: trackColor)),
+            FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: progress.clamp(0.0, 1.0),
+              child: DecoratedBox(
+                decoration: BoxDecoration(color: barColor),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
 
-class _ProgressRing extends StatelessWidget {
-  const _ProgressRing({required this.progress, required this.tokens});
+class _ProjectGlyph extends StatelessWidget {
+  const _ProjectGlyph({required this.tokens});
 
-  final double progress;
   final TasklyTokens tokens;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final percent = (progress * 100).round();
+    final scheme = Theme.of(context).colorScheme;
 
-    return SizedBox(
-      width: tokens.progressRingSizeSmall,
-      height: tokens.progressRingSizeSmall,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          CircularProgressIndicator(
-            value: 1,
-            strokeWidth: tokens.progressRingStrokeSmall,
-            valueColor: AlwaysStoppedAnimation<Color>(
-              scheme.surfaceContainerHighest,
-            ),
-          ),
-          CircularProgressIndicator(
-            value: progress,
-            strokeWidth: tokens.progressRingStrokeSmall,
-            strokeCap: StrokeCap.round,
-            backgroundColor: scheme.surface.withValues(alpha: 0),
-            valueColor: AlwaysStoppedAnimation<Color>(
-              scheme.primary,
-            ),
-          ),
-          Text(
-            '$percent%',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+    return Container(
+      width: tokens.progressRingSize,
+      height: tokens.progressRingSize,
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Icon(
+        Icons.folder_rounded,
+        size: 20,
+        color: scheme.onSurfaceVariant,
       ),
     );
   }
