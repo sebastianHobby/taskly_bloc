@@ -51,7 +51,7 @@ List<GuidedTourStep> buildGuidedTourSteps() {
       id: 'my_day_overview',
       route: '/my-day',
       title: 'Your plan for today',
-      body: "My Day surfaces what matters and what's due.",
+      body: 'Your selected tasks and routines for today.',
       kind: GuidedTourStepKind.card,
     ),
     GuidedTourStep(
@@ -71,13 +71,13 @@ List<GuidedTourStep> buildGuidedTourSteps() {
       route: '/my-day',
       title: 'Time-sensitive tasks',
       body:
-          "Review overdue and due-today items and choose what you'll handle now.",
+          "Review overdue and due-today items, then decide what you'll handle now.",
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
         targetId: 'plan_my_day_triage',
         title: 'Time-sensitive tasks',
         body:
-            "Review overdue and due-today items and choose what you'll handle now.",
+            "Review overdue and due-today items, then decide what you'll handle now.",
       ),
     ),
     GuidedTourStep(
@@ -117,18 +117,6 @@ List<GuidedTourStep> buildGuidedTourSteps() {
       ),
     ),
     GuidedTourStep(
-      id: 'values_list',
-      route: '/values',
-      title: 'Define what matters',
-      body: 'Add a few values so suggestions can keep what matters in focus.',
-      kind: GuidedTourStepKind.coachmark,
-      coachmark: GuidedTourCoachmark(
-        targetId: 'values_list',
-        title: 'Define what matters',
-        body: 'Add a few values so suggestions can keep what matters in focus.',
-      ),
-    ),
-    GuidedTourStep(
       id: 'routines_scheduled_example',
       route: '/routines',
       title: 'Scheduled routines',
@@ -156,19 +144,19 @@ List<GuidedTourStep> buildGuidedTourSteps() {
       id: 'projects_overview',
       route: '/projects',
       title: 'Build your project list',
-      body: "Projects is the source for today's plan in My Day.",
+      body: 'Where you build your project list.',
       kind: GuidedTourStepKind.card,
     ),
     GuidedTourStep(
       id: 'projects_create_project',
       route: '/projects',
       title: 'Create a project',
-      body: 'Start a project so My Day can pull from it.',
+      body: "Start a project to organize what you're working on.",
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
         targetId: 'projects_create_project',
         title: 'Create a project',
-        body: 'Start a project so My Day can pull from it.',
+        body: "Start a project to organize what you're working on.",
       ),
     ),
     GuidedTourStep(
@@ -176,16 +164,18 @@ List<GuidedTourStep> buildGuidedTourSteps() {
       route: '/projects',
       title: 'Values-led suggestions',
       body:
-          'Set a value for each project. Taskly picks projects across your '
-          'values, then chooses tasks inside them to keep progress balanced. '
-          "You'll see those suggestions in Plan My Day.",
+          'Assign a value to each project. Taskly uses those values as the '
+          'foundation for suggestions.',
       kind: GuidedTourStepKind.card,
     ),
     GuidedTourStep(
       id: 'project_detail_suggestions',
       route: '/project/${DemoDataProvider.demoProjectGymId}/detail',
-      title: 'How tasks get suggested',
-      body: 'Taskly uses deadlines and priority to choose the next best tasks.',
+      title: 'How suggestions work',
+      body:
+          'Taskly balances suggestions using value priorities. If a value has '
+          'fewer tasks completed than expected for its value priority, it gets '
+          'more suggestions.',
       kind: GuidedTourStepKind.card,
     ),
     GuidedTourStep(
