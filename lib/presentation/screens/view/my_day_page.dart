@@ -17,6 +17,7 @@ import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dar
 import 'package:taskly_bloc/presentation/shared/widgets/app_loading_screen.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
@@ -49,8 +50,8 @@ import 'package:taskly_ui/taskly_ui_tokens.dart';
 enum _MyDayMode { execute, plan }
 
 enum _MyDayMenuAction {
-  showCompleted,
   selectMultiple,
+  settings,
 }
 
 class MyDayPage extends StatefulWidget {
@@ -63,6 +64,7 @@ class MyDayPage extends StatefulWidget {
 class _MyDayPageState extends State<MyDayPage> {
   _MyDayMode _mode = _MyDayMode.execute;
   bool _showCompleted = false;
+  _MyDayTaskSortOrder _sortOrder = _MyDayTaskSortOrder.defaultOrder;
 
   Future<void> _openNewTaskEditor(
     BuildContext context, {
@@ -119,6 +121,35 @@ class _MyDayPageState extends State<MyDayPage> {
 
   void _toggleShowCompleted() {
     setState(() => _showCompleted = !_showCompleted);
+  }
+
+  Future<void> _showFilterSheet(BuildContext context) async {
+    await showFilterSortSheet(
+      context: context,
+      sortGroups: [
+        FilterSortRadioGroup(
+          title: 'Sort',
+          options: [
+            for (final order in _MyDayTaskSortOrder.values)
+              FilterSortRadioOption(
+                value: order,
+                label: order.label,
+              ),
+          ],
+          selectedValue: _sortOrder,
+          onSelected: (value) => setState(
+            () => _sortOrder = value as _MyDayTaskSortOrder,
+          ),
+        ),
+      ],
+      toggles: [
+        FilterSortToggle(
+          title: 'Show completed',
+          value: _showCompleted,
+          onChanged: (_) => _toggleShowCompleted(),
+        ),
+      ],
+    );
   }
 
   @override
@@ -197,6 +228,7 @@ class _MyDayPageState extends State<MyDayPage> {
                       dayKeyUtc: dayKeyUtc,
                       onOpenPlan: () => _enterPlanMode(context),
                       showCompleted: _showCompleted,
+                      sortOrder: _sortOrder,
                     );
                   },
                 );
@@ -210,56 +242,33 @@ class _MyDayPageState extends State<MyDayPage> {
                       : AppBar(
                           toolbarHeight: 56,
                           actions: [
-                            BlocBuilder<
-                              DisplayDensityBloc,
-                              DisplayDensityState
-                            >(
-                              builder: (context, densityState) {
-                                final isCompact =
-                                    densityState.density ==
-                                    DisplayDensity.compact;
-                                return IconButton(
-                                  tooltip: 'Row density',
-                                  icon: Icon(
-                                    isCompact
-                                        ? Icons.view_agenda_rounded
-                                        : Icons.view_week_rounded,
-                                  ),
-                                  onPressed: () => context
-                                      .read<DisplayDensityBloc>()
-                                      .add(const DisplayDensityToggled()),
-                                );
-                              },
-                            ),
                             IconButton(
-                              tooltip: context.l10n.settingsTitle,
-                              icon: const Icon(Icons.settings_outlined),
-                              onPressed: () =>
-                                  Routing.toScreenKey(context, 'settings'),
+                              tooltip: 'Filter & sort',
+                              icon: const Icon(Icons.tune_rounded),
+                              onPressed: () => _showFilterSheet(context),
                             ),
                             TasklyOverflowMenuButton<_MyDayMenuAction>(
                               tooltip: 'More',
                               itemsBuilder: (context) => [
-                                CheckedPopupMenuItem(
-                                  value: _MyDayMenuAction.showCompleted,
-                                  checked: _showCompleted,
-                                  child: const TasklyMenuItemLabel(
-                                    'Show completed',
-                                  ),
-                                ),
                                 const PopupMenuItem(
                                   value: _MyDayMenuAction.selectMultiple,
                                   child: TasklyMenuItemLabel('Select multiple'),
                                 ),
+                                PopupMenuItem(
+                                  value: _MyDayMenuAction.settings,
+                                  child: TasklyMenuItemLabel(
+                                    context.l10n.settingsTitle,
+                                  ),
+                                ),
                               ],
                               onSelected: (action) {
                                 switch (action) {
-                                  case _MyDayMenuAction.showCompleted:
-                                    _toggleShowCompleted();
                                   case _MyDayMenuAction.selectMultiple:
                                     context
                                         .read<SelectionBloc>()
                                         .enterSelectionMode();
+                                  case _MyDayMenuAction.settings:
+                                    Routing.toScreenKey(context, 'settings');
                                 }
                               },
                             ),
@@ -294,12 +303,14 @@ class _MyDayLoadedBody extends StatelessWidget {
     required this.dayKeyUtc,
     required this.onOpenPlan,
     required this.showCompleted,
+    required this.sortOrder,
   });
 
   final DateTime today;
   final DateTime dayKeyUtc;
   final VoidCallback onOpenPlan;
   final bool showCompleted;
+  final _MyDayTaskSortOrder sortOrder;
 
   @override
   Widget build(BuildContext context) {
@@ -384,6 +395,7 @@ class _MyDayLoadedBody extends StatelessWidget {
                         showCompleted: showCompleted,
                         onOpenPlan: onOpenPlan,
                         density: density,
+                        sortOrder: sortOrder,
                       ),
                     ],
                   ),
@@ -565,6 +577,7 @@ class _MyDayTaskList extends StatefulWidget {
     required this.showCompleted,
     required this.onOpenPlan,
     required this.density,
+    required this.sortOrder,
   });
 
   final DateTime today;
@@ -574,6 +587,7 @@ class _MyDayTaskList extends StatefulWidget {
   final bool showCompleted;
   final VoidCallback onOpenPlan;
   final DisplayDensity density;
+  final _MyDayTaskSortOrder sortOrder;
 
   @override
   State<_MyDayTaskList> createState() => _MyDayTaskListState();
@@ -650,6 +664,7 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
       activeTaskEntriesCombined,
       todayDate: todayDate,
       density: widget.density,
+      sortOrder: widget.sortOrder,
     );
     final completedTaskRows = widget.showCompleted
         ? _buildTaskRows(
@@ -657,6 +672,7 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
             completedTaskEntriesCombined,
             todayDate: todayDate,
             density: widget.density,
+            sortOrder: widget.sortOrder,
           )
         : const <TasklyRowSpec>[];
 
@@ -694,11 +710,20 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
       );
     }
 
+    final hasActiveRows =
+        activeRoutineRows.isNotEmpty || activeTaskRows.isNotEmpty;
+    final hasCompletedRows =
+        completedRoutineRows.isNotEmpty || completedTaskRows.isNotEmpty;
+
     final rows = <TasklyRowSpec>[
-      ...routineRows,
-      if (routineRows.isNotEmpty && taskRows.isNotEmpty)
-        TasklyRowSpec.divider(key: 'myday-list-divider'),
-      ...taskRows,
+      ...activeRoutineRows,
+      if (activeRoutineRows.isNotEmpty && activeTaskRows.isNotEmpty)
+        TasklyRowSpec.divider(key: 'myday-list-divider-active'),
+      ...activeTaskRows,
+      if (hasActiveRows && hasCompletedRows)
+        TasklyRowSpec.divider(key: 'myday-list-divider-completed'),
+      ...completedRoutineRows,
+      ...completedTaskRows,
     ];
 
     return TasklyFeedRenderer.buildSection(
@@ -762,6 +787,7 @@ List<TasklyRowSpec> _buildTaskRows(
   List<_MyDayListEntry> entries, {
   required DateTime todayDate,
   required DisplayDensity density,
+  required _MyDayTaskSortOrder sortOrder,
 }) {
   final rows = <TasklyRowSpec>[];
 
@@ -774,11 +800,12 @@ List<TasklyRowSpec> _buildTaskRows(
     for (final entry in taskEntries)
       if (entry.item.task != null) entry.item.task!.id: entry,
   };
-  final sortedTasks = sortTasksByDeadlineThenStartThenPriorityThenName(
+  final sortedTasks = _sortMyDayTasks(
     taskEntries
         .map((entry) => entry.item.task)
         .whereType<Task>()
         .toList(growable: false),
+    order: sortOrder,
     today: todayDate,
   );
 
@@ -949,7 +976,6 @@ TasklyRowSpec _buildRoutineRow(
     completed: completed,
     highlightCompleted: false,
     showProgress: true,
-    forceProgress: true,
     showScheduleRow: routine.routineType == RoutineType.weeklyFixed,
     dayKeyUtc: dayKeyUtc,
     completionsInPeriod: completionsInPeriod,
@@ -1131,4 +1157,79 @@ bool _isDueToday(Task task, DateTime today) {
   if (deadline == null) return false;
   final day = dateOnly(deadline);
   return day.isAtSameMomentAs(today);
+}
+
+enum _MyDayTaskSortOrder {
+  defaultOrder,
+  recentlyUpdated,
+  alphabetical,
+  priority,
+  dueDate,
+}
+
+extension _MyDayTaskSortOrderLabels on _MyDayTaskSortOrder {
+  String get label {
+    return switch (this) {
+      _MyDayTaskSortOrder.defaultOrder => 'Default',
+      _MyDayTaskSortOrder.recentlyUpdated => 'Recently updated',
+      _MyDayTaskSortOrder.alphabetical => 'A–Z',
+      _MyDayTaskSortOrder.priority => 'Priority',
+      _MyDayTaskSortOrder.dueDate => 'Due date',
+    };
+  }
+}
+
+List<Task> _sortMyDayTasks(
+  List<Task> tasks, {
+  required _MyDayTaskSortOrder order,
+  required DateTime today,
+}) {
+  if (order == _MyDayTaskSortOrder.defaultOrder) {
+    return sortTasksByDeadlineThenStartThenPriorityThenName(
+      tasks,
+      today: today,
+    );
+  }
+
+  int byName(Task a, Task b) {
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  }
+
+  int byUpdated(Task a, Task b) {
+    final byUpdated = b.updatedAt.compareTo(a.updatedAt);
+    if (byUpdated != 0) return byUpdated;
+    return byName(a, b);
+  }
+
+  int byPriority(Task a, Task b) {
+    final aPriority = a.priority ?? 999;
+    final bPriority = b.priority ?? 999;
+    final byPriority = aPriority.compareTo(bPriority);
+    if (byPriority != 0) return byPriority;
+    return byName(a, b);
+  }
+
+  int byDueDate(Task a, Task b) {
+    final aDate = a.occurrence?.deadline ?? a.deadlineDate;
+    final bDate = b.occurrence?.deadline ?? b.deadlineDate;
+    if (aDate != null && bDate != null) {
+      final byDate = aDate.compareTo(bDate);
+      if (byDate != 0) return byDate;
+    } else if (aDate != null || bDate != null) {
+      return aDate != null ? -1 : 1;
+    }
+    return byName(a, b);
+  }
+
+  final sorted = tasks.toList(growable: false);
+  sorted.sort(
+    switch (order) {
+      _MyDayTaskSortOrder.recentlyUpdated => byUpdated,
+      _MyDayTaskSortOrder.alphabetical => byName,
+      _MyDayTaskSortOrder.priority => byPriority,
+      _MyDayTaskSortOrder.dueDate => byDueDate,
+      _MyDayTaskSortOrder.defaultOrder => byName,
+    },
+  );
+  return sorted;
 }

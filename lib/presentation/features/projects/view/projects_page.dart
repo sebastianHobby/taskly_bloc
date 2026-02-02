@@ -11,13 +11,13 @@ import 'package:taskly_bloc/presentation/features/scope_context/model/projects_s
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_domain/analytics.dart';
@@ -126,8 +126,8 @@ class _ProjectsViewState extends State<_ProjectsView> {
     );
   }
 
-  void _toggleShowCompleted() {
-    setState(() => _showCompleted = !_showCompleted);
+  void _toggleShowCompleted([bool? value]) {
+    setState(() => _showCompleted = value ?? !_showCompleted);
   }
 
   void _toggleValueFilter(String valueId) {
@@ -183,95 +183,73 @@ class _ProjectsViewState extends State<_ProjectsView> {
     );
     final counts = _countProjectsByValue(countRows);
     final hasScopedValue = scope is ProjectsValueScope;
-
-    await showModalBottomSheet<void>(
+    await showFilterSortSheet(
       context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              TasklyTokens.of(sheetContext).spaceLg,
-              TasklyTokens.of(sheetContext).spaceSm,
-              TasklyTokens.of(sheetContext).spaceLg,
-              TasklyTokens.of(sheetContext).spaceLg,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Filter & sort',
-                  style: Theme.of(sheetContext).textTheme.titleLarge,
-                ),
-                SizedBox(height: TasklyTokens.of(sheetContext).spaceSm),
-                Text(
-                  'Sort',
-                  style: Theme.of(sheetContext).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+      sortGroups: [
+        FilterSortRadioGroup(
+          title: 'Sort',
+          options: [
+            for (final order in ProjectsSortOrder.values)
+              FilterSortRadioOption(
+                value: order,
+                label: order.label,
+              ),
+          ],
+          selectedValue: _sortOrder,
+          onSelected: (value) {
+            if (value is! ProjectsSortOrder) return;
+            _updateSortOrder(value);
+          },
+        ),
+      ],
+      sections: [
+        FilterSortSection(
+          title: 'Values',
+          child: Builder(
+            builder: (sheetContext) {
+              if (hasScopedValue) {
+                return Text(
+                  'Value filters are disabled for scoped views.',
+                  style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
                   ),
-                ),
-                for (final order in ProjectsSortOrder.values)
-                  RadioListTile<ProjectsSortOrder>(
-                    value: order,
-                    groupValue: _sortOrder,
-                    title: Text(order.label),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      _updateSortOrder(value);
-                      Navigator.of(sheetContext).pop();
-                    },
+                );
+              }
+              return Column(
+                children: [
+                  _ValueFilterRow(
+                    label: 'All values',
+                    count: counts.total,
+                    selected: _selectedValueIds.isEmpty,
+                    icon: Icons.filter_list_rounded,
+                    iconColor: Theme.of(
+                      sheetContext,
+                    ).colorScheme.onSurfaceVariant,
+                    onTap: _clearValueFilters,
                   ),
-                SizedBox(height: TasklyTokens.of(sheetContext).spaceSm),
-                Text(
-                  'Values',
-                  style: Theme.of(sheetContext).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: TasklyTokens.of(sheetContext).spaceSm),
-                if (hasScopedValue)
-                  Text(
-                    'Value filters are disabled for scoped views.',
-                    style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(
-                        sheetContext,
-                      ).colorScheme.onSurfaceVariant,
+                  for (final value in values) ...[
+                    _ValueFilterRow(
+                      label: value.name,
+                      count: counts.byValueId[value.id],
+                      selected: _selectedValueIds.contains(value.id),
+                      icon: value.toChipData(sheetContext).icon,
+                      iconColor: value.toChipData(sheetContext).color,
+                      onTap: () => _toggleValueFilter(value.id),
                     ),
-                  )
-                else
-                  Wrap(
-                    spacing: TasklyTokens.of(sheetContext).spaceSm,
-                    runSpacing: TasklyTokens.of(sheetContext).spaceSm,
-                    children: [
-                      _ValueFilterChip(
-                        label: 'All values',
-                        count: counts.total,
-                        selected: _selectedValueIds.isEmpty,
-                        icon: Icons.filter_list_rounded,
-                        iconColor: Theme.of(
-                          sheetContext,
-                        ).colorScheme.onSurfaceVariant,
-                        onTap: _clearValueFilters,
-                      ),
-                      for (final value in values) ...[
-                        _ValueFilterChip(
-                          label: value.name,
-                          count: counts.byValueId[value.id],
-                          selected: _selectedValueIds.contains(value.id),
-                          icon: value.toChipData(sheetContext).icon,
-                          iconColor: value.toChipData(sheetContext).color,
-                          tintColor: value.toChipData(sheetContext).color,
-                          onTap: () => _toggleValueFilter(value.id),
-                        ),
-                      ],
-                    ],
-                  ),
-              ],
-            ),
+                  ],
+                ],
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
+      toggles: [
+        FilterSortToggle(
+          title: 'Show completed',
+          value: _showCompleted,
+          onChanged: _toggleShowCompleted,
+        ),
+      ],
     );
   }
 
@@ -368,86 +346,54 @@ class _ProjectsViewState extends State<_ProjectsView> {
                             },
                           )
                         : null,
-                    actions: TasklyAppBarActions.withAttentionBell(
-                      context,
-                      actions: [
+                    actions: [
+                      IconButton(
+                        tooltip: 'Filter & sort',
+                        icon: const Icon(Icons.tune_rounded),
+                        style: iconButtonStyle,
+                        onPressed: () {
+                          final state = context.read<ProjectsFeedBloc>().state;
+                          if (state is! ProjectsFeedLoaded) return;
+                          _showFilterSheet(
+                            values: state.values,
+                            rows: state.rows,
+                          );
+                        },
+                      ),
+                      if (!_isSearching)
                         IconButton(
-                          tooltip: 'Filter & sort',
-                          icon: const Icon(Icons.tune_rounded),
+                          tooltip: 'Search',
+                          icon: const Icon(Icons.search),
                           style: iconButtonStyle,
-                          onPressed: () {
-                            final state = context
-                                .read<ProjectsFeedBloc>()
-                                .state;
-                            if (state is! ProjectsFeedLoaded) return;
-                            _showFilterSheet(
-                              values: state.values,
-                              rows: state.rows,
-                            );
-                          },
+                          onPressed: () => _setSearchActive(true),
+                        )
+                      else
+                        IconButton(
+                          tooltip: 'Close search',
+                          icon: const Icon(Icons.close),
+                          style: iconButtonStyle,
+                          onPressed: () => _setSearchActive(false),
                         ),
-                        if (!_isSearching)
-                          IconButton(
-                            tooltip: 'Search',
-                            icon: const Icon(Icons.search),
-                            style: iconButtonStyle,
-                            onPressed: () => _setSearchActive(true),
-                          )
-                        else
-                          IconButton(
-                            tooltip: 'Close search',
-                            icon: const Icon(Icons.close),
-                            style: iconButtonStyle,
-                            onPressed: () => _setSearchActive(false),
+                      TasklyOverflowMenuButton<_ProjectsMenuAction>(
+                        tooltip: 'More',
+                        icon: Icons.more_vert,
+                        style: iconButtonStyle,
+                        itemsBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: _ProjectsMenuAction.selectMultiple,
+                            child: TasklyMenuItemLabel('Select multiple'),
                           ),
-                        BlocBuilder<DisplayDensityBloc, DisplayDensityState>(
-                          builder: (context, densityState) {
-                            final isCompact =
-                                densityState.density == DisplayDensity.compact;
-                            return IconButton(
-                              tooltip: 'Row density',
-                              icon: Icon(
-                                isCompact
-                                    ? Icons.view_agenda_rounded
-                                    : Icons.view_week_rounded,
-                              ),
-                              style: iconButtonStyle,
-                              onPressed: () => context
-                                  .read<DisplayDensityBloc>()
-                                  .add(const DisplayDensityToggled()),
-                            );
-                          },
-                        ),
-                        TasklyOverflowMenuButton<_ProjectsMenuAction>(
-                          tooltip: 'More',
-                          icon: Icons.more_vert,
-                          style: iconButtonStyle,
-                          itemsBuilder: (context) => [
-                            CheckedPopupMenuItem(
-                              value: _ProjectsMenuAction.showCompleted,
-                              checked: _showCompleted,
-                              child: const TasklyMenuItemLabel(
-                                'Show completed',
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: _ProjectsMenuAction.selectMultiple,
-                              child: TasklyMenuItemLabel('Select multiple'),
-                            ),
-                          ],
-                          onSelected: (action) {
-                            switch (action) {
-                              case _ProjectsMenuAction.showCompleted:
-                                _toggleShowCompleted();
-                              case _ProjectsMenuAction.selectMultiple:
-                                context
-                                    .read<SelectionBloc>()
-                                    .enterSelectionMode();
-                            }
-                          },
-                        ),
-                      ],
-                    ),
+                        ],
+                        onSelected: (action) {
+                          switch (action) {
+                            case _ProjectsMenuAction.selectMultiple:
+                              context
+                                  .read<SelectionBloc>()
+                                  .enterSelectionMode();
+                          }
+                        },
+                      ),
+                    ],
                   ),
             floatingActionButton: selectionState.isSelectionMode
                 ? null
@@ -548,7 +494,6 @@ class _ProjectsViewState extends State<_ProjectsView> {
 void _noop() {}
 
 enum _ProjectsMenuAction {
-  showCompleted,
   selectMultiple,
 }
 
@@ -665,14 +610,13 @@ List<TasklyRowSpec> _buildStandardRows(
   return specs;
 }
 
-class _ValueFilterChip extends StatelessWidget {
-  const _ValueFilterChip({
+class _ValueFilterRow extends StatelessWidget {
+  const _ValueFilterRow({
     required this.label,
     required this.selected,
     required this.icon,
     required this.iconColor,
     required this.onTap,
-    this.tintColor,
     this.count,
   });
 
@@ -681,86 +625,45 @@ class _ValueFilterChip extends StatelessWidget {
   final bool selected;
   final IconData icon;
   final Color iconColor;
-  final Color? tintColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
-
-    final baseBg = selected
-        ? scheme.primaryContainer
-        : scheme.surfaceContainerLow;
-    final tintAlpha = selected ? 0.16 : 0.12;
-    final bg = tintColor == null
-        ? baseBg
-        : Color.alphaBlend(tintColor!.withValues(alpha: tintAlpha), baseBg);
     final fg = selected ? scheme.onSurface : scheme.onSurfaceVariant;
-    final border = selected
-        ? scheme.primary.withValues(alpha: 0.28)
-        : scheme.outlineVariant.withValues(alpha: 0.7);
+    final countLabel = count == null ? null : '$count';
 
-    final textStyle =
-        Theme.of(context).textTheme.labelSmall ?? const TextStyle(fontSize: 12);
-    const visualHeight = 30.0;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(tokens.radiusPill),
+    return ListTile(
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      contentPadding: EdgeInsets.zero,
       onTap: onTap,
-      child: SizedBox(
-        height: tokens.minTapTargetSize,
-        child: Center(
-          child: Container(
-            height: visualHeight,
-            padding: EdgeInsets.symmetric(horizontal: tokens.spaceSm),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(tokens.radiusPill),
-              border: Border.all(color: border),
-            ),
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: tokens.filterPillIconSize - 2,
-                  color: iconColor,
-                ),
-                SizedBox(width: tokens.spaceXxs2),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(text: label),
-                      if (count != null && count! > 0)
-                        TextSpan(
-                          text: ' \u00b7 $count',
-                          style: textStyle.copyWith(
-                            color: fg.withValues(alpha: 0.7),
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.w500,
-                          ),
-                        ),
-                    ],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textStyle.copyWith(
-                    color: fg,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                  ),
-                ),
-                if (selected) ...[
-                  SizedBox(width: tokens.spaceXxs2),
-                  Icon(Icons.check_rounded, size: 12, color: fg),
-                ],
-              ],
-            ),
-          ),
+      leading: Icon(icon, color: iconColor),
+      title: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: fg,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
         ),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (countLabel != null)
+            Text(
+              countLabel,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          if (selected) ...[
+            const SizedBox(width: 8),
+            Icon(Icons.check_rounded, size: 18, color: scheme.primary),
+          ],
+        ],
       ),
     );
   }
@@ -870,12 +773,6 @@ class _ProjectsTitleHeader extends StatelessWidget {
                   'Projects',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
-                  ),
-                ),
-                Text(
-                  "Source for today's plan",
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
                   ),
                 ),
               ],

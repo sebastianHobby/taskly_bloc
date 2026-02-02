@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import 'package:taskly_domain/src/allocation/model/allocation_exception_rule.dart';
 import 'package:taskly_domain/src/allocation/model/focus_mode.dart';
 
 part 'allocation_config.freezed.dart';
@@ -9,22 +8,6 @@ part 'allocation_config.g.dart';
 // ============================================================================
 // ENUMS
 // ============================================================================
-
-/// Defines how urgent tasks without values are handled during allocation.
-///
-/// - [ignore]: Urgent value-less tasks are excluded, no warnings
-/// - [warnOnly]: Urgent value-less tasks excluded but generate warnings
-/// - [includeAll]: Urgent value-less tasks included in Focus list
-enum UrgentTaskBehavior {
-  @JsonValue('ignore')
-  ignore,
-
-  @JsonValue('warnOnly')
-  warnOnly,
-
-  @JsonValue('includeAll')
-  includeAll,
-}
 
 /// Controls the signal used for task suggestions.
 enum SuggestionSignal {
@@ -58,7 +41,6 @@ abstract class AllocationConfig with _$AllocationConfig {
     @Default(FocusMode.sustainable) FocusMode focusMode,
     @Default(StrategySettings()) StrategySettings strategySettings,
     @Default(DisplaySettings()) DisplaySettings displaySettings,
-    @Default([]) List<AllocationExceptionRule> exceptionRules,
 
     /// What signal drives suggestion weighting.
     @Default(SuggestionSignal.behaviorBased) SuggestionSignal suggestionSignal,
@@ -75,14 +57,8 @@ abstract class AllocationConfig with _$AllocationConfig {
 @freezed
 abstract class StrategySettings with _$StrategySettings {
   const factory StrategySettings({
-    /// How to handle urgent tasks without value alignment.
-    @Default(UrgentTaskBehavior.warnOnly) UrgentTaskBehavior urgentTaskBehavior,
-
     /// Days before task deadline = urgent.
     @Default(3) int taskUrgencyThresholdDays,
-
-    /// Days before project deadline = urgent.
-    @Default(7) int projectUrgencyThresholdDays,
 
     /// Enable neglect-based weighting (Reflector mode feature).
     @Default(false) bool enableNeglectWeighting,
@@ -110,37 +86,10 @@ abstract class StrategySettings with _$StrategySettings {
   factory StrategySettings.fromJson(Map<String, dynamic> json) =>
       _$StrategySettingsFromJson(json);
 
-  /// Factory: Returns preset settings for the given focus mode.
-  factory StrategySettings.forFocusMode(FocusMode mode) {
-    return switch (mode) {
-      FocusMode.intentional => const StrategySettings(
-        urgentTaskBehavior: UrgentTaskBehavior.ignore,
-        taskUrgencyThresholdDays: 3,
-        projectUrgencyThresholdDays: 7,
-        enableNeglectWeighting: false,
-      ),
-      FocusMode.sustainable => const StrategySettings(
-        urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
-        taskUrgencyThresholdDays: 3,
-        projectUrgencyThresholdDays: 7,
-        enableNeglectWeighting: true,
-      ),
-      FocusMode.responsive => const StrategySettings(
-        urgentTaskBehavior: UrgentTaskBehavior.includeAll,
-        taskUrgencyThresholdDays: 3,
-        projectUrgencyThresholdDays: 7,
-        enableNeglectWeighting: false,
-      ),
-      FocusMode.personalized => const StrategySettings(),
-    };
-  }
 }
 
 /// Display-related settings controlling UI behavior.
 ///
-/// Note: Warning visibility is controlled by `StrategySettings.urgentTaskBehavior`,
-/// not by DisplaySettings. The UI simply renders whatever warnings the allocator
-/// generates. Set `urgentTaskBehavior = ignore` to suppress urgent task warnings.
 @freezed
 abstract class DisplaySettings with _$DisplaySettings {
   const factory DisplaySettings({

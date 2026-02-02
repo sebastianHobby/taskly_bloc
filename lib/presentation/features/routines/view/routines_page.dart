@@ -11,7 +11,6 @@ import 'package:taskly_bloc/presentation/features/routines/selection/routine_sel
 import 'package:taskly_bloc/presentation/features/routines/widgets/routines_list.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
@@ -19,6 +18,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_se
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
@@ -48,127 +48,93 @@ class _RoutinesPageState extends State<RoutinesPage> {
     setState(() => _showInactive = !_showInactive);
   }
 
-  Future<void> _showFilterSheet({
+  Future<void> _showFilterSheet(
+    BuildContext sheetContext, {
     required List<Value> values,
     required List<RoutineListItem> routines,
   }) async {
+    final routineListBloc = sheetContext.read<RoutineListBloc>();
     final sortedValues = values.toList(growable: false)..sort(_compareValues);
     final counts = _countRoutinesByValue(routines);
-
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        final tokens = TasklyTokens.of(sheetContext);
-        final scheme = Theme.of(sheetContext).colorScheme;
-
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.spaceLg,
-              tokens.spaceSm,
-              tokens.spaceLg,
-              tokens.spaceLg,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Filter & sort',
-                  style: Theme.of(sheetContext).textTheme.titleLarge,
-                ),
-                SizedBox(height: tokens.spaceSm),
-                Text(
-                  'Sort',
-                  style: Theme.of(sheetContext).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                for (final order in RoutineSortOrder.values)
-                  RadioListTile<RoutineSortOrder>(
-                    value: order,
-                    groupValue: _sortOrder,
-                    title: Text(order.label),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() => _sortOrder = value);
-                      Navigator.of(sheetContext).pop();
-                    },
-                  ),
-                SizedBox(height: tokens.spaceSm),
-                Text(
-                  'Values',
-                  style: Theme.of(sheetContext).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: tokens.spaceSm),
-                BlocSelector<RoutineListBloc, RoutineListState, String?>(
-                  selector: (state) => switch (state) {
-                    RoutineListLoaded(:final selectedValueId) =>
-                      selectedValueId,
-                    _ => null,
-                  },
-                  builder: (context, selectedValueId) {
-                    return Wrap(
-                      spacing: tokens.spaceSm,
-                      runSpacing: tokens.spaceSm,
-                      children: [
-                        _RoutineValueFilterChip(
-                          label: 'All values',
-                          count: counts.total,
-                          selected: selectedValueId == null,
-                          icon: Icons.filter_list_rounded,
-                          iconColor: scheme.onSurfaceVariant,
-                          onTap: () {
-                            if (selectedValueId == null) return;
-                            context.read<RoutineListBloc>().add(
-                              const RoutineListEvent.valueFilterChanged(),
-                            );
-                          },
-                        ),
-                        for (final value in sortedValues) ...[
-                          Builder(
-                            builder: (context) {
-                              final chip = value.toChipData(sheetContext);
-                              return _RoutineValueFilterChip(
-                                label: chip.label,
-                                count: counts.byValueId[value.id],
-                                selected: value.id == selectedValueId,
-                                icon: chip.icon,
-                                iconColor: chip.color,
-                                tintColor: chip.color,
-                                onTap: () {
-                                  if (value.id == selectedValueId) return;
-                                  context.read<RoutineListBloc>().add(
-                                    RoutineListEvent.valueFilterChanged(
-                                      valueId: value.id,
-                                    ),
-                                  );
-                                },
+    await showFilterSortSheet(
+      context: sheetContext,
+      sortGroups: [
+        FilterSortRadioGroup(
+          title: 'Sort',
+          options: [
+            for (final order in RoutineSortOrder.values)
+              FilterSortRadioOption(value: order, label: order.label),
+          ],
+          selectedValue: _sortOrder,
+          onSelected: (value) {
+            if (value is! RoutineSortOrder) return;
+            setState(() => _sortOrder = value);
+          },
+        ),
+      ],
+      sections: [
+        FilterSortSection(
+          title: 'Values',
+          child: BlocProvider.value(
+            value: routineListBloc,
+            child: BlocSelector<RoutineListBloc, RoutineListState, String?>(
+              selector: (state) => switch (state) {
+                RoutineListLoaded(:final selectedValueId) => selectedValueId,
+                _ => null,
+              },
+              builder: (context, selectedValueId) {
+                final scheme = Theme.of(context).colorScheme;
+                return Column(
+                  children: [
+                    _RoutineValueFilterRow(
+                      label: 'All values',
+                      count: counts.total,
+                      selected: selectedValueId == null,
+                      icon: Icons.filter_list_rounded,
+                      iconColor: scheme.onSurfaceVariant,
+                      onTap: () {
+                        if (selectedValueId == null) return;
+                        context.read<RoutineListBloc>().add(
+                          const RoutineListEvent.valueFilterChanged(),
+                        );
+                      },
+                    ),
+                    for (final value in sortedValues) ...[
+                      Builder(
+                        builder: (context) {
+                          final chip = value.toChipData(context);
+                          return _RoutineValueFilterRow(
+                            label: chip.label,
+                            count: counts.byValueId[value.id],
+                            selected: value.id == selectedValueId,
+                            icon: chip.icon,
+                            iconColor: chip.color,
+                            onTap: () {
+                              if (value.id == selectedValueId) return;
+                              context.read<RoutineListBloc>().add(
+                                RoutineListEvent.valueFilterChanged(
+                                  valueId: value.id,
+                                ),
                               );
                             },
-                          ),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-                SizedBox(height: tokens.spaceSm),
-                SwitchListTile(
-                  title: const Text('Show inactive'),
-                  value: _showInactive,
-                  onChanged: (_) {
-                    _toggleShowInactive();
-                    Navigator.of(sheetContext).pop();
-                  },
-                ),
-              ],
+                          );
+                        },
+                      ),
+                    ],
+                  ],
+                );
+              },
             ),
           ),
-        );
-      },
+        ),
+      ],
+      toggles: [
+        FilterSortToggle(
+          title: 'Show inactive',
+          value: _showInactive,
+          onChanged: (_) => _toggleShowInactive(),
+        ),
+      ],
     );
   }
 
@@ -199,42 +165,40 @@ class _RoutinesPageState extends State<RoutinesPage> {
                         onExit: () {},
                       )
                     : AppBar(
-                        actions: TasklyAppBarActions.withAttentionBell(
-                          context,
-                          actions: [
-                            IconButton(
-                              tooltip: 'Filter & sort',
-                              onPressed: () {
-                                final state = context
-                                    .read<RoutineListBloc>()
-                                    .state;
-                                if (state is! RoutineListLoaded) return;
-                                _showFilterSheet(
-                                  values: state.values,
-                                  routines: state.routines,
-                                );
-                              },
-                              icon: const Icon(Icons.tune_rounded),
-                            ),
-                            TasklyOverflowMenuButton<_RoutinesMenuAction>(
-                              tooltip: 'More',
-                              itemsBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: _RoutinesMenuAction.selectMultiple,
-                                  child: Text('Select multiple'),
-                                ),
-                              ],
-                              onSelected: (action) {
-                                switch (action) {
-                                  case _RoutinesMenuAction.selectMultiple:
-                                    context
-                                        .read<RoutineSelectionBloc>()
-                                        .enterSelectionMode();
-                                }
-                              },
-                            ),
-                          ],
-                        ),
+                        actions: [
+                          IconButton(
+                            tooltip: 'Filter & sort',
+                            onPressed: () {
+                              final state = context
+                                  .read<RoutineListBloc>()
+                                  .state;
+                              if (state is! RoutineListLoaded) return;
+                              _showFilterSheet(
+                                context,
+                                values: state.values,
+                                routines: state.routines,
+                              );
+                            },
+                            icon: const Icon(Icons.tune_rounded),
+                          ),
+                          TasklyOverflowMenuButton<_RoutinesMenuAction>(
+                            tooltip: 'More',
+                            itemsBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: _RoutinesMenuAction.selectMultiple,
+                                child: Text('Select multiple'),
+                              ),
+                            ],
+                            onSelected: (action) {
+                              switch (action) {
+                                case _RoutinesMenuAction.selectMultiple:
+                                  context
+                                      .read<RoutineSelectionBloc>()
+                                      .enterSelectionMode();
+                              }
+                            },
+                          ),
+                        ],
                       ),
                 floatingActionButton: EntityAddFab(
                   tooltip: context.l10n.routineCreateTooltip,
@@ -348,14 +312,13 @@ class _RoutinesFilterLayout extends StatelessWidget {
   }
 }
 
-class _RoutineValueFilterChip extends StatelessWidget {
-  const _RoutineValueFilterChip({
+class _RoutineValueFilterRow extends StatelessWidget {
+  const _RoutineValueFilterRow({
     required this.label,
     required this.selected,
     required this.icon,
     required this.iconColor,
     required this.onTap,
-    this.tintColor,
     this.count,
   });
 
@@ -364,86 +327,45 @@ class _RoutineValueFilterChip extends StatelessWidget {
   final bool selected;
   final IconData icon;
   final Color iconColor;
-  final Color? tintColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
-
-    final baseBg = selected
-        ? scheme.primaryContainer
-        : scheme.surfaceContainerLow;
-    final tintAlpha = selected ? 0.16 : 0.12;
-    final bg = tintColor == null
-        ? baseBg
-        : Color.alphaBlend(tintColor!.withValues(alpha: tintAlpha), baseBg);
     final fg = selected ? scheme.onSurface : scheme.onSurfaceVariant;
-    final border = selected
-        ? scheme.primary.withValues(alpha: 0.28)
-        : scheme.outlineVariant.withValues(alpha: 0.7);
+    final countLabel = count == null ? null : '$count';
 
-    final textStyle =
-        Theme.of(context).textTheme.labelSmall ?? const TextStyle(fontSize: 12);
-    const visualHeight = 30.0;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(tokens.radiusPill),
+    return ListTile(
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      contentPadding: EdgeInsets.zero,
       onTap: onTap,
-      child: SizedBox(
-        height: tokens.minTapTargetSize,
-        child: Center(
-          child: Container(
-            height: visualHeight,
-            padding: EdgeInsets.symmetric(horizontal: tokens.spaceSm),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(tokens.radiusPill),
-              border: Border.all(color: border),
-            ),
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: tokens.filterPillIconSize - 2,
-                  color: iconColor,
-                ),
-                SizedBox(width: tokens.spaceXxs2),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(text: label),
-                      if (count != null && count! > 0)
-                        TextSpan(
-                          text: ' \u00b7 $count',
-                          style: textStyle.copyWith(
-                            color: fg.withValues(alpha: 0.7),
-                            fontWeight: selected
-                                ? FontWeight.w600
-                                : FontWeight.w500,
-                          ),
-                        ),
-                    ],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: textStyle.copyWith(
-                    color: fg,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                  ),
-                ),
-                if (selected) ...[
-                  SizedBox(width: tokens.spaceXxs2),
-                  Icon(Icons.check_rounded, size: 12, color: fg),
-                ],
-              ],
-            ),
-          ),
+      leading: Icon(icon, color: iconColor),
+      title: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: fg,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
         ),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (countLabel != null)
+            Text(
+              countLabel,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          if (selected) ...[
+            const SizedBox(width: 8),
+            Icon(Icons.check_rounded, size: 18, color: scheme.primary),
+          ],
+        ],
       ),
     );
   }

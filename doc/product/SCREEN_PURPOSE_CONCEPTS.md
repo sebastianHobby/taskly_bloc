@@ -7,11 +7,11 @@
 
 ## My Day
 
-**Primary purpose**: My Day is today's plan - a calm, values-aligned focus list
-that still respects deadlines. It is the execution view for today.
+**Primary purpose**: My Day is today's plan -  It is the execution view for today 
+based on the users selected tasks and routines
 
 **Description line (UI copy)**
-- "Your plan for today - values and due dates."
+- "Your plan for today"
 
 **Key question it answers**
 - "What should I focus on today?"

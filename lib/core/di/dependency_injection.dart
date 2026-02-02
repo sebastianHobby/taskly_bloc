@@ -413,3 +413,22 @@ Future<void> setupDependencies() async {
       ),
     );
 }
+
+Future<void> resetDependencies({required String reason}) async {
+  if (getIt.isRegistered<PresentationSessionServicesCoordinator>()) {
+    await getIt<PresentationSessionServicesCoordinator>().stop();
+  }
+
+  if (getIt.isRegistered<AuthenticatedAppServicesCoordinator>()) {
+    await getIt<AuthenticatedAppServicesCoordinator>().stopWithReason(
+      reason: reason,
+      clearLocalData: false,
+    );
+  }
+
+  if (getIt.isRegistered<TasklyDataStack>()) {
+    await getIt<TasklyDataStack>().dispose();
+  }
+
+  await getIt.reset();
+}

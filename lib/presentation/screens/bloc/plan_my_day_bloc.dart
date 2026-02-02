@@ -1178,11 +1178,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   }
 
   Future<void> _refreshSuggestions() async {
-    final showRoutines = _globalSettings.myDayShowRoutines;
-
-    final routineSelections = showRoutines
-        ? _routineSelectionsByValue()
-        : const <String, int>{};
+    final routineSelections = _routineSelectionsByValue();
     final triageSelections = _triageSelectionsByValue();
     final selectionCounts = _mergeSelectionCounts(
       routineSelections,
@@ -1212,8 +1208,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         .expand((group) => group.tasks)
         .toList(growable: false);
 
-    final showRoutines = _globalSettings.myDayShowRoutines;
-
     final snoozedIds =
         snapshot?.snoozed.map((task) => task.id).toSet() ?? const <String>{};
     final activeTasks = _incompleteTasks
@@ -1230,9 +1224,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         .where((task) => !dueIds.contains(task.id))
         .toList(growable: false);
 
-    final routineItems = showRoutines
-        ? _buildRoutineItems()
-        : _RoutineItemBuildResult.empty;
+    final routineItems = _buildRoutineItems();
     final scheduledRoutines = routineItems.scheduledEligible;
     final flexibleRoutines = routineItems.flexibleEligible;
     final allRoutines = routineItems.allItems;
@@ -1285,9 +1277,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       dueToday: dueTodayTasks,
       planned: plannedTasks,
     );
-    final selectedRoutineIds = showRoutines
-        ? _selectedRoutineIds
-        : const <String>{};
+    final selectedRoutineIds = _selectedRoutineIds;
     final overCapacity =
         (selectedTaskIds.length + selectedRoutineIds.length) > _dailyLimit;
     final toast = _pendingToast;
@@ -1454,10 +1444,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   }
 
   Map<String, int> _routineSelectionsByValue() {
-    if (!_globalSettings.myDayShowRoutines) {
-      return const <String, int>{};
-    }
-
     final routinesById = {for (final routine in _routines) routine.id: routine};
     final counts = <String, int>{};
     for (final routineId in _selectedRoutineIds) {
@@ -1728,10 +1714,4 @@ final class _RoutineItemBuildResult {
   final List<PlanMyDayRoutineItem> allItems;
   final List<PlanMyDayRoutineItem> scheduledEligible;
   final List<PlanMyDayRoutineItem> flexibleEligible;
-
-  static const empty = _RoutineItemBuildResult(
-    allItems: <PlanMyDayRoutineItem>[],
-    scheduledEligible: <PlanMyDayRoutineItem>[],
-    flexibleEligible: <PlanMyDayRoutineItem>[],
-  );
 }

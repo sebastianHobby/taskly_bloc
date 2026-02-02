@@ -35,6 +35,9 @@ Tests using real in-memory database. Located in `integration/`.
 ### Pipeline Tests (local Supabase + PowerSync)
 Pipeline tests require a real local stack and run via the integration test
 entrypoint to allow plugins + real HTTP.
+- **Integration-only behavior:** these tests self-skip when not running under
+  `IntegrationTestWidgetsFlutterBinding`, so `flutter test -t pipeline` will
+  not execute them. Always use the entrypoint below.
 - **Run (Windows):** `powershell -File tool/e2e/Run-LocalPipelineIntegrationTests.ps1 -ResetDb`
 - **Entrypoint:** `integration_test/powersync_pipeline_entrypoint_test.dart`
 
@@ -62,6 +65,8 @@ Flutter SDK. Use tag filters (or the VS Code tasks) instead.
 - Broader: `flutter test -x slow -x flaky -x pipeline -x diagnosis`
 - DB confidence: `flutter test -t integration -t repository`
 - Exclude local-stack pipeline: `flutter test -x pipeline -x diagnosis`
+  - Note: pipeline tests are integration-test-only and will not execute under
+    plain `flutter test`. Use the pipeline script/entrypoint.
 
 ### All Tests
 ```bash

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
@@ -71,6 +73,7 @@ void testWidgetsSafe(
         await callback(tester).timeout(
           timeout,
           onTimeout: () {
+            _dumpWidgetTestDiagnostics(description);
             throw TimeoutException(
               'Test "$description" exceeded ${timeout.inSeconds}s total duration. '
               'Check for: pumpAndSettle() with streams, unclosed subscriptions, '
@@ -126,6 +129,32 @@ void testSafe(
       );
     },
   );
+}
+
+void _dumpWidgetTestDiagnostics(String description) {
+  try {
+    debugPrint('--- Widget test timeout diagnostics: "$description" ---');
+    debugPrint('Dumping widget tree...');
+    debugDumpApp();
+    debugPrint('Dumping render tree...');
+    debugDumpRenderTree();
+    debugPrint('Dumping focus tree...');
+    debugDumpFocusTree();
+    debugPrint('Dumping semantics tree...');
+    debugDumpSemanticsTree();
+
+    final scheduler = SchedulerBinding.instance;
+    debugPrint(
+      'Scheduler: phase=${scheduler.schedulerPhase} '
+      'hasScheduledFrame=${scheduler.hasScheduledFrame} '
+      'transientCallbacks=${scheduler.transientCallbackCount}',
+    );
+    debugPrint('--- End widget test timeout diagnostics ---');
+  } catch (error, stackTrace) {
+    debugPrint(
+      'Widget test timeout diagnostics failed: $error\n$stackTrace',
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

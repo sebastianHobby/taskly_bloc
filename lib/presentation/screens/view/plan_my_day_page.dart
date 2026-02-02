@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
@@ -15,6 +16,9 @@ import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
+
+const Key kPlanMyDayBottomFadeKey = Key('plan_my_day_bottom_fade');
+const Key kPlanMyDayLastChildKey = Key('plan_my_day_last_child');
 
 class PlanMyDayPage extends StatelessWidget {
   const PlanMyDayPage({
@@ -143,7 +147,7 @@ class PlanMyDayPage extends StatelessWidget {
   }
 }
 
-class _PlanMyDayBody extends StatelessWidget {
+class _PlanMyDayBody extends StatefulWidget {
   const _PlanMyDayBody({
     required this.data,
     required this.gateState,
@@ -153,7 +157,17 @@ class _PlanMyDayBody extends StatelessWidget {
   final MyDayGateState gateState;
 
   @override
+  State<_PlanMyDayBody> createState() => _PlanMyDayBodyState();
+}
+
+class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
+  double? _lastChildHeight;
+
+  @override
   Widget build(BuildContext context) {
+    final data = widget.data;
+    final gateState = widget.gateState;
+
     if (data.requiresValueSetup && gateState is MyDayGateLoaded) {
       return const MyDayValuesGate();
     }
@@ -168,124 +182,296 @@ class _PlanMyDayBody extends StatelessWidget {
     }
 
     final tokens = TasklyTokens.of(context);
-    return ListView(
-      padding: EdgeInsets.fromLTRB(
-        tokens.spaceLg,
-        tokens.spaceSm,
-        tokens.spaceLg,
+    final double fadeHeight;
+    final double bottomPadding;
+
+    final measuredHeight = _lastChildHeight ?? 0;
+    if (measuredHeight > 0) {
+      final desiredFade = (measuredHeight * 0.5).clamp(
+        tokens.spaceMd,
         tokens.spaceXl,
-      ),
-      children: [
-        Text(
-          "Build today's plan.",
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+      );
+      final desiredCovered = (measuredHeight * 0.3).clamp(
+        tokens.spaceXs2,
+        desiredFade - 1,
+      );
+      fadeHeight = desiredFade;
+      bottomPadding = (fadeHeight - desiredCovered).clamp(0, fadeHeight);
+    } else {
+      fadeHeight = tokens.spaceXl;
+      bottomPadding = tokens.spaceSm;
+    }
+
+    final children = <Widget>[
+      Text(
+        "Build today's plan.",
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w800,
         ),
-        SizedBox(height: tokens.spaceSm),
-        _PlanSummaryBar(data: data),
-        SizedBox(height: tokens.spaceLg),
-        if (data.dueTodayTasks.isNotEmpty)
-          _TaskShelf(
-            title: 'Due Today',
-            actionLabel: 'Reschedule all due',
-            anchorKey: GuidedTourAnchors.planMyDayTriage,
-            onAction: () => _showRescheduleSheet(
+      ),
+      SizedBox(height: tokens.spaceSm),
+      _PlanSummaryBar(data: data),
+      SizedBox(height: tokens.spaceLg),
+      if (data.dueTodayTasks.isNotEmpty)
+        _TaskShelf(
+          title: 'Due Today',
+          actionLabel: 'Reschedule all due',
+          anchorKey: GuidedTourAnchors.planMyDayTriage,
+          onAction: () async {
+            final choice = await _showRescheduleSheet(
               context,
               title: 'Reschedule all',
               subtitle: 'Choose a new day for these items.',
               dayKeyUtc: data.dayKeyUtc,
-              onSelected: (date) => context.read<PlanMyDayBloc>().add(
-                PlanMyDayBulkRescheduleDueRequested(newDayUtc: date),
-              ),
-            ),
-            rows: _buildTaskRows(
-              context,
-              tasks: data.dueTodayTasks,
-              selectedTaskIds: data.selectedTaskIds,
-              style: ({required bool selected}) =>
-                  TasklyTaskRowStyle.planPick(selected: selected),
-              allowSelection: false,
-              onActionPressed: (task) => _showRescheduleSheet(
+            );
+            if (choice == null || !context.mounted) return;
+
+            final bloc = context.read<PlanMyDayBloc>();
+            switch (choice) {
+              case _RescheduleQuickChoice(:final date):
+                bloc.add(
+                  PlanMyDayBulkRescheduleDueRequested(newDayUtc: date),
+                );
+              case _ReschedulePickDateChoice():
+                final picked = await _showRescheduleDatePicker(
+                  context,
+                  dayKeyUtc: data.dayKeyUtc,
+                );
+                if (picked == null || !context.mounted) return;
+                bloc.add(
+                  PlanMyDayBulkRescheduleDueRequested(newDayUtc: picked),
+                );
+            }
+          },
+          rows: _buildTaskRows(
+            context,
+            tasks: data.dueTodayTasks,
+            selectedTaskIds: data.selectedTaskIds,
+            style: ({required bool selected}) =>
+                TasklyTaskRowStyle.planPick(selected: selected),
+            allowSelection: false,
+            onActionPressed: (task) async {
+              final choice = await _showRescheduleSheet(
                 context,
                 title: 'Reschedule task',
                 subtitle: 'Choose a new day for this task.',
                 dayKeyUtc: data.dayKeyUtc,
-                onSelected: (date) => context.read<PlanMyDayBloc>().add(
-                  PlanMyDayRescheduleDueTaskRequested(
-                    taskId: task.id,
-                    newDayUtc: date,
-                  ),
-                ),
-              ),
-              dayKeyUtc: data.dayKeyUtc,
-            ),
-          )
-        else
-          _EmptyShelf(
-            title: 'Due Today',
-            body: 'Nothing due today.',
-            anchorKey: GuidedTourAnchors.planMyDayTriage,
-          ),
-        SizedBox(height: tokens.spaceLg),
-        if (data.plannedTasks.isNotEmpty)
-          _TaskShelf(
-            title: 'Planned',
-            actionLabel: 'Reschedule all planned',
-            onAction: () => _showRescheduleSheet(
-              context,
-              title: 'Reschedule all',
-              subtitle: 'Choose a new day for these items.',
-              dayKeyUtc: data.dayKeyUtc,
-              onSelected: (date) => context.read<PlanMyDayBloc>().add(
-                PlanMyDayBulkReschedulePlannedRequested(newDayUtc: date),
-              ),
-            ),
-            rows: _buildTaskRows(
-              context,
-              tasks: data.plannedTasks,
-              selectedTaskIds: data.selectedTaskIds,
-              style: ({required bool selected}) =>
-                  TasklyTaskRowStyle.planPick(selected: selected),
-              allowSelection: false,
-              onActionPressed: (task) => _showRescheduleSheet(
-                context,
-                title: 'Reschedule task',
-                subtitle: 'Choose a new day for this task.',
-                dayKeyUtc: data.dayKeyUtc,
-                onSelected: (date) => context.read<PlanMyDayBloc>().add(
-                  PlanMyDayReschedulePlannedTaskRequested(
-                    taskId: task.id,
-                    newDayUtc: date,
-                  ),
-                ),
-              ),
-              dayKeyUtc: data.dayKeyUtc,
-            ),
-          )
-        else
-          _EmptyShelf(title: 'Planned', body: 'Nothing planned for today.'),
-        SizedBox(height: tokens.spaceLg),
-        if (data.allRoutines.isNotEmpty)
-          _RoutineShelf(
-            data: data,
+              );
+              if (choice == null || !context.mounted) return;
+
+              final bloc = context.read<PlanMyDayBloc>();
+              switch (choice) {
+                case _RescheduleQuickChoice(:final date):
+                  bloc.add(
+                    PlanMyDayRescheduleDueTaskRequested(
+                      taskId: task.id,
+                      newDayUtc: date,
+                    ),
+                  );
+                case _ReschedulePickDateChoice():
+                  buildTaskOpenEditorHandler(context, task: task)();
+              }
+            },
             dayKeyUtc: data.dayKeyUtc,
-            scheduledAnchorKey: GuidedTourAnchors.planMyDayScheduledRoutines,
-            flexibleAnchorKey: GuidedTourAnchors.planMyDayFlexibleRoutines,
           ),
-        if (!data.overCapacity && data.valueSuggestionGroups.isNotEmpty) ...[
-          SizedBox(height: tokens.spaceLg),
-          _SuggestionsShelf(data: data),
-        ],
-        if (data.overCapacity) ...[
-          SizedBox(height: tokens.spaceLg),
-          _OverCapacityCard(
-            count: data.plannedCount,
-            limit: data.dailyLimit,
+        )
+      else
+        _EmptyShelf(
+          title: 'Due Today',
+          body: 'Nothing due today.',
+          anchorKey: GuidedTourAnchors.planMyDayTriage,
+        ),
+      SizedBox(height: tokens.spaceLg),
+      if (data.plannedTasks.isNotEmpty)
+        _TaskShelf(
+          title: 'Planned',
+          actionLabel: 'Reschedule all planned',
+          onAction: () async {
+            final choice = await _showRescheduleSheet(
+              context,
+              title: 'Reschedule all',
+              subtitle: 'Choose a new day for these items.',
+              dayKeyUtc: data.dayKeyUtc,
+            );
+            if (choice == null || !context.mounted) return;
+
+            final bloc = context.read<PlanMyDayBloc>();
+            switch (choice) {
+              case _RescheduleQuickChoice(:final date):
+                bloc.add(
+                  PlanMyDayBulkReschedulePlannedRequested(
+                    newDayUtc: date,
+                  ),
+                );
+              case _ReschedulePickDateChoice():
+                final picked = await _showRescheduleDatePicker(
+                  context,
+                  dayKeyUtc: data.dayKeyUtc,
+                );
+                if (picked == null || !context.mounted) return;
+                bloc.add(
+                  PlanMyDayBulkReschedulePlannedRequested(
+                    newDayUtc: picked,
+                  ),
+                );
+            }
+          },
+          rows: _buildTaskRows(
+            context,
+            tasks: data.plannedTasks,
+            selectedTaskIds: data.selectedTaskIds,
+            style: ({required bool selected}) =>
+                TasklyTaskRowStyle.planPick(selected: selected),
+            allowSelection: false,
+            onActionPressed: (task) async {
+              final choice = await _showRescheduleSheet(
+                context,
+                title: 'Reschedule task',
+                subtitle: 'Choose a new day for this task.',
+                dayKeyUtc: data.dayKeyUtc,
+              );
+              if (choice == null || !context.mounted) return;
+
+              final bloc = context.read<PlanMyDayBloc>();
+              switch (choice) {
+                case _RescheduleQuickChoice(:final date):
+                  bloc.add(
+                    PlanMyDayReschedulePlannedTaskRequested(
+                      taskId: task.id,
+                      newDayUtc: date,
+                    ),
+                  );
+                case _ReschedulePickDateChoice():
+                  buildTaskOpenEditorHandler(context, task: task)();
+              }
+            },
+            dayKeyUtc: data.dayKeyUtc,
           ),
-        ],
+        )
+      else
+        _EmptyShelf(title: 'Planned', body: 'Nothing planned for today.'),
+      SizedBox(height: tokens.spaceLg),
+      if (data.allRoutines.isNotEmpty)
+        _RoutineShelf(
+          data: data,
+          dayKeyUtc: data.dayKeyUtc,
+          scheduledAnchorKey: GuidedTourAnchors.planMyDayScheduledRoutines,
+          flexibleAnchorKey: GuidedTourAnchors.planMyDayFlexibleRoutines,
+        ),
+      if (!data.overCapacity && data.valueSuggestionGroups.isNotEmpty) ...[
+        SizedBox(height: tokens.spaceLg),
+        _SuggestionsShelf(data: data),
+      ],
+      if (data.overCapacity) ...[
+        SizedBox(height: tokens.spaceLg),
+        _OverCapacityCard(
+          count: data.plannedCount,
+          limit: data.dailyLimit,
+        ),
+      ],
+    ];
+
+    if (children.isNotEmpty) {
+      final lastIndex = children.length - 1;
+      children[lastIndex] = _MeasuredSize(
+        key: kPlanMyDayLastChildKey,
+        onChanged: (size) {
+          if (!mounted) return;
+          final nextHeight = size?.height ?? 0;
+          if (nextHeight <= 0) return;
+          if ((_lastChildHeight ?? 0) == nextHeight) return;
+          setState(() => _lastChildHeight = nextHeight);
+        },
+        child: children[lastIndex],
+      );
+    }
+
+    return Stack(
+      children: [
+        ListView(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spaceLg,
+            tokens.spaceSm,
+            tokens.spaceLg,
+            bottomPadding,
+          ),
+          children: children,
+        ),
+        _BottomFadeHint(height: fadeHeight),
       ],
     );
+  }
+}
+
+class _BottomFadeHint extends StatelessWidget {
+  const _BottomFadeHint({
+    required this.height,
+  });
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return IgnorePointer(
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Container(
+          key: kPlanMyDayBottomFadeKey,
+          height: height,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                scheme.surface.withOpacity(0),
+                scheme.surface,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MeasuredSize extends SingleChildRenderObjectWidget {
+  const _MeasuredSize({
+    required this.onChanged,
+    required Widget child,
+    super.key,
+  }) : super(child: child);
+
+  final ValueChanged<Size?> onChanged;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _MeasureSizeRenderObject(onChanged);
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant _MeasureSizeRenderObject renderObject,
+  ) {
+    renderObject.onChanged = onChanged;
+  }
+}
+
+class _MeasureSizeRenderObject extends RenderProxyBox {
+  _MeasureSizeRenderObject(this.onChanged);
+
+  ValueChanged<Size?> onChanged;
+  Size? _oldSize;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final newSize = child?.size;
+    if (_oldSize == newSize) return;
+    _oldSize = newSize;
+    WidgetsBinding.instance.addPostFrameCallback((_) => onChanged(newSize));
   }
 }
 
@@ -948,7 +1134,6 @@ TasklyRowSpec _buildRoutineRow(
     selected: item.selected,
     completed: item.completedToday,
     showProgress: true,
-    forceProgress: true,
     showScheduleRow: routine.routineType == RoutineType.weeklyFixed,
     dayKeyUtc: data.dayKeyUtc,
     completionsInPeriod: item.completionsInPeriod,
@@ -1112,12 +1297,25 @@ Future<void> _showSwapSheet(
   );
 }
 
-Future<void> _showRescheduleSheet(
+sealed class _RescheduleChoice {
+  const _RescheduleChoice();
+}
+
+final class _RescheduleQuickChoice extends _RescheduleChoice {
+  const _RescheduleQuickChoice(this.date);
+
+  final DateTime date;
+}
+
+final class _ReschedulePickDateChoice extends _RescheduleChoice {
+  const _ReschedulePickDateChoice();
+}
+
+Future<_RescheduleChoice?> _showRescheduleSheet(
   BuildContext context, {
   required String title,
   required String subtitle,
   required DateTime dayKeyUtc,
-  required ValueChanged<DateTime> onSelected,
 }) async {
   DateTime nextWeekday(DateTime day, int weekday) {
     final normalized = dateOnly(day);
@@ -1131,7 +1329,7 @@ Future<void> _showRescheduleSheet(
   final thisWeekend = nextWeekday(today, DateTime.saturday);
   final nextWeek = nextWeekday(today, DateTime.monday);
 
-  await showModalBottomSheet<void>(
+  return showModalBottomSheet<_RescheduleChoice>(
     context: context,
     showDragHandle: true,
     builder: (sheetContext) {
@@ -1147,44 +1345,36 @@ Future<void> _showRescheduleSheet(
               leading: const Icon(Icons.today),
               title: const Text('Tomorrow'),
               onTap: () {
-                Navigator.of(sheetContext).pop();
-                onSelected(tomorrow);
+                Navigator.of(sheetContext).pop(
+                  _RescheduleQuickChoice(tomorrow),
+                );
               },
             ),
             ListTile(
               leading: const Icon(Icons.weekend_outlined),
               title: const Text('This weekend'),
               onTap: () {
-                Navigator.of(sheetContext).pop();
-                onSelected(thisWeekend);
+                Navigator.of(sheetContext).pop(
+                  _RescheduleQuickChoice(thisWeekend),
+                );
               },
             ),
             ListTile(
               leading: const Icon(Icons.event),
               title: const Text('Next week'),
               onTap: () {
-                Navigator.of(sheetContext).pop();
-                onSelected(nextWeek);
+                Navigator.of(sheetContext).pop(
+                  _RescheduleQuickChoice(nextWeek),
+                );
               },
             ),
             ListTile(
               leading: const Icon(Icons.calendar_today),
               title: const Text('Pick a date'),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: sheetContext,
-                  initialDate: today.add(const Duration(days: 1)),
-                  firstDate: today.add(const Duration(days: 1)),
-                  lastDate: DateTime(
-                    today.year + 3,
-                    today.month,
-                    today.day,
-                  ),
+              onTap: () {
+                Navigator.of(sheetContext).pop(
+                  const _ReschedulePickDateChoice(),
                 );
-                if (picked == null) return;
-                if (!sheetContext.mounted) return;
-                Navigator.of(sheetContext).pop();
-                onSelected(dateOnly(picked));
               },
             ),
           ],
@@ -1192,6 +1382,25 @@ Future<void> _showRescheduleSheet(
       );
     },
   );
+}
+
+Future<DateTime?> _showRescheduleDatePicker(
+  BuildContext context, {
+  required DateTime dayKeyUtc,
+}) async {
+  final today = dateOnly(dayKeyUtc);
+  final picked = await showDatePicker(
+    context: context,
+    initialDate: today.add(const Duration(days: 1)),
+    firstDate: today.add(const Duration(days: 1)),
+    lastDate: DateTime(
+      today.year + 3,
+      today.month,
+      today.day,
+    ),
+  );
+  if (picked == null || !context.mounted) return null;
+  return dateOnly(picked);
 }
 
 class _RatingsGate extends StatelessWidget {

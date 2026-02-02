@@ -5,6 +5,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
+import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -26,8 +28,21 @@ const _initialSyncTimeout = Duration(seconds: 90);
 const _remoteSyncTimeout = Duration(seconds: 25);
 const _remotePollInterval = Duration(milliseconds: 350);
 
+bool _isIntegrationTestBinding() {
+  try {
+    final binding = WidgetsBinding.instance;
+    return binding is IntegrationTestWidgetsFlutterBinding;
+  } catch (_) {
+    return false;
+  }
+}
+
 void main() {
-  setUpAll(setUpAllIntegrationTestEnvironment);
+  if (!_isIntegrationTestBinding()) {
+    return;
+  }
+
+  setUpAllIntegrationTestEnvironment();
 
   late TasklyDataStack stack;
   late TasklyDataBindings bindings;

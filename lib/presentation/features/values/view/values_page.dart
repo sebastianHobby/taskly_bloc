@@ -7,7 +7,6 @@ import 'package:taskly_bloc/presentation/features/values/widgets/values_list.dar
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
@@ -18,6 +17,7 @@ import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
 
 class ValuesPage extends StatefulWidget {
   const ValuesPage({super.key});
@@ -36,6 +36,26 @@ class _ValuesPageState extends State<ValuesPage> {
   void _updateSort(ValueSortOrder order) {
     if (_sortOrder == order) return;
     setState(() => _sortOrder = order);
+  }
+
+  Future<void> _showFilterSheet(BuildContext context) async {
+    await showFilterSortSheet(
+      context: context,
+      sortGroups: [
+        FilterSortRadioGroup(
+          title: 'Sort',
+          options: [
+            for (final option in ValueSortOrder.values)
+              FilterSortRadioOption(value: option, label: option.label),
+          ],
+          selectedValue: _sortOrder,
+          onSelected: (value) {
+            if (value is! ValueSortOrder) return;
+            _updateSort(value);
+          },
+        ),
+      ],
+    );
   }
 
   @override
@@ -60,34 +80,30 @@ class _ValuesPageState extends State<ValuesPage> {
                 appBar: selectionState.isSelectionMode
                     ? SelectionAppBar(baseTitle: 'Values', onExit: () {})
                     : AppBar(
-                        actions: TasklyAppBarActions.withAttentionBell(
-                          context,
-                          actions: [
-                            TasklyOverflowMenuButton<_ValuesMenuAction>(
-                              tooltip: 'More',
-                              itemsBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: _ValuesMenuAction.sortBy,
-                                  child: Text('Sort by'),
-                                ),
-                                const PopupMenuItem(
-                                  value: _ValuesMenuAction.selectMultiple,
-                                  child: Text('Select multiple'),
-                                ),
-                              ],
-                              onSelected: (action) {
-                                switch (action) {
-                                  case _ValuesMenuAction.sortBy:
-                                    _showSortSheet();
-                                  case _ValuesMenuAction.selectMultiple:
-                                    context
-                                        .read<SelectionBloc>()
-                                        .enterSelectionMode();
-                                }
-                              },
-                            ),
-                          ],
-                        ),
+                        actions: [
+                          IconButton(
+                            tooltip: 'Filter & sort',
+                            icon: const Icon(Icons.tune_rounded),
+                            onPressed: () => _showFilterSheet(context),
+                          ),
+                          TasklyOverflowMenuButton<_ValuesMenuAction>(
+                            tooltip: 'More',
+                            itemsBuilder: (context) => [
+                              const PopupMenuItem(
+                                value: _ValuesMenuAction.selectMultiple,
+                                child: Text('Select multiple'),
+                              ),
+                            ],
+                            onSelected: (action) {
+                              switch (action) {
+                                case _ValuesMenuAction.selectMultiple:
+                                  context
+                                      .read<SelectionBloc>()
+                                      .enterSelectionMode();
+                              }
+                            },
+                          ),
+                        ],
                       ),
                 floatingActionButton: FloatingActionButton(
                   tooltip: context.l10n.createValueTooltip,
@@ -162,43 +178,9 @@ class _ValuesPageState extends State<ValuesPage> {
       ),
     );
   }
-
-  Future<void> _showSortSheet() async {
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: const Text(
-                  'Sort by',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              for (final option in ValueSortOrder.values)
-                RadioListTile<ValueSortOrder>(
-                  value: option,
-                  groupValue: _sortOrder,
-                  title: Text(option.label),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    _updateSort(value);
-                    Navigator.of(sheetContext).pop();
-                  },
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 }
 
 enum _ValuesMenuAction {
-  sortBy,
   selectMultiple,
 }
 

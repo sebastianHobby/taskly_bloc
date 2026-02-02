@@ -94,7 +94,6 @@ abstract class AllocationReasoning with _$AllocationReasoning {
     required String strategyUsed,
     required Map<String, int> categoryAllocations, // categoryId -> count
     required Map<String, double> categoryWeights, // categoryId -> weight
-    double? urgencyInfluence,
     @Default(<String, double>{})
     Map<String, double> neglectDeficits, // categoryId -> deficit (0..1)
     String? topNeglectValueId,

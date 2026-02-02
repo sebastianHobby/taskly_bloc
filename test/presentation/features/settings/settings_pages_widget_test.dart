@@ -10,7 +10,6 @@ import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_appearance_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_language_region_page.dart';
-import 'package:taskly_bloc/presentation/features/settings/view/settings_my_day_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_task_suggestions_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_weekly_review_page.dart';
 import 'package:taskly_domain/allocation.dart';
@@ -60,19 +59,6 @@ void main() {
     );
 
     expect(find.text('Theme'), findsOneWidget);
-  });
-
-  testWidgetsSafe('my day settings render when loaded', (tester) async {
-    const state = GlobalSettingsState(isLoading: false);
-    when(() => globalBloc.state).thenReturn(state);
-    whenListen(globalBloc, Stream.value(state), initialState: state);
-
-    await tester.pumpWidgetWithBloc<GlobalSettingsBloc>(
-      bloc: globalBloc,
-      child: const SettingsMyDayPage(),
-    );
-
-    expect(find.text('My Day'), findsOneWidget);
   });
 
   testWidgetsSafe('language and region page renders', (tester) async {

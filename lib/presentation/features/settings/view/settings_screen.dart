@@ -31,12 +31,6 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => Routing.pushSettingsAppearance(context),
             ),
             _SettingsNavItem(
-              icon: Icons.today_outlined,
-              title: 'My Day',
-              subtitle: 'Routines',
-              onTap: () => Routing.pushSettingsMyDay(context),
-            ),
-            _SettingsNavItem(
               icon: Icons.auto_awesome_outlined,
               title: 'Task Suggestions',
               subtitle: 'Values balance and project focus',

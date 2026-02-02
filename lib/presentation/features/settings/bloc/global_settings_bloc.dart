@@ -47,11 +47,6 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
   const factory GlobalSettingsEvent.textScaleChanged(double textScaleFactor) =
       GlobalSettingsTextScaleChanged;
 
-  /// User toggled whether to show the routines step.
-  const factory GlobalSettingsEvent.myDayShowRoutinesChanged(
-    bool enabled,
-  ) = GlobalSettingsMyDayShowRoutinesChanged;
-
   /// User toggled weekly review scheduling.
   const factory GlobalSettingsEvent.weeklyReviewEnabledChanged(bool enabled) =
       GlobalSettingsWeeklyReviewEnabledChanged;
@@ -229,10 +224,6 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsTextScaleChanged>(
       _onTextScaleChanged,
-      transformer: sequential(),
-    );
-    on<GlobalSettingsMyDayShowRoutinesChanged>(
-      _onMyDayShowRoutinesChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsWeeklyReviewEnabledChanged>(
@@ -651,18 +642,6 @@ class GlobalSettingsBloc
         message: '[GlobalSettingsBloc] guided tour persist failed',
       );
     }
-  }
-
-  Future<void> _onMyDayShowRoutinesChanged(
-    GlobalSettingsMyDayShowRoutinesChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final updated = state.settings.copyWith(myDayShowRoutines: event.enabled);
-    await _persistSettings(
-      updated,
-      intent: 'settings_my_day_show_routines_changed',
-      extraFields: <String, Object?>{'enabled': event.enabled},
-    );
   }
 
   Future<void> _onWeeklyReviewEnabledChanged(

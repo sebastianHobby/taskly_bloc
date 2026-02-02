@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_today_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -64,27 +63,24 @@ class _JournalHubPageState extends State<JournalHubPage> {
 
     return Scaffold(
       appBar: AppBar(
-        actions: TasklyAppBarActions.withAttentionBell(
-          context,
-          actions: [
-            IconButton(
-              tooltip: 'History',
-              onPressed: () => Routing.pushScreenKey(
-                context,
-                'journal_history',
-              ),
-              icon: const Icon(Icons.search),
+        actions: [
+          IconButton(
+            tooltip: 'History',
+            onPressed: () => Routing.pushScreenKey(
+              context,
+              'journal_history',
             ),
-            IconButton(
-              tooltip: 'Manage trackers',
-              onPressed: () => Routing.pushScreenKey(
-                context,
-                'journal_manage_trackers',
-              ),
-              icon: const Icon(Icons.tune),
+            icon: const Icon(Icons.search),
+          ),
+          IconButton(
+            tooltip: 'Manage trackers',
+            onPressed: () => Routing.pushScreenKey(
+              context,
+              'journal_manage_trackers',
             ),
-          ],
-        ),
+            icon: const Icon(Icons.tune),
+          ),
+        ],
       ),
       body: Column(
         children: [

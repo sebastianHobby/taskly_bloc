@@ -69,4 +69,5 @@ while ((Get-Date) -lt $deadline) {
 }
 
 Write-Host "Running pipeline integration tests (device: $Device)..."
+Write-Host "Note: pipeline tests are integration-test-only and require the integration test binding."
 flutter test $Entrypoint -d $Device | Out-Host

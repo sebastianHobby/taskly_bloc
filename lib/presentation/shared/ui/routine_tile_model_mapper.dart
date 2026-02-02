@@ -15,7 +15,6 @@ TasklyRoutineRowData buildRoutineRowData(
   bool completed = false,
   bool highlightCompleted = true,
   bool showProgress = false,
-  bool forceProgress = false,
   bool showScheduleRow = false,
   DateTime? dayKeyUtc,
   List<RoutineCompletion>? completionsInPeriod,
@@ -27,9 +26,7 @@ TasklyRoutineRowData buildRoutineRowData(
   final targetLabel = _cadenceLabel(context, routine);
 
   final effectiveShowProgress =
-      showProgress &&
-      (_supportsProgress(routine.routineType) ||
-          (forceProgress && routine.routineType == RoutineType.weeklyFixed));
+      showProgress && _supportsProgress(routine.routineType);
 
   final progressData = effectiveShowProgress
       ? TasklyRoutineProgressData(

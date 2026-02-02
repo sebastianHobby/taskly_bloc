@@ -40,16 +40,19 @@ tags:
   guided_tour:
   onboarding:
   projects:
+  routines:
   review:
   reviews:
   journal:
   scheduled:
+  statistics:
   scope_context:
   values:
   tasks:
   my_day:
   parity:
   settings:
+  plan_my_day:
 
   # Local-stack pipeline tests (Supabase + PowerSync + real network)
   pipeline:

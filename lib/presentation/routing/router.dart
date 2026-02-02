@@ -39,7 +39,6 @@ import 'package:taskly_bloc/presentation/screens/view/my_day_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_appearance_page.dart';
-import 'package:taskly_bloc/presentation/features/settings/view/settings_my_day_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_task_suggestions_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_weekly_review_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_language_region_page.dart';
@@ -444,10 +443,6 @@ GoRouter createRouter({
           GoRoute(
             path: '${Routing.screenPath('settings')}/appearance',
             builder: (_, __) => const SettingsAppearancePage(),
-          ),
-          GoRoute(
-            path: '${Routing.screenPath('settings')}/my-day',
-            builder: (_, __) => const SettingsMyDayPage(),
           ),
           GoRoute(
             path: '${Routing.screenPath('settings')}/task-suggestions',

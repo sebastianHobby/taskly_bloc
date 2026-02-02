@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker_bloc_logger/talker_bloc_logger.dart';
+import 'package:taskly_bloc/app/restartable_app.dart';
 import 'package:taskly_bloc/bootstrap/error_capture.dart';
 import 'package:taskly_bloc/bootstrap/logging_bootstrap.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
@@ -52,7 +53,7 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
 
       talker.info('Starting application...');
       talker.debug('>>> bootstrap: calling runApp()...');
-      runApp(await builder());
+      runApp(RestartableApp(builder: builder));
       talker.debug('<<< bootstrap: runApp() returned');
     } catch (error, stackTrace) {
       talker.handle(error, stackTrace, 'Bootstrap failed before runApp()');

@@ -10,7 +10,6 @@ import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_timel
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_app_bar_actions.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
@@ -79,7 +78,6 @@ class ScheduledPage extends StatelessWidget {
 }
 
 enum _ScheduledMenuAction {
-  showCompleted,
   selectMultiple,
 }
 
@@ -101,7 +99,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
   DateTime? _latestToday;
   int _latestOverdueOffset = 0;
   DateTime? _lastVisibleDay;
-  bool _showCompleted = false;
+  final bool _showCompleted = false;
 
   @override
   void initState() {
@@ -145,10 +143,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     context.read<ScheduledTimelineBloc>().add(
       ScheduledTimelineVisibleDayChanged(day: day),
     );
-  }
-
-  void _toggleShowCompleted() {
-    setState(() => _showCompleted = !_showCompleted);
   }
 
   DateTime _fallbackTodayLocal() {
@@ -311,70 +305,44 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 toolbarHeight: TasklyTokens.of(
                   context,
                 ).scheduledAppBarHeight,
-                actions: TasklyAppBarActions.withAttentionBell(
-                  context,
-                  actions: [
-                    _CircleIconButton(
-                      icon: Icons.calendar_month_rounded,
-                      onPressed: null,
-                    ),
-                    BlocBuilder<DisplayDensityBloc, DisplayDensityState>(
-                      builder: (context, densityState) {
-                        final isCompact =
-                            densityState.density == DisplayDensity.compact;
-                        return _CircleIconButton(
-                          icon: isCompact
-                              ? Icons.view_agenda_rounded
-                              : Icons.view_week_rounded,
-                          onPressed: () => context
-                              .read<DisplayDensityBloc>()
-                              .add(const DisplayDensityToggled()),
-                        );
-                      },
-                    ),
-                    TasklyOverflowMenuButton<_ScheduledMenuAction>(
-                      tooltip: 'More',
-                      icon: Icons.more_vert,
-                      style: IconButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(
+                actions: [
+                  _CircleIconButton(
+                    icon: Icons.calendar_month_rounded,
+                    onPressed: null,
+                  ),
+                  TasklyOverflowMenuButton<_ScheduledMenuAction>(
+                    tooltip: 'More',
+                    icon: Icons.more_vert,
+                    style: IconButton.styleFrom(
+                      backgroundColor:
+                          Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest.withValues(
+                            alpha: TasklyTokens.of(
                               context,
-                            ).colorScheme.surfaceContainerHighest.withValues(
-                              alpha: TasklyTokens.of(
-                                context,
-                              ).iconButtonBackgroundAlpha,
-                            ),
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onSurface,
-                        shape: const CircleBorder(),
-                        minimumSize: Size.square(
-                          TasklyTokens.of(context).iconButtonMinSize,
-                        ),
-                        padding: TasklyTokens.of(context).iconButtonPadding,
+                            ).iconButtonBackgroundAlpha,
+                          ),
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
+                      shape: const CircleBorder(),
+                      minimumSize: Size.square(
+                        TasklyTokens.of(context).iconButtonMinSize,
                       ),
-                      itemsBuilder: (context) => [
-                        CheckedPopupMenuItem(
-                          value: _ScheduledMenuAction.showCompleted,
-                          checked: _showCompleted,
-                          child: const TasklyMenuItemLabel('Show completed'),
-                        ),
-                        const PopupMenuItem(
-                          value: _ScheduledMenuAction.selectMultiple,
-                          child: TasklyMenuItemLabel('Select multiple'),
-                        ),
-                      ],
-                      onSelected: (action) {
-                        switch (action) {
-                          case _ScheduledMenuAction.showCompleted:
-                            _toggleShowCompleted();
-                          case _ScheduledMenuAction.selectMultiple:
-                            context.read<SelectionBloc>().enterSelectionMode();
-                        }
-                      },
+                      padding: TasklyTokens.of(context).iconButtonPadding,
                     ),
-                  ],
-                ),
+                    itemsBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: _ScheduledMenuAction.selectMultiple,
+                        child: TasklyMenuItemLabel('Select multiple'),
+                      ),
+                    ],
+                    onSelected: (action) {
+                      switch (action) {
+                        case _ScheduledMenuAction.selectMultiple:
+                          context.read<SelectionBloc>().enterSelectionMode();
+                      }
+                    },
+                  ),
+                ],
               ),
               floatingActionButton: _buildAddSpeedDial(_fallbackTodayLocal()),
               body: Column(
@@ -393,70 +361,44 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 toolbarHeight: TasklyTokens.of(
                   context,
                 ).scheduledAppBarHeight,
-                actions: TasklyAppBarActions.withAttentionBell(
-                  context,
-                  actions: [
-                    _CircleIconButton(
-                      icon: Icons.calendar_month_rounded,
-                      onPressed: null,
-                    ),
-                    BlocBuilder<DisplayDensityBloc, DisplayDensityState>(
-                      builder: (context, densityState) {
-                        final isCompact =
-                            densityState.density == DisplayDensity.compact;
-                        return _CircleIconButton(
-                          icon: isCompact
-                              ? Icons.view_agenda_rounded
-                              : Icons.view_week_rounded,
-                          onPressed: () => context
-                              .read<DisplayDensityBloc>()
-                              .add(const DisplayDensityToggled()),
-                        );
-                      },
-                    ),
-                    TasklyOverflowMenuButton<_ScheduledMenuAction>(
-                      tooltip: 'More',
-                      icon: Icons.more_vert,
-                      style: IconButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(
+                actions: [
+                  _CircleIconButton(
+                    icon: Icons.calendar_month_rounded,
+                    onPressed: null,
+                  ),
+                  TasklyOverflowMenuButton<_ScheduledMenuAction>(
+                    tooltip: 'More',
+                    icon: Icons.more_vert,
+                    style: IconButton.styleFrom(
+                      backgroundColor:
+                          Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest.withValues(
+                            alpha: TasklyTokens.of(
                               context,
-                            ).colorScheme.surfaceContainerHighest.withValues(
-                              alpha: TasklyTokens.of(
-                                context,
-                              ).iconButtonBackgroundAlpha,
-                            ),
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onSurface,
-                        shape: const CircleBorder(),
-                        minimumSize: Size.square(
-                          TasklyTokens.of(context).iconButtonMinSize,
-                        ),
-                        padding: TasklyTokens.of(context).iconButtonPadding,
+                            ).iconButtonBackgroundAlpha,
+                          ),
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
+                      shape: const CircleBorder(),
+                      minimumSize: Size.square(
+                        TasklyTokens.of(context).iconButtonMinSize,
                       ),
-                      itemsBuilder: (context) => [
-                        CheckedPopupMenuItem(
-                          value: _ScheduledMenuAction.showCompleted,
-                          checked: _showCompleted,
-                          child: const TasklyMenuItemLabel('Show completed'),
-                        ),
-                        const PopupMenuItem(
-                          value: _ScheduledMenuAction.selectMultiple,
-                          child: TasklyMenuItemLabel('Select multiple'),
-                        ),
-                      ],
-                      onSelected: (action) {
-                        switch (action) {
-                          case _ScheduledMenuAction.showCompleted:
-                            _toggleShowCompleted();
-                          case _ScheduledMenuAction.selectMultiple:
-                            context.read<SelectionBloc>().enterSelectionMode();
-                        }
-                      },
+                      padding: TasklyTokens.of(context).iconButtonPadding,
                     ),
-                  ],
-                ),
+                    itemsBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: _ScheduledMenuAction.selectMultiple,
+                        child: TasklyMenuItemLabel('Select multiple'),
+                      ),
+                    ],
+                    onSelected: (action) {
+                      switch (action) {
+                        case _ScheduledMenuAction.selectMultiple:
+                          context.read<SelectionBloc>().enterSelectionMode();
+                      }
+                    },
+                  ),
+                ],
               ),
               floatingActionButton: _buildAddSpeedDial(_fallbackTodayLocal()),
               body: Column(
@@ -625,77 +567,51 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   toolbarHeight: TasklyTokens.of(
                     context,
                   ).scheduledAppBarHeight,
-                  actions: TasklyAppBarActions.withAttentionBell(
-                    context,
-                    actions: [
-                      _CircleIconButton(
-                        icon: Icons.calendar_month_rounded,
-                        onPressed: () async {
-                          await _pickDateAndJump(
-                            today: today,
-                            initialDay: _lastVisibleDay ?? today,
-                          );
-                        },
-                      ),
-                      BlocBuilder<DisplayDensityBloc, DisplayDensityState>(
-                        builder: (context, densityState) {
-                          final isCompact =
-                              densityState.density == DisplayDensity.compact;
-                          return _CircleIconButton(
-                            icon: isCompact
-                                ? Icons.view_agenda_rounded
-                                : Icons.view_week_rounded,
-                            onPressed: () => context
-                                .read<DisplayDensityBloc>()
-                                .add(const DisplayDensityToggled()),
-                          );
-                        },
-                      ),
-                      TasklyOverflowMenuButton<_ScheduledMenuAction>(
-                        tooltip: 'More',
-                        icon: Icons.more_vert,
-                        style: IconButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(
+                  actions: [
+                    _CircleIconButton(
+                      icon: Icons.calendar_month_rounded,
+                      onPressed: () async {
+                        await _pickDateAndJump(
+                          today: today,
+                          initialDay: _lastVisibleDay ?? today,
+                        );
+                      },
+                    ),
+                    TasklyOverflowMenuButton<_ScheduledMenuAction>(
+                      tooltip: 'More',
+                      icon: Icons.more_vert,
+                      style: IconButton.styleFrom(
+                        backgroundColor:
+                            Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest.withValues(
+                              alpha: TasklyTokens.of(
                                 context,
-                              ).colorScheme.surfaceContainerHighest.withValues(
-                                alpha: TasklyTokens.of(
-                                  context,
-                                ).iconButtonBackgroundAlpha,
-                              ),
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.onSurface,
-                          shape: const CircleBorder(),
-                          minimumSize: Size.square(
-                            TasklyTokens.of(context).iconButtonMinSize,
-                          ),
-                          padding: TasklyTokens.of(context).iconButtonPadding,
+                              ).iconButtonBackgroundAlpha,
+                            ),
+                        foregroundColor: Theme.of(context).colorScheme.onSurface,
+                        shape: const CircleBorder(),
+                        minimumSize: Size.square(
+                          TasklyTokens.of(context).iconButtonMinSize,
                         ),
-                        itemsBuilder: (context) => [
-                          CheckedPopupMenuItem(
-                            value: _ScheduledMenuAction.showCompleted,
-                            checked: _showCompleted,
-                            child: const TasklyMenuItemLabel('Show completed'),
-                          ),
-                          const PopupMenuItem(
-                            value: _ScheduledMenuAction.selectMultiple,
-                            child: TasklyMenuItemLabel('Select multiple'),
-                          ),
-                        ],
-                        onSelected: (action) {
-                          switch (action) {
-                            case _ScheduledMenuAction.showCompleted:
-                              _toggleShowCompleted();
-                            case _ScheduledMenuAction.selectMultiple:
-                              context
-                                  .read<SelectionBloc>()
-                                  .enterSelectionMode();
-                          }
-                        },
+                        padding: TasklyTokens.of(context).iconButtonPadding,
                       ),
-                    ],
-                  ),
+                      itemsBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: _ScheduledMenuAction.selectMultiple,
+                          child: TasklyMenuItemLabel('Select multiple'),
+                        ),
+                      ],
+                      onSelected: (action) {
+                        switch (action) {
+                          case _ScheduledMenuAction.selectMultiple:
+                            context
+                                .read<SelectionBloc>()
+                                .enterSelectionMode();
+                        }
+                      },
+                    ),
+                  ],
                 ),
           floatingActionButton: selectionState.isSelectionMode
               ? null
@@ -836,7 +752,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     );
   }
 
-  static int _compareOccurrences(ScheduledOccurrence a, ScheduledOccurrence b) {
+  int _compareOccurrences(ScheduledOccurrence a, ScheduledOccurrence b) {
     final aDue = a.tag == ScheduledDateTag.due;
     final bDue = b.tag == ScheduledDateTag.due;
     if (aDue != bDue) return aDue ? -1 : 1;

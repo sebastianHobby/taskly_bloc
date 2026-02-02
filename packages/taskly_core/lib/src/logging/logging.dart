@@ -101,7 +101,16 @@ void initializeLogging() {
 /// This disables fail-fast behavior.
 @visibleForTesting
 void initializeLoggingForTest() {
-  final raw = TalkerFlutter.init();
+  final observer = MultiTalkerObserver(
+    observers: <TalkerObserver>[
+      DebugFileLogObserver(
+        maxFileBytes: 1024 * 1024,
+        supportDirectoryProvider: () async => Directory('build/test_logs'),
+      ),
+    ],
+  );
+
+  final raw = TalkerFlutter.init(observer: observer);
   _backend = TasklyTalker(raw, failFastPolicy: TalkerFailFastPolicy.forTests());
   talker = _TasklyLogAdapter(_backend);
   _isInitialized = true;

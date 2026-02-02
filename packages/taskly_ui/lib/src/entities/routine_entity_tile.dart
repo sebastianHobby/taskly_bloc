@@ -56,26 +56,17 @@ class RoutineEntityTile extends StatelessWidget {
     final valueChip = model.valueChip;
     final metaLabel =
         [
-              model.remainingLabel,
+              if (!showProgress) model.remainingLabel,
               model.windowLabel,
               model.targetLabel,
             ]
             .map((text) => text.trim())
             .where((text) => text.isNotEmpty)
             .join(' \u00b7 ');
-    final showMeta = metaLabel.isNotEmpty && !showProgress && !showScheduleRow;
+    final showMeta = metaLabel.isNotEmpty;
 
     final progress = model.progress;
-    final progressLabel = progress == null
-        ? ''
-        : '${progress.completedCount}/${progress.targetCount}';
-    final windowLabel = progress?.windowLabel.trim() ?? '';
-    final compactMetaLabel = progress == null
-        ? metaLabel
-        : [
-            progressLabel,
-            windowLabel,
-          ].where((text) => text.isNotEmpty).join(' \u00b7 ');
+    final compactMetaLabel = metaLabel;
 
     final isSelected =
         model.selected || (model.completed && model.highlightCompleted);
@@ -91,11 +82,6 @@ class RoutineEntityTile extends StatelessWidget {
       fontWeight: FontWeight.w700,
     );
 
-    final metaStyle = theme.textTheme.labelSmall?.copyWith(
-      color: scheme.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
-    );
-
     final VoidCallback? onTap = isPlanPickStyle
         ? actions.onTap ?? actions.onToggleSelected
         : actions.onTap;
@@ -108,7 +94,9 @@ class RoutineEntityTile extends StatelessWidget {
             tileSurface: tileSurface,
             showScheduleRow: showScheduleRow,
             metaLabel: compactMetaLabel,
+            progress: progress,
             showPrimary: showPrimary,
+            primaryLabelText: primaryLabelText,
             showPicker: showPicker,
             showSelection: showSelection,
             selectionAddLabel: selectionAddLabel,
@@ -151,39 +139,14 @@ class RoutineEntityTile extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: titleStyle,
                               ),
-                              if (!showProgress &&
-                                  !showScheduleRow &&
-                                  (valueChip != null || showMeta)) ...[
+                              if (valueChip != null || showMeta) ...[
                                 SizedBox(height: tokens.spaceXs2),
-                                Wrap(
-                                  spacing: tokens.spaceXs2,
-                                  runSpacing: tokens.spaceXs2,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    if (valueChip != null)
-                                      _ValueInlineLabel(
-                                        data: valueChip,
-                                        textColor: scheme.onSurfaceVariant,
-                                      ),
-                                    if (showMeta) ...[
-                                      if (valueChip != null)
-                                        _ValueMetaDot(tokens: tokens),
-                                      Text(metaLabel, style: metaStyle),
-                                    ],
-                                  ],
+                                _RoutineMetaRow(
+                                  valueChip: valueChip,
+                                  metaLabel: metaLabel,
+                                  showMeta: showMeta,
+                                  progress: progress,
                                 ),
-                              ],
-                              if ((showProgress || showScheduleRow) &&
-                                  valueChip != null) ...[
-                                SizedBox(height: tokens.spaceXs2),
-                                _ValueInlineLabel(
-                                  data: valueChip,
-                                  textColor: scheme.onSurfaceVariant,
-                                ),
-                              ],
-                              if (showProgress && model.progress != null) ...[
-                                SizedBox(height: tokens.spaceSm2),
-                                _RoutineProgressRow(data: model.progress!),
                               ],
                               if (showScheduleRow &&
                                   model.scheduleRow != null) ...[
@@ -253,7 +216,9 @@ class _CompactRoutineTile extends StatelessWidget {
     required this.tileSurface,
     required this.showScheduleRow,
     required this.metaLabel,
+    required this.progress,
     required this.showPrimary,
+    required this.primaryLabelText,
     required this.showPicker,
     required this.showSelection,
     required this.selectionAddLabel,
@@ -266,7 +231,9 @@ class _CompactRoutineTile extends StatelessWidget {
   final Color tileSurface;
   final bool showScheduleRow;
   final String metaLabel;
+  final TasklyRoutineProgressData? progress;
   final bool showPrimary;
+  final String primaryLabelText;
   final bool showPicker;
   final bool showSelection;
   final String selectionAddLabel;
@@ -280,6 +247,7 @@ class _CompactRoutineTile extends StatelessWidget {
     final valueChip = model.valueChip;
     final trimmedMetaLabel = metaLabel.trim();
     final hasMetaLabel = trimmedMetaLabel.isNotEmpty;
+    final hasProgress = progress != null;
 
     final VoidCallback? onTap = actions.onTap ?? actions.onToggleSelected;
 
@@ -333,6 +301,10 @@ class _CompactRoutineTile extends StatelessWidget {
                               SizedBox(width: tokens.spaceXs2),
                               _ValueIconOnly(data: valueChip),
                             ],
+                            if (hasProgress) ...[
+                              SizedBox(width: tokens.spaceXs2),
+                              _ProgressChip(data: progress!),
+                            ],
                             if (hasMetaLabel) ...[
                               SizedBox(width: tokens.spaceSm2),
                               Text(
@@ -357,7 +329,7 @@ class _CompactRoutineTile extends StatelessWidget {
                   if (showPrimary) ...[
                     SizedBox(width: tokens.spaceSm),
                     _PrimaryActionButton(
-                      label: model.completed ? 'Logged' : 'Do today',
+                      label: primaryLabelText,
                       completed: model.completed,
                       onPressed: actions.onPrimaryAction,
                     ),
@@ -579,8 +551,67 @@ class _ValueMetaDot extends StatelessWidget {
   }
 }
 
-class _RoutineProgressRow extends StatelessWidget {
-  const _RoutineProgressRow({required this.data});
+class _RoutineMetaRow extends StatelessWidget {
+  const _RoutineMetaRow({
+    required this.valueChip,
+    required this.metaLabel,
+    required this.showMeta,
+    required this.progress,
+  });
+
+  final ValueChipData? valueChip;
+  final String metaLabel;
+  final bool showMeta;
+  final TasklyRoutineProgressData? progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final children = <Widget>[];
+
+    if (valueChip != null) {
+      children.add(
+        _ValueInlineLabel(
+          data: valueChip!,
+          textColor: scheme.onSurfaceVariant,
+        ),
+      );
+    }
+    if (progress != null) {
+      if (children.isNotEmpty) {
+        children.add(_ValueMetaDot(tokens: tokens));
+      }
+      children.add(_ProgressChip(data: progress!));
+    }
+    if (showMeta) {
+      if (children.isNotEmpty) {
+        children.add(_ValueMetaDot(tokens: tokens));
+      }
+      children.add(
+        Text(
+          metaLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: tokens.spaceXs2,
+      runSpacing: tokens.spaceXs2,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: children,
+    );
+  }
+}
+
+class _ProgressChip extends StatelessWidget {
+  const _ProgressChip({required this.data});
 
   final TasklyRoutineProgressData data;
 
@@ -588,83 +619,26 @@ class _RoutineProgressRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final label = '${data.completedCount}/${data.targetCount}';
+    final background = scheme.primaryContainer.withValues(alpha: 0.7);
+    final foreground = scheme.primary;
 
-    const progressWidth = 72.0;
-    final barHeight = tokens.spaceXs2;
-    final progressColor = scheme.primary;
-    final trackColor = scheme.surfaceVariant.withValues(alpha: 0.6);
-
-    final progressLabel = '${data.completedCount}/${data.targetCount}';
-    final windowLabel = data.windowLabel.trim();
-    final caption = data.caption?.trim() ?? '';
-
-    final bar = SizedBox(
-      width: progressWidth,
-      child: ClipRRect(
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceXs2,
+        vertical: tokens.spaceXxs2,
+      ),
+      decoration: BoxDecoration(
+        color: background,
         borderRadius: BorderRadius.circular(tokens.radiusPill),
-        child: SizedBox(
-          height: barHeight,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              DecoratedBox(
-                decoration: BoxDecoration(color: trackColor),
-              ),
-              FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: data.progressRatio.clamp(0.0, 1.0),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(color: progressColor),
-                ),
-              ),
-            ],
-          ),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: foreground,
+          fontWeight: FontWeight.w700,
         ),
       ),
-    );
-
-    final metaText = Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(text: progressLabel),
-          if (windowLabel.isNotEmpty) TextSpan(text: ' \u00b7 $windowLabel'),
-        ],
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: textTheme.labelSmall?.copyWith(
-        color: scheme.onSurfaceVariant,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-
-    if (caption.isEmpty) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          bar,
-          SizedBox(width: tokens.spaceSm),
-          Expanded(child: metaText),
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        bar,
-        SizedBox(height: tokens.spaceXs2),
-        Text(
-          caption,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: textTheme.labelSmall?.copyWith(
-            color: scheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 }

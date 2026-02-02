@@ -15,6 +15,7 @@ import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/settings.dart' as settings;
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class MockPlanMyDayBloc extends MockBloc<PlanMyDayEvent, PlanMyDayState>
     implements PlanMyDayBloc {}
@@ -31,7 +32,10 @@ class FakeNowService implements NowService {
 }
 
 void main() {
-  setUpAll(setUpAllTestEnvironment);
+  setUpAll(() {
+    setUpAllTestEnvironment();
+    registerFallbackValue(const PlanMyDayStarted());
+  });
   setUp(setUpTestEnvironment);
 
   late MockPlanMyDayBloc planBloc;
@@ -75,6 +79,15 @@ void main() {
       overCapacity: false,
       toastRequestId: 0,
     );
+  }
+
+  void setTestSurfaceSize(WidgetTester tester, Size size) {
+    tester.binding.window.physicalSizeTestValue = size;
+    tester.binding.window.devicePixelRatioTestValue = 1.0;
+    addTearDown(() {
+      tester.binding.window.clearPhysicalSizeTestValue();
+      tester.binding.window.clearDevicePixelRatioTestValue();
+    });
   }
 
   testWidgetsSafe('plan my day shows loading state', (tester) async {
@@ -210,4 +223,183 @@ void main() {
     expect(find.text('Pay rent'), findsOneWidget);
     expect(find.text('Prep meeting notes'), findsOneWidget);
   });
+
+  testWidgetsSafe(
+    'plan my day reschedules all due tasks on quick pick',
+    (tester) async {
+      setTestSurfaceSize(tester, const Size(800, 1800));
+      final dueTask = TestData.task(
+        id: 'task-due',
+        name: 'Pay rent',
+        deadlineDate: DateTime(2025, 1, 15),
+      );
+
+      final state = buildReady(
+        valueGroups: const [],
+        dueTodayTasks: [dueTask],
+        selectedTaskIds: {dueTask.id},
+      );
+      const gateState = MyDayGateLoaded(needsValuesSetup: false);
+
+      when(() => planBloc.state).thenReturn(state);
+      whenListen(planBloc, Stream.value(state), initialState: state);
+      when(() => gateBloc.state).thenReturn(gateState);
+      whenListen(gateBloc, Stream.value(gateState), initialState: gateState);
+
+      await tester.pumpWidgetWithBlocs(
+        providers: [
+          BlocProvider<PlanMyDayBloc>.value(value: planBloc),
+          BlocProvider<MyDayGateBloc>.value(value: gateBloc),
+        ],
+        child: RepositoryProvider<NowService>.value(
+          value: nowService,
+          child: PlanMyDayPage(onCloseRequested: () {}),
+        ),
+      );
+      await tester.pumpForStream();
+
+      await tester.tap(find.text('Reschedule all due'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final tomorrowTile = tester.widget<ListTile>(
+        find.widgetWithText(ListTile, 'Tomorrow'),
+      );
+      expect(tomorrowTile.onTap, isNotNull);
+      tomorrowTile.onTap!();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final captured = verify(() => planBloc.add(captureAny())).captured;
+      final event = captured.single as PlanMyDayBulkRescheduleDueRequested;
+
+      expect(event.newDayUtc, DateTime.utc(2025, 1, 16));
+    },
+  );
+
+  testWidgetsSafe(
+    'plan my day reschedules all planned tasks on quick pick',
+    (tester) async {
+      setTestSurfaceSize(tester, const Size(800, 1800));
+      final plannedTask = TestData.task(
+        id: 'task-plan',
+        name: 'Prep meeting notes',
+        startDate: DateTime(2025, 1, 15),
+      );
+
+      final state = buildReady(
+        valueGroups: const [],
+        plannedTasks: [plannedTask],
+        selectedTaskIds: {plannedTask.id},
+      );
+      const gateState = MyDayGateLoaded(needsValuesSetup: false);
+
+      when(() => planBloc.state).thenReturn(state);
+      whenListen(planBloc, Stream.value(state), initialState: state);
+      when(() => gateBloc.state).thenReturn(gateState);
+      whenListen(gateBloc, Stream.value(gateState), initialState: gateState);
+
+      await tester.pumpWidgetWithBlocs(
+        providers: [
+          BlocProvider<PlanMyDayBloc>.value(value: planBloc),
+          BlocProvider<MyDayGateBloc>.value(value: gateBloc),
+        ],
+        child: RepositoryProvider<NowService>.value(
+          value: nowService,
+          child: PlanMyDayPage(onCloseRequested: () {}),
+        ),
+      );
+      await tester.pumpForStream();
+
+      await tester.tap(find.text('Reschedule all planned'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final tomorrowTile = tester.widget<ListTile>(
+        find.widgetWithText(ListTile, 'Tomorrow'),
+      );
+      expect(tomorrowTile.onTap, isNotNull);
+      tomorrowTile.onTap!();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final captured = verify(() => planBloc.add(captureAny())).captured;
+      final event = captured.single as PlanMyDayBulkReschedulePlannedRequested;
+
+      expect(event.newDayUtc, DateTime.utc(2025, 1, 16));
+    },
+  );
+
+  testWidgetsSafe(
+    'plan my day sizes bottom fade based on last child height',
+    (tester) async {
+      setTestSurfaceSize(tester, const Size(800, 1200));
+      final dueTask = TestData.task(
+        id: 'task-due',
+        name: 'Pay rent',
+        deadlineDate: DateTime(2025, 1, 15),
+      );
+      final plannedTask = TestData.task(
+        id: 'task-plan',
+        name: 'Prep meeting notes',
+        startDate: DateTime(2025, 1, 15),
+      );
+
+      final state = buildReady(
+        valueGroups: const [],
+        dueTodayTasks: [dueTask],
+        plannedTasks: [plannedTask],
+        selectedTaskIds: {dueTask.id, plannedTask.id},
+      );
+      const gateState = MyDayGateLoaded(needsValuesSetup: false);
+
+      when(() => planBloc.state).thenReturn(state);
+      whenListen(planBloc, Stream.value(state), initialState: state);
+      when(() => gateBloc.state).thenReturn(gateState);
+      whenListen(gateBloc, Stream.value(gateState), initialState: gateState);
+
+      await tester.pumpWidgetWithBlocs(
+        providers: [
+          BlocProvider<PlanMyDayBloc>.value(value: planBloc),
+          BlocProvider<MyDayGateBloc>.value(value: gateBloc),
+        ],
+        child: RepositoryProvider<NowService>.value(
+          value: nowService,
+          child: PlanMyDayPage(onCloseRequested: () {}),
+        ),
+      );
+      await tester.pumpForStream();
+      await tester.pump();
+      await tester.pump();
+
+      final context = tester.element(find.byType(PlanMyDayPage));
+      final tokens = TasklyTokens.of(context);
+
+      final lastChildSize = tester.getSize(
+        find.byKey(kPlanMyDayLastChildKey),
+      );
+      final fadeSize = tester.getSize(find.byKey(kPlanMyDayBottomFadeKey));
+
+      final expectedFade = (lastChildSize.height * 0.5).clamp(
+        tokens.spaceMd,
+        tokens.spaceXl,
+      );
+      final expectedCovered = (lastChildSize.height * 0.3).clamp(
+        tokens.spaceXs2,
+        expectedFade - 1,
+      );
+      final expectedBottomPadding = (expectedFade - expectedCovered).clamp(
+        0,
+        expectedFade,
+      );
+
+      expect(
+        fadeSize.height,
+        moreOrLessEquals(expectedFade.toDouble(), epsilon: 0.5),
+      );
+
+      final listView = tester.widget<ListView>(find.byType(ListView));
+      final padding = listView.padding! as EdgeInsets;
+      expect(
+        padding.bottom,
+        moreOrLessEquals(expectedBottomPadding.toDouble(), epsilon: 0.5),
+      );
+    },
+  );
 }

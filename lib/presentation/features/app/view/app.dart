@@ -11,6 +11,7 @@ import 'package:taskly_bloc/core/config/debug_bootstrap_flags.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
+import 'package:taskly_bloc/core/startup/app_restart_service.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/debug_bootstrap_bloc.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
@@ -151,6 +152,7 @@ class App extends StatelessWidget {
           Provider<PresentationSessionServicesCoordinator>(
             create: (_) => getIt<PresentationSessionServicesCoordinator>(),
           ),
+          Provider<AppRestartService>.value(value: appRestartService),
           Provider<InitialSyncService>(
             create: (_) => getIt<InitialSyncService>(),
           ),
@@ -231,6 +233,7 @@ class App extends StatelessWidget {
                     .read<AuthenticatedAppServicesCoordinator>(),
                 initialSyncService: context.read<InitialSyncService>(),
                 sharedDataService: context.read<SessionSharedDataService>(),
+                appRestartService: context.read<AppRestartService>(),
               ),
             ),
             BlocProvider<GuidedTourBloc>(

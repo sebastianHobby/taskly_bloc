@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
+import 'package:taskly_bloc/core/startup/app_restart_service.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
@@ -20,6 +21,8 @@ class MockAuthenticatedAppServicesCoordinator extends Mock
 class MockInitialSyncService extends Mock implements InitialSyncService {}
 
 class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
+
+class MockAppRestartService extends Mock implements AppRestartService {}
 
 InitialSyncProgress _progress({
   bool hasSynced = false,
@@ -44,6 +47,7 @@ void main() {
 
   late MockAuthenticatedAppServicesCoordinator coordinator;
   late MockInitialSyncService initialSyncService;
+  late MockAppRestartService appRestartService;
   late SessionSharedDataService sharedDataService;
   late SessionStreamCacheManager cacheManager;
   late DemoModeService demoModeService;
@@ -61,12 +65,14 @@ void main() {
       coordinator: coordinator,
       initialSyncService: initialSyncService,
       sharedDataService: sharedDataService,
+      appRestartService: appRestartService,
     );
   }
 
   setUp(() {
     coordinator = MockAuthenticatedAppServicesCoordinator();
     initialSyncService = MockInitialSyncService();
+    appRestartService = MockAppRestartService();
     appLifecycleEvents = MockAppLifecycleEvents();
     valueRepository = MockValueRepositoryContract();
     taskRepository = MockTaskRepositoryContract();
@@ -81,6 +87,9 @@ void main() {
     when(() => initialSyncService.progress).thenAnswer(
       (_) => progressController.stream,
     );
+    when(
+      () => appRestartService.restart(reason: any(named: 'reason')),
+    ).thenAnswer((_) async => true);
     when(() => appLifecycleEvents.events).thenAnswer(
       (_) => const Stream<AppLifecycleEvent>.empty(),
     );
@@ -159,5 +168,26 @@ void main() {
       isA<InitialSyncGateInProgress>(),
       isA<InitialSyncGateReady>(),
     ],
+  );
+
+  blocTestSafe<InitialSyncGateBloc, InitialSyncGateState>(
+    'triggers app restart on stream already listened error',
+    build: () {
+      when(
+        () => coordinator.start(),
+      ).thenThrow(StateError('Stream has already been listened to.'));
+      return buildBloc();
+    },
+    act: (bloc) => bloc.add(const InitialSyncGateStarted()),
+    expect: () => [
+      isA<InitialSyncGateInProgress>(),
+    ],
+    verify: (_) {
+      verify(
+        () => appRestartService.restart(
+          reason: 'powersync-stream-already-listened',
+        ),
+      ).called(1);
+    },
   );
 }

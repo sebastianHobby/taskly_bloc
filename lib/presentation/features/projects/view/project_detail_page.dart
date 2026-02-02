@@ -16,6 +16,7 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart'
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rich_text_utils.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
@@ -105,65 +106,32 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
   }
 
   Future<void> _showFilterSheet() async {
-    await showModalBottomSheet<void>(
+    await showFilterSortSheet(
       context: context,
-      showDragHandle: true,
-      builder: (sheetContext) {
-        final tokens = TasklyTokens.of(sheetContext);
-        final theme = Theme.of(sheetContext);
-
-        return SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.spaceLg,
-              tokens.spaceSm,
-              tokens.spaceLg,
-              tokens.spaceLg,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Filter & sort',
-                  style: theme.textTheme.titleLarge,
-                ),
-                SizedBox(height: tokens.spaceSm),
-                Text(
-                  'Sort',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                for (final order in _ProjectTaskSortOrder.values)
-                  RadioListTile<_ProjectTaskSortOrder>(
-                    value: order,
-                    groupValue: _sortOrder,
-                    title: Text(order.label),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      _updateSortOrder(value);
-                      Navigator.of(sheetContext).pop();
-                    },
-                  ),
-                SizedBox(height: tokens.spaceSm),
-                Text(
-                  'Filter',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SwitchListTile(
-                  value: _showCompleted,
-                  onChanged: _toggleShowCompleted,
-                  title: const Text('Show completed'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      sortGroups: [
+        FilterSortRadioGroup(
+          title: 'Sort',
+          options: [
+            for (final order in _ProjectTaskSortOrder.values)
+              FilterSortRadioOption(
+                value: order,
+                label: order.label,
+              ),
+          ],
+          selectedValue: _sortOrder,
+          onSelected: (value) {
+            if (value is! _ProjectTaskSortOrder) return;
+            _updateSortOrder(value);
+          },
+        ),
+      ],
+      toggles: [
+        FilterSortToggle(
+          title: 'Show completed',
+          value: _showCompleted,
+          onChanged: _toggleShowCompleted,
+        ),
+      ],
     );
   }
 

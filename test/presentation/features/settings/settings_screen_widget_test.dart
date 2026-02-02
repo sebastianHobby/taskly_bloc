@@ -36,7 +36,6 @@ void main() {
 
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Appearance'), findsOneWidget);
-    expect(find.text('My Day'), findsOneWidget);
     expect(find.text('Task Suggestions'), findsOneWidget);
     expect(find.text('Weekly Review'), findsOneWidget);
     expect(find.text('Language & Region'), findsOneWidget);

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
@@ -77,8 +79,8 @@ class ProjectEntityTile extends StatelessWidget {
         ? scheme.error
         : scheme.onSurfaceVariant;
 
-    final baseOpacity = model.deemphasized ? 0.6 : 1.0;
-    final completedOpacity = model.completed ? 0.75 : 1.0;
+    final baseOpacity = model.deemphasized ? 0.6 : 1;
+    final completedOpacity = model.completed ? 0.75 : 1;
     final opacity = (baseOpacity * completedOpacity).clamp(0, 1).toDouble();
 
     final onTap = switch (preset) {
@@ -91,9 +93,10 @@ class ProjectEntityTile extends StatelessWidget {
         (isReadOnlyHeader
             ? theme.textTheme.headlineSmall
             : (_isCompact
-                  ? theme.textTheme.titleSmall
-                  : theme.textTheme.titleMedium)) ??
+                  ? theme.textTheme.titleMedium
+                  : theme.textTheme.headlineSmall)) ??
         const TextStyle();
+    final weightedTitleStyle = titleStyle.copyWith(fontWeight: FontWeight.w700);
 
     final card = DecoratedBox(
       decoration: BoxDecoration(
@@ -129,7 +132,11 @@ class ProjectEntityTile extends StatelessWidget {
                         _InboxGlyph(tokens: tokens),
                         SizedBox(width: tokens.spaceMd),
                       ] else ...[
-                        _ProjectGlyph(tokens: tokens),
+                        _ProjectGlyph(
+                          tokens: tokens,
+                          progress: _progress ?? 0,
+                          isCompact: _isCompact,
+                        ),
                         SizedBox(width: tokens.spaceMd),
                       ],
                       Expanded(
@@ -153,7 +160,7 @@ class ProjectEntityTile extends StatelessWidget {
                                     model.title,
                                     maxLines: _isCompact ? 1 : 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: titleStyle.copyWith(
+                                    style: weightedTitleStyle.copyWith(
                                       color: scheme.onSurface,
                                       decoration: model.completed
                                           ? TextDecoration.lineThrough
@@ -236,12 +243,6 @@ class ProjectEntityTile extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (_showProgressBar(model)) ...[
-                    SizedBox(height: tokens.spaceSm),
-                    _ProjectProgressBar(
-                      progress: _progress ?? 0.0,
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -343,70 +344,56 @@ bool _hasMetaRow(TasklyProjectRowData model) {
   return hasStart || hasDeadline || hasPriority;
 }
 
-bool _showProgressBar(TasklyProjectRowData model) {
-  final total = model.taskCount ?? 0;
-  return total > 0;
-}
-
-class _ProjectProgressBar extends StatelessWidget {
-  const _ProjectProgressBar({required this.progress});
-
-  final double progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-
-    final trackColor = scheme.surfaceContainerHighest.withValues(alpha: 0.9);
-    final barColor = scheme.primary;
-    final height = tokens.spaceXs2;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(tokens.radiusPill),
-      child: SizedBox(
-        height: height,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            DecoratedBox(decoration: BoxDecoration(color: trackColor)),
-            FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: progress.clamp(0.0, 1.0),
-              child: DecoratedBox(
-                decoration: BoxDecoration(color: barColor),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _ProjectGlyph extends StatelessWidget {
-  const _ProjectGlyph({required this.tokens});
+  const _ProjectGlyph({
+    required this.tokens,
+    required this.progress,
+    required this.isCompact,
+  });
 
   final TasklyTokens tokens;
+  final double progress;
+  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final size = isCompact
+        ? tokens.progressRingSizeSmall
+        : tokens.progressRingSize - tokens.spaceXs;
+    final stroke = tokens.progressRingStrokeSmall;
+    final trackColor = scheme.outlineVariant.withValues(alpha: 0.7);
+    final ringColor = scheme.primary;
+    final innerSize = math.max<double>(
+      0,
+      size - (stroke * 2) - tokens.spaceXs2,
+    );
 
-    return Container(
-      width: tokens.progressRingSize,
-      height: tokens.progressRingSize,
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.6),
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _ProgressRingPainter(
+          progress: progress,
+          trackColor: trackColor,
+          ringColor: ringColor,
+          strokeWidth: stroke,
         ),
-      ),
-      child: Icon(
-        Icons.folder_rounded,
-        size: 20,
-        color: scheme.onSurfaceVariant,
+        child: Center(
+          child: Container(
+            width: innerSize,
+            height: innerSize,
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest.withValues(alpha: 0.45),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.folder_rounded,
+              size: isCompact ? 16 : 18,
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -461,5 +448,56 @@ class _PinnedGlyph extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ProgressRingPainter extends CustomPainter {
+  const _ProgressRingPainter({
+    required this.progress,
+    required this.trackColor,
+    required this.ringColor,
+    required this.strokeWidth,
+  });
+
+  final double progress;
+  final Color trackColor;
+  final Color ringColor;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = math.max<double>(
+      0,
+      (size.shortestSide - strokeWidth) / 2,
+    );
+    if (radius <= 0) return;
+
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    final ringPaint = Paint()
+      ..color = ringColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, trackPaint);
+    final clamped = progress.clamp(0, 1);
+    if (clamped == 0) return;
+
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    const startAngle = -math.pi / 2;
+    final sweep = (math.pi * 2) * clamped;
+    canvas.drawArc(rect, startAngle, sweep, false, ringPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ProgressRingPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.trackColor != trackColor ||
+        oldDelegate.ringColor != ringColor ||
+        oldDelegate.strokeWidth != strokeWidth;
   }
 }

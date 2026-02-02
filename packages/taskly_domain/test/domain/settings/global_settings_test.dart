@@ -18,7 +18,6 @@ void main() {
       });
 
       expect(settings.themeMode, AppThemeMode.dark);
-      expect(settings.myDayShowRoutines, isTrue);
       expect(settings.textScaleFactor, 1.25);
       expect(settings.onboardingCompleted, isTrue);
       expect(settings.guidedTourCompleted, isTrue);
@@ -48,7 +47,6 @@ void main() {
       colorSchemeSeedArgb: 0xFF112233,
       localeCode: 'en',
       homeTimeZoneOffsetMinutes: -60,
-      myDayShowRoutines: false,
       maintenanceDeadlineRiskDueWithinDays: 99,
       maintenanceDeadlineRiskMinUnscheduledCount: 0,
       maintenanceTaskStaleThresholdDays: 0,
@@ -65,7 +63,6 @@ void main() {
     expect(decoded.colorSchemeSeedArgb, 0xFF112233);
     expect(decoded.localeCode, 'en');
     expect(decoded.homeTimeZoneOffsetMinutes, -60);
-    expect(decoded.myDayShowRoutines, isFalse);
     expect(
       decoded.maintenanceDeadlineRiskDueWithinDays,
       GlobalSettings.maintenanceDeadlineRiskDueWithinDaysMax,

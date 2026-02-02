@@ -24,6 +24,8 @@ Core principles:
 - **Layer-aligned tests**: test at the lowest layer that gives confidence.
 - **Hermetic-by-default**: unit/widget tests do not require network.
 - **Explicit real-stack boundaries**: pipeline tests are opt-in and tagged.
+- **Integration-only execution**: pipeline tests only execute under the
+  integration test binding; standard `flutter test` runs will skip them.
 - **Artifact-first**: structured output exists to debug failures.
 
 ## 2) Non-goals

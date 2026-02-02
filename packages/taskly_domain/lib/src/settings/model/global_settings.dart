@@ -20,9 +20,6 @@ abstract class GlobalSettings with _$GlobalSettings {
     @Default(GlobalSettings.defaultHomeTimeZoneOffsetMinutes)
     int homeTimeZoneOffsetMinutes,
 
-    /// My Day ritual: show the routines step.
-    @Default(true) bool myDayShowRoutines,
-
     /// Weekly review scheduling.
     @Default(true) bool weeklyReviewEnabled,
     @Default(GlobalSettings.defaultWeeklyReviewDayOfWeek)
@@ -60,8 +57,6 @@ abstract class GlobalSettings with _$GlobalSettings {
   }) = _GlobalSettings;
 
   factory GlobalSettings.fromJson(Map<String, dynamic> json) {
-    final rawMyDayShowRoutines = json['myDayShowRoutines'] as bool?;
-
     final rawWeeklyReviewDay =
         (json['weeklyReviewDayOfWeek'] as num?)?.toInt() ??
         defaultWeeklyReviewDayOfWeek;
@@ -103,7 +98,6 @@ abstract class GlobalSettings with _$GlobalSettings {
       homeTimeZoneOffsetMinutes:
           (json['homeTimeZoneOffsetMinutes'] as num?)?.toInt() ??
           defaultHomeTimeZoneOffsetMinutes,
-      myDayShowRoutines: rawMyDayShowRoutines ?? true,
       weeklyReviewEnabled: json['weeklyReviewEnabled'] as bool? ?? true,
       weeklyReviewDayOfWeek: rawWeeklyReviewDay.clamp(1, 7),
       weeklyReviewTimeMinutes: rawWeeklyReviewTimeMinutes.clamp(0, 1439),
@@ -228,7 +222,6 @@ extension GlobalSettingsJson on GlobalSettings {
     ),
     'locale': localeCode,
     'homeTimeZoneOffsetMinutes': homeTimeZoneOffsetMinutes,
-    'myDayShowRoutines': myDayShowRoutines,
     'weeklyReviewEnabled': weeklyReviewEnabled,
     'weeklyReviewDayOfWeek': weeklyReviewDayOfWeek.clamp(1, 7),
     'weeklyReviewTimeMinutes': weeklyReviewTimeMinutes.clamp(0, 1439),

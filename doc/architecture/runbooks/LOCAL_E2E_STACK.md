@@ -41,6 +41,9 @@ What reset does:
 Notes:
 - The app's local endpoints/keys are selected via `lib/main_local.dart`.
 - PowerSync sync rules are mounted from `supabase/powersync-sync-rules.yaml`.
+- Pipeline tests are **integration-test-only** and will self-skip unless the
+  integration test binding is active; always run them via the entrypoint below
+  or the script above (not plain `flutter test -t pipeline`).
 
 What the test script runs:
 - `flutter test integration_test/powersync_pipeline_entrypoint_test.dart -d windows`

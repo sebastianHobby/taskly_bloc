@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
+import 'package:taskly_bloc/core/startup/app_restart_service.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/features/app/view/initial_sync_gate_screen.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
@@ -23,6 +24,8 @@ class MockAuthenticatedAppServicesCoordinator extends Mock
     implements AuthenticatedAppServicesCoordinator {}
 
 class MockInitialSyncService extends Mock implements InitialSyncService {}
+
+class MockAppRestartService extends Mock implements AppRestartService {}
 
 class FakeAppLifecycleEvents implements AppLifecycleEvents {
   final _controller = StreamController<AppLifecycleEvent>.broadcast();
@@ -44,6 +47,7 @@ void main() {
 
   late MockAuthenticatedAppServicesCoordinator coordinator;
   late MockInitialSyncService initialSyncService;
+  late MockAppRestartService appRestartService;
   late SessionSharedDataService sharedDataService;
   late DemoModeService demoModeService;
   late DemoDataProvider demoDataProvider;
@@ -56,6 +60,7 @@ void main() {
   setUp(() {
     coordinator = MockAuthenticatedAppServicesCoordinator();
     initialSyncService = MockInitialSyncService();
+    appRestartService = MockAppRestartService();
     valueRepository = MockValueRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
     taskRepository = MockTaskRepositoryContract();
@@ -79,6 +84,9 @@ void main() {
     when(() => valueRepository.watchAll()).thenAnswer(
       (_) => const Stream<List<Value>>.empty(),
     );
+    when(
+      () => appRestartService.restart(reason: any(named: 'reason')),
+    ).thenAnswer((_) async => true);
 
     addTearDown(cacheManager.dispose);
     addTearDown(demoModeService.dispose);
@@ -90,6 +98,7 @@ void main() {
       coordinator: coordinator,
       initialSyncService: initialSyncService,
       sharedDataService: sharedDataService,
+      appRestartService: appRestartService,
     );
     await tester.pumpWidgetWithBloc<InitialSyncGateBloc>(
       bloc: bloc,
