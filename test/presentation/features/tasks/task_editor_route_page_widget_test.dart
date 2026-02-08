@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/feature_mocks.dart';
+import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
@@ -46,7 +47,10 @@ void main() {
   late MockTaskRepository taskRepository;
   late MockProjectRepository projectRepository;
   late MockValueRepository valueRepository;
+  late MockMyDayRepositoryContract myDayRepository;
+  late MockSettingsRepositoryContract settingsRepository;
   late TaskWriteService taskWriteService;
+  late TaskMyDayWriteService taskMyDayWriteService;
   late AppErrorReporter errorReporter;
   late DemoModeService demoModeService;
   late DemoDataProvider demoDataProvider;
@@ -55,10 +59,19 @@ void main() {
     taskRepository = MockTaskRepository();
     projectRepository = MockProjectRepository();
     valueRepository = MockValueRepository();
+    myDayRepository = MockMyDayRepositoryContract();
+    settingsRepository = MockSettingsRepositoryContract();
     taskWriteService = TaskWriteService(
       taskRepository: taskRepository,
       projectRepository: projectRepository,
       occurrenceCommandService: MockOccurrenceCommandService(),
+    );
+    taskMyDayWriteService = TaskMyDayWriteService(
+      taskWriteService: taskWriteService,
+      myDayRepository: myDayRepository,
+      dayKeyService: HomeDayKeyService(
+        settingsRepository: settingsRepository,
+      ),
     );
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
@@ -100,6 +113,9 @@ void main() {
             value: valueRepository,
           ),
           RepositoryProvider<TaskWriteService>.value(value: taskWriteService),
+          RepositoryProvider<TaskMyDayWriteService>.value(
+            value: taskMyDayWriteService,
+          ),
           RepositoryProvider<AppErrorReporter>.value(value: errorReporter),
           RepositoryProvider<DemoModeService>.value(value: demoModeService),
           RepositoryProvider<DemoDataProvider>.value(value: demoDataProvider),

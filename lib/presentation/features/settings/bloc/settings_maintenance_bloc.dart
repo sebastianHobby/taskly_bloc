@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
@@ -139,7 +140,17 @@ class SettingsMaintenanceBloc
 
       if (emit.isDone) return;
       emit(SettingsMaintenanceState.idle());
-    } catch (e) {
+    } catch (e, st) {
+      AppLog.handleStructured(
+        'presentation.settings',
+        'generate template data failed',
+        e,
+        st,
+        _newContext(
+          intent: 'generate_template_data',
+          operation: 'settings.template.seed',
+        ).toLogFields(),
+      );
       if (emit.isDone) return;
 
       emit(
@@ -192,7 +203,17 @@ class SettingsMaintenanceBloc
 
       if (emit.isDone) return;
       emit(SettingsMaintenanceState.idle());
-    } catch (e) {
+    } catch (e, st) {
+      AppLog.handleStructured(
+        'presentation.settings',
+        'reset onboarding failed',
+        e,
+        st,
+        _newContext(
+          intent: 'settings_sign_out_requested',
+          operation: 'auth.sign_out',
+        ).toLogFields(),
+      );
       if (emit.isDone) return;
       emit(
         SettingsMaintenanceState(

@@ -70,7 +70,7 @@ void initializeLogging() {
       ? MultiTalkerObserver(
           observers: <TalkerObserver>[
             DebugFileLogObserver(
-              includedTitles: const <String>{'ERROR'},
+              includedTitles: const <String>{'ERROR', 'WARNING'},
               maxFileBytes: 1024 * 1024,
             ),
           ],

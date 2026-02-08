@@ -4,6 +4,7 @@ library;
 import '../../../helpers/test_imports.dart';
 
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
@@ -449,6 +450,8 @@ class _InMemoryValueRatingsRepository extends Fake
 }
 
 void main() {
+  setUpAll(initializeLoggingForTest);
+
   testSafe(
     'resetAndSeed wipes existing data and seeds template entries',
     () async {

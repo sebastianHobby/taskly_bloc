@@ -3,6 +3,7 @@ import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_domain/telemetry.dart';
 
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
@@ -78,7 +79,14 @@ final class SessionAllocationCacheService {
         .startWith(null)
         .switchMap(
           (_) => Stream.fromFuture(
-            _allocationOrchestrator.getAllocationSnapshot(),
+            _allocationOrchestrator.getAllocationSnapshot(
+              context: systemOperationContext(
+                feature: 'allocation',
+                screen: 'session_allocation_cache',
+                intent: 'refresh_snapshot',
+                operation: 'getAllocationSnapshot',
+              ),
+            ),
           ),
         );
   }

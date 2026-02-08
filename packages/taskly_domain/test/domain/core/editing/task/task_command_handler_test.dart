@@ -248,6 +248,28 @@ final class _RecordingTaskRepository implements TaskRepositoryContract {
   }
 
   @override
+  Future<String> createReturningId({
+    required String name,
+    String? description,
+    bool completed = false,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? projectId,
+    int? priority,
+    String? repeatIcalRrule,
+    bool repeatFromCompletion = false,
+    bool seriesEnded = false,
+    List<String>? valueIds,
+    OperationContext? context,
+  }) async {
+    createCalls++;
+    lastCreatedName = name;
+    lastCreatedValueIds = valueIds;
+    lastCreatedContext = context;
+    return 'task-1';
+  }
+
+  @override
   Future<void> update({
     required String id,
     required String name,

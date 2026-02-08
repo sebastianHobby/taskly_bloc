@@ -10,6 +10,7 @@ import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignme
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
+import 'package:taskly_bloc/presentation/widgets/pickers/picker_shell.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/feature_flags.dart';
 import 'package:taskly_domain/time.dart';
@@ -17,13 +18,12 @@ import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:provider/provider.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 
-/// A modern form for creating or editing tasks.
-///
-/// Features:
-/// - Action buttons in header (always visible)
-/// - Unsaved changes confirmation on close
-/// - Clear cancel/close affordance
+abstract final class TaskFormFieldKeys {
+  static const includeInMyDay = 'task.includeInMyDay';
+}
+
 class TaskForm extends StatefulWidget {
   const TaskForm({
     required this.formKey,
@@ -39,6 +39,8 @@ class TaskForm extends StatefulWidget {
     this.defaultDeadlineDate,
     this.openToValues = false,
     this.openToProjectPicker = false,
+    this.includeInMyDayDefault = false,
+    this.showMyDayToggle = false,
     this.onClose,
     this.trailingActions = const <Widget>[],
     super.key,
@@ -65,6 +67,12 @@ class TaskForm extends StatefulWidget {
 
   /// When true, scrolls to the project picker and opens the picker dialog.
   final bool openToProjectPicker;
+
+  /// When true, defaults the include-in-My-Day toggle to on.
+  final bool includeInMyDayDefault;
+
+  /// When true, shows the include-in-My-Day toggle.
+  final bool showMyDayToggle;
 
   /// Called when the user wants to close the form.
   /// If null, no close button is shown.
@@ -392,7 +400,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
         useSafeArea: true,
         showDragHandle: true,
         isScrollControlled: true,
-        builder: (sheetContext) => _ProjectPickerDialog(
+        builder: (sheetContext) => _ProjectPickerContent(
           availableProjects: widget.availableProjects,
           currentProjectId: currentProjectId,
           recentProjectIds: List<String>.unmodifiable(_recentProjectIds),
@@ -405,7 +413,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       anchorContext: anchorContext,
       maxWidth: 460,
       maxHeight: 520,
-      builder: (dialogContext) => _ProjectPickerDialog(
+      builder: (dialogContext) => _ProjectPickerContent(
         availableProjects: widget.availableProjects,
         currentProjectId: currentProjectId,
         recentProjectIds: List<String>.unmodifiable(_recentProjectIds),
@@ -518,6 +526,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     final isCompact = _isCompact(context);
     final isCreating = widget.initialData == null;
     final now = context.read<NowService>().nowLocal();
+    final myDayIcon = const NavigationIconResolver().resolve(
+      screenId: 'my_day',
+      iconName: null,
+    );
 
     final availableValuesById = <String, Value>{
       for (final v in widget.availableValues) v.id: v,
@@ -533,6 +545,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       TaskFieldKeys.name.id: widget.initialData?.name ?? '',
       TaskFieldKeys.description.id: widget.initialData?.description ?? '',
       TaskFieldKeys.completed.id: widget.initialData?.completed ?? false,
+      TaskFormFieldKeys.includeInMyDay: widget.includeInMyDayDefault,
       TaskFieldKeys.startDate.id:
           widget.initialData?.startDate ?? widget.defaultStartDate,
       TaskFieldKeys.deadlineDate.id:
@@ -1199,6 +1212,20 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                 },
               ),
 
+              if (widget.showMyDayToggle) ...[
+                SizedBox(height: sectionGap),
+                FormBuilderSwitchTile(
+                  name: TaskFormFieldKeys.includeInMyDay,
+                  title: 'Include in My Day today',
+                  subtitle: "Adds this task to today's plan.",
+                  initialValue: widget.includeInMyDayDefault,
+                  secondary: Icon(
+                    myDayIcon.selectedIcon,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ],
+
               SizedBox(height: sectionGap),
 
               TasklyFormSectionLabel(text: l10n.priorityLabel),
@@ -1497,8 +1524,8 @@ final class _ProjectPickerResultCleared extends _ProjectPickerResult {
   const _ProjectPickerResultCleared();
 }
 
-class _ProjectPickerDialog extends StatefulWidget {
-  const _ProjectPickerDialog({
+class _ProjectPickerContent extends StatefulWidget {
+  const _ProjectPickerContent({
     required this.availableProjects,
     required this.recentProjectIds,
     this.currentProjectId,
@@ -1509,10 +1536,10 @@ class _ProjectPickerDialog extends StatefulWidget {
   final String? currentProjectId;
 
   @override
-  State<_ProjectPickerDialog> createState() => _ProjectPickerDialogState();
+  State<_ProjectPickerContent> createState() => _ProjectPickerContentState();
 }
 
-class _ProjectPickerDialogState extends State<_ProjectPickerDialog> {
+class _ProjectPickerContentState extends State<_ProjectPickerContent> {
   static const _searchDebounce = Duration(milliseconds: 300);
 
   final _searchController = TextEditingController();
@@ -1549,151 +1576,115 @@ class _ProjectPickerDialogState extends State<_ProjectPickerDialog> {
               .where((p) => p.name.toLowerCase().contains(query))
               .toList(growable: false);
 
-    return Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420, maxHeight: 560),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                TasklyTokens.of(context).spaceLg,
-                TasklyTokens.of(context).spaceLg,
-                TasklyTokens.of(context).spaceSm,
-                TasklyTokens.of(context).spaceSm,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 420, maxHeight: 560),
+      child: PickerShell(
+        title: l10n.selectProjectTitle,
+        searchField: TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: l10n.projectPickerSearchHint,
+            prefixIcon: const Icon(Icons.search),
+            filled: true,
+            fillColor: colorScheme.surfaceContainerLow,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                TasklyTokens.of(context).radiusMd,
               ),
-              child: Row(
-                children: [
-                  Text(
-                    l10n.selectProjectTitle,
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
+              borderSide: BorderSide.none,
+            ),
+          ),
+          onChanged: (_) {
+            _searchDebouncer.schedule(() {
+              if (!mounted) return;
+              setState(() {});
+            });
+          },
+        ),
+        child: ListView(
+          children: [
+            ListTile(
+              leading: Icon(
+                Icons.inbox_outlined,
+                color: currentId.isEmpty
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+              ),
+              title: Text(l10n.projectPickerNoProjectInbox),
+              trailing: currentId.isEmpty
+                  ? Icon(Icons.check, color: colorScheme.primary)
+                  : null,
+              selected: currentId.isEmpty,
+              onTap: () => Navigator.of(context).pop(
+                const _ProjectPickerResultCleared(),
               ),
             ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                TasklyTokens.of(context).spaceLg,
-                0,
-                TasklyTokens.of(context).spaceLg,
-                TasklyTokens.of(context).spaceMd,
-              ),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: l10n.projectPickerSearchHint,
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: colorScheme.surfaceContainerLow,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      TasklyTokens.of(context).radiusMd,
-                    ),
-                    borderSide: BorderSide.none,
+            if (recentProjects.isNotEmpty) ...[
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  TasklyTokens.of(context).spaceLg,
+                  TasklyTokens.of(context).spaceMd,
+                  TasklyTokens.of(context).spaceLg,
+                  TasklyTokens.of(context).spaceXs,
+                ),
+                child: Text(
+                  l10n.projectPickerRecentTitle,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
-                onChanged: (_) {
-                  _searchDebouncer.schedule(() {
-                    if (!mounted) return;
-                    setState(() {});
-                  });
-                },
               ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView(
-                children: [
-                  ListTile(
-                    leading: Icon(
-                      Icons.inbox_outlined,
-                      color: currentId.isEmpty
-                          ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
-                    ),
-                    title: Text(l10n.projectPickerNoProjectInbox),
-                    trailing: currentId.isEmpty
-                        ? Icon(Icons.check, color: colorScheme.primary)
-                        : null,
-                    selected: currentId.isEmpty,
-                    onTap: () => Navigator.of(context).pop(
-                      const _ProjectPickerResultCleared(),
-                    ),
+              ...recentProjects.map((project) {
+                final isSelected = project.id == currentId;
+                return ListTile(
+                  leading: Icon(
+                    Icons.history,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
                   ),
-                  if (recentProjects.isNotEmpty) ...[
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        TasklyTokens.of(context).spaceLg,
-                        TasklyTokens.of(context).spaceMd,
-                        TasklyTokens.of(context).spaceLg,
-                        TasklyTokens.of(context).spaceXs,
-                      ),
-                      child: Text(
-                        l10n.projectPickerRecentTitle,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    ...recentProjects.map((project) {
-                      final isSelected = project.id == currentId;
-                      return ListTile(
-                        leading: Icon(
-                          Icons.history,
-                          color: isSelected
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant,
-                        ),
-                        title: Text(project.name),
-                        trailing: isSelected
-                            ? Icon(Icons.check, color: colorScheme.primary)
-                            : null,
-                        selected: isSelected,
-                        onTap: () => Navigator.of(context).pop(
-                          _ProjectPickerResultSelected(project),
-                        ),
-                      );
-                    }),
-                    const Divider(height: 1),
-                  ],
-                  if (filteredProjects.isEmpty)
-                    Padding(
-                      padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
-                      child: Text(
-                        l10n.projectPickerNoMatchingProjects,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    )
-                  else
-                    ...filteredProjects.map((project) {
-                      final isSelected = project.id == currentId;
-                      return ListTile(
-                        leading: Icon(
-                          Icons.folder_rounded,
-                          color: isSelected
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant,
-                        ),
-                        title: Text(project.name),
-                        trailing: isSelected
-                            ? Icon(Icons.check, color: colorScheme.primary)
-                            : null,
-                        selected: isSelected,
-                        onTap: () => Navigator.of(context).pop(
-                          _ProjectPickerResultSelected(project),
-                        ),
-                      );
-                    }),
-                ],
-              ),
-            ),
+                  title: Text(project.name),
+                  trailing: isSelected
+                      ? Icon(Icons.check, color: colorScheme.primary)
+                      : null,
+                  selected: isSelected,
+                  onTap: () => Navigator.of(context).pop(
+                    _ProjectPickerResultSelected(project),
+                  ),
+                );
+              }),
+              const Divider(height: 1),
+            ],
+            if (filteredProjects.isEmpty)
+              Padding(
+                padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
+                child: Text(
+                  l10n.projectPickerNoMatchingProjects,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else
+              ...filteredProjects.map((project) {
+                final isSelected = project.id == currentId;
+                return ListTile(
+                  leading: Icon(
+                    Icons.folder_rounded,
+                    color: isSelected
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                  title: Text(project.name),
+                  trailing: isSelected
+                      ? Icon(Icons.check, color: colorScheme.primary)
+                      : null,
+                  selected: isSelected,
+                  onTap: () => Navigator.of(context).pop(
+                    _ProjectPickerResultSelected(project),
+                  ),
+                );
+              }),
           ],
         ),
       ),

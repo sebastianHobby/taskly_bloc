@@ -29,6 +29,7 @@ Future<void> showWeeklyReviewModal(
           create: (context) => WeeklyReviewBloc(
             analyticsService: context.read<AnalyticsService>(),
             attentionEngine: context.read<AttentionEngineContract>(),
+            settingsRepository: context.read<SettingsRepositoryContract>(),
             valueRepository: context.read<ValueRepositoryContract>(),
             valueRatingsRepository: context
                 .read<ValueRatingsRepositoryContract>(),

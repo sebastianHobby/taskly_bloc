@@ -17,6 +17,10 @@ abstract final class AppFailureMapper {
       return NotFoundFailure(message: error.message, cause: error);
     }
 
+    if (error is RepositoryException) {
+      return StorageFailure(message: error.message, cause: error);
+    }
+
     if (_isSqliteException(error)) {
       return StorageFailure(message: _extractMessage(error), cause: error);
     }

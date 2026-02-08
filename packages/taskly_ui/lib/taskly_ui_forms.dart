@@ -20,3 +20,4 @@ export 'src/primitives/taskly_form_section_label.dart';
 export 'src/primitives/taskly_form_icon_grid_picker.dart';
 export 'src/primitives/taskly_form_color_palette_picker.dart';
 export 'src/primitives/taskly_form_icon_search_picker.dart';
+export 'src/primitives/form_fields/form_builder_slider_field.dart';

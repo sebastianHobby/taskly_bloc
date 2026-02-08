@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 import 'package:taskly_ui/src/primitives/meta_badges.dart';
+import 'package:taskly_ui/src/primitives/taskly_badge.dart';
 
 /// Canonical Project tile aligned to Stitch mockups.
 ///
@@ -61,6 +62,7 @@ class ProjectEntityTile extends StatelessWidget {
 
     final valueChip = model.leadingChip;
     final showValueIcon = valueChip != null;
+    final statusBadge = model.statusBadge;
 
     final startLabel = model.meta.startDateLabel?.trim() ?? '';
     final deadlineLabel = model.meta.deadlineDateLabel?.trim() ?? '';
@@ -196,6 +198,15 @@ class ProjectEntityTile extends StatelessWidget {
                                     valueChip.icon,
                                     size: tokens.spaceMd2,
                                     color: valueChip.color,
+                                  ),
+                                ],
+                                if (statusBadge != null) ...[
+                                  SizedBox(width: tokens.spaceSm),
+                                  TasklyBadge(
+                                    label: statusBadge.label,
+                                    icon: statusBadge.icon,
+                                    color: statusBadge.color,
+                                    style: _badgeStyle(statusBadge.tone),
                                   ),
                                 ],
                                 if (_selected != null) ...[
@@ -342,6 +353,14 @@ bool _hasMetaRow(TasklyProjectRowData model) {
       startLabel.isNotEmpty;
   final hasPriority = model.meta.priority != null;
   return hasStart || hasDeadline || hasPriority;
+}
+
+TasklyBadgeStyle _badgeStyle(TasklyBadgeTone tone) {
+  return switch (tone) {
+    TasklyBadgeTone.solid => TasklyBadgeStyle.solid,
+    TasklyBadgeTone.outline => TasklyBadgeStyle.outline,
+    TasklyBadgeTone.soft => TasklyBadgeStyle.softOutline,
+  };
 }
 
 class _ProjectGlyph extends StatelessWidget {

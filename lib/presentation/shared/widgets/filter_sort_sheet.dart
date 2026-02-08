@@ -63,6 +63,7 @@ Future<void> showFilterSortSheet({
   await showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
+    isScrollControlled: true,
     builder: (sheetContext) {
       final tokens = TasklyTokens.of(sheetContext);
       final theme = Theme.of(sheetContext);
@@ -145,18 +146,28 @@ Future<void> showFilterSortSheet({
       }
 
       return SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            tokens.spaceLg,
-            tokens.spaceSm,
-            tokens.spaceLg,
-            tokens.spaceLg,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: constraints.maxHeight * 0.9,
+              ),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  tokens.spaceLg,
+                  tokens.spaceSm,
+                  tokens.spaceLg,
+                  tokens.spaceLg,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: children,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       );
     },

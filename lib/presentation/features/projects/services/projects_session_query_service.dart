@@ -104,11 +104,6 @@ final class ProjectsSessionQueryService {
   }
 
   Stream<List<Project>> _projectsForScope(ProjectsScope? scope) {
-    const incompletePredicate = ProjectBoolPredicate(
-      field: ProjectBoolField.completed,
-      operator: BoolOperator.isFalse,
-    );
-
     return _demoModeService.enabled.distinct().switchMap((enabled) {
       if (enabled) {
         return Stream<List<Project>>.value(
@@ -117,24 +112,20 @@ final class ProjectsSessionQueryService {
       }
 
       return switch (scope) {
-        null => _sharedDataService.watchIncompleteProjects(),
+        null => _sharedDataService.watchAllProjects(),
         ProjectsProjectScope(:final projectId) =>
           _projectRepository
               .watchById(projectId)
               .map((project) => project == null ? const [] : [project]),
         ProjectsValueScope(:final valueId) => _projectRepository.watchAll(
-          ProjectQuery.byValues([valueId]).withAdditionalPredicates([
-            incompletePredicate,
-          ]),
+          ProjectQuery.byValues([valueId]),
         ),
       };
     });
   }
 
   List<Project> _projectsForDemoScope(ProjectsScope? scope) {
-    final projects = _demoDataProvider.projects
-        .where((project) => !project.completed)
-        .toList(growable: false);
+    final projects = _demoDataProvider.projects.toList(growable: false);
 
     return switch (scope) {
       null => projects,

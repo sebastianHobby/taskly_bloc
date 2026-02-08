@@ -12,6 +12,7 @@ import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart'
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/errors.dart';
 import 'package:taskly_domain/my_day.dart' as my_day;
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/queries.dart';
@@ -39,6 +40,7 @@ void main() {
   late MockAllocationOrchestrator allocationOrchestrator;
   late MockTaskRepositoryContract taskRepository;
   late MockProjectRepositoryContract projectRepository;
+  late MockProjectAnchorStateRepositoryContract projectAnchorStateRepository;
   late MockRoutineRepositoryContract routineRepository;
   late TaskWriteService taskWriteService;
   late RoutineWriteService routineWriteService;
@@ -58,6 +60,7 @@ void main() {
     allocationOrchestrator = MockAllocationOrchestrator();
     taskRepository = MockTaskRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
+    projectAnchorStateRepository = MockProjectAnchorStateRepositoryContract();
     routineRepository = MockRoutineRepositoryContract();
     occurrenceCommandService = MockOccurrenceCommandService();
     dayKeyService = MockHomeDayKeyService();
@@ -119,6 +122,7 @@ void main() {
         batchCount: any(named: 'batchCount'),
         nowUtc: any(named: 'nowUtc'),
         routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+        context: any(named: 'context'),
       ),
     ).thenAnswer((_) async => defaultAllocation);
     when(
@@ -126,6 +130,7 @@ void main() {
         suggestedTaskTarget: any(named: 'suggestedTaskTarget'),
         nowUtc: any(named: 'nowUtc'),
         routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+        context: any(named: 'context'),
       ),
     ).thenAnswer((_) async => defaultAllocation);
 
@@ -156,6 +161,7 @@ void main() {
       taskSuggestionService: taskSuggestionService,
       taskRepository: taskRepository,
       routineRepository: routineRepository,
+      projectAnchorStateRepository: projectAnchorStateRepository,
       taskWriteService: taskWriteService,
       routineWriteService: routineWriteService,
       dayKeyService: dayKeyService,
@@ -182,9 +188,10 @@ void main() {
   String? swapToId;
 
   blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
-    'auto-includes due and planned tasks in selection',
+    'auto-includes due and yesterday tasks in selection',
     build: () {
       final value = TestData.value(id: 'value-1', name: 'Health');
+      final yesterdayKey = dayKey.subtract(const Duration(days: 1));
       dueTask = TestData.task(
         id: 'task-due',
         name: 'Due Today',
@@ -193,14 +200,35 @@ void main() {
       );
       plannedTask = TestData.task(
         id: 'task-planned',
-        name: 'Planned Today',
-        startDate: dayKey,
+        name: 'From Yesterday',
         values: [value],
       );
       final suggestedTask = TestData.task(
         id: 'task-suggested',
         name: 'Suggested',
         values: [value],
+      );
+
+      when(() => myDayRepository.loadDay(dayKey)).thenAnswer(
+        (_) async => my_day.MyDayDayPicks(
+          dayKeyUtc: dayKey,
+          ritualCompletedAtUtc: null,
+          picks: const <my_day.MyDayPick>[],
+        ),
+      );
+      when(() => myDayRepository.loadDay(yesterdayKey)).thenAnswer(
+        (_) async => my_day.MyDayDayPicks(
+          dayKeyUtc: yesterdayKey,
+          ritualCompletedAtUtc: yesterdayKey,
+          picks: [
+            my_day.MyDayPick.task(
+              taskId: plannedTask.id,
+              bucket: my_day.MyDayPickBucket.manual,
+              sortIndex: 0,
+              pickedAtUtc: yesterdayKey,
+            ),
+          ],
+        ),
       );
 
       when(() => taskRepository.getAll(any())).thenAnswer(
@@ -316,5 +344,53 @@ void main() {
       const PlanMyDayLoading(),
       isA<PlanMyDayReady>(),
     ],
+  );
+
+  blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
+    'shows a toast when bulk reschedule due fails',
+    build: () {
+      final value = TestData.value(id: 'value-1', name: 'Health');
+      dueTask = TestData.task(
+        id: 'task-due',
+        name: 'Due Today',
+        deadlineDate: dayKey,
+        values: [value],
+      );
+
+      when(() => taskRepository.getAll(any())).thenAnswer(
+        (_) async => [dueTask],
+      );
+      when(() => taskRepository.watchAll(any())).thenAnswer(
+        (_) => Stream.value([dueTask]),
+      );
+      when(
+        () => taskRepository.bulkRescheduleDeadlines(
+          taskIds: any(named: 'taskIds'),
+          deadlineDate: any(named: 'deadlineDate'),
+          context: any(named: 'context'),
+        ),
+      ).thenThrow(const StorageFailure(message: 'write failed'));
+
+      return buildBloc();
+    },
+    act: (bloc) async {
+      if (bloc.state is! PlanMyDayReady) {
+        await bloc.stream.firstWhere((state) => state is PlanMyDayReady);
+      }
+
+      bloc.add(
+        PlanMyDayBulkRescheduleDueRequested(
+          newDayUtc: dayKey.add(const Duration(days: 1)),
+        ),
+      );
+
+      await bloc.stream.firstWhere(
+        (state) => state is PlanMyDayReady && state.toast != null,
+      );
+    },
+    verify: (bloc) {
+      final state = bloc.state as PlanMyDayReady;
+      expect(state.toast?.message, isNotEmpty);
+    },
   );
 }

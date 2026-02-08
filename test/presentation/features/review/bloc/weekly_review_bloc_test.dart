@@ -8,8 +8,10 @@ import '../../../../mocks/feature_mocks.dart';
 import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/review/bloc/weekly_review_cubit.dart';
+import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
 
@@ -22,6 +24,7 @@ void main() {
 
   late MockAnalyticsService analyticsService;
   late MockAttentionEngineContract attentionEngine;
+  late MockSettingsRepositoryContract settingsRepository;
   late MockValueRepositoryContract valueRepository;
   late MockValueRatingsRepositoryContract valueRatingsRepository;
   late ValueRatingsWriteService valueRatingsWriteService;
@@ -33,6 +36,7 @@ void main() {
     return WeeklyReviewBloc(
       analyticsService: analyticsService,
       attentionEngine: attentionEngine,
+      settingsRepository: settingsRepository,
       valueRepository: valueRepository,
       valueRatingsRepository: valueRatingsRepository,
       valueRatingsWriteService: valueRatingsWriteService,
@@ -45,6 +49,7 @@ void main() {
   setUp(() {
     analyticsService = MockAnalyticsService();
     attentionEngine = MockAttentionEngineContract();
+    settingsRepository = MockSettingsRepositoryContract();
     valueRepository = MockValueRepositoryContract();
     valueRatingsRepository = MockValueRatingsRepositoryContract();
     valueRatingsWriteService = ValueRatingsWriteService(
@@ -56,6 +61,13 @@ void main() {
 
     when(() => nowService.nowUtc()).thenReturn(DateTime.utc(2025, 1, 15));
     when(() => nowService.nowLocal()).thenReturn(DateTime(2025, 1, 15));
+    when(
+      () => settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
+    ).thenAnswer(
+      (_) async => const AllocationConfig(
+        suggestionSignal: SuggestionSignal.behaviorBased,
+      ),
+    );
     when(() => valueRepository.getAll()).thenAnswer(
       (_) async => [TestData.value(id: 'v-1', name: 'Value')],
     );
@@ -132,6 +144,53 @@ void main() {
       isA<WeeklyReviewState>()
           .having((s) => s.status, 'status', WeeklyReviewStatus.ready)
           .having((s) => s.valuesSummary?.hasData, 'hasData', true),
+    ],
+  );
+
+  blocTestSafe<WeeklyReviewBloc, WeeklyReviewState>(
+    'requested enables ratings when suggestions require weekly ratings',
+    build: buildBloc,
+    setUp: () {
+      when(() => valueRepository.getAll()).thenAnswer((_) async => []);
+      when(
+        () => settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
+      ).thenAnswer(
+        (_) async => const AllocationConfig(
+          suggestionSignal: SuggestionSignal.ratingsBased,
+        ),
+      );
+    },
+    act: (bloc) => bloc.add(
+      WeeklyReviewRequested(
+        WeeklyReviewConfig(
+          valuesSummaryEnabled: false,
+          valuesWindowWeeks: 4,
+          valueWinsCount: 2,
+          maintenanceEnabled: false,
+          showDeadlineRisk: false,
+          showDueSoonUnderControl: false,
+          showStaleItems: false,
+          taskStaleThresholdDays: 14,
+          projectIdleThresholdDays: 14,
+          deadlineRiskDueWithinDays: 3,
+          deadlineRiskMinUnscheduledCount: 2,
+          showFrequentSnoozed: false,
+        ),
+      ),
+    ),
+    expect: () => [
+      isA<WeeklyReviewState>().having(
+        (s) => s.status,
+        'status',
+        WeeklyReviewStatus.loading,
+      ),
+      isA<WeeklyReviewState>()
+          .having((s) => s.status, 'status', WeeklyReviewStatus.ready)
+          .having(
+            (s) => s.ratingsSummary?.ratingsEnabled,
+            'ratingsEnabled',
+            true,
+          ),
     ],
   );
 

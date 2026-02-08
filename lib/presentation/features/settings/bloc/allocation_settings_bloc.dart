@@ -10,11 +10,6 @@ enum ValuesBalanceMode {
   prioritizeTopValues,
 }
 
-enum ProjectFocusStyle {
-  rotateQuietProjects,
-  stayFocused,
-}
-
 enum SuggestionSignalOption {
   behaviorBased,
   ratingsBased,
@@ -38,12 +33,6 @@ final class AllocationValuesBalanceModeChanged extends AllocationSettingsEvent {
   const AllocationValuesBalanceModeChanged(this.mode);
 
   final ValuesBalanceMode mode;
-}
-
-final class AllocationProjectFocusStyleChanged extends AllocationSettingsEvent {
-  const AllocationProjectFocusStyleChanged(this.style);
-
-  final ProjectFocusStyle style;
 }
 
 final class AllocationSuggestionSignalChanged extends AllocationSettingsEvent {
@@ -90,7 +79,6 @@ class AllocationSettingsBloc
     on<AllocationSettingsStarted>(_onStarted, transformer: restartable());
     on<AllocationSettingsStreamUpdated>(_onStreamUpdated);
     on<AllocationValuesBalanceModeChanged>(_onValuesBalanceChanged);
-    on<AllocationProjectFocusStyleChanged>(_onProjectFocusChanged);
     on<AllocationSuggestionSignalChanged>(_onSuggestionSignalChanged);
   }
 
@@ -135,23 +123,6 @@ class AllocationSettingsBloc
     );
     emit(state.copyWith(settings: updated, isLoading: false));
     await _persist(updated, intent: 'allocation_values_balance_changed');
-  }
-
-  Future<void> _onProjectFocusChanged(
-    AllocationProjectFocusStyleChanged event,
-    Emitter<AllocationSettingsState> emit,
-  ) async {
-    final rotationPressureDays = switch (event.style) {
-      ProjectFocusStyle.rotateQuietProjects => 3,
-      ProjectFocusStyle.stayFocused => 14,
-    };
-    final updated = state.settings.copyWith(
-      strategySettings: state.settings.strategySettings.copyWith(
-        rotationPressureDays: rotationPressureDays,
-      ),
-    );
-    emit(state.copyWith(settings: updated, isLoading: false));
-    await _persist(updated, intent: 'allocation_project_focus_changed');
   }
 
   Future<void> _onSuggestionSignalChanged(

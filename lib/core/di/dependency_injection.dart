@@ -224,6 +224,13 @@ Future<void> setupDependencies() async {
         occurrenceCommandService: getIt<OccurrenceCommandService>(),
       ),
     )
+    ..registerLazySingleton<TaskMyDayWriteService>(
+      () => TaskMyDayWriteService(
+        taskWriteService: getIt<TaskWriteService>(),
+        myDayRepository: getIt<MyDayRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
+      ),
+    )
     ..registerLazySingleton<ProjectWriteService>(
       () => ProjectWriteService(
         projectRepository: getIt<ProjectRepositoryContract>(),
@@ -391,6 +398,8 @@ Future<void> setupDependencies() async {
         taskSuggestionService: getIt<TaskSuggestionService>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         routineRepository: getIt<RoutineRepositoryContract>(),
+        projectAnchorStateRepository:
+            getIt<ProjectAnchorStateRepositoryContract>(),
         taskWriteService: getIt<TaskWriteService>(),
         routineWriteService: getIt<RoutineWriteService>(),
         dayKeyService: getIt<HomeDayKeyService>(),

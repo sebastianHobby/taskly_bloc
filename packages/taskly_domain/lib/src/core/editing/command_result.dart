@@ -10,7 +10,9 @@ sealed class CommandResult {
 }
 
 final class CommandSuccess extends CommandResult {
-  const CommandSuccess();
+  const CommandSuccess({this.entityId});
+
+  final String? entityId;
 }
 
 final class CommandValidationFailure extends CommandResult {

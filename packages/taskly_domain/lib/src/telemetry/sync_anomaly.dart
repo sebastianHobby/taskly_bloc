@@ -82,6 +82,9 @@ enum SyncAnomalyKind {
   /// already applied to the offline-first DB.
   supabaseRejectedButLocalApplied,
 
+  /// The sync pipeline detected an internal issue (not a remote rejection).
+  syncPipelineIssue,
+
   /// A conflict was detected and resolved (remote value chosen).
   conflictResolvedWithRemote,
 
@@ -104,6 +107,15 @@ enum SyncAnomalyReason {
 
   /// The server schema cache did not contain the referenced table.
   schemaNotFound,
+
+  /// Upload loop detected (same CRUD transaction repeating).
+  uploadLoopDetected,
+
+  /// Upload connector re-entered while another upload was in flight.
+  uploadReentrancy,
+
+  /// CRUD metadata was present but missing required operation context fields.
+  missingOperationContext,
 }
 
 /// A contract for a stream of sync anomalies.

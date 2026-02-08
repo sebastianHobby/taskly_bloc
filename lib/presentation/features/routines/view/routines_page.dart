@@ -17,11 +17,15 @@ import 'package:taskly_bloc/presentation/shared/session/session_shared_data_serv
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/display_density_toggle.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
+import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -52,6 +56,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
     BuildContext sheetContext, {
     required List<Value> values,
     required List<RoutineListItem> routines,
+    required DisplayDensity density,
   }) async {
     final routineListBloc = sheetContext.read<RoutineListBloc>();
     final sortedValues = values.toList(growable: false)..sort(_compareValues);
@@ -73,6 +78,23 @@ class _RoutinesPageState extends State<RoutinesPage> {
         ),
       ],
       sections: [
+        FilterSortSection(
+          title: 'View',
+          child: Builder(
+            builder: (sectionContext) {
+              return DisplayDensityToggle(
+                density: density,
+                onChanged: (next) {
+                  if (next == density) return;
+                  sheetContext.read<DisplayDensityBloc>().add(
+                    DisplayDensitySet(next),
+                  );
+                  Navigator.of(sectionContext).pop();
+                },
+              );
+            },
+          ),
+        ),
         FilterSortSection(
           title: 'Values',
           child: BlocProvider.value(
@@ -140,6 +162,9 @@ class _RoutinesPageState extends State<RoutinesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isCompactScreen = Breakpoints.isCompact(
+      MediaQuery.sizeOf(context).width,
+    );
     return MultiBlocProvider(
       providers: [
         BlocProvider<RoutineListBloc>(
@@ -152,12 +177,24 @@ class _RoutinesPageState extends State<RoutinesPage> {
             nowService: context.read<NowService>(),
           )..add(const RoutineListEvent.subscriptionRequested()),
         ),
+        BlocProvider(
+          create: (context) => DisplayDensityBloc(
+            settingsRepository: context.read<SettingsRepositoryContract>(),
+            pageKey: PageKey.routines,
+            defaultDensity: isCompactScreen
+                ? DisplayDensity.compact
+                : DisplayDensity.standard,
+          )..add(const DisplayDensityStarted()),
+        ),
         BlocProvider(create: (_) => RoutineSelectionBloc()),
       ],
       child: Builder(
         builder: (context) {
           return BlocBuilder<RoutineSelectionBloc, RoutineSelectionState>(
             builder: (context, selectionState) {
+              final density = context.select(
+                (DisplayDensityBloc bloc) => bloc.state.density,
+              );
               return Scaffold(
                 appBar: selectionState.isSelectionMode
                     ? RoutineSelectionAppBar(
@@ -177,6 +214,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
                                 context,
                                 values: state.values,
                                 routines: state.routines,
+                                density: density,
                               );
                             },
                             icon: const Icon(Icons.tune_rounded),
@@ -251,6 +289,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
                                 selectedValueId: selectedValueId,
                                 showInactive: _showInactive,
                                 sortOrder: _sortOrder,
+                                density: density,
                                 onEditRoutine: (id) =>
                                     _editRoutine(context, id),
                                 onLogRoutine: (id) =>
@@ -283,6 +322,7 @@ class _RoutinesFilterLayout extends StatelessWidget {
     required this.selectedValueId,
     required this.showInactive,
     required this.sortOrder,
+    required this.density,
     required this.onEditRoutine,
     required this.onLogRoutine,
   });
@@ -291,6 +331,7 @@ class _RoutinesFilterLayout extends StatelessWidget {
   final String? selectedValueId;
   final bool showInactive;
   final RoutineSortOrder sortOrder;
+  final DisplayDensity density;
   final ValueChanged<String> onEditRoutine;
   final ValueChanged<String> onLogRoutine;
 
@@ -306,6 +347,7 @@ class _RoutinesFilterLayout extends StatelessWidget {
     return RoutinesListView(
       items: filtered,
       sortOrder: sortOrder,
+      density: density,
       onEditRoutine: onEditRoutine,
       onLogRoutine: onLogRoutine,
     );

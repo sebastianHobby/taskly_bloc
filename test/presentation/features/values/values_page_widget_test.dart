@@ -191,4 +191,16 @@ void main() {
       await queue.cancel();
     });
   });
+
+  testWidgetsSafe('opens range selector from overflow menu', (tester) async {
+    when(() => valueRepository.getAll()).thenAnswer((_) async => const []);
+
+    await pumpPage(tester);
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('More'));
+    await tester.pump(const Duration(milliseconds: 300));
+    final rangeItem = find.text('Range');
+    expect(rangeItem, findsOneWidget);
+  });
 }

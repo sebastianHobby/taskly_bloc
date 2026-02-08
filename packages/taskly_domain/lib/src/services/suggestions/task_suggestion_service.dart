@@ -5,6 +5,7 @@ import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/src/services/values/effective_values.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/time/clock.dart';
+import 'package:taskly_domain/telemetry.dart';
 
 final class SuggestedTask {
   const SuggestedTask({
@@ -28,6 +29,7 @@ final class TaskSuggestionSnapshot {
     required this.requiresValueSetup,
     required this.requiresRatings,
     required this.neglectDeficits,
+    required this.anchorProjectIds,
     this.spotlightTaskId,
   });
 
@@ -37,6 +39,7 @@ final class TaskSuggestionSnapshot {
   final bool requiresValueSetup;
   final bool requiresRatings;
   final Map<String, double> neglectDeficits;
+  final List<String> anchorProjectIds;
   final String? spotlightTaskId;
 }
 
@@ -67,6 +70,7 @@ final class TaskSuggestionService {
     List<Task>? tasksOverride,
     Map<String, int> routineSelectionsByValue = const {},
     DateTime? nowUtc,
+    OperationContext? context,
   }) async {
     final resolvedNowUtc = nowUtc ?? _clock.nowUtc();
     final dayKeyUtc = _dayKeyService.todayDayKeyUtc(nowUtc: resolvedNowUtc);
@@ -81,11 +85,13 @@ final class TaskSuggestionService {
             suggestedTaskTarget: suggestedTargetCount,
             nowUtc: resolvedNowUtc,
             routineSelectionsByValue: routineSelectionsByValue,
+            context: context,
           )
         : await _allocationOrchestrator.getSuggestedSnapshot(
             batchCount: batchCount,
             nowUtc: resolvedNowUtc,
             routineSelectionsByValue: routineSelectionsByValue,
+            context: context,
           );
 
     final baseSuggested = _buildSuggested(
@@ -115,6 +121,7 @@ final class TaskSuggestionService {
       requiresValueSetup: allocation.requiresValueSetup,
       requiresRatings: allocation.requiresRatings,
       neglectDeficits: allocation.reasoning.neglectDeficits,
+      anchorProjectIds: allocation.anchorProjectIds,
       spotlightTaskId: spotlightTaskId,
     );
   }

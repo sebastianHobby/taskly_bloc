@@ -38,6 +38,14 @@ void main() {
       expect(mapped.message, contains('missing'));
     });
 
+    testSafe('maps repository exception to StorageFailure', () async {
+      final mapped = AppFailureMapper.fromException(
+        RepositoryException('write failed'),
+      );
+      expect(mapped, isA<StorageFailure>());
+      expect(mapped.message, contains('write failed'));
+    });
+
     testSafe('maps TimeoutException to TimeoutFailure', () async {
       final mapped = AppFailureMapper.fromException(
         async.TimeoutException('slow'),

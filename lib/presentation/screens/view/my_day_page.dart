@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/review/utils/weekly_review_schedule.dart';
 import 'package:taskly_bloc/presentation/features/review/view/weekly_review_modal.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
@@ -39,7 +37,6 @@ import 'package:taskly_bloc/presentation/features/navigation/services/navigation
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/routines.dart';
-import 'package:taskly_domain/auth.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
@@ -76,6 +73,7 @@ class _MyDayPageState extends State<MyDayPage> {
       showDragHandle: true,
       defaultStartDate: defaultDay,
       defaultDeadlineDate: defaultDay,
+      includeInMyDayDefault: true,
     );
   }
 
@@ -182,6 +180,8 @@ class _MyDayPageState extends State<MyDayPage> {
             taskSuggestionService: context.read<TaskSuggestionService>(),
             taskRepository: context.read<TaskRepositoryContract>(),
             routineRepository: context.read<RoutineRepositoryContract>(),
+            projectAnchorStateRepository: context
+                .read<ProjectAnchorStateRepositoryContract>(),
             taskWriteService: context.read<TaskWriteService>(),
             routineWriteService: context.read<RoutineWriteService>(),
             dayKeyService: context.read<HomeDayKeyService>(),
@@ -326,16 +326,34 @@ class _MyDayLoadedBody extends StatelessWidget {
     );
     final locale = Localizations.localeOf(context).toLanguageTag();
     final dateLabel = DateFormat('EEE, d MMM', locale).format(today);
-    final header = _buildGreetingHeader(
-      context,
-      icon: iconSet.selectedIcon,
-      dateLabel: dateLabel,
-    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        header,
+        BlocBuilder<MyDayBloc, MyDayState>(
+          builder: (context, state) {
+            final (plannedCount, completedCount) = switch (state) {
+              MyDayLoaded(
+                :final plannedItems,
+                :final ritualStatus,
+              )
+                  when ritualStatus.hasAnyPick =>
+                (
+                  plannedItems.length,
+                  plannedItems.where((item) => item.completed).length,
+                ),
+              _ => (null, null),
+            };
+
+            return _MyDaySummaryHeader(
+              icon: iconSet.selectedIcon,
+              title: context.l10n.myDayTitle,
+              dateLabel: dateLabel,
+              plannedCount: plannedCount,
+              completedCount: completedCount,
+            );
+          },
+        ),
         Expanded(
           child: BlocBuilder<MyDayBloc, MyDayState>(
             builder: (context, state) {
@@ -372,21 +390,13 @@ class _MyDayLoadedBody extends StatelessWidget {
                         ),
                         SizedBox(height: TasklyTokens.of(context).spaceSm),
                       ],
-                      _MyDayHeaderRow(
-                        hasPlan: state.ritualStatus.hasAnyPick,
-                        onUpdatePlan: onOpenPlan,
-                      ),
-                      SizedBox(height: TasklyTokens.of(context).spaceSm),
-                      _MyDaySummaryStrip(
-                        plannedCount: plannedItems.length,
-                        routineCount: plannedItems
-                            .where(
-                              (item) =>
-                                  item.type == MyDayPlannedItemType.routine,
-                            )
-                            .length,
-                      ),
-                      SizedBox(height: TasklyTokens.of(context).spaceSm),
+                      if (state.ritualStatus.hasAnyPick) ...[
+                        _MyDayHeaderRow(
+                          hasPlan: state.ritualStatus.hasAnyPick,
+                          onUpdatePlan: onOpenPlan,
+                        ),
+                        SizedBox(height: TasklyTokens.of(context).spaceSm),
+                      ],
                       _MyDayTaskList(
                         today: today,
                         dayKeyUtc: dayKeyUtc,
@@ -396,6 +406,8 @@ class _MyDayLoadedBody extends StatelessWidget {
                         onOpenPlan: onOpenPlan,
                         density: density,
                         sortOrder: sortOrder,
+                        emptyStateIcon: iconSet.selectedIcon,
+                        hasPlan: state.ritualStatus.hasAnyPick,
                       ),
                     ],
                   ),
@@ -409,49 +421,20 @@ class _MyDayLoadedBody extends StatelessWidget {
   }
 }
 
-Widget _buildGreetingHeader(
-  BuildContext context, {
-  required IconData icon,
-  required String dateLabel,
-}) {
-  final l10n = context.l10n;
-  final tagline = l10n.myDayHeaderTagline(dateLabel);
-
-  Widget buildHeader(String? displayName) {
-    final resolvedName = displayName?.trim();
-    final greeting = resolvedName == null || resolvedName.isEmpty
-        ? l10n.myDayGreetingWithoutName
-        : l10n.myDayGreetingWithName(resolvedName);
-    return _ScreenTitleHeader(
-      icon: icon,
-      greeting: greeting,
-      tagline: tagline,
-    );
-  }
-
-  final authBloc = _maybeReadAuthBloc(context);
-  if (authBloc == null) {
-    return buildHeader(null);
-  }
-
-  return BlocBuilder<AuthBloc, AppAuthState>(
-    buildWhen: (previous, current) => previous.user != current.user,
-    builder: (context, state) {
-      return buildHeader(_displayNameFromAuthUser(state.user));
-    },
-  );
-}
-
-class _ScreenTitleHeader extends StatelessWidget {
-  const _ScreenTitleHeader({
+class _MyDaySummaryHeader extends StatelessWidget {
+  const _MyDaySummaryHeader({
     required this.icon,
-    required this.greeting,
-    required this.tagline,
+    required this.title,
+    required this.dateLabel,
+    required this.plannedCount,
+    required this.completedCount,
   });
 
   final IconData icon;
-  final String greeting;
-  final String tagline;
+  final String title;
+  final String dateLabel;
+  final int? plannedCount;
+  final int? completedCount;
 
   @override
   Widget build(BuildContext context) {
@@ -466,28 +449,36 @@ class _ScreenTitleHeader extends StatelessWidget {
         tokens.sectionPaddingH,
         tokens.spaceSm,
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: scheme.primary, size: tokens.spaceLg3),
-          SizedBox(width: tokens.spaceSm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  greeting,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+          Row(
+            children: [
+              Icon(
+                icon,
+                color: scheme.primary,
+                size: tokens.spaceLg3,
+              ),
+              SizedBox(width: tokens.spaceSm),
+              Text(
+                title,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
                 ),
-                Text(
-                  tagline,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spaceSm),
+          Wrap(
+            spacing: tokens.spaceSm,
+            runSpacing: tokens.spaceXs2,
+            children: [
+              _MyDaySummaryPill(label: dateLabel),
+              if (plannedCount != null)
+                _MyDaySummaryPill(label: '$plannedCount planned'),
+              if (completedCount != null)
+                _MyDaySummaryPill(label: '$completedCount completed'),
+            ],
           ),
         ],
       ),
@@ -495,22 +486,34 @@ class _ScreenTitleHeader extends StatelessWidget {
   }
 }
 
-String? _displayNameFromAuthUser(AuthUser? user) {
-  final metadata = user?.metadata;
-  final displayName =
-      metadata?['display_name'] as String? ??
-      metadata?['full_name'] as String? ??
-      metadata?['name'] as String?;
-  if (displayName == null) return null;
-  final trimmed = displayName.trim();
-  return trimmed.isEmpty ? null : trimmed;
-}
+class _MyDaySummaryPill extends StatelessWidget {
+  const _MyDaySummaryPill({required this.label});
 
-AuthBloc? _maybeReadAuthBloc(BuildContext context) {
-  try {
-    return BlocProvider.of<AuthBloc>(context, listen: false);
-  } on ProviderNotFoundException {
-    return null;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(tokens.radiusPill),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spaceSm2,
+          vertical: tokens.spaceXs2,
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: scheme.onSurface,
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -578,6 +581,8 @@ class _MyDayTaskList extends StatefulWidget {
     required this.onOpenPlan,
     required this.density,
     required this.sortOrder,
+    required this.emptyStateIcon,
+    required this.hasPlan,
   });
 
   final DateTime today;
@@ -588,6 +593,8 @@ class _MyDayTaskList extends StatefulWidget {
   final VoidCallback onOpenPlan;
   final DisplayDensity density;
   final _MyDayTaskSortOrder sortOrder;
+  final IconData emptyStateIcon;
+  final bool hasPlan;
 
   @override
   State<_MyDayTaskList> createState() => _MyDayTaskListState();
@@ -679,34 +686,37 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
     final taskRows = [...activeTaskRows, ...completedTaskRows];
     if (routineRows.isEmpty && taskRows.isEmpty) {
       final hasTasks = widget.tasks.isNotEmpty;
-      final emptyTitle = hasTasks ? 'No plan yet.' : 'All clear for today.';
-      final emptyBody = hasTasks
-          ? 'You have tasks ready to choose from.'
-          : 'Add a task to get started.';
-      final ctaLabel = hasTasks
-          ? l10n.myDayPlanMyDayTitle
-          : l10n.myDayAddTaskAction;
+      final hasPlan = widget.hasPlan;
 
-      return TasklyFeedRenderer(
-        spec: TasklyFeedSpec.empty(
-          empty: TasklyEmptyStateSpec(
-            icon: Icons.check_circle_outline,
-            title: emptyTitle,
-            description: emptyBody,
-            actionLabel: ctaLabel,
-            onAction: () {
-              if (hasTasks) {
-                widget.onOpenPlan();
-              } else {
-                context.read<EditorLauncher>().openTaskEditor(
-                  context,
-                  taskId: null,
-                  showDragHandle: true,
-                );
-              }
-            },
-          ),
-        ),
+      final (title, description) = hasPlan
+          ? ('All clear for today.', "You've finished today's plan.")
+          : hasTasks
+          ? ('No plan yet.', "Build today's plan from your task list.")
+          : (
+              'No tasks yet.',
+              "Start a project or add tasks to build today's plan.",
+            );
+
+      final String? actionLabel;
+      final VoidCallback? onAction;
+      if (hasPlan) {
+        actionLabel = l10n.myDayUpdatePlanTitle;
+        onAction = widget.onOpenPlan;
+      } else if (hasTasks) {
+        actionLabel = l10n.myDayPlanMyDayTitle;
+        onAction = widget.onOpenPlan;
+      } else {
+        actionLabel = l10n.projectsTitle;
+        onAction = () => Routing.toScreenKey(context, 'projects');
+      }
+
+      return _MyDayEmptyState(
+        icon: widget.emptyStateIcon,
+        title: title,
+        description: description,
+        actionLabel: actionLabel,
+        onAction: onAction,
+        showPlanAnchor: !hasPlan && hasTasks,
       );
     }
 
@@ -1071,47 +1081,82 @@ TasklyRowSpec _buildTaskRowSpec(
   );
 }
 
-class _MyDaySummaryStrip extends StatelessWidget {
-  const _MyDaySummaryStrip({
-    required this.plannedCount,
-    required this.routineCount,
+class _MyDayEmptyState extends StatelessWidget {
+  const _MyDayEmptyState({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.actionLabel,
+    required this.onAction,
+    required this.showPlanAnchor,
   });
 
-  final int plannedCount;
-  final int routineCount;
+  final IconData icon;
+  final String title;
+  final String description;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final bool showPlanAnchor;
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final iconSize = tokens.spaceLg3 * 1.6;
+    final iconContainerSize = tokens.spaceLg3 * 3;
 
-    Widget buildPill(String label) {
-      return Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spaceMd,
-          vertical: tokens.spaceXs,
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          tokens.spaceLg,
+          tokens.spaceXl,
+          tokens.spaceLg,
+          tokens.spaceXl,
         ),
-        decoration: BoxDecoration(
-          color: scheme.surface,
-          borderRadius: BorderRadius.circular(tokens.radiusPill),
-          border: Border.all(color: scheme.outlineVariant),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: iconContainerSize,
+              height: iconContainerSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: scheme.surfaceContainerHighest,
+              ),
+              child: Icon(
+                icon,
+                size: iconSize,
+                color: scheme.primary,
+              ),
+            ),
+            SizedBox(height: tokens.spaceLg),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: tokens.spaceSm),
+            Text(
+              description,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              SizedBox(height: tokens.spaceLg),
+              FilledButton(
+                key: showPlanAnchor ? GuidedTourAnchors.myDayPlanButton : null,
+                onPressed: onAction,
+                child: Text(actionLabel!),
+              ),
+            ],
+          ],
         ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      );
-    }
-
-    return Wrap(
-      spacing: tokens.spaceSm,
-      runSpacing: tokens.spaceXs2,
-      children: [
-        buildPill('Planned: $plannedCount'),
-        buildPill('Routines: $routineCount'),
-      ],
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/routine_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
@@ -215,8 +216,25 @@ class TemplateDataService {
       throw StateError('TemplateDataService is debug-only.');
     }
 
+    final baseFields = _logFields(context, const {'step': 'start'});
+    AppLog.routineStructured(
+      'domain.template_data',
+      'resetAndSeed start',
+      fields: baseFields,
+    );
+
     // 1) Wipe existing user data (local + synced).
+    AppLog.routineStructured(
+      'domain.template_data',
+      'wipe start',
+      fields: _logFields(context, const {'step': 'wipe_start'}),
+    );
     await _userDataWipeService.wipeAllUserData();
+    AppLog.routineStructured(
+      'domain.template_data',
+      'wipe complete',
+      fields: _logFields(context, const {'step': 'wipe_complete'}),
+    );
 
     // 2) Create Values.
     const seeds = <_TemplateValueSeed>[
@@ -248,19 +266,43 @@ class TemplateDataService {
 
     final iconAssigner = _UniqueValueIconAssigner();
     for (final seed in seeds) {
-      await _valueRepository.create(
-        name: seed.name,
-        color: seed.color,
-        iconName: iconAssigner.assign(
-          valueName: seed.name,
-          preferred: seed.iconName,
-        ),
-        priority: seed.priority,
-        context: context,
-      );
+      try {
+        await _valueRepository.create(
+          name: seed.name,
+          color: seed.color,
+          iconName: iconAssigner.assign(
+            valueName: seed.name,
+            preferred: seed.iconName,
+          ),
+          priority: seed.priority,
+          context: context,
+        );
+      } catch (e, st) {
+        AppLog.handleStructured(
+          'domain.template_data',
+          'value create failed',
+          e,
+          st,
+          _logFields(context, {
+            'step': 'value_create_failed',
+            'valueName': seed.name,
+            'color': seed.color,
+            'priority': seed.priority.name,
+          }),
+        );
+        rethrow;
+      }
     }
 
     final valueIdByName = await _loadValueIdByName();
+    AppLog.routineStructured(
+      'domain.template_data',
+      'values loaded',
+      fields: _logFields(context, {
+        'step': 'values_loaded',
+        'valueCount': valueIdByName.length,
+      }),
+    );
     final priorityByValueName = <String, ValuePriority>{
       for (final seed in seeds) seed.name: seed.priority,
     };
@@ -268,59 +310,129 @@ class TemplateDataService {
     final today = dateOnly(_clock.nowUtc());
     DateTime day(int offset) => today.add(Duration(days: offset));
 
-    await _projectRepository.create(
-      name: 'Learning',
-      description: 'Courses, reading, and study sessions',
-      priority: 1,
-      startDate: day(-7),
-      deadlineDate: day(21),
-      valueIds: [valueIdByName['Learning']!],
-      context: context,
-    );
-    await _projectRepository.create(
-      name: 'Self-care',
-      description: 'Appointments, movement, and daily energy',
-      priority: 2,
-      startDate: day(-10),
-      deadlineDate: day(30),
-      valueIds: [valueIdByName['Health']!],
-      context: context,
-    );
-    await _projectRepository.create(
-      name: 'Work',
-      description: 'Planning, updates, and delivery',
-      priority: 1,
-      startDate: day(-5),
-      deadlineDate: day(14),
-      valueIds: [valueIdByName['Career']!],
-      context: context,
-    );
-    await _projectRepository.create(
-      name: 'People',
-      description: 'Family, friends, and invites',
-      priority: 3,
-      startDate: day(-3),
-      deadlineDate: day(10),
-      valueIds: [valueIdByName['Social']!],
-      context: context,
-    );
+    final projectSeeds = <({
+      String name,
+      String description,
+      int priority,
+      int startOffset,
+      int deadlineOffset,
+      String valueName,
+    })>[
+      (
+        name: 'Learning',
+        description: 'Courses, reading, and study sessions',
+        priority: 1,
+        startOffset: -7,
+        deadlineOffset: 21,
+        valueName: 'Learning',
+      ),
+      (
+        name: 'Self-care',
+        description: 'Appointments, movement, and daily energy',
+        priority: 2,
+        startOffset: -10,
+        deadlineOffset: 30,
+        valueName: 'Health',
+      ),
+      (
+        name: 'Work',
+        description: 'Planning, updates, and delivery',
+        priority: 1,
+        startOffset: -5,
+        deadlineOffset: 14,
+        valueName: 'Career',
+      ),
+      (
+        name: 'People',
+        description: 'Family, friends, and invites',
+        priority: 3,
+        startOffset: -3,
+        deadlineOffset: 10,
+        valueName: 'Social',
+      ),
+    ];
+
+    for (final seed in projectSeeds) {
+      final valueId = valueIdByName[seed.valueName];
+      if (valueId == null) {
+        AppLog.warnStructured(
+          'domain.template_data',
+          'project seed skipped (missing value)',
+          fields: _logFields(context, {
+            'step': 'project_seed_skipped',
+            'projectName': seed.name,
+            'valueName': seed.valueName,
+          }),
+        );
+        continue;
+      }
+
+      try {
+        await _projectRepository.create(
+          name: seed.name,
+          description: seed.description,
+          priority: seed.priority,
+          startDate: day(seed.startOffset),
+          deadlineDate: day(seed.deadlineOffset),
+          valueIds: [valueId],
+          context: context,
+        );
+      } catch (e, st) {
+        AppLog.handleStructured(
+          'domain.template_data',
+          'project create failed',
+          e,
+          st,
+          _logFields(context, {
+            'step': 'project_create_failed',
+            'projectName': seed.name,
+            'valueName': seed.valueName,
+          }),
+        );
+        rethrow;
+      }
+    }
 
     final projectIdByName = await _loadProjectIdByName();
+    AppLog.routineStructured(
+      'domain.template_data',
+      'projects loaded',
+      fields: _logFields(context, {
+        'step': 'projects_loaded',
+        'projectCount': projectIdByName.length,
+      }),
+    );
     final projectPrimaryValueIdById = await _loadProjectPrimaryValueIdById();
 
     for (final seed in _templateRoutineSeeds) {
       final valueId = valueIdByName[seed.valueName];
       if (valueId == null) continue;
 
-      await _routineRepository.create(
-        name: seed.name,
-        valueId: valueId,
-        routineType: seed.routineType,
-        targetCount: seed.targetCount,
-        scheduleDays: seed.scheduleDays,
-        minSpacingDays: seed.minSpacingDays,
-        context: context,
-      );
+      try {
+        await _routineRepository.create(
+          name: seed.name,
+          valueId: valueId,
+          routineType: seed.routineType,
+          targetCount: seed.targetCount,
+          scheduleDays: seed.scheduleDays,
+          minSpacingDays: seed.minSpacingDays,
+          context: context,
+        );
+      } catch (e, st) {
+        AppLog.handleStructured(
+          'domain.template_data',
+          'routine create failed',
+          e,
+          st,
+          _logFields(context, {
+            'step': 'routine_create_failed',
+            'routineName': seed.name,
+            'valueName': seed.valueName,
+            'routineType': seed.routineType.name,
+          }),
+        );
+        rethrow;
+      }
     }
 
     final completedTaskNames = <String>[];
@@ -335,18 +447,34 @@ class TemplateDataService {
         projectPrimaryValueIdById: projectPrimaryValueIdById,
       );
 
-      await _taskRepository.create(
-        name: seed.name,
-        projectId: projectId,
-        priority: seed.priority,
-        startDate: seed.startOffset == null ? null : day(seed.startOffset!),
-        deadlineDate: seed.deadlineOffset == null
-            ? null
-            : day(seed.deadlineOffset!),
-        valueIds: taskValueIds,
-        repeatIcalRrule: seed.repeatIcalRrule,
-        context: context,
-      );
+      try {
+        await _taskRepository.create(
+          name: seed.name,
+          projectId: projectId,
+          priority: seed.priority,
+          startDate: seed.startOffset == null ? null : day(seed.startOffset!),
+          deadlineDate: seed.deadlineOffset == null
+              ? null
+              : day(seed.deadlineOffset!),
+          valueIds: taskValueIds,
+          repeatIcalRrule: seed.repeatIcalRrule,
+          context: context,
+        );
+      } catch (e, st) {
+        AppLog.handleStructured(
+          'domain.template_data',
+          'task create failed',
+          e,
+          st,
+          _logFields(context, {
+            'step': 'task_create_failed',
+            'taskName': seed.name,
+            'projectName': seed.projectName,
+            'valueNames': seed.valueNames?.join(','),
+          }),
+        );
+        rethrow;
+      }
 
       if (seed.complete) completedTaskNames.add(seed.name);
     }
@@ -364,6 +492,12 @@ class TemplateDataService {
       context: context,
     );
     await _forceWeeklyReviewDue(context);
+
+    AppLog.routineStructured(
+      'domain.template_data',
+      'resetAndSeed complete',
+      fields: _logFields(context, const {'step': 'complete'}),
+    );
   }
 
   List<String>? _valueIdsFor(
@@ -405,10 +539,25 @@ class TemplateDataService {
     for (final name in names) {
       final id = idByName[name];
       if (id == null) continue;
-      await _taskRepository.completeOccurrence(
-        taskId: id,
-        context: context,
-      );
+      try {
+        await _taskRepository.completeOccurrence(
+          taskId: id,
+          context: context,
+        );
+      } catch (e, st) {
+        AppLog.handleStructured(
+          'domain.template_data',
+          'task complete failed',
+          e,
+          st,
+          _logFields(context, {
+            'step': 'task_complete_failed',
+            'taskName': name,
+            'taskId': id,
+          }),
+        );
+        rethrow;
+      }
     }
   }
 
@@ -425,11 +574,27 @@ class TemplateDataService {
 
     for (final offset in days) {
       final until = _clock.nowUtc().add(Duration(days: offset));
-      await _taskRepository.setMyDaySnoozedUntil(
-        id: id,
-        untilUtc: until,
-        context: context,
-      );
+      try {
+        await _taskRepository.setMyDaySnoozedUntil(
+          id: id,
+          untilUtc: until,
+          context: context,
+        );
+      } catch (e, st) {
+        AppLog.handleStructured(
+          'domain.template_data',
+          'task snooze failed',
+          e,
+          st,
+          _logFields(context, {
+            'step': 'task_snooze_failed',
+            'taskName': name,
+            'taskId': id,
+            'snoozeOffsetDays': offset,
+          }),
+        );
+        rethrow;
+      }
     }
   }
 
@@ -472,11 +637,26 @@ class TemplateDataService {
         ratings[entry.value] = rating;
       }
 
-      await _valueRatingsWriteService.recordWeeklyRatings(
-        weekStartUtc: week,
-        ratingsByValueId: ratings,
-        context: context,
-      );
+      try {
+        await _valueRatingsWriteService.recordWeeklyRatings(
+          weekStartUtc: week,
+          ratingsByValueId: ratings,
+          context: context,
+        );
+      } catch (e, st) {
+        AppLog.handleStructured(
+          'domain.template_data',
+          'weekly ratings seed failed',
+          e,
+          st,
+          _logFields(context, {
+            'step': 'weekly_ratings_seed_failed',
+            'weekStartUtc': week.toIso8601String(),
+            'ratingCount': ratings.length,
+          }),
+        );
+        rethrow;
+      }
     }
   }
 
@@ -517,20 +697,41 @@ class TemplateDataService {
     final nowLocal = _clock.nowLocal();
     final minutesOfDay = (nowLocal.hour * 60 + nowLocal.minute).clamp(0, 1439);
 
-    await _settingsRepository.save(
-      SettingsKey.global,
-      settings.copyWith(
-        weeklyReviewEnabled: true,
-        weeklyReviewDayOfWeek: nowLocal.weekday,
-        weeklyReviewTimeMinutes: minutesOfDay,
-        weeklyReviewLastCompletedAt: null,
-        onboardingCompleted: true,
-      ),
-      context: context?.copyWith(
-        intent: 'weekly_review.force_due',
-        operation: 'settings.weekly_review.force_due',
-      ),
-    );
+    try {
+      await _settingsRepository.save(
+        SettingsKey.global,
+        settings.copyWith(
+          weeklyReviewEnabled: true,
+          weeklyReviewDayOfWeek: nowLocal.weekday,
+          weeklyReviewTimeMinutes: minutesOfDay,
+          weeklyReviewLastCompletedAt: null,
+          onboardingCompleted: true,
+        ),
+        context: context?.copyWith(
+          intent: 'weekly_review.force_due',
+          operation: 'settings.weekly_review.force_due',
+        ),
+      );
+    } catch (e, st) {
+      AppLog.handleStructured(
+        'domain.template_data',
+        'weekly review force due failed',
+        e,
+        st,
+        _logFields(context, const {'step': 'weekly_review_force_due_failed'}),
+      );
+      rethrow;
+    }
+  }
+
+  Map<String, Object?> _logFields(
+    OperationContext? context, [
+    Map<String, Object?> extra = const <String, Object?>{},
+  ]) {
+    return <String, Object?>{
+      ...?context?.toLogFields(),
+      ...extra,
+    };
   }
 }
 

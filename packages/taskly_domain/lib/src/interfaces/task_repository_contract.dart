@@ -100,6 +100,21 @@ abstract class TaskRepositoryContract {
     OperationContext? context,
   });
 
+  Future<String> createReturningId({
+    required String name,
+    String? description,
+    bool completed = false,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? projectId,
+    int? priority,
+    String? repeatIcalRrule,
+    bool repeatFromCompletion = false,
+    bool seriesEnded = false,
+    List<String>? valueIds,
+    OperationContext? context,
+  });
+
   Future<void> update({
     required String id,
     required String name,

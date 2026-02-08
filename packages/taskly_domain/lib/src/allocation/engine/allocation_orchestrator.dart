@@ -22,6 +22,7 @@ import 'package:taskly_domain/src/services/analytics/analytics_service.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/time/clock.dart';
 import 'package:taskly_domain/time.dart' show dateOnly;
+import 'package:taskly_domain/telemetry.dart';
 
 /// Orchestrates task allocation using allocation strategies.
 ///
@@ -76,6 +77,7 @@ class AllocationOrchestrator {
     int? maxTasksOverride,
     int? anchorCountOverride,
     Map<String, int> routineSelectionsByValue = const {},
+    OperationContext? context,
   }) async {
     final resolvedNowUtc = nowUtc ?? _clock.nowUtc();
     final todayUtc = _dayKeyService.todayDayKeyUtc(nowUtc: resolvedNowUtc);
@@ -108,6 +110,7 @@ class AllocationOrchestrator {
       maxTasksOverride: maxTasksOverride,
       anchorCountOverride: anchorCountOverride,
       routineSelectionsByValue: routineSelectionsByValue,
+      context: context,
     );
   }
 
@@ -119,6 +122,7 @@ class AllocationOrchestrator {
     required int batchCount,
     DateTime? nowUtc,
     Map<String, int> routineSelectionsByValue = const {},
+    OperationContext? context,
   }) async {
     final resolvedNowUtc = nowUtc ?? _clock.nowUtc();
     final todayUtc = _dayKeyService.todayDayKeyUtc(nowUtc: resolvedNowUtc);
@@ -158,6 +162,7 @@ class AllocationOrchestrator {
       todayDayKeyUtc: todayUtc,
       anchorCountOverride: anchorCountOverride,
       routineSelectionsByValue: routineSelectionsByValue,
+      context: context,
     );
   }
 
@@ -169,6 +174,7 @@ class AllocationOrchestrator {
     required int suggestedTaskTarget,
     DateTime? nowUtc,
     Map<String, int> routineSelectionsByValue = const {},
+    OperationContext? context,
   }) async {
     final resolvedNowUtc = nowUtc ?? _clock.nowUtc();
     final todayUtc = _dayKeyService.todayDayKeyUtc(nowUtc: resolvedNowUtc);
@@ -215,6 +221,7 @@ class AllocationOrchestrator {
       maxTasksOverride: target,
       anchorCountOverride: anchorCountOverride,
       routineSelectionsByValue: routineSelectionsByValue,
+      context: context,
     );
   }
 
@@ -228,6 +235,7 @@ class AllocationOrchestrator {
     int? maxTasksOverride,
     int? anchorCountOverride,
     Map<String, int> routineSelectionsByValue = const {},
+    OperationContext? context,
   }) async {
     final strategy = allocationConfig.strategySettings;
     final routineSelections = routineSelectionsByValue;
@@ -321,13 +329,6 @@ class AllocationOrchestrator {
       anchorProjectIds: allocatedRegularTasks.anchorProjectIds,
       requiresValueSetup: allocatedRegularTasks.requiresValueSetup,
     );
-
-    if (result.anchorProjectIds.isNotEmpty) {
-      await _projectAnchorStateRepository.recordAnchors(
-        projectIds: result.anchorProjectIds,
-        anchoredAtUtc: nowUtc,
-      );
-    }
 
     return result;
   }

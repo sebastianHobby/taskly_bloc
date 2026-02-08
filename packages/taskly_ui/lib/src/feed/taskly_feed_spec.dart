@@ -89,9 +89,8 @@ sealed class TasklySectionSpec {
     required String id,
     required String title,
     required String countLabel,
-    required bool isCollapsed,
-    required VoidCallback? onToggleCollapsed,
     required List<TasklyRowSpec> rows,
+    required String Function(int remaining, int total) showMoreLabelBuilder,
     String? actionLabel,
     String? actionTooltip,
     VoidCallback? onActionPressed,
@@ -138,9 +137,8 @@ final class TasklyScheduledOverdueSectionSpec extends TasklySectionSpec {
     required this.id,
     required this.title,
     required this.countLabel,
-    required this.isCollapsed,
-    required this.onToggleCollapsed,
     required this.rows,
+    required this.showMoreLabelBuilder,
     this.actionLabel,
     this.actionTooltip,
     this.onActionPressed,
@@ -149,9 +147,8 @@ final class TasklyScheduledOverdueSectionSpec extends TasklySectionSpec {
   final String id;
   final String title;
   final String countLabel;
-  final bool isCollapsed;
-  final VoidCallback? onToggleCollapsed;
   final List<TasklyRowSpec> rows;
+  final String Function(int remaining, int total) showMoreLabelBuilder;
   final String? actionLabel;
   final String? actionTooltip;
   final VoidCallback? onActionPressed;
@@ -633,6 +630,7 @@ final class TasklyProjectRowData {
     required this.completed,
     required this.pinned,
     required this.meta,
+    this.statusBadge,
     this.taskCount,
     this.completedTaskCount,
     this.dueSoonCount,
@@ -646,6 +644,7 @@ final class TasklyProjectRowData {
   final bool completed;
   final bool pinned;
   final TasklyEntityMetaData meta;
+  final TasklyBadgeData? statusBadge;
   final int? taskCount;
   final int? completedTaskCount;
   final int? dueSoonCount;

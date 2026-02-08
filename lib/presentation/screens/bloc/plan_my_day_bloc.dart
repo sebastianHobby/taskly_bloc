@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/routine_day_policy.dart';
@@ -66,16 +67,6 @@ final class PlanMyDayConfirm extends PlanMyDayEvent {
   const PlanMyDayConfirm({this.closeOnSuccess = false});
 
   final bool closeOnSuccess;
-}
-
-final class PlanMyDayMoreSuggestionsRequested extends PlanMyDayEvent {
-  const PlanMyDayMoreSuggestionsRequested();
-}
-
-final class PlanMyDayValueSortChanged extends PlanMyDayEvent {
-  const PlanMyDayValueSortChanged(this.sort);
-
-  final PlanMyDayValueSort sort;
 }
 
 final class PlanMyDaySwitchToBehaviorSuggestionsRequested
@@ -353,6 +344,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     required TaskSuggestionService taskSuggestionService,
     required TaskRepositoryContract taskRepository,
     required RoutineRepositoryContract routineRepository,
+    required ProjectAnchorStateRepositoryContract projectAnchorStateRepository,
     required TaskWriteService taskWriteService,
     required RoutineWriteService routineWriteService,
     required HomeDayKeyService dayKeyService,
@@ -366,6 +358,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
        _taskSuggestionService = taskSuggestionService,
        _taskRepository = taskRepository,
        _routineRepository = routineRepository,
+       _projectAnchorStateRepository = projectAnchorStateRepository,
        _taskWriteService = taskWriteService,
        _routineWriteService = routineWriteService,
        _dayKeyService = dayKeyService,
@@ -382,8 +375,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     on<PlanMyDaySwapSuggestionRequested>(_onSwapSuggestionRequested);
     on<PlanMyDayPauseRoutineRequested>(_onPauseRoutineRequested);
     on<PlanMyDayConfirm>(_onConfirm);
-    on<PlanMyDayMoreSuggestionsRequested>(_onMoreSuggestionsRequested);
-    on<PlanMyDayValueSortChanged>(_onValueSortChanged);
     on<PlanMyDaySwitchToBehaviorSuggestionsRequested>(
       _onSwitchToBehaviorSuggestionsRequested,
     );
@@ -401,6 +392,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   final TaskSuggestionService _taskSuggestionService;
   final TaskRepositoryContract _taskRepository;
   final RoutineRepositoryContract _routineRepository;
+  final ProjectAnchorStateRepositoryContract _projectAnchorStateRepository;
   final TaskWriteService _taskWriteService;
   final RoutineWriteService _routineWriteService;
   final HomeDayKeyService _dayKeyService;
@@ -429,6 +421,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   List<RoutineCompletion> _routineCompletions = const <RoutineCompletion>[];
   List<RoutineSkip> _routineSkips = const <RoutineSkip>[];
   late my_day.MyDayDayPicks _dayPicks;
+  my_day.MyDayDayPicks? _yesterdayDayPicks;
 
   int _suggestionBatchCount = 1;
   int _dailyLimit = 8;
@@ -443,13 +436,14 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   Set<String> _lockedCompletedPickIds = const <String>{};
   Set<String> _lockedCompletedRoutineIds = const <String>{};
 
-  PlanMyDayValueSort _valuesSort = PlanMyDayValueSort.attentionFirst;
+  final PlanMyDayValueSort _valuesSort = PlanMyDayValueSort.attentionFirst;
   String _taskRevisionStamp = '';
 
   Completer<void>? _refreshCompleter;
   bool _isDemoMode = false;
   int _toastRequestId = 0;
   PlanMyDayToast? _pendingToast;
+  String? _lastSuggestionInputHash;
 
   Future<void> _onStarted(
     PlanMyDayStarted event,
@@ -499,7 +493,12 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
             }
 
             if (trigger is AppResumed && !_hasUserSelection) {
-              await _refreshSnapshots(resetSelection: false);
+              final allowSuggestionRefresh =
+                  _dayPicks.ritualCompletedAtUtc == null;
+              await _refreshSnapshots(
+                resetSelection: false,
+                allowSuggestionRefresh: allowSuggestionRefresh,
+              );
               if (emit.isDone || _isDemoMode) return;
               _emitReady(emit);
             }
@@ -508,7 +507,12 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
             final revision = _buildTaskRevision(tasks);
             if (revision == _taskRevisionStamp) return;
             _taskRevisionStamp = revision;
-            await _refreshSnapshots(resetSelection: false);
+            final allowSuggestionRefresh =
+                _dayPicks.ritualCompletedAtUtc == null;
+            await _refreshSnapshots(
+              resetSelection: false,
+              allowSuggestionRefresh: allowSuggestionRefresh,
+            );
             if (emit.isDone || _isDemoMode) return;
             _emitReady(emit);
         }
@@ -830,6 +834,25 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       context: context,
     );
 
+    final anchorProjectIds =
+        _suggestionSnapshot?.anchorProjectIds ?? const <String>[];
+    if (anchorProjectIds.isNotEmpty) {
+      final anchorContext = context.copyWith(
+        intent: 'confirm_anchors',
+        operation: 'project_anchor_state.record_anchors',
+        entityType: 'project_anchor_state',
+        extraFields: <String, Object?>{
+          ...context.extraFields,
+          'anchorCount': anchorProjectIds.length,
+        },
+      );
+      await _projectAnchorStateRepository.recordAnchors(
+        projectIds: anchorProjectIds,
+        anchoredAtUtc: nowUtc,
+        context: anchorContext,
+      );
+    }
+
     _dayPicks = my_day.MyDayDayPicks(
       dayKeyUtc: dateOnly(_dayKeyUtc),
       ritualCompletedAtUtc: nowUtc,
@@ -847,27 +870,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     }
 
     if (emit.isDone) return;
-    _emitReady(emit);
-  }
-
-  Future<void> _onMoreSuggestionsRequested(
-    PlanMyDayMoreSuggestionsRequested event,
-    Emitter<PlanMyDayState> emit,
-  ) async {
-    if (_isDemoMode) return;
-    _suggestionBatchCount += 1;
-    await _refreshSnapshots(resetSelection: false);
-    if (emit.isDone) return;
-    _emitReady(emit);
-  }
-
-  void _onValueSortChanged(
-    PlanMyDayValueSortChanged event,
-    Emitter<PlanMyDayState> emit,
-  ) {
-    if (state is! PlanMyDayReady) return;
-    if (_isDemoMode) return;
-    _valuesSort = event.sort;
     _emitReady(emit);
   }
 
@@ -902,7 +904,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
     _allocationConfig = updated;
 
-    await _refreshSuggestions();
+    await _refreshSnapshots(resetSelection: false);
     if (emit.isDone) return;
     _emitReady(emit);
   }
@@ -969,11 +971,18 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       },
     );
 
-    await _taskWriteService.bulkRescheduleDeadlines(
-      taskIds,
-      newDeadlineDay,
-      context: context,
-    );
+    try {
+      await _taskWriteService.bulkRescheduleDeadlines(
+        taskIds,
+        newDeadlineDay,
+        context: context,
+      );
+    } catch (error) {
+      _queueToast(PlanMyDayToast(message: friendlyErrorMessage(error)));
+      if (emit.isDone) return;
+      _emitReady(emit);
+      return;
+    }
 
     _hasUserSelection = true;
     _selectedTaskIds = _selectedTaskIds.difference(_dueTodayTaskIds);
@@ -1001,11 +1010,18 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       },
     );
 
-    await _taskWriteService.bulkRescheduleDeadlines(
-      [event.taskId],
-      newDeadlineDay,
-      context: context,
-    );
+    try {
+      await _taskWriteService.bulkRescheduleDeadlines(
+        [event.taskId],
+        newDeadlineDay,
+        context: context,
+      );
+    } catch (error) {
+      _queueToast(PlanMyDayToast(message: friendlyErrorMessage(error)));
+      if (emit.isDone) return;
+      _emitReady(emit);
+      return;
+    }
 
     _hasUserSelection = true;
     _selectedTaskIds = {..._selectedTaskIds}..remove(event.taskId);
@@ -1036,11 +1052,18 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       },
     );
 
-    await _taskWriteService.bulkRescheduleStarts(
-      taskIds,
-      newStartDay,
-      context: context,
-    );
+    try {
+      await _taskWriteService.bulkRescheduleStarts(
+        taskIds,
+        newStartDay,
+        context: context,
+      );
+    } catch (error) {
+      _queueToast(PlanMyDayToast(message: friendlyErrorMessage(error)));
+      if (emit.isDone) return;
+      _emitReady(emit);
+      return;
+    }
 
     _hasUserSelection = true;
     _selectedTaskIds = _selectedTaskIds.difference(_plannedTaskIds);
@@ -1068,11 +1091,18 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       },
     );
 
-    await _taskWriteService.bulkRescheduleStarts(
-      [event.taskId],
-      newStartDay,
-      context: context,
-    );
+    try {
+      await _taskWriteService.bulkRescheduleStarts(
+        [event.taskId],
+        newStartDay,
+        context: context,
+      );
+    } catch (error) {
+      _queueToast(PlanMyDayToast(message: friendlyErrorMessage(error)));
+      if (emit.isDone) return;
+      _emitReady(emit);
+      return;
+    }
 
     _hasUserSelection = true;
     _selectedTaskIds = {..._selectedTaskIds}..remove(event.taskId);
@@ -1082,7 +1112,10 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     _emitReady(emit);
   }
 
-  Future<void> _refreshSnapshots({required bool resetSelection}) async {
+  Future<void> _refreshSnapshots({
+    required bool resetSelection,
+    bool allowSuggestionRefresh = true,
+  }) async {
     final inFlight = _refreshCompleter;
     if (inFlight != null) {
       await inFlight.future;
@@ -1096,13 +1129,18 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       _selectedTaskIds = <String>{};
       _selectedRoutineIds = <String>{};
       _suggestionBatchCount = 1;
+      _lastSuggestionInputHash = null;
     }
 
     try {
+      final yesterdayDayKeyUtc = dateOnly(
+        _dayKeyUtc.subtract(const Duration(days: 1)),
+      );
       final results = await Future.wait([
         _settingsRepository.load<settings.GlobalSettings>(SettingsKey.global),
         _settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
         _myDayRepository.loadDay(_dayKeyUtc),
+        _myDayRepository.loadDay(yesterdayDayKeyUtc),
         _taskRepository.getAll(TaskQuery.incomplete()),
         _routineRepository.getAll(includeInactive: true),
         _routineRepository.getCompletions(),
@@ -1114,14 +1152,15 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
       final picks = results[2] as my_day.MyDayDayPicks;
       _dayPicks = picks;
+      _yesterdayDayPicks = results[3] as my_day.MyDayDayPicks;
 
-      final incompleteTasks = results[3] as List<Task>;
+      final incompleteTasks = results[4] as List<Task>;
       _incompleteTasks = incompleteTasks;
       _taskRevisionStamp = _buildTaskRevision(incompleteTasks);
 
-      final routines = results[4] as List<Routine>;
-      final completions = results[5] as List<RoutineCompletion>;
-      final skips = results[6] as List<RoutineSkip>;
+      final routines = results[5] as List<Routine>;
+      final completions = results[6] as List<RoutineCompletion>;
+      final skips = results[7] as List<RoutineSkip>;
 
       _routines = routines;
       _routineCompletions = completions;
@@ -1170,22 +1209,44 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         }
       }
 
-      await _refreshSuggestions();
+      final shouldRefreshSuggestions =
+          allowSuggestionRefresh && _shouldRefreshSuggestions();
+      if (shouldRefreshSuggestions) {
+        final routineSelections = _routineSelectionsByValue();
+        final triageSelections = _triageSelectionsByValue();
+        final selectionCounts = _mergeSelectionCounts(
+          routineSelections,
+          triageSelections,
+        );
+        final targetCount = _suggestionPoolTargetCount();
+        final inputHash = _buildSuggestionInputHash(
+          selectionCounts: selectionCounts,
+          targetCount: targetCount,
+        );
+        if (inputHash != _lastSuggestionInputHash) {
+          await _refreshSuggestions(
+            selectionCounts: selectionCounts,
+            targetCount: targetCount,
+          );
+          _lastSuggestionInputHash = inputHash;
+        }
+      }
     } finally {
       _refreshCompleter = null;
       completer.complete();
     }
   }
 
-  Future<void> _refreshSuggestions() async {
-    final routineSelections = _routineSelectionsByValue();
-    final triageSelections = _triageSelectionsByValue();
-    final selectionCounts = _mergeSelectionCounts(
-      routineSelections,
-      triageSelections,
+  Future<void> _refreshSuggestions({
+    required Map<String, int> selectionCounts,
+    required int targetCount,
+  }) async {
+    final context = _contextFactory.create(
+      feature: 'plan_my_day',
+      screen: 'plan_my_day',
+      intent: 'refresh_suggestions',
+      operation: 'getSuggestedSnapshot',
     );
-
-    final targetCount = _suggestionPoolTargetCount();
 
     _suggestionSnapshot = await _taskSuggestionService.getSnapshot(
       batchCount: _suggestionBatchCount,
@@ -1193,6 +1254,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       tasksOverride: _incompleteTasks,
       routineSelectionsByValue: selectionCounts,
       nowUtc: _nowService.nowUtc(),
+      context: context,
     );
     _lastNeglectDeficits = _suggestionSnapshot?.neglectDeficits ?? const {};
   }
@@ -1219,8 +1281,10 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         .where((task) => _isDueTodayOrOverdue(task, today))
         .toList(growable: false);
     final dueIds = dueTodayTasks.map((task) => task.id).toSet();
+    final yesterdayTaskIds =
+        _yesterdayDayPicks?.selectedTaskIds ?? const <String>{};
     final plannedTasks = activeTasks
-        .where((task) => _isPlannedTodayOrEarlier(task, today))
+        .where((task) => yesterdayTaskIds.contains(task.id))
         .where((task) => !dueIds.contains(task.id))
         .toList(growable: false);
 
@@ -1532,6 +1596,49 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     return total * _suggestionBatchCount;
   }
 
+  bool _shouldRefreshSuggestions() {
+    if (_dayPicks.ritualCompletedAtUtc == null) return true;
+    if (_suggestionSnapshot == null) return true;
+    return _remainingSlotCount() > 0;
+  }
+
+  int _remainingSlotCount() {
+    final activeTaskIds = _dayPicks.selectedTaskIds
+        .where((id) => !_lockedCompletedPickIds.contains(id))
+        .toSet();
+    final activeRoutineIds = _dayPicks.selectedRoutineIds
+        .where((id) => !_lockedCompletedRoutineIds.contains(id))
+        .toSet();
+    final activeCount = activeTaskIds.length + activeRoutineIds.length;
+    return _dailyLimit - activeCount;
+  }
+
+  String _buildSuggestionInputHash({
+    required Map<String, int> selectionCounts,
+    required int targetCount,
+  }) {
+    final buffer = StringBuffer()
+      ..write(dateOnly(_dayKeyUtc).toIso8601String())
+      ..write('|')
+      ..write(_allocationConfig.hashCode)
+      ..write('|')
+      ..write(_suggestionBatchCount)
+      ..write('|')
+      ..write(_taskRevisionStamp)
+      ..write('|')
+      ..write(targetCount)
+      ..write('|')
+      ..write(_mapSignature(selectionCounts));
+    return buffer.toString();
+  }
+
+  String _mapSignature(Map<String, int> counts) {
+    if (counts.isEmpty) return '';
+    final entries = counts.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    return entries.map((entry) => '${entry.key}:${entry.value}').join('|');
+  }
+
   List<PlanMyDayValueSuggestionGroup> _buildValueSuggestionGroups(
     List<SuggestedTask> suggested, {
     required Map<String, double> deficits,
@@ -1661,19 +1768,9 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     return dateOnlyOrNull(raw);
   }
 
-  DateTime? _startDateOnly(Task task) {
-    final raw = task.occurrence?.date ?? task.startDate;
-    return dateOnlyOrNull(raw);
-  }
-
   bool _isDueTodayOrOverdue(Task task, DateTime today) {
     final deadline = _deadlineDateOnly(task);
     return deadline != null && !deadline.isAfter(today);
-  }
-
-  bool _isPlannedTodayOrEarlier(Task task, DateTime today) {
-    final start = _startDateOnly(task);
-    return start != null && !start.isAfter(today);
   }
 
   bool _isSameDayUtc(DateTime a, DateTime b) {

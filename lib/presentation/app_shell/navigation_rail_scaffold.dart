@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -118,7 +119,18 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
         textAlign: TextAlign.center,
       ),
       icon: Icon(destination.icon),
-      selectedIcon: Icon(destination.selectedIcon),
+      selectedIcon: _railSelectedIcon(destination),
+    );
+  }
+
+  Widget _railSelectedIcon(NavigationDestinationVm destination) {
+    if (destination.screenId != 'my_day') {
+      return Icon(destination.selectedIcon);
+    }
+
+    return KeyedSubtree(
+      key: GuidedTourAnchors.myDayNavItem,
+      child: Icon(destination.selectedIcon),
     );
   }
 }

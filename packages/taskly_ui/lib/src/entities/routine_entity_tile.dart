@@ -48,10 +48,10 @@ class RoutineEntityTile extends StatelessWidget {
         (actions.onPrimaryAction != null || model.completed);
     final showPicker = isPlanPickStyle && actions.onToggleSelected != null;
     final badges = model.badges;
-    final hasBadges = badges.isNotEmpty;
 
     final showProgress = model.progress != null;
     final showScheduleRow = model.scheduleRow != null;
+    final isScheduledRow = showScheduleRow;
 
     final valueChip = model.valueChip;
     final metaLabel =
@@ -63,10 +63,13 @@ class RoutineEntityTile extends StatelessWidget {
             .map((text) => text.trim())
             .where((text) => text.isNotEmpty)
             .join(' \u00b7 ');
-    final showMeta = metaLabel.isNotEmpty;
+    final showMeta = !isScheduledRow && metaLabel.isNotEmpty;
 
-    final progress = model.progress;
+    final progress = isScheduledRow ? null : model.progress;
     final compactMetaLabel = metaLabel;
+
+    final hasBadges = !isScheduledRow && badges.isNotEmpty;
+    final ValueChipData? leadingValueChip = isScheduledRow ? valueChip : null;
 
     final isSelected =
         model.selected || (model.completed && model.highlightCompleted);
@@ -101,6 +104,7 @@ class RoutineEntityTile extends StatelessWidget {
             showSelection: showSelection,
             selectionAddLabel: selectionAddLabel,
             selectionAddedLabel: selectionAddedLabel,
+            leadingValueChip: leadingValueChip,
           )
         : DecoratedBox(
             decoration: BoxDecoration(
@@ -129,6 +133,14 @@ class RoutineEntityTile extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (leadingValueChip != null) ...[
+                          Icon(
+                            leadingValueChip.icon,
+                            size: tokens.spaceLg2,
+                            color: leadingValueChip.color,
+                          ),
+                          SizedBox(width: tokens.spaceSm),
+                        ],
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +151,8 @@ class RoutineEntityTile extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: titleStyle,
                               ),
-                              if (valueChip != null || showMeta) ...[
+                              if (!isScheduledRow &&
+                                  (valueChip != null || showMeta)) ...[
                                 SizedBox(height: tokens.spaceXs2),
                                 _RoutineMetaRow(
                                   valueChip: valueChip,
@@ -223,6 +236,7 @@ class _CompactRoutineTile extends StatelessWidget {
     required this.showSelection,
     required this.selectionAddLabel,
     required this.selectionAddedLabel,
+    required this.leadingValueChip,
   });
 
   final TasklyRoutineRowData model;
@@ -238,6 +252,7 @@ class _CompactRoutineTile extends StatelessWidget {
   final bool showSelection;
   final String selectionAddLabel;
   final String selectionAddedLabel;
+  final ValueChipData? leadingValueChip;
 
   @override
   Widget build(BuildContext context) {
@@ -245,9 +260,11 @@ class _CompactRoutineTile extends StatelessWidget {
     final scheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
     final valueChip = model.valueChip;
+    final leadingValueChip = this.leadingValueChip;
     final trimmedMetaLabel = metaLabel.trim();
     final hasMetaLabel = trimmedMetaLabel.isNotEmpty;
     final hasProgress = progress != null;
+    final isScheduledRow = showScheduleRow && model.scheduleRow != null;
 
     final VoidCallback? onTap = actions.onTap ?? actions.onToggleSelected;
 
@@ -276,11 +293,18 @@ class _CompactRoutineTile extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.repeat_outlined,
-                    size: tokens.spaceLg2,
-                    color: scheme.onSurfaceVariant,
-                  ),
+                  if (leadingValueChip != null)
+                    Icon(
+                      leadingValueChip.icon,
+                      size: tokens.spaceLg2,
+                      color: leadingValueChip.color,
+                    )
+                  else
+                    Icon(
+                      Icons.repeat_outlined,
+                      size: tokens.spaceLg2,
+                      color: scheme.onSurfaceVariant,
+                    ),
                   SizedBox(width: tokens.spaceSm),
                   Expanded(
                     child: Column(
@@ -297,15 +321,15 @@ class _CompactRoutineTile extends StatelessWidget {
                                 style: titleStyle,
                               ),
                             ),
-                            if (valueChip != null) ...[
+                            if (!isScheduledRow && valueChip != null) ...[
                               SizedBox(width: tokens.spaceXs2),
                               _ValueIconOnly(data: valueChip),
                             ],
-                            if (hasProgress) ...[
+                            if (!isScheduledRow && hasProgress) ...[
                               SizedBox(width: tokens.spaceXs2),
                               _ProgressChip(data: progress!),
                             ],
-                            if (hasMetaLabel) ...[
+                            if (!isScheduledRow && hasMetaLabel) ...[
                               SizedBox(width: tokens.spaceSm2),
                               Text(
                                 trimmedMetaLabel,

@@ -14,6 +14,11 @@ import 'package:taskly_domain/taskly_domain.dart';
 import '../../../../mocks/feature_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 
+class MockMyDayRepositoryContract extends Mock
+    implements MyDayRepositoryContract {}
+
+class MockHomeDayKeyService extends Mock implements HomeDayKeyService {}
+
 void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
@@ -41,6 +46,9 @@ void main() {
   late MockValueRepositoryContract valueRepository;
   late MockOccurrenceCommandService occurrenceCommandService;
   late TaskWriteService taskWriteService;
+  late MockMyDayRepositoryContract myDayRepository;
+  late MockHomeDayKeyService homeDayKeyService;
+  late TaskMyDayWriteService taskMyDayWriteService;
   late AppErrorReporter errorReporter;
   late DemoModeService demoModeService;
   late DemoDataProvider demoDataProvider;
@@ -51,6 +59,7 @@ void main() {
       projectRepository: projectRepository,
       valueRepository: valueRepository,
       taskWriteService: taskWriteService,
+      taskMyDayWriteService: taskMyDayWriteService,
       errorReporter: errorReporter,
       demoModeService: demoModeService,
       demoDataProvider: demoDataProvider,
@@ -67,6 +76,13 @@ void main() {
       taskRepository: taskRepository,
       projectRepository: projectRepository,
       occurrenceCommandService: occurrenceCommandService,
+    );
+    myDayRepository = MockMyDayRepositoryContract();
+    homeDayKeyService = MockHomeDayKeyService();
+    taskMyDayWriteService = TaskMyDayWriteService(
+      taskWriteService: taskWriteService,
+      myDayRepository: myDayRepository,
+      dayKeyService: homeDayKeyService,
     );
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),

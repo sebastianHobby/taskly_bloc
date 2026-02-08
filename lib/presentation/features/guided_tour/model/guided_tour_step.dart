@@ -50,20 +50,25 @@ List<GuidedTourStep> buildGuidedTourSteps() {
     GuidedTourStep(
       id: 'my_day_overview',
       route: '/my-day',
-      title: 'Your plan for today',
-      body: 'Your selected tasks and routines for today.',
-      kind: GuidedTourStepKind.card,
+      title: 'My Day',
+      body: 'My Day shows your selected tasks and routines for today.',
+      kind: GuidedTourStepKind.coachmark,
+      coachmark: GuidedTourCoachmark(
+        targetId: 'nav_my_day',
+        title: 'My Day',
+        body: 'My Day shows your selected tasks and routines for today.',
+      ),
     ),
     GuidedTourStep(
       id: 'my_day_plan_button',
       route: '/my-day',
       title: 'Plan My Day',
-      body: 'Choose tasks and routines that balance values and deadlines.',
+      body: "Build today's plan by choosing tasks and routines for today.",
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
         targetId: 'my_day_plan_button',
         title: 'Plan My Day',
-        body: 'Choose tasks and routines that balance values and deadlines.',
+        body: "Build today's plan by choosing tasks and routines for today.",
       ),
     ),
     GuidedTourStep(
@@ -143,8 +148,8 @@ List<GuidedTourStep> buildGuidedTourSteps() {
     GuidedTourStep(
       id: 'projects_overview',
       route: '/projects',
-      title: 'Build your project list',
-      body: 'Where you build your project list.',
+      title: 'Projects',
+      body: 'Build your project list with tasks grouped underneath.',
       kind: GuidedTourStepKind.card,
     ),
     GuidedTourStep(
@@ -181,13 +186,13 @@ List<GuidedTourStep> buildGuidedTourSteps() {
     GuidedTourStep(
       id: 'scheduled_horizon',
       route: '/scheduled',
-      title: "What's coming up",
-      body: 'A date-based view to plan ahead.',
+      title: 'Scheduled',
+      body: 'A date-based view of tasks and projects to plan ahead.',
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
         targetId: 'scheduled_section_today',
-        title: "What's coming up",
-        body: 'A date-based view to plan ahead.',
+        title: 'Scheduled',
+        body: 'A date-based view of tasks and projects to plan ahead.',
       ),
     ),
     GuidedTourStep(

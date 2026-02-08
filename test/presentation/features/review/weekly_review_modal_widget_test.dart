@@ -91,6 +91,13 @@ void main() {
     when(
       () => attentionEngine.watch(any()),
     ).thenAnswer((_) => const Stream<List<AttentionItem>>.empty());
+    when(
+      () => settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
+    ).thenAnswer(
+      (_) async => const AllocationConfig(
+        suggestionSignal: SuggestionSignal.behaviorBased,
+      ),
+    );
     when(() => valueRepository.getAll()).thenAnswer((_) async => <Value>[]);
     when(
       () => valueRatingsRepository.getAll(weeks: any(named: 'weeks')),

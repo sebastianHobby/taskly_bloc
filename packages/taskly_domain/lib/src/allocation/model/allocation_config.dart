@@ -73,7 +73,7 @@ abstract class StrategySettings with _$StrategySettings {
     @Default(2) int tasksPerAnchorMax,
 
     /// Days since last progress before a project receives rotation pressure.
-    @Default(7) int rotationPressureDays,
+    @Default(3) int rotationPressureDays,
 
     /// Only anchor projects that have actionable tasks.
     @Default(true) bool readinessFilter,

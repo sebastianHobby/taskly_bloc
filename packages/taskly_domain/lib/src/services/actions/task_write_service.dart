@@ -29,6 +29,13 @@ final class TaskWriteService {
     return _commandHandler.handleCreate(command, context: context);
   }
 
+  Future<CommandResult> createReturningId(
+    CreateTaskCommand command, {
+    OperationContext? context,
+  }) {
+    return _commandHandler.handleCreateWithId(command, context: context);
+  }
+
   Future<CommandResult> update(
     UpdateTaskCommand command, {
     OperationContext? context,

@@ -21,6 +21,7 @@ class TaskDetailSheet extends StatefulWidget {
     this.defaultDeadlineDate,
     this.openToValues = false,
     this.openToProjectPicker = false,
+    this.includeInMyDayDefault = false,
     super.key,
   });
 
@@ -41,6 +42,9 @@ class TaskDetailSheet extends StatefulWidget {
   /// first build.
   final bool openToProjectPicker;
 
+  /// Defaults the include-in-My-Day toggle when creating a task.
+  final bool includeInMyDayDefault;
+
   @override
   State<TaskDetailSheet> createState() => _TaskDetailSheetState();
 }
@@ -51,6 +55,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
   final _formKey = GlobalKey<FormBuilderState>();
 
   TaskDraft _draft = TaskDraft.empty();
+  bool _includeInMyDay = false;
 
   void _syncDraftFromFormValues(Map<String, dynamic> formValues) {
     final name = extractStringValue(formValues, TaskFieldKeys.name.id);
@@ -98,6 +103,10 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
       formValues,
       TaskFieldKeys.valueIds.id,
     );
+    final includeInMyDay = extractBoolValue(
+      formValues,
+      TaskFormFieldKeys.includeInMyDay,
+    );
 
     _draft = _draft.copyWith(
       name: name,
@@ -112,6 +121,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
       priority: priority,
       valueIds: valueIds,
     );
+    _includeInMyDay = includeInMyDay;
   }
 
   Future<void> _scrollToFirstInvalidField() async {
@@ -201,6 +211,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                         seriesEnded: _draft.seriesEnded,
                         valueIds: _draft.valueIds,
                       ),
+                      includeInMyDay: _includeInMyDay,
                     ),
                   );
                 },
@@ -211,6 +222,8 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 defaultValueIds: widget.defaultValueIds,
                 defaultStartDate: widget.defaultStartDate,
                 defaultDeadlineDate: widget.defaultDeadlineDate,
+                includeInMyDayDefault: widget.includeInMyDayDefault,
+                showMyDayToggle: true,
                 openToValues: widget.openToValues,
                 openToProjectPicker: widget.openToProjectPicker,
                 onClose: () => unawaited(closeEditor(context)),
@@ -264,6 +277,8 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 availableValues: availableValues,
                 defaultProjectId: widget.defaultProjectId,
                 defaultValueIds: widget.defaultValueIds,
+                includeInMyDayDefault: widget.includeInMyDayDefault,
+                showMyDayToggle: false,
                 openToValues: widget.openToValues,
                 openToProjectPicker: widget.openToProjectPicker,
                 onClose: () => unawaited(closeEditor(context)),

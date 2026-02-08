@@ -244,6 +244,37 @@ class FakeTaskRepository implements TaskRepositoryContract {
     List<String>? valueIds,
     OperationContext? context,
   }) async {
+    await createReturningId(
+      name: name,
+      description: description,
+      completed: completed,
+      startDate: startDate,
+      deadlineDate: deadlineDate,
+      projectId: projectId,
+      priority: priority,
+      repeatIcalRrule: repeatIcalRrule,
+      repeatFromCompletion: repeatFromCompletion,
+      seriesEnded: seriesEnded,
+      valueIds: valueIds,
+      context: context,
+    );
+  }
+
+  @override
+  Future<String> createReturningId({
+    required String name,
+    String? description,
+    bool completed = false,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? projectId,
+    int? priority,
+    String? repeatIcalRrule,
+    bool repeatFromCompletion = false,
+    bool seriesEnded = false,
+    List<String>? valueIds,
+    OperationContext? context,
+  }) async {
     final now = _now();
     final id = 'gen-task-${_idCounter++}';
     final newTask = Task(
@@ -263,6 +294,7 @@ class FakeTaskRepository implements TaskRepositoryContract {
     );
     _last = [..._last, newTask];
     _controller.add(_last);
+    return id;
   }
 
   @override

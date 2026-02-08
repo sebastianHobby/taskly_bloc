@@ -1643,6 +1643,46 @@
     "@projectStatusActive": {
         "description": "Insignia de estado para proyectos activos"
     },
+    "projectCompleteConfirmTitle": "Completar este proyecto?",
+    "@projectCompleteConfirmTitle": {
+        "description": "Titulo del dialogo de confirmacion para completar un proyecto"
+    },
+    "projectCompleteConfirmBody": "Aun podras verlo despues en Filtros -> Mostrar completados.",
+    "@projectCompleteConfirmBody": {
+        "description": "Cuerpo del dialogo de confirmacion para completar un proyecto"
+    },
+    "projectCompletedSnack": "Proyecto completado.",
+    "@projectCompletedSnack": {
+        "description": "Mensaje de snackbar despues de completar un proyecto"
+    },
+    "undoLabel": "Deshacer",
+    "@undoLabel": {
+        "description": "Etiqueta para acciones de deshacer en snackbars"
+    },
+    "completeLabel": "Completar",
+    "@completeLabel": {
+        "description": "Etiqueta generica para acciones de completar"
+    },
+    "showCompletedLabel": "Mostrar completados",
+    "@showCompletedLabel": {
+        "description": "Etiqueta para mostrar elementos completados en menus de filtro"
+    },
+    "projectsEmptyActiveTitle": "No hay proyectos activos aun.",
+    "@projectsEmptyActiveTitle": {
+        "description": "Titulo del estado vacio cuando no hay proyectos activos"
+    },
+    "projectsEmptyActiveDescription": "Crea un proyecto para empezar.",
+    "@projectsEmptyActiveDescription": {
+        "description": "Descripcion del estado vacio cuando no hay proyectos activos"
+    },
+    "projectsEmptyCompletedTitle": "No hay proyectos completados aun.",
+    "@projectsEmptyCompletedTitle": {
+        "description": "Titulo del estado vacio cuando no hay proyectos completados"
+    },
+    "projectsEmptyCompletedDescription": "Los proyectos completados apareceran aqui.",
+    "@projectsEmptyCompletedDescription": {
+        "description": "Descripcion del estado vacio cuando no hay proyectos completados"
+    },
     "deleteProjectAction": "Eliminar proyecto",
     "@deleteProjectAction": {
         "description": "AcciÃ³n del menÃº para eliminar un proyecto"

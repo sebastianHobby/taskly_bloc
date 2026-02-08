@@ -10,6 +10,7 @@ import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_fact
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/taskly_domain.dart';
+import 'package:taskly_domain/my_day.dart';
 import 'package:taskly_domain/services.dart';
 
 part 'task_detail_bloc.freezed.dart';
@@ -23,6 +24,7 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
 
   const factory TaskDetailEvent.create({
     required CreateTaskCommand command,
+    @Default(false) bool includeInMyDay,
   }) = _TaskDetailCreate;
 
   const factory TaskDetailEvent.loadById({required String taskId}) =
@@ -70,6 +72,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
     required TaskWriteService taskWriteService,
+    required TaskMyDayWriteService taskMyDayWriteService,
     required AppErrorReporter errorReporter,
     required DemoModeService demoModeService,
     required DemoDataProvider demoDataProvider,
@@ -79,6 +82,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
        _taskWriteService = taskWriteService,
+       _taskMyDayWriteService = taskMyDayWriteService,
        _errorReporter = errorReporter,
        _demoModeService = demoModeService,
        _demoDataProvider = demoDataProvider,
@@ -104,6 +108,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
   final TaskWriteService _taskWriteService;
+  final TaskMyDayWriteService _taskMyDayWriteService;
   final AppErrorReporter _errorReporter;
   final DemoModeService _demoModeService;
   final DemoDataProvider _demoDataProvider;
@@ -259,12 +264,20 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
       operation: 'tasks.create',
       extraFields: <String, Object?>{
         'hasProjectId': event.command.projectId != null,
+        'include_in_my_day': event.includeInMyDay,
       },
     );
+    final createAction = event.includeInMyDay
+        ? () => _taskMyDayWriteService.createAndPickForToday(
+              event.command,
+              bucket: MyDayPickBucket.manual,
+              context: context,
+            )
+        : () => _taskWriteService.create(event.command, context: context);
     await _executeValidatedCommand(
       emit,
       EntityOperation.create,
-      () => _taskWriteService.create(event.command, context: context),
+      createAction,
       context: context,
     );
   }

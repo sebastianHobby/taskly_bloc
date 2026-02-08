@@ -26,6 +26,7 @@ export 'src/services/time/temporal_trigger_service.dart';
 export 'src/services/suggestions/task_suggestion_service.dart';
 export 'src/services/actions/project_write_service.dart';
 export 'src/services/actions/routine_write_service.dart';
+export 'src/services/actions/task_my_day_write_service.dart';
 export 'src/services/actions/task_write_service.dart';
 export 'src/services/actions/value_write_service.dart';
 export 'src/services/actions/value_ratings_write_service.dart';

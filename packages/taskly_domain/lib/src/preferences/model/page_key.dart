@@ -17,11 +17,17 @@ enum PageKey {
   /// Projects overview page
   projectOverview('project_overview'),
 
+  /// Project detail page
+  projectDetail('project_detail'),
+
   /// My Day page
   myDay('my_day'),
 
   /// Scheduled page
   scheduled('scheduled'),
+
+  /// Routines page
+  routines('routines'),
 
   /// Labels overview page
   labelOverview('label_overview');

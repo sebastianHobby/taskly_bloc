@@ -11,6 +11,7 @@ import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dar
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/routines.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -19,6 +20,7 @@ class RoutinesListView extends StatelessWidget {
   const RoutinesListView({
     required this.items,
     required this.sortOrder,
+    required this.density,
     required this.onEditRoutine,
     required this.onLogRoutine,
     super.key,
@@ -26,6 +28,7 @@ class RoutinesListView extends StatelessWidget {
 
   final List<RoutineListItem> items;
   final RoutineSortOrder sortOrder;
+  final DisplayDensity density;
   final ValueChanged<String> onEditRoutine;
   final ValueChanged<String> onLogRoutine;
 
@@ -53,6 +56,7 @@ class RoutinesListView extends StatelessWidget {
         onLogRoutine: onLogRoutine,
         selection: selection,
         showTourAnchors: showTourAnchors,
+        density: density,
       );
     } else {
       final sorted = _sortItems(items, sortOrder);
@@ -64,6 +68,7 @@ class RoutinesListView extends StatelessWidget {
         onLogRoutine: onLogRoutine,
         selection: selection,
         showTourAnchors: showTourAnchors,
+        density: density,
       );
     }
 
@@ -121,6 +126,7 @@ List<TasklySectionSpec> _buildScheduledSections(
   required ValueChanged<String> onLogRoutine,
   required RoutineSelectionBloc selection,
   required bool showTourAnchors,
+  required DisplayDensity density,
 }) {
   return <TasklySectionSpec>[
     if (scheduled.isNotEmpty)
@@ -140,6 +146,7 @@ List<TasklySectionSpec> _buildScheduledSections(
               onLogRoutine: onLogRoutine,
               selection: selection,
               showTourAnchors: showTourAnchors,
+              density: density,
             ),
         ],
       ),
@@ -160,6 +167,7 @@ List<TasklySectionSpec> _buildScheduledSections(
               onLogRoutine: onLogRoutine,
               selection: selection,
               showTourAnchors: showTourAnchors,
+              density: density,
             ),
         ],
       ),
@@ -173,6 +181,7 @@ List<TasklySectionSpec> _buildFlatSection(
   required ValueChanged<String> onLogRoutine,
   required RoutineSelectionBloc selection,
   required bool showTourAnchors,
+  required DisplayDensity density,
 }) {
   if (items.isEmpty) return const <TasklySectionSpec>[];
   return [
@@ -192,6 +201,7 @@ List<TasklySectionSpec> _buildFlatSection(
             onLogRoutine: onLogRoutine,
             selection: selection,
             showTourAnchors: showTourAnchors,
+            density: density,
           ),
       ],
     ),
@@ -205,6 +215,7 @@ TasklyRowSpec _buildRow(
   required ValueChanged<String> onLogRoutine,
   required RoutineSelectionBloc selection,
   required bool showTourAnchors,
+  required DisplayDensity density,
 }) {
   final key = RoutineSelectionKey(item.routine.id);
   final selectionMode = selection.isSelectionMode;
@@ -242,6 +253,9 @@ TasklyRowSpec _buildRow(
               completed: _completedToday(item),
             ),
     ),
+    style: density == DisplayDensity.compact
+        ? const TasklyRoutineRowStyle.compact()
+        : const TasklyRoutineRowStyle.standard(),
     actions: TasklyRoutineRowActions(
       onTap: handleTap,
       onPrimaryAction: selectionMode
@@ -284,9 +298,29 @@ List<RoutineListItem> _sortItems(
   }
 
   int byPriority(RoutineListItem a, RoutineListItem b) {
-    final aPriority = a.routine.value?.priority.weight ?? 0;
-    final bPriority = b.routine.value?.priority.weight ?? 0;
-    final byPriority = bPriority.compareTo(aPriority);
+    final aValue = a.routine.value;
+    final bValue = b.routine.value;
+    if (aValue == null && bValue == null) return byName(a, b);
+    if (aValue == null) return 1;
+    if (bValue == null) return -1;
+
+    final byPriority = bValue.priority.weight.compareTo(aValue.priority.weight);
+    if (byPriority != 0) return byPriority;
+    final byValueName = aValue.name.compareTo(bValue.name);
+    if (byValueName != 0) return byValueName;
+    return byName(a, b);
+  }
+
+  int byValueName(RoutineListItem a, RoutineListItem b) {
+    final aValue = a.routine.value;
+    final bValue = b.routine.value;
+    if (aValue == null && bValue == null) return byName(a, b);
+    if (aValue == null) return 1;
+    if (bValue == null) return -1;
+
+    final byValueName = aValue.name.compareTo(bValue.name);
+    if (byValueName != 0) return byValueName;
+    final byPriority = bValue.priority.weight.compareTo(aValue.priority.weight);
     if (byPriority != 0) return byPriority;
     return byName(a, b);
   }
@@ -296,6 +330,7 @@ List<RoutineListItem> _sortItems(
       RoutineSortOrder.scheduledFirst => byName,
       RoutineSortOrder.alphabetical => byName,
       RoutineSortOrder.priority => byPriority,
+      RoutineSortOrder.valueName => byValueName,
       RoutineSortOrder.mostRecent => byMostRecent,
     },
   );

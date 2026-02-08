@@ -181,7 +181,9 @@ void main() {
     expect(find.text('Morning walk'), findsOneWidget);
   });
 
-  testWidgetsSafe('plan my day shows due and planned shelves', (tester) async {
+  testWidgetsSafe('plan my day shows due and yesterday shelves', (
+    tester,
+  ) async {
     final dueTask = TestData.task(
       id: 'task-due',
       name: 'Pay rent',
@@ -219,10 +221,58 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.text('Due Today'), findsOneWidget);
-    expect(find.text('Planned'), findsOneWidget);
+    expect(find.text('Yesterday'), findsOneWidget);
     expect(find.text('Pay rent'), findsOneWidget);
     expect(find.text('Prep meeting notes'), findsOneWidget);
   });
+
+  testWidgetsSafe(
+    'plan my day limits sections on compact and expands on show more',
+    (tester) async {
+      setTestSurfaceSize(tester, const Size(375, 1200));
+      final dueTasks = List.generate(
+        5,
+        (index) => TestData.task(
+          id: 'task-$index',
+          name: 'Task ${index + 1}',
+          deadlineDate: DateTime(2025, 1, 15),
+        ),
+      );
+
+      final state = buildReady(
+        valueGroups: const [],
+        dueTodayTasks: dueTasks,
+      );
+      const gateState = MyDayGateLoaded(needsValuesSetup: false);
+
+      when(() => planBloc.state).thenReturn(state);
+      whenListen(planBloc, Stream.value(state), initialState: state);
+      when(() => gateBloc.state).thenReturn(gateState);
+      whenListen(gateBloc, Stream.value(gateState), initialState: gateState);
+
+      await tester.pumpWidgetWithBlocs(
+        providers: [
+          BlocProvider<PlanMyDayBloc>.value(value: planBloc),
+          BlocProvider<MyDayGateBloc>.value(value: gateBloc),
+        ],
+        child: RepositoryProvider<NowService>.value(
+          value: nowService,
+          child: PlanMyDayPage(onCloseRequested: () {}),
+        ),
+      );
+      await tester.pumpForStream();
+
+      expect(find.text('Task 1'), findsOneWidget);
+      expect(find.text('Task 4'), findsOneWidget);
+      expect(find.text('Task 5'), findsNothing);
+      expect(find.text('Show 1 more (5)'), findsOneWidget);
+
+      await tester.tap(find.text('Show 1 more (5)'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Task 5'), findsOneWidget);
+    },
+  );
 
   testWidgetsSafe(
     'plan my day reschedules all due tasks on quick pick',
@@ -276,7 +326,7 @@ void main() {
   );
 
   testWidgetsSafe(
-    'plan my day reschedules all planned tasks on quick pick',
+    'plan my day reschedules all yesterday tasks on quick pick',
     (tester) async {
       setTestSurfaceSize(tester, const Size(800, 1800));
       final plannedTask = TestData.task(
@@ -309,7 +359,7 @@ void main() {
       );
       await tester.pumpForStream();
 
-      await tester.tap(find.text('Reschedule all planned'));
+      await tester.tap(find.text('Reschedule all'));
       await tester.pump(const Duration(milliseconds: 300));
 
       final tomorrowTile = tester.widget<ListTile>(

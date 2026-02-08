@@ -6,6 +6,8 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
+import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
+import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
@@ -44,6 +46,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
 
   late RoutineType _currentType;
   final _scrollController = ScrollController();
+  final GlobalKey<State<StatefulWidget>> _valueKey = GlobalKey();
   final Debouncer _draftSyncDebouncer = Debouncer(_draftSyncDebounce);
   bool _submitEnabled = false;
 
@@ -141,6 +144,107 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
       return;
     }
     setState(() => _submitEnabled = next);
+  }
+
+  bool _isCompact(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < 600;
+
+  Rect _anchorRect(BuildContext anchorContext) {
+    final box = anchorContext.findRenderObject()! as RenderBox;
+    final topLeft = box.localToGlobal(Offset.zero);
+    return topLeft & box.size;
+  }
+
+  Future<T?> _showAnchoredDialog<T>(
+    BuildContext context, {
+    required BuildContext anchorContext,
+    required WidgetBuilder builder,
+    double maxWidth = 420,
+    double maxHeight = 520,
+  }) {
+    final anchor = _anchorRect(anchorContext);
+    final theme = Theme.of(context);
+
+    return showGeneralDialog<T>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: theme.colorScheme.surface.withValues(alpha: 0),
+      pageBuilder: (dialogContext, _, __) {
+        return Stack(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.of(dialogContext).maybePop(),
+              child: ColoredBox(
+                color: theme.colorScheme.surface.withValues(alpha: 0),
+              ),
+            ),
+            CustomSingleChildLayout(
+              delegate: _AnchoredDialogLayoutDelegate(
+                anchor: anchor,
+                margin: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
+                maxWidth: maxWidth,
+                maxHeight: maxHeight,
+              ),
+              child: Material(
+                elevation: 6,
+                color: theme.colorScheme.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    TasklyTokens.of(context).radiusMd,
+                  ),
+                  side: BorderSide(
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.6,
+                    ),
+                  ),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: builder(dialogContext),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<List<String>?> _showValuePicker({
+    required BuildContext anchorContext,
+    required List<String> valueIds,
+  }) {
+    final l10n = context.l10n;
+
+    if (_isCompact(context)) {
+      return showModalBottomSheet<List<String>>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (context) => ValuesAlignmentSheet.singleValue(
+          availableValues: widget.availableValues,
+          valueIds: valueIds,
+          title: l10n.routineFormValueLabel,
+          helperText: l10n.routineFormValueHint,
+        ),
+      );
+    }
+
+    return _showAnchoredDialog<List<String>>(
+      context,
+      anchorContext: anchorContext,
+      maxWidth: 520,
+      maxHeight: 560,
+      builder: (dialogContext) => ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: ValuesAlignmentSheet.singleValue(
+          availableValues: widget.availableValues,
+          valueIds: valueIds,
+          title: l10n.routineFormValueLabel,
+          helperText: l10n.routineFormValueHint,
+        ),
+      ),
+    );
   }
 
   @override
@@ -293,31 +397,52 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                 ),
               ),
               SizedBox(height: TasklyTokens.of(context).spaceSm),
-              FormBuilderDropdown<String>(
+              TasklyFormSectionLabel(text: l10n.routineFormValueLabel),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
+              FormBuilderField<String>(
                 name: RoutineFieldKeys.valueId.id,
-                items: [
-                  for (final value in widget.availableValues)
-                    DropdownMenuItem(
-                      value: value.id,
-                      child: Text(value.name),
-                    ),
-                ],
-                decoration: InputDecoration(
-                  labelText: l10n.routineFormValueLabel,
-                  hintText: l10n.routineFormValueHint,
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(
-                      TasklyTokens.of(context).radiusMd,
-                    ),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
                 validator: toFormBuilderValidator<String>(
                   RoutineValidators.valueId,
                   context,
                 ),
+                builder: (field) {
+                  final selectedValue = widget.availableValues
+                      .where((value) => value.id == field.value)
+                      .firstOrNull;
+                  final label =
+                      selectedValue?.name ?? l10n.routineFormValueHint;
+                  final iconName = selectedValue?.iconName;
+                  final iconData = iconName == null
+                      ? Icons.star
+                      : (getIconDataFromName(iconName) ?? Icons.star);
+
+                  return KeyedSubtree(
+                    key: _valueKey,
+                    child: Builder(
+                      builder: (chipContext) => TasklyFormProjectRow(
+                        label: label,
+                        hasValue: selectedValue != null,
+                        icon: iconData,
+                        onTap: () async {
+                          final currentId = (field.value ?? '').trim();
+                          final valueIds = currentId.isEmpty
+                              ? const <String>[]
+                              : <String>[currentId];
+
+                          final result = await _showValuePicker(
+                            anchorContext: chipContext,
+                            valueIds: valueIds,
+                          );
+                          if (result == null) return;
+
+                          field.didChange(result.isEmpty ? '' : result.first);
+                          _markDirtySafely();
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                  );
+                },
               ),
               SizedBox(height: TasklyTokens.of(context).spaceSm),
               TasklyFormSectionLabel(text: l10n.routineFormTypeLabel),
@@ -442,6 +567,68 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
         ),
       ),
     );
+  }
+}
+
+class _AnchoredDialogLayoutDelegate extends SingleChildLayoutDelegate {
+  _AnchoredDialogLayoutDelegate({
+    required this.anchor,
+    required this.margin,
+    required this.maxWidth,
+    required this.maxHeight,
+  });
+
+  final Rect anchor;
+  final EdgeInsets margin;
+  final double maxWidth;
+  final double maxHeight;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final maxW = (constraints.maxWidth - margin.horizontal).clamp(
+      0.0,
+      maxWidth,
+    );
+    final maxH = (constraints.maxHeight - margin.vertical).clamp(
+      0.0,
+      maxHeight,
+    );
+    return BoxConstraints(
+      maxWidth: maxW,
+      maxHeight: maxH,
+    );
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final availableBelow = size.height - anchor.bottom - margin.bottom;
+    final availableAbove = anchor.top - margin.top;
+
+    final showBelow =
+        availableBelow >= childSize.height || availableBelow >= availableAbove;
+
+    final y = showBelow
+        ? (anchor.bottom + 6).clamp(margin.top, size.height - margin.bottom)
+        : (anchor.top - childSize.height - 6).clamp(
+            margin.top,
+            size.height - margin.bottom,
+          );
+
+    final desiredX = anchor.left;
+    final x = desiredX.clamp(
+      margin.left,
+      size.width - margin.right - childSize.width,
+    );
+
+    return Offset(x, y);
+  }
+
+  @override
+  bool shouldRelayout(covariant _AnchoredDialogLayoutDelegate oldDelegate) {
+    return anchor != oldDelegate.anchor ||
+        margin != oldDelegate.margin ||
+        maxWidth != oldDelegate.maxWidth ||
+        maxHeight != oldDelegate.maxHeight;
   }
 }
 

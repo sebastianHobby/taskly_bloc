@@ -42,6 +42,31 @@ final class TaskCommandHandler {
     return const CommandResult.success();
   }
 
+  Future<CommandResult> handleCreateWithId(
+    CreateTaskCommand command, {
+    OperationContext? context,
+  }) async {
+    final failure = await _validate(command);
+    if (failure != null) return CommandResult.validationFailure(failure);
+
+    final taskId = await _taskRepository.createReturningId(
+      name: command.name.trim(),
+      description: command.description,
+      completed: command.completed,
+      startDate: command.startDate,
+      deadlineDate: command.deadlineDate,
+      projectId: command.projectId,
+      priority: command.priority,
+      repeatIcalRrule: command.repeatIcalRrule,
+      repeatFromCompletion: command.repeatFromCompletion,
+      seriesEnded: command.seriesEnded,
+      valueIds: command.valueIds,
+      context: context,
+    );
+
+    return CommandSuccess(entityId: taskId);
+  }
+
   Future<CommandResult> handleUpdate(
     UpdateTaskCommand command, {
     OperationContext? context,

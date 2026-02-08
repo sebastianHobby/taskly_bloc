@@ -3,6 +3,8 @@ enum ProjectsSortOrder {
   alphabetical,
   priority,
   dueDate,
+  valuePriority,
+  valueName,
 }
 
 extension ProjectsSortOrderLabels on ProjectsSortOrder {
@@ -12,6 +14,8 @@ extension ProjectsSortOrderLabels on ProjectsSortOrder {
       ProjectsSortOrder.alphabetical => 'A-Z',
       ProjectsSortOrder.priority => 'Priority',
       ProjectsSortOrder.dueDate => 'Due date',
+      ProjectsSortOrder.valuePriority => 'Value priority',
+      ProjectsSortOrder.valueName => 'Value name (A-Z)',
     };
   }
 }

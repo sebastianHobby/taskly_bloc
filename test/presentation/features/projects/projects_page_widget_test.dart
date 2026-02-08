@@ -169,7 +169,7 @@ void main() {
   ) async {
     await pumpPage(tester);
 
-    expect(find.text('Build your project list'), findsOneWidget);
+    expect(find.text('No active projects yet.'), findsOneWidget);
     expect(find.text('Add project'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });

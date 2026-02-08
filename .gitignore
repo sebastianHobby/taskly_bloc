@@ -126,3 +126,6 @@ lib/l10n/gen/
 
 # Allow committed local-stack templates
 !infra/powersync_local/*.example
+
+# Test artifacts
+test/last_run.json

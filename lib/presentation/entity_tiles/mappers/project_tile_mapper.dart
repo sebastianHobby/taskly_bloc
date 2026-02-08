@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rich_text_utils.dart';
@@ -19,6 +20,7 @@ TasklyProjectRowData buildProjectRowData(
   bool? overrideIsOverdue,
   bool? overrideIsDueToday,
 }) {
+  final scheme = Theme.of(context).colorScheme;
   final now = context.read<NowService>().nowLocal();
   final today = DateTime(now.year, now.month, now.day);
 
@@ -46,6 +48,15 @@ TasklyProjectRowData buildProjectRowData(
   final effectiveTaskCount = taskCount ?? project.taskCount;
   final effectiveCompletedTaskCount =
       completedTaskCount ?? project.completedTaskCount;
+
+  final statusBadge = project.completed
+      ? TasklyBadgeData(
+          label: context.l10n.projectStatusCompleted,
+          color: scheme.secondary,
+          icon: Icons.check_rounded,
+          tone: TasklyBadgeTone.soft,
+        )
+      : null;
 
   final meta = TasklyEntityMetaData(
     showOnlyDeadlineDate: showOnlyDeadlineDate,
@@ -79,6 +90,8 @@ TasklyProjectRowData buildProjectRowData(
     taskCount: effectiveTaskCount,
     completedTaskCount: effectiveCompletedTaskCount,
     dueSoonCount: dueSoonCount,
+    statusBadge: statusBadge,
+    deemphasized: project.completed,
   );
 }
 

@@ -11,6 +11,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/presentation_mocks.dart';
+import '../../../mocks/fake_repositories.dart';
 import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
@@ -60,7 +61,7 @@ void main() {
   late DemoModeService demoModeService;
   late DemoDataProvider demoDataProvider;
   late GuidedTourBloc guidedTourBloc;
-  late MockSettingsRepositoryContract settingsRepository;
+  late FakeSettingsRepository settingsRepository;
   late MockAppLifecycleEvents appLifecycleEvents;
   late MockHomeDayKeyService dayKeyService;
   late MockTemporalTriggerService temporalTriggerService;
@@ -85,7 +86,7 @@ void main() {
     taskRepository = MockTaskRepositoryContract();
     demoModeService = DemoModeService();
     demoDataProvider = DemoDataProvider();
-    settingsRepository = MockSettingsRepositoryContract();
+    settingsRepository = FakeSettingsRepository();
     cacheManager = SessionStreamCacheManager(
       appLifecycleService: appLifecycleEvents,
     );
@@ -140,13 +141,6 @@ void main() {
     when(() => valueRepository.getAll()).thenAnswer(
       (_) async => valuesSubject.valueOrNull ?? const <Value>[],
     );
-    when(
-      () => settingsRepository.watch(SettingsKey.global),
-    ).thenAnswer((_) => Stream.value(const GlobalSettings()));
-    when(
-      () => settingsRepository.load(SettingsKey.global),
-    ).thenAnswer((_) async => const GlobalSettings());
-
     sharedDataService = SessionSharedDataService(
       cacheManager: cacheManager,
       valueRepository: valueRepository,
@@ -214,6 +208,9 @@ void main() {
               ),
               RepositoryProvider<DemoModeService>.value(
                 value: demoModeService,
+              ),
+              RepositoryProvider<SettingsRepositoryContract>.value(
+                value: settingsRepository,
               ),
             ],
             child: MultiBlocProvider(

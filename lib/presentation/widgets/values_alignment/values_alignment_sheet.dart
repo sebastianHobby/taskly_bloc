@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
+import 'package:taskly_bloc/presentation/widgets/pickers/picker_shell.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -99,6 +100,8 @@ class ValuesAlignmentSheet extends StatefulWidget {
     required List<Value> availableValues,
     required List<String> valueIds,
     required ValuesAlignmentTarget target,
+    String? title,
+    String? helperText,
   }) {
     return ValuesAlignmentSheet._(
       key: const ValueKey('values_alignment_sheet_project'),
@@ -106,8 +109,32 @@ class ValuesAlignmentSheet extends StatefulWidget {
       requireSelection: true,
       initialValueIds: valueIds,
       target: target,
-      title: null,
-      helperText: null,
+      title: title,
+      helperText: helperText,
+      primaryLabel: null,
+      secondaryLabel: null,
+      primaryShortLabel: null,
+      secondaryShortLabel: null,
+      inheritedValueLabel: null,
+      inheritedValueId: null,
+      isTaskTags: false,
+    );
+  }
+
+  factory ValuesAlignmentSheet.singleValue({
+    required List<Value> availableValues,
+    required List<String> valueIds,
+    required String title,
+    required String helperText,
+  }) {
+    return ValuesAlignmentSheet._(
+      key: const ValueKey('values_alignment_sheet_single_value'),
+      availableValues: availableValues,
+      requireSelection: true,
+      initialValueIds: valueIds,
+      target: ValuesAlignmentTarget.primary,
+      title: title,
+      helperText: helperText,
       primaryLabel: null,
       secondaryLabel: null,
       primaryShortLabel: null,
@@ -223,7 +250,7 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
         widget.helperText ??
         (widget.isTaskTags
             ? l10n.taskAdditionalValuesHelper
-            : l10n.valuesMaxTwoHelper);
+            : l10n.projectFormSingleValueOnly);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -232,85 +259,80 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
         bottom: tokens.spaceLg + MediaQuery.viewInsetsOf(context).bottom,
         top: tokens.spaceSm,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(title, style: theme.textTheme.titleLarge),
-          SizedBox(height: tokens.spaceSm),
-          if (widget.inheritedValueLabel != null) ...[
-            Text(
-              l10n.taskProjectValueRow(widget.inheritedValueLabel!.trim()),
-              style: theme.textTheme.bodySmall,
-            ),
-            SizedBox(height: tokens.spaceXs),
-          ],
-          Text(helperText, style: theme.textTheme.bodySmall),
-          if (widget.target == ValuesAlignmentTarget.secondary && hasSecondary)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: _clearSecondary,
-                child: Text(l10n.valuesSecondaryClearAction),
+      child: PickerShell(
+        title: title,
+        headerContent: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.inheritedValueLabel != null) ...[
+              Text(
+                l10n.taskProjectValueRow(widget.inheritedValueLabel!.trim()),
+                style: theme.textTheme.bodySmall,
               ),
-            ),
-          SizedBox(height: tokens.spaceSm),
-
-          Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              children: [
-                if (widget.availableValues.isEmpty)
-                  ListTile(
-                    title: Text(l10n.noValuesFound),
-                    leading: const Icon(Icons.info_outline),
-                  )
-                else
-                  for (final v in widget.availableValues)
-                    _SelectableValueTile(
-                      value: v,
-                      target: widget.target,
-                      selectedPrimaryId: _primaryId,
-                      selectedSecondaryId: _secondaryId,
-                      inheritedValueId: widget.inheritedValueId,
-                      onSelectPrimary: _setPrimary,
-                      onSelectSecondary: _setSecondary,
-                      onClearSecondary: _clearSecondary,
-                      primaryShortLabel:
-                          widget.primaryShortLabel ??
-                          (widget.isTaskTags
-                              ? l10n.taskAdditionalValuePrimaryLabel
-                              : l10n.valuesPrimaryShortLabel),
-                      secondaryShortLabel:
-                          widget.secondaryShortLabel ??
-                          (widget.isTaskTags
-                              ? l10n.taskAdditionalValueSecondaryLabel
-                              : l10n.valuesSecondaryShortLabel),
-                    ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: tokens.spaceMd),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(l10n.cancelLabel),
-              ),
-              SizedBox(width: tokens.spaceSm),
-              FilledButton(
-                onPressed: canSave
-                    ? () {
-                        Navigator.of(context).pop(_selectedValueIds);
-                      }
-                    : null,
-                child: Text(l10n.doneLabel),
-              ),
+              SizedBox(height: tokens.spaceXs),
             ],
-          ),
-        ],
+            Text(helperText, style: theme.textTheme.bodySmall),
+            if (widget.target == ValuesAlignmentTarget.secondary &&
+                hasSecondary)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: _clearSecondary,
+                  child: Text(l10n.valuesSecondaryClearAction),
+                ),
+              ),
+          ],
+        ),
+        footer: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(l10n.cancelLabel),
+            ),
+            SizedBox(width: tokens.spaceSm),
+            FilledButton(
+              onPressed: canSave
+                  ? () {
+                      Navigator.of(context).pop(_selectedValueIds);
+                    }
+                  : null,
+              child: Text(l10n.doneLabel),
+            ),
+          ],
+        ),
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            if (widget.availableValues.isEmpty)
+              ListTile(
+                title: Text(l10n.noValuesFound),
+                leading: const Icon(Icons.info_outline),
+              )
+            else
+              for (final v in widget.availableValues)
+                _SelectableValueTile(
+                  value: v,
+                  target: widget.target,
+                  selectedPrimaryId: _primaryId,
+                  selectedSecondaryId: _secondaryId,
+                  inheritedValueId: widget.inheritedValueId,
+                  onSelectPrimary: _setPrimary,
+                  onSelectSecondary: _setSecondary,
+                  onClearSecondary: _clearSecondary,
+                  primaryShortLabel:
+                      widget.primaryShortLabel ??
+                      (widget.isTaskTags
+                          ? l10n.taskAdditionalValuePrimaryLabel
+                          : l10n.valuesPrimaryShortLabel),
+                  secondaryShortLabel:
+                      widget.secondaryShortLabel ??
+                      (widget.isTaskTags
+                          ? l10n.taskAdditionalValueSecondaryLabel
+                          : l10n.valuesSecondaryShortLabel),
+                ),
+          ],
+        ),
       ),
     );
   }
@@ -419,10 +441,11 @@ class _ValueIconBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final foreground = disabled ? scheme.onSurfaceVariant : color;
+    final foreground = disabled
+        ? color.withValues(alpha: 0.6)
+        : color.withValues(alpha: 0.95);
     final background = disabled
-        ? scheme.surfaceContainerLow
+        ? color.withValues(alpha: 0.12)
         : color.withValues(alpha: 0.16);
 
     return Container(

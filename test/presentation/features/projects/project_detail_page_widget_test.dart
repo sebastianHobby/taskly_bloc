@@ -8,6 +8,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/presentation_mocks.dart';
+import '../../../mocks/fake_repositories.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
@@ -23,9 +24,6 @@ class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 class MockEditorLauncher extends Mock implements EditorLauncher {}
 
 class MockTaskRepository extends Mock implements TaskRepositoryContract {}
-
-class MockSettingsRepository extends Mock
-    implements SettingsRepositoryContract {}
 
 class MockGlobalSettingsBloc
     extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
@@ -52,7 +50,7 @@ void main() {
 
   late MockProjectRepository projectRepository;
   late MockTaskRepository taskRepository;
-  late MockSettingsRepository settingsRepository;
+  late FakeSettingsRepository settingsRepository;
   late OccurrenceReadService occurrenceReadService;
   late SessionDayKeyService sessionDayKeyService;
   late MockHomeDayKeyService dayKeyService;
@@ -70,7 +68,7 @@ void main() {
   setUp(() {
     projectRepository = MockProjectRepository();
     taskRepository = MockTaskRepository();
-    settingsRepository = MockSettingsRepository();
+    settingsRepository = FakeSettingsRepository();
     occurrenceReadService = OccurrenceReadService(
       taskRepository: taskRepository,
       projectRepository: projectRepository,
@@ -133,7 +131,10 @@ void main() {
     await exceptionsSubject.close();
   });
 
-  Future<void> pumpPage(WidgetTester tester) async {
+  Future<void> pumpPage(
+    WidgetTester tester, {
+    String projectId = 'project-1',
+  }) async {
     await tester.pumpApp(
       MultiRepositoryProvider(
         providers: [
@@ -150,12 +151,15 @@ void main() {
           RepositoryProvider<NowService>.value(
             value: FakeNowService(DateTime(2025, 1, 15, 9)),
           ),
+          RepositoryProvider<SettingsRepositoryContract>.value(
+            value: settingsRepository,
+          ),
         ],
         child: MultiBlocProvider(
           providers: [
             BlocProvider<GlobalSettingsBloc>.value(value: globalSettingsBloc),
           ],
-          child: const ProjectDetailPage(projectId: 'project-1'),
+          child: ProjectDetailPage(projectId: projectId),
         ),
       ),
     );
@@ -208,6 +212,20 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.text('Task B'), findsOneWidget);
+  });
+
+  testWidgetsSafe('shows inbox empty state when inbox has no tasks', (
+    tester,
+  ) async {
+    final inboxId = ProjectGroupingRef.inbox().stableKey;
+    await pumpPage(tester, projectId: inboxId);
+
+    projectSubject.add(TestData.project(id: inboxId, name: 'Inbox'));
+    tasksSubject.add(const <Task>[]);
+    await tester.pumpForStream();
+
+    expect(find.text('Inbox is for capture'), findsOneWidget);
+    expect(find.text('Add to Inbox'), findsOneWidget);
   });
 }
 

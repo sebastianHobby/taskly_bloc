@@ -1572,6 +1572,46 @@
     "@projectStatusActive": {
         "description": "Status badge for active projects"
     },
+    "projectCompleteConfirmTitle": "Complete this project?",
+    "@projectCompleteConfirmTitle": {
+        "description": "Confirmation dialog title for completing a project"
+    },
+    "projectCompleteConfirmBody": "You can still view it later from Filters -> Show completed.",
+    "@projectCompleteConfirmBody": {
+        "description": "Confirmation dialog body for completing a project"
+    },
+    "projectCompletedSnack": "Project completed.",
+    "@projectCompletedSnack": {
+        "description": "Snackbar message after completing a project"
+    },
+    "undoLabel": "Undo",
+    "@undoLabel": {
+        "description": "Label for undo actions in snackbars"
+    },
+    "completeLabel": "Complete",
+    "@completeLabel": {
+        "description": "Generic label for completion actions"
+    },
+    "showCompletedLabel": "Show completed",
+    "@showCompletedLabel": {
+        "description": "Label for showing completed items in filter menus"
+    },
+    "projectsEmptyActiveTitle": "No active projects yet.",
+    "@projectsEmptyActiveTitle": {
+        "description": "Empty state title when no active projects exist"
+    },
+    "projectsEmptyActiveDescription": "Create a project to get started.",
+    "@projectsEmptyActiveDescription": {
+        "description": "Empty state description when no active projects exist"
+    },
+    "projectsEmptyCompletedTitle": "No completed projects yet.",
+    "@projectsEmptyCompletedTitle": {
+        "description": "Empty state title when no completed projects exist"
+    },
+    "projectsEmptyCompletedDescription": "Completed projects will appear here.",
+    "@projectsEmptyCompletedDescription": {
+        "description": "Empty state description when no completed projects exist"
+    },
     "deleteProjectAction": "Delete project",
     "@deleteProjectAction": {
         "description": "Menu action to delete a project"

@@ -8,21 +8,29 @@ import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rich_text_utils.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/display_density_toggle.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
+import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_primitives.dart';
+import 'package:taskly_ui/taskly_ui_sections.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class ProjectDetailPage extends StatelessWidget {
@@ -35,6 +43,10 @@ class ProjectDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompactScreen = Breakpoints.isCompact(
+      MediaQuery.sizeOf(context).width,
+    );
+
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -52,6 +64,15 @@ class ProjectDetailPage extends StatelessWidget {
             projectWriteService: context.read<ProjectWriteService>(),
             errorReporter: context.read<AppErrorReporter>(),
           ),
+        ),
+        BlocProvider(
+          create: (context) => DisplayDensityBloc(
+            settingsRepository: context.read<SettingsRepositoryContract>(),
+            pageKey: PageKey.projectDetail,
+            defaultDensity: isCompactScreen
+                ? DisplayDensity.compact
+                : DisplayDensity.standard,
+          )..add(const DisplayDensityStarted()),
         ),
         BlocProvider(create: (_) => SelectionBloc()),
       ],
@@ -105,7 +126,86 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
     setState(() => _showCompleted = value);
   }
 
-  Future<void> _showFilterSheet() async {
+  Future<bool> _confirmCompleteProject() async {
+    final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+
+    return ConfirmationDialog.show(
+      context,
+      title: l10n.projectCompleteConfirmTitle,
+      confirmLabel: l10n.completeLabel,
+      cancelLabel: l10n.cancelLabel,
+      icon: Icons.check_circle_outline,
+      iconColor: scheme.primary,
+      iconBackgroundColor: scheme.primaryContainer.withValues(alpha: 0.35),
+      content: Text(
+        l10n.projectCompleteConfirmBody,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: scheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleProjectCompletion(Project project) async {
+    final tileCapabilities = EntityTileCapabilitiesResolver.forProject(project);
+    if (!tileCapabilities.canToggleCompletion) return;
+
+    final shouldComplete = !project.completed;
+    if (shouldComplete) {
+      final confirmed = await _confirmCompleteProject();
+      if (!confirmed || !mounted) return;
+    }
+
+    final occurrenceDate = project.occurrence?.date;
+    final originalOccurrenceDate =
+        project.occurrence?.originalDate ?? occurrenceDate;
+
+    final completer = Completer<void>();
+    context.read<ScreenActionsBloc>().add(
+      ScreenActionsProjectCompletionChanged(
+        projectId: project.id,
+        completed: shouldComplete,
+        occurrenceDate: occurrenceDate,
+        originalOccurrenceDate: originalOccurrenceDate,
+        completer: completer,
+      ),
+    );
+
+    try {
+      await completer.future;
+    } catch (_) {
+      return;
+    }
+
+    if (!mounted || !shouldComplete) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final l10n = context.l10n;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(l10n.projectCompletedSnack),
+          action: SnackBarAction(
+            label: l10n.undoLabel,
+            onPressed: () {
+              context.read<ScreenActionsBloc>().add(
+                ScreenActionsProjectCompletionChanged(
+                  projectId: project.id,
+                  completed: false,
+                  occurrenceDate: occurrenceDate,
+                  originalOccurrenceDate: originalOccurrenceDate,
+                ),
+              );
+            },
+          ),
+        ),
+      );
+  }
+
+  Future<void> _showFilterSheet(DisplayDensity density) async {
     await showFilterSortSheet(
       context: context,
       sortGroups: [
@@ -125,9 +225,28 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
           },
         ),
       ],
+      sections: [
+        FilterSortSection(
+          title: 'View',
+          child: Builder(
+            builder: (sheetContext) {
+              return DisplayDensityToggle(
+                density: density,
+                onChanged: (next) {
+                  if (next == density) return;
+                  context.read<DisplayDensityBloc>().add(
+                    DisplayDensitySet(next),
+                  );
+                  Navigator.of(sheetContext).pop();
+                },
+              );
+            },
+          ),
+        ),
+      ],
       toggles: [
         FilterSortToggle(
-          title: 'Show completed',
+          title: context.l10n.showCompletedLabel,
           value: _showCompleted,
           onChanged: _toggleShowCompleted,
         ),
@@ -142,6 +261,9 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
     final appBarTitle = isInbox ? '' : 'Project details';
     final chrome = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final density = context.select(
+      (DisplayDensityBloc bloc) => bloc.state.density,
+    );
     final iconButtonStyle = IconButton.styleFrom(
       backgroundColor: scheme.surfaceContainerHighest.withValues(
         alpha: chrome.iconButtonBackgroundAlpha,
@@ -178,7 +300,44 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
                       tooltip: 'Filter & sort',
                       icon: const Icon(Icons.tune_rounded),
                       style: iconButtonStyle,
-                      onPressed: _showFilterSheet,
+                      onPressed: () => _showFilterSheet(density),
+                    ),
+                    BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
+                      builder: (context, state) {
+                        if (state is! ProjectOverviewLoaded) {
+                          return const SizedBox.shrink();
+                        }
+
+                        final project = state.project;
+                        if (project.id ==
+                            ProjectGroupingRef.inbox().stableKey) {
+                          return const SizedBox.shrink();
+                        }
+
+                        final label = project.completed
+                            ? context.l10n.markIncompleteAction
+                            : context.l10n.markCompleteAction;
+
+                        return TasklyOverflowMenuButton<
+                          _ProjectDetailMenuAction
+                        >(
+                          tooltip: context.l10n.moreOptionsLabel,
+                          icon: Icons.more_vert,
+                          style: iconButtonStyle,
+                          itemsBuilder: (context) => [
+                            PopupMenuItem(
+                              value: _ProjectDetailMenuAction.toggleCompletion,
+                              child: TasklyMenuItemLabel(label),
+                            ),
+                          ],
+                          onSelected: (action) {
+                            switch (action) {
+                              case _ProjectDetailMenuAction.toggleCompletion:
+                                unawaited(_toggleProjectCompletion(project));
+                            }
+                          },
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -210,6 +369,7 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
                     selectionState: selectionState,
                     sortOrder: _sortOrder,
                     showCompleted: _showCompleted,
+                    density: density,
                   ),
               };
             },
@@ -228,6 +388,7 @@ class _ProjectDetailBody extends StatelessWidget {
     required this.selectionState,
     required this.sortOrder,
     required this.showCompleted,
+    required this.density,
   });
 
   final Project project;
@@ -236,11 +397,22 @@ class _ProjectDetailBody extends StatelessWidget {
   final SelectionState selectionState;
   final _ProjectTaskSortOrder sortOrder;
   final bool showCompleted;
+  final DisplayDensity density;
 
   @override
   Widget build(BuildContext context) {
     final isInbox = project.id == ProjectGroupingRef.inbox().stableKey;
     final dueSoonCount = _countDueSoon(tasks, todayDayKeyUtc);
+    final tokens = TasklyTokens.of(context);
+
+    void openInboxTaskEditor() {
+      context.read<EditorLauncher>().openTaskEditor(
+        context,
+        taskId: null,
+        defaultProjectId: null,
+        showDragHandle: true,
+      );
+    }
 
     final completed = tasks
         .where((task) => task.occurrence?.isCompleted ?? task.completed)
@@ -313,7 +485,12 @@ class _ProjectDetailBody extends StatelessWidget {
         trailingLabel: '${orderedOpen.length} remaining',
       ),
       ...orderedOpen.map(
-        (task) => _buildProjectTaskRow(context, task, selectionState),
+        (task) => _buildProjectTaskRow(
+          context,
+          task,
+          selectionState,
+          density: density,
+        ),
       ),
       if (orderedCompleted.isNotEmpty) ...[
         TasklyRowSpec.header(
@@ -321,17 +498,58 @@ class _ProjectDetailBody extends StatelessWidget {
           title: 'Completed',
         ),
         ...orderedCompleted.map(
-          (task) => _buildProjectTaskRow(context, task, selectionState),
+          (task) => _buildProjectTaskRow(
+            context,
+            task,
+            selectionState,
+            density: density,
+          ),
         ),
       ],
     ];
 
+    if (isInbox && tasks.isEmpty) {
+      return ListView(
+        padding: EdgeInsets.fromLTRB(
+          tokens.spaceLg,
+          tokens.spaceSm,
+          tokens.spaceLg,
+          tokens.spaceXl,
+        ),
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _ProjectDetailHeader(
+                data: headerData,
+                isInbox: isInbox,
+                onEditRequested: null,
+              ),
+              SizedBox(height: tokens.spaceSm),
+              TasklyFeedRenderer(
+                spec: TasklyFeedSpec.empty(
+                  empty: TasklyEmptyStateSpec(
+                    icon: Icons.inbox_outlined,
+                    title: 'Inbox is for capture',
+                    description:
+                        "Sort into Projects when ready - that's what My Day pulls from.",
+                    actionLabel: 'Add to Inbox',
+                    onAction: openInboxTaskEditor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
     return ListView(
       padding: EdgeInsets.fromLTRB(
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceSm,
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceXl,
+        tokens.spaceLg,
+        tokens.spaceSm,
+        tokens.spaceLg,
+        tokens.spaceXl,
       ),
       children: [
         Column(
@@ -343,13 +561,13 @@ class _ProjectDetailBody extends StatelessWidget {
               onEditRequested: isInbox ? null : openEdit,
             ),
             if (!isInbox) ...[
-              SizedBox(height: TasklyTokens.of(context).spaceSm),
+              SizedBox(height: tokens.spaceSm),
               _ProjectNotesEditor(
                 rawNotes: normalizedDescription,
                 hintText: context.l10n.projectFormDescriptionHint,
                 onNotesChanged: updateDescription,
               ),
-              SizedBox(height: TasklyTokens.of(context).spaceSm),
+              SizedBox(height: tokens.spaceSm),
             ],
             TasklyFeedRenderer.buildSection(
               TasklySectionSpec.standardList(id: 'project-detail', rows: rows),
@@ -377,6 +595,12 @@ class _ProjectDetailHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final inboxIcon = isInbox
+        ? const NavigationIconResolver().resolve(
+            screenId: 'inbox',
+            iconName: null,
+          )
+        : null;
 
     final titleStyle =
         theme.textTheme.headlineSmall ?? theme.textTheme.titleLarge;
@@ -391,81 +615,80 @@ class _ProjectDetailHeader extends StatelessWidget {
 
     final metaChildren = <Widget>[];
 
-    if (isInbox) {
-      metaChildren.add(
-        MetaIconLabel(
-          icon: Icons.inbox_outlined,
-          label: 'Inbox',
-          color: scheme.onSurfaceVariant,
-          textStyle: metaStyle,
-        ),
-      );
-    }
+    if (!isInbox) {
+      if (primaryValue != null) {
+        metaChildren.add(
+          _ValueInlineLabel(
+            data: primaryValue,
+            maxLabelChars: 18,
+            textColor: scheme.onSurfaceVariant,
+          ),
+        );
+      }
 
-    if (primaryValue != null) {
-      metaChildren.add(
-        _ValueInlineLabel(
-          data: primaryValue,
-          maxLabelChars: 18,
-          textColor: scheme.onSurfaceVariant,
-        ),
-      );
-    }
+      if (totalCount != null) {
+        final showCompletionRatio = completedCount != null;
+        metaChildren.add(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                showCompletionRatio
+                    ? Icons.check_circle_rounded
+                    : Icons.inbox_outlined,
+                size: 14,
+                color: showCompletionRatio
+                    ? scheme.secondary
+                    : scheme.onSurfaceVariant.withValues(alpha: 0.8),
+              ),
+              SizedBox(width: tokens.spaceXs),
+              Text(
+                showCompletionRatio
+                    ? '$completedCount/$totalCount tasks'
+                    : '$totalCount tasks',
+                style: metaStyle,
+              ),
+            ],
+          ),
+        );
+      }
 
-    if (totalCount != null) {
-      final showCompletionRatio = !isInbox && completedCount != null;
-      metaChildren.add(
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              showCompletionRatio
-                  ? Icons.check_circle_rounded
-                  : Icons.inbox_outlined,
-              size: 14,
-              color: showCompletionRatio
-                  ? scheme.secondary
-                  : scheme.onSurfaceVariant.withValues(alpha: 0.8),
-            ),
-            SizedBox(width: tokens.spaceXs),
-            Text(
-              showCompletionRatio
-                  ? '$completedCount/$totalCount tasks'
-                  : '$totalCount tasks',
-              style: metaStyle,
-            ),
-          ],
-        ),
-      );
-    }
+      final dueSoon = data.dueSoonCount ?? 0;
+      final dueLabel = data.meta.deadlineDateLabel?.trim();
+      final showDue = (dueLabel != null && dueLabel.isNotEmpty) || dueSoon > 0;
+      if (showDue) {
+        final dueColor = (data.meta.isOverdue || data.meta.isDueToday)
+            ? scheme.error
+            : scheme.onSurfaceVariant;
+        metaChildren.add(
+          MetaIconLabel(
+            icon: Icons.flag_rounded,
+            label: (dueLabel != null && dueLabel.isNotEmpty)
+                ? dueLabel
+                : '$dueSoon due soon',
+            color: dueColor,
+            textStyle: metaStyle,
+          ),
+        );
+      }
 
-    final dueSoon = data.dueSoonCount ?? 0;
-    final dueLabel = data.meta.deadlineDateLabel?.trim();
-    final showDue = (dueLabel != null && dueLabel.isNotEmpty) || dueSoon > 0;
-    if (showDue) {
-      final dueColor = (data.meta.isOverdue || data.meta.isDueToday)
-          ? scheme.error
-          : scheme.onSurfaceVariant;
-      metaChildren.add(
-        MetaIconLabel(
-          icon: Icons.flag_rounded,
-          label: (dueLabel != null && dueLabel.isNotEmpty)
-              ? dueLabel
-              : '$dueSoon due soon',
-          color: dueColor,
-          textStyle: metaStyle,
-        ),
-      );
-    }
-
-    if (data.meta.priority != null) {
-      metaChildren.add(PriorityPill(priority: data.meta.priority!));
+      if (data.meta.priority != null) {
+        metaChildren.add(PriorityPill(priority: data.meta.priority!));
+      }
     }
 
     final canEdit = onEditRequested != null;
     final titleRow = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (inboxIcon != null) ...[
+          Icon(
+            inboxIcon.selectedIcon,
+            color: scheme.primary,
+            size: tokens.spaceLg3,
+          ),
+          SizedBox(width: tokens.spaceSm),
+        ],
         Expanded(
           child: Text(
             data.title,
@@ -746,6 +969,7 @@ TasklyRowSpec _buildProjectTaskRow(
   BuildContext context,
   Task task,
   SelectionState selectionState, {
+  required DisplayDensity density,
   List<TasklyBadgeData> badges = const [],
   VoidCallback? onTapOverride,
   VoidCallback? onLongPressOverride,
@@ -780,7 +1004,9 @@ TasklyRowSpec _buildProjectTaskRow(
 
   final style = selectionState.isSelectionMode
       ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
-      : const TasklyTaskRowStyle.standard();
+      : (density == DisplayDensity.compact
+            ? const TasklyTaskRowStyle.compact()
+            : const TasklyTaskRowStyle.standard());
 
   return TasklyRowSpec.task(
     key: 'project-detail-task-${task.id}',
@@ -870,12 +1096,18 @@ int _countDueSoon(
   return count;
 }
 
+enum _ProjectDetailMenuAction {
+  toggleCompletion,
+}
+
 enum _ProjectTaskSortOrder {
   listOrder,
   recentlyUpdated,
   alphabetical,
   priority,
   dueDate,
+  valuePriority,
+  valueName,
 }
 
 extension _ProjectTaskSortOrderLabels on _ProjectTaskSortOrder {
@@ -886,6 +1118,8 @@ extension _ProjectTaskSortOrderLabels on _ProjectTaskSortOrder {
       _ProjectTaskSortOrder.alphabetical => 'A–Z',
       _ProjectTaskSortOrder.priority => 'Priority',
       _ProjectTaskSortOrder.dueDate => 'Due date',
+      _ProjectTaskSortOrder.valuePriority => 'Value priority',
+      _ProjectTaskSortOrder.valueName => 'Value name (A-Z)',
     };
   }
 }
@@ -925,6 +1159,34 @@ List<Task> _sortTasks(List<Task> tasks, _ProjectTaskSortOrder order) {
     return byName(a, b);
   }
 
+  int byValuePriority(Task a, Task b) {
+    final byPrimary = _compareValuesByPriority(
+      a.effectivePrimaryValue,
+      b.effectivePrimaryValue,
+    );
+    if (byPrimary != 0) return byPrimary;
+    final bySecondary = _compareValueListsByPriority(
+      a.effectiveSecondaryValues,
+      b.effectiveSecondaryValues,
+    );
+    if (bySecondary != 0) return bySecondary;
+    return byName(a, b);
+  }
+
+  int byValueName(Task a, Task b) {
+    final byPrimary = _compareValuesByName(
+      a.effectivePrimaryValue,
+      b.effectivePrimaryValue,
+    );
+    if (byPrimary != 0) return byPrimary;
+    final bySecondary = _compareValueListsByName(
+      a.effectiveSecondaryValues,
+      b.effectiveSecondaryValues,
+    );
+    if (bySecondary != 0) return bySecondary;
+    return byName(a, b);
+  }
+
   final sorted = tasks.toList(growable: false);
   sorted.sort(
     switch (order) {
@@ -932,8 +1194,56 @@ List<Task> _sortTasks(List<Task> tasks, _ProjectTaskSortOrder order) {
       _ProjectTaskSortOrder.alphabetical => byName,
       _ProjectTaskSortOrder.priority => byPriority,
       _ProjectTaskSortOrder.dueDate => byDueDate,
+      _ProjectTaskSortOrder.valuePriority => byValuePriority,
+      _ProjectTaskSortOrder.valueName => byValueName,
       _ProjectTaskSortOrder.listOrder => byName,
     },
   );
   return sorted;
+}
+
+int _compareValueListsByPriority(List<Value> a, List<Value> b) {
+  final maxLen = a.length > b.length ? a.length : b.length;
+  for (var i = 0; i < maxLen; i++) {
+    final aValue = i < a.length ? a[i] : null;
+    final bValue = i < b.length ? b[i] : null;
+    final compare = _compareValuesByPriority(aValue, bValue);
+    if (compare != 0) return compare;
+  }
+  return 0;
+}
+
+int _compareValueListsByName(List<Value> a, List<Value> b) {
+  final maxLen = a.length > b.length ? a.length : b.length;
+  for (var i = 0; i < maxLen; i++) {
+    final aValue = i < a.length ? a[i] : null;
+    final bValue = i < b.length ? b[i] : null;
+    final compare = _compareValuesByName(aValue, bValue);
+    if (compare != 0) return compare;
+  }
+  return 0;
+}
+
+int _compareValuesByPriority(Value? a, Value? b) {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+
+  final byPriority = b.priority.weight.compareTo(a.priority.weight);
+  if (byPriority != 0) return byPriority;
+  return _compareValueNames(a, b);
+}
+
+int _compareValuesByName(Value? a, Value? b) {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+
+  final byName = _compareValueNames(a, b);
+  if (byName != 0) return byName;
+  return b.priority.weight.compareTo(a.priority.weight);
+}
+
+int _compareValueNames(Value a, Value b) {
+  return a.name.toLowerCase().compareTo(b.name.toLowerCase());
 }

@@ -391,8 +391,7 @@ class TaskRepository implements TaskRepositoryContract {
     });
   }
 
-  @override
-  Future<void> create({
+  Future<String> _createInternal({
     required String name,
     String? description,
     bool completed = false,
@@ -405,8 +404,8 @@ class TaskRepository implements TaskRepositoryContract {
     bool seriesEnded = false,
     List<String>? valueIds,
     OperationContext? context,
-  }) async {
-    await FailureGuard.run(
+  }) {
+    return FailureGuard.run(
       () async {
         final normalizedProjectId = switch (projectId?.trim()) {
           null || '' => null,
@@ -479,9 +478,73 @@ class TaskRepository implements TaskRepositoryContract {
                 ),
               );
         });
+
+        return id;
       },
       area: 'data.task',
       opName: 'create',
+      context: context,
+    );
+  }
+
+  @override
+  Future<void> create({
+    required String name,
+    String? description,
+    bool completed = false,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? projectId,
+    int? priority,
+    String? repeatIcalRrule,
+    bool repeatFromCompletion = false,
+    bool seriesEnded = false,
+    List<String>? valueIds,
+    OperationContext? context,
+  }) async {
+    await _createInternal(
+      name: name,
+      description: description,
+      completed: completed,
+      startDate: startDate,
+      deadlineDate: deadlineDate,
+      projectId: projectId,
+      priority: priority,
+      repeatIcalRrule: repeatIcalRrule,
+      repeatFromCompletion: repeatFromCompletion,
+      seriesEnded: seriesEnded,
+      valueIds: valueIds,
+      context: context,
+    );
+  }
+
+  @override
+  Future<String> createReturningId({
+    required String name,
+    String? description,
+    bool completed = false,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? projectId,
+    int? priority,
+    String? repeatIcalRrule,
+    bool repeatFromCompletion = false,
+    bool seriesEnded = false,
+    List<String>? valueIds,
+    OperationContext? context,
+  }) {
+    return _createInternal(
+      name: name,
+      description: description,
+      completed: completed,
+      startDate: startDate,
+      deadlineDate: deadlineDate,
+      projectId: projectId,
+      priority: priority,
+      repeatIcalRrule: repeatIcalRrule,
+      repeatFromCompletion: repeatFromCompletion,
+      seriesEnded: seriesEnded,
+      valueIds: valueIds,
       context: context,
     );
   }

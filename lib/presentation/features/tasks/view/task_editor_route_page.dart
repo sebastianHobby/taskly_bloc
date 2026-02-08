@@ -68,6 +68,7 @@ class _TaskEditorFullPage extends StatelessWidget {
     final projectRepository = context.read<ProjectRepositoryContract>();
     final valueRepository = context.read<ValueRepositoryContract>();
     final taskWriteService = context.read<TaskWriteService>();
+    final taskMyDayWriteService = context.read<TaskMyDayWriteService>();
     final demoModeService = context.read<DemoModeService>();
     final demoDataProvider = context.read<DemoDataProvider>();
 
@@ -80,6 +81,7 @@ class _TaskEditorFullPage extends StatelessWidget {
             projectRepository: projectRepository,
             valueRepository: valueRepository,
             taskWriteService: taskWriteService,
+            taskMyDayWriteService: taskMyDayWriteService,
             errorReporter: context.read<AppErrorReporter>(),
             demoModeService: demoModeService,
             demoDataProvider: demoDataProvider,

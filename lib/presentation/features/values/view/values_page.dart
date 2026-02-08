@@ -58,6 +58,36 @@ class _ValuesPageState extends State<ValuesPage> {
     );
   }
 
+  Future<void> _showRangeSheet(
+    BuildContext context, {
+    required int selectedDays,
+  }) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      builder: (context) {
+        final tokens = TasklyTokens.of(context);
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spaceLg,
+            tokens.spaceLg,
+            tokens.spaceLg,
+            tokens.spaceXl,
+          ),
+          child: _ValuesRangeSelector(
+            selectedDays: selectedDays,
+            onChanged: (days) {
+              context
+                  .read<ValuesHeroBloc>()
+                  .add(ValuesHeroRangeChanged(days));
+              Navigator.of(context).pop();
+            },
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -90,12 +120,24 @@ class _ValuesPageState extends State<ValuesPage> {
                             tooltip: 'More',
                             itemsBuilder: (context) => [
                               const PopupMenuItem(
+                                value: _ValuesMenuAction.range,
+                                child: Text('Range'),
+                              ),
+                              const PopupMenuItem(
                                 value: _ValuesMenuAction.selectMultiple,
                                 child: Text('Select multiple'),
                               ),
                             ],
                             onSelected: (action) {
                               switch (action) {
+                                case _ValuesMenuAction.range:
+                                  _showRangeSheet(
+                                    context,
+                                    selectedDays: context
+                                        .read<ValuesHeroBloc>()
+                                        .state
+                                        .rangeDays,
+                                  );
                                 case _ValuesMenuAction.selectMultiple:
                                   context
                                       .read<SelectionBloc>()
@@ -147,25 +189,9 @@ class _ValuesPageState extends State<ValuesPage> {
                       ),
                     };
 
-                    final tokens = TasklyTokens.of(context);
-
                     return Column(
                       children: [
                         const _ValuesTitleHeader(),
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            tokens.sectionPaddingH,
-                            tokens.spaceMd,
-                            tokens.sectionPaddingH,
-                            tokens.spaceSm,
-                          ),
-                          child: _ValuesRangeSelector(
-                            selectedDays: state.rangeDays,
-                            onChanged: (days) => context
-                                .read<ValuesHeroBloc>()
-                                .add(ValuesHeroRangeChanged(days)),
-                          ),
-                        ),
                         Expanded(child: body),
                       ],
                     );
@@ -181,6 +207,7 @@ class _ValuesPageState extends State<ValuesPage> {
 }
 
 enum _ValuesMenuAction {
+  range,
   selectMultiple,
 }
 

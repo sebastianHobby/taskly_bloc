@@ -70,6 +70,13 @@ class SupabaseConnector extends PowerSyncBackendConnector {
   final Clock _clock;
 
   Future<void>? _refreshFuture;
+  int _uploadInFlightCount = 0;
+  String? _lastUploadSignature;
+  DateTime? _lastUploadSignatureAt;
+  int _repeatUploadCount = 0;
+
+  static const Duration _uploadLoopWindow = Duration(seconds: 3);
+  static const int _uploadLoopThreshold = 3;
 
   /// Get a Supabase token to authenticate against the PowerSync instance.
   @override
@@ -128,35 +135,84 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       return;
     }
 
-    // IMPORTANT: Never discard/consume queued CRUD when the user is signed out.
-    // If we proceed without a session, REST calls may fail with RLS/auth errors
-    // and our fatal handler would discard the transaction (data loss).
-    final session = Supabase.instance.client.auth.currentSession;
-    final currentUser = Supabase.instance.client.auth.currentUser;
-    if (session == null) {
-      talker.info(
-        '[powersync] uploadData skipped (no Supabase session)\n'
-        '  queuedOps=${transaction.crud.length}\n'
-        '  hint=Wait for sign-in before uploading',
-      );
-      return;
-    }
+    final wasInFlight = _uploadInFlightCount > 0;
+    _uploadInFlightCount++;
 
-    talker.debug(
-      '[powersync] uploadData starting\n'
-      '  queuedOps=${transaction.crud.length}\n'
-      '  userId=${currentUser?.id ?? "<null>"}',
-    );
-
-    final rest = Supabase.instance.client.rest;
+    late final PostgrestClient rest;
     CrudEntry? lastOp;
     var lastOpIndex = -1;
+    var missingContextReported = false;
+
     try {
+      // IMPORTANT: Never discard/consume queued CRUD when the user is signed out.
+      // If we proceed without a session, REST calls may fail with RLS/auth errors
+      // and our fatal handler would discard the transaction (data loss).
+      final session = Supabase.instance.client.auth.currentSession;
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (session == null) {
+        talker.info(
+          '[powersync] uploadData skipped (no Supabase session)\n'
+          '  queuedOps=${transaction.crud.length}\n'
+          '  hint=Wait for sign-in before uploading',
+        );
+        return;
+      }
+
+      final userId = currentUser?.id ?? '<null>';
+      talker.debug(
+        '[powersync] uploadData starting\n'
+        '  queuedOps=${transaction.crud.length}\n'
+        '  userId=$userId',
+      );
+
+      if (wasInFlight && transaction.crud.isNotEmpty) {
+        final op = transaction.crud.first;
+        talker.warning(
+          '[powersync] uploadData re-entered while previous upload is in flight\n'
+          '  queuedOps=${transaction.crud.length}\n'
+          '  userId=$userId\n'
+          '  sample=${op.table}/${op.id}/${op.op.name}',
+        );
+        _emitAnomaly(
+          kind: SyncAnomalyKind.syncPipelineIssue,
+          reason: SyncAnomalyReason.uploadReentrancy,
+          op: op,
+          details: <String, Object?>{
+            'queuedOps': transaction.crud.length,
+            'userId': userId,
+          },
+        );
+      }
+
+      _recordUploadSignature(transaction, userId: userId);
+
+      rest = Supabase.instance.client.rest;
       // Note: If transactional consistency is important, use database functions
       // or edge functions to process the entire transaction in a single call.
       for (final op in transaction.crud) {
         lastOp = op;
         lastOpIndex++;
+
+        if (!missingContextReported &&
+            op.metadata != null &&
+            !_hasOperationContext(op.metadata)) {
+          missingContextReported = true;
+          talker.warning(
+            '[powersync] CRUD metadata missing operation context\n'
+            '  table=${op.table}\n'
+            '  id=${op.id}\n'
+            '  op=${op.op.name}',
+          );
+          _emitAnomaly(
+            kind: SyncAnomalyKind.syncPipelineIssue,
+            reason: SyncAnomalyReason.missingOperationContext,
+            op: op,
+            details: <String, Object?>{
+              'queuedOps': transaction.crud.length,
+              'metadataType': op.metadata.runtimeType.toString(),
+            },
+          );
+        }
 
         // Enhanced logging for user_profiles to trace sync sequence
         final isUserProfiles = op.table == 'user_profiles';
@@ -298,6 +354,8 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         // Throwing an error here causes this call to be retried after a delay.
         rethrow;
       }
+    } finally {
+      _uploadInFlightCount = (_uploadInFlightCount - 1).clamp(0, 1 << 20);
     }
   }
 
@@ -489,6 +547,98 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     } catch (e, st) {
       talker.handle(e, st, '[powersync] Failed to publish SyncAnomaly');
     }
+  }
+
+  String _buildCrudSignature(List<CrudEntry> crud) {
+    final buffer = StringBuffer();
+    for (final op in crud) {
+      buffer
+        ..write(op.table)
+        ..write(':')
+        ..write(op.op.name)
+        ..write(':')
+        ..write(op.id)
+        ..write('|');
+    }
+    return buffer.toString();
+  }
+
+  void _recordUploadSignature(
+    CrudTransaction transaction, {
+    required String userId,
+  }) {
+    if (transaction.crud.isEmpty) return;
+
+    final signature = _buildCrudSignature(transaction.crud);
+    final now = _clock.nowUtc();
+    final lastSignature = _lastUploadSignature;
+    final lastAt = _lastUploadSignatureAt;
+    if (lastSignature == signature &&
+        lastAt != null &&
+        now.difference(lastAt) <= _uploadLoopWindow) {
+      _repeatUploadCount++;
+    } else {
+      _repeatUploadCount = 1;
+    }
+
+    _lastUploadSignature = signature;
+    _lastUploadSignatureAt = now;
+
+    final shouldReport =
+        _repeatUploadCount == _uploadLoopThreshold ||
+        (_repeatUploadCount > _uploadLoopThreshold &&
+            _repeatUploadCount % 10 == 0);
+
+    if (!shouldReport) return;
+
+    final tables = transaction.crud.map((op) => op.table).toSet().toList()
+      ..sort();
+    final op = transaction.crud.first;
+
+    talker.warning(
+      '[powersync] Possible upload loop detected\n'
+      '  repeats=$_repeatUploadCount\n'
+      '  windowMs=${_uploadLoopWindow.inMilliseconds}\n'
+      '  queuedOps=${transaction.crud.length}\n'
+      '  tables=$tables\n'
+      '  userId=$userId',
+    );
+
+    _emitAnomaly(
+      kind: SyncAnomalyKind.syncPipelineIssue,
+      reason: SyncAnomalyReason.uploadLoopDetected,
+      op: op,
+      details: <String, Object?>{
+        'repeatCount': _repeatUploadCount,
+        'windowMs': _uploadLoopWindow.inMilliseconds,
+        'queuedOps': transaction.crud.length,
+        'tables': tables,
+        'userId': userId,
+      },
+    );
+  }
+
+  Map<String, dynamic>? _decodeCrudMetadata(Object? metadata) {
+    if (metadata is Map) {
+      return Map<String, dynamic>.from(metadata);
+    }
+    if (metadata is String && metadata.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(metadata);
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  bool _hasOperationContext(Object? metadata) {
+    final decoded = _decodeCrudMetadata(metadata);
+    if (decoded == null) return false;
+    final cid = decoded['cid'];
+    if (cid is String && cid.trim().isNotEmpty) return true;
+    return false;
   }
 }
 

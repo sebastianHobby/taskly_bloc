@@ -1,10 +1,12 @@
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
+import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart';
 import 'package:taskly_domain/time.dart';
@@ -244,6 +246,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
   WeeklyReviewBloc({
     required AnalyticsService analyticsService,
     required AttentionEngineContract attentionEngine,
+    required SettingsRepositoryContract settingsRepository,
     required ValueRepositoryContract valueRepository,
     required ValueRatingsRepositoryContract valueRatingsRepository,
     required ValueRatingsWriteService valueRatingsWriteService,
@@ -252,6 +255,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     required NowService nowService,
   }) : _analyticsService = analyticsService,
        _attentionEngine = attentionEngine,
+       _settingsRepository = settingsRepository,
        _valueRepository = valueRepository,
        _valueRatingsRepository = valueRatingsRepository,
        _valueRatingsWriteService = valueRatingsWriteService,
@@ -269,6 +273,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
   final AnalyticsService _analyticsService;
   final AttentionEngineContract _attentionEngine;
+  final SettingsRepositoryContract _settingsRepository;
   final ValueRepositoryContract _valueRepository;
   final ValueRatingsRepositoryContract _valueRatingsRepository;
   final ValueRatingsWriteService _valueRatingsWriteService;
@@ -291,8 +296,15 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     emit(state.copyWith(status: WeeklyReviewStatus.loading));
 
     try {
+      final allocation = await _settingsRepository.load(
+        SettingsKey.allocation,
+      );
+      final ratingsRequested =
+          allocation.suggestionSignal == SuggestionSignal.ratingsBased;
+
       final ratingsSummary = await _buildRatingsSummary(
         config: config,
+        ratingsRequested: ratingsRequested,
       );
 
       final shouldShowValuesSummary = config.valuesSummaryEnabled;
@@ -410,6 +422,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
   Future<WeeklyReviewRatingsSummary> _buildRatingsSummary({
     required WeeklyReviewConfig config,
+    required bool ratingsRequested,
   }) async {
     final values = await _valueRepository.getAll();
     final nowUtc = _nowService.nowUtc();
@@ -421,7 +434,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
         entries: const [],
         maxRating: _ratingsMax,
         graceWeeks: _ratingsGraceWeeks,
-        ratingsEnabled: false,
+        ratingsEnabled: ratingsRequested,
         ratingsOverdue: false,
         ratingsInGrace: false,
       );

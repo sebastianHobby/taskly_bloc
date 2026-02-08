@@ -163,6 +163,9 @@ class App extends StatelessWidget {
             create: (_) => getIt<SyncAnomalyStream>(),
           ),
           Provider<TaskWriteService>(create: (_) => getIt<TaskWriteService>()),
+          Provider<TaskMyDayWriteService>(
+            create: (_) => getIt<TaskMyDayWriteService>(),
+          ),
           Provider<ProjectWriteService>(
             create: (_) => getIt<ProjectWriteService>(),
           ),
@@ -185,6 +188,7 @@ class App extends StatelessWidget {
               valueRepository: getIt<ValueRepositoryContract>(),
               routineRepository: getIt<RoutineRepositoryContract>(),
               taskWriteService: getIt<TaskWriteService>(),
+              taskMyDayWriteService: getIt<TaskMyDayWriteService>(),
               projectWriteService: getIt<ProjectWriteService>(),
               valueWriteService: getIt<ValueWriteService>(),
               routineWriteService: getIt<RoutineWriteService>(),

@@ -16,6 +16,7 @@ class TaskEditorLaunchArgs {
     required this.projectRepository,
     required this.valueRepository,
     required this.taskWriteService,
+    required this.taskMyDayWriteService,
     required this.errorReporter,
     required this.demoModeService,
     required this.demoDataProvider,
@@ -26,12 +27,14 @@ class TaskEditorLaunchArgs {
     this.defaultDeadlineDate,
     this.openToValues = false,
     this.openToProjectPicker = false,
+    this.includeInMyDayDefault = false,
   });
 
   final TaskRepositoryContract taskRepository;
   final ProjectRepositoryContract projectRepository;
   final ValueRepositoryContract valueRepository;
   final TaskWriteService taskWriteService;
+  final TaskMyDayWriteService taskMyDayWriteService;
   final AppErrorReporter errorReporter;
   final DemoModeService demoModeService;
   final DemoDataProvider demoDataProvider;
@@ -42,6 +45,7 @@ class TaskEditorLaunchArgs {
   final DateTime? defaultDeadlineDate;
   final bool openToValues;
   final bool openToProjectPicker;
+  final bool includeInMyDayDefault;
 }
 
 typedef TaskEditorBuilder =
@@ -126,6 +130,7 @@ class EditorLauncher {
     TaskRepositoryContract? taskRepository,
     RoutineRepositoryContract? routineRepository,
     TaskWriteService? taskWriteService,
+    TaskMyDayWriteService? taskMyDayWriteService,
     ProjectWriteService? projectWriteService,
     ValueWriteService? valueWriteService,
     RoutineWriteService? routineWriteService,
@@ -141,6 +146,7 @@ class EditorLauncher {
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
        _taskWriteService = taskWriteService,
+       _taskMyDayWriteService = taskMyDayWriteService,
        _projectWriteService = projectWriteService,
        _valueWriteService = valueWriteService,
        _routineWriteService = routineWriteService,
@@ -154,6 +160,7 @@ class EditorLauncher {
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
   final TaskWriteService? _taskWriteService;
+  final TaskMyDayWriteService? _taskMyDayWriteService;
   final ProjectWriteService? _projectWriteService;
   final ValueWriteService? _valueWriteService;
   final RoutineWriteService? _routineWriteService;
@@ -174,13 +181,20 @@ class EditorLauncher {
     DateTime? defaultDeadlineDate,
     bool openToValues = false,
     bool openToProjectPicker = false,
+    bool includeInMyDayDefault = false,
     bool? showDragHandle,
   }) {
     final taskRepository = _taskRepository;
     final taskWriteService = _taskWriteService;
+    final taskMyDayWriteService = _taskMyDayWriteService;
     if (taskRepository == null || taskWriteService == null) {
       throw StateError(
         'EditorLauncher.openTaskEditor requires a TaskRepositoryContract.',
+      );
+    }
+    if (taskMyDayWriteService == null) {
+      throw StateError(
+        'EditorLauncher.openTaskEditor requires a TaskMyDayWriteService.',
       );
     }
     final taskEditorBuilder = _taskEditorBuilder;
@@ -205,6 +219,7 @@ class EditorLauncher {
             projectRepository: _projectRepository,
             valueRepository: _valueRepository,
             taskWriteService: taskWriteService,
+            taskMyDayWriteService: taskMyDayWriteService,
             errorReporter: _errorReporter,
             demoModeService: _demoModeService,
             demoDataProvider: _demoDataProvider,
@@ -215,6 +230,7 @@ class EditorLauncher {
             defaultDeadlineDate: defaultDeadlineDate,
             openToValues: openToValues,
             openToProjectPicker: openToProjectPicker,
+            includeInMyDayDefault: includeInMyDayDefault,
           ),
         );
       },

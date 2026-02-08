@@ -76,8 +76,8 @@ Notes:
 - My Day persistence uses deterministic UUID v5 IDs (via `IdGenerator`) for
   `my_day_days` and `my_day_picks` to support offline-first upserts and
   cross-device convergence.
-- When anchors are selected, the orchestrator records them in
-  `project_anchor_state` for rotation pressure.
+- When the ritual is confirmed, the app records the most recent anchor
+  projects in `project_anchor_state` for rotation pressure (user action only).
 
 ## 4) Algorithm overview
 

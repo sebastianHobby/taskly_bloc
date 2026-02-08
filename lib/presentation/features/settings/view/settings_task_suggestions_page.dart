@@ -31,7 +31,6 @@ class SettingsTaskSuggestionsPage extends StatelessWidget {
                 children: [
                   _SuggestionSignalSection(settings: state.settings),
                   _ValuesBalanceSection(settings: state.settings),
-                  _ProjectFocusSection(settings: state.settings),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                 ],
               ),
@@ -149,56 +148,6 @@ class _ValuesBalanceSection extends StatelessWidget {
             if (value == null) return;
             context.read<AllocationSettingsBloc>().add(
               AllocationValuesBalanceModeChanged(value),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _ProjectFocusSection extends StatelessWidget {
-  const _ProjectFocusSection({required this.settings});
-
-  final AllocationConfig settings;
-
-  @override
-  Widget build(BuildContext context) {
-    final style = settings.strategySettings.rotationPressureDays <= 7
-        ? ProjectFocusStyle.rotateQuietProjects
-        : ProjectFocusStyle.stayFocused;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionHeader(title: 'Project focus style'),
-        RadioListTile<ProjectFocusStyle>(
-          title: const Text('Rotate quiet projects'),
-          subtitle: const Text(
-            'Bring in projects you haven\u2019t touched recently so they '
-            'don\u2019t stall.',
-          ),
-          value: ProjectFocusStyle.rotateQuietProjects,
-          groupValue: style,
-          onChanged: (value) {
-            if (value == null) return;
-            context.read<AllocationSettingsBloc>().add(
-              AllocationProjectFocusStyleChanged(value),
-            );
-          },
-        ),
-        RadioListTile<ProjectFocusStyle>(
-          title: const Text('Stay focused on top projects'),
-          subtitle: const Text(
-            'Keep suggestions concentrated on your most active or '
-            'high-priority projects.',
-          ),
-          value: ProjectFocusStyle.stayFocused,
-          groupValue: style,
-          onChanged: (value) {
-            if (value == null) return;
-            context.read<AllocationSettingsBloc>().add(
-              AllocationProjectFocusStyleChanged(value),
             );
           },
         ),

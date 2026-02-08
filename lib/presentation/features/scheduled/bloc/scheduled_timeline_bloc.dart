@@ -32,11 +32,6 @@ final class ScheduledTimelineDayJumpRequested extends ScheduledTimelineEvent {
   final DateTime day;
 }
 
-final class ScheduledTimelineOverdueCollapsedToggled
-    extends ScheduledTimelineEvent {
-  const ScheduledTimelineOverdueCollapsedToggled();
-}
-
 final class ScheduledTimelineScrollEffectHandled
     extends ScheduledTimelineEvent {
   const ScheduledTimelineScrollEffectHandled();
@@ -59,7 +54,6 @@ final class ScheduledTimelineLoaded extends ScheduledTimelineState {
     required this.activeMonth,
     required this.occurrences,
     required this.overdue,
-    required this.overdueCollapsed,
     required this.scrollToDaySignal,
     required this.scrollTargetDay,
   });
@@ -80,8 +74,6 @@ final class ScheduledTimelineLoaded extends ScheduledTimelineState {
 
   /// Scheduled occurrences within the current range.
   final List<ScheduledOccurrence> occurrences;
-
-  final bool overdueCollapsed;
 
   /// Monotonically increasing signal used by the UI to trigger a one-off scroll.
   final int scrollToDaySignal;
@@ -114,7 +106,6 @@ final class ScheduledTimelineBloc
     on<ScheduledTimelineStarted>(_onStarted, transformer: restartable());
     on<ScheduledTimelineVisibleDayChanged>(_onVisibleDayChanged);
     on<ScheduledTimelineDayJumpRequested>(_onDayJumpRequested);
-    on<ScheduledTimelineOverdueCollapsedToggled>(_onOverdueCollapsedToggled);
     on<ScheduledTimelineScrollEffectHandled>(_onScrollEffectHandled);
 
     add(const ScheduledTimelineStarted());
@@ -130,7 +121,6 @@ final class ScheduledTimelineBloc
   final BehaviorSubject<_RangeWindow> _rangeWindow =
       BehaviorSubject<_RangeWindow>();
 
-  bool _overdueCollapsed = false;
   int _scrollToDaySignal = 0;
   DateTime? _scrollTargetDay;
 
@@ -256,7 +246,6 @@ final class ScheduledTimelineBloc
       activeMonth: activeMonth,
       occurrences: result.occurrences,
       overdue: result.overdue,
-      overdueCollapsed: _overdueCollapsed,
       scrollToDaySignal: _scrollToDaySignal,
       scrollTargetDay: _scrollTargetDay,
     );
@@ -309,15 +298,6 @@ final class ScheduledTimelineBloc
     _scrollTargetDay = targetDay;
     _scrollToDaySignal++;
 
-    final next = _buildLoadedState();
-    if (next != null) emit(next);
-  }
-
-  Future<void> _onOverdueCollapsedToggled(
-    ScheduledTimelineOverdueCollapsedToggled event,
-    Emitter<ScheduledTimelineState> emit,
-  ) async {
-    _overdueCollapsed = !_overdueCollapsed;
     final next = _buildLoadedState();
     if (next != null) emit(next);
   }

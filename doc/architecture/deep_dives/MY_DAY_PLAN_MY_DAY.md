@@ -56,16 +56,31 @@ Plan My Day wizard (Presentation)
     -> SuggestedPicksEngine.allocate(...)
   -> user selects tasks + routines for today
   -> MyDayRepository.setDayPicks(dayKeyUtc, picks, ritualCompletedAtUtc)
+  -> record anchor projects in project_anchor_state (on confirm)
 ```
 
 Routines are **not** suggested by the allocator, but can optionally count
 against value quotas (see [../../product/SPEC_ROUTINES.md](../../product/SPEC_ROUTINES.md)).
+
+Carryover policy:
+
+- Plan My Day auto-includes **urgent tasks** (overdue + due today).
+- It also carries forward **unfinished picks from yesterday** so the user can
+  decide whether to reschedule or include them again.
 
 ### 3.3 Suggested picks explainability
 
 Suggested picks return reason codes. When the ritual is confirmed, a subset of
 this metadata is persisted in `my_day_picks` so My Day can render "Why
 suggested" without re-running allocation.
+
+### 3.4 Suggestion refresh policy (Plan My Day)
+
+- Suggestions are computed on entry and cached for the session.
+- Auto-refresh runs only while the ritual is open (no plan yet) or when the
+  user returns with open capacity after completing picks.
+- Allocation does not re-run for every task edit; My Day execution remains
+  reactive via its own task/routine streams.
 
 ## 4) Where things live (code map)
 

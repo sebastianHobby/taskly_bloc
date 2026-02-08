@@ -139,20 +139,6 @@ void main() {
   );
 
   blocTestSafe<ScheduledTimelineBloc, ScheduledTimelineState>(
-    'toggles overdue collapsed',
-    build: buildBloc,
-    act: (bloc) => bloc.add(const ScheduledTimelineOverdueCollapsedToggled()),
-    expect: () => [
-      isA<ScheduledTimelineLoaded>(),
-      isA<ScheduledTimelineLoaded>().having(
-        (s) => s.overdueCollapsed,
-        'overdueCollapsed',
-        true,
-      ),
-    ],
-  );
-
-  blocTestSafe<ScheduledTimelineBloc, ScheduledTimelineState>(
     'day jump sets scroll target',
     build: buildBloc,
     act: (bloc) => bloc.add(

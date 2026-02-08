@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
+import 'package:taskly_ui/src/sections/expandable_row_list.dart';
 import 'package:taskly_ui/src/sections/empty_state_widget.dart';
 import 'package:taskly_ui/src/sections/feed_body.dart';
 import 'package:taskly_ui/src/sections/value_distribution_section.dart';
@@ -115,9 +116,8 @@ class TasklyFeedRenderer extends StatelessWidget {
       TasklyScheduledOverdueSectionSpec(
         :final title,
         :final countLabel,
-        :final isCollapsed,
-        :final onToggleCollapsed,
         :final rows,
+        :final showMoreLabelBuilder,
         :final actionLabel,
         :final actionTooltip,
         :final onActionPressed,
@@ -125,9 +125,8 @@ class TasklyFeedRenderer extends StatelessWidget {
         _ScheduledOverdueSection(
           title: title,
           countLabel: countLabel,
-          isCollapsed: isCollapsed,
-          onToggleCollapsed: onToggleCollapsed,
           rows: rows,
+          showMoreLabelBuilder: showMoreLabelBuilder,
           actionLabel: actionLabel,
           actionTooltip: actionTooltip,
           onActionPressed: onActionPressed,
@@ -667,9 +666,8 @@ class _ScheduledOverdueSection extends StatelessWidget {
   const _ScheduledOverdueSection({
     required this.title,
     required this.countLabel,
-    required this.isCollapsed,
-    required this.onToggleCollapsed,
     required this.rows,
+    required this.showMoreLabelBuilder,
     required this.actionLabel,
     required this.actionTooltip,
     required this.onActionPressed,
@@ -678,9 +676,8 @@ class _ScheduledOverdueSection extends StatelessWidget {
 
   final String title;
   final String countLabel;
-  final bool isCollapsed;
-  final VoidCallback? onToggleCollapsed;
   final List<TasklyRowSpec> rows;
+  final String Function(int remaining, int total) showMoreLabelBuilder;
   final String? actionLabel;
   final String? actionTooltip;
   final VoidCallback? onActionPressed;
@@ -693,8 +690,6 @@ class _ScheduledOverdueSection extends StatelessWidget {
     final textTheme = theme.textTheme;
     final tokens = TasklyTokens.of(context);
 
-    final visibleRows = isCollapsed ? rows.take(3).toList() : rows;
-
     return Padding(
       padding: EdgeInsets.fromLTRB(
         tokens.sectionPaddingH,
@@ -705,61 +700,56 @@ class _ScheduledOverdueSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          InkWell(
-            onTap: onToggleCollapsed,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                tokens.spaceXs,
-                tokens.spaceXs2,
-                tokens.spaceXs,
-                tokens.spaceXs2,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: scheme.error,
-                      ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spaceXs,
+              tokens.spaceXs2,
+              tokens.spaceXs,
+              tokens.spaceXs2,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: scheme.error,
                     ),
                   ),
-                  Text(
-                    countLabel,
-                    style: textTheme.labelSmall?.copyWith(
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
-                    ),
-                  ),
-                  SizedBox(width: tokens.spaceXs2),
-                  Icon(
-                    isCollapsed
-                        ? Icons.expand_more_rounded
-                        : Icons.expand_less_rounded,
+                ),
+                Text(
+                  countLabel,
+                  style: textTheme.labelSmall?.copyWith(
                     color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          if (!isCollapsed || rows.isNotEmpty)
+          if (rows.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(bottom: tokens.spaceSm),
-              child: visibleRows.isEmpty
-                  ? Text(
-                      'Nothing overdue',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    )
-                  : _RowList(
-                      rows: visibleRows,
-                      emptyLabel: null,
-                      onAddRequested: null,
-                      entityRowPadding: entityRowPadding,
-                    ),
+              child: ExpandableRowList(
+                rows: rows,
+                rowKeyPrefix: 'scheduled-overdue',
+                maxVisible: ExpandableRowListDefaults.compactMaxVisible,
+                allowCollapse: false,
+                showMoreLabelBuilder: showMoreLabelBuilder,
+                entityRowPadding: entityRowPadding,
+              ),
+            )
+          else
+            Padding(
+              padding: EdgeInsets.only(bottom: tokens.spaceSm),
+              child: Text(
+                'Nothing overdue',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
         ],
       ),

@@ -19,6 +19,9 @@ import '../../../mocks/feature_mocks.dart';
 import '../../../mocks/repository_mocks.dart';
 
 class MockNowService extends Mock implements NowService {}
+class MockMyDayRepositoryContract extends Mock
+    implements MyDayRepositoryContract {}
+class MockHomeDayKeyService extends Mock implements HomeDayKeyService {}
 
 Widget _buildTestModal(BuildContext context, String label) {
   return Material(
@@ -124,6 +127,13 @@ void main() {
       projectRepository: projectRepository,
       occurrenceCommandService: occurrenceCommandService,
     );
+    final myDayRepository = MockMyDayRepositoryContract();
+    final homeDayKeyService = MockHomeDayKeyService();
+    final taskMyDayWriteService = TaskMyDayWriteService(
+      taskWriteService: taskWriteService,
+      myDayRepository: myDayRepository,
+      dayKeyService: homeDayKeyService,
+    );
     final nowService = MockNowService();
     final demoModeService = DemoModeService();
     final demoDataProvider = DemoDataProvider();
@@ -147,6 +157,7 @@ void main() {
       projectRepository: projectRepository,
       valueRepository: valueRepository,
       taskWriteService: taskWriteService,
+      taskMyDayWriteService: taskMyDayWriteService,
       taskEditorBuilder: _taskEditorBuilder,
     );
 
@@ -202,6 +213,13 @@ void main() {
       projectRepository: projectRepository,
       occurrenceCommandService: occurrenceCommandService,
     );
+    final myDayRepository = MockMyDayRepositoryContract();
+    final homeDayKeyService = MockHomeDayKeyService();
+    final taskMyDayWriteService = TaskMyDayWriteService(
+      taskWriteService: taskWriteService,
+      myDayRepository: myDayRepository,
+      dayKeyService: homeDayKeyService,
+    );
     final nowService = MockNowService();
     final demoModeService = DemoModeService();
     final demoDataProvider = DemoDataProvider();
@@ -225,6 +243,7 @@ void main() {
       projectRepository: projectRepository,
       valueRepository: valueRepository,
       taskWriteService: taskWriteService,
+      taskMyDayWriteService: taskMyDayWriteService,
       taskEditorBuilder: _taskEditorBuilder,
     );
 

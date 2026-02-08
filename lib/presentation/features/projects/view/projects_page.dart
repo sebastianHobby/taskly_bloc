@@ -17,6 +17,7 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/display_density_toggle.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
@@ -174,6 +175,7 @@ class _ProjectsViewState extends State<_ProjectsView> {
   Future<void> _showFilterSheet({
     required List<Value> values,
     required List<ListRowUiModel> rows,
+    required DisplayDensity density,
   }) async {
     final countRows = _filterProjectsRows(
       rows: rows,
@@ -203,6 +205,23 @@ class _ProjectsViewState extends State<_ProjectsView> {
         ),
       ],
       sections: [
+        FilterSortSection(
+          title: 'View',
+          child: Builder(
+            builder: (sheetContext) {
+              return DisplayDensityToggle(
+                density: density,
+                onChanged: (next) {
+                  if (next == density) return;
+                  context.read<DisplayDensityBloc>().add(
+                    DisplayDensitySet(next),
+                  );
+                  Navigator.of(sheetContext).pop();
+                },
+              );
+            },
+          ),
+        ),
         FilterSortSection(
           title: 'Values',
           child: Builder(
@@ -245,7 +264,7 @@ class _ProjectsViewState extends State<_ProjectsView> {
       ],
       toggles: [
         FilterSortToggle(
-          title: 'Show completed',
+          title: context.l10n.showCompletedLabel,
           value: _showCompleted,
           onChanged: _toggleShowCompleted,
         ),
@@ -357,6 +376,7 @@ class _ProjectsViewState extends State<_ProjectsView> {
                           _showFilterSheet(
                             values: state.values,
                             rows: state.rows,
+                            density: density,
                           );
                         },
                       ),
@@ -438,6 +458,10 @@ class _ProjectsViewState extends State<_ProjectsView> {
                                   context,
                                   scope,
                                   screenState,
+                                  showCompleted: _showCompleted,
+                                  completionCounts: _countProjectsByCompletion(
+                                    rows,
+                                  ),
                                 ),
                               ),
                             ProjectsFeedLoaded(:final rows) => () {
@@ -453,6 +477,9 @@ class _ProjectsViewState extends State<_ProjectsView> {
                                     context,
                                     scope,
                                     screenState,
+                                    showCompleted: _showCompleted,
+                                    completionCounts:
+                                        _countProjectsByCompletion(rows),
                                   ),
                                 );
                               }
@@ -500,8 +527,10 @@ enum _ProjectsMenuAction {
 TasklyEmptyStateSpec _buildEmptySpec(
   BuildContext context,
   ProjectsScope? scope,
-  ProjectsScreenState screenState,
-) {
+  ProjectsScreenState screenState, {
+  required bool showCompleted,
+  required _ProjectCompletionCounts completionCounts,
+}) {
   final query = screenState.searchQuery.trim();
   if (query.isNotEmpty) {
     return TasklyEmptyStateSpec(
@@ -537,6 +566,29 @@ TasklyEmptyStateSpec _buildEmptySpec(
     );
   }
 
+  if (completionCounts.total == 0 ||
+      (!showCompleted && completionCounts.active == 0) ||
+      (showCompleted && completionCounts.completed == 0)) {
+    final l10n = context.l10n;
+    final title = showCompleted
+        ? l10n.projectsEmptyCompletedTitle
+        : l10n.projectsEmptyActiveTitle;
+    final description = showCompleted
+        ? l10n.projectsEmptyCompletedDescription
+        : l10n.projectsEmptyActiveDescription;
+    return TasklyEmptyStateSpec(
+      icon: Icons.inbox_outlined,
+      title: title,
+      description: description,
+      actionLabel: showCompleted ? null : l10n.addProjectAction,
+      onAction: showCompleted
+          ? null
+          : () => context.read<ProjectsScreenBloc>().add(
+              const ProjectsCreateProjectRequested(),
+            ),
+    );
+  }
+
   return TasklyEmptyStateSpec(
     icon: Icons.inbox_outlined,
     title: 'Build your project list',
@@ -546,6 +598,31 @@ TasklyEmptyStateSpec _buildEmptySpec(
       const ProjectsCreateProjectRequested(),
     ),
   );
+}
+
+_ProjectCompletionCounts _countProjectsByCompletion(List<ListRowUiModel> rows) {
+  var total = 0;
+  var completed = 0;
+  for (final row in rows) {
+    if (row is! ProjectRowUiModel) continue;
+    final project = row.project;
+    if (project == null) continue;
+    total += 1;
+    if (project.completed) completed += 1;
+  }
+  return _ProjectCompletionCounts(total: total, completed: completed);
+}
+
+class _ProjectCompletionCounts {
+  const _ProjectCompletionCounts({
+    required this.total,
+    required this.completed,
+  });
+
+  final int total;
+  final int completed;
+
+  int get active => total - completed;
 }
 
 List<TasklyRowSpec> _buildStandardRows(
