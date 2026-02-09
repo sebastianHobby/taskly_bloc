@@ -371,6 +371,22 @@ class _FakeTaskRepository implements TaskRepositoryContract {
   }) async => throw UnimplementedError();
 
   @override
+  Future<String> createReturningId({
+    required String name,
+    String? description,
+    bool completed = false,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? projectId,
+    int? priority,
+    String? repeatIcalRrule,
+    bool repeatFromCompletion = false,
+    bool seriesEnded = false,
+    List<String>? valueIds,
+    OperationContext? context,
+  }) async => throw UnimplementedError();
+
+  @override
   Future<void> update({
     required String id,
     required String name,
@@ -678,6 +694,9 @@ class _FakeValueRepository implements ValueRepositoryContract {
     String? iconName,
     OperationContext? context,
   }) async => throw UnimplementedError();
+
+  @override
+  Future<int> getCount() async => _values.length;
 
   @override
   Future<void> delete(String id, {OperationContext? context}) async =>

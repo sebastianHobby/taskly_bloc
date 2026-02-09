@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_daily_detail_sheet.dart';
@@ -65,10 +66,10 @@ class _JournalTodayPageState extends State<JournalTodayPage> {
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   TasklyJournalDailySummarySection(
                     moodEmoji: _moodEmoji(moodAverage),
-                    moodLabel: _moodLabel(moodAverage),
-                    entryCountLabel: entries.length == 1
-                        ? '1 entry'
-                        : '${entries.length} entries',
+                    moodLabel: _moodLabel(context, moodAverage),
+                    entryCountLabel: context.l10n.journalEntryCountLabel(
+                      entries.length,
+                    ),
                     items: [
                       for (final item in dailySummaryItems)
                         TasklyJournalDailySummaryItem(
@@ -76,6 +77,9 @@ class _JournalTodayPageState extends State<JournalTodayPage> {
                           value: item.value,
                         ),
                     ],
+                    emptyItemsLabel: context.l10n.journalDailyNoTrackers,
+                    seeAllLabel: context.l10n.journalSeeAll,
+                    editDailyLabel: context.l10n.journalEditDaily,
                     showItems: _showDailyDetails,
                     onEditDaily: () => JournalDailyDetailSheet.show(
                       context: context,
@@ -135,10 +139,15 @@ class _DailySummaryHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text('Daily summary', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          context.l10n.journalDailySummaryTitle,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const Spacer(),
         IconButton(
-          tooltip: isExpanded ? 'Collapse' : 'Expand',
+          tooltip: isExpanded
+              ? context.l10n.collapseLabel
+              : context.l10n.expandLabel,
           onPressed: onToggle,
           icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more),
         ),
@@ -160,12 +169,15 @@ class _EntriesHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text('Entries', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          context.l10n.journalEntriesTitle,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const Spacer(),
         if (showAdd)
           TextButton(
             onPressed: onAddLog,
-            child: const Text('Add entry'),
+            child: Text(context.l10n.journalAddEntry),
           ),
       ],
     );
@@ -234,7 +246,9 @@ String _moodEmoji(double? moodAverage) {
   return MoodRating.fromValue(moodAverage.round().clamp(1, 5)).emoji;
 }
 
-String _moodLabel(double? moodAverage) {
-  if (moodAverage == null) return 'Mood avg: -';
-  return 'Mood avg: ${moodAverage.toStringAsFixed(1)}';
+String _moodLabel(BuildContext context, double? moodAverage) {
+  if (moodAverage == null) return context.l10n.journalMoodAverageEmpty;
+  return context.l10n.journalMoodAverageValue(
+    moodAverage.toStringAsFixed(1),
+  );
 }

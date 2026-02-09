@@ -100,9 +100,6 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
   ) = GlobalSettingsMaintenanceDeadlineRiskMinUnscheduledCountChanged;
 
   /// User toggled due soon maintenance.
-  const factory GlobalSettingsEvent.maintenanceDueSoonChanged(bool enabled) =
-      GlobalSettingsMaintenanceDueSoonChanged;
-
   /// User toggled stale items maintenance.
   const factory GlobalSettingsEvent.maintenanceStaleChanged(bool enabled) =
       GlobalSettingsMaintenanceStaleChanged;
@@ -268,10 +265,6 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsMaintenanceDeadlineRiskMinUnscheduledCountChanged>(
       _onMaintenanceDeadlineRiskMinUnscheduledCountChanged,
-      transformer: sequential(),
-    );
-    on<GlobalSettingsMaintenanceDueSoonChanged>(
-      _onMaintenanceDueSoonChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsMaintenanceStaleChanged>(
@@ -814,20 +807,6 @@ class GlobalSettingsBloc
       'problem_project_deadline_risk',
       <String, Object?>{'minUnscheduledCount': clamped},
       context: context,
-    );
-  }
-
-  Future<void> _onMaintenanceDueSoonChanged(
-    GlobalSettingsMaintenanceDueSoonChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final updated = state.settings.copyWith(
-      maintenanceDueSoonEnabled: event.enabled,
-    );
-    await _persistSettings(
-      updated,
-      intent: 'settings_maintenance_due_soon_changed',
-      extraFields: <String, Object?>{'enabled': event.enabled},
     );
   }
 

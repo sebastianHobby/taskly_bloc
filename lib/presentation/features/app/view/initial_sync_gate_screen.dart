@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/app_loading_screen.dart';
 import 'package:taskly_domain/services.dart';
@@ -12,15 +13,16 @@ class InitialSyncGateScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<InitialSyncGateBloc, InitialSyncGateState>(
       builder: (context, state) {
-        const title = 'Syncing your data';
-        const subtitle = 'This is a one-time setup for this device.';
+        final l10n = context.l10n;
+        final title = l10n.initialSyncTitle;
+        final subtitle = l10n.initialSyncSubtitle;
 
         return switch (state) {
           InitialSyncGateInProgress(:final progress) => AppLoadingScreen(
             title: title,
             subtitle: subtitle,
             icon: Icons.sync,
-            progressLabel: _labelForProgress(progress),
+            progressLabel: _labelForProgress(progress, l10n),
             progressValue: progress?.downloadFraction,
           ),
           InitialSyncGateFailure(:final message) => Scaffold(
@@ -56,7 +58,7 @@ class InitialSyncGateScreen extends StatelessWidget {
                               const InitialSyncGateRetryRequested(),
                             );
                           },
-                          child: const Text('Retry'),
+                          child: Text(l10n.retryButton),
                         ),
                       ],
                     ),
@@ -65,7 +67,7 @@ class InitialSyncGateScreen extends StatelessWidget {
               ),
             ),
           ),
-          InitialSyncGateReady() => const AppLoadingScreen(
+          InitialSyncGateReady() => AppLoadingScreen(
             title: title,
             subtitle: subtitle,
             icon: Icons.sync,
@@ -76,13 +78,16 @@ class InitialSyncGateScreen extends StatelessWidget {
   }
 }
 
-String? _labelForProgress(InitialSyncProgress? progress) {
+String? _labelForProgress(
+  InitialSyncProgress? progress,
+  AppLocalizations l10n,
+) {
   return switch (progress) {
-    null => 'Preparing sync...',
-    InitialSyncProgress(downloading: true) => 'Downloading...',
-    InitialSyncProgress(uploading: true) => 'Uploading...',
-    InitialSyncProgress(connected: true) => 'Finalizing...',
-    InitialSyncProgress(connecting: true) => 'Connecting...',
-    _ => 'Preparing sync...',
+    null => l10n.initialSyncPreparing,
+    InitialSyncProgress(downloading: true) => l10n.initialSyncDownloading,
+    InitialSyncProgress(uploading: true) => l10n.initialSyncUploading,
+    InitialSyncProgress(connected: true) => l10n.initialSyncFinalizing,
+    InitialSyncProgress(connecting: true) => l10n.initialSyncConnecting,
+    _ => l10n.initialSyncPreparing,
   };
 }

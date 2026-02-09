@@ -91,7 +91,6 @@ GoRouter createRouter({
       appRouteObserver,
     ],
     errorBuilder: (_, state) => NotFoundRoutePage(
-      message: 'Page not found',
       details: state.error?.toString(),
     ),
     refreshListenable: refreshListenable,

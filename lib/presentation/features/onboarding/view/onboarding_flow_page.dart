@@ -149,8 +149,10 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Step ${state.step.index + 1} of '
-                        '${OnboardingStep.values.length}',
+                        context.l10n.onboardingStepProgress(
+                          state.step.index + 1,
+                          OnboardingStep.values.length,
+                        ),
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.labelMedium
                             ?.copyWith(
@@ -188,7 +190,7 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
                           onPressed: () => context.read<OnboardingBloc>().add(
                             const OnboardingBackRequested(),
                           ),
-                          child: const Text('Back'),
+                          child: Text(context.l10n.backLabel),
                         ),
                       ],
                     ],
@@ -212,9 +214,9 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
 
   String _primaryLabelFor(OnboardingStep step) {
     return switch (step) {
-      OnboardingStep.welcome => 'Get started',
-      OnboardingStep.name => 'Continue',
-      OnboardingStep.valuesSetup => 'Finish',
+      OnboardingStep.welcome => context.l10n.onboardingGetStartedLabel,
+      OnboardingStep.name => context.l10n.onboardingContinueLabel,
+      OnboardingStep.valuesSetup => context.l10n.onboardingFinishLabel,
     };
   }
 }
@@ -239,19 +241,19 @@ class _WelcomeStep extends StatelessWidget {
           ),
           SizedBox(height: tokens.spaceLg),
           Text(
-            'Meet Taskly',
+            context.l10n.onboardingWelcomeTitle,
             style: theme.textTheme.displaySmall,
             textAlign: TextAlign.center,
           ),
           SizedBox(height: tokens.spaceSm),
           Text(
-            'Your daily plan, shaped by what matters.',
+            context.l10n.onboardingWelcomeSubtitle1,
             style: theme.textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
           SizedBox(height: tokens.spaceSm),
           Text(
-            'Choose your values to get better suggestions.',
+            context.l10n.onboardingWelcomeSubtitle2,
             style: theme.textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
@@ -278,13 +280,13 @@ class _NameStep extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'What should we call you?',
+            context.l10n.onboardingNameTitle,
             style: theme.textTheme.displaySmall,
             textAlign: TextAlign.center,
           ),
           SizedBox(height: tokens.spaceSm),
           Text(
-            'Used on your profile and reminders.',
+            context.l10n.onboardingNameSubtitle,
             style: theme.textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
@@ -292,10 +294,10 @@ class _NameStep extends StatelessWidget {
           TextField(
             controller: controller,
             textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
-              labelText: 'Name',
-              hintText: 'Sebastian',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: context.l10n.nameLabel,
+              hintText: context.l10n.onboardingNameHint,
+              border: const OutlineInputBorder(),
             ),
           ),
         ],
@@ -321,7 +323,7 @@ class _ValuesStep extends StatelessWidget {
     final tokens = TasklyTokens.of(context);
     final scheme = theme.colorScheme;
 
-    final quickPicks = _quickPickTemplates();
+    final quickPicks = _quickPickTemplates(context.l10n);
     final canAddMore = selectedValues.length < _maxValues;
 
     return SingleChildScrollView(
@@ -335,25 +337,24 @@ class _ValuesStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Choose your top values',
+            context.l10n.onboardingValuesTitle,
             style: theme.textTheme.displaySmall,
           ),
           SizedBox(height: tokens.spaceSm),
           Text(
-            'Taskly suggests tasks based on these and helps balance what '
-            'matters most to you right now.',
+            context.l10n.onboardingValuesSubtitle,
             style: theme.textTheme.bodyLarge,
           ),
           SizedBox(height: tokens.spaceSm),
           Text(
-            'Pick 1-3 to start.',
+            context.l10n.onboardingValuesHint,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
           ),
           SizedBox(height: tokens.spaceLg),
           Text(
-            'Quick picks',
+            context.l10n.onboardingQuickPicksTitle,
             style: theme.textTheme.titleMedium,
           ),
           SizedBox(height: tokens.spaceSm),
@@ -368,17 +369,17 @@ class _ValuesStep extends StatelessWidget {
                 ? () => _openCustomValueSheet(context)
                 : null,
             icon: const Icon(Icons.add),
-            label: const Text('Custom value'),
+            label: Text(context.l10n.onboardingCustomValueLabel),
           ),
           SizedBox(height: tokens.spaceLg),
           Text(
-            'Your picks',
+            context.l10n.onboardingYourPicksTitle,
             style: theme.textTheme.titleMedium,
           ),
           SizedBox(height: tokens.spaceSm),
           if (selectedValues.isEmpty)
             Text(
-              'Pick at least 1 value to continue.',
+              context.l10n.onboardingPickAtLeastOneValue,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
@@ -403,35 +404,35 @@ class _ValuesStep extends StatelessWidget {
     );
   }
 
-  List<_QuickPickTemplate> _quickPickTemplates() {
+  List<_QuickPickTemplate> _quickPickTemplates(AppLocalizations l10n) {
     return [
       _QuickPickTemplate(
-        name: 'Health',
+        name: l10n.onboardingValueHealth,
         iconName: 'health',
         colorId: ColorUtils.valueGreenId,
       ),
       _QuickPickTemplate(
-        name: 'Relationships',
+        name: l10n.onboardingValueRelationships,
         iconName: 'group',
         colorId: ColorUtils.valueRoseId,
       ),
       _QuickPickTemplate(
-        name: 'Career',
+        name: l10n.onboardingValueCareer,
         iconName: 'work',
         colorId: ColorUtils.valueBlueId,
       ),
       _QuickPickTemplate(
-        name: 'Learning',
+        name: l10n.onboardingValueLearning,
         iconName: 'lightbulb',
         colorId: ColorUtils.valueVioletId,
       ),
       _QuickPickTemplate(
-        name: 'Home',
+        name: l10n.onboardingValueHome,
         iconName: 'home',
         colorId: ColorUtils.valueSlateId,
       ),
       _QuickPickTemplate(
-        name: 'Adventure',
+        name: l10n.onboardingValueAdventure,
         iconName: 'rocket',
         colorId: ColorUtils.valueAmberId,
       ),
@@ -629,12 +630,12 @@ class _SelectedValueRow extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'Edit',
+            tooltip: context.l10n.editLabel,
             icon: const Icon(Icons.edit_outlined),
             onPressed: onEdit,
           ),
           IconButton(
-            tooltip: 'Remove',
+            tooltip: context.l10n.removeLabel,
             icon: const Icon(Icons.close),
             onPressed: onRemove,
           ),
@@ -675,12 +676,12 @@ class _CustomValueSheetState extends State<_CustomValueSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Custom value',
+              context.l10n.onboardingCustomValueLabel,
               style: theme.textTheme.titleLarge,
             ),
             SizedBox(height: tokens.spaceSm),
             Text(
-              'Name it, pick an icon and color.',
+              context.l10n.onboardingCustomValueSubtitle,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
@@ -690,9 +691,9 @@ class _CustomValueSheetState extends State<_CustomValueSheet> {
               name: ValueFieldKeys.name.id,
               textInputAction: TextInputAction.next,
               maxLength: ValueValidators.maxNameLength,
-              decoration: const InputDecoration(
-                labelText: 'Value name',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: context.l10n.valueNameLabel,
+                border: const OutlineInputBorder(),
               ),
               validator: toFormBuilderValidator<String>(
                 ValueValidators.name,
@@ -726,11 +727,11 @@ class _CustomValueSheetState extends State<_CustomValueSheet> {
             SizedBox(height: tokens.spaceLg),
             FilledButton(
               onPressed: _handleSave,
-              child: const Text('Add value'),
+              child: Text(context.l10n.onboardingAddValueLabel),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Text(context.l10n.cancelLabel),
             ),
           ],
         ),

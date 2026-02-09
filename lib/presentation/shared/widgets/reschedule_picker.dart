@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/time.dart';
 
 sealed class RescheduleChoice {
@@ -37,6 +38,7 @@ Future<RescheduleChoice?> showRescheduleChoiceSheet(
     context: context,
     showDragHandle: true,
     builder: (sheetContext) {
+      final l10n = sheetContext.l10n;
       return SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -47,7 +49,7 @@ Future<RescheduleChoice?> showRescheduleChoiceSheet(
             ),
             ListTile(
               leading: const Icon(Icons.today),
-              title: const Text('Tomorrow'),
+              title: Text(l10n.dateTomorrow),
               onTap: () {
                 Navigator.of(sheetContext).pop(
                   RescheduleQuickChoice(tomorrow),
@@ -56,7 +58,7 @@ Future<RescheduleChoice?> showRescheduleChoiceSheet(
             ),
             ListTile(
               leading: const Icon(Icons.weekend_outlined),
-              title: const Text('This weekend'),
+              title: Text(l10n.dateThisWeekend),
               onTap: () {
                 Navigator.of(sheetContext).pop(
                   RescheduleQuickChoice(thisWeekend),
@@ -65,7 +67,7 @@ Future<RescheduleChoice?> showRescheduleChoiceSheet(
             ),
             ListTile(
               leading: const Icon(Icons.event),
-              title: const Text('Next week'),
+              title: Text(l10n.dateNextWeek),
               onTap: () {
                 Navigator.of(sheetContext).pop(
                   RescheduleQuickChoice(nextWeek),
@@ -74,7 +76,7 @@ Future<RescheduleChoice?> showRescheduleChoiceSheet(
             ),
             ListTile(
               leading: const Icon(Icons.calendar_today),
-              title: const Text('Pick a date'),
+              title: Text(l10n.pickDateLabel),
               onTap: () {
                 Navigator.of(sheetContext).pop(
                   const ReschedulePickDateChoice(),

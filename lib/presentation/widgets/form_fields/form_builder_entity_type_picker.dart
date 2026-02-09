@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/analytics.dart';
 
 /// FormBuilder field for selecting entity type.
@@ -62,7 +63,7 @@ class _EntityTypeSelector extends StatelessWidget {
         final isSelected = value == type;
 
         return FilterChip(
-          label: Text(_getLabel(type)),
+          label: Text(_getLabel(context, type)),
           avatar: Icon(
             _getIcon(type),
             size: 18,
@@ -83,14 +84,15 @@ class _EntityTypeSelector extends StatelessWidget {
     );
   }
 
-  String _getLabel(EntityType type) {
+  String _getLabel(BuildContext context, EntityType type) {
+    final l10n = context.l10n;
     switch (type) {
       case EntityType.task:
-        return 'Tasks';
+        return l10n.tasksTitle;
       case EntityType.project:
-        return 'Projects';
+        return l10n.projectsTitle;
       case EntityType.value:
-        return 'Values';
+        return l10n.valuesTitle;
     }
   }
 

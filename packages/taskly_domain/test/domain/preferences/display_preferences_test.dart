@@ -6,9 +6,9 @@ import '../../helpers/test_imports.dart';
 import 'package:taskly_domain/preferences.dart';
 
 void main() {
-  testSafe('DisplayPreferences.fromJson falls back to standard', () async {
+  testSafe('DisplayPreferences.fromJson falls back to compact', () async {
     final prefs = DisplayPreferences.fromJson(const <String, dynamic>{});
-    expect(prefs.density, DisplayDensity.standard);
+    expect(prefs.density, DisplayDensity.compact);
   });
 
   testSafe('DisplayPreferences serializes and restores density', () async {

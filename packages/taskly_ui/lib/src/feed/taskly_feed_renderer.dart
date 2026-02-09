@@ -85,6 +85,7 @@ class TasklyFeedRenderer extends StatelessWidget {
       TasklyStandardListSectionSpec(:final rows) => _RowList(
         rows: rows,
         emptyLabel: null,
+        addLabel: null,
         onAddRequested: null,
         entityRowPadding: entityRowPadding,
       ),
@@ -104,6 +105,7 @@ class TasklyFeedRenderer extends StatelessWidget {
         :final rows,
         :final emptyLabel,
         :final onAddRequested,
+        :final addLabel,
       ) =>
         _ScheduledDaySection(
           title: title,
@@ -111,6 +113,7 @@ class TasklyFeedRenderer extends StatelessWidget {
           rows: rows,
           emptyLabel: emptyLabel,
           onAddRequested: onAddRequested,
+          addLabel: addLabel,
           entityRowPadding: entityRowPadding,
         ),
       TasklyScheduledOverdueSectionSpec(
@@ -118,6 +121,7 @@ class TasklyFeedRenderer extends StatelessWidget {
         :final countLabel,
         :final rows,
         :final showMoreLabelBuilder,
+        :final emptyLabel,
         :final actionLabel,
         :final actionTooltip,
         :final onActionPressed,
@@ -127,6 +131,7 @@ class TasklyFeedRenderer extends StatelessWidget {
           countLabel: countLabel,
           rows: rows,
           showMoreLabelBuilder: showMoreLabelBuilder,
+          emptyLabel: emptyLabel,
           actionLabel: actionLabel,
           actionTooltip: actionTooltip,
           onActionPressed: onActionPressed,
@@ -222,12 +227,17 @@ class _RowList extends StatelessWidget {
     required this.rows,
     required this.emptyLabel,
     required this.onAddRequested,
+    required this.addLabel,
     this.entityRowPadding,
-  });
+  }) : assert(
+         onAddRequested == null || addLabel != null,
+         'addLabel is required when onAddRequested is provided.',
+       );
 
   final List<TasklyRowSpec> rows;
   final String? emptyLabel;
   final VoidCallback? onAddRequested;
+  final String? addLabel;
   final EdgeInsetsGeometry? entityRowPadding;
 
   @override
@@ -236,6 +246,7 @@ class _RowList extends StatelessWidget {
       return _EmptyRow(
         label: emptyLabel!,
         onAddRequested: onAddRequested,
+        addLabel: addLabel,
       );
     }
 
@@ -517,6 +528,7 @@ class _ScheduledDaySection extends StatelessWidget {
     required this.rows,
     required this.emptyLabel,
     required this.onAddRequested,
+    required this.addLabel,
     this.entityRowPadding,
   });
 
@@ -525,6 +537,7 @@ class _ScheduledDaySection extends StatelessWidget {
   final List<TasklyRowSpec> rows;
   final String? emptyLabel;
   final VoidCallback? onAddRequested;
+  final String? addLabel;
   final EdgeInsetsGeometry? entityRowPadding;
 
   @override
@@ -593,6 +606,7 @@ class _ScheduledDaySection extends StatelessWidget {
             rows: rows,
             emptyLabel: emptyLabel,
             onAddRequested: onAddRequested,
+            addLabel: addLabel,
             entityRowPadding: entityRowPadding,
           ),
         ],
@@ -602,10 +616,15 @@ class _ScheduledDaySection extends StatelessWidget {
 }
 
 class _EmptyRow extends StatelessWidget {
-  const _EmptyRow({required this.label, required this.onAddRequested});
+  const _EmptyRow({
+    required this.label,
+    required this.onAddRequested,
+    required this.addLabel,
+  });
 
   final String label;
   final VoidCallback? onAddRequested;
+  final String? addLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -646,7 +665,7 @@ class _EmptyRow extends StatelessWidget {
               TextButton.icon(
                 onPressed: onAddRequested,
                 icon: Icon(Icons.add_rounded, size: tokens.spaceLg2),
-                label: const Text('Add'),
+                label: Text(addLabel ?? ''),
                 style: TextButton.styleFrom(
                   padding: EdgeInsets.symmetric(
                     horizontal: tokens.spaceSm2,
@@ -668,6 +687,7 @@ class _ScheduledOverdueSection extends StatelessWidget {
     required this.countLabel,
     required this.rows,
     required this.showMoreLabelBuilder,
+    required this.emptyLabel,
     required this.actionLabel,
     required this.actionTooltip,
     required this.onActionPressed,
@@ -678,6 +698,7 @@ class _ScheduledOverdueSection extends StatelessWidget {
   final String countLabel;
   final List<TasklyRowSpec> rows;
   final String Function(int remaining, int total) showMoreLabelBuilder;
+  final String emptyLabel;
   final String? actionLabel;
   final String? actionTooltip;
   final VoidCallback? onActionPressed;
@@ -744,7 +765,7 @@ class _ScheduledOverdueSection extends StatelessWidget {
             Padding(
               padding: EdgeInsets.only(bottom: tokens.spaceSm),
               child: Text(
-                'Nothing overdue',
+                emptyLabel,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,

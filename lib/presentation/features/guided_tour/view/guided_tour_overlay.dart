@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/app/view/app.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
@@ -200,6 +201,13 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
         }
         return;
       }
+
+      final anchorContext = key.currentContext!;
+      if (!_isTargetFullyVisible(anchorContext) &&
+          attempt < _maxCoachmarkAttempts) {
+        _scrollAnchorIntoView(step, anchorContext, attempt + 1);
+        return;
+      }
     }
 
     _showCoachMark(step, state);
@@ -254,6 +262,51 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
     }
 
     coachMark.show(context: context);
+  }
+
+  bool _isTargetFullyVisible(BuildContext targetContext) {
+    final scrollable = Scrollable.maybeOf(targetContext);
+    if (scrollable == null) return true;
+    final targetBox = targetContext.findRenderObject();
+    final scrollBox = scrollable.context.findRenderObject();
+    if (targetBox is! RenderBox || scrollBox is! RenderBox) return true;
+    if (!targetBox.hasSize || !scrollBox.hasSize) return true;
+
+    final targetRect =
+        targetBox.localToGlobal(Offset.zero, ancestor: scrollBox) &
+        targetBox.size;
+    final viewportRect = Offset.zero & scrollBox.size;
+
+    if (!targetRect.overlaps(viewportRect)) return false;
+    if (targetRect.height <= viewportRect.height) {
+      return targetRect.top >= viewportRect.top &&
+          targetRect.bottom <= viewportRect.bottom;
+    }
+
+    final centerY = targetRect.center.dy;
+    return centerY >= viewportRect.top && centerY <= viewportRect.bottom;
+  }
+
+  void _scrollAnchorIntoView(
+    GuidedTourStep step,
+    BuildContext anchorContext,
+    int nextAttempt,
+  ) {
+    if (kDebugMode) {
+      debugPrint(
+        '[GuidedTourOverlay] scrolling to anchor '
+        '(step=${step.id}, target=${step.coachmark?.targetId}, attempt=$nextAttempt)',
+      );
+    }
+    Scrollable.ensureVisible(
+      anchorContext,
+      alignment: 0.1,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+    ).whenComplete(() {
+      if (!mounted) return;
+      _attemptShow(step, nextAttempt);
+    });
   }
 
   void _scheduleNavigation(GuidedTourStep step) {
@@ -688,14 +741,14 @@ class _GuidedTourContentCard extends StatelessWidget {
                 if (onBack != null)
                   TextButton(
                     onPressed: onBack,
-                    child: const Text('Back'),
+                    child: Text(context.l10n.backLabel),
                   )
                 else
                   const SizedBox(width: 72),
                 const Spacer(),
                 TextButton(
                   onPressed: onSkip,
-                  child: const Text('Skip'),
+                  child: Text(context.l10n.skipLabel),
                 ),
                 SizedBox(width: tokens.spaceSm),
                 FilledButton(

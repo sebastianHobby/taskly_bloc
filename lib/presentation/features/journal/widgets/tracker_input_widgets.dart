@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -47,7 +48,7 @@ class TrackerChoiceInput extends StatelessWidget {
             id: '',
             trackerId: '',
             choiceKey: '',
-            label: 'Choose option',
+            label: context.l10n.journalChooseOptionLabel,
             createdAt: DateTime(2000),
             updatedAt: DateTime(2000),
           ),
@@ -99,9 +100,9 @@ class TrackerChoiceInput extends StatelessWidget {
                   children: [
                     TextField(
                       controller: controller,
-                      decoration: const InputDecoration(
-                        labelText: 'Search options',
-                        prefixIcon: Icon(Icons.search),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.journalSearchOptionsLabel,
+                        prefixIcon: const Icon(Icons.search),
                       ),
                       onChanged: (_) {
                         debouncer.schedule(() {
@@ -114,7 +115,7 @@ class TrackerChoiceInput extends StatelessWidget {
                     if (selectedKey != null)
                       ListTile(
                         leading: const Icon(Icons.clear),
-                        title: const Text('Clear selection'),
+                        title: Text(context.l10n.journalClearSelectionLabel),
                         onTap: () {
                           next = null;
                           Navigator.of(context).pop();
@@ -217,13 +218,13 @@ class TrackerQuantityInput extends StatelessWidget {
             TextButton.icon(
               onPressed: !enabled ? null : () => _showEditSheet(context),
               icon: const Icon(Icons.edit),
-              label: const Text('Edit'),
+              label: Text(context.l10n.editLabel),
             ),
           ],
         ),
         if (showEditHint)
           Text(
-            'Tap to type a larger number.',
+            context.l10n.journalEditLargeNumberHint,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -256,14 +257,16 @@ class TrackerQuantityInput extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Edit value',
+                  context.l10n.journalEditValueTitle,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 SizedBox(height: TasklyTokens.of(context).spaceSm),
                 TextField(
                   controller: controller,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Value'),
+                  decoration: InputDecoration(
+                    labelText: context.l10n.valueLabel,
+                  ),
                   onChanged: (value) => nextValue = int.tryParse(value),
                 ),
                 SizedBox(height: TasklyTokens.of(context).spaceSm),
@@ -275,16 +278,16 @@ class TrackerQuantityInput extends StatelessWidget {
                           nextValue = null;
                           Navigator.of(context).pop();
                         },
-                        child: const Text('Clear'),
+                        child: Text(context.l10n.clearLabel),
                       ),
                     const Spacer(),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancel'),
+                      child: Text(context.l10n.cancelLabel),
                     ),
                     FilledButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Save'),
+                      child: Text(context.l10n.saveLabel),
                     ),
                   ],
                 ),

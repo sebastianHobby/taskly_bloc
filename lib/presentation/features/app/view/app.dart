@@ -530,13 +530,12 @@ class _DebugBootstrapperState extends State<_DebugBootstrapper> {
   }
 
   String? _currentPath() {
-    try {
-      final router = GoRouter.of(context);
-      final path = router.routeInformationProvider.value.uri.path;
-      return path.isEmpty ? null : path;
-    } catch (_) {
-      return null;
-    }
+    final navigatorContext = App.navigatorKey.currentContext;
+    final router = GoRouter.maybeOf(navigatorContext ?? context);
+    if (router == null) return null;
+
+    final path = router.routeInformationProvider.value.uri.path;
+    return path.isEmpty ? null : path;
   }
 
   bool _shouldDelayForRoute(String? path) {
@@ -600,7 +599,9 @@ class _SyncAnomalySnackBarListenerState
           ..hideCurrentSnackBar()
           ..showSnackBar(
             SnackBar(
-              content: Text('Sync anomaly: ${anomaly.debugSummary()}'),
+              content: Text(
+                context.l10n.syncAnomalySnack(anomaly.debugSummary()),
+              ),
               duration: const Duration(seconds: 4),
             ),
           );

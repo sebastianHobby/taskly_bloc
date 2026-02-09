@@ -3,6 +3,7 @@ library;
 
 import '../../helpers/test_imports.dart';
 import '../../helpers/test_db.dart';
+import '../../helpers/fixed_clock.dart';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:matcher/matcher.dart' as matcher;
@@ -89,6 +90,35 @@ void main() {
         () => repo.update(id: 'missing', name: 'Project', completed: false),
         throwsA(isA<NotFoundFailure>()),
       );
+    });
+
+    testSafe('bulkRescheduleDeadlines returns count on no-op update', () async {
+      final db = createAutoClosingDb();
+      final fixedNow = DateTime.utc(2026, 2, 9, 12);
+      final deadlineDay = DateTime.utc(2026, 2, 10);
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+        clock: FixedClock(fixedNow),
+      );
+
+      await repo.create(
+        name: 'Project',
+        valueIds: ['v1'],
+        deadlineDate: deadlineDay,
+      );
+      final id = (await db.select(db.projectTable).getSingle()).id;
+
+      final updated = await repo.bulkRescheduleDeadlines(
+        projectIds: [id],
+        deadlineDate: deadlineDay,
+      );
+
+      expect(updated, equals(1));
+      final row = await db.select(db.projectTable).getSingle();
+      expect(row.deadlineDate, equals(deadlineDay));
     });
 
     testSafe('setPinned updates pinned state', () async {

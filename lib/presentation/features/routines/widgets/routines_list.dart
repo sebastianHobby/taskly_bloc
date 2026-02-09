@@ -253,9 +253,13 @@ TasklyRowSpec _buildRow(
               completed: _completedToday(item),
             ),
     ),
-    style: density == DisplayDensity.compact
-        ? const TasklyRoutineRowStyle.compact()
-        : const TasklyRoutineRowStyle.standard(),
+    style: selectionMode
+        ? (density == DisplayDensity.compact
+              ? const TasklyRoutineRowStyle.bulkSelectionCompact()
+              : const TasklyRoutineRowStyle.bulkSelection())
+        : (density == DisplayDensity.compact
+              ? const TasklyRoutineRowStyle.compact()
+              : const TasklyRoutineRowStyle.standard()),
     actions: TasklyRoutineRowActions(
       onTap: handleTap,
       onPrimaryAction: selectionMode

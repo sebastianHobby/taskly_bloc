@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -105,7 +107,7 @@ class _CompactMoodSelector extends StatelessWidget {
         final isSelected = selected == mood;
         final color = _getMoodColor(mood, scheme);
         return ChoiceChip(
-          label: Text('${mood.emoji} ${mood.label}'),
+          label: Text('${mood.emoji} ${mood.localizedLabel(context.l10n)}'),
           selected: isSelected,
           onSelected: enabled ? (_) => onSelected(mood) : null,
           selectedColor: color.withValues(alpha: 0.2),
@@ -170,7 +172,7 @@ class _MoodOption extends StatelessWidget {
               ),
               SizedBox(height: tokens.spaceXs),
               Text(
-                mood.label,
+                mood.localizedLabel(context.l10n),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: isSelected ? color : theme.textTheme.bodySmall?.color,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

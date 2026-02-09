@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/navigation_bar_scaffold.dart';
 import 'package:taskly_bloc/presentation/app_shell/navigation_rail_scaffold.dart';
@@ -30,6 +31,7 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
     );
 
     const iconResolver = NavigationIconResolver();
+    final l10n = context.l10n;
 
     final primaryNavigationKeys = <String>[
       'my_day',
@@ -43,16 +45,16 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'settings',
     ];
 
-    const labels = <String, String>{
-      'my_day': 'My Day',
-      'inbox': 'Inbox',
-      'scheduled': 'Scheduled',
-      'projects': 'Projects',
-      'routines': 'Routines',
-      'journal': 'Journal',
-      'values': 'Values',
-      'statistics': 'Stats',
-      'settings': 'Settings',
+    final labels = <String, String>{
+      'my_day': l10n.myDayTitle,
+      'inbox': l10n.inboxLabel,
+      'scheduled': l10n.scheduledTitle,
+      'projects': l10n.projectsTitle,
+      'routines': l10n.routinesTitle,
+      'journal': l10n.journalTitle,
+      'values': l10n.valuesTitle,
+      'statistics': l10n.statisticsTitle,
+      'settings': l10n.settingsTitle,
     };
 
     const sortOrders = <String, int>{

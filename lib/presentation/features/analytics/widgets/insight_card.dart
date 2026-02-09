@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -16,6 +18,7 @@ class InsightCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Card(
       child: InkWell(
@@ -42,7 +45,7 @@ class InsightCard extends StatelessWidget {
                         ),
                         SizedBox(height: TasklyTokens.of(context).spaceSm),
                         Text(
-                          _getInsightTypeLabel(),
+                          _getInsightTypeLabel(l10n),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: _getInsightColor(context),
                             fontWeight: FontWeight.w500,
@@ -55,7 +58,7 @@ class InsightCard extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.close, size: 18),
                       onPressed: onDismiss,
-                      tooltip: 'Dismiss',
+                      tooltip: l10n.dismissLabel,
                     ),
                 ],
               ),
@@ -75,7 +78,9 @@ class InsightCard extends StatelessWidget {
                     ),
                     SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
-                      '${(insight.confidence! * 100).toStringAsFixed(0)}% confidence',
+                      l10n.insightConfidenceLabel(
+                        (insight.confidence! * 100).round(),
+                      ),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -89,7 +94,7 @@ class InsightCard extends StatelessWidget {
                   ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Text(
-                    _formatDateRange(),
+                    _formatDateRange(context),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -132,14 +137,14 @@ class InsightCard extends StatelessWidget {
     };
   }
 
-  String _getInsightTypeLabel() {
+  String _getInsightTypeLabel(AppLocalizations l10n) {
     return switch (insight.insightType) {
-      InsightType.correlationDiscovery => 'Correlation Discovery',
-      InsightType.trendAlert => 'Trend Alert',
-      InsightType.anomalyDetection => 'Anomaly Detected',
-      InsightType.productivityPattern => 'Productivity Pattern',
-      InsightType.moodPattern => 'Mood Pattern',
-      InsightType.recommendation => 'Recommendation',
+      InsightType.correlationDiscovery => l10n.insightTypeCorrelationDiscovery,
+      InsightType.trendAlert => l10n.insightTypeTrendAlert,
+      InsightType.anomalyDetection => l10n.insightTypeAnomalyDetected,
+      InsightType.productivityPattern => l10n.insightTypeProductivityPattern,
+      InsightType.moodPattern => l10n.insightTypeMoodPattern,
+      InsightType.recommendation => l10n.insightTypeRecommendation,
     };
   }
 
@@ -148,16 +153,23 @@ class InsightCard extends StatelessWidget {
     return insight.isPositive ? scheme.tertiary : scheme.secondary;
   }
 
-  String _formatDateRange() {
+  String _formatDateRange(BuildContext context) {
     final start = insight.periodStart;
     final end = insight.periodEnd;
+    final locale = Localizations.localeOf(context).toLanguageTag();
 
     if (start.year == end.year &&
         start.month == end.month &&
         start.day == end.day) {
-      return '${start.month}/${start.day}/${start.year}';
+      return DateFormat.yMMMd(locale).format(start);
     }
 
-    return '${start.month}/${start.day} - ${end.month}/${end.day}';
+    if (start.year == end.year) {
+      final formatter = DateFormat.MMMd(locale);
+      return '${formatter.format(start)} - ${formatter.format(end)}';
+    }
+
+    final formatter = DateFormat.yMMMd(locale);
+    return '${formatter.format(start)} - ${formatter.format(end)}';
   }
 }

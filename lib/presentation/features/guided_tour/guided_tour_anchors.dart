@@ -9,8 +9,7 @@ abstract final class GuidedTourAnchors {
   static final GlobalKey routinesScheduledExample = GlobalKey();
   static final GlobalKey routinesFlexibleExample = GlobalKey();
   static final GlobalKey planMyDayTriage = GlobalKey();
-  static final GlobalKey planMyDayScheduledRoutines = GlobalKey();
-  static final GlobalKey planMyDayFlexibleRoutines = GlobalKey();
+  static final GlobalKey planMyDayRoutinesBlock = GlobalKey();
   static final GlobalKey planMyDayValuesCard = GlobalKey();
 
   static GlobalKey? keyFor(String id) {
@@ -23,8 +22,7 @@ abstract final class GuidedTourAnchors {
       'routines_scheduled_example' => routinesScheduledExample,
       'routines_flexible_example' => routinesFlexibleExample,
       'plan_my_day_triage' => planMyDayTriage,
-      'plan_my_day_routines_scheduled' => planMyDayScheduledRoutines,
-      'plan_my_day_routines_flexible' => planMyDayFlexibleRoutines,
+      'plan_my_day_routines_block' => planMyDayRoutinesBlock,
       'plan_my_day_values_card' => planMyDayValuesCard,
       _ => null,
     };

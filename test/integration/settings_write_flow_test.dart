@@ -58,10 +58,9 @@ void main() {
       hasSelectedFocusMode: true,
       focusMode: FocusMode.intentional,
       strategySettings: StrategySettings(
-        urgentTaskBehavior: UrgentTaskBehavior.ignore,
         taskUrgencyThresholdDays: 2,
-        projectUrgencyThresholdDays: 5,
         enableNeglectWeighting: false,
+        anchorCount: 3,
       ),
     );
 
@@ -72,5 +71,6 @@ void main() {
         .firstWhere((value) => value.suggestionsPerBatch == 5);
     expect(watched.focusMode, FocusMode.intentional);
     expect(watched.strategySettings.taskUrgencyThresholdDays, 2);
+    expect(watched.strategySettings.anchorCount, 3);
   });
 }

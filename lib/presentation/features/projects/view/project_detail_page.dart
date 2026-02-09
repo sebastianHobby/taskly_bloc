@@ -18,11 +18,10 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rich_text_utils.dart';
-import 'package:taskly_bloc/presentation/shared/widgets/display_density_toggle.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
@@ -43,10 +42,6 @@ class ProjectDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompactScreen = Breakpoints.isCompact(
-      MediaQuery.sizeOf(context).width,
-    );
-
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -69,9 +64,7 @@ class ProjectDetailPage extends StatelessWidget {
           create: (context) => DisplayDensityBloc(
             settingsRepository: context.read<SettingsRepositoryContract>(),
             pageKey: PageKey.projectDetail,
-            defaultDensity: isCompactScreen
-                ? DisplayDensity.compact
-                : DisplayDensity.standard,
+            defaultDensity: DisplayDensity.compact,
           )..add(const DisplayDensityStarted()),
         ),
         BlocProvider(create: (_) => SelectionBloc()),
@@ -205,17 +198,18 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
       );
   }
 
-  Future<void> _showFilterSheet(DisplayDensity density) async {
+  Future<void> _showFilterSheet() async {
+    final l10n = context.l10n;
     await showFilterSortSheet(
       context: context,
       sortGroups: [
         FilterSortRadioGroup(
-          title: 'Sort',
+          title: l10n.sortLabel,
           options: [
             for (final order in _ProjectTaskSortOrder.values)
               FilterSortRadioOption(
                 value: order,
-                label: order.label,
+                label: order.label(l10n),
               ),
           ],
           selectedValue: _sortOrder,
@@ -223,25 +217,6 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
             if (value is! _ProjectTaskSortOrder) return;
             _updateSortOrder(value);
           },
-        ),
-      ],
-      sections: [
-        FilterSortSection(
-          title: 'View',
-          child: Builder(
-            builder: (sheetContext) {
-              return DisplayDensityToggle(
-                density: density,
-                onChanged: (next) {
-                  if (next == density) return;
-                  context.read<DisplayDensityBloc>().add(
-                    DisplayDensitySet(next),
-                  );
-                  Navigator.of(sheetContext).pop();
-                },
-              );
-            },
-          ),
         ),
       ],
       toggles: [
@@ -254,11 +229,23 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
     );
   }
 
+  Future<void> _showDensitySheet(DisplayDensity density) async {
+    await showDisplayDensitySheet(
+      context: context,
+      density: density,
+      onChanged: (next) {
+        context.read<DisplayDensityBloc>().add(DisplayDensitySet(next));
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final inboxId = ProjectGroupingRef.inbox().stableKey;
     final isInbox = widget.projectId == inboxId;
-    final appBarTitle = isInbox ? '' : 'Project details';
+    final appBarTitle = isInbox
+        ? context.l10n.inboxLabel
+        : context.l10n.projectDetailsTitle;
     final chrome = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
     final density = context.select(
@@ -289,7 +276,7 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
                   title: appBarTitle.isEmpty ? null : Text(appBarTitle),
                   leading: canPop
                       ? IconButton(
-                          tooltip: 'Back',
+                          tooltip: context.l10n.backLabel,
                           icon: const Icon(Icons.arrow_back),
                           style: iconButtonStyle,
                           onPressed: () => Navigator.of(context).maybePop(),
@@ -297,26 +284,18 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
                       : null,
                   actions: [
                     IconButton(
-                      tooltip: 'Filter & sort',
+                      tooltip: context.l10n.filterSortTooltip,
                       icon: const Icon(Icons.tune_rounded),
                       style: iconButtonStyle,
-                      onPressed: () => _showFilterSheet(density),
+                      onPressed: _showFilterSheet,
                     ),
                     BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
                       builder: (context, state) {
-                        if (state is! ProjectOverviewLoaded) {
-                          return const SizedBox.shrink();
-                        }
-
-                        final project = state.project;
-                        if (project.id ==
-                            ProjectGroupingRef.inbox().stableKey) {
-                          return const SizedBox.shrink();
-                        }
-
-                        final label = project.completed
-                            ? context.l10n.markIncompleteAction
-                            : context.l10n.markCompleteAction;
+                        final project = state is ProjectOverviewLoaded
+                            ? state.project
+                            : null;
+                        final isInboxProject =
+                            project?.id == ProjectGroupingRef.inbox().stableKey;
 
                         return TasklyOverflowMenuButton<
                           _ProjectDetailMenuAction
@@ -324,15 +303,38 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
                           tooltip: context.l10n.moreOptionsLabel,
                           icon: Icons.more_vert,
                           style: iconButtonStyle,
-                          itemsBuilder: (context) => [
-                            PopupMenuItem(
-                              value: _ProjectDetailMenuAction.toggleCompletion,
-                              child: TasklyMenuItemLabel(label),
-                            ),
-                          ],
+                          itemsBuilder: (context) {
+                            final items =
+                                <PopupMenuEntry<_ProjectDetailMenuAction>>[
+                                  PopupMenuItem(
+                                    value: _ProjectDetailMenuAction.density,
+                                    child: TasklyMenuItemLabel(
+                                      context.l10n.displayDensityTitle,
+                                    ),
+                                  ),
+                                ];
+
+                            if (project != null && !isInboxProject) {
+                              final label = project.completed
+                                  ? context.l10n.markIncompleteAction
+                                  : context.l10n.markCompleteAction;
+                              items.add(
+                                PopupMenuItem(
+                                  value:
+                                      _ProjectDetailMenuAction.toggleCompletion,
+                                  child: TasklyMenuItemLabel(label),
+                                ),
+                              );
+                            }
+
+                            return items;
+                          },
                           onSelected: (action) {
                             switch (action) {
+                              case _ProjectDetailMenuAction.density:
+                                _showDensitySheet(density);
                               case _ProjectDetailMenuAction.toggleCompletion:
+                                if (project == null || isInboxProject) return;
                                 unawaited(_toggleProjectCompletion(project));
                             }
                           },
@@ -481,8 +483,8 @@ class _ProjectDetailBody extends StatelessWidget {
     final rows = <TasklyRowSpec>[
       TasklyRowSpec.header(
         key: 'project-detail-open-header',
-        title: 'Tasks',
-        trailingLabel: '${orderedOpen.length} remaining',
+        title: context.l10n.tasksTitle,
+        trailingLabel: context.l10n.remainingCountLabel(orderedOpen.length),
       ),
       ...orderedOpen.map(
         (task) => _buildProjectTaskRow(
@@ -495,7 +497,7 @@ class _ProjectDetailBody extends StatelessWidget {
       if (orderedCompleted.isNotEmpty) ...[
         TasklyRowSpec.header(
           key: 'project-detail-completed-header',
-          title: 'Completed',
+          title: context.l10n.completedLabel,
         ),
         ...orderedCompleted.map(
           (task) => _buildProjectTaskRow(
@@ -530,10 +532,9 @@ class _ProjectDetailBody extends StatelessWidget {
                 spec: TasklyFeedSpec.empty(
                   empty: TasklyEmptyStateSpec(
                     icon: Icons.inbox_outlined,
-                    title: 'Inbox is for capture',
-                    description:
-                        "Sort into Projects when ready - that's what My Day pulls from.",
-                    actionLabel: 'Add to Inbox',
+                    title: context.l10n.inboxEmptyTitle,
+                    description: context.l10n.inboxEmptyDescription,
+                    actionLabel: context.l10n.inboxEmptyAction,
                     onAction: openInboxTaskEditor,
                   ),
                 ),
@@ -595,6 +596,7 @@ class _ProjectDetailHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final l10n = context.l10n;
     final inboxIcon = isInbox
         ? const NavigationIconResolver().resolve(
             screenId: 'inbox',
@@ -611,7 +613,8 @@ class _ProjectDetailHeader extends StatelessWidget {
 
     final primaryValue = data.leadingChip;
     final totalCount = data.taskCount;
-    final completedCount = data.completedTaskCount;
+    final completedCount = data.completedTaskCount ?? 0;
+    final hasCompletedCount = data.completedTaskCount != null;
 
     final metaChildren = <Widget>[];
 
@@ -627,7 +630,7 @@ class _ProjectDetailHeader extends StatelessWidget {
       }
 
       if (totalCount != null) {
-        final showCompletionRatio = completedCount != null;
+        final showCompletionRatio = hasCompletedCount;
         metaChildren.add(
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -644,8 +647,11 @@ class _ProjectDetailHeader extends StatelessWidget {
               SizedBox(width: tokens.spaceXs),
               Text(
                 showCompletionRatio
-                    ? '$completedCount/$totalCount tasks'
-                    : '$totalCount tasks',
+                    ? l10n.projectTaskCompletionRatioLabel(
+                        completedCount,
+                        totalCount,
+                      )
+                    : l10n.tasksCountLabel(totalCount),
                 style: metaStyle,
               ),
             ],
@@ -665,7 +671,7 @@ class _ProjectDetailHeader extends StatelessWidget {
             icon: Icons.flag_rounded,
             label: (dueLabel != null && dueLabel.isNotEmpty)
                 ? dueLabel
-                : '$dueSoon due soon',
+                : l10n.projectDueSoonLabel(dueSoon),
             color: dueColor,
             textStyle: metaStyle,
           ),
@@ -704,7 +710,7 @@ class _ProjectDetailHeader extends StatelessWidget {
         ),
         if (canEdit)
           IconButton(
-            tooltip: 'Edit project',
+            tooltip: context.l10n.editProjectLabel,
             onPressed: onEditRequested,
             icon: const Icon(Icons.edit_rounded),
             style: IconButton.styleFrom(
@@ -1003,7 +1009,9 @@ TasklyRowSpec _buildProjectTaskRow(
   );
 
   final style = selectionState.isSelectionMode
-      ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
+      ? (density == DisplayDensity.compact
+            ? TasklyTaskRowStyle.bulkSelectionCompact(selected: isSelected)
+            : TasklyTaskRowStyle.bulkSelection(selected: isSelected))
       : (density == DisplayDensity.compact
             ? const TasklyTaskRowStyle.compact()
             : const TasklyTaskRowStyle.standard());
@@ -1097,6 +1105,7 @@ int _countDueSoon(
 }
 
 enum _ProjectDetailMenuAction {
+  density,
   toggleCompletion,
 }
 
@@ -1111,15 +1120,15 @@ enum _ProjectTaskSortOrder {
 }
 
 extension _ProjectTaskSortOrderLabels on _ProjectTaskSortOrder {
-  String get label {
+  String label(AppLocalizations l10n) {
     return switch (this) {
-      _ProjectTaskSortOrder.listOrder => 'Default',
-      _ProjectTaskSortOrder.recentlyUpdated => 'Recently updated',
-      _ProjectTaskSortOrder.alphabetical => 'A–Z',
-      _ProjectTaskSortOrder.priority => 'Priority',
-      _ProjectTaskSortOrder.dueDate => 'Due date',
-      _ProjectTaskSortOrder.valuePriority => 'Value priority',
-      _ProjectTaskSortOrder.valueName => 'Value name (A-Z)',
+      _ProjectTaskSortOrder.listOrder => l10n.sortDefault,
+      _ProjectTaskSortOrder.recentlyUpdated => l10n.sortRecentlyUpdated,
+      _ProjectTaskSortOrder.alphabetical => l10n.sortAlphabetical,
+      _ProjectTaskSortOrder.priority => l10n.sortPriority,
+      _ProjectTaskSortOrder.dueDate => l10n.sortDueDate,
+      _ProjectTaskSortOrder.valuePriority => l10n.sortValuePriority,
+      _ProjectTaskSortOrder.valueName => l10n.sortValueName,
     };
   }
 }

@@ -44,7 +44,6 @@ abstract class GlobalSettings with _$GlobalSettings {
     int maintenanceDeadlineRiskDueWithinDays,
     @Default(GlobalSettings.defaultMaintenanceDeadlineRiskMinUnscheduledCount)
     int maintenanceDeadlineRiskMinUnscheduledCount,
-    @Default(true) bool maintenanceDueSoonEnabled,
     @Default(true) bool maintenanceStaleEnabled,
     @Default(GlobalSettings.defaultMaintenanceTaskStaleThresholdDays)
     int maintenanceTaskStaleThresholdDays,
@@ -121,8 +120,6 @@ abstract class GlobalSettings with _$GlobalSettings {
             maintenanceDeadlineRiskMinUnscheduledCountMin,
             maintenanceDeadlineRiskMinUnscheduledCountMax,
           ),
-      maintenanceDueSoonEnabled:
-          json['maintenanceDueSoonEnabled'] as bool? ?? true,
       maintenanceStaleEnabled: json['maintenanceStaleEnabled'] as bool? ?? true,
       maintenanceTaskStaleThresholdDays: rawMaintenanceTaskStaleThresholdDays
           .clamp(
@@ -244,7 +241,6 @@ extension GlobalSettingsJson on GlobalSettings {
           GlobalSettings.maintenanceDeadlineRiskMinUnscheduledCountMin,
           GlobalSettings.maintenanceDeadlineRiskMinUnscheduledCountMax,
         ),
-    'maintenanceDueSoonEnabled': maintenanceDueSoonEnabled,
     'maintenanceStaleEnabled': maintenanceStaleEnabled,
     'maintenanceTaskStaleThresholdDays': maintenanceTaskStaleThresholdDays
         .clamp(

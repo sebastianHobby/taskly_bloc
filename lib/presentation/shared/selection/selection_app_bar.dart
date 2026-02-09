@@ -44,18 +44,18 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
             },
             icon: const Icon(Icons.close),
           ),
-          title: Text('${state.selectedCount} selected'),
+          title: Text(context.l10n.selectedCountLabel(state.selectedCount)),
           actions: [
             if (actions.isEnabled(BulkActionKind.complete))
               IconButton(
-                tooltip: 'Complete',
+                tooltip: context.l10n.completeLabel,
                 onPressed: () =>
                     _completeOrUncomplete(context, completed: true),
                 icon: const Icon(Icons.check_rounded),
               ),
             if (actions.isEnabled(BulkActionKind.uncomplete))
               IconButton(
-                tooltip: 'Mark incomplete',
+                tooltip: context.l10n.markIncompleteAction,
                 onPressed: () =>
                     _completeOrUncomplete(context, completed: false),
                 icon: const Icon(Icons.restart_alt_rounded),
@@ -66,19 +66,19 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
               itemBuilder: (context) {
                 return <PopupMenuEntry<_SelectionMenuItem>>[
                   if (actions.isEnabled(BulkActionKind.moveToProject))
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: _SelectionMenuItem.moveToProject,
-                      child: Text('Move to project'),
+                      child: Text(context.l10n.moveToProjectAction),
                     ),
                   if (actions.isEnabled(BulkActionKind.completeSeries))
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: _SelectionMenuItem.completeSeries,
-                      child: Text('Complete series'),
+                      child: Text(context.l10n.completeSeriesAction),
                     ),
                   const PopupMenuDivider(),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: _SelectionMenuItem.delete,
-                    child: Text('Delete'),
+                    child: Text(context.l10n.deleteLabel),
                   ),
                 ];
               },
@@ -224,7 +224,7 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     final confirmed = await ConfirmationDialog.show(
       context,
-      title: 'Delete ${metas.length} item${metas.length == 1 ? '' : 's'}?',
+      title: context.l10n.deleteItemsConfirmationTitle(metas.length),
       confirmLabel: context.l10n.deleteLabel,
       cancelLabel: context.l10n.cancelLabel,
       isDestructive: true,
@@ -233,9 +233,7 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
       iconBackgroundColor: Theme.of(
         context,
       ).colorScheme.errorContainer.withValues(alpha: 0.3),
-      content: const Text(
-        'This action cannot be undone.',
-      ),
+      content: Text(context.l10n.deleteConfirmationIrreversibleDescription),
     );
 
     if (!context.mounted || !confirmed) return;

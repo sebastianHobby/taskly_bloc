@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 
 /// Shows a dialog asking the user to confirm discarding unsaved changes.
 ///
@@ -16,28 +17,33 @@ import 'package:flutter/material.dart';
 /// ```
 Future<bool?> showDiscardDialog(
   BuildContext context, {
-  String title = 'Discard changes?',
-  String content =
-      'You have unsaved changes. Are you sure you want to discard them?',
-  String keepEditingText = 'Keep Editing',
-  String discardText = 'Discard',
+  String? title,
+  String? content,
+  String? keepEditingText,
+  String? discardText,
 }) {
+  final l10n = context.l10n;
+  final effectiveTitle = title ?? l10n.discardChangesTitle;
+  final effectiveContent = content ?? l10n.discardChangesBody;
+  final effectiveKeepEditing = keepEditingText ?? l10n.keepEditingLabel;
+  final effectiveDiscard = discardText ?? l10n.discardLabel;
+
   return showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text(title),
-      content: Text(content),
+      title: Text(effectiveTitle),
+      content: Text(effectiveContent),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: Text(keepEditingText),
+          child: Text(effectiveKeepEditing),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(true),
           style: FilledButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
-          child: Text(discardText),
+          child: Text(effectiveDiscard),
         ),
       ],
     ),

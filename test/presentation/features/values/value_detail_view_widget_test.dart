@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_imports.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_detail_view.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/value_form.dart';
@@ -74,6 +75,7 @@ void main() {
       child: const ValueDetailSheetView(valueId: 'value-1'),
     );
 
-    expect(find.text('Something went wrong'), findsOneWidget);
+    final l10n = tester.element(find.byType(ValueDetailSheetView)).l10n;
+    expect(find.text(l10n.genericErrorFallback), findsOneWidget);
   });
 }

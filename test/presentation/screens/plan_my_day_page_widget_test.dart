@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/test_imports.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
@@ -90,6 +91,10 @@ void main() {
     });
   }
 
+  AppLocalizations l10nFor(WidgetTester tester) {
+    return tester.element(find.byType(PlanMyDayPage)).l10n;
+  }
+
   testWidgetsSafe('plan my day shows loading state', (tester) async {
     const state = PlanMyDayLoading();
     const gateState = MyDayGateLoaded(needsValuesSetup: false);
@@ -155,6 +160,7 @@ void main() {
           neglectScore: 0,
           visibleCount: 1,
           expanded: true,
+          isSpotlight: false,
         ),
       ],
     );
@@ -180,6 +186,125 @@ void main() {
     expect(find.text('Health'), findsOneWidget);
     expect(find.text('Morning walk'), findsOneWidget);
   });
+
+  testWidgetsSafe('plan my day shows spotlight badge for value group', (
+    tester,
+  ) async {
+    final value = TestData.value(id: 'value-1', name: 'Family');
+    final task = TestData.task(
+      id: 'task-1',
+      name: 'Call parents',
+      values: [value],
+    );
+    final state = buildReady(
+      valueGroups: [
+        PlanMyDayValueSuggestionGroup(
+          valueId: value.id,
+          value: value,
+          tasks: [task],
+          attentionNeeded: true,
+          neglectScore: 0.3,
+          visibleCount: 1,
+          expanded: true,
+          isSpotlight: true,
+        ),
+      ],
+    );
+    const gateState = MyDayGateLoaded(needsValuesSetup: false);
+
+    when(() => planBloc.state).thenReturn(state);
+    whenListen(planBloc, Stream.value(state), initialState: state);
+    when(() => gateBloc.state).thenReturn(gateState);
+    whenListen(gateBloc, Stream.value(gateState), initialState: gateState);
+
+    await tester.pumpWidgetWithBlocs(
+      providers: [
+        BlocProvider<PlanMyDayBloc>.value(value: planBloc),
+        BlocProvider<MyDayGateBloc>.value(value: gateBloc),
+      ],
+      child: RepositoryProvider<NowService>.value(
+        value: nowService,
+        child: PlanMyDayPage(onCloseRequested: () {}),
+      ),
+    );
+    await tester.pumpForStream();
+
+    final l10n = l10nFor(tester);
+    expect(find.text(l10n.myDayPlanSpotlightLabel), findsOneWidget);
+    expect(find.text('Family'), findsOneWidget);
+  });
+
+  testWidgetsSafe(
+    'plan my day renders spotlight group before other values',
+    (tester) async {
+      final spotlightValue = TestData.value(
+        id: 'value-spotlight',
+        name: 'Family',
+      );
+      final otherValue = TestData.value(
+        id: 'value-other',
+        name: 'Health',
+      );
+      final spotlightTask = TestData.task(
+        id: 'task-spotlight',
+        name: 'Call parents',
+        values: [spotlightValue],
+      );
+      final otherTask = TestData.task(
+        id: 'task-other',
+        name: 'Morning walk',
+        values: [otherValue],
+      );
+
+      final state = buildReady(
+        valueGroups: [
+          PlanMyDayValueSuggestionGroup(
+            valueId: spotlightValue.id,
+            value: spotlightValue,
+            tasks: [spotlightTask],
+            attentionNeeded: true,
+            neglectScore: 0.3,
+            visibleCount: 1,
+            expanded: true,
+            isSpotlight: true,
+          ),
+          PlanMyDayValueSuggestionGroup(
+            valueId: otherValue.id,
+            value: otherValue,
+            tasks: [otherTask],
+            attentionNeeded: false,
+            neglectScore: 0.0,
+            visibleCount: 1,
+            expanded: true,
+            isSpotlight: false,
+          ),
+        ],
+      );
+      const gateState = MyDayGateLoaded(needsValuesSetup: false);
+
+      when(() => planBloc.state).thenReturn(state);
+      whenListen(planBloc, Stream.value(state), initialState: state);
+      when(() => gateBloc.state).thenReturn(gateState);
+      whenListen(gateBloc, Stream.value(gateState), initialState: gateState);
+
+      await tester.pumpWidgetWithBlocs(
+        providers: [
+          BlocProvider<PlanMyDayBloc>.value(value: planBloc),
+          BlocProvider<MyDayGateBloc>.value(value: gateBloc),
+        ],
+        child: RepositoryProvider<NowService>.value(
+          value: nowService,
+          child: PlanMyDayPage(onCloseRequested: () {}),
+        ),
+      );
+      await tester.pumpForStream();
+
+      final spotlightOffset = tester.getTopLeft(find.text('Family'));
+      final otherOffset = tester.getTopLeft(find.text('Health'));
+
+      expect(spotlightOffset.dy, lessThan(otherOffset.dy));
+    },
+  );
 
   testWidgetsSafe('plan my day shows due and yesterday shelves', (
     tester,
@@ -220,8 +345,9 @@ void main() {
     );
     await tester.pumpForStream();
 
-    expect(find.text('Due Today'), findsOneWidget);
-    expect(find.text('Yesterday'), findsOneWidget);
+    final l10n = l10nFor(tester);
+    expect(find.text(l10n.planMyDayDueTodayTitle), findsWidgets);
+    expect(find.text(l10n.planMyDayYesterdayTitle), findsWidgets);
     expect(find.text('Pay rent'), findsOneWidget);
     expect(find.text('Prep meeting notes'), findsOneWidget);
   });
@@ -265,9 +391,10 @@ void main() {
       expect(find.text('Task 1'), findsOneWidget);
       expect(find.text('Task 4'), findsOneWidget);
       expect(find.text('Task 5'), findsNothing);
-      expect(find.text('Show 1 more (5)'), findsOneWidget);
+      final l10n = l10nFor(tester);
+      expect(find.text(l10n.myDayPlanShowMore(1, 5)), findsOneWidget);
 
-      await tester.tap(find.text('Show 1 more (5)'));
+      await tester.tap(find.text(l10n.myDayPlanShowMore(1, 5)));
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Task 5'), findsOneWidget);
@@ -308,11 +435,12 @@ void main() {
       );
       await tester.pumpForStream();
 
-      await tester.tap(find.text('Reschedule all due'));
+      final l10n = l10nFor(tester);
+      await tester.tap(find.text(l10n.planMyDayRescheduleAllDueAction));
       await tester.pump(const Duration(milliseconds: 300));
 
       final tomorrowTile = tester.widget<ListTile>(
-        find.widgetWithText(ListTile, 'Tomorrow'),
+        find.widgetWithText(ListTile, l10n.dateTomorrow),
       );
       expect(tomorrowTile.onTap, isNotNull);
       tomorrowTile.onTap!();
@@ -359,11 +487,12 @@ void main() {
       );
       await tester.pumpForStream();
 
-      await tester.tap(find.text('Reschedule all'));
+      final l10n = l10nFor(tester);
+      await tester.tap(find.text(l10n.planMyDayRescheduleAllAction));
       await tester.pump(const Duration(milliseconds: 300));
 
       final tomorrowTile = tester.widget<ListTile>(
-        find.widgetWithText(ListTile, 'Tomorrow'),
+        find.widgetWithText(ListTile, l10n.dateTomorrow),
       );
       expect(tomorrowTile.onTap, isNotNull);
       tomorrowTile.onTap!();

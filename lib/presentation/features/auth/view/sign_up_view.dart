@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -85,13 +86,13 @@ class _SignUpViewState extends State<SignUpView> {
                     ),
                     SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
-                      'Create Account',
+                      context.l10n.authSignUpTitle,
                       style: Theme.of(context).textTheme.displaySmall,
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
-                      'Sign up to start managing your tasks',
+                      context.l10n.authSignUpSubtitle,
                       style: Theme.of(context).textTheme.bodyLarge,
                       textAlign: TextAlign.center,
                     ),
@@ -105,18 +106,18 @@ class _SignUpViewState extends State<SignUpView> {
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.email],
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        hintText: 'Enter your email',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.authEmailLabel,
+                        hintText: context.l10n.authEmailHint,
+                        prefixIcon: const Icon(Icons.email_outlined),
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
+                          return context.l10n.authEmailRequired;
                         }
                         if (!value.contains('@')) {
-                          return 'Please enter a valid email';
+                          return context.l10n.authEmailInvalid;
                         }
                         return null;
                       },
@@ -128,8 +129,8 @@ class _SignUpViewState extends State<SignUpView> {
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.newPassword],
                       decoration: InputDecoration(
-                        labelText: 'Password',
-                        hintText: 'Enter your password',
+                        labelText: context.l10n.authPasswordLabel,
+                        hintText: context.l10n.authPasswordHint,
                         prefixIcon: const Icon(Icons.lock_outlined),
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
@@ -147,10 +148,10 @@ class _SignUpViewState extends State<SignUpView> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
+                          return context.l10n.authPasswordRequired;
                         }
                         if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
+                          return context.l10n.authPasswordMinLength(6);
                         }
                         return null;
                       },
@@ -162,8 +163,8 @@ class _SignUpViewState extends State<SignUpView> {
                       textInputAction: TextInputAction.done,
                       autofillHints: const [AutofillHints.newPassword],
                       decoration: InputDecoration(
-                        labelText: 'Confirm Password',
-                        hintText: 'Re-enter your password',
+                        labelText: context.l10n.authConfirmPasswordLabel,
+                        hintText: context.l10n.authConfirmPasswordHint,
                         prefixIcon: const Icon(Icons.lock_outlined),
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
@@ -182,10 +183,10 @@ class _SignUpViewState extends State<SignUpView> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please confirm your password';
+                          return context.l10n.authConfirmPasswordRequired;
                         }
                         if (value != _passwordController.text) {
-                          return 'Passwords do not match';
+                          return context.l10n.authPasswordMismatch;
                         }
                         return null;
                       },
@@ -208,7 +209,7 @@ class _SignUpViewState extends State<SignUpView> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : const Text('Sign Up'),
+                                : Text(context.l10n.authSignUpButton),
                           ),
                         );
                       },
@@ -219,12 +220,12 @@ class _SignUpViewState extends State<SignUpView> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          'Already have an account? ',
+                          '${context.l10n.authAlreadyHaveAccount} ',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         TextButton(
                           onPressed: () => context.go('/sign-in'),
-                          child: const Text('Sign In'),
+                          child: Text(context.l10n.authSignInButton),
                         ),
                       ],
                     ),

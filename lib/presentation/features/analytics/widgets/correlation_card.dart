@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -16,6 +17,7 @@ class CorrelationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
 
     return Card(
       child: InkWell(
@@ -35,14 +37,17 @@ class CorrelationCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${correlation.sourceLabel} → ${correlation.targetLabel}',
+                          l10n.analyticsCorrelationTitle(
+                            correlation.sourceLabel,
+                            correlation.targetLabel,
+                          ),
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         SizedBox(height: TasklyTokens.of(context).spaceSm),
                         Text(
-                          _getStrengthLabel(),
+                          _getStrengthLabel(l10n),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: _getStrengthColor(context),
                             fontWeight: FontWeight.w500,
@@ -73,7 +78,9 @@ class CorrelationCard extends StatelessWidget {
                     ),
                     SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
-                      '${correlation.differencePercent!.abs().toStringAsFixed(0)}% difference',
+                      l10n.analyticsDifferenceLabel(
+                        correlation.differencePercent!.abs().round(),
+                      ),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -83,7 +90,7 @@ class CorrelationCard extends StatelessWidget {
               ],
               SizedBox(height: TasklyTokens.of(context).spaceSm),
               Text(
-                'Sample size: ${correlation.sampleSize} days',
+                l10n.analyticsSampleSizeLabel(correlation.sampleSize ?? 0),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -138,15 +145,19 @@ class CorrelationCard extends StatelessWidget {
     );
   }
 
-  String _getStrengthLabel() {
+  String _getStrengthLabel(AppLocalizations l10n) {
     return switch (correlation.strength) {
-      CorrelationStrength.strongPositive => 'Strong Positive',
-      CorrelationStrength.moderatePositive => 'Moderate Positive',
-      CorrelationStrength.weakPositive => 'Weak Positive',
-      CorrelationStrength.negligible => 'Negligible',
-      CorrelationStrength.weakNegative => 'Weak Negative',
-      CorrelationStrength.moderateNegative => 'Moderate Negative',
-      CorrelationStrength.strongNegative => 'Strong Negative',
+      CorrelationStrength.strongPositive =>
+        l10n.analyticsStrengthStrongPositive,
+      CorrelationStrength.moderatePositive =>
+        l10n.analyticsStrengthModeratePositive,
+      CorrelationStrength.weakPositive => l10n.analyticsStrengthWeakPositive,
+      CorrelationStrength.negligible => l10n.analyticsStrengthNegligible,
+      CorrelationStrength.weakNegative => l10n.analyticsStrengthWeakNegative,
+      CorrelationStrength.moderateNegative =>
+        l10n.analyticsStrengthModerateNegative,
+      CorrelationStrength.strongNegative =>
+        l10n.analyticsStrengthStrongNegative,
     };
   }
 
@@ -175,8 +186,12 @@ class CorrelationCard extends StatelessWidget {
         SizedBox(height: TasklyTokens.of(context).spaceSm),
         Text(
           sig.isSignificant
-              ? 'Statistically significant (p=${sig.pValue.toStringAsFixed(3)})'
-              : 'Not statistically significant (p=${sig.pValue.toStringAsFixed(3)})',
+              ? context.l10n.analyticsSignificantLabel(
+                  sig.pValue.toStringAsFixed(3),
+                )
+              : context.l10n.analyticsNotSignificantLabel(
+                  sig.pValue.toStringAsFixed(3),
+                ),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
             fontSize: 11,
@@ -191,7 +206,10 @@ class CorrelationCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Text(
-      'Calculated in ${perf.calculationTimeMs}ms using ${perf.algorithm}',
+      context.l10n.analyticsPerformanceLabel(
+        perf.calculationTimeMs,
+        perf.algorithm,
+      ),
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
         fontSize: 10,

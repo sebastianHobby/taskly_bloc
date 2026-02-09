@@ -111,7 +111,8 @@ When **Suggestion signal** is set to ratings-based:
 
 ### 4.2 Bounded value balancing ("Keep my values in balance")
 
-When enabled, the engine may perform a **bounded quota repair** pass:
+Value balancing is **enabled by default** in behavior-based mode and is not
+user-tunable. The engine may perform a **bounded quota repair** pass:
 
 - Uses recent completion counts per value (via analytics) to identify values the
   user has focused on less recently.
@@ -152,6 +153,10 @@ threshold (20%), the top task for the most-neglected value is **moved to the
 front** of the suggestion list. This does not change quotas; it is a visual
 ordering cue for the first row only.
 
+Plan My Day presentation mirrors this cue by pinning the spotlight value group
+first and surfacing a "Spotlight" badge on that value header while preserving
+the domain ordering within the group.
+
 ### 4.6 Per-value suggestion pools (Plan My Day)
 
 For the Plan My Day ritual, suggested picks are now **pooled per value** to
@@ -168,11 +173,15 @@ support progressive disclosure in the UI:
 
 User-facing setting:
 
-- **Keep my values in balance** -> `AllocationConfig.strategySettings.enableNeglectWeighting`
 - **Suggestion signal** -> `AllocationConfig.suggestionSignal`
   - Behavior-based (Completions + balance)
   - Ratings-based (Values + weekly ratings)
 - **Suggested batch size** -> `AllocationConfig.suggestionsPerBatch`
+
+Internal default (not user-facing):
+
+- `AllocationConfig.strategySettings.enableNeglectWeighting` defaults to `true`
+  and controls whether bounded value balancing runs in behavior-based mode.
 
 Implementation notes:
 

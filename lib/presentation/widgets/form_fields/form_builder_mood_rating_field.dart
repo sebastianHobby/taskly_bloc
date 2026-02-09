@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -85,7 +87,7 @@ class FormBuilderMoodRatingField
                              if (widget.showLabels) ...[
                                SizedBox(height: tokens.spaceXs),
                                Text(
-                                 mood.label,
+                                 mood.localizedLabel(state.context.l10n),
                                  style: theme.textTheme.bodySmall?.copyWith(
                                    color: isSelected
                                        ? _getMoodColor(mood, colorScheme)

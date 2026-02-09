@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
@@ -17,9 +18,10 @@ class NotFoundRoutePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final text = message?.trim().isNotEmpty ?? false
         ? message!.trim()
-        : 'Page not found';
+        : l10n.notFoundTitle;
 
     if (details != null && details!.trim().isNotEmpty) {
       AppLog.routineThrottled(
@@ -37,8 +39,8 @@ class NotFoundRoutePage extends StatelessWidget {
           empty: TasklyEmptyStateSpec(
             icon: Icons.warning_amber_rounded,
             title: text,
-            description: 'This page does not exist.',
-            actionLabel: 'Go Home',
+            description: l10n.notFoundDescription,
+            actionLabel: l10n.notFoundActionLabel,
             onAction: () =>
                 GoRouter.of(context).go(Routing.screenPath('my_day')),
           ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
@@ -33,10 +34,10 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
         selectedIndex: selectedIndex,
         destinations: [
           ...visible.map(_toNavDestination),
-          const NavigationDestination(
-            label: 'More',
-            icon: Icon(Icons.more_horiz),
-            selectedIcon: Icon(Icons.more_horiz),
+          NavigationDestination(
+            label: context.l10n.moreLabel,
+            icon: const Icon(Icons.more_horiz),
+            selectedIcon: const Icon(Icons.more_horiz),
           ),
         ],
         onDestinationSelected: (index) {

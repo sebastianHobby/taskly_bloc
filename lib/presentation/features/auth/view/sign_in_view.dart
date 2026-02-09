@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -69,13 +70,13 @@ class _SignInViewState extends State<SignInView> {
                     ),
                     SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
-                      'Welcome to Taskly',
+                      context.l10n.authWelcomeTitle,
                       style: Theme.of(context).textTheme.displaySmall,
                       textAlign: TextAlign.center,
                     ),
                     SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
-                      'Sign in to manage your tasks',
+                      context.l10n.authSignInSubtitle,
                       style: Theme.of(context).textTheme.bodyLarge,
                       textAlign: TextAlign.center,
                     ),
@@ -89,18 +90,18 @@ class _SignInViewState extends State<SignInView> {
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.email],
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        hintText: 'Enter your email',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.authEmailLabel,
+                        hintText: context.l10n.authEmailHint,
+                        prefixIcon: const Icon(Icons.email_outlined),
+                        border: const OutlineInputBorder(),
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
+                          return context.l10n.authEmailRequired;
                         }
                         if (!value.contains('@')) {
-                          return 'Please enter a valid email';
+                          return context.l10n.authEmailInvalid;
                         }
                         return null;
                       },
@@ -112,8 +113,8 @@ class _SignInViewState extends State<SignInView> {
                       textInputAction: TextInputAction.done,
                       autofillHints: const [AutofillHints.password],
                       decoration: InputDecoration(
-                        labelText: 'Password',
-                        hintText: 'Enter your password',
+                        labelText: context.l10n.authPasswordLabel,
+                        hintText: context.l10n.authPasswordHint,
                         prefixIcon: const Icon(Icons.lock_outlined),
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
@@ -131,7 +132,7 @@ class _SignInViewState extends State<SignInView> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
+                          return context.l10n.authPasswordRequired;
                         }
                         return null;
                       },
@@ -154,7 +155,7 @@ class _SignInViewState extends State<SignInView> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : const Text('Sign In'),
+                                : Text(context.l10n.authSignInButton),
                           ),
                         );
                       },
@@ -165,18 +166,18 @@ class _SignInViewState extends State<SignInView> {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          "Don't have an account? ",
+                          '${context.l10n.authNoAccountPrompt} ',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         TextButton(
                           onPressed: () => context.go('/sign-up'),
-                          child: const Text('Sign Up'),
+                          child: Text(context.l10n.authSignUpButton),
                         ),
                       ],
                     ),
                     TextButton(
                       onPressed: () => context.go('/forgot-password'),
-                      child: const Text('Forgot Password?'),
+                      child: Text(context.l10n.authForgotPasswordLink),
                     ),
                   ],
                 ),

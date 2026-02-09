@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -11,6 +12,8 @@ class AccentPaletteGallery extends StatelessWidget {
     required this.palettes,
     required this.selectedSeedArgb,
     required this.onSelected,
+    this.padding,
+    this.showHeader = true,
     super.key,
   });
 
@@ -19,6 +22,8 @@ class AccentPaletteGallery extends StatelessWidget {
   final List<ThemePaletteOption> palettes;
   final int selectedSeedArgb;
   final ValueChanged<ThemePaletteOption> onSelected;
+  final EdgeInsetsGeometry? padding;
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -31,25 +36,31 @@ class AccentPaletteGallery extends StatelessWidget {
 
     final selectedScheme = (selected ?? palettes.first).schemeFor(brightness);
 
+    final resolvedPadding =
+        padding ??
+        EdgeInsets.fromLTRB(
+          TasklyTokens.of(context).spaceLg,
+          TasklyTokens.of(context).spaceSm,
+          TasklyTokens.of(context).spaceLg,
+          0,
+        );
+
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceSm,
-        TasklyTokens.of(context).spaceLg,
-        0,
-      ),
+      padding: resolvedPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          SizedBox(height: TasklyTokens.of(context).spaceSm),
-          Text(
-            subtitle,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+          if (showHeader) ...[
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          SizedBox(height: TasklyTokens.of(context).spaceSm),
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
+          ],
           _PalettePreviewCard(colorScheme: selectedScheme),
           SizedBox(height: TasklyTokens.of(context).spaceSm),
           LayoutBuilder(
@@ -125,13 +136,13 @@ class _PalettePreviewCard extends StatelessWidget {
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Expanded(
                     child: Text(
-                      'Preview',
+                      context.l10n.previewLabel,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
                   FilledButton.tonal(
                     onPressed: null,
-                    child: const Text('Action'),
+                    child: Text(context.l10n.actionLabel),
                   ),
                 ],
               ),
@@ -152,8 +163,8 @@ class _PalettePreviewCard extends StatelessWidget {
                       color: colorScheme.onSecondaryContainer,
                     ),
                   ),
-                  title: const Text('List item'),
-                  subtitle: const Text('Supporting text'),
+                  title: Text(context.l10n.listItemLabel),
+                  subtitle: Text(context.l10n.supportingTextLabel),
                   trailing: Icon(
                     Icons.chevron_right,
                     color: colorScheme.onSurfaceVariant,
@@ -166,11 +177,11 @@ class _PalettePreviewCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   Chip(
-                    label: const Text('Chip'),
+                    label: Text(context.l10n.chipLabel),
                     backgroundColor: colorScheme.surfaceContainerHighest,
                   ),
                   Chip(
-                    label: const Text('Primary'),
+                    label: Text(context.l10n.primaryLabel),
                     backgroundColor: colorScheme.primaryContainer,
                     labelStyle: TextStyle(
                       color: colorScheme.onPrimaryContainer,

@@ -51,17 +51,17 @@ abstract final class RouteCodec {
       fields: fields,
     );
 
-    return notFoundLocation(
-      message: 'Invalid link',
-      fields: fields,
-    );
+    return notFoundLocation(fields: fields);
   }
 
   static String notFoundLocation({
-    required String message,
+    String? message,
     Map<String, Object?>? fields,
   }) {
-    final qp = <String, String>{'message': message};
+    final qp = <String, String>{};
+    if (message != null && message.trim().isNotEmpty) {
+      qp['message'] = message;
+    }
     if (fields != null && fields.isNotEmpty) {
       qp['details'] = _encodeFields(fields);
     }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/allocation_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -17,7 +19,7 @@ class SettingsTaskSuggestionsPage extends StatelessWidget {
       )..add(const AllocationSettingsStarted()),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Task Suggestions'),
+          title: Text(context.l10n.settingsTaskSuggestionsTitle),
         ),
         body: BlocBuilder<AllocationSettingsBloc, AllocationSettingsState>(
           builder: (context, state) {
@@ -29,8 +31,9 @@ class SettingsTaskSuggestionsPage extends StatelessWidget {
               isExpandedLayout: context.isExpandedScreen,
               child: ListView(
                 children: [
-                  _SuggestionSignalSection(settings: state.settings),
-                  _ValuesBalanceSection(settings: state.settings),
+                  _SettingsSectionPadding(
+                    child: _SuggestionSignalCard(settings: state.settings),
+                  ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                 ],
               ),
@@ -42,140 +45,92 @@ class SettingsTaskSuggestionsPage extends StatelessWidget {
   }
 }
 
-class _SuggestionSignalSection extends StatelessWidget {
-  const _SuggestionSignalSection({required this.settings});
+class _SuggestionSignalCard extends StatefulWidget {
+  const _SuggestionSignalCard({required this.settings});
 
   final AllocationConfig settings;
 
   @override
+  State<_SuggestionSignalCard> createState() => _SuggestionSignalCardState();
+}
+
+class _SuggestionSignalCardState extends State<_SuggestionSignalCard> {
+  bool _isExpanded = true;
+
+  @override
   Widget build(BuildContext context) {
+    final settings = widget.settings;
     final mode = switch (settings.suggestionSignal) {
       SuggestionSignal.behaviorBased => SuggestionSignalOption.behaviorBased,
       SuggestionSignal.ratingsBased => SuggestionSignalOption.ratingsBased,
     };
+    final summary = mode == SuggestionSignalOption.behaviorBased
+        ? context.l10n.suggestionSignalBehaviorSummary
+        : context.l10n.suggestionSignalRatingsSummary;
+    final tokens = TasklyTokens.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionHeader(title: 'Suggestion signal'),
-        RadioListTile<SuggestionSignalOption>(
-          title: const Text('Behavior-based (Completions + balance)'),
-          subtitle: const Text(
-            'Stable and objective. Follows what you actually did.',
+    return TasklySettingsCard(
+      title: context.l10n.suggestionSignalTitle,
+      subtitle: context.l10n.suggestionSignalSubtitle,
+      summary: summary,
+      isExpanded: _isExpanded,
+      onExpandedChanged: (next) => setState(() => _isExpanded = next),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RadioListTile<SuggestionSignalOption>(
+            title: Text(context.l10n.suggestionSignalBehaviorTitle),
+            subtitle: Text(context.l10n.suggestionSignalBehaviorSubtitle),
+            value: SuggestionSignalOption.behaviorBased,
+            groupValue: mode,
+            onChanged: (value) {
+              if (value == null) return;
+              context.read<AllocationSettingsBloc>().add(
+                AllocationSuggestionSignalChanged(value),
+              );
+            },
           ),
-          value: SuggestionSignalOption.behaviorBased,
-          groupValue: mode,
-          onChanged: (value) {
-            if (value == null) return;
-            context.read<AllocationSettingsBloc>().add(
-              AllocationSuggestionSignalChanged(value),
-            );
-          },
-        ),
-        RadioListTile<SuggestionSignalOption>(
-          title: const Text('Ratings-based (Values + ratings)'),
-          subtitle: const Text(
-            'More personal and reflective. Uses your weekly check-ins.',
+          RadioListTile<SuggestionSignalOption>(
+            title: Text(context.l10n.suggestionSignalRatingsTitle),
+            subtitle: Text(context.l10n.suggestionSignalRatingsSubtitle),
+            value: SuggestionSignalOption.ratingsBased,
+            groupValue: mode,
+            onChanged: (value) {
+              if (value == null) return;
+              context.read<AllocationSettingsBloc>().add(
+                AllocationSuggestionSignalChanged(value),
+              );
+            },
           ),
-          value: SuggestionSignalOption.ratingsBased,
-          groupValue: mode,
-          onChanged: (value) {
-            if (value == null) return;
-            context.read<AllocationSettingsBloc>().add(
-              AllocationSuggestionSignalChanged(value),
-            );
-          },
-        ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            TasklyTokens.of(context).spaceLg,
-            0,
-            TasklyTokens.of(context).spaceLg,
-            TasklyTokens.of(context).spaceSm,
-          ),
-          child: Text(
-            'Ratings mode requires weekly ratings and may change suggestions '
-            'more quickly.',
+          SizedBox(height: tokens.spaceXs),
+          Text(
+            context.l10n.suggestionSignalRatingsFootnote,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _ValuesBalanceSection extends StatelessWidget {
-  const _ValuesBalanceSection({required this.settings});
+class _SettingsSectionPadding extends StatelessWidget {
+  const _SettingsSectionPadding({required this.child});
 
-  final AllocationConfig settings;
-
-  @override
-  Widget build(BuildContext context) {
-    final mode = settings.strategySettings.enableNeglectWeighting
-        ? ValuesBalanceMode.balanceOverTime
-        : ValuesBalanceMode.prioritizeTopValues;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionHeader(title: 'Values balance'),
-        RadioListTile<ValuesBalanceMode>(
-          title: const Text('Balance over time'),
-          subtitle: const Text(
-            'Suggest more from values you\u2019ve done less of, while still '
-            'giving more weight to higher-priority values overall.',
-          ),
-          value: ValuesBalanceMode.balanceOverTime,
-          groupValue: mode,
-          onChanged: (value) {
-            if (value == null) return;
-            context.read<AllocationSettingsBloc>().add(
-              AllocationValuesBalanceModeChanged(value),
-            );
-          },
-        ),
-        RadioListTile<ValuesBalanceMode>(
-          title: const Text('Prioritize top values'),
-          subtitle: const Text(
-            'Keep suggestions tightly aligned to your highest-priority values, '
-            'even if other values are neglected.',
-          ),
-          value: ValuesBalanceMode.prioritizeTopValues,
-          groupValue: mode,
-          onChanged: (value) {
-            if (value == null) return;
-            context.read<AllocationSettingsBloc>().add(
-              AllocationValuesBalanceModeChanged(value),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceXs2,
+        tokens.spaceLg,
+        tokens.spaceSm,
+        tokens.spaceLg,
+        0,
       ),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+      child: child,
     );
   }
 }

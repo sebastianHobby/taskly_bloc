@@ -5,6 +5,7 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/bloc/scope_context_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 
 class ScopeHeader extends StatelessWidget {
   const ScopeHeader({
@@ -39,7 +40,7 @@ class _ScopeHeaderView extends StatelessWidget {
           ScopeContextLoading() => SizedBox(
             height: TasklyTokens.of(context).spaceXxl * 2,
           ),
-          ScopeContextError(:final message) => Padding(
+          ScopeContextError() => Padding(
             padding: EdgeInsets.fromLTRB(
               TasklyTokens.of(context).spaceLg,
               TasklyTokens.of(context).spaceMd,
@@ -47,7 +48,7 @@ class _ScopeHeaderView extends StatelessWidget {
               0,
             ),
             child: Text(
-              message,
+              context.l10n.scopeHeaderLoadFailedMessage,
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
@@ -75,7 +76,7 @@ class _ScopeHeaderView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              title,
+                              _titleLabel(context, title),
                               style: Theme.of(context).textTheme.titleMedium,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -85,10 +86,13 @@ class _ScopeHeaderView extends StatelessWidget {
                               spacing: 8,
                               runSpacing: 8,
                               children: [
-                                _MetricChip(label: 'Tasks', value: taskCount),
+                                _MetricChip(
+                                  label: context.l10n.tasksTitle,
+                                  value: taskCount,
+                                ),
                                 if (projectCount != null)
                                   _MetricChip(
-                                    label: 'Projects',
+                                    label: context.l10n.projectsTitle,
                                     value: projectCount,
                                   ),
                               ],
@@ -104,6 +108,16 @@ class _ScopeHeaderView extends StatelessWidget {
         };
       },
     );
+  }
+
+  String _titleLabel(BuildContext context, ScopeContextTitle title) {
+    final l10n = context.l10n;
+    final name = title.name;
+    if (name != null && name.trim().isNotEmpty) return name;
+    return switch (title.kind) {
+      ScopeContextTitleKind.project => l10n.projectLabel,
+      ScopeContextTitleKind.value => l10n.valueLabel,
+    };
   }
 }
 
@@ -129,7 +143,7 @@ class _MetricChip extends StatelessWidget {
           vertical: TasklyTokens.of(context).spaceSm,
         ),
         child: Text(
-          '$label: $value',
+          context.l10n.scopeHeaderMetricLabel(label, value),
           style: Theme.of(context).textTheme.labelMedium,
         ),
       ),

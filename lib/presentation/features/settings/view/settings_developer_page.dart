@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
@@ -23,7 +24,7 @@ class SettingsDeveloperPage extends StatelessWidget {
       ),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Developer'),
+          title: Text(context.l10n.developerTitle),
         ),
         body: ResponsiveBody(
           isExpandedLayout: context.isExpandedScreen,
@@ -44,8 +45,8 @@ class SettingsDeveloperPage extends StatelessWidget {
   Widget _buildViewLogsItem(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.bug_report_outlined),
-      title: const Text('View App Logs'),
-      subtitle: const Text('View and share app logs for debugging'),
+      title: Text(context.l10n.viewAppLogsTitle),
+      subtitle: Text(context.l10n.viewAppLogsSubtitle),
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
         Navigator.of(context).push(
@@ -60,8 +61,8 @@ class SettingsDeveloperPage extends StatelessWidget {
   Widget _buildTileCatalogItem(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.dashboard_outlined),
-      title: const Text('Tile Catalog'),
-      subtitle: const Text('Preview all task, project, and value tiles'),
+      title: Text(context.l10n.tileCatalogTitle),
+      subtitle: Text(context.l10n.tileCatalogSubtitle),
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
         Navigator.of(context).push(
@@ -90,18 +91,20 @@ class _ResetOnboardingItem extends StatelessWidget {
               when action == SettingsMaintenanceAction.resetOnboardingAndLogout:
             messenger.clearSnackBars();
             messenger.showSnackBar(
-              const SnackBar(
-                content: Text('Wiping account data and signing out...'),
-                duration: Duration(seconds: 2),
+              SnackBar(
+                content: Text(
+                  context.l10n.resetOnboardingRunningMessage,
+                ),
+                duration: const Duration(seconds: 2),
               ),
             );
           case SettingsMaintenanceSuccess(:final action)
               when action == SettingsMaintenanceAction.resetOnboardingAndLogout:
             messenger.clearSnackBars();
             messenger.showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text(
-                  'Wipe complete. Onboarding will run next sign-in.',
+                  context.l10n.resetOnboardingSuccessMessage,
                 ),
               ),
             );
@@ -123,10 +126,8 @@ class _ResetOnboardingItem extends StatelessWidget {
           Icons.restart_alt_outlined,
           color: Theme.of(context).colorScheme.error,
         ),
-        title: const Text('Wipe account data and reset onboarding'),
-        subtitle: const Text(
-          'Deletes all synced data for this account, then signs out.',
-        ),
+        title: Text(context.l10n.resetOnboardingTitle),
+        subtitle: Text(context.l10n.resetOnboardingSubtitle),
         trailing: Icon(
           Icons.warning_amber,
           color: Theme.of(context).colorScheme.error,
@@ -140,23 +141,19 @@ class _ResetOnboardingItem extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Wipe account data and reset onboarding'),
-        content: const Text(
-          'This will delete all synced data for this account (server + local) '
-          'and then sign you out.\n\n'
-          'Your auth account remains, and onboarding will run next sign-in.',
-        ),
+        title: Text(context.l10n.resetOnboardingDialogTitle),
+        content: Text(context.l10n.resetOnboardingDialogBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancelLabel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Wipe & Sign out'),
+            child: Text(context.l10n.resetOnboardingConfirmButton),
           ),
         ],
       ),
@@ -183,16 +180,20 @@ class _GenerateTemplateDataItem extends StatelessWidget {
               when action == SettingsMaintenanceAction.generateTemplateData:
             messenger.clearSnackBars();
             messenger.showSnackBar(
-              const SnackBar(
-                content: Text('Generating template data...'),
-                duration: Duration(seconds: 2),
+              SnackBar(
+                content: Text(
+                  context.l10n.templateDataGeneratingMessage,
+                ),
+                duration: const Duration(seconds: 2),
               ),
             );
           case SettingsMaintenanceSuccess(:final action)
               when action == SettingsMaintenanceAction.generateTemplateData:
             messenger.clearSnackBars();
             messenger.showSnackBar(
-              const SnackBar(content: Text('Template data generated.')),
+              SnackBar(
+                content: Text(context.l10n.templateDataGeneratedMessage),
+              ),
             );
           case SettingsMaintenanceFailure(:final action, :final message)
               when action == SettingsMaintenanceAction.generateTemplateData:
@@ -212,10 +213,8 @@ class _GenerateTemplateDataItem extends StatelessWidget {
           Icons.auto_awesome,
           color: Theme.of(context).colorScheme.error,
         ),
-        title: const Text('Generate Template Data'),
-        subtitle: const Text(
-          'Wipes all account data and seeds a full demo dataset',
-        ),
+        title: Text(context.l10n.templateDataGenerateTitle),
+        subtitle: Text(context.l10n.templateDataGenerateSubtitle),
         trailing: Icon(
           Icons.warning_amber,
           color: Theme.of(context).colorScheme.error,
@@ -229,25 +228,19 @@ class _GenerateTemplateDataItem extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Generate Template Data'),
-        content: const Text(
-          'This will delete all synced account data (local + server) and then '
-          'generate a sample dataset with values, projects, tasks, routines, '
-          'and weekly ratings.\n\n'
-          'Weekly review will be marked due immediately.\n\n'
-          'This is intended for debug/demo use only.',
-        ),
+        title: Text(context.l10n.templateDataGenerateDialogTitle),
+        content: Text(context.l10n.templateDataGenerateDialogBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancelLabel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Generate'),
+            child: Text(context.l10n.generateLabel),
           ),
         ],
       ),

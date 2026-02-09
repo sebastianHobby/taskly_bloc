@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/preferences.dart';
 
 class DisplayDensityToggle extends StatelessWidget {
@@ -13,17 +14,18 @@ class DisplayDensityToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Align(
       alignment: Alignment.centerLeft,
       child: SegmentedButton<DisplayDensity>(
-        segments: const [
+        segments: [
           ButtonSegment(
             value: DisplayDensity.standard,
-            label: Text('Standard'),
+            label: Text(l10n.displayDensityStandard),
           ),
           ButtonSegment(
             value: DisplayDensity.compact,
-            label: Text('Compact'),
+            label: Text(l10n.displayDensityCompact),
           ),
         ],
         selected: {density},

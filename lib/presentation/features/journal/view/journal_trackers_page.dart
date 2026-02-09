@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
@@ -74,12 +75,14 @@ class _ManageLibraryView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isSaving = status is JournalManageLibrarySaving;
+    final l10n = context.l10n;
 
     List<TrackerGroup?> groupOptions() {
       return <TrackerGroup?>[null, ...groups];
     }
 
-    String groupLabel(TrackerGroup? group) => group?.name ?? 'Ungrouped';
+    String groupLabel(TrackerGroup? group) =>
+        group?.name ?? l10n.journalGroupUngrouped;
 
     List<TrackerDefinition> trackersForGroup(String? groupId) {
       final key = groupId ?? '';
@@ -96,13 +99,13 @@ class _ManageLibraryView extends StatelessWidget {
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: const Text('New group'),
+              title: Text(l10n.journalNewGroupTitle),
               content: TextField(
                 controller: controller,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  hintText: 'e.g. Health, Work, Habits',
+                decoration: InputDecoration(
+                  labelText: l10n.nameLabel,
+                  hintText: l10n.journalGroupNameHint,
                 ),
                 textInputAction: TextInputAction.done,
                 onSubmitted: (value) => Navigator.of(context).pop(value),
@@ -110,11 +113,11 @@ class _ManageLibraryView extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.cancelLabel),
                 ),
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(controller.text),
-                  child: const Text('Create'),
+                  child: Text(l10n.createLabel),
                 ),
               ],
             );
@@ -136,22 +139,22 @@ class _ManageLibraryView extends StatelessWidget {
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: const Text('Rename group'),
+              title: Text(l10n.journalRenameGroupTitle),
               content: TextField(
                 controller: controller,
                 autofocus: true,
-                decoration: const InputDecoration(labelText: 'Name'),
+                decoration: InputDecoration(labelText: l10n.nameLabel),
                 textInputAction: TextInputAction.done,
                 onSubmitted: (value) => Navigator.of(context).pop(value),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.cancelLabel),
                 ),
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(controller.text),
-                  child: const Text('Save'),
+                  child: Text(l10n.saveLabel),
                 ),
               ],
             );
@@ -188,14 +191,14 @@ class _ManageLibraryView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Rename tracker',
+                    l10n.journalRenameTrackerTitle,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   TextField(
                     controller: controller,
                     autofocus: true,
-                    decoration: const InputDecoration(labelText: 'Name'),
+                    decoration: InputDecoration(labelText: l10n.nameLabel),
                     textInputAction: TextInputAction.done,
                     onSubmitted: (value) => Navigator.of(context).pop(value),
                   ),
@@ -205,12 +208,12 @@ class _ManageLibraryView extends StatelessWidget {
                       const Spacer(),
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
+                        child: Text(l10n.cancelLabel),
                       ),
                       FilledButton(
                         onPressed: () =>
                             Navigator.of(context).pop(controller.text),
-                        child: const Text('Save'),
+                        child: Text(l10n.saveLabel),
                       ),
                     ],
                   ),
@@ -226,10 +229,10 @@ class _ManageLibraryView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage trackers'),
+        title: Text(l10n.journalManageTrackersTitle),
         actions: [
           IconButton(
-            tooltip: 'New group',
+            tooltip: l10n.journalNewGroupTooltip,
             onPressed: isSaving
                 ? null
                 : () async {
@@ -243,7 +246,7 @@ class _ManageLibraryView extends StatelessWidget {
             icon: const Icon(Icons.create_new_folder_outlined),
           ),
           IconButton(
-            tooltip: 'New tracker',
+            tooltip: l10n.journalNewTrackerTooltip,
             onPressed: isSaving
                 ? null
                 : () => Routing.toJournalTrackerWizard(context),
@@ -259,14 +262,14 @@ class _ManageLibraryView extends StatelessWidget {
           TasklyTokens.of(context).spaceXl,
         ),
         children: [
-          Text('Groups', style: theme.textTheme.titleMedium),
+          Text(l10n.groupsTitle, style: theme.textTheme.titleMedium),
           SizedBox(height: TasklyTokens.of(context).spaceSm),
           Card(
             child: Column(
               children: [
                 if (groups.isEmpty)
-                  const ListTile(
-                    title: Text('No groups yet.'),
+                  ListTile(
+                    title: Text(l10n.journalNoGroupsYet),
                   )
                 else
                   for (final g in groups)
@@ -276,7 +279,7 @@ class _ManageLibraryView extends StatelessWidget {
                         spacing: 4,
                         children: [
                           IconButton(
-                            tooltip: 'Move up',
+                            tooltip: l10n.moveUpLabel,
                             onPressed: isSaving
                                 ? null
                                 : () => context
@@ -288,7 +291,7 @@ class _ManageLibraryView extends StatelessWidget {
                             icon: const Icon(Icons.arrow_upward),
                           ),
                           IconButton(
-                            tooltip: 'Move down',
+                            tooltip: l10n.moveDownLabel,
                             onPressed: isSaving
                                 ? null
                                 : () => context
@@ -300,7 +303,7 @@ class _ManageLibraryView extends StatelessWidget {
                             icon: const Icon(Icons.arrow_downward),
                           ),
                           IconButton(
-                            tooltip: 'Rename',
+                            tooltip: l10n.renameLabel,
                             onPressed: isSaving
                                 ? null
                                 : () async {
@@ -314,7 +317,7 @@ class _ManageLibraryView extends StatelessWidget {
                             icon: const Icon(Icons.edit_outlined),
                           ),
                           IconButton(
-                            tooltip: 'Delete',
+                            tooltip: l10n.deleteLabel,
                             onPressed: isSaving
                                 ? null
                                 : () => context
@@ -329,7 +332,7 @@ class _ManageLibraryView extends StatelessWidget {
             ),
           ),
           SizedBox(height: TasklyTokens.of(context).spaceSm),
-          Text('Trackers', style: theme.textTheme.titleMedium),
+          Text(l10n.trackersTitle, style: theme.textTheme.titleMedium),
           SizedBox(height: TasklyTokens.of(context).spaceSm),
           for (final group in groupOptions())
             Builder(
@@ -355,7 +358,12 @@ class _ManageLibraryView extends StatelessWidget {
                               children: [
                                 ListTile(
                                   title: Text(d.name),
-                                  subtitle: Text('${d.valueType} • ${d.scope}'),
+                                  subtitle: Text(
+                                    l10n.journalTrackerTypeScopeLabel(
+                                      d.valueType,
+                                      d.scope,
+                                    ),
+                                  ),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -373,7 +381,7 @@ class _ManageLibraryView extends StatelessWidget {
                                                   ),
                                       ),
                                       IconButton(
-                                        tooltip: 'Rename',
+                                        tooltip: l10n.renameLabel,
                                         onPressed: isSaving
                                             ? null
                                             : () async {
@@ -412,8 +420,8 @@ class _ManageLibraryView extends StatelessWidget {
                                               TrackerGroup?
                                             >(
                                               value: selectedGroup,
-                                              decoration: const InputDecoration(
-                                                labelText: 'Group',
+                                              decoration: InputDecoration(
+                                                labelText: l10n.groupLabel,
                                               ),
                                               items: [
                                                 for (final g in groupOptions())
@@ -442,7 +450,7 @@ class _ManageLibraryView extends StatelessWidget {
                                         ).spaceSm,
                                       ),
                                       IconButton(
-                                        tooltip: 'Move up',
+                                        tooltip: l10n.moveUpLabel,
                                         onPressed: isSaving
                                             ? null
                                             : () => context
@@ -457,7 +465,7 @@ class _ManageLibraryView extends StatelessWidget {
                                         icon: const Icon(Icons.arrow_upward),
                                       ),
                                       IconButton(
-                                        tooltip: 'Move down',
+                                        tooltip: l10n.moveDownLabel,
                                         onPressed: isSaving
                                             ? null
                                             : () => context

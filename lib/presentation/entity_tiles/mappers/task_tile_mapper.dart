@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/shared/formatters/date_label_formatter.dart';
@@ -88,8 +89,8 @@ TasklyTaskRowData buildTaskRowData(
     leadingChip: primaryValueData,
     secondaryChips: secondaryValueData,
     checkboxSemanticLabel: isCompleted
-        ? 'Mark "${task.name}" as incomplete'
-        : 'Mark "${task.name}" as complete',
+        ? context.l10n.markIncompleteSemanticLabel(task.name)
+        : context.l10n.markCompleteSemanticLabel(task.name),
     pinned: false,
   );
 }

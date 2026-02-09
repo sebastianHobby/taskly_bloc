@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_history_page.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -95,6 +96,10 @@ void main() {
     await tester.pumpWidgetWithRouter(router: router);
   }
 
+  AppLocalizations l10nFor(WidgetTester tester) {
+    return tester.element(find.byType(JournalHistoryPage)).l10n;
+  }
+
   testWidgetsSafe('shows loading state before streams emit', (tester) async {
     await pumpPage(tester);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -126,7 +131,8 @@ void main() {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    expect(find.text('History'), findsOneWidget);
+    final l10n = l10nFor(tester);
+    expect(find.text(l10n.journalHistoryTitle), findsOneWidget);
     expect(find.text('Note 1'), findsOneWidget);
   });
 

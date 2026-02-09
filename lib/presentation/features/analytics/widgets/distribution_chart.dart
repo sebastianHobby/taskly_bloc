@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 enum ChartType { bar, pie, horizontalBar }
@@ -25,7 +26,7 @@ class DistributionChart extends StatelessWidget {
           padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
           child: Center(
             child: Text(
-              'No data available',
+              context.l10n.analyticsNoDataLabel,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),

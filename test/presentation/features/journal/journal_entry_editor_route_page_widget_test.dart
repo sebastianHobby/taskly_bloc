@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
@@ -209,7 +210,7 @@ void main() {
       ),
     ).called(greaterThanOrEqualTo(1));
 
-    expect(find.textContaining('Saved log'), findsOneWidget);
+    expect(find.text(_l10n(tester).journalSavedLogSnack), findsOneWidget);
   });
 
   testWidgetsSafe('shows error snack when save fails', (tester) async {
@@ -479,11 +480,12 @@ void main() {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    await _tapTextButton(tester, 'Choose option');
+    final l10n = _l10n(tester);
+    await _tapTextButton(tester, l10n.journalChooseOptionLabel);
     await tester.pumpForStream();
 
     await tester.enterText(
-      find.widgetWithText(TextField, 'Search options'),
+      find.widgetWithText(TextField, l10n.journalSearchOptionsLabel),
       'Work',
     );
     await tester.pumpForStream();
@@ -505,28 +507,31 @@ Finder _textFieldWithLabel(String label) {
 }
 
 ButtonStyleButton _saveLogButton(WidgetTester tester) {
-  final buttonFinder = _saveLogButtonFinder();
+  final buttonFinder = _saveLogButtonFinder(tester);
   return tester.widget<ButtonStyleButton>(buttonFinder);
 }
 
-Finder _saveLogButtonFinder() {
+Finder _saveLogButtonFinder(WidgetTester tester) {
+  final l10n = _l10n(tester);
   return find.ancestor(
-    of: find.text('Save log'),
+    of: find.text(l10n.journalSaveLogButton),
     matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
   );
 }
 
 Future<void> _tapSaveLog(WidgetTester tester) async {
-  final buttonFinder = _saveLogButtonFinder();
+  final buttonFinder = _saveLogButtonFinder(tester);
   await tester.ensureVisible(buttonFinder);
   await tester.pump(const Duration(milliseconds: 200));
   await tester.tap(buttonFinder, warnIfMissed: false);
 }
 
 Future<void> _tapMood(WidgetTester tester, String label) async {
+  final l10n = _l10n(tester);
   final moodFinder = find.byWidgetPredicate(
     (widget) =>
-        widget is Semantics && widget.properties.label == 'Mood: $label',
+        widget is Semantics &&
+        widget.properties.label == l10n.journalMoodSemanticsLabel(label),
   );
   await tester.ensureVisible(moodFinder.first);
   await tester.pump(const Duration(milliseconds: 200));
@@ -593,4 +598,8 @@ TrackerDefinition _trackerDef(
     maxInt: maxInt,
     stepInt: stepInt,
   );
+}
+
+AppLocalizations _l10n(WidgetTester tester) {
+  return tester.element(find.byType(JournalEntryEditorRoutePage)).l10n;
 }

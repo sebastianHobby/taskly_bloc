@@ -145,7 +145,11 @@ void main() {
           BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
           BlocProvider<GlobalSettingsBloc>.value(value: settingsBloc),
         ],
-        child: MaterialApp.router(routerConfig: router),
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
       ),
     );
 
@@ -262,7 +266,11 @@ void main() {
             BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
             BlocProvider<GlobalSettingsBloc>.value(value: settingsBloc),
           ],
-          child: MaterialApp.router(routerConfig: router),
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
         ),
       );
 
@@ -374,7 +382,11 @@ void main() {
             BlocProvider<GlobalSettingsBloc>.value(value: settingsBloc),
             BlocProvider<PlanMyDayBloc>.value(value: planMyDayBloc),
           ],
-          child: MaterialApp.router(routerConfig: router),
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
         ),
       );
 
@@ -559,6 +571,121 @@ void main() {
       );
     },
   );
+
+  testWidgetsSafe(
+    'scrolls to coachmark target before showing routines step',
+    (tester) async {
+      const surfaceSize = Size(600, 420);
+      tester.binding.window.devicePixelRatioTestValue = 1.0;
+      await tester.binding.setSurfaceSize(surfaceSize);
+      addTearDown(() async {
+        tester.binding.window.devicePixelRatioTestValue = 1.0;
+        await tester.binding.setSurfaceSize(null);
+      });
+
+      final guidedTourBloc = MockGuidedTourBloc();
+      final settingsBloc = MockGlobalSettingsBloc();
+      final scrollController = ScrollController();
+      addTearDown(scrollController.dispose);
+
+      const settingsState = GlobalSettingsState();
+
+      final steps = [
+        GuidedTourStep(
+          id: 'plan_my_day_routines',
+          route: '/my-day',
+          title: 'Routines',
+          body: 'Scheduled and flexible routines show up here.',
+          kind: GuidedTourStepKind.coachmark,
+          coachmark: const GuidedTourCoachmark(
+            targetId: 'plan_my_day_routines_block',
+            title: 'Routines',
+            body: 'Scheduled and flexible routines show up here.',
+          ),
+        ),
+      ];
+      final initialState = GuidedTourState(
+        steps: steps,
+        active: false,
+        currentIndex: 0,
+        navRequestId: 0,
+      );
+      final activeState = initialState.copyWith(active: true, navRequestId: 1);
+
+      final stateController = TestStreamController<GuidedTourState>.seeded(
+        initialState,
+      );
+      addTearDown(stateController.close);
+
+      when(() => guidedTourBloc.state).thenAnswer(
+        (_) => stateController.value ?? initialState,
+      );
+      whenListen(
+        guidedTourBloc,
+        stateController.stream,
+        initialState: initialState,
+      );
+
+      when(() => settingsBloc.state).thenReturn(settingsState);
+      whenListen(
+        settingsBloc,
+        const Stream<GlobalSettingsState>.empty(),
+        initialState: settingsState,
+      );
+
+      final router = GoRouter(
+        initialLocation: '/my-day',
+        routes: [
+          ShellRoute(
+            builder: (_, __, child) => GuidedTourOverlayHost(child: child),
+            routes: [
+              GoRoute(
+                path: '/my-day',
+                builder: (_, __) => _ScrollableAnchorPage(
+                  controller: scrollController,
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
+            BlocProvider<GlobalSettingsBloc>.value(value: settingsBloc),
+          ],
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      );
+
+      expect(scrollController.offset, 0);
+      final anchorFinder = find.byKey(GuidedTourAnchors.planMyDayRoutinesBlock);
+      final initialRect = tester.getRect(anchorFinder);
+      expect(initialRect.top, greaterThan(surfaceSize.height));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        stateController.emit(activeState);
+      });
+      await tester.pumpForStream();
+      await pumpUntilFound(
+        tester,
+        find.byKey(const Key('guided-tour-coachmark-plan_my_day_routines')),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final updatedRect = tester.getRect(anchorFinder);
+      expect(updatedRect.top, lessThan(initialRect.top));
+      expect(
+        find.byKey(const Key('guided-tour-coachmark-plan_my_day_routines')),
+        findsOneWidget,
+      );
+    },
+  );
 }
 
 class _DelayedAnchorPage extends StatefulWidget {
@@ -603,6 +730,49 @@ class _DelayedAnchorPageState extends State<_DelayedAnchorPage> {
                 key: GuidedTourAnchors.planMyDayTriage,
               )
             : const SizedBox(width: 32, height: 32),
+      ),
+    );
+  }
+}
+
+class _ScrollableAnchorPage extends StatelessWidget {
+  const _ScrollableAnchorPage({
+    required this.controller,
+  });
+
+  final ScrollController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SingleChildScrollView(
+        controller: controller,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Column(
+            children: [
+              const SizedBox(height: 900),
+              Container(
+                key: GuidedTourAnchors.planMyDayRoutinesBlock,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Routines'),
+                    SizedBox(height: 12),
+                    SizedBox(height: 240),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 900),
+            ],
+          ),
+        ),
       ),
     );
   }

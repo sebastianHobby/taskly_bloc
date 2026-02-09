@@ -20,7 +20,9 @@ class TasklyJournalDailySummarySection extends StatelessWidget {
     required this.moodLabel,
     required this.entryCountLabel,
     required this.items,
-    this.emptyItemsLabel = 'No daily trackers yet.',
+    required this.emptyItemsLabel,
+    required this.seeAllLabel,
+    required this.editDailyLabel,
     this.showItems = true,
     this.onEditDaily,
     this.onSeeAll,
@@ -32,6 +34,8 @@ class TasklyJournalDailySummarySection extends StatelessWidget {
   final String entryCountLabel;
   final List<TasklyJournalDailySummaryItem> items;
   final String emptyItemsLabel;
+  final String seeAllLabel;
+  final String editDailyLabel;
   final bool showItems;
   final VoidCallback? onEditDaily;
   final VoidCallback? onSeeAll;
@@ -44,12 +48,12 @@ class TasklyJournalDailySummarySection extends StatelessWidget {
       if (onSeeAll != null)
         TextButton(
           onPressed: onSeeAll,
-          child: const Text('See all'),
+          child: Text(seeAllLabel),
         ),
       if (onEditDaily != null)
         TextButton(
           onPressed: onEditDaily,
-          child: const Text('Edit daily'),
+          child: Text(editDailyLabel),
         ),
     ];
 

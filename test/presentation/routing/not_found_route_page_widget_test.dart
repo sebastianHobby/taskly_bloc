@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/routing/not_found_route_page.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 
@@ -16,7 +17,8 @@ void main() {
     await tester.pumpApp(const NotFoundRoutePage());
     await tester.pumpForStream(3);
 
-    expect(find.text('Page not found'), findsOneWidget);
+    final l10n = tester.element(find.byType(NotFoundRoutePage)).l10n;
+    expect(find.text(l10n.notFoundTitle), findsOneWidget);
   });
 
   testWidgetsSafe('navigates home from empty state action', (tester) async {
@@ -42,8 +44,9 @@ void main() {
     await pumpLocalizedRouterApp(tester, router: router);
     await tester.pumpForStream(5);
 
+    final l10n = tester.element(find.byType(NotFoundRoutePage)).l10n;
     expect(find.text('Missing'), findsOneWidget);
-    await tester.tap(find.text('Go Home'));
+    await tester.tap(find.text(l10n.notFoundActionLabel));
     await tester.pumpForStream(5);
 
     final foundHome = await tester.pumpUntilFound(

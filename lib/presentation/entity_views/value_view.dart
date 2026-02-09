@@ -176,13 +176,13 @@ class ValueView extends StatelessWidget {
                       )
                     else ...[
                       _MyValuesCountRow(
-                        label: 'Primary',
+                        label: l10n.valuesPrimaryShortLabel,
                         value: primaryLabel ?? '',
                         colorScheme: colorScheme,
                       ),
                       SizedBox(height: TasklyTokens.of(context).spaceSm),
                       _MyValuesCountRow(
-                        label: 'Secondary',
+                        label: l10n.valuesSecondaryShortLabel,
                         value: secondaryLabel ?? '',
                         colorScheme: colorScheme,
                       ),

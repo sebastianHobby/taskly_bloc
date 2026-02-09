@@ -69,7 +69,7 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
         bloc.add(
           ScreenActionsFailureEvent(
             failureKind: ScreenActionsFailureKind.invalidOccurrenceData,
-            fallbackMessage: 'Invalid occurrence data',
+            fallbackMessage: context.l10n.snackInvalidOccurrence,
             entityType: intent.entityType,
             entityId: intent.entityId,
           ),
@@ -220,12 +220,12 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
             size: 32,
           ),
         ),
-        title: const Text(
-          'Complete series?',
+        title: Text(
+          context.l10n.completeSeriesConfirmTitle,
           textAlign: TextAlign.center,
         ),
         content: Text(
-          'This ends the recurring series for "$entityName" and marks it complete.',
+          context.l10n.completeSeriesConfirmBody(entityName),
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
@@ -235,13 +235,13 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(
-              'Cancel',
+              context.l10n.cancelLabel,
               style: TextStyle(color: colorScheme.onSurfaceVariant),
             ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Complete series'),
+            child: Text(context.l10n.completeSeriesAction),
           ),
         ],
         actionsAlignment: MainAxisAlignment.spaceEvenly,
@@ -322,10 +322,8 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
               if (intent.allowQuickMove)
                 ListTile(
                   leading: const Icon(Icons.flash_on_outlined),
-                  title: const Text('Move now'),
-                  subtitle: const Text(
-                    'Select a project and move immediately.',
-                  ),
+                  title: Text(context.l10n.moveNowLabel),
+                  subtitle: Text(context.l10n.moveToProjectQuickSubtitle),
                   onTap: () => Navigator.of(
                     context,
                   ).pop(_MoveToProjectChoice.quickMove),
@@ -333,10 +331,8 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
               if (intent.allowOpenEditor)
                 ListTile(
                   leading: const Icon(Icons.edit_outlined),
-                  title: const Text('Open editor'),
-                  subtitle: const Text(
-                    'Open the task editor and choose a project.',
-                  ),
+                  title: Text(context.l10n.openEditorLabel),
+                  subtitle: Text(context.l10n.moveToProjectEditorSubtitle),
                   onTap: () => Navigator.of(
                     context,
                   ).pop(_MoveToProjectChoice.openEditor),

@@ -17,11 +17,10 @@ import 'package:taskly_bloc/presentation/shared/session/session_shared_data_serv
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
-import 'package:taskly_bloc/presentation/shared/widgets/display_density_toggle.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
@@ -56,7 +55,6 @@ class _RoutinesPageState extends State<RoutinesPage> {
     BuildContext sheetContext, {
     required List<Value> values,
     required List<RoutineListItem> routines,
-    required DisplayDensity density,
   }) async {
     final routineListBloc = sheetContext.read<RoutineListBloc>();
     final sortedValues = values.toList(growable: false)..sort(_compareValues);
@@ -65,7 +63,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
       context: sheetContext,
       sortGroups: [
         FilterSortRadioGroup(
-          title: 'Sort',
+          title: sheetContext.l10n.sortMenuTitle,
           options: [
             for (final order in RoutineSortOrder.values)
               FilterSortRadioOption(value: order, label: order.label),
@@ -79,24 +77,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
       ],
       sections: [
         FilterSortSection(
-          title: 'View',
-          child: Builder(
-            builder: (sectionContext) {
-              return DisplayDensityToggle(
-                density: density,
-                onChanged: (next) {
-                  if (next == density) return;
-                  sheetContext.read<DisplayDensityBloc>().add(
-                    DisplayDensitySet(next),
-                  );
-                  Navigator.of(sectionContext).pop();
-                },
-              );
-            },
-          ),
-        ),
-        FilterSortSection(
-          title: 'Values',
+          title: sheetContext.l10n.valuesLabel,
           child: BlocProvider.value(
             value: routineListBloc,
             child: BlocSelector<RoutineListBloc, RoutineListState, String?>(
@@ -109,7 +90,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
                 return Column(
                   children: [
                     _RoutineValueFilterRow(
-                      label: 'All values',
+                      label: sheetContext.l10n.allValuesLabel,
                       count: counts.total,
                       selected: selectedValueId == null,
                       icon: Icons.filter_list_rounded,
@@ -152,7 +133,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
       ],
       toggles: [
         FilterSortToggle(
-          title: 'Show inactive',
+          title: sheetContext.l10n.showInactiveLabel,
           value: _showInactive,
           onChanged: (_) => _toggleShowInactive(),
         ),
@@ -160,11 +141,21 @@ class _RoutinesPageState extends State<RoutinesPage> {
     );
   }
 
+  Future<void> _showDensitySheet(
+    BuildContext context, {
+    required DisplayDensity density,
+  }) async {
+    await showDisplayDensitySheet(
+      context: context,
+      density: density,
+      onChanged: (next) {
+        context.read<DisplayDensityBloc>().add(DisplayDensitySet(next));
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isCompactScreen = Breakpoints.isCompact(
-      MediaQuery.sizeOf(context).width,
-    );
     return MultiBlocProvider(
       providers: [
         BlocProvider<RoutineListBloc>(
@@ -181,9 +172,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
           create: (context) => DisplayDensityBloc(
             settingsRepository: context.read<SettingsRepositoryContract>(),
             pageKey: PageKey.routines,
-            defaultDensity: isCompactScreen
-                ? DisplayDensity.compact
-                : DisplayDensity.standard,
+            defaultDensity: DisplayDensity.compact,
           )..add(const DisplayDensityStarted()),
         ),
         BlocProvider(create: (_) => RoutineSelectionBloc()),
@@ -204,7 +193,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
                     : AppBar(
                         actions: [
                           IconButton(
-                            tooltip: 'Filter & sort',
+                            tooltip: context.l10n.filterSortTooltip,
                             onPressed: () {
                               final state = context
                                   .read<RoutineListBloc>()
@@ -214,21 +203,35 @@ class _RoutinesPageState extends State<RoutinesPage> {
                                 context,
                                 values: state.values,
                                 routines: state.routines,
-                                density: density,
                               );
                             },
                             icon: const Icon(Icons.tune_rounded),
                           ),
                           TasklyOverflowMenuButton<_RoutinesMenuAction>(
-                            tooltip: 'More',
+                            tooltip: MaterialLocalizations.of(
+                              context,
+                            ).moreButtonTooltip,
                             itemsBuilder: (context) => [
-                              const PopupMenuItem(
+                              PopupMenuItem(
+                                value: _RoutinesMenuAction.density,
+                                child: TasklyMenuItemLabel(
+                                  context.l10n.displayDensityTitle,
+                                ),
+                              ),
+                              PopupMenuItem(
                                 value: _RoutinesMenuAction.selectMultiple,
-                                child: Text('Select multiple'),
+                                child: TasklyMenuItemLabel(
+                                  context.l10n.selectMultipleLabel,
+                                ),
                               ),
                             ],
                             onSelected: (action) {
                               switch (action) {
+                                case _RoutinesMenuAction.density:
+                                  _showDensitySheet(
+                                    context,
+                                    density: density,
+                                  );
                                 case _RoutinesMenuAction.selectMultiple:
                                   context
                                       .read<RoutineSelectionBloc>()
@@ -314,7 +317,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
   }
 }
 
-enum _RoutinesMenuAction { selectMultiple }
+enum _RoutinesMenuAction { density, selectMultiple }
 
 class _RoutinesFilterLayout extends StatelessWidget {
   const _RoutinesFilterLayout({

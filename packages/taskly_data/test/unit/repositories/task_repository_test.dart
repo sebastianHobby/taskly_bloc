@@ -3,6 +3,7 @@ library;
 
 import '../../helpers/test_imports.dart';
 import '../../helpers/test_db.dart';
+import '../../helpers/fixed_clock.dart';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:matcher/matcher.dart' as matcher;
@@ -116,6 +117,62 @@ void main() {
         ),
         throwsA(isA<InputValidationFailure>()),
       );
+    });
+
+    testSafe('bulkRescheduleDeadlines returns count on no-op update', () async {
+      final db = createAutoClosingDb();
+      final fixedNow = DateTime.utc(2026, 2, 9, 12);
+      final deadlineDay = DateTime.utc(2026, 2, 10);
+      final repo = TaskRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+        clock: FixedClock(fixedNow),
+      );
+
+      await repo.create(name: 'Task A', deadlineDate: deadlineDay);
+      await repo.create(name: 'Task B', deadlineDate: deadlineDay);
+      final ids = (await db.select(db.taskTable).get())
+          .map((t) => t.id)
+          .toList();
+
+      final updated = await repo.bulkRescheduleDeadlines(
+        taskIds: ids,
+        deadlineDate: deadlineDay,
+      );
+
+      expect(updated, equals(ids.length));
+      final rows = await db.select(db.taskTable).get();
+      expect(rows.map((r) => r.deadlineDate).toSet(), equals({deadlineDay}));
+    });
+
+    testSafe('bulkRescheduleStarts returns count on no-op update', () async {
+      final db = createAutoClosingDb();
+      final fixedNow = DateTime.utc(2026, 2, 9, 12);
+      final startDay = DateTime.utc(2026, 2, 11);
+      final repo = TaskRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+        clock: FixedClock(fixedNow),
+      );
+
+      await repo.create(name: 'Task A', startDate: startDay);
+      await repo.create(name: 'Task B', startDate: startDay);
+      final ids = (await db.select(db.taskTable).get())
+          .map((t) => t.id)
+          .toList();
+
+      final updated = await repo.bulkRescheduleStarts(
+        taskIds: ids,
+        startDate: startDay,
+      );
+
+      expect(updated, equals(ids.length));
+      final rows = await db.select(db.taskTable).get();
+      expect(rows.map((r) => r.startDate).toSet(), equals({startDay}));
     });
 
     testSafe('setPinned updates pinned state', () async {

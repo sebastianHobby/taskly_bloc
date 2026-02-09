@@ -669,8 +669,9 @@ class ProjectRepository implements ProjectRepositoryContract {
     required DateTime deadlineDate,
     OperationContext? context,
   }) async {
-    final ids = projectIds
-        .map((id) => id.trim())
+    final rawIds = projectIds.toList(growable: false);
+    final trimmedIds = rawIds.map((id) => id.trim()).toList(growable: false);
+    final ids = trimmedIds
         .where((id) => id.isNotEmpty)
         .toSet()
         .toList(growable: false);
@@ -679,8 +680,24 @@ class ProjectRepository implements ProjectRepositoryContract {
     return FailureGuard.run(
       () async {
         final normalizedDeadline = dateOnlyOrNull(deadlineDate);
+        final normalizedDeadlineEncoded = encodeDateOnlyOrNull(
+          normalizedDeadline,
+        );
         final now = _clock.nowUtc();
         final psMetadata = encodeCrudMetadata(context, clock: _clock);
+        final baseFields = context?.toLogFields() ?? const <String, Object?>{};
+        final nonEmptyIds = trimmedIds
+            .where((id) => id.isNotEmpty)
+            .toList(growable: false);
+        final duplicateIdCount =
+            nonEmptyIds.length - nonEmptyIds.toSet().length;
+        final emptyIdCount = trimmedIds.length - nonEmptyIds.length;
+
+        List<String> sampleIds(Iterable<String> values, {int max = 20}) {
+          final list = values.toList(growable: false);
+          if (list.length <= max) return list;
+          return list.take(max).toList(growable: false);
+        }
 
         return driftDb.transaction(() async {
           final existingIds =
@@ -691,6 +708,26 @@ class ProjectRepository implements ProjectRepositoryContract {
                   .get();
 
           if (existingIds.length != ids.length) {
+            final existingSet = existingIds.toSet();
+            final missingIds = ids
+                .where((id) => !existingSet.contains(id))
+                .toList(growable: false);
+            AppLog.warnStructured(
+              'data.project',
+              'bulk deadline update missing projects',
+              fields: <String, Object?>{
+                ...baseFields,
+                'projectCount': ids.length,
+                'inputProjectCount': rawIds.length,
+                'emptyIdCount': emptyIdCount,
+                'duplicateIdCount': duplicateIdCount,
+                'deadlineDate': deadlineDate.toIso8601String(),
+                'normalizedDeadline': normalizedDeadlineEncoded,
+                'missingProjectCount': missingIds.length,
+                'missingProjectIdsSample': sampleIds(missingIds),
+                'requestedProjectIdsSample': sampleIds(ids),
+              },
+            );
             throw RepositoryNotFoundException(
               'Some projects were not found for bulk deadline update',
             );
@@ -710,7 +747,68 @@ class ProjectRepository implements ProjectRepositoryContract {
               );
 
           if (updated != ids.length) {
-            throw RepositoryException('Bulk project deadline update failed');
+            final rows =
+                await (driftDb.selectOnly(driftDb.projectTable)
+                      ..addColumns([
+                        driftDb.projectTable.id,
+                        driftDb.projectTable.deadlineDate,
+                        driftDb.projectTable.updatedAt,
+                      ])
+                      ..where(driftDb.projectTable.id.isIn(ids)))
+                    .get();
+            final rowSnapshots = <Map<String, Object?>>[];
+            final matchingDeadlineIds = <String>[];
+            final nonMatchingDeadlineIds = <String>[];
+            var snapshotCount = 0;
+            for (final row in rows) {
+              final id = row.read(driftDb.projectTable.id)!;
+              final dbDeadline = row.read(driftDb.projectTable.deadlineDate);
+              final dbUpdatedAt = row.read(driftDb.projectTable.updatedAt);
+              if (dbDeadline == normalizedDeadlineEncoded) {
+                matchingDeadlineIds.add(id);
+              } else {
+                nonMatchingDeadlineIds.add(id);
+              }
+              if (snapshotCount < 20) {
+                rowSnapshots.add(<String, Object?>{
+                  'id': id,
+                  'deadlineDate': dbDeadline,
+                  'updatedAt': dbUpdatedAt?.toIso8601String(),
+                });
+                snapshotCount += 1;
+              }
+            }
+
+            final verified =
+                rows.length == ids.length && nonMatchingDeadlineIds.isEmpty;
+            AppLog.warnStructured(
+              'data.project',
+              verified
+                  ? 'bulk deadline update rowcount mismatch (verified)'
+                  : 'bulk deadline update rowcount mismatch',
+              fields: <String, Object?>{
+                ...baseFields,
+                'projectCount': ids.length,
+                'inputProjectCount': rawIds.length,
+                'emptyIdCount': emptyIdCount,
+                'duplicateIdCount': duplicateIdCount,
+                'updatedCount': updated,
+                'rowCount': rows.length,
+                'deadlineDate': deadlineDate.toIso8601String(),
+                'normalizedDeadline': normalizedDeadlineEncoded,
+                'matchingDeadlineCount': matchingDeadlineIds.length,
+                'nonMatchingDeadlineCount': nonMatchingDeadlineIds.length,
+                'nonMatchingDeadlineIdsSample': sampleIds(
+                  nonMatchingDeadlineIds,
+                ),
+                'rowSnapshotSample': rowSnapshots,
+                'requestedProjectIdsSample': sampleIds(ids),
+              },
+            );
+            if (!verified) {
+              throw RepositoryException('Bulk project deadline update failed');
+            }
+            return ids.length;
           }
 
           return updated;

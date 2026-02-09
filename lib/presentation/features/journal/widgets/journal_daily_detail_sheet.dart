@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_daily_edit_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -68,7 +69,8 @@ class JournalDailyDetailSheet extends StatelessWidget {
           return <TrackerGroup?>[null, ...state.groups];
         }
 
-        String groupLabel(TrackerGroup? group) => group?.name ?? 'Ungrouped';
+        String groupLabel(TrackerGroup? group) =>
+            group?.name ?? context.l10n.journalGroupUngrouped;
 
         List<TrackerDefinition> trackersForGroup(String? groupId) {
           final key = groupId ?? '';
@@ -199,7 +201,7 @@ class JournalDailyDetailSheet extends StatelessWidget {
                     SizedBox(height: TasklyTokens.of(context).spaceSm),
                     if (choices.isEmpty)
                       Text(
-                        'No options',
+                        context.l10n.journalNoOptions,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -220,7 +222,9 @@ class JournalDailyDetailSheet extends StatelessWidget {
           return ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(d.name),
-            subtitle: Text('Unsupported: ${d.valueType}'),
+            subtitle: Text(
+              context.l10n.journalUnsupportedValueType(d.valueType),
+            ),
           );
         }
 
@@ -234,7 +238,9 @@ class JournalDailyDetailSheet extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      readOnly ? 'Daily summary' : 'Edit daily',
+                      readOnly
+                          ? context.l10n.journalDailySummaryTitle
+                          : context.l10n.journalEditDaily,
                       style: theme.textTheme.titleLarge,
                     ),
                     const Spacer(),

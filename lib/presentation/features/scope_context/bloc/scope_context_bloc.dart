@@ -22,6 +22,18 @@ sealed class ScopeContextState {
   const ScopeContextState();
 }
 
+enum ScopeContextTitleKind {
+  project,
+  value,
+}
+
+class ScopeContextTitle {
+  const ScopeContextTitle({required this.kind, this.name});
+
+  final ScopeContextTitleKind kind;
+  final String? name;
+}
+
 final class ScopeContextLoading extends ScopeContextState {
   const ScopeContextLoading();
 }
@@ -33,15 +45,15 @@ final class ScopeContextLoaded extends ScopeContextState {
     this.projectCount,
   });
 
-  final String title;
+  final ScopeContextTitle title;
   final int taskCount;
   final int? projectCount;
 }
 
 final class ScopeContextError extends ScopeContextState {
-  const ScopeContextError({required this.message});
+  const ScopeContextError({this.error});
 
-  final String message;
+  final Object? error;
 }
 
 class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
@@ -108,7 +120,12 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
 
         final projectCount$ = _projectRepository.watchAllCount(projectQuery);
 
-        return Rx.combineLatest3<String, int, int, ScopeContextState>(
+        return Rx.combineLatest3<
+          ScopeContextTitle,
+          int,
+          int,
+          ScopeContextState
+        >(
           title$,
           taskCount$,
           projectCount$,
@@ -119,7 +136,7 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
           ),
         );
       }(),
-      _ => Rx.combineLatest2<String, int, ScopeContextState>(
+      _ => Rx.combineLatest2<ScopeContextTitle, int, ScopeContextState>(
         title$,
         taskCount$,
         (title, taskCount) => ScopeContextLoaded(
@@ -132,8 +149,7 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
     await emit.forEach<ScopeContextState>(
       combined$,
       onData: (state) => state,
-      onError: (error, stackTrace) =>
-          ScopeContextError(message: error.toString()),
+      onError: (error, stackTrace) => ScopeContextError(error: error),
     );
   }
 
@@ -155,16 +171,26 @@ class ScopeContextBloc extends Bloc<ScopeContextEvent, ScopeContextState> {
     };
   }
 
-  Stream<String> _scopeTitleStream(ProjectsScope scope) {
+  Stream<ScopeContextTitle> _scopeTitleStream(ProjectsScope scope) {
     return switch (scope) {
       ProjectsProjectScope(:final projectId) =>
         _projectRepository
             .watchById(projectId)
-            .map((project) => project?.name ?? 'Project'),
+            .map(
+              (project) => ScopeContextTitle(
+                kind: ScopeContextTitleKind.project,
+                name: project?.name,
+              ),
+            ),
       ProjectsValueScope(:final valueId) =>
         _valueRepository
             .watchById(valueId)
-            .map((value) => value?.name ?? 'Value'),
+            .map(
+              (value) => ScopeContextTitle(
+                kind: ScopeContextTitleKind.value,
+                name: value?.name,
+              ),
+            ),
     };
   }
 }

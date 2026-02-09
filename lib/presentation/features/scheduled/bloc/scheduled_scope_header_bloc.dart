@@ -20,20 +20,37 @@ sealed class ScheduledScopeHeaderState {
   const ScheduledScopeHeaderState();
 }
 
+enum ScheduledScopeHeaderKind {
+  project,
+  value,
+}
+
+enum ScheduledScopeHeaderErrorType {
+  notFound,
+  loadFailed,
+}
+
 final class ScheduledScopeHeaderLoading extends ScheduledScopeHeaderState {
   const ScheduledScopeHeaderLoading();
 }
 
 final class ScheduledScopeHeaderLoaded extends ScheduledScopeHeaderState {
-  const ScheduledScopeHeaderLoaded({required this.title});
+  const ScheduledScopeHeaderLoaded({required this.kind, required this.name});
 
-  final String title;
+  final ScheduledScopeHeaderKind kind;
+  final String name;
 }
 
 final class ScheduledScopeHeaderError extends ScheduledScopeHeaderState {
-  const ScheduledScopeHeaderError({required this.message});
+  const ScheduledScopeHeaderError({
+    required this.kind,
+    required this.type,
+    this.error,
+  });
 
-  final String message;
+  final ScheduledScopeHeaderKind kind;
+  final ScheduledScopeHeaderErrorType type;
+  final Object? error;
 }
 
 class ScheduledScopeHeaderBloc
@@ -84,15 +101,19 @@ class ScheduledScopeHeaderBloc
           onData: (project) {
             if (project == null) {
               return const ScheduledScopeHeaderError(
-                message: 'Project not found',
+                kind: ScheduledScopeHeaderKind.project,
+                type: ScheduledScopeHeaderErrorType.notFound,
               );
             }
             return ScheduledScopeHeaderLoaded(
-              title: 'Project: ${project.name}',
+              kind: ScheduledScopeHeaderKind.project,
+              name: project.name,
             );
           },
-          onError: (error, stackTrace) => const ScheduledScopeHeaderError(
-            message: 'Failed to load project',
+          onError: (error, stackTrace) => ScheduledScopeHeaderError(
+            kind: ScheduledScopeHeaderKind.project,
+            type: ScheduledScopeHeaderErrorType.loadFailed,
+            error: error,
           ),
         );
       case ValueScheduledScope(:final valueId):
@@ -101,13 +122,19 @@ class ScheduledScopeHeaderBloc
           onData: (value) {
             if (value == null) {
               return const ScheduledScopeHeaderError(
-                message: 'Value not found',
+                kind: ScheduledScopeHeaderKind.value,
+                type: ScheduledScopeHeaderErrorType.notFound,
               );
             }
-            return ScheduledScopeHeaderLoaded(title: 'Value: ${value.name}');
+            return ScheduledScopeHeaderLoaded(
+              kind: ScheduledScopeHeaderKind.value,
+              name: value.name,
+            );
           },
-          onError: (error, stackTrace) => const ScheduledScopeHeaderError(
-            message: 'Failed to load value',
+          onError: (error, stackTrace) => ScheduledScopeHeaderError(
+            kind: ScheduledScopeHeaderKind.value,
+            type: ScheduledScopeHeaderErrorType.loadFailed,
+            error: error,
           ),
         );
     }

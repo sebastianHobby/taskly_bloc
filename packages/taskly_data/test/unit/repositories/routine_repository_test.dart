@@ -71,7 +71,7 @@ Future<void> _seedValue(AppDatabase db) async {
       .into(db.valueTable)
       .insert(
         ValueTableCompanion.insert(
-          id: const Value('value-1'),
+          id: 'value-1',
           name: 'Health',
           color: '#00AA00',
         ),

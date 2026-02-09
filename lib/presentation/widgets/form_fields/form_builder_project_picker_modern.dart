@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -21,7 +22,7 @@ class FormBuilderProjectPickerModern extends StatelessWidget {
     this.enabled = true,
     this.isRequired = false,
     this.allowNoProject = true,
-    this.noProjectText = 'No Project',
+    this.noProjectText,
     super.key,
   });
 
@@ -34,13 +35,14 @@ class FormBuilderProjectPickerModern extends StatelessWidget {
   final bool enabled;
   final bool isRequired;
   final bool allowNoProject;
-  final String noProjectText;
+  final String? noProjectText;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final effectiveNoProjectText = noProjectText ?? context.l10n.noProjectLabel;
 
     final options = <DropdownMenuItem<String>>[
       if (allowNoProject)
@@ -63,7 +65,7 @@ class FormBuilderProjectPickerModern extends StatelessWidget {
                 ),
               ),
               Text(
-                noProjectText,
+                effectiveNoProjectText,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurface.withValues(alpha: 0.6),
                 ),

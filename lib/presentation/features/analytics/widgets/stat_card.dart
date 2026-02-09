@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -14,7 +15,7 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final presentation = StatPresentation.fromStat(stat);
+    final presentation = StatPresentation.fromStat(stat, context.l10n);
 
     return Card(
       child: InkWell(
@@ -102,41 +103,43 @@ class StatPresentation {
     this.description,
   });
 
-  factory StatPresentation.fromStat(StatResult stat) {
+  factory StatPresentation.fromStat(StatResult stat, AppLocalizations l10n) {
     final value = stat.value;
     return switch (stat.statType) {
       TaskStatType.totalCount => StatPresentation(
-        label: 'Total Tasks',
+        label: l10n.analyticsStatTotalTasksLabel,
         valueText: value.toStringAsFixed(0),
       ),
       TaskStatType.completedCount => StatPresentation(
-        label: 'Completed',
+        label: l10n.analyticsStatCompletedLabel,
         valueText: value.toStringAsFixed(0),
       ),
       TaskStatType.completionRate => StatPresentation(
-        label: 'Completion Rate',
-        valueText: '${value.toStringAsFixed(0)}%',
+        label: l10n.analyticsStatCompletionRateLabel,
+        valueText: l10n.analyticsPercentValue(value.round()),
       ),
       TaskStatType.staleCount => StatPresentation(
-        label: 'Stale Tasks',
+        label: l10n.analyticsStatStaleTasksLabel,
         valueText: value.toStringAsFixed(0),
-        description: _staleDescription(stat.metadata),
+        description: _staleDescription(stat.metadata, l10n),
       ),
       TaskStatType.overdueCount => StatPresentation(
-        label: 'Overdue',
+        label: l10n.analyticsStatOverdueLabel,
         valueText: value.toStringAsFixed(0),
       ),
       TaskStatType.avgDaysToComplete => StatPresentation(
-        label: 'Avg Days to Complete',
-        valueText: value == 0 ? 'N/A' : '${value.toStringAsFixed(1)} days',
+        label: l10n.analyticsStatAverageDaysLabel,
+        valueText: value == 0
+            ? l10n.analyticsNotAvailableLabel
+            : l10n.analyticsDaysValue(value.toDouble()),
       ),
       TaskStatType.completedThisWeek => StatPresentation(
-        label: 'Completed This Week',
+        label: l10n.analyticsStatCompletedThisWeekLabel,
         valueText: value.toStringAsFixed(0),
       ),
       TaskStatType.velocity => StatPresentation(
-        label: 'Velocity',
-        valueText: '${value.toStringAsFixed(1)} tasks/week',
+        label: l10n.analyticsStatVelocityLabel,
+        valueText: l10n.analyticsVelocityValue(value.toDouble()),
       ),
     };
   }
@@ -145,10 +148,13 @@ class StatPresentation {
   final String valueText;
   final String? description;
 
-  static String? _staleDescription(Map<String, Object?> metadata) {
+  static String? _staleDescription(
+    Map<String, Object?> metadata,
+    AppLocalizations l10n,
+  ) {
     final threshold = metadata['staleThresholdDays'];
     if (threshold is int) {
-      return 'No activity for $threshold+ days';
+      return l10n.analyticsStaleDescription(threshold);
     }
     return null;
   }

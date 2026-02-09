@@ -83,18 +83,25 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
             );
 
         if (updated == 0) {
-          await _database
-              .into(_database.analyticsSnapshots)
-              .insert(
-                AnalyticsSnapshotsCompanion(
-                  id: Value(snapshotId),
-                  entityType: Value(snapshot.entityType),
-                  entityId: Value(snapshot.entityId),
-                  snapshotDate: Value(snapshot.snapshotDate),
-                  metrics: Value(snapshot.metrics),
-                ),
-                mode: InsertMode.insertOrAbort,
-              );
+          final existing =
+              await (_database.selectOnly(_database.analyticsSnapshots)
+                    ..addColumns([_database.analyticsSnapshots.id])
+                    ..where(_database.analyticsSnapshots.id.equals(snapshotId)))
+                  .getSingleOrNull();
+          if (existing == null) {
+            await _database
+                .into(_database.analyticsSnapshots)
+                .insert(
+                  AnalyticsSnapshotsCompanion(
+                    id: Value(snapshotId),
+                    entityType: Value(snapshot.entityType),
+                    entityId: Value(snapshot.entityId),
+                    snapshotDate: Value(snapshot.snapshotDate),
+                    metrics: Value(snapshot.metrics),
+                  ),
+                  mode: InsertMode.insertOrAbort,
+                );
+          }
         }
       },
       area: 'data.analytics',

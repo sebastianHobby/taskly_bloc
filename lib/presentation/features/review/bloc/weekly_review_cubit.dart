@@ -1,16 +1,15 @@
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
-import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_core/logging.dart';
 
 class WeeklyReviewConfig {
   WeeklyReviewConfig({
@@ -19,7 +18,6 @@ class WeeklyReviewConfig {
     required this.valueWinsCount,
     required this.maintenanceEnabled,
     required this.showDeadlineRisk,
-    required this.showDueSoonUnderControl,
     required this.showStaleItems,
     required this.taskStaleThresholdDays,
     required this.projectIdleThresholdDays,
@@ -35,7 +33,6 @@ class WeeklyReviewConfig {
       valueWinsCount: settings.valuesSummaryWinsCount,
       maintenanceEnabled: settings.maintenanceEnabled,
       showDeadlineRisk: settings.maintenanceDeadlineRiskEnabled,
-      showDueSoonUnderControl: settings.maintenanceDueSoonEnabled,
       showStaleItems: settings.maintenanceStaleEnabled,
       taskStaleThresholdDays: settings.maintenanceTaskStaleThresholdDays,
       projectIdleThresholdDays: settings.maintenanceProjectIdleThresholdDays,
@@ -51,7 +48,6 @@ class WeeklyReviewConfig {
   final int valueWinsCount;
   final bool maintenanceEnabled;
   final bool showDeadlineRisk;
-  final bool showDueSoonUnderControl;
   final bool showStaleItems;
   final int taskStaleThresholdDays;
   final int projectIdleThresholdDays;
@@ -92,7 +88,7 @@ class WeeklyReviewValueWin {
     required this.completionCount,
   });
 
-  final String valueName;
+  final String? valueName;
   final int completionCount;
 }
 
@@ -156,27 +152,57 @@ class WeeklyReviewRatingsSummary {
   }
 }
 
-class WeeklyReviewMaintenanceItem {
-  const WeeklyReviewMaintenanceItem({
-    required this.title,
-    required this.description,
+enum WeeklyReviewMaintenanceSectionType {
+  deadlineRisk,
+  staleItems,
+  frequentlySnoozed,
+}
+
+sealed class WeeklyReviewMaintenanceItem {
+  const WeeklyReviewMaintenanceItem({required this.name});
+
+  final String? name;
+}
+
+final class WeeklyReviewDeadlineRiskItem extends WeeklyReviewMaintenanceItem {
+  const WeeklyReviewDeadlineRiskItem({
+    required super.name,
+    required this.dueInDays,
+    required this.unscheduledCount,
   });
 
-  final String title;
-  final String description;
+  final int? dueInDays;
+  final int unscheduledCount;
+}
+
+final class WeeklyReviewStaleItem extends WeeklyReviewMaintenanceItem {
+  const WeeklyReviewStaleItem({
+    required super.name,
+    required this.thresholdDays,
+  });
+
+  final int thresholdDays;
+}
+
+final class WeeklyReviewFrequentSnoozedItem
+    extends WeeklyReviewMaintenanceItem {
+  const WeeklyReviewFrequentSnoozedItem({
+    required super.name,
+    required this.snoozeCount,
+    required this.totalSnoozeDays,
+  });
+
+  final int snoozeCount;
+  final int totalSnoozeDays;
 }
 
 class WeeklyReviewMaintenanceSection {
   const WeeklyReviewMaintenanceSection({
-    required this.id,
-    required this.title,
-    required this.emptyMessage,
+    required this.type,
     required this.items,
   });
 
-  final String id;
-  final String title;
-  final String emptyMessage;
+  final WeeklyReviewMaintenanceSectionType type;
   final List<WeeklyReviewMaintenanceItem> items;
 }
 
@@ -187,7 +213,7 @@ class WeeklyReviewState {
     this.valuesSummary,
     this.valueWins = const [],
     this.maintenanceSections = const [],
-    this.errorMessage,
+    this.error,
   });
 
   final WeeklyReviewStatus status;
@@ -195,7 +221,7 @@ class WeeklyReviewState {
   final WeeklyReviewValuesSummary? valuesSummary;
   final List<WeeklyReviewValueWin> valueWins;
   final List<WeeklyReviewMaintenanceSection> maintenanceSections;
-  final String? errorMessage;
+  final Object? error;
 
   WeeklyReviewState copyWith({
     WeeklyReviewStatus? status,
@@ -203,7 +229,7 @@ class WeeklyReviewState {
     WeeklyReviewValuesSummary? valuesSummary,
     List<WeeklyReviewValueWin>? valueWins,
     List<WeeklyReviewMaintenanceSection>? maintenanceSections,
-    String? errorMessage,
+    Object? error,
   }) {
     return WeeklyReviewState(
       status: status ?? this.status,
@@ -211,7 +237,7 @@ class WeeklyReviewState {
       valuesSummary: valuesSummary ?? this.valuesSummary,
       valueWins: valueWins ?? this.valueWins,
       maintenanceSections: maintenanceSections ?? this.maintenanceSections,
-      errorMessage: errorMessage,
+      error: error,
     );
   }
 }
@@ -246,7 +272,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
   WeeklyReviewBloc({
     required AnalyticsService analyticsService,
     required AttentionEngineContract attentionEngine,
-    required SettingsRepositoryContract settingsRepository,
     required ValueRepositoryContract valueRepository,
     required ValueRatingsRepositoryContract valueRatingsRepository,
     required ValueRatingsWriteService valueRatingsWriteService,
@@ -255,7 +280,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     required NowService nowService,
   }) : _analyticsService = analyticsService,
        _attentionEngine = attentionEngine,
-       _settingsRepository = settingsRepository,
        _valueRepository = valueRepository,
        _valueRatingsRepository = valueRatingsRepository,
        _valueRatingsWriteService = valueRatingsWriteService,
@@ -273,7 +297,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
   final AnalyticsService _analyticsService;
   final AttentionEngineContract _attentionEngine;
-  final SettingsRepositoryContract _settingsRepository;
   final ValueRepositoryContract _valueRepository;
   final ValueRatingsRepositoryContract _valueRatingsRepository;
   final ValueRatingsWriteService _valueRatingsWriteService;
@@ -293,18 +316,21 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
   ) async {
     final config = event.config;
 
+    AppLog.warnStructured(
+      'weekly_review',
+      'requested',
+      fields: <String, Object?>{
+        'valuesSummaryEnabled': config.valuesSummaryEnabled,
+        'maintenanceEnabled': config.maintenanceEnabled,
+        'valuesWindowWeeks': config.valuesWindowWeeks,
+      },
+    );
+
     emit(state.copyWith(status: WeeklyReviewStatus.loading));
 
     try {
-      final allocation = await _settingsRepository.load(
-        SettingsKey.allocation,
-      );
-      final ratingsRequested =
-          allocation.suggestionSignal == SuggestionSignal.ratingsBased;
-
       final ratingsSummary = await _buildRatingsSummary(
         config: config,
-        ratingsRequested: ratingsRequested,
       );
 
       final shouldShowValuesSummary = config.valuesSummaryEnabled;
@@ -328,8 +354,20 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
           valuesSummary: summary,
           valueWins: wins,
           maintenanceSections: initialSections,
-          errorMessage: null,
+          error: null,
         ),
+      );
+
+      AppLog.warnStructured(
+        'weekly_review',
+        'ready',
+        fields: <String, Object?>{
+          'ratingsEnabled': ratingsSummary.ratingsEnabled,
+          'ratingsEntries': ratingsSummary.entries.length,
+          'ratingsComplete': ratingsSummary.isComplete,
+          'valuesSummary': summary?.hasData ?? false,
+          'valueWins': wins.length,
+        },
       );
 
       if (!config.maintenanceEnabled) return;
@@ -346,7 +384,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
         onData: (next) => next,
         onError: (error, stackTrace) => state.copyWith(
           status: WeeklyReviewStatus.failure,
-          errorMessage: '$error',
+          error: error,
         ),
       );
     } catch (e) {
@@ -354,7 +392,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       emit(
         state.copyWith(
           status: WeeklyReviewStatus.failure,
-          errorMessage: '$e',
+          error: e,
         ),
       );
     }
@@ -422,11 +460,19 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
   Future<WeeklyReviewRatingsSummary> _buildRatingsSummary({
     required WeeklyReviewConfig config,
-    required bool ratingsRequested,
   }) async {
     final values = await _valueRepository.getAll();
     final nowUtc = _nowService.nowUtc();
     final weekStartUtc = _weekStartFor(nowUtc);
+
+    AppLog.warnStructured(
+      'weekly_review',
+      'build_ratings_summary',
+      fields: <String, Object?>{
+        'values': values.length,
+        'weekStartUtc': weekStartUtc.toIso8601String(),
+      },
+    );
 
     if (values.isEmpty) {
       return WeeklyReviewRatingsSummary(
@@ -434,7 +480,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
         entries: const [],
         maxRating: _ratingsMax,
         graceWeeks: _ratingsGraceWeeks,
-        ratingsEnabled: ratingsRequested,
+        ratingsEnabled: true,
         ratingsOverdue: false,
         ratingsInGrace: false,
       );
@@ -442,6 +488,14 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
     final history = await _valueRatingsRepository.getAll(
       weeks: _ratingsHistoryWeeks,
+    );
+    AppLog.warnStructured(
+      'weekly_review',
+      'ratings_history',
+      fields: <String, Object?>{
+        'count': history.length,
+        'weeks': _ratingsHistoryWeeks,
+      },
     );
     final historyByValue = <String, List<ValueWeeklyRating>>{};
     for (final rating in history) {
@@ -690,7 +744,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
         .where((entry) => entry.value > 0)
         .take(maxCount)
         .map((entry) {
-          final valueName = valueById[entry.key]?.name ?? 'Value';
+          final valueName = valueById[entry.key]?.name;
           return WeeklyReviewValueWin(
             valueName: valueName,
             completionCount: entry.value,
@@ -711,21 +765,8 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       );
       sections.add(
         WeeklyReviewMaintenanceSection(
-          id: 'deadline-risk',
-          title: 'Deadline Risk',
-          emptyMessage: 'No deadline risks this week.',
+          type: WeeklyReviewMaintenanceSectionType.deadlineRisk,
           items: riskItems.map(_mapDeadlineRiskItem).toList(growable: false),
-        ),
-      );
-    }
-
-    if (config.showDueSoonUnderControl) {
-      sections.add(
-        const WeeklyReviewMaintenanceSection(
-          id: 'due-soon-under-control',
-          title: 'Due Soon (Under Control)',
-          emptyMessage: 'No upcoming projects need a check-in.',
-          items: [],
         ),
       );
     }
@@ -737,9 +778,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       ];
       sections.add(
         WeeklyReviewMaintenanceSection(
-          id: 'stale-items',
-          title: 'Stale Tasks & Projects',
-          emptyMessage: 'No stale items right now.',
+          type: WeeklyReviewMaintenanceSectionType.staleItems,
           items: staleItems
               .map((item) => _mapStaleItem(item, config))
               .toList(growable: false),
@@ -768,7 +807,10 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
     return base
         .map(
-          (section) => section.id == 'frequently-snoozed' && snoozed != null
+          (section) =>
+              section.type ==
+                      WeeklyReviewMaintenanceSectionType.frequentlySnoozed &&
+                  snoozed != null
               ? snoozed
               : section,
         )
@@ -779,11 +821,10 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     List<WeeklyReviewMaintenanceSection> currentSections,
   ) {
     final existing = currentSections.firstWhere(
-      (section) => section.id == 'frequently-snoozed',
+      (section) =>
+          section.type == WeeklyReviewMaintenanceSectionType.frequentlySnoozed,
       orElse: () => const WeeklyReviewMaintenanceSection(
-        id: 'frequently-snoozed',
-        title: 'Frequently Snoozed',
-        emptyMessage: 'No items are stuck in a snooze loop.',
+        type: WeeklyReviewMaintenanceSectionType.frequentlySnoozed,
         items: [],
       ),
     );
@@ -803,9 +844,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
     if (statsByTask.isEmpty) {
       return const WeeklyReviewMaintenanceSection(
-        id: 'frequently-snoozed',
-        title: 'Frequently Snoozed',
-        emptyMessage: 'No items are stuck in a snooze loop.',
+        type: WeeklyReviewMaintenanceSectionType.frequentlySnoozed,
         items: [],
       );
     }
@@ -821,9 +860,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
     if (flaggedIds.isEmpty) {
       return const WeeklyReviewMaintenanceSection(
-        id: 'frequently-snoozed',
-        title: 'Frequently Snoozed',
-        emptyMessage: 'No items are stuck in a snooze loop.',
+        type: WeeklyReviewMaintenanceSectionType.frequentlySnoozed,
         items: [],
       );
     }
@@ -836,69 +873,51 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       final stats = statsByTask[task.id];
       if (stats == null) continue;
 
-      final countLabel = stats.snoozeCount == 1
-          ? '1 snooze'
-          : '${stats.snoozeCount} snoozes';
-      final daysLabel = stats.totalSnoozeDays == 1
-          ? '1 day'
-          : '${stats.totalSnoozeDays} days';
-
       items.add(
-        WeeklyReviewMaintenanceItem(
-          title: task.name,
-          description:
-              'Snoozed $countLabel in the last 28 days ($daysLabel total).',
+        WeeklyReviewFrequentSnoozedItem(
+          name: task.name,
+          snoozeCount: stats.snoozeCount,
+          totalSnoozeDays: stats.totalSnoozeDays,
         ),
       );
     }
 
     return WeeklyReviewMaintenanceSection(
-      id: 'frequently-snoozed',
-      title: 'Frequently Snoozed',
-      emptyMessage: 'No items are stuck in a snooze loop.',
+      type: WeeklyReviewMaintenanceSectionType.frequentlySnoozed,
       items: items,
     );
   }
 
-  WeeklyReviewMaintenanceItem _mapDeadlineRiskItem(AttentionItem item) {
+  WeeklyReviewDeadlineRiskItem _mapDeadlineRiskItem(AttentionItem item) {
     final name =
         item.metadata?['project_name'] as String? ??
-        item.metadata?['entity_display_name'] as String? ??
-        'Project';
+        item.metadata?['entity_display_name'] as String?;
     final dueInDays = item.metadata?['due_in_days'] as int?;
     final unscheduled = item.metadata?['unscheduled_tasks_count'] as int? ?? 0;
 
-    final dueLabel = switch (dueInDays) {
-      null => 'due soon',
-      0 => 'due today',
-      1 => 'due tomorrow',
-      < 0 => 'overdue by ${dueInDays.abs()} days',
-      _ => 'due in $dueInDays days',
-    };
-
-    return WeeklyReviewMaintenanceItem(
-      title: name,
-      description: 'Project is $dueLabel with $unscheduled unscheduled tasks.',
+    return WeeklyReviewDeadlineRiskItem(
+      name: name,
+      dueInDays: dueInDays,
+      unscheduledCount: unscheduled,
     );
   }
 
-  WeeklyReviewMaintenanceItem _mapStaleItem(
+  WeeklyReviewStaleItem _mapStaleItem(
     AttentionItem item,
     WeeklyReviewConfig config,
   ) {
     final name =
         item.metadata?['task_name'] as String? ??
         item.metadata?['project_name'] as String? ??
-        item.metadata?['entity_display_name'] as String? ??
-        'Item';
+        item.metadata?['entity_display_name'] as String?;
 
     final thresholdDays = item.ruleKey == 'problem_task_stale'
         ? config.taskStaleThresholdDays
         : config.projectIdleThresholdDays;
 
-    return WeeklyReviewMaintenanceItem(
-      title: name,
-      description: 'No activity in $thresholdDays days.',
+    return WeeklyReviewStaleItem(
+      name: name,
+      thresholdDays: thresholdDays,
     );
   }
 

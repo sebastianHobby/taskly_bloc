@@ -123,12 +123,14 @@ TasklyValueRowData _buildRowData(
 
   final hasCompletionData = item.completionCount > 0;
   final completionLabel = hasCompletionData
-      ? '${item.completionSharePercent.toStringAsFixed(0)}% of completed tasks'
+      ? context.l10n.valuesCompletionShareLabel(
+          item.completionSharePercent.toStringAsFixed(0),
+        )
       : null;
-  const completionSubLabel = 'reflected this value';
+  final completionSubLabel = context.l10n.valuesCompletionShareSubtitle;
 
-  const emptyTitle = 'No completions yet';
-  const emptySubtitle = 'Start small - every action counts';
+  final emptyTitle = context.l10n.valuesCompletionEmptyTitle;
+  final emptySubtitle = context.l10n.valuesCompletionEmptySubtitle;
 
   final metrics = <TasklyValueRowMetric>[];
   if (item.activeTaskCount > 0) {

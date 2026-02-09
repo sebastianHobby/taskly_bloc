@@ -4,3 +4,4 @@
 library;
 
 export 'src/primitives/meta_badges.dart';
+export 'src/primitives/taskly_settings_card.dart';

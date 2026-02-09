@@ -17,10 +17,9 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
-import 'package:taskly_bloc/presentation/shared/widgets/display_density_toggle.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -43,10 +42,6 @@ class ProjectsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompactScreen = Breakpoints.isCompact(
-      MediaQuery.sizeOf(context).width,
-    );
-
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => ProjectsScreenBloc(scope: scope)),
@@ -60,9 +55,7 @@ class ProjectsPage extends StatelessWidget {
           create: (context) => DisplayDensityBloc(
             settingsRepository: context.read<SettingsRepositoryContract>(),
             pageKey: PageKey.projectOverview,
-            defaultDensity: isCompactScreen
-                ? DisplayDensity.compact
-                : DisplayDensity.standard,
+            defaultDensity: DisplayDensity.compact,
           )..add(const DisplayDensityStarted()),
         ),
         BlocProvider(create: (_) => SelectionBloc()),
@@ -175,8 +168,8 @@ class _ProjectsViewState extends State<_ProjectsView> {
   Future<void> _showFilterSheet({
     required List<Value> values,
     required List<ListRowUiModel> rows,
-    required DisplayDensity density,
   }) async {
+    final l10n = context.l10n;
     final countRows = _filterProjectsRows(
       rows: rows,
       selectedValueIds: const <String>{},
@@ -189,12 +182,12 @@ class _ProjectsViewState extends State<_ProjectsView> {
       context: context,
       sortGroups: [
         FilterSortRadioGroup(
-          title: 'Sort',
+          title: l10n.sortLabel,
           options: [
             for (final order in ProjectsSortOrder.values)
               FilterSortRadioOption(
                 value: order,
-                label: order.label,
+                label: order.label(l10n),
               ),
           ],
           selectedValue: _sortOrder,
@@ -206,29 +199,12 @@ class _ProjectsViewState extends State<_ProjectsView> {
       ],
       sections: [
         FilterSortSection(
-          title: 'View',
-          child: Builder(
-            builder: (sheetContext) {
-              return DisplayDensityToggle(
-                density: density,
-                onChanged: (next) {
-                  if (next == density) return;
-                  context.read<DisplayDensityBloc>().add(
-                    DisplayDensitySet(next),
-                  );
-                  Navigator.of(sheetContext).pop();
-                },
-              );
-            },
-          ),
-        ),
-        FilterSortSection(
-          title: 'Values',
+          title: l10n.valuesLabel,
           child: Builder(
             builder: (sheetContext) {
               if (hasScopedValue) {
                 return Text(
-                  'Value filters are disabled for scoped views.',
+                  l10n.projectsValueFiltersDisabled,
                   style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
                     color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
                   ),
@@ -237,7 +213,7 @@ class _ProjectsViewState extends State<_ProjectsView> {
               return Column(
                 children: [
                   _ValueFilterRow(
-                    label: 'All values',
+                    label: l10n.allValuesLabel,
                     count: counts.total,
                     selected: _selectedValueIds.isEmpty,
                     icon: Icons.filter_list_rounded,
@@ -269,6 +245,16 @@ class _ProjectsViewState extends State<_ProjectsView> {
           onChanged: _toggleShowCompleted,
         ),
       ],
+    );
+  }
+
+  Future<void> _showDensitySheet(DisplayDensity density) async {
+    await showDisplayDensitySheet(
+      context: context,
+      density: density,
+      onChanged: (DisplayDensity next) {
+        context.read<DisplayDensityBloc>().add(DisplayDensitySet(next));
+      },
     );
   }
 
@@ -345,7 +331,10 @@ class _ProjectsViewState extends State<_ProjectsView> {
         builder: (context, selectionState) {
           return Scaffold(
             appBar: selectionState.isSelectionMode
-                ? const SelectionAppBar(baseTitle: 'Projects', onExit: _noop)
+                ? SelectionAppBar(
+                    baseTitle: context.l10n.projectsTitle,
+                    onExit: _noop,
+                  )
                 : AppBar(
                     centerTitle: true,
                     toolbarHeight: chrome.projectsAppBarHeight,
@@ -353,8 +342,8 @@ class _ProjectsViewState extends State<_ProjectsView> {
                         ? TextField(
                             controller: _searchController,
                             focusNode: _searchFocusNode,
-                            decoration: const InputDecoration(
-                              hintText: 'Search your project list',
+                            decoration: InputDecoration(
+                              hintText: context.l10n.searchProjectsHint,
                               border: InputBorder.none,
                             ),
                             textInputAction: TextInputAction.search,
@@ -367,7 +356,7 @@ class _ProjectsViewState extends State<_ProjectsView> {
                         : null,
                     actions: [
                       IconButton(
-                        tooltip: 'Filter & sort',
+                        tooltip: context.l10n.filterSortTooltip,
                         icon: const Icon(Icons.tune_rounded),
                         style: iconButtonStyle,
                         onPressed: () {
@@ -376,36 +365,45 @@ class _ProjectsViewState extends State<_ProjectsView> {
                           _showFilterSheet(
                             values: state.values,
                             rows: state.rows,
-                            density: density,
                           );
                         },
                       ),
                       if (!_isSearching)
                         IconButton(
-                          tooltip: 'Search',
+                          tooltip: context.l10n.searchLabel,
                           icon: const Icon(Icons.search),
                           style: iconButtonStyle,
                           onPressed: () => _setSearchActive(true),
                         )
                       else
                         IconButton(
-                          tooltip: 'Close search',
+                          tooltip: context.l10n.closeSearchLabel,
                           icon: const Icon(Icons.close),
                           style: iconButtonStyle,
                           onPressed: () => _setSearchActive(false),
                         ),
                       TasklyOverflowMenuButton<_ProjectsMenuAction>(
-                        tooltip: 'More',
+                        tooltip: context.l10n.moreLabel,
                         icon: Icons.more_vert,
                         style: iconButtonStyle,
                         itemsBuilder: (context) => [
-                          const PopupMenuItem(
+                          PopupMenuItem(
+                            value: _ProjectsMenuAction.density,
+                            child: TasklyMenuItemLabel(
+                              context.l10n.displayDensityTitle,
+                            ),
+                          ),
+                          PopupMenuItem(
                             value: _ProjectsMenuAction.selectMultiple,
-                            child: TasklyMenuItemLabel('Select multiple'),
+                            child: TasklyMenuItemLabel(
+                              context.l10n.selectMultipleLabel,
+                            ),
                           ),
                         ],
                         onSelected: (action) {
                           switch (action) {
+                            case _ProjectsMenuAction.density:
+                              _showDensitySheet(density);
                             case _ProjectsMenuAction.selectMultiple:
                               context
                                   .read<SelectionBloc>()
@@ -491,6 +489,7 @@ class _ProjectsViewState extends State<_ProjectsView> {
                                     context,
                                     visibleRows,
                                     density: density,
+                                    selectionState: selectionState,
                                   ),
                                 ),
                               );
@@ -521,6 +520,7 @@ class _ProjectsViewState extends State<_ProjectsView> {
 void _noop() {}
 
 enum _ProjectsMenuAction {
+  density,
   selectMultiple,
 }
 
@@ -535,9 +535,9 @@ TasklyEmptyStateSpec _buildEmptySpec(
   if (query.isNotEmpty) {
     return TasklyEmptyStateSpec(
       icon: Icons.search,
-      title: 'No matches',
-      description: 'Try a different keyword.',
-      actionLabel: 'Clear search',
+      title: context.l10n.projectsSearchNoMatchesTitle,
+      description: context.l10n.projectsSearchNoMatchesDescription,
+      actionLabel: context.l10n.clearSearchLabel,
       onAction: () {
         context.read<ProjectsScreenBloc>().add(
           const ProjectsSearchQueryChanged(''),
@@ -550,16 +550,15 @@ TasklyEmptyStateSpec _buildEmptySpec(
     return TasklyEmptyStateSpec(
       icon: Icons.inbox_outlined,
       title: switch (scope) {
-        ProjectsValueScope() => 'No projects for this value yet',
-        ProjectsProjectScope() => 'No tasks in this project yet',
+        ProjectsValueScope() => context.l10n.projectsValueScopeEmptyTitle,
+        ProjectsProjectScope() => context.l10n.projectsProjectScopeEmptyTitle,
       },
       description: switch (scope) {
-        ProjectsValueScope() =>
-          'Add a project or assign this value to get started.',
+        ProjectsValueScope() => context.l10n.projectsValueScopeEmptyDescription,
         ProjectsProjectScope() =>
-          'Add tasks so My Day can pull from this project.',
+          context.l10n.projectsProjectScopeEmptyDescription,
       },
-      actionLabel: 'Create project',
+      actionLabel: context.l10n.addProjectAction,
       onAction: () => context.read<ProjectsScreenBloc>().add(
         const ProjectsCreateProjectRequested(),
       ),
@@ -591,9 +590,9 @@ TasklyEmptyStateSpec _buildEmptySpec(
 
   return TasklyEmptyStateSpec(
     icon: Icons.inbox_outlined,
-    title: 'Build your project list',
-    description: 'My Day is filled from here - add a project to get started.',
-    actionLabel: 'Add project',
+    title: context.l10n.projectsEmptyBuildTitle,
+    description: context.l10n.projectsEmptyBuildDescription,
+    actionLabel: context.l10n.addProjectAction,
     onAction: () => context.read<ProjectsScreenBloc>().add(
       const ProjectsCreateProjectRequested(),
     ),
@@ -629,8 +628,10 @@ List<TasklyRowSpec> _buildStandardRows(
   BuildContext context,
   List<ListRowUiModel> rows, {
   required DisplayDensity density,
+  required SelectionState selectionState,
 }) {
   final selection = context.read<SelectionBloc>();
+  final selectionMode = selectionState.isSelectionMode;
 
   final projectRowCache = rows.whereType<ProjectRowUiModel>().toList(
     growable: false,
@@ -643,7 +644,7 @@ List<TasklyRowSpec> _buildStandardRows(
             entityType: EntityType.project,
             entityId: r.project?.id ?? r.rowKey,
           ),
-          displayName: r.project?.name ?? 'Inbox',
+          displayName: r.project?.name ?? context.l10n.inboxLabel,
           canDelete: r.project != null,
           completed: r.project?.completed ?? false,
         ),
@@ -665,12 +666,34 @@ List<TasklyRowSpec> _buildStandardRows(
       dueSoonCount: row.dueSoonCount,
     );
 
-    final preset = density == DisplayDensity.compact
-        ? const TasklyProjectRowPreset.compact()
-        : const TasklyProjectRowPreset.standard();
+    final key = SelectionKey(
+      entityType: EntityType.project,
+      entityId: row.project!.id,
+    );
+    final isSelected = selectionState.selected.contains(key);
+
+    final preset = selectionMode
+        ? (density == DisplayDensity.compact
+              ? TasklyProjectRowPreset.bulkSelectionCompact(
+                  selected: isSelected,
+                )
+              : TasklyProjectRowPreset.bulkSelection(selected: isSelected))
+        : (density == DisplayDensity.compact
+              ? const TasklyProjectRowPreset.compact()
+              : const TasklyProjectRowPreset.standard());
 
     final actions = TasklyProjectRowActions(
-      onTap: () => Routing.toProject(context, row.project!),
+      onTap: () {
+        if (selection.shouldInterceptTapAsSelection()) {
+          selection.handleEntityTap(key);
+          return;
+        }
+        Routing.toProject(context, row.project!);
+      },
+      onLongPress: () => selection.enterSelectionMode(initialSelection: key),
+      onToggleSelected: selectionMode
+          ? () => selection.toggleSelection(key, extendRange: false)
+          : null,
     );
 
     specs.add(
@@ -847,7 +870,7 @@ class _ProjectsTitleHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Projects',
+                  context.l10n.projectsTitle,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),

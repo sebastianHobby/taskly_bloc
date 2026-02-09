@@ -278,7 +278,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
                 onClose: () => unawaited(closeEditor(context)),
               );
             }
-            return const Center(child: Text('Something went wrong'));
+            return Center(child: Text(context.l10n.genericErrorFallback));
           },
         );
       },

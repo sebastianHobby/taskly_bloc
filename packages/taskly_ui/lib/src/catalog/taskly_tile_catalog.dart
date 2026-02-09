@@ -11,6 +11,11 @@ class TasklyTileCatalog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final routineSelectionActions = TasklyRoutineRowActions(
+      onTap: _noop,
+      onToggleSelected: _noop,
+      onLongPress: _noop,
+    );
 
     final valueCareer = ValueChipData(
       label: 'Career',
@@ -41,7 +46,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-standard',
-        title: 'Task Ã‚Â· Standard',
+        title: 'Task · Standard',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-standard-1',
@@ -80,7 +85,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-primary-icon-only',
-        title: 'Task Â· Primary icon-only',
+        title: 'Task · Primary icon-only',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-primary-icon-only',
@@ -114,7 +119,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-bulk',
-        title: 'Task Ã‚Â· Bulk selection',
+        title: 'Task · Bulk selection',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-bulk-selected',
@@ -138,10 +143,36 @@ class TasklyTileCatalog extends StatelessWidget {
         style: const TasklyTaskRowStyle.bulkSelection(selected: false),
         actions: _taskActions,
       ),
+      TasklyRowSpec.header(
+        key: 'catalog-tasks-bulk-compact',
+        title: 'Task Â· Bulk selection (compact)',
+      ),
+      TasklyRowSpec.task(
+        key: 'catalog-task-bulk-compact-selected',
+        data: _taskData(
+          id: 't-bulk-c-1',
+          title: 'Sync weekly status notes',
+          meta: const TasklyEntityMetaData(),
+          leadingChip: valueFinance,
+        ),
+        style: const TasklyTaskRowStyle.bulkSelectionCompact(selected: true),
+        actions: _taskActions,
+      ),
+      TasklyRowSpec.task(
+        key: 'catalog-task-bulk-compact-unselected',
+        data: _taskData(
+          id: 't-bulk-c-2',
+          title: 'Update meeting notes',
+          meta: const TasklyEntityMetaData(),
+          leadingChip: valueFinance,
+        ),
+        style: const TasklyTaskRowStyle.bulkSelectionCompact(selected: false),
+        actions: _taskActions,
+      ),
 
       TasklyRowSpec.header(
         key: 'catalog-tasks-plan-pick',
-        title: 'Task Â· Plan pick',
+        title: 'Task · Plan pick',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-plan-pick-selected',
@@ -270,9 +301,9 @@ class TasklyTileCatalog extends StatelessWidget {
         data: TasklyRoutineRowData(
           id: 'r-standard-1',
           title: 'Gym session',
-          targetLabel: '3Ã—/week',
+          targetLabel: '3×/week',
           remainingLabel: '2 left',
-          windowLabel: '4 days left (Monâ€“Sun)',
+          windowLabel: '4 days left (Mon–Sun)',
           valueChip: valueHealth,
           labels: const TasklyRoutineRowLabels(
             primaryActionLabel: 'Log today',
@@ -356,7 +387,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-routines-plan-pick',
-        title: 'Routine Â· Plan pick',
+        title: 'Routine · Plan pick',
       ),
       TasklyRowSpec.routine(
         key: 'catalog-routine-plan-pick-selected',
@@ -405,13 +436,97 @@ class TasklyTileCatalog extends StatelessWidget {
         actions: _routineActions,
       ),
       TasklyRowSpec.header(
+        key: 'catalog-routines-bulk',
+        title: 'Routine Â· Bulk selection',
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-bulk-selected',
+        data: TasklyRoutineRowData(
+          id: 'r-bulk-1',
+          title: 'Breathwork session',
+          targetLabel: '3x/week',
+          remainingLabel: '2 left',
+          windowLabel: '4 days left',
+          valueChip: valueHealth,
+          progress: const TasklyRoutineProgressData(
+            completedCount: 1,
+            targetCount: 3,
+            windowLabel: '4 days left',
+          ),
+          selected: true,
+        ),
+        style: const TasklyRoutineRowStyle.bulkSelection(),
+        actions: routineSelectionActions,
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-bulk-unselected',
+        data: TasklyRoutineRowData(
+          id: 'r-bulk-2',
+          title: 'Book review',
+          targetLabel: '1x/week',
+          remainingLabel: '1 left',
+          windowLabel: '6 days left',
+          valueChip: valueKnowledge,
+          progress: const TasklyRoutineProgressData(
+            completedCount: 0,
+            targetCount: 1,
+            windowLabel: '6 days left',
+          ),
+          selected: false,
+        ),
+        style: const TasklyRoutineRowStyle.bulkSelection(),
+        actions: routineSelectionActions,
+      ),
+      TasklyRowSpec.header(
+        key: 'catalog-routines-bulk-compact',
+        title: 'Routine Â· Bulk selection (compact)',
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-bulk-compact-selected',
+        data: TasklyRoutineRowData(
+          id: 'r-bulk-c-1',
+          title: 'Evening walk',
+          targetLabel: '3x/week',
+          remainingLabel: '2 left',
+          windowLabel: '4 days left',
+          valueChip: valueHealth,
+          progress: const TasklyRoutineProgressData(
+            completedCount: 1,
+            targetCount: 3,
+            windowLabel: '4 days left',
+          ),
+          selected: true,
+        ),
+        style: const TasklyRoutineRowStyle.bulkSelectionCompact(),
+        actions: routineSelectionActions,
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-bulk-compact-unselected',
+        data: TasklyRoutineRowData(
+          id: 'r-bulk-c-2',
+          title: 'Language practice',
+          targetLabel: '5x/week',
+          remainingLabel: '3 left',
+          windowLabel: '2 days left',
+          valueChip: valueKnowledge,
+          progress: const TasklyRoutineProgressData(
+            completedCount: 2,
+            targetCount: 5,
+            windowLabel: '2 days left',
+          ),
+          selected: false,
+        ),
+        style: const TasklyRoutineRowStyle.bulkSelectionCompact(),
+        actions: routineSelectionActions,
+      ),
+      TasklyRowSpec.header(
         key: 'catalog-projects',
         title: 'Projects',
         trailingLabel: 'Presets',
       ),
       TasklyRowSpec.header(
         key: 'catalog-projects-standard',
-        title: 'Project Ã‚Â· Standard',
+        title: 'Project · Standard',
       ),
       TasklyRowSpec.project(
         key: 'catalog-project-standard-1',
@@ -488,7 +603,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-projects-bulk',
-        title: 'Project Ã‚Â· Bulk selection',
+        title: 'Project · Bulk selection',
       ),
       TasklyRowSpec.project(
         key: 'catalog-project-bulk-selected',
@@ -513,13 +628,47 @@ class TasklyTileCatalog extends StatelessWidget {
         actions: _projectActions,
       ),
       TasklyRowSpec.header(
+        key: 'catalog-projects-bulk-compact',
+        title: 'Project Â· Bulk selection (compact)',
+      ),
+      TasklyRowSpec.project(
+        key: 'catalog-project-bulk-compact-selected',
+        data: _projectData(
+          id: 'p-bulk-c-1',
+          title: 'Partner onboarding',
+          meta: const TasklyEntityMetaData(),
+          leadingChip: valueCareer,
+          taskCount: 6,
+          completedTaskCount: 2,
+        ),
+        preset: const TasklyProjectRowPreset.bulkSelectionCompact(
+          selected: true,
+        ),
+        actions: _projectActions,
+      ),
+      TasklyRowSpec.project(
+        key: 'catalog-project-bulk-compact-unselected',
+        data: _projectData(
+          id: 'p-bulk-c-2',
+          title: 'Financial tidy-up',
+          meta: const TasklyEntityMetaData(),
+          leadingChip: valueFinance,
+          taskCount: 4,
+          completedTaskCount: 1,
+        ),
+        preset: const TasklyProjectRowPreset.bulkSelectionCompact(
+          selected: false,
+        ),
+        actions: _projectActions,
+      ),
+      TasklyRowSpec.header(
         key: 'catalog-values',
         title: 'Values',
         trailingLabel: 'Presets',
       ),
       TasklyRowSpec.header(
         key: 'catalog-values-standard',
-        title: 'Value Ã‚Â· Standard',
+        title: 'Value · Standard',
       ),
       TasklyRowSpec.value(
         key: 'catalog-value-standard',
@@ -534,7 +683,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-values-hero',
-        title: 'Value Ã‚Â· Hero',
+        title: 'Value · Hero',
       ),
       TasklyRowSpec.value(
         key: 'catalog-value-hero',
@@ -576,7 +725,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-values-bulk',
-        title: 'Value Ã‚Â· Bulk selection',
+        title: 'Value · Bulk selection',
       ),
       TasklyRowSpec.value(
         key: 'catalog-value-bulk-selected',

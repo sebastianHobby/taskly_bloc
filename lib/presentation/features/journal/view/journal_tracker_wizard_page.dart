@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_tracker_wizard_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -84,7 +85,7 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
         }
 
         return Scaffold(
-          appBar: AppBar(title: const Text('New tracker')),
+          appBar: AppBar(title: Text(context.l10n.journalNewTrackerTitle)),
           body: Stepper(
             currentStep: step,
             onStepCancel: isSaving
@@ -132,12 +133,20 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                                 color: theme.colorScheme.onPrimary,
                               ),
                             )
-                          : Text(step == 2 ? 'Create' : 'Next'),
+                          : Text(
+                              step == 2
+                                  ? context.l10n.createLabel
+                                  : context.l10n.nextLabel,
+                            ),
                     ),
                     SizedBox(width: tokens.spaceSm),
                     TextButton(
                       onPressed: details.onStepCancel,
-                      child: Text(step == 0 ? 'Cancel' : 'Back'),
+                      child: Text(
+                        step == 0
+                            ? context.l10n.cancelLabel
+                            : context.l10n.backLabel,
+                      ),
                     ),
                   ],
                 ),
@@ -145,7 +154,7 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
             },
             steps: [
               Step(
-                title: const Text('Name'),
+                title: Text(context.l10n.nameLabel),
                 isActive: step >= 0,
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,9 +162,9 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                     TextField(
                       controller: _nameController,
                       enabled: !isSaving,
-                      decoration: const InputDecoration(
-                        labelText: 'Name',
-                        hintText: 'e.g. Read, Walk, Stretch',
+                      decoration: InputDecoration(
+                        labelText: context.l10n.nameLabel,
+                        hintText: context.l10n.journalTrackerNameHint,
                       ),
                       textInputAction: TextInputAction.next,
                       onChanged: (value) => context
@@ -165,11 +174,13 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                     SizedBox(height: tokens.spaceSm),
                     DropdownButtonFormField<String?>(
                       value: state.groupId,
-                      decoration: const InputDecoration(labelText: 'Group'),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.groupLabel,
+                      ),
                       items: [
-                        const DropdownMenuItem<String?>(
+                        DropdownMenuItem<String?>(
                           value: null,
-                          child: Text('Ungrouped'),
+                          child: Text(context.l10n.journalGroupUngrouped),
                         ),
                         for (final g in state.groups)
                           DropdownMenuItem<String?>(
@@ -187,7 +198,7 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                 ),
               ),
               Step(
-                title: const Text('Scope'),
+                title: Text(context.l10n.journalScopeTitle),
                 isActive: step >= 1,
                 content: Column(
                   children: [
@@ -200,9 +211,9 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                                 context.read<JournalTrackerWizardBloc>().add(
                                   JournalTrackerWizardScopeChanged(value!),
                                 ),
-                      title: const Text('Daily total'),
-                      subtitle: const Text(
-                        'Applies to the whole day.',
+                      title: Text(context.l10n.journalScopeDailyTotal),
+                      subtitle: Text(
+                        context.l10n.journalScopeDailyTotalSubtitle,
                       ),
                     ),
                     RadioListTile<JournalTrackerScopeOption>(
@@ -214,9 +225,9 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                                 context.read<JournalTrackerWizardBloc>().add(
                                   JournalTrackerWizardScopeChanged(value!),
                                 ),
-                      title: const Text('Momentary'),
-                      subtitle: const Text(
-                        'Applies only to this entry.',
+                      title: Text(context.l10n.journalScopeMomentary),
+                      subtitle: Text(
+                        context.l10n.journalScopeMomentarySubtitle,
                       ),
                     ),
                     RadioListTile<JournalTrackerScopeOption>(
@@ -228,23 +239,23 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                                 context.read<JournalTrackerWizardBloc>().add(
                                   JournalTrackerWizardScopeChanged(value!),
                                 ),
-                      title: const Text('Sleep / night'),
-                      subtitle: const Text(
-                        'Tracks a nightly total.',
+                      title: Text(context.l10n.journalScopeSleepNight),
+                      subtitle: Text(
+                        context.l10n.journalScopeSleepNightSubtitle,
                       ),
                     ),
                   ],
                 ),
               ),
               Step(
-                title: const Text('Measurement'),
+                title: Text(context.l10n.journalMeasurementTitle),
                 isActive: step >= 2,
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _MeasurementOption(
-                      title: 'Toggle',
-                      subtitle: 'Stats compare days with vs without.',
+                      title: context.l10n.journalMeasurementToggleTitle,
+                      subtitle: context.l10n.journalMeasurementToggleSubtitle,
                       selected:
                           state.measurement ==
                           JournalTrackerMeasurementType.toggle,
@@ -257,8 +268,8 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                             ),
                     ),
                     _MeasurementOption(
-                      title: 'Rating',
-                      subtitle: 'Stats use daily average.',
+                      title: context.l10n.journalMeasurementRatingTitle,
+                      subtitle: context.l10n.journalMeasurementRatingSubtitle,
                       selected:
                           state.measurement ==
                           JournalTrackerMeasurementType.rating,
@@ -271,10 +282,10 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                             ),
                     ),
                     _MeasurementOption(
-                      title: 'Quantity',
+                      title: context.l10n.journalMeasurementQuantityTitle,
                       subtitle: state.scope == JournalTrackerScopeOption.entry
-                          ? 'Stats can use total + frequency + typical amount.'
-                          : 'Stats use daily total.',
+                          ? context.l10n.journalMeasurementQuantityEntrySubtitle
+                          : context.l10n.journalMeasurementQuantityDaySubtitle,
                       selected:
                           state.measurement ==
                           JournalTrackerMeasurementType.quantity,
@@ -287,8 +298,8 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                             ),
                     ),
                     _MeasurementOption(
-                      title: 'Choice',
-                      subtitle: 'Stats compare outcomes by option (per event).',
+                      title: context.l10n.journalMeasurementChoiceTitle,
+                      subtitle: context.l10n.journalMeasurementChoiceSubtitle,
                       selected:
                           state.measurement ==
                           JournalTrackerMeasurementType.choice,
@@ -418,19 +429,19 @@ class _RatingConfigForm extends StatelessWidget {
     return Column(
       children: [
         _NumberField(
-          label: 'Min',
+          label: context.l10n.minLabel,
           value: min,
           enabled: enabled,
           onChanged: (value) => onChanged(value ?? min, max, step),
         ),
         _NumberField(
-          label: 'Max',
+          label: context.l10n.maxLabel,
           value: max,
           enabled: enabled,
           onChanged: (value) => onChanged(min, value ?? max, step),
         ),
         _NumberField(
-          label: 'Step',
+          label: context.l10n.stepLabel,
           value: step,
           enabled: enabled,
           onChanged: (value) => onChanged(min, max, value ?? step),
@@ -463,24 +474,26 @@ class _QuantityConfigForm extends StatelessWidget {
       children: [
         TextField(
           controller: TextEditingController(text: unit),
-          decoration: const InputDecoration(labelText: 'Unit (optional)'),
+          decoration: InputDecoration(
+            labelText: context.l10n.journalUnitOptionalLabel,
+          ),
           enabled: enabled,
           onChanged: (value) => onChanged(value, min, max, step),
         ),
         _NumberField(
-          label: 'Min (optional)',
+          label: context.l10n.minOptionalLabel,
           value: min,
           enabled: enabled,
           onChanged: (value) => onChanged(unit, value, max, step),
         ),
         _NumberField(
-          label: 'Max (optional)',
+          label: context.l10n.maxOptionalLabel,
           value: max,
           enabled: enabled,
           onChanged: (value) => onChanged(unit, min, value, step),
         ),
         _NumberField(
-          label: 'Step',
+          label: context.l10n.stepLabel,
           value: step,
           enabled: enabled,
           onChanged: (value) => onChanged(unit, min, max, value ?? step),
@@ -519,9 +532,9 @@ class _ChoiceConfigForm extends StatelessWidget {
               child: TextField(
                 controller: controller,
                 enabled: enabled,
-                decoration: const InputDecoration(
-                  labelText: 'Option',
-                  hintText: 'e.g. Home, Work, Social',
+                decoration: InputDecoration(
+                  labelText: context.l10n.journalOptionLabel,
+                  hintText: context.l10n.journalOptionHint,
                 ),
                 textInputAction: TextInputAction.done,
                 onSubmitted: (value) {
@@ -538,14 +551,14 @@ class _ChoiceConfigForm extends StatelessWidget {
                       controller.clear();
                     }
                   : null,
-              child: const Text('Add'),
+              child: Text(context.l10n.addLabel),
             ),
           ],
         ),
         SizedBox(height: tokens.spaceSm),
         if (choices.isEmpty)
           Text(
-            'Add at least one option.',
+            context.l10n.journalAddOptionHint,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -560,12 +573,14 @@ class _ChoiceConfigForm extends StatelessWidget {
                     child: TextFormField(
                       initialValue: choices[i],
                       enabled: enabled,
-                      decoration: const InputDecoration(labelText: 'Label'),
+                      decoration: InputDecoration(
+                        labelText: context.l10n.labelLabel,
+                      ),
                       onChanged: (value) => onUpdate(i, value),
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Remove',
+                    tooltip: context.l10n.removeLabel,
                     onPressed: enabled ? () => onRemove(i) : null,
                     icon: const Icon(Icons.close),
                   ),

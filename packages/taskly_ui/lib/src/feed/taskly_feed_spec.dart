@@ -91,6 +91,7 @@ sealed class TasklySectionSpec {
     required String countLabel,
     required List<TasklyRowSpec> rows,
     required String Function(int remaining, int total) showMoreLabelBuilder,
+    required String emptyLabel,
     String? actionLabel,
     String? actionTooltip,
     VoidCallback? onActionPressed,
@@ -105,6 +106,7 @@ sealed class TasklySectionSpec {
     String? countLabel,
     String? emptyLabel,
     VoidCallback? onAddRequested,
+    String? addLabel,
   }) = TasklyScheduledDaySectionSpec;
 }
 
@@ -139,6 +141,7 @@ final class TasklyScheduledOverdueSectionSpec extends TasklySectionSpec {
     required this.countLabel,
     required this.rows,
     required this.showMoreLabelBuilder,
+    required this.emptyLabel,
     this.actionLabel,
     this.actionTooltip,
     this.onActionPressed,
@@ -149,6 +152,7 @@ final class TasklyScheduledOverdueSectionSpec extends TasklySectionSpec {
   final String countLabel;
   final List<TasklyRowSpec> rows;
   final String Function(int remaining, int total) showMoreLabelBuilder;
+  final String emptyLabel;
   final String? actionLabel;
   final String? actionTooltip;
   final VoidCallback? onActionPressed;
@@ -164,6 +168,7 @@ final class TasklyScheduledDaySectionSpec extends TasklySectionSpec {
     this.countLabel,
     this.emptyLabel,
     this.onAddRequested,
+    this.addLabel,
   });
 
   final String id;
@@ -174,6 +179,7 @@ final class TasklyScheduledDaySectionSpec extends TasklySectionSpec {
   final String? countLabel;
   final String? emptyLabel;
   final VoidCallback? onAddRequested;
+  final String? addLabel;
 }
 
 sealed class TasklyRowSpec {
@@ -391,6 +397,10 @@ sealed class TasklyTaskRowStyle {
     required bool selected,
   }) = TasklyTaskRowStyleBulkSelection;
 
+  const factory TasklyTaskRowStyle.bulkSelectionCompact({
+    required bool selected,
+  }) = TasklyTaskRowStyleBulkSelectionCompact;
+
   const factory TasklyTaskRowStyle.planPick({
     required bool selected,
   }) = TasklyTaskRowStylePlanPick;
@@ -410,6 +420,12 @@ final class TasklyTaskRowStyleBulkSelection extends TasklyTaskRowStyle {
   final bool selected;
 }
 
+final class TasklyTaskRowStyleBulkSelectionCompact extends TasklyTaskRowStyle {
+  const TasklyTaskRowStyleBulkSelectionCompact({required this.selected});
+
+  final bool selected;
+}
+
 final class TasklyTaskRowStylePlanPick extends TasklyTaskRowStyle {
   const TasklyTaskRowStylePlanPick({required this.selected});
 
@@ -423,6 +439,11 @@ sealed class TasklyRoutineRowStyle {
       TasklyRoutineRowStyleStandard;
   const factory TasklyRoutineRowStyle.compact() = TasklyRoutineRowStyleCompact;
 
+  const factory TasklyRoutineRowStyle.bulkSelection() =
+      TasklyRoutineRowStyleBulkSelection;
+  const factory TasklyRoutineRowStyle.bulkSelectionCompact() =
+      TasklyRoutineRowStyleBulkSelectionCompact;
+
   const factory TasklyRoutineRowStyle.planPick() =
       TasklyRoutineRowStylePlanPick;
 }
@@ -433,6 +454,15 @@ final class TasklyRoutineRowStyleStandard extends TasklyRoutineRowStyle {
 
 final class TasklyRoutineRowStyleCompact extends TasklyRoutineRowStyle {
   const TasklyRoutineRowStyleCompact();
+}
+
+final class TasklyRoutineRowStyleBulkSelection extends TasklyRoutineRowStyle {
+  const TasklyRoutineRowStyleBulkSelection();
+}
+
+final class TasklyRoutineRowStyleBulkSelectionCompact
+    extends TasklyRoutineRowStyle {
+  const TasklyRoutineRowStyleBulkSelectionCompact();
 }
 
 final class TasklyRoutineRowStylePlanPick extends TasklyRoutineRowStyle {
@@ -472,6 +502,10 @@ sealed class TasklyProjectRowPreset {
   const factory TasklyProjectRowPreset.bulkSelection({
     required bool selected,
   }) = TasklyProjectRowPresetBulkSelection;
+
+  const factory TasklyProjectRowPreset.bulkSelectionCompact({
+    required bool selected,
+  }) = TasklyProjectRowPresetBulkSelectionCompact;
 }
 
 final class TasklyProjectRowPresetStandard extends TasklyProjectRowPreset {
@@ -488,6 +522,13 @@ final class TasklyProjectRowPresetInbox extends TasklyProjectRowPreset {
 
 final class TasklyProjectRowPresetBulkSelection extends TasklyProjectRowPreset {
   const TasklyProjectRowPresetBulkSelection({required this.selected});
+
+  final bool selected;
+}
+
+final class TasklyProjectRowPresetBulkSelectionCompact
+    extends TasklyProjectRowPreset {
+  const TasklyProjectRowPresetBulkSelectionCompact({required this.selected});
 
   final bool selected;
 }

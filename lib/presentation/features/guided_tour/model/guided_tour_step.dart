@@ -74,51 +74,41 @@ List<GuidedTourStep> buildGuidedTourSteps() {
     GuidedTourStep(
       id: 'plan_my_day_triage',
       route: '/my-day',
-      title: 'Time-sensitive tasks',
+      title: 'Due today',
       body:
-          "Review overdue and due-today items, then decide what you'll handle now.",
+          'Overdue and due-today items are in your plan. Reschedule if not '
+          'today.',
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
         targetId: 'plan_my_day_triage',
-        title: 'Time-sensitive tasks',
+        title: 'Due today',
         body:
-            "Review overdue and due-today items, then decide what you'll handle now.",
+            'Overdue and due-today items are in your plan. Reschedule if not '
+            'today.',
       ),
     ),
     GuidedTourStep(
-      id: 'plan_my_day_scheduled_routines',
+      id: 'plan_my_day_routines',
       route: '/my-day',
-      title: 'Scheduled routines',
-      body: "Pick the routines you're committing to today.",
+      title: 'Routines',
+      body: 'Scheduled and flexible routines show up here. Keep or deselect.',
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
-        targetId: 'plan_my_day_routines_scheduled',
-        title: 'Scheduled routines',
-        body: "Pick the routines you're committing to today.",
-      ),
-    ),
-    GuidedTourStep(
-      id: 'plan_my_day_flexible_routines',
-      route: '/my-day',
-      title: 'Flexible routines',
-      body: 'Choose routines that move your weekly targets forward.',
-      kind: GuidedTourStepKind.coachmark,
-      coachmark: GuidedTourCoachmark(
-        targetId: 'plan_my_day_routines_flexible',
-        title: 'Flexible routines',
-        body: 'Choose routines that move your weekly targets forward.',
+        targetId: 'plan_my_day_routines_block',
+        title: 'Routines',
+        body: 'Scheduled and flexible routines show up here. Keep or deselect.',
       ),
     ),
     GuidedTourStep(
       id: 'plan_my_day_values',
       route: '/my-day',
-      title: 'Value-based tasks',
-      body: "Add tasks that support your values to balance today's plan.",
+      title: 'Suggestions by value',
+      body: "Add value-aligned tasks to balance today's plan.",
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
         targetId: 'plan_my_day_values_card',
-        title: 'Value-based tasks',
-        body: "Add tasks that support your values to balance today's plan.",
+        title: 'Suggestions by value',
+        body: "Add value-aligned tasks to balance today's plan.",
       ),
     ),
     GuidedTourStep(

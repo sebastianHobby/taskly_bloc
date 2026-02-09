@@ -12,6 +12,7 @@ import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 Future<void> showWeeklyReviewModal(
@@ -21,31 +22,44 @@ Future<void> showWeeklyReviewModal(
   final config = WeeklyReviewConfig.fromSettings(settings);
   final parentContext = context;
 
-  return Navigator.of(context).push<void>(
-    MaterialPageRoute(
-      fullscreenDialog: true,
-      builder: (context) {
-        return BlocProvider(
-          create: (context) => WeeklyReviewBloc(
-            analyticsService: context.read<AnalyticsService>(),
-            attentionEngine: context.read<AttentionEngineContract>(),
-            settingsRepository: context.read<SettingsRepositoryContract>(),
-            valueRepository: context.read<ValueRepositoryContract>(),
-            valueRatingsRepository: context
-                .read<ValueRatingsRepositoryContract>(),
-            valueRatingsWriteService: context.read<ValueRatingsWriteService>(),
-            routineRepository: context.read<RoutineRepositoryContract>(),
-            taskRepository: context.read<TaskRepositoryContract>(),
-            nowService: context.read<NowService>(),
-          )..add(WeeklyReviewRequested(config)),
-          child: _WeeklyReviewModal(
-            config: config,
-            parentContext: parentContext,
-          ),
-        );
-      },
-    ),
+  AppLog.warnStructured(
+    'weekly_review',
+    'open_modal',
+    fields: <String, Object?>{
+      'valuesSummaryEnabled': config.valuesSummaryEnabled,
+      'maintenanceEnabled': config.maintenanceEnabled,
+    },
   );
+
+  return Navigator.of(context)
+      .push<void>(
+        MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (context) {
+            return BlocProvider(
+              create: (context) => WeeklyReviewBloc(
+                analyticsService: context.read<AnalyticsService>(),
+                attentionEngine: context.read<AttentionEngineContract>(),
+                valueRepository: context.read<ValueRepositoryContract>(),
+                valueRatingsRepository: context
+                    .read<ValueRatingsRepositoryContract>(),
+                valueRatingsWriteService: context
+                    .read<ValueRatingsWriteService>(),
+                routineRepository: context.read<RoutineRepositoryContract>(),
+                taskRepository: context.read<TaskRepositoryContract>(),
+                nowService: context.read<NowService>(),
+              )..add(WeeklyReviewRequested(config)),
+              child: _WeeklyReviewModal(
+                config: config,
+                parentContext: parentContext,
+              ),
+            );
+          },
+        ),
+      )
+      .whenComplete(
+        () => AppLog.warn('weekly_review', 'close_modal'),
+      );
 }
 
 class _WeeklyReviewModal extends StatefulWidget {
@@ -64,23 +78,9 @@ class _WeeklyReviewModal extends StatefulWidget {
 class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   late final PageController _controller = PageController();
   int _pageIndex = 0;
-  bool _ratingsEnabled = false;
   bool _useRatingWheel = true;
-
-  int get _pageCount {
-    var count = 0;
-    final showValuesOverview = widget.config.valuesSummaryEnabled;
-    if (showValuesOverview) {
-      count += 1;
-    }
-    if (_ratingsEnabled) {
-      count += 1;
-    }
-    if (widget.config.maintenanceEnabled) {
-      count += 1;
-    }
-    return count + 1;
-  }
+  int _pageCount = 1;
+  int _lastLoggedPageCount = -1;
 
   @override
   void dispose() {
@@ -89,6 +89,14 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   }
 
   void _goNext() {
+    AppLog.warnStructured(
+      'weekly_review',
+      'next',
+      fields: <String, Object?>{
+        'pageIndex': _pageIndex,
+        'pageCount': _pageCount,
+      },
+    );
     if (_pageIndex >= _pageCount - 1) {
       _finishReview();
       return;
@@ -100,6 +108,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   }
 
   void _finishReview() {
+    AppLog.warn('weekly_review', 'complete_review');
     final nowUtc = context.read<NowService>().nowUtc();
     context.read<GlobalSettingsBloc>().add(
       GlobalSettingsEvent.weeklyReviewCompleted(nowUtc),
@@ -108,9 +117,53 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   }
 
   void _openSettings() {
+    AppLog.warn('weekly_review', 'open_settings');
     Navigator.of(context).maybePop();
     if (!widget.parentContext.mounted) return;
     Routing.toScreenKey(widget.parentContext, 'settings');
+  }
+
+  void _ensurePageInRange(int pageCount) {
+    if (_pageIndex < pageCount) return;
+    final target = pageCount - 1;
+    AppLog.warnStructured(
+      'weekly_review',
+      'page_index_clamped',
+      fields: <String, Object?>{
+        'pageIndex': _pageIndex,
+        'pageCount': pageCount,
+        'targetIndex': target,
+      },
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _pageIndex = target);
+      _controller.jumpToPage(target);
+    });
+  }
+
+  void _logPageCountChange({
+    required int pageCount,
+    required bool showValuesOverview,
+    required bool ratingsEnabled,
+    required bool ratingsSummary,
+    required bool maintenanceEnabled,
+  }) {
+    if (pageCount == _lastLoggedPageCount) return;
+    AppLog.warnStructured(
+      'weekly_review',
+      'page_count_changed',
+      fields: <String, Object?>{
+        'pageIndex': _pageIndex,
+        'previousPageCount': _lastLoggedPageCount,
+        'pageCount': pageCount,
+        'valuesOverview': showValuesOverview,
+        'ratingsEnabled': ratingsEnabled,
+        'ratingsSummary': ratingsSummary,
+        'maintenanceEnabled': maintenanceEnabled,
+      },
+    );
+    _lastLoggedPageCount = pageCount;
   }
 
   @override
@@ -119,6 +172,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
 
     return BlocBuilder<WeeklyReviewBloc, WeeklyReviewState>(
       builder: (context, state) {
+        final l10n = context.l10n;
         if (state.status == WeeklyReviewStatus.loading) {
           return Scaffold(
             body: SafeArea(child: _ReviewLoading()),
@@ -128,7 +182,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
           return Scaffold(
             body: SafeArea(
               child: _ReviewError(
-                message: state.errorMessage ?? 'Failed to load review.',
+                message: l10n.weeklyReviewLoadFailureMessage,
                 onRetry: () => context.read<WeeklyReviewBloc>().add(
                   WeeklyReviewRequested(widget.config),
                 ),
@@ -140,30 +194,55 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
         final ratingsSummary = state.ratingsSummary;
         final ratingsEnabled = ratingsSummary?.ratingsEnabled ?? false;
         final ratingsComplete = ratingsSummary?.isComplete ?? true;
-        _ratingsEnabled = ratingsEnabled;
-
         final initialCheckInValueId = ratingsSummary == null
             ? null
             : _initialValueId(ratingsSummary);
 
         final showValuesOverview = widget.config.valuesSummaryEnabled;
-
+        final hasCheckIn = ratingsEnabled && ratingsSummary != null;
+        final pageCount =
+            (showValuesOverview ? 1 : 0) +
+            (hasCheckIn ? 1 : 0) +
+            (widget.config.maintenanceEnabled ? 1 : 0) +
+            1;
+        final checkInStep = showValuesOverview ? 2 : 1;
         final pages = <Widget>[
           if (showValuesOverview)
             _ValuesSnapshotPage(
+              key: const ValueKey('weekly_review_values_snapshot'),
               config: widget.config,
               summary: state.valuesSummary,
               wins: state.valueWins,
             ),
-          if (ratingsEnabled && ratingsSummary != null)
+          if (hasCheckIn)
             WeeklyValueCheckInContent(
+              key: const ValueKey('weekly_review_check_in'),
               initialValueId: initialCheckInValueId,
               windowWeeks: widget.config.valuesWindowWeeks,
               useRatingWheel: _useRatingWheel,
+              wizardStep: checkInStep,
+              wizardTotal: pageCount,
+              onWizardBack: () {
+                if (showValuesOverview) {
+                  _controller.previousPage(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                  );
+                } else {
+                  Navigator.of(context).maybePop();
+                }
+              },
               onChartToggle: (value) => setState(() {
                 _useRatingWheel = value;
               }),
               onExit: () {
+                AppLog.warnStructured(
+                  'weekly_review',
+                  'exit_checkin',
+                  fields: <String, Object?>{
+                    'hasValuesOverview': showValuesOverview,
+                  },
+                );
                 if (showValuesOverview) {
                   _controller.previousPage(
                     duration: const Duration(milliseconds: 200),
@@ -177,18 +256,46 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
             ),
           if (widget.config.maintenanceEnabled)
             _MaintenancePage(
+              key: const ValueKey('weekly_review_maintenance'),
               sections: state.maintenanceSections,
             ),
-          const _CompletionPage(),
+          const _CompletionPage(
+            key: ValueKey('weekly_review_completion'),
+          ),
         ];
 
+        AppLog.warnStructured(
+          'weekly_review',
+          'build_pages',
+          fields: <String, Object?>{
+            'valuesOverview': showValuesOverview,
+            'ratingsEnabled': ratingsEnabled,
+            'ratingsSummary': ratingsSummary != null,
+            'maintenanceEnabled': widget.config.maintenanceEnabled,
+            'pageCount': pages.length,
+          },
+        );
+
+        _pageCount = pageCount;
+        _logPageCountChange(
+          pageCount: pageCount,
+          showValuesOverview: showValuesOverview,
+          ratingsEnabled: ratingsEnabled,
+          ratingsSummary: ratingsSummary != null,
+          maintenanceEnabled: widget.config.maintenanceEnabled,
+        );
+        _ensurePageInRange(pageCount);
+
+        final checkInIndex = showValuesOverview ? 1 : 0;
         final isCheckInPage =
-            ratingsEnabled && _pageIndex == (showValuesOverview ? 1 : 0);
+            ratingsEnabled &&
+            ratingsSummary != null &&
+            _pageIndex == checkInIndex;
         final buttonLabel = _pageIndex == _pageCount - 1
-            ? 'Done'
+            ? l10n.doneLabel
             : (isCheckInPage && !ratingsComplete
-                  ? 'Skip check-in'
-                  : 'Continue');
+                  ? l10n.weeklyReviewSkipCheckInAction
+                  : l10n.continueLabel);
 
         return Scaffold(
           body: SafeArea(
@@ -206,7 +313,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
                       children: [
                         Expanded(
                           child: Text(
-                            'Weekly Review',
+                            l10n.weeklyReviewTitle,
                             style: theme.textTheme.titleLarge,
                           ),
                         ),
@@ -215,7 +322,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
                           child: Text(context.l10n.settingsTitle),
                         ),
                         IconButton(
-                          tooltip: 'Close',
+                          tooltip: context.l10n.closeLabel,
                           onPressed: () => Navigator.of(context).maybePop(),
                           icon: const Icon(Icons.close),
                         ),
@@ -225,8 +332,17 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
                 Expanded(
                   child: PageView(
                     controller: _controller,
-                    onPageChanged: (index) =>
-                        setState(() => _pageIndex = index),
+                    onPageChanged: (index) {
+                      AppLog.warnStructured(
+                        'weekly_review',
+                        'page_changed',
+                        fields: <String, Object?>{
+                          'pageIndex': index,
+                          'pageCount': _pageCount,
+                        },
+                      );
+                      setState(() => _pageIndex = index);
+                    },
                     children: pages,
                   ),
                 ),
@@ -246,7 +362,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
                               duration: const Duration(milliseconds: 200),
                               curve: Curves.easeOut,
                             ),
-                            child: const Text('Back'),
+                            child: Text(context.l10n.backLabel),
                           ),
                         const Spacer(),
                         FilledButton(
@@ -274,6 +390,7 @@ class _ValuesSnapshotPage extends StatelessWidget {
     required this.config,
     required this.summary,
     required this.wins,
+    super.key,
   });
 
   final WeeklyReviewConfig config;
@@ -282,16 +399,22 @@ class _ValuesSnapshotPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
     final hasSummary = summary?.hasData ?? false;
     final insight = hasSummary
-        ? 'Most aligned with ${summary?.topValueName}. '
-              'Least aligned with ${summary?.bottomValueName}.'
-        : 'No completed tasks yet.';
+        ? l10n.weeklyReviewValuesInsightLabel(
+            summary?.topValueName ?? l10n.valueLabel,
+            summary?.bottomValueName ?? l10n.valueLabel,
+          )
+        : l10n.weeklyReviewValuesInsightEmptyLabel;
 
     return ListView(
+      key: const PageStorageKey<String>(
+        'weekly_review_values_snapshot_list',
+      ),
       padding: EdgeInsets.fromLTRB(
         TasklyTokens.of(context).spaceLg,
         TasklyTokens.of(context).spaceXs,
@@ -300,12 +423,12 @@ class _ValuesSnapshotPage extends StatelessWidget {
       ),
       children: [
         Text(
-          'Values Snapshot',
+          l10n.weeklyReviewValuesTitle,
           style: theme.textTheme.titleLarge,
         ),
         SizedBox(height: TasklyTokens.of(context).spaceSm),
         Text(
-          'How your completed work aligned with what matters.',
+          l10n.weeklyReviewValuesSnapshotSubtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
@@ -313,7 +436,7 @@ class _ValuesSnapshotPage extends StatelessWidget {
         SizedBox(height: TasklyTokens.of(context).spaceSm),
         if (summary?.hasData ?? false) ...[
           Text(
-            'Last ${config.valuesWindowWeeks} weeks',
+            l10n.weeklyReviewLastWeeksLabel(config.valuesWindowWeeks),
             style: theme.textTheme.labelMedium?.copyWith(
               color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
@@ -329,14 +452,14 @@ class _ValuesSnapshotPage extends StatelessWidget {
         ),
         SizedBox(height: TasklyTokens.of(context).spaceSm),
         Text(
-          'Value Wins',
+          l10n.weeklyReviewValuesWinsLabel,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
         SizedBox(height: TasklyTokens.of(context).spaceSm),
         Text(
-          'Small moments that added up.',
+          l10n.weeklyReviewValueWinsSubtitle,
           style: theme.textTheme.bodySmall?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
@@ -344,7 +467,7 @@ class _ValuesSnapshotPage extends StatelessWidget {
         SizedBox(height: TasklyTokens.of(context).spaceSm),
         if (wins.isEmpty)
           Text(
-            'No value wins yet.',
+            l10n.weeklyReviewValueWinsEmpty,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
@@ -361,7 +484,10 @@ class _ValuesSnapshotPage extends StatelessWidget {
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Expanded(
                     child: Text(
-                      '${win.valueName} - ${win.completionCount} completions',
+                      l10n.weeklyReviewValueWinsRow(
+                        win.valueName ?? l10n.valueLabel,
+                        win.completionCount,
+                      ),
                       style: theme.textTheme.bodyMedium,
                     ),
                   ),
@@ -410,6 +536,7 @@ class _ValueRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
     final accent = ColorUtils.valueColorForTheme(
       context,
@@ -432,7 +559,7 @@ class _ValueRing extends StatelessWidget {
                 valueColor: AlwaysStoppedAnimation<Color>(accent),
               ),
               Text(
-                '$percentLabel%',
+                l10n.analyticsPercentValue(percentLabel),
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -457,16 +584,23 @@ class _ValueRing extends StatelessWidget {
 }
 
 class _MaintenancePage extends StatelessWidget {
-  const _MaintenancePage({required this.sections});
+  const _MaintenancePage({
+    required this.sections,
+    super.key,
+  });
 
   final List<WeeklyReviewMaintenanceSection> sections;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
     return ListView(
+      key: const PageStorageKey<String>(
+        'weekly_review_maintenance_list',
+      ),
       padding: EdgeInsets.fromLTRB(
         TasklyTokens.of(context).spaceLg,
         TasklyTokens.of(context).spaceXs,
@@ -475,12 +609,12 @@ class _MaintenancePage extends StatelessWidget {
       ),
       children: [
         Text(
-          'Maintenance Check',
+          l10n.weeklyReviewMaintenanceTitle,
           style: theme.textTheme.titleLarge,
         ),
         SizedBox(height: TasklyTokens.of(context).spaceSm),
         Text(
-          'A short list to keep things from building up.',
+          l10n.weeklyReviewMaintenanceCheckSubtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
@@ -488,7 +622,7 @@ class _MaintenancePage extends StatelessWidget {
         SizedBox(height: TasklyTokens.of(context).spaceSm),
         for (final section in sections) ...[
           Text(
-            section.title,
+            _sectionTitle(l10n, section.type),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -500,7 +634,7 @@ class _MaintenancePage extends StatelessWidget {
                 bottom: TasklyTokens.of(context).spaceSm,
               ),
               child: Text(
-                section.emptyMessage,
+                _sectionEmptyMessage(l10n, section.type),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
@@ -512,7 +646,10 @@ class _MaintenancePage extends StatelessWidget {
                 padding: EdgeInsets.only(
                   bottom: TasklyTokens.of(context).spaceSm,
                 ),
-                child: _MaintenanceItem(item: item),
+                child: _MaintenanceItem(
+                  title: _itemTitle(l10n, item),
+                  description: _itemDescription(l10n, item),
+                ),
               ),
             ),
           SizedBox(height: TasklyTokens.of(context).spaceSm),
@@ -520,12 +657,90 @@ class _MaintenancePage extends StatelessWidget {
       ],
     );
   }
+
+  String _sectionTitle(
+    AppLocalizations l10n,
+    WeeklyReviewMaintenanceSectionType type,
+  ) {
+    return switch (type) {
+      WeeklyReviewMaintenanceSectionType.deadlineRisk =>
+        l10n.weeklyReviewDeadlineRiskTitle,
+      WeeklyReviewMaintenanceSectionType.staleItems =>
+        l10n.weeklyReviewStaleTitle,
+      WeeklyReviewMaintenanceSectionType.frequentlySnoozed =>
+        l10n.weeklyReviewFrequentSnoozedTitle,
+    };
+  }
+
+  String _sectionEmptyMessage(
+    AppLocalizations l10n,
+    WeeklyReviewMaintenanceSectionType type,
+  ) {
+    return switch (type) {
+      WeeklyReviewMaintenanceSectionType.deadlineRisk =>
+        l10n.weeklyReviewDeadlineRiskEmptyMessage,
+      WeeklyReviewMaintenanceSectionType.staleItems =>
+        l10n.weeklyReviewStaleItemsEmptyMessage,
+      WeeklyReviewMaintenanceSectionType.frequentlySnoozed =>
+        l10n.weeklyReviewFrequentSnoozedEmptyMessage,
+    };
+  }
+
+  String _itemTitle(AppLocalizations l10n, WeeklyReviewMaintenanceItem item) {
+    final name = item.name;
+    if (name != null && name.trim().isNotEmpty) return name;
+    return switch (item) {
+      WeeklyReviewDeadlineRiskItem() => l10n.projectLabel,
+      WeeklyReviewStaleItem() => l10n.itemLabel,
+      WeeklyReviewFrequentSnoozedItem() => l10n.taskLabel,
+    };
+  }
+
+  String _itemDescription(
+    AppLocalizations l10n,
+    WeeklyReviewMaintenanceItem item,
+  ) {
+    return switch (item) {
+      WeeklyReviewDeadlineRiskItem(
+        :final dueInDays,
+        :final unscheduledCount,
+      ) =>
+        l10n.weeklyReviewDeadlineRiskItemDescription(
+          _dueLabel(l10n, dueInDays),
+          unscheduledCount,
+        ),
+      WeeklyReviewStaleItem(:final thresholdDays) =>
+        l10n.weeklyReviewStaleItemDescription(thresholdDays),
+      WeeklyReviewFrequentSnoozedItem(
+        :final snoozeCount,
+        :final totalSnoozeDays,
+      ) =>
+        l10n.weeklyReviewFrequentSnoozeItemDescription(
+          snoozeCount,
+          totalSnoozeDays,
+        ),
+    };
+  }
+
+  String _dueLabel(AppLocalizations l10n, int? dueInDays) {
+    return switch (dueInDays) {
+      null => l10n.weeklyReviewDueSoonLabel,
+      0 => l10n.weeklyReviewDueTodayLabel,
+      1 => l10n.weeklyReviewDueTomorrowLabel,
+      < 0 => l10n.weeklyReviewOverdueByDaysLabel(dueInDays.abs()),
+      _ => l10n.weeklyReviewDueInDaysLabel(dueInDays),
+    };
+  }
 }
 
 class _MaintenanceItem extends StatelessWidget {
-  const _MaintenanceItem({required this.item});
+  const _MaintenanceItem({
+    required this.title,
+    required this.description,
+  });
 
-  final WeeklyReviewMaintenanceItem item;
+  final String title;
+  final String description;
 
   @override
   Widget build(BuildContext context) {
@@ -543,14 +758,14 @@ class _MaintenanceItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            item.title,
+            title,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           SizedBox(height: TasklyTokens.of(context).spaceSm),
           Text(
-            item.description,
+            description,
             style: theme.textTheme.bodySmall?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
@@ -562,10 +777,11 @@ class _MaintenanceItem extends StatelessWidget {
 }
 
 class _CompletionPage extends StatelessWidget {
-  const _CompletionPage();
+  const _CompletionPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
@@ -580,13 +796,13 @@ class _CompletionPage extends StatelessWidget {
             Icon(Icons.check_circle_outline, size: 48, color: scheme.primary),
             SizedBox(height: TasklyTokens.of(context).spaceSm),
             Text(
-              "You're done.",
+              l10n.weeklyReviewCompletionTitle,
               style: theme.textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             SizedBox(height: TasklyTokens.of(context).spaceSm),
             Text(
-              'Clear, calm, and ready to go.',
+              l10n.weeklyReviewCompletionSubtitle,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
@@ -594,7 +810,7 @@ class _CompletionPage extends StatelessWidget {
             ),
             SizedBox(height: TasklyTokens.of(context).spaceSm),
             Text(
-              'Run again whenever.',
+              l10n.weeklyReviewCompletionFooter,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
@@ -633,7 +849,7 @@ class _ReviewError extends StatelessWidget {
             SizedBox(height: TasklyTokens.of(context).spaceSm),
             FilledButton(
               onPressed: onRetry,
-              child: const Text('Retry'),
+              child: Text(context.l10n.retryButton),
             ),
           ],
         ),

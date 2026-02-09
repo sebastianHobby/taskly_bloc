@@ -2,6 +2,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/my_day.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
@@ -80,7 +81,9 @@ final class MyDayQueryService {
 
     final dayPicks$ = Rx.concat([
       Stream.fromFuture(_myDayRepository.loadDay(dayKeyUtc)),
-      _myDayRepository.watchDay(dayKeyUtc),
+      _myDayRepository
+          .watchDay(dayKeyUtc)
+          .onErrorResumeNext(Rx.never<MyDayDayPicks>()),
     ]);
 
     return dayPicks$.switchMap((dayPicks) {

@@ -4,7 +4,6 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/routine_day_policy.dart';
@@ -176,6 +175,7 @@ final class PlanMyDayValueSuggestionGroup {
     required this.neglectScore,
     required this.visibleCount,
     required this.expanded,
+    required this.isSpotlight,
   });
 
   final String valueId;
@@ -185,18 +185,25 @@ final class PlanMyDayValueSuggestionGroup {
   final double neglectScore;
   final int visibleCount;
   final bool expanded;
+  final bool isSpotlight;
 
   int get totalCount => tasks.length;
 }
 
 @immutable
 final class PlanMyDayToast {
-  const PlanMyDayToast({required this.message});
+  const PlanMyDayToast._(this.kind, {this.error});
 
-  static const updated = PlanMyDayToast(message: 'Updated');
+  const PlanMyDayToast.updated() : this._(PlanMyDayToastKind.updated);
 
-  final String message;
+  const PlanMyDayToast.error(Object error)
+    : this._(PlanMyDayToastKind.error, error: error);
+
+  final PlanMyDayToastKind kind;
+  final Object? error;
 }
+
+enum PlanMyDayToastKind { updated, error }
 
 sealed class _PlanMyDayStreamEvent {
   const _PlanMyDayStreamEvent();
@@ -407,7 +414,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
   static const double _attentionDeficitThreshold = 0.20;
   static const int _poolExtraCount = 6;
-  static const int _maxVisibleSuggestionsPerValue = 3;
 
   settings.GlobalSettings _globalSettings = const settings.GlobalSettings();
   AllocationConfig _allocationConfig = const AllocationConfig();
@@ -978,7 +984,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         context: context,
       );
     } catch (error) {
-      _queueToast(PlanMyDayToast(message: friendlyErrorMessage(error)));
+      _queueToast(PlanMyDayToast.error(error));
       if (emit.isDone) return;
       _emitReady(emit);
       return;
@@ -986,7 +992,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
     _hasUserSelection = true;
     _selectedTaskIds = _selectedTaskIds.difference(_dueTodayTaskIds);
-    _queueToast(PlanMyDayToast.updated);
+    _queueToast(const PlanMyDayToast.updated());
     await _refreshSnapshots(resetSelection: false);
     if (emit.isDone) return;
     _emitReady(emit);
@@ -1017,7 +1023,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         context: context,
       );
     } catch (error) {
-      _queueToast(PlanMyDayToast(message: friendlyErrorMessage(error)));
+      _queueToast(PlanMyDayToast.error(error));
       if (emit.isDone) return;
       _emitReady(emit);
       return;
@@ -1025,7 +1031,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
     _hasUserSelection = true;
     _selectedTaskIds = {..._selectedTaskIds}..remove(event.taskId);
-    _queueToast(PlanMyDayToast.updated);
+    _queueToast(const PlanMyDayToast.updated());
     await _refreshSnapshots(resetSelection: false);
     if (emit.isDone) return;
     _emitReady(emit);
@@ -1059,7 +1065,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         context: context,
       );
     } catch (error) {
-      _queueToast(PlanMyDayToast(message: friendlyErrorMessage(error)));
+      _queueToast(PlanMyDayToast.error(error));
       if (emit.isDone) return;
       _emitReady(emit);
       return;
@@ -1067,7 +1073,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
     _hasUserSelection = true;
     _selectedTaskIds = _selectedTaskIds.difference(_plannedTaskIds);
-    _queueToast(PlanMyDayToast.updated);
+    _queueToast(const PlanMyDayToast.updated());
     await _refreshSnapshots(resetSelection: false);
     if (emit.isDone) return;
     _emitReady(emit);
@@ -1098,7 +1104,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         context: context,
       );
     } catch (error) {
-      _queueToast(PlanMyDayToast(message: friendlyErrorMessage(error)));
+      _queueToast(PlanMyDayToast.error(error));
       if (emit.isDone) return;
       _emitReady(emit);
       return;
@@ -1106,7 +1112,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
     _hasUserSelection = true;
     _selectedTaskIds = {..._selectedTaskIds}..remove(event.taskId);
-    _queueToast(PlanMyDayToast.updated);
+    _queueToast(const PlanMyDayToast.updated());
     await _refreshSnapshots(resetSelection: false);
     if (emit.isDone) return;
     _emitReady(emit);
@@ -1265,6 +1271,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     final valueGroups = _buildValueSuggestionGroups(
       suggestedEntries,
       deficits: snapshot?.neglectDeficits ?? const {},
+      spotlightTaskId: snapshot?.spotlightTaskId,
     );
     final suggested = valueGroups
         .expand((group) => group.tasks)
@@ -1369,7 +1376,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         routineSelectionsByValue: _routineSelectionsByValue(),
         overCapacity: overCapacity,
         valueSort: _valuesSort,
-        spotlightTaskId: suggested.isEmpty ? null : suggested.first.id,
+        spotlightTaskId: snapshot?.spotlightTaskId,
         toastRequestId: toastRequestId,
         toast: toast,
       ),
@@ -1581,11 +1588,9 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     if (valuesById.isEmpty) return 0;
 
     var total = 0;
-    final hasDeficitData = _lastNeglectDeficits.isNotEmpty;
     for (final value in valuesById.values) {
       final deficit = _lastNeglectDeficits[value.id] ?? 0.0;
-      final attentionNeeded =
-          !hasDeficitData || deficit >= _attentionDeficitThreshold;
+      final attentionNeeded = deficit >= _attentionDeficitThreshold;
       final defaultVisible = _defaultVisibleCount(
         value.priority,
         attentionNeeded: attentionNeeded,
@@ -1642,6 +1647,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   List<PlanMyDayValueSuggestionGroup> _buildValueSuggestionGroups(
     List<SuggestedTask> suggested, {
     required Map<String, double> deficits,
+    String? spotlightTaskId,
   }) {
     if (suggested.isEmpty) return const [];
 
@@ -1663,6 +1669,19 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       deficitById[valueId] = deficits[valueId] ?? 0.0;
     }
 
+    String? spotlightValueId;
+    if (spotlightTaskId != null) {
+      for (final entry in groupsById.entries) {
+        final hasSpotlight = entry.value.any(
+          (task) => task.id == spotlightTaskId,
+        );
+        if (hasSpotlight) {
+          spotlightValueId = entry.key;
+          break;
+        }
+      }
+    }
+
     final groups = <PlanMyDayValueSuggestionGroup>[];
     for (final entry in groupsById.entries) {
       final valueId = entry.key;
@@ -1671,9 +1690,13 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
       final deficit = deficitById[valueId] ?? 0.0;
       final attentionNeeded = deficit >= _attentionDeficitThreshold;
-      final visibleCount = entry.value.length > _maxVisibleSuggestionsPerValue
-          ? _maxVisibleSuggestionsPerValue
-          : entry.value.length;
+      final defaultVisible = _defaultVisibleCount(
+        value.priority,
+        attentionNeeded: attentionNeeded,
+      );
+      final visibleCount = entry.value.length < defaultVisible
+          ? entry.value.length
+          : defaultVisible;
 
       groups.add(
         PlanMyDayValueSuggestionGroup(
@@ -1684,11 +1707,20 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
           neglectScore: deficit,
           visibleCount: visibleCount,
           expanded: true,
+          isSpotlight: valueId == spotlightValueId,
         ),
       );
     }
 
     groups.sort((a, b) {
+      if (spotlightValueId != null) {
+        if (a.valueId == spotlightValueId && b.valueId != spotlightValueId) {
+          return -1;
+        }
+        if (b.valueId == spotlightValueId && a.valueId != spotlightValueId) {
+          return 1;
+        }
+      }
       switch (_valuesSort) {
         case PlanMyDayValueSort.attentionFirst:
           if (a.attentionNeeded != b.attentionNeeded) {
@@ -1728,14 +1760,11 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     ValuePriority priority, {
     required bool attentionNeeded,
   }) {
-    final base = switch (priority) {
+    return switch (priority) {
       ValuePriority.high => attentionNeeded ? 4 : 3,
       ValuePriority.medium => attentionNeeded ? 3 : 2,
       ValuePriority.low => attentionNeeded ? 2 : 1,
     };
-    return base > _maxVisibleSuggestionsPerValue
-        ? _maxVisibleSuggestionsPerValue
-        : base;
   }
 
   Value? _resolveValueForTask(Task task, String valueId) {

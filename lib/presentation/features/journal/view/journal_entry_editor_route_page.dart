@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
@@ -59,8 +61,8 @@ class _JournalEntryEditorRoutePageState
             case JournalEntryEditorSaved():
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Saved log'),
+                SnackBar(
+                  content: Text(context.l10n.journalSavedLogSnack),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -78,6 +80,7 @@ class _JournalEntryEditorRoutePageState
         },
         builder: (context, state) {
           final theme = Theme.of(context);
+          final l10n = context.l10n;
           final isSaving = state.status is JournalEntryEditorSaving;
           final isLoading = state.status is JournalEntryEditorLoading;
           final canSave =
@@ -96,7 +99,8 @@ class _JournalEntryEditorRoutePageState
             return <TrackerGroup?>[null, ...state.groups];
           }
 
-          String groupLabel(TrackerGroup? group) => group?.name ?? 'Ungrouped';
+          String groupLabel(TrackerGroup? group) =>
+              group?.name ?? l10n.journalGroupUngrouped;
 
           List<TrackerDefinition> trackersForGroup(String? groupId) {
             final key = groupId ?? '';
@@ -217,7 +221,7 @@ class _JournalEntryEditorRoutePageState
                       SizedBox(height: TasklyTokens.of(context).spaceSm),
                       if (choices.isEmpty)
                         Text(
-                          'No options',
+                          l10n.journalNoOptions,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -238,13 +242,17 @@ class _JournalEntryEditorRoutePageState
             return ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(d.name),
-              subtitle: Text('Unsupported: ${d.valueType}'),
+              subtitle: Text(l10n.journalUnsupportedValueType(d.valueType)),
             );
           }
 
           return Scaffold(
             appBar: AppBar(
-              title: Text(state.isEditingExisting ? 'Edit log' : 'New log'),
+              title: Text(
+                state.isEditingExisting
+                    ? l10n.journalEditLogTitle
+                    : l10n.journalNewLogTitle,
+              ),
             ),
             bottomNavigationBar: SafeArea(
               child: Padding(
@@ -269,7 +277,7 @@ class _JournalEntryEditorRoutePageState
                           ),
                         )
                       : const Icon(Icons.check),
-                  label: const Text('Save log'),
+                  label: Text(l10n.journalSaveLogButton),
                 ),
               ),
             ),
@@ -285,7 +293,10 @@ class _JournalEntryEditorRoutePageState
                             TasklyTokens.of(context).spaceXl,
                       ),
                       children: [
-                        Text('Mood', style: theme.textTheme.titleMedium),
+                        Text(
+                          l10n.journalMoodLabel,
+                          style: theme.textTheme.titleMedium,
+                        ),
                         SizedBox(height: TasklyTokens.of(context).spaceSm),
                         _MoodScalePicker(
                           value: state.mood,
@@ -302,16 +313,19 @@ class _JournalEntryEditorRoutePageState
                               .add(JournalEntryEditorNoteChanged(v)),
                           maxLines: 6,
                           enabled: !isSaving,
-                          decoration: const InputDecoration(
-                            labelText: 'Note (optional)',
-                            border: OutlineInputBorder(),
+                          decoration: InputDecoration(
+                            labelText: l10n.journalNoteOptionalLabel,
+                            border: const OutlineInputBorder(),
                           ),
                         ),
                         SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        Text('Right now', style: theme.textTheme.titleMedium),
+                        Text(
+                          l10n.journalRightNowTitle,
+                          style: theme.textTheme.titleMedium,
+                        ),
                         SizedBox(height: TasklyTokens.of(context).spaceSm),
                         Text(
-                          'Log things that happened with this entry.',
+                          l10n.journalRightNowSubtitle,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -420,7 +434,9 @@ class _MoodOptionButton extends StatelessWidget {
       button: true,
       selected: selected,
       enabled: enabled,
-      label: 'Mood: ${mood.label}',
+      label: context.l10n.journalMoodSemanticsLabel(
+        mood.localizedLabel(context.l10n),
+      ),
       child: InkWell(
         onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
@@ -494,11 +510,14 @@ class _AllDaySummarySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('All-day', style: theme.textTheme.titleMedium),
+        Text(
+          context.l10n.journalAllDayTitle,
+          style: theme.textTheme.titleMedium,
+        ),
         SizedBox(height: tokens.spaceSm),
         if (!hasItems)
           Text(
-            'No daily totals yet.',
+            context.l10n.journalAllDayEmpty,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -527,7 +546,7 @@ class _AllDaySummarySection extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: TextButton(
             onPressed: onShowMore,
-            child: const Text('Show all'),
+            child: Text(context.l10n.journalShowAll),
           ),
         ),
       ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class FilterSortRadioOption {
@@ -55,7 +56,7 @@ class FilterSortSection {
 
 Future<void> showFilterSortSheet({
   required BuildContext context,
-  String title = 'Filter & sort',
+  String? title,
   List<FilterSortRadioGroup> sortGroups = const <FilterSortRadioGroup>[],
   List<FilterSortToggle> toggles = const <FilterSortToggle>[],
   List<FilterSortSection> sections = const <FilterSortSection>[],
@@ -68,9 +69,10 @@ Future<void> showFilterSortSheet({
       final tokens = TasklyTokens.of(sheetContext);
       final theme = Theme.of(sheetContext);
 
+      final effectiveTitle = title ?? context.l10n.filterSortTitle;
       final children = <Widget>[
         Text(
-          title,
+          effectiveTitle,
           style: theme.textTheme.titleLarge,
         ),
       ];
@@ -121,7 +123,7 @@ Future<void> showFilterSortSheet({
         children.add(SizedBox(height: tokens.spaceSm));
         children.add(
           Text(
-            'Filter',
+            context.l10n.filterLabel,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),

@@ -6,12 +6,12 @@ enum DisplayDensity { compact, standard }
 /// Per-page display preferences (row density, etc.).
 @immutable
 final class DisplayPreferences {
-  const DisplayPreferences({this.density = DisplayDensity.standard});
+  const DisplayPreferences({this.density = DisplayDensity.compact});
 
   factory DisplayPreferences.fromJson(Map<String, dynamic> json) {
     final raw = json['density'] as String?;
     final density = DisplayDensity.values.byName(
-      raw ?? DisplayDensity.standard.name,
+      raw ?? DisplayDensity.compact.name,
     );
     return DisplayPreferences(density: density);
   }

@@ -1,3 +1,5 @@
+import 'package:taskly_bloc/l10n/l10n.dart';
+
 enum ProjectsSortOrder {
   recentlyUpdated,
   alphabetical,
@@ -8,14 +10,14 @@ enum ProjectsSortOrder {
 }
 
 extension ProjectsSortOrderLabels on ProjectsSortOrder {
-  String get label {
+  String label(AppLocalizations l10n) {
     return switch (this) {
-      ProjectsSortOrder.recentlyUpdated => 'Recently updated',
-      ProjectsSortOrder.alphabetical => 'A-Z',
-      ProjectsSortOrder.priority => 'Priority',
-      ProjectsSortOrder.dueDate => 'Due date',
-      ProjectsSortOrder.valuePriority => 'Value priority',
-      ProjectsSortOrder.valueName => 'Value name (A-Z)',
+      ProjectsSortOrder.recentlyUpdated => l10n.sortRecentlyUpdated,
+      ProjectsSortOrder.alphabetical => l10n.sortAlphabetical,
+      ProjectsSortOrder.priority => l10n.sortPriority,
+      ProjectsSortOrder.dueDate => l10n.sortDueDate,
+      ProjectsSortOrder.valuePriority => l10n.sortValuePriority,
+      ProjectsSortOrder.valueName => l10n.sortValueName,
     };
   }
 }

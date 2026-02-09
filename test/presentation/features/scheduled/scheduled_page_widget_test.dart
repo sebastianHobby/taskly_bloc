@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/feature_mocks.dart';
@@ -156,7 +157,8 @@ void main() {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    expect(find.text('Schedule'), findsOneWidget);
+    final l10n = _l10n(tester);
+    expect(find.text(l10n.scheduledTitle), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });
 
@@ -167,4 +169,8 @@ void main() {
     expect(find.text('Complete Lesson 3'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });
+}
+
+AppLocalizations _l10n(WidgetTester tester) {
+  return tester.element(find.byType(ScheduledPage)).l10n;
 }

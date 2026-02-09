@@ -43,10 +43,13 @@ class _ValuesPageState extends State<ValuesPage> {
       context: context,
       sortGroups: [
         FilterSortRadioGroup(
-          title: 'Sort',
+          title: context.l10n.sortMenuTitle,
           options: [
             for (final option in ValueSortOrder.values)
-              FilterSortRadioOption(value: option, label: option.label),
+              FilterSortRadioOption(
+                value: option,
+                label: option.label(context.l10n),
+              ),
           ],
           selectedValue: _sortOrder,
           onSelected: (value) {
@@ -77,9 +80,7 @@ class _ValuesPageState extends State<ValuesPage> {
           child: _ValuesRangeSelector(
             selectedDays: selectedDays,
             onChanged: (days) {
-              context
-                  .read<ValuesHeroBloc>()
-                  .add(ValuesHeroRangeChanged(days));
+              context.read<ValuesHeroBloc>().add(ValuesHeroRangeChanged(days));
               Navigator.of(context).pop();
             },
           ),
@@ -108,24 +109,33 @@ class _ValuesPageState extends State<ValuesPage> {
             builder: (context, selectionState) {
               return Scaffold(
                 appBar: selectionState.isSelectionMode
-                    ? SelectionAppBar(baseTitle: 'Values', onExit: () {})
+                    ? SelectionAppBar(
+                        baseTitle: context.l10n.valuesTitle,
+                        onExit: () {},
+                      )
                     : AppBar(
                         actions: [
                           IconButton(
-                            tooltip: 'Filter & sort',
+                            tooltip: context.l10n.filterSortTooltip,
                             icon: const Icon(Icons.tune_rounded),
                             onPressed: () => _showFilterSheet(context),
                           ),
                           TasklyOverflowMenuButton<_ValuesMenuAction>(
-                            tooltip: 'More',
+                            tooltip: MaterialLocalizations.of(
+                              context,
+                            ).moreButtonTooltip,
                             itemsBuilder: (context) => [
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: _ValuesMenuAction.range,
-                                child: Text('Range'),
+                                child: Text(
+                                  context.l10n.rangeLabel,
+                                ),
                               ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: _ValuesMenuAction.selectMultiple,
-                                child: Text('Select multiple'),
+                                child: Text(
+                                  context.l10n.selectMultipleLabel,
+                                ),
                               ),
                             ],
                             onSelected: (action) {
@@ -176,9 +186,8 @@ class _ValuesPageState extends State<ValuesPage> {
                           spec: TasklyFeedSpec.empty(
                             empty: TasklyEmptyStateSpec(
                               icon: Icons.favorite_border,
-                              title: 'No values yet',
-                              description:
-                                  'Create a value to clarify what matters most.',
+                              title: context.l10n.valuesEmptyTitle,
+                              description: context.l10n.valuesEmptyDescription,
                               actionLabel: context.l10n.createValueOption,
                               onAction: () => _createValue(context),
                             ),
@@ -303,18 +312,30 @@ class _ValuesRangeSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Range',
+          context.l10n.rangeLabel,
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
         SizedBox(height: tokens.spaceSm),
         SegmentedButton<int>(
-          segments: const [
-            ButtonSegment(value: 30, label: Text('30d')),
-            ButtonSegment(value: 90, label: Text('90d')),
-            ButtonSegment(value: 180, label: Text('180d')),
-            ButtonSegment(value: 365, label: Text('365d')),
+          segments: [
+            ButtonSegment(
+              value: 30,
+              label: Text(context.l10n.rangeDaysShort(30)),
+            ),
+            ButtonSegment(
+              value: 90,
+              label: Text(context.l10n.rangeDaysShort(90)),
+            ),
+            ButtonSegment(
+              value: 180,
+              label: Text(context.l10n.rangeDaysShort(180)),
+            ),
+            ButtonSegment(
+              value: 365,
+              label: Text(context.l10n.rangeDaysShort(365)),
+            ),
           ],
           selected: {selectedDays},
           onSelectionChanged: (selection) {

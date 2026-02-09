@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_daily_detail_sheet.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
@@ -71,7 +72,7 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
         return StatefulBuilder(
           builder: (context, setState) {
             final dateLabel = rangeStart == null || rangeEnd == null
-                ? 'Any time'
+                ? context.l10n.journalAnyTimeLabel
                 : '${DateFormat.yMMMd().format(rangeStart!.toLocal())} - '
                       '${DateFormat.yMMMd().format(rangeEnd!.toLocal())}';
 
@@ -92,12 +93,12 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Filters',
+                    context.l10n.filtersLabel,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   ListTile(
-                    title: const Text('Date range'),
+                    title: Text(context.l10n.journalDateRangeTitle),
                     subtitle: Text(dateLabel),
                     trailing: const Icon(Icons.date_range),
                     onTap: () async {
@@ -120,7 +121,7 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
                     },
                   ),
                   SwitchListTile(
-                    title: const Text('Mood minimum'),
+                    title: Text(context.l10n.journalMoodMinimumTitle),
                     value: moodEnabled,
                     onChanged: (value) {
                       setState(() {
@@ -152,12 +153,12 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
                             moodMin = null;
                           });
                         },
-                        child: const Text('Clear'),
+                        child: Text(context.l10n.clearLabel),
                       ),
                       const Spacer(),
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
+                        child: Text(context.l10n.cancelLabel),
                       ),
                       FilledButton(
                         onPressed: () {
@@ -172,7 +173,7 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
                           );
                           Navigator.of(context).pop();
                         },
-                        child: const Text('Apply'),
+                        child: Text(context.l10n.applyLabel),
                       ),
                     ],
                   ),
@@ -216,7 +217,7 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
             appBar: AppBar(
               actions: [
                 IconButton(
-                  tooltip: 'Filters',
+                  tooltip: context.l10n.filtersLabel,
                   onPressed: () => _showFilters(context, filters),
                   icon: const Icon(Icons.tune),
                 ),
@@ -229,8 +230,8 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
                   padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
                   child: TextField(
                     controller: _searchController,
-                    decoration: const InputDecoration(
-                      labelText: 'Search entries',
+                    decoration: InputDecoration(
+                      labelText: context.l10n.journalSearchEntriesLabel,
                       prefixIcon: Icon(Icons.search),
                     ),
                     onChanged: (value) =>
@@ -276,7 +277,7 @@ class _JournalHistoryTitleHeader extends StatelessWidget {
           ),
           SizedBox(width: tokens.spaceSm),
           Text(
-            'History',
+            context.l10n.journalHistoryTitle,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),
@@ -295,7 +296,7 @@ class _HistoryList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (days.isEmpty) {
-      return const Center(child: Text('No recent logs.'));
+      return Center(child: Text(context.l10n.journalNoRecentLogs));
     }
 
     return ListView.builder(
@@ -319,6 +320,7 @@ class _DaySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateLabel = DateFormat.yMMMEd().format(summary.day.toLocal());
+    final l10n = context.l10n;
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -332,10 +334,10 @@ class _DaySection extends StatelessWidget {
           SizedBox(height: TasklyTokens.of(context).spaceSm),
           TasklyJournalDailySummarySection(
             moodEmoji: _moodEmoji(summary.moodAverage),
-            moodLabel: _moodLabel(summary.moodAverage),
-            entryCountLabel: summary.entries.length == 1
-                ? '1 entry'
-                : '${summary.entries.length} entries',
+            moodLabel: _moodLabel(l10n, summary.moodAverage),
+            entryCountLabel: l10n.journalEntryCountLabel(
+              summary.entries.length,
+            ),
             items: [
               for (final item in summary.dailySummaryItems)
                 TasklyJournalDailySummaryItem(
@@ -343,6 +345,9 @@ class _DaySection extends StatelessWidget {
                   value: item.value,
                 ),
             ],
+            emptyItemsLabel: l10n.journalDailyNoTrackers,
+            seeAllLabel: l10n.journalSeeAll,
+            editDailyLabel: l10n.journalEditDaily,
             onSeeAll:
                 summary.dailySummaryTotalCount >
                     summary.dailySummaryItems.length
@@ -379,7 +384,7 @@ String _moodEmoji(double? moodAverage) {
   return MoodRating.fromValue(moodAverage.round().clamp(1, 5)).emoji;
 }
 
-String _moodLabel(double? moodAverage) {
-  if (moodAverage == null) return 'Mood avg: -';
-  return 'Mood avg: ${moodAverage.toStringAsFixed(1)}';
+String _moodLabel(AppLocalizations l10n, double? moodAverage) {
+  if (moodAverage == null) return l10n.journalMoodAverageEmpty;
+  return l10n.journalMoodAverageValue(moodAverage.toStringAsFixed(1));
 }

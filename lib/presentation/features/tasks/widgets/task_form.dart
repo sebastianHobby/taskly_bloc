@@ -1216,8 +1216,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                 SizedBox(height: sectionGap),
                 FormBuilderSwitchTile(
                   name: TaskFormFieldKeys.includeInMyDay,
-                  title: 'Include in My Day today',
-                  subtitle: "Adds this task to today's plan.",
+                  title: l10n.taskFormIncludeInMyDayTitle,
+                  subtitle: l10n.taskFormIncludeInMyDaySubtitle,
                   initialValue: widget.includeInMyDayDefault,
                   secondary: Icon(
                     myDayIcon.selectedIcon,
@@ -1236,22 +1236,22 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                   return TasklyFormPrioritySegmented(
                     segments: [
                       TasklyFormPrioritySegment(
-                        label: 'P1',
+                        label: l10n.priorityP1Label,
                         value: 1,
                         selectedColor: colorScheme.error,
                       ),
                       TasklyFormPrioritySegment(
-                        label: 'P2',
+                        label: l10n.priorityP2Label,
                         value: 2,
                         selectedColor: colorScheme.tertiary,
                       ),
                       TasklyFormPrioritySegment(
-                        label: 'P3',
+                        label: l10n.priorityP3Label,
                         value: 3,
                         selectedColor: colorScheme.primary,
                       ),
                       TasklyFormPrioritySegment(
-                        label: 'P4',
+                        label: l10n.priorityP4Label,
                         value: 4,
                         selectedColor: colorScheme.onSurfaceVariant,
                       ),

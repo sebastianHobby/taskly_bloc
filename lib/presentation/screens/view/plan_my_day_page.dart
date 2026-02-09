@@ -9,6 +9,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/reschedule_picker.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_domain/core.dart';
@@ -50,16 +51,16 @@ class PlanMyDayPage extends StatelessWidget {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('Exit without saving?'),
-          content: const Text("Your picks won't be saved to today's plan."),
+          title: Text(context.l10n.planMyDayExitWithoutSavingTitle),
+          content: Text(context.l10n.planMyDayExitWithoutSavingBody),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Stay'),
+              child: Text(context.l10n.stayLabel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Exit'),
+              child: Text(context.l10n.exitLabel),
             ),
           ],
         );
@@ -97,11 +98,19 @@ class PlanMyDayPage extends StatelessWidget {
             if (state is! PlanMyDayReady) return;
             final toast = state.toast;
             if (toast == null) return;
+            final l10n = context.l10n;
+            final message = switch (toast.kind) {
+              PlanMyDayToastKind.updated => l10n.planMyDayUpdatedSnack,
+              PlanMyDayToastKind.error =>
+                toast.error == null
+                    ? l10n.genericErrorFallback
+                    : friendlyErrorMessageForUi(toast.error!, l10n),
+            };
             final messenger = ScaffoldMessenger.of(context);
             messenger.clearSnackBars();
             messenger.showSnackBar(
               SnackBar(
-                content: Text(toast.message),
+                content: Text(message),
                 duration: const Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -122,7 +131,7 @@ class PlanMyDayPage extends StatelessWidget {
                     title: Text(context.l10n.myDayPlanTitle),
                     actions: [
                       IconButton(
-                        tooltip: 'Exit plan',
+                        tooltip: context.l10n.planMyDayExitTooltip,
                         icon: const Icon(Icons.close),
                         onPressed: () => _handleClose(
                           context,
@@ -184,6 +193,7 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
     }
 
     final tokens = TasklyTokens.of(context);
+    final l10n = context.l10n;
     final isCompact = context.isCompactScreen;
     const maxVisibleItems = ExpandableRowListDefaults.compactMaxVisible;
     final double fadeHeight;
@@ -208,7 +218,7 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
 
     final children = <Widget>[
       Text(
-        "Build today's plan.",
+        l10n.planMyDayBuildPlanTitle,
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.w800,
         ),
@@ -218,8 +228,8 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
       SizedBox(height: tokens.spaceLg),
       if (data.dueTodayTasks.isNotEmpty)
         _TaskShelf(
-          title: 'Due Today',
-          actionLabel: 'Reschedule all due',
+          title: l10n.planMyDayDueTodayTitle,
+          actionLabel: l10n.planMyDayRescheduleAllDueAction,
           anchorKey: GuidedTourAnchors.planMyDayTriage,
           rowKeyPrefix: 'plan-due',
           limitItems: isCompact,
@@ -227,8 +237,8 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
           onAction: () async {
             final choice = await showRescheduleChoiceSheet(
               context,
-              title: 'Reschedule all',
-              subtitle: 'Choose a new day for these items.',
+              title: l10n.planMyDayRescheduleAllTitle,
+              subtitle: l10n.planMyDayRescheduleAllSubtitle,
               dayKeyUtc: data.dayKeyUtc,
             );
             if (choice == null || !context.mounted) return;
@@ -266,8 +276,8 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
             onActionPressed: (task) async {
               final choice = await showRescheduleChoiceSheet(
                 context,
-                title: 'Reschedule task',
-                subtitle: 'Choose a new day for this task.',
+                title: l10n.planMyDayRescheduleTaskTitle,
+                subtitle: l10n.planMyDayRescheduleTaskSubtitle,
                 dayKeyUtc: data.dayKeyUtc,
               );
               if (choice == null || !context.mounted) return;
@@ -290,23 +300,23 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
         )
       else
         _EmptyShelf(
-          title: 'Due Today',
-          body: 'Nothing due today.',
+          title: l10n.planMyDayDueTodayTitle,
+          body: l10n.planMyDayDueTodayEmptyBody,
           anchorKey: GuidedTourAnchors.planMyDayTriage,
         ),
       SizedBox(height: tokens.spaceLg),
       if (data.plannedTasks.isNotEmpty)
         _TaskShelf(
-          title: 'Yesterday',
-          actionLabel: 'Reschedule all',
+          title: l10n.planMyDayYesterdayTitle,
+          actionLabel: l10n.planMyDayRescheduleAllAction,
           rowKeyPrefix: 'plan-yesterday',
           limitItems: isCompact,
           maxVisibleItems: maxVisibleItems,
           onAction: () async {
             final choice = await showRescheduleChoiceSheet(
               context,
-              title: 'Reschedule all',
-              subtitle: 'Choose a new day for these items.',
+              title: l10n.planMyDayRescheduleAllTitle,
+              subtitle: l10n.planMyDayRescheduleAllSubtitle,
               dayKeyUtc: data.dayKeyUtc,
             );
             if (choice == null || !context.mounted) return;
@@ -348,8 +358,8 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
             onActionPressed: (task) async {
               final choice = await showRescheduleChoiceSheet(
                 context,
-                title: 'Reschedule task',
-                subtitle: 'Choose a new day for this task.',
+                title: l10n.planMyDayRescheduleTaskTitle,
+                subtitle: l10n.planMyDayRescheduleTaskSubtitle,
                 dayKeyUtc: data.dayKeyUtc,
               );
               if (choice == null || !context.mounted) return;
@@ -372,8 +382,8 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
         )
       else
         _EmptyShelf(
-          title: 'Yesterday',
-          body: 'Nothing carried over from yesterday.',
+          title: l10n.planMyDayYesterdayTitle,
+          body: l10n.planMyDayYesterdayEmptyBody,
         ),
       SizedBox(height: tokens.spaceLg),
       if (data.allRoutines.isNotEmpty)
@@ -383,15 +393,12 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
           rowKeyPrefix: 'plan-routines',
           limitItems: isCompact,
           maxVisibleItems: maxVisibleItems,
-          scheduledAnchorKey: GuidedTourAnchors.planMyDayScheduledRoutines,
-          flexibleAnchorKey: GuidedTourAnchors.planMyDayFlexibleRoutines,
+          anchorKey: GuidedTourAnchors.planMyDayRoutinesBlock,
         ),
       if (!data.overCapacity && data.valueSuggestionGroups.isNotEmpty) ...[
         SizedBox(height: tokens.spaceLg),
         _SuggestionsShelf(
           data: data,
-          limitItems: isCompact,
-          maxVisibleItems: maxVisibleItems,
         ),
       ],
       if (data.overCapacity) ...[
@@ -516,6 +523,7 @@ class _PlanSummaryBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
 
     return Container(
       padding: EdgeInsets.all(tokens.spaceMd),
@@ -528,7 +536,7 @@ class _PlanSummaryBar extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              "Today's plan: ${data.plannedCount} items",
+              l10n.planMyDaySummaryLabel(data.plannedCount),
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -549,22 +557,23 @@ class _LimitStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<PlanMyDayBloc>();
+    final l10n = context.l10n;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: 'Decrease limit',
+          tooltip: l10n.planMyDayDecreaseLimitTooltip,
           onPressed: () => bloc.add(PlanMyDayDailyLimitChanged(limit - 1)),
           icon: const Icon(Icons.remove_circle_outline),
         ),
         Text(
-          'Limit: $limit',
+          l10n.planMyDayLimitLabel(limit),
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
         IconButton(
-          tooltip: 'Increase limit',
+          tooltip: l10n.planMyDayIncreaseLimitTooltip,
           onPressed: () => bloc.add(PlanMyDayDailyLimitChanged(limit + 1)),
           icon: const Icon(Icons.add_circle_outline),
         ),
@@ -640,8 +649,7 @@ class _RoutineShelf extends StatelessWidget {
     required this.rowKeyPrefix,
     required this.limitItems,
     required this.maxVisibleItems,
-    this.scheduledAnchorKey,
-    this.flexibleAnchorKey,
+    this.anchorKey,
   });
 
   final PlanMyDayReady data;
@@ -649,8 +657,7 @@ class _RoutineShelf extends StatelessWidget {
   final String rowKeyPrefix;
   final bool limitItems;
   final int maxVisibleItems;
-  final Key? scheduledAnchorKey;
-  final Key? flexibleAnchorKey;
+  final Key? anchorKey;
 
   @override
   Widget build(BuildContext context) {
@@ -673,50 +680,28 @@ class _RoutineShelf extends StatelessWidget {
 
     final l10n = context.l10n;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            if (scheduledAnchorKey != null)
-              Positioned(
-                left: 0,
-                top: 0,
-                child: SizedBox(
-                  key: scheduledAnchorKey,
-                  width: 1,
-                  height: 1,
-                ),
-              ),
-            if (flexibleAnchorKey != null)
-              Positioned(
-                left: 12,
-                top: 0,
-                child: SizedBox(
-                  key: flexibleAnchorKey,
-                  width: 1,
-                  height: 1,
-                ),
-              ),
-            Text(
-              'Routines',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+    return Container(
+      key: anchorKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.routinesTitle,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
             ),
-          ],
-        ),
-        SizedBox(height: tokens.spaceSm),
-        ExpandableRowList(
-          rows: routineRows,
-          rowKeyPrefix: rowKeyPrefix,
-          maxVisible: maxVisibleItems,
-          enabled: limitItems,
-          showMoreLabelBuilder: l10n.myDayPlanShowMore,
-          showFewerLabel: l10n.myDayPlanShowFewer,
-        ),
-      ],
+          ),
+          SizedBox(height: tokens.spaceSm),
+          ExpandableRowList(
+            rows: routineRows,
+            rowKeyPrefix: rowKeyPrefix,
+            maxVisible: maxVisibleItems,
+            enabled: limitItems,
+            showMoreLabelBuilder: l10n.myDayPlanShowMore,
+            showFewerLabel: l10n.myDayPlanShowFewer,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -724,13 +709,9 @@ class _RoutineShelf extends StatelessWidget {
 class _SuggestionsShelf extends StatelessWidget {
   const _SuggestionsShelf({
     required this.data,
-    required this.limitItems,
-    required this.maxVisibleItems,
   });
 
   final PlanMyDayReady data;
-  final bool limitItems;
-  final int maxVisibleItems;
 
   @override
   Widget build(BuildContext context) {
@@ -744,16 +725,14 @@ class _SuggestionsShelf extends StatelessWidget {
       suggestions.add(
         _ValueSuggestionChip(
           value: group.value,
+          showSpotlightBadge: group.isSpotlight,
           anchorKey: i == 0 ? GuidedTourAnchors.planMyDayValuesCard : null,
         ),
       );
       suggestions.add(SizedBox(height: tokens.spaceSm2));
-      final visibleTasks = limitItems
-          ? group.tasks
-          : group.tasks.take(group.visibleCount).toList(growable: false);
       final rows = _buildTaskRows(
         context,
-        tasks: visibleTasks,
+        tasks: group.tasks,
         selectedTaskIds: data.selectedTaskIds,
         style: TasklyTaskRowStyle.planPick,
         allowSelection: true,
@@ -769,8 +748,8 @@ class _SuggestionsShelf extends StatelessWidget {
         ExpandableRowList(
           rows: rows,
           rowKeyPrefix: 'plan-suggest-${group.valueId}',
-          maxVisible: maxVisibleItems,
-          enabled: limitItems,
+          maxVisible: group.visibleCount,
+          enabled: true,
           showMoreLabelBuilder: l10n.myDayPlanShowMore,
           showFewerLabel: l10n.myDayPlanShowFewer,
         ),
@@ -784,7 +763,7 @@ class _SuggestionsShelf extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Suggestions',
+          l10n.planMyDaySuggestionsTitle,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.w800,
           ),
@@ -799,10 +778,12 @@ class _SuggestionsShelf extends StatelessWidget {
 class _ValueSuggestionChip extends StatelessWidget {
   const _ValueSuggestionChip({
     required this.value,
+    required this.showSpotlightBadge,
     this.anchorKey,
   });
 
   final Value value;
+  final bool showSpotlightBadge;
   final Key? anchorKey;
 
   @override
@@ -810,8 +791,9 @@ class _ValueSuggestionChip extends StatelessWidget {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
     final chipData = value.toChipData(context);
+    final l10n = context.l10n;
 
-    return Container(
+    final chip = Container(
       key: anchorKey,
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spaceSm2,
@@ -841,6 +823,35 @@ class _ValueSuggestionChip extends StatelessWidget {
         ],
       ),
     );
+
+    if (!showSpotlightBadge) {
+      return chip;
+    }
+
+    return Wrap(
+      spacing: tokens.spaceXs2,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        chip,
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spaceXs2,
+            vertical: tokens.spaceXxs2,
+          ),
+          decoration: BoxDecoration(
+            color: scheme.primaryContainer,
+            borderRadius: BorderRadius.circular(tokens.radiusPill),
+          ),
+          child: Text(
+            l10n.myDayPlanSpotlightLabel,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: scheme.onPrimaryContainer,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -857,6 +868,7 @@ class _OverCapacityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
 
     return Container(
       padding: EdgeInsets.all(tokens.spaceMd),
@@ -870,7 +882,7 @@ class _OverCapacityCard extends StatelessWidget {
           SizedBox(width: tokens.spaceSm),
           Expanded(
             child: Text(
-              'Over capacity ($count/$limit). Reschedule items or adjust limit.',
+              l10n.planMyDayOverCapacityMessage(count, limit),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -950,7 +962,7 @@ class _PlanBottomBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              '${data.plannedCount} selected',
+              l10n.selectedCountLabel(data.plannedCount),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -1128,9 +1140,9 @@ TasklyRowSpec _buildRoutineRow(
   String? deadlineLabel;
   if (dateOnlyDeadline != null) {
     if (dateOnlyDeadline.isBefore(today)) {
-      deadlineLabel = 'Overdue';
+      deadlineLabel = context.l10n.overdueLabel;
     } else if (dateOnlyDeadline.isAtSameMomentAs(today)) {
-      deadlineLabel = 'Due today';
+      deadlineLabel = context.l10n.dueTodayLabel;
     } else {
       deadlineLabel = MaterialLocalizations.of(context).formatMediumDate(
         deadline!,
@@ -1194,14 +1206,14 @@ Future<void> _showSwapSheet(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Swap suggestion',
+                context.l10n.planMyDaySwapSuggestionTitle,
                 style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
               SizedBox(height: tokens.spaceXs2),
               Text(
-                'Choose another option in ${group.value.name}.',
+                context.l10n.planMyDaySwapSuggestionBody(group.value.name),
                 style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
@@ -1209,7 +1221,7 @@ Future<void> _showSwapSheet(
               SizedBox(height: tokens.spaceSm),
               if (candidates.isEmpty)
                 Text(
-                  'No other options for this value.',
+                  context.l10n.planMyDaySwapSuggestionEmpty,
                   style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
@@ -1282,13 +1294,13 @@ class _RatingsGate extends StatelessWidget {
             ),
             SizedBox(height: tokens.spaceSm),
             Text(
-              'Rate your values to unlock suggestions',
+              context.l10n.planMyDayRatingsGateTitle,
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             SizedBox(height: tokens.spaceSm),
             Text(
-              'Or switch to behavior-based suggestions to keep planning.',
+              context.l10n.planMyDayRatingsGateBody,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -1297,12 +1309,12 @@ class _RatingsGate extends StatelessWidget {
             SizedBox(height: tokens.spaceMd),
             FilledButton(
               onPressed: onRateRequested,
-              child: const Text('Rate values'),
+              child: Text(context.l10n.rateValuesLabel),
             ),
             SizedBox(height: tokens.spaceSm),
             TextButton(
               onPressed: onSwitchRequested,
-              child: const Text('Switch to behavior-based'),
+              child: Text(context.l10n.switchToBehaviorBasedLabel),
             ),
           ],
         ),

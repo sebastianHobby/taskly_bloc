@@ -299,6 +299,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
     required bool seriesEnded,
   }) {
     final actions = TileOverflowActionCatalog.forEntityDetail(
+      l10n: context.l10n,
       entityType: EntityType.task,
       entityId: taskId,
       entityName: taskName,
@@ -311,7 +312,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
 
     return [
       PopupMenuButton<TileOverflowActionId>(
-        tooltip: 'More',
+        tooltip: context.l10n.moreLabel,
         icon: const Icon(Icons.more_horiz),
         onSelected: (actionId) async {
           final dispatcher = context.read<TileIntentDispatcher>();

@@ -1,3 +1,4 @@
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
@@ -38,6 +39,7 @@ class TileOverflowActionEntry {
 /// list (including disabled items) and corresponding [TileIntent]s.
 abstract final class TileOverflowActionCatalog {
   static List<TileOverflowActionEntry> forEntityDetail({
+    required AppLocalizations l10n,
     required EntityType entityType,
     required String entityId,
     required String entityName,
@@ -49,7 +51,7 @@ abstract final class TileOverflowActionCatalog {
       TileOverflowActionEntry(
         id: TileOverflowActionId.completeSeries,
         group: TileOverflowActionGroup.destructive,
-        label: 'Complete series',
+        label: l10n.completeSeriesAction,
         enabled: canCompleteSeries,
         destructive: true,
         intent: TileIntentCompleteSeries(
@@ -61,7 +63,7 @@ abstract final class TileOverflowActionCatalog {
       TileOverflowActionEntry(
         id: TileOverflowActionId.delete,
         group: TileOverflowActionGroup.destructive,
-        label: 'Delete',
+        label: l10n.deleteLabel,
         enabled: true,
         destructive: true,
         intent: TileIntentRequestDelete(
@@ -75,6 +77,7 @@ abstract final class TileOverflowActionCatalog {
   }
 
   static List<TileOverflowActionEntry> forTask({
+    required AppLocalizations l10n,
     required String taskId,
     required String taskName,
     required bool isRepeating,
@@ -87,7 +90,7 @@ abstract final class TileOverflowActionCatalog {
       TileOverflowActionEntry(
         id: TileOverflowActionId.edit,
         group: TileOverflowActionGroup.edit,
-        label: 'Edit',
+        label: l10n.editLabel,
         enabled: tileCapabilities.canOpenEditor,
         destructive: false,
         intent: TileIntentOpenEditor(
@@ -98,7 +101,7 @@ abstract final class TileOverflowActionCatalog {
       TileOverflowActionEntry(
         id: TileOverflowActionId.moveToProject,
         group: TileOverflowActionGroup.edit,
-        label: 'Move to project…',
+        label: l10n.moveToProjectAction,
         enabled: tileCapabilities.canOpenMoveToProject,
         destructive: false,
         intent: TileIntentOpenMoveToProject(
@@ -111,7 +114,7 @@ abstract final class TileOverflowActionCatalog {
       TileOverflowActionEntry(
         id: TileOverflowActionId.completeSeries,
         group: TileOverflowActionGroup.destructive,
-        label: 'Complete series',
+        label: l10n.completeSeriesAction,
         enabled: canCompleteSeries,
         destructive: true,
         intent: TileIntentCompleteSeries(
@@ -123,7 +126,7 @@ abstract final class TileOverflowActionCatalog {
       TileOverflowActionEntry(
         id: TileOverflowActionId.delete,
         group: TileOverflowActionGroup.destructive,
-        label: 'Delete',
+        label: l10n.deleteLabel,
         enabled: tileCapabilities.canDelete,
         destructive: true,
         intent: TileIntentRequestDelete(
@@ -136,6 +139,7 @@ abstract final class TileOverflowActionCatalog {
   }
 
   static List<TileOverflowActionEntry> forProject({
+    required AppLocalizations l10n,
     required String projectId,
     required String projectName,
     required bool isRepeating,
@@ -148,7 +152,7 @@ abstract final class TileOverflowActionCatalog {
       TileOverflowActionEntry(
         id: TileOverflowActionId.edit,
         group: TileOverflowActionGroup.edit,
-        label: 'Edit',
+        label: l10n.editLabel,
         enabled: tileCapabilities.canOpenEditor,
         destructive: false,
         intent: TileIntentOpenEditor(
@@ -159,7 +163,7 @@ abstract final class TileOverflowActionCatalog {
       TileOverflowActionEntry(
         id: TileOverflowActionId.completeSeries,
         group: TileOverflowActionGroup.destructive,
-        label: 'Complete series',
+        label: l10n.completeSeriesAction,
         enabled: canCompleteSeries,
         destructive: true,
         intent: TileIntentCompleteSeries(
@@ -171,7 +175,7 @@ abstract final class TileOverflowActionCatalog {
       TileOverflowActionEntry(
         id: TileOverflowActionId.delete,
         group: TileOverflowActionGroup.destructive,
-        label: 'Delete',
+        label: l10n.deleteLabel,
         enabled: tileCapabilities.canDelete,
         destructive: true,
         intent: TileIntentRequestDelete(

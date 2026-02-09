@@ -26,19 +26,27 @@ class TaskEntityTile extends StatelessWidget {
 
   bool get _isSelectionStyle =>
       style is TasklyTaskRowStylePlanPick ||
-      style is TasklyTaskRowStyleBulkSelection;
+      style is TasklyTaskRowStyleBulkSelection ||
+      style is TasklyTaskRowStyleBulkSelectionCompact;
 
-  bool get _isBulkSelectionStyle => style is TasklyTaskRowStyleBulkSelection;
+  bool get _isBulkSelectionStyle =>
+      style is TasklyTaskRowStyleBulkSelection ||
+      style is TasklyTaskRowStyleBulkSelectionCompact;
+
+  bool get _isBulkSelectionCompactStyle =>
+      style is TasklyTaskRowStyleBulkSelectionCompact;
 
   bool get _isPlanPickStyle => style is TasklyTaskRowStylePlanPick;
 
-  bool get _isCompactStyle => style is TasklyTaskRowStyleCompact;
+  bool get _isCompactStyle =>
+      style is TasklyTaskRowStyleCompact || _isBulkSelectionCompactStyle;
 
   bool get _isPickerLikeStyle => _isPlanPickStyle;
 
   bool? get _selected => switch (style) {
     TasklyTaskRowStylePlanPick(:final selected) => selected,
     TasklyTaskRowStyleBulkSelection(:final selected) => selected,
+    TasklyTaskRowStyleBulkSelectionCompact(:final selected) => selected,
     _ => null,
   };
 
@@ -72,10 +80,15 @@ class TaskEntityTile extends StatelessWidget {
     // Keep left-side spacing so rows don't horizontally jump when entering/exiting
     // selection mode.
     final showCompletionControl = !_isBulkSelectionStyle && !_isPickerLikeStyle;
+    final showSelectionControl = _isBulkSelectionStyle;
+    final selectionEnabled = actions.onToggleSelected != null;
+    final isSelected = _selected ?? false;
 
     final VoidCallback? onTap = switch (style) {
       TasklyTaskRowStylePlanPick() => actions.onTap ?? actions.onToggleSelected,
       TasklyTaskRowStyleBulkSelection() =>
+        actions.onToggleSelected ?? actions.onTap,
+      TasklyTaskRowStyleBulkSelectionCompact() =>
         actions.onToggleSelected ?? actions.onTap,
       _ => actions.onTap,
     };
@@ -140,11 +153,14 @@ class TaskEntityTile extends StatelessWidget {
                           scheme: scheme,
                           titleStyle: titleStyle,
                           showCompletionControl: showCompletionControl,
+                          showSelectionControl: showSelectionControl,
                           completionEnabled: completionEnabled,
                           onToggleCompletion: actions.onToggleCompletion,
+                          selectionEnabled: selectionEnabled,
                           showPicker: _isPickerLikeStyle,
-                          selected: _selected ?? false,
-                          pickerEnabled: actions.onToggleSelected != null,
+                          selected: isSelected,
+                          pickerEnabled: selectionEnabled,
+                          selectionCompact: _isBulkSelectionCompactStyle,
                           onToggleSelected: actions.onToggleSelected,
                           pickerTooltip: addTooltipLabel,
                           showSwapAction: showSwapAction,
@@ -176,9 +192,11 @@ class TaskEntityTile extends StatelessWidget {
                                     : tokens.spaceSm,
                               ),
                             ] else if (_isBulkSelectionStyle) ...[
-                              SizedBox(
-                                width: tokens.spaceXl,
-                                height: tokens.spaceXl,
+                              _SelectionControl(
+                                selected: isSelected,
+                                enabled: selectionEnabled,
+                                compact: _isBulkSelectionCompactStyle,
+                                onPressed: actions.onToggleSelected,
                               ),
                               SizedBox(
                                 width: effectiveCompact
@@ -234,32 +252,6 @@ class TaskEntityTile extends StatelessWidget {
                                           ),
                                         ),
                                       ],
-                                      if (_isBulkSelectionStyle) ...[
-                                        SizedBox(width: tokens.spaceXs2),
-                                        IconButton(
-                                          tooltip: (_selected ?? false)
-                                              ? 'Deselect'
-                                              : 'Select',
-                                          onPressed: actions.onToggleSelected,
-                                          icon: Icon(
-                                            (_selected ?? false)
-                                                ? Icons.check_circle_rounded
-                                                : Icons
-                                                      .radio_button_unchecked_rounded,
-                                            color: (_selected ?? false)
-                                                ? scheme.primary
-                                                : scheme.onSurfaceVariant,
-                                          ),
-                                          style: IconButton.styleFrom(
-                                            minimumSize: Size.square(
-                                              tokens.minTapTargetSize,
-                                            ),
-                                            padding: EdgeInsets.all(
-                                              tokens.spaceSm,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
                                     ],
                                   ),
                                   SizedBox(height: tokens.spaceXs2),
@@ -274,8 +266,8 @@ class TaskEntityTile extends StatelessWidget {
                             if (_isPickerLikeStyle) ...[
                               SizedBox(width: tokens.spaceSm),
                               _PickerActionButton(
-                                selected: _selected ?? false,
-                                enabled: actions.onToggleSelected != null,
+                                selected: isSelected,
+                                enabled: selectionEnabled,
                                 onPressed: actions.onToggleSelected,
                                 tooltip: addTooltipLabel,
                               ),
@@ -526,11 +518,14 @@ class _CompactTaskRow extends StatelessWidget {
     required this.scheme,
     required this.titleStyle,
     required this.showCompletionControl,
+    required this.showSelectionControl,
     required this.completionEnabled,
     required this.onToggleCompletion,
+    required this.selectionEnabled,
     required this.showPicker,
     required this.selected,
     required this.pickerEnabled,
+    required this.selectionCompact,
     required this.onToggleSelected,
     required this.pickerTooltip,
     required this.showSwapAction,
@@ -543,11 +538,14 @@ class _CompactTaskRow extends StatelessWidget {
   final ColorScheme scheme;
   final TextStyle titleStyle;
   final bool showCompletionControl;
+  final bool showSelectionControl;
   final bool completionEnabled;
   final ValueChanged<bool>? onToggleCompletion;
+  final bool selectionEnabled;
   final bool showPicker;
   final bool selected;
   final bool pickerEnabled;
+  final bool selectionCompact;
   final VoidCallback? onToggleSelected;
   final String? pickerTooltip;
   final bool showSwapAction;
@@ -586,6 +584,14 @@ class _CompactTaskRow extends StatelessWidget {
                 : null,
           )
         : const SizedBox.shrink();
+    final selectionControl = showSelectionControl
+        ? _SelectionControl(
+            selected: selected,
+            enabled: selectionEnabled,
+            compact: selectionCompact,
+            onPressed: onToggleSelected,
+          )
+        : const SizedBox.shrink();
 
     final titleText = Text(
       model.title,
@@ -617,6 +623,9 @@ class _CompactTaskRow extends StatelessWidget {
       children: [
         if (showCompletionControl) ...[
           completionControl,
+          SizedBox(width: tokens.spaceSm),
+        ] else if (showSelectionControl) ...[
+          selectionControl,
           SizedBox(width: tokens.spaceSm),
         ],
         Expanded(child: titleContent),
@@ -896,6 +905,44 @@ class _CompletionControl extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SelectionControl extends StatelessWidget {
+  const _SelectionControl({
+    required this.selected,
+    required this.enabled,
+    required this.compact,
+    required this.onPressed,
+  });
+
+  final bool selected;
+  final bool enabled;
+  final bool compact;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
+    final iconSize = compact ? tokens.spaceMd2 : tokens.spaceLg2;
+    final padding = compact ? tokens.spaceXs2 : tokens.spaceSm2;
+
+    return IconButton(
+      tooltip: selected ? 'Deselect' : 'Select',
+      onPressed: enabled ? onPressed : null,
+      icon: Icon(
+        selected
+            ? Icons.check_circle_rounded
+            : Icons.radio_button_unchecked_rounded,
+        size: iconSize,
+        color: selected ? scheme.primary : scheme.onSurfaceVariant,
+      ),
+      style: IconButton.styleFrom(
+        minimumSize: Size.square(tokens.minTapTargetSize),
+        padding: EdgeInsets.all(padding),
       ),
     );
   }

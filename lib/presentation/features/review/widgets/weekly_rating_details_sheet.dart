@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/review/bloc/weekly_review_cubit.dart';
 import 'package:taskly_bloc/presentation/shared/ui/sparkline_painter.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
@@ -34,6 +35,7 @@ class WeeklyRatingDetailsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
     final tokens = TasklyTokens.of(context);
     final localization = MaterialLocalizations.of(context);
@@ -73,17 +75,18 @@ class WeeklyRatingDetailsSheet extends StatelessWidget {
           SizedBox(height: tokens.spaceSm),
           Text(
             entry.lastRating == null
-                ? 'No ratings yet'
-                : 'Last rating ${entry.lastRating} '
-                      '(${entry.weeksSinceLastRating ?? 0} '
-                      'week${(entry.weeksSinceLastRating ?? 0) == 1 ? '' : 's'} ago)',
+                ? l10n.weeklyReviewNoRatingsYet
+                : l10n.weeklyReviewLastRatingLabel(
+                    entry.lastRating ?? 0,
+                    entry.weeksSinceLastRating ?? 0,
+                  ),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
           ),
           SizedBox(height: tokens.spaceMd),
           Text(
-            'Last $windowWeeks weeks',
+            l10n.weeklyReviewLastWeeksLabel(windowWeeks),
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -92,19 +95,19 @@ class WeeklyRatingDetailsSheet extends StatelessWidget {
           Row(
             children: [
               _StatPill(
-                label: 'Tasks',
+                label: l10n.tasksTitle,
                 value: entry.taskCompletions.toString(),
               ),
               SizedBox(width: tokens.spaceSm),
               _StatPill(
-                label: 'Routines',
+                label: l10n.routinesTitle,
                 value: entry.routineCompletions.toString(),
               ),
             ],
           ),
           SizedBox(height: tokens.spaceMd),
           Text(
-            '$windowWeeks-week trend',
+            l10n.weeklyReviewWeekTrendLabel(windowWeeks),
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -114,7 +117,7 @@ class WeeklyRatingDetailsSheet extends StatelessWidget {
             height: 40,
             child: history.isEmpty || entry.trend.isEmpty
                 ? Text(
-                    'No trend data yet',
+                    l10n.weeklyReviewNoTrendDataYet,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -129,7 +132,7 @@ class WeeklyRatingDetailsSheet extends StatelessWidget {
           ),
           SizedBox(height: tokens.spaceMd),
           Text(
-            'Recent ratings',
+            l10n.weeklyReviewRecentRatingsTitle,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -137,7 +140,7 @@ class WeeklyRatingDetailsSheet extends StatelessWidget {
           SizedBox(height: tokens.spaceXs2),
           if (history.isEmpty)
             Text(
-              'No rating history yet.',
+              l10n.weeklyReviewNoRatingHistory,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),

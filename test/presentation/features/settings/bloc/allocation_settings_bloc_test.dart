@@ -67,35 +67,6 @@ void main() {
   );
 
   blocTestSafe<AllocationSettingsBloc, AllocationSettingsState>(
-    'persists values balance changes with operation context',
-    build: buildBloc,
-    act: (bloc) async {
-      bloc.add(const AllocationSettingsStarted());
-      bloc.add(
-        const AllocationValuesBalanceModeChanged(
-          ValuesBalanceMode.balanceOverTime,
-        ),
-      );
-    },
-    expect: () => [
-      isA<AllocationSettingsState>(),
-      isA<AllocationSettingsState>(),
-    ],
-    verify: (_) {
-      final captured = verify(
-        () => settingsRepository.save<AllocationConfig>(
-          SettingsKey.allocation,
-          captureAny(),
-          context: captureAny(named: 'context'),
-        ),
-      ).captured;
-      final ctx = captured.last as OperationContext;
-      expect(ctx.feature, 'settings');
-      expect(ctx.operation, 'settings.save.allocation');
-    },
-  );
-
-  blocTestSafe<AllocationSettingsBloc, AllocationSettingsState>(
     'emits error message when stream fails',
     build: () {
       when(() => settingsRepository.watch(SettingsKey.allocation)).thenAnswer(

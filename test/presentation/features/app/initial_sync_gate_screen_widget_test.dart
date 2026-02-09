@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/repository_mocks.dart';
@@ -111,8 +112,9 @@ void main() {
     final bloc = await pumpScreen(tester);
     addTearDown(bloc.close);
 
+    final l10n = tester.element(find.byType(InitialSyncGateScreen)).l10n;
     expect(find.byType(AppLoadingScreen), findsOneWidget);
-    expect(find.text('Syncing your data'), findsOneWidget);
+    expect(find.text(l10n.initialSyncTitle), findsOneWidget);
   });
 
   testWidgetsSafe('shows error state with retry button', (tester) async {

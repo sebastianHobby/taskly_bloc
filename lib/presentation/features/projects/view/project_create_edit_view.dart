@@ -373,6 +373,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
     required bool seriesEnded,
   }) {
     final actions = TileOverflowActionCatalog.forEntityDetail(
+      l10n: context.l10n,
       entityType: EntityType.project,
       entityId: projectId,
       entityName: projectName,
@@ -385,7 +386,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
 
     return [
       PopupMenuButton<TileOverflowActionId>(
-        tooltip: 'More',
+        tooltip: context.l10n.moreLabel,
         icon: const Icon(Icons.more_horiz),
         onSelected: (actionId) async {
           final dispatcher = context.read<TileIntentDispatcher>();

@@ -25,11 +25,17 @@ class ProjectEntityTile extends StatelessWidget {
 
   bool? get _selected => switch (preset) {
     TasklyProjectRowPresetBulkSelection(:final selected) => selected,
+    TasklyProjectRowPresetBulkSelectionCompact(:final selected) => selected,
     _ => null,
   };
 
   bool get _isInbox => preset is TasklyProjectRowPresetInbox;
-  bool get _isCompact => preset is TasklyProjectRowPresetCompact;
+  bool get _isCompact =>
+      preset is TasklyProjectRowPresetCompact ||
+      preset is TasklyProjectRowPresetBulkSelectionCompact;
+  bool get _isBulkSelection =>
+      preset is TasklyProjectRowPresetBulkSelection ||
+      preset is TasklyProjectRowPresetBulkSelectionCompact;
 
   double? get _progress {
     final total = model.taskCount;
@@ -85,11 +91,9 @@ class ProjectEntityTile extends StatelessWidget {
     final completedOpacity = model.completed ? 0.75 : 1;
     final opacity = (baseOpacity * completedOpacity).clamp(0, 1).toDouble();
 
-    final onTap = switch (preset) {
-      TasklyProjectRowPresetBulkSelection() =>
-        actions.onToggleSelected ?? actions.onTap,
-      _ => actions.onTap,
-    };
+    final onTap = _isBulkSelection
+        ? (actions.onToggleSelected ?? actions.onTap)
+        : actions.onTap;
 
     final titleStyle =
         (isReadOnlyHeader
@@ -99,6 +103,7 @@ class ProjectEntityTile extends StatelessWidget {
                   : theme.textTheme.headlineSmall)) ??
         const TextStyle();
     final weightedTitleStyle = titleStyle.copyWith(fontWeight: FontWeight.w700);
+    final selectionGap = _isCompact ? tokens.spaceSm : tokens.spaceMd;
 
     final card = DecoratedBox(
       decoration: BoxDecoration(
@@ -130,6 +135,15 @@ class ProjectEntityTile extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (_selected != null) ...[
+                        _SelectionRailButton(
+                          selected: _selected ?? false,
+                          compact: _isCompact,
+                          onPressed:
+                              actions.onToggleSelected ?? actions.onTap,
+                        ),
+                        SizedBox(width: selectionGap),
+                      ],
                       if (_isInbox) ...[
                         _InboxGlyph(tokens: tokens),
                         SizedBox(width: tokens.spaceMd),
@@ -207,32 +221,6 @@ class ProjectEntityTile extends StatelessWidget {
                                     icon: statusBadge.icon,
                                     color: statusBadge.color,
                                     style: _badgeStyle(statusBadge.tone),
-                                  ),
-                                ],
-                                if (_selected != null) ...[
-                                  SizedBox(width: tokens.spaceXs2),
-                                  IconButton(
-                                    tooltip: (_selected ?? false)
-                                        ? 'Deselect'
-                                        : 'Select',
-                                    onPressed: actions.onToggleSelected,
-                                    icon: Icon(
-                                      (_selected ?? false)
-                                          ? Icons.check_circle_rounded
-                                          : Icons
-                                                .radio_button_unchecked_rounded,
-                                      color: (_selected ?? false)
-                                          ? scheme.primary
-                                          : scheme.onSurfaceVariant,
-                                    ),
-                                    style: IconButton.styleFrom(
-                                      minimumSize: Size.square(
-                                        tokens.minTapTargetSize,
-                                      ),
-                                      padding: EdgeInsets.all(
-                                        tokens.spaceSm,
-                                      ),
-                                    ),
                                   ),
                                 ],
                               ],
@@ -465,6 +453,42 @@ class _PinnedGlyph extends StatelessWidget {
             color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SelectionRailButton extends StatelessWidget {
+  const _SelectionRailButton({
+    required this.selected,
+    required this.compact,
+    required this.onPressed,
+  });
+
+  final bool selected;
+  final bool compact;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
+    final iconSize = compact ? tokens.spaceMd2 : tokens.spaceLg2;
+    final padding = compact ? tokens.spaceXs2 : tokens.spaceSm2;
+
+    return IconButton(
+      tooltip: selected ? 'Deselect' : 'Select',
+      onPressed: onPressed,
+      icon: Icon(
+        selected
+            ? Icons.check_circle_rounded
+            : Icons.radio_button_unchecked_rounded,
+        size: iconSize,
+        color: selected ? scheme.primary : scheme.onSurfaceVariant,
+      ),
+      style: IconButton.styleFrom(
+        minimumSize: Size.square(tokens.minTapTargetSize),
+        padding: EdgeInsets.all(padding),
       ),
     );
   }

@@ -17,7 +17,6 @@ import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/taskly_domain.dart';
-import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/settings.dart';
 import 'package:taskly_domain/services.dart';
 
@@ -31,9 +30,6 @@ class MockValueRatingsRepository extends Mock
     implements ValueRatingsRepositoryContract {}
 
 class MockRoutineRepository extends Mock implements RoutineRepositoryContract {}
-
-class MockSettingsRepository extends Mock
-    implements SettingsRepositoryContract {}
 
 class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
@@ -67,7 +63,6 @@ void main() {
   late MockValueRatingsRepository valueRatingsRepository;
   late ValueRatingsWriteService valueRatingsWriteService;
   late MockRoutineRepository routineRepository;
-  late MockSettingsRepository settingsRepository;
   late MockTaskRepository taskRepository;
   late MockGlobalSettingsBloc globalSettingsBloc;
 
@@ -80,7 +75,6 @@ void main() {
       repository: valueRatingsRepository,
     );
     routineRepository = MockRoutineRepository();
-    settingsRepository = MockSettingsRepository();
     taskRepository = MockTaskRepository();
     globalSettingsBloc = MockGlobalSettingsBloc();
 
@@ -91,13 +85,6 @@ void main() {
     when(
       () => attentionEngine.watch(any()),
     ).thenAnswer((_) => const Stream<List<AttentionItem>>.empty());
-    when(
-      () => settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
-    ).thenAnswer(
-      (_) async => const AllocationConfig(
-        suggestionSignal: SuggestionSignal.behaviorBased,
-      ),
-    );
     when(() => valueRepository.getAll()).thenAnswer((_) async => <Value>[]);
     when(
       () => valueRatingsRepository.getAll(weeks: any(named: 'weeks')),
@@ -151,9 +138,6 @@ void main() {
           RepositoryProvider<RoutineRepositoryContract>.value(
             value: routineRepository,
           ),
-          RepositoryProvider<SettingsRepositoryContract>.value(
-            value: settingsRepository,
-          ),
           RepositoryProvider<TaskRepositoryContract>.value(
             value: taskRepository,
           ),
@@ -188,6 +172,10 @@ void main() {
     );
   }
 
+  Future<AppLocalizations> l10nFor() {
+    return AppLocalizations.delegate.load(const Locale('en'));
+  }
+
   testWidgetsSafe('shows loading state while weekly review loads', (
     tester,
   ) async {
@@ -212,23 +200,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpForStream();
 
-    expect(find.text('review failed'), findsOneWidget);
+    final l10n = await l10nFor();
+    expect(find.text(l10n.weeklyReviewLoadFailureMessage), findsOneWidget);
   });
 
   testWidgetsSafe('renders weekly review content when loaded', (tester) async {
-    when(
-      () => settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
-    ).thenAnswer(
-      (_) async => const AllocationConfig(
-        suggestionSignal: SuggestionSignal.behaviorBased,
-      ),
-    );
-
     await pumpModal(tester);
     await tester.tap(find.text('Open'));
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpForStream();
 
-    expect(find.text('Weekly Review'), findsOneWidget);
+    final l10n = await l10nFor();
+    expect(find.text(l10n.weeklyReviewTitle), findsOneWidget);
   });
 }

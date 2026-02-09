@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -25,12 +27,13 @@ class JournalTodayEntriesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = TasklyTokens.of(context);
+    final l10n = context.l10n;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Logs',
+          l10n.journalLogsTitle,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -82,7 +85,7 @@ class JournalTodayEmptyState extends StatelessWidget {
           SizedBox(width: tokens.spaceSm),
           Expanded(
             child: Text(
-              'No logs yet today.',
+              context.l10n.journalNoLogsToday,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -90,7 +93,7 @@ class JournalTodayEmptyState extends StatelessWidget {
           ),
           TextButton(
             onPressed: onAddLog,
-            child: const Text('Add log'),
+            child: Text(context.l10n.journalAddLog),
           ),
         ],
       ),
@@ -119,9 +122,10 @@ class JournalLogCard extends StatelessWidget {
     final theme = Theme.of(context);
     final timeLabel = DateFormat.jm().format(entry.occurredAt.toLocal());
     final tokens = TasklyTokens.of(context);
+    final l10n = context.l10n;
 
     final mood = _findMood();
-    final summaryItems = _buildSummaryItems();
+    final summaryItems = _buildSummaryItems(l10n);
 
     final note = entry.journalText?.trim();
 
@@ -164,7 +168,7 @@ class JournalLogCard extends StatelessWidget {
                   const Spacer(),
                   if (hasMood)
                     Tooltip(
-                      message: mood.label,
+                      message: mood.localizedLabel(l10n),
                       child: Container(
                         padding: EdgeInsets.symmetric(
                           horizontal: tokens.spaceSm,
@@ -241,39 +245,42 @@ class JournalLogCard extends StatelessWidget {
     return null;
   }
 
-  List<String> _buildSummaryItems() {
+  List<String> _buildSummaryItems(AppLocalizations l10n) {
     final candidates = <String>[];
     final moodId = moodTrackerId;
 
     for (final e in events) {
       if (moodId != null && e.trackerId == moodId) continue;
 
-      final name = definitionById[e.trackerId]?.name ?? 'Tracker';
+      final name =
+          definitionById[e.trackerId]?.name ?? l10n.journalTrackerFallbackName;
       final value = e.value;
 
       if (value is bool) {
         if (!value) continue;
-        candidates.add('OK $name');
+        candidates.add(l10n.journalTrackerOkLabel(name));
         continue;
       }
 
       if (value is int) {
-        candidates.add('$name: $value');
+        candidates.add(l10n.journalTrackerValueLabel(name, '$value'));
         continue;
       }
 
       if (value is double) {
-        candidates.add('$name: ${value.toStringAsFixed(1)}');
+        candidates.add(
+          l10n.journalTrackerValueLabel(name, value.toStringAsFixed(1)),
+        );
         continue;
       }
 
       if (value is String) {
-        candidates.add('$name: $value');
+        candidates.add(l10n.journalTrackerValueLabel(name, value));
         continue;
       }
 
       if (value != null) {
-        candidates.add('$name: $value');
+        candidates.add(l10n.journalTrackerValueLabel(name, '$value'));
       }
     }
 
@@ -282,7 +289,7 @@ class JournalLogCard extends StatelessWidget {
     final remaining = candidates.length - 3;
     return [
       ...candidates.take(3),
-      '+$remaining more',
+      l10n.journalTrackerMoreLabel(remaining),
     ];
   }
 }

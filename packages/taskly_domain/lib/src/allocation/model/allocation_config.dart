@@ -61,7 +61,7 @@ abstract class StrategySettings with _$StrategySettings {
     @Default(3) int taskUrgencyThresholdDays,
 
     /// Enable neglect-based weighting (Reflector mode feature).
-    @Default(false) bool enableNeglectWeighting,
+    @Default(true) bool enableNeglectWeighting,
 
     /// How many anchor projects to select per batch.
     @Default(2) int anchorCount,
@@ -85,7 +85,6 @@ abstract class StrategySettings with _$StrategySettings {
 
   factory StrategySettings.fromJson(Map<String, dynamic> json) =>
       _$StrategySettingsFromJson(json);
-
 }
 
 /// Display-related settings controlling UI behavior.

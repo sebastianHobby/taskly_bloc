@@ -38,7 +38,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
   DateTime? _until;
   final Set<int> _byWeekDay = {};
   late TextEditingController _intervalController;
-  RruleL10nEn? _l10n;
+  RruleL10n? _rruleL10n;
 
   late bool _repeatFromCompletion;
   late bool _seriesEnded;
@@ -47,18 +47,27 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
   void initState() {
     super.initState();
     _intervalController = TextEditingController(text: _interval.toString());
-    unawaited(_initializeL10n());
     _parseRRule(widget.initialRRule);
 
     _repeatFromCompletion = widget.initialRepeatFromCompletion;
     _seriesEnded = widget.initialSeriesEnded;
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    unawaited(_initializeL10n());
+  }
+
   Future<void> _initializeL10n() async {
-    _l10n = await RruleL10nEn.create();
-    if (mounted) {
-      setState(() {});
-    }
+    final locale = Localizations.localeOf(context);
+    final next = locale.languageCode == 'es'
+        ? await RruleL10nEs.create()
+        : await RruleL10nEn.create();
+    if (!mounted) return;
+    setState(() {
+      _rruleL10n = next;
+    });
   }
 
   @override
@@ -155,19 +164,22 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
     );
   }
 
-  String _getHumanReadableText() {
+  String _getHumanReadableText(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
     if (_frequency == RecurrenceFrequency.none) {
-      return 'Does not repeat';
+      return l10n.recurrenceDoesNotRepeat;
     }
 
     // Try to use rrule's toText() method if l10n is initialized
-    if (_l10n != null) {
+    if (_rruleL10n != null) {
       try {
         final rruleString = _buildRRule();
-        if (rruleString == null) return 'Does not repeat';
+        if (rruleString == null) return l10n.recurrenceDoesNotRepeat;
 
         final recurrenceRule = RecurrenceRule.fromString(rruleString);
-        return recurrenceRule.toText(l10n: _l10n!);
+        return recurrenceRule.toText(l10n: _rruleL10n!);
       } catch (e) {
         // Fall through to manual text generation
         talker.debug(
@@ -177,25 +189,24 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
     }
 
     // Fallback: Build human-readable text manually
-    var text = 'Every';
+    var text = l10n.recurrenceEvery;
     if (_interval > 1) {
       text += ' $_interval';
     }
-    text += ' ${_frequency.label}';
-    if (_interval > 1) {
-      text += 's';
-    }
+    text += ' ${_frequencyUnitLabel(l10n, _frequency, _interval)}';
 
     if (_frequency == RecurrenceFrequency.weekly && _byWeekDay.isNotEmpty) {
       final dayNames = _byWeekDay.map(_dayLabel).join(', ');
-      text += ' on $dayNames';
+      text += ' ${l10n.recurrenceOn} $dayNames';
     }
 
     if (_count != null) {
-      text += ', $_count times';
+      text += ', ${_count!} ${l10n.recurrenceTimesLabel}';
     } else if (_until != null) {
-      text +=
-          ', until ${_until!.year}-${_until!.month.toString().padLeft(2, '0')}-${_until!.day.toString().padLeft(2, '0')}';
+      final formattedDate = MaterialLocalizations.of(context).formatMediumDate(
+        _until!,
+      );
+      text += ', ${l10n.recurrenceUntilDate(formattedDate)}';
     }
 
     return text;
@@ -218,22 +229,22 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
         children: [
           // Frequency selector
           SegmentedButton<RecurrenceFrequency>(
-            segments: const [
+            segments: [
               ButtonSegment(
                 value: RecurrenceFrequency.none,
-                label: Text('Never'),
+                label: Text(l10n.recurrenceNever),
               ),
               ButtonSegment(
                 value: RecurrenceFrequency.daily,
-                label: Text('Daily'),
+                label: Text(l10n.recurrenceDaily),
               ),
               ButtonSegment(
                 value: RecurrenceFrequency.weekly,
-                label: Text('Weekly'),
+                label: Text(l10n.recurrenceWeekly),
               ),
               ButtonSegment(
                 value: RecurrenceFrequency.monthly,
-                label: Text('Monthly'),
+                label: Text(l10n.recurrenceMonthly),
               ),
             ],
             selected: {_frequency},
@@ -256,7 +267,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
             Row(
               children: [
                 Text(
-                  'Every',
+                  l10n.recurrenceEvery,
                   style: theme.textTheme.titleMedium,
                 ),
                 SizedBox(width: tokens.spaceLg),
@@ -287,17 +298,17 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                     },
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Required';
+                        return l10n.validationRequired;
                       }
                       final interval = int.tryParse(value);
                       if (interval == null) {
-                        return 'Invalid';
+                        return l10n.validationInvalid;
                       }
                       if (interval <= 0) {
-                        return 'Must be > 0';
+                        return l10n.validationMustBeGreaterThanZero;
                       }
                       if (interval > 999) {
-                        return 'Max 999';
+                        return l10n.validationMaxValue(999);
                       }
                       return null;
                     },
@@ -306,7 +317,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                 SizedBox(width: tokens.spaceMd),
                 Expanded(
                   child: Text(
-                    '${_frequency.label}${_interval > 1 ? 's' : ''}',
+                    _frequencyUnitLabel(l10n, _frequency, _interval),
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: colorScheme.onSurface,
                     ),
@@ -319,7 +330,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
             if (_frequency == RecurrenceFrequency.weekly) ...[
               SizedBox(height: tokens.spaceLg),
               Text(
-                'On days',
+                l10n.recurrenceOnDays,
                 style: theme.textTheme.titleMedium,
               ),
               SizedBox(height: tokens.spaceMd),
@@ -361,13 +372,13 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
 
             // End condition
             Text(
-              'Ends',
+              l10n.recurrenceEnds,
               style: theme.textTheme.titleMedium,
             ),
             SizedBox(height: tokens.spaceMd),
 
             RadioListTile<EndCondition>(
-              title: const Text('Never'),
+              title: Text(l10n.recurrenceNever),
               value: EndCondition.never,
               groupValue: _count != null
                   ? EndCondition.after
@@ -385,7 +396,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
             RadioListTile<EndCondition>(
               title: Row(
                 children: [
-                  const Text('After'),
+                  Text(l10n.recurrenceAfter),
                   SizedBox(width: tokens.spaceLg),
                   SizedBox(
                     width: 80,
@@ -398,7 +409,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                       ],
                       decoration: InputDecoration(
                         isDense: true,
-                        suffix: Text('times'),
+                        suffix: Text(l10n.recurrenceTimesLabel),
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(
                           horizontal: tokens.spaceMd,
@@ -417,17 +428,17 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                       },
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Required';
+                          return l10n.validationRequired;
                         }
                         final count = int.tryParse(value);
                         if (count == null) {
-                          return 'Invalid';
+                          return l10n.validationInvalid;
                         }
                         if (count <= 0) {
-                          return '> 0';
+                          return l10n.validationMustBeGreaterThanZero;
                         }
                         if (count > 9999) {
-                          return 'Max 9999';
+                          return l10n.validationMaxValue(9999);
                         }
                         return null;
                       },
@@ -452,7 +463,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
             RadioListTile<EndCondition>(
               title: Row(
                 children: [
-                  const Text('On'),
+                  Text(l10n.recurrenceOn),
                   SizedBox(width: tokens.spaceLg),
                   TextButton.icon(
                     onPressed: () async {
@@ -474,8 +485,10 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                     icon: Icon(Icons.calendar_today, size: tokens.spaceLg),
                     label: Text(
                       _until != null
-                          ? '${_until!.day}/${_until!.month}/${_until!.year}'
-                          : 'Select date',
+                          ? MaterialLocalizations.of(context).formatMediumDate(
+                              _until!,
+                            )
+                          : l10n.recurrenceSelectDate,
                     ),
                   ),
                 ],
@@ -539,7 +552,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                   SizedBox(width: tokens.spaceMd),
                   Expanded(
                     child: Text(
-                      _getSummary(),
+                      _getSummary(context, l10n),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurface,
                       ),
@@ -564,33 +577,29 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
   }
 
   String _dayLabel(int weekday) {
-    const labels = {
-      DateTime.monday: 'Mon',
-      DateTime.tuesday: 'Tue',
-      DateTime.wednesday: 'Wed',
-      DateTime.thursday: 'Thu',
-      DateTime.friday: 'Fri',
-      DateTime.saturday: 'Sat',
-      DateTime.sunday: 'Sun',
+    return MaterialLocalizations.of(context).narrowWeekdays[weekday % 7];
+  }
+
+  String _getSummary(BuildContext context, AppLocalizations l10n) {
+    return _getHumanReadableText(context, l10n);
+  }
+
+  String _frequencyUnitLabel(
+    AppLocalizations l10n,
+    RecurrenceFrequency frequency,
+    int interval,
+  ) {
+    return switch (frequency) {
+      RecurrenceFrequency.none => '',
+      RecurrenceFrequency.daily => l10n.recurrenceDayUnit(interval),
+      RecurrenceFrequency.weekly => l10n.recurrenceWeekUnit(interval),
+      RecurrenceFrequency.monthly => l10n.recurrenceMonthUnit(interval),
+      RecurrenceFrequency.yearly => l10n.recurrenceYearUnit(interval),
     };
-    return labels[weekday]!;
-  }
-
-  String _getSummary() {
-    return _getHumanReadableText();
   }
 }
 
-enum RecurrenceFrequency {
-  none('Never'),
-  daily('day'),
-  weekly('week'),
-  monthly('month'),
-  yearly('year');
-
-  const RecurrenceFrequency(this.label);
-  final String label;
-}
+enum RecurrenceFrequency { none, daily, weekly, monthly, yearly }
 
 enum EndCondition {
   never,

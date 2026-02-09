@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_add_entry_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/tracker_input_widgets.dart';
+import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
@@ -226,7 +228,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                     SizedBox(height: TasklyTokens.of(context).spaceSm),
                     if (choices.isEmpty)
                       Text(
-                        'No options',
+                        context.l10n.journalNoOptions,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -247,7 +249,9 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
           return ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(d.name),
-            subtitle: Text('Unsupported: ${d.valueType}'),
+            subtitle: Text(
+              context.l10n.journalUnsupportedValueType(d.valueType),
+            ),
           );
         }
 
@@ -261,7 +265,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                 Row(
                   children: [
                     Text(
-                      'Add entry',
+                      context.l10n.journalAddEntry,
                       style: theme.textTheme.titleLarge,
                     ),
                     const Spacer(),
@@ -272,7 +276,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                               context,
                               'journal_manage_trackers',
                             ),
-                      child: const Text('Manage'),
+                      child: Text(context.l10n.journalManageTrackersLabel),
                     ),
                     IconButton(
                       onPressed: isSaving
@@ -291,7 +295,10 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                     child: Center(child: CircularProgressIndicator()),
                   )
                 else ...[
-                  Text('Mood', style: theme.textTheme.titleMedium),
+                  Text(
+                    context.l10n.journalMoodLabel,
+                    style: theme.textTheme.titleMedium,
+                  ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   _MoodScalePicker(
                     value: state.mood,
@@ -304,9 +311,9 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                   TextField(
                     controller: _noteController,
                     maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Note (optional)',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: context.l10n.journalNoteOptionalLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     enabled: !isSaving,
                     onChanged: (v) => context.read<JournalAddEntryBloc>().add(
@@ -314,7 +321,10 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                     ),
                   ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  Text('Trackers', style: theme.textTheme.titleMedium),
+                  Text(
+                    context.l10n.journalTrackersTitle,
+                    style: theme.textTheme.titleMedium,
+                  ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   for (final group in groupOptions())
                     Builder(
@@ -324,8 +334,9 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                         if (inGroup.isEmpty) return SizedBox.shrink();
 
                         final groupName = groupId == null
-                            ? 'Ungrouped'
-                            : (groupsById[groupId]?.name ?? 'Ungrouped');
+                            ? context.l10n.journalGroupUngrouped
+                            : (groupsById[groupId]?.name ??
+                                  context.l10n.journalGroupUngrouped);
 
                         return ExpansionTile(
                           initiallyExpanded: true,
@@ -360,7 +371,7 @@ class _AddLogSheetViewState extends State<_AddLogSheetView> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.check),
-                      label: const Text('Save'),
+                      label: Text(context.l10n.saveLabel),
                     ),
                   ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
@@ -431,7 +442,9 @@ class _MoodOptionButton extends StatelessWidget {
       button: true,
       selected: selected,
       enabled: enabled,
-      label: 'Mood: ${mood.label}',
+      label: context.l10n.journalMoodSemanticsLabel(
+        mood.localizedLabel(context.l10n),
+      ),
       child: InkWell(
         onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),

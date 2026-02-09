@@ -1596,6 +1596,205 @@
     "@showCompletedLabel": {
         "description": "Label for showing completed items in filter menus"
     },
+    "sortLabel": "Sort",
+    "@sortLabel": {
+        "description": "Label for sort sections in filter sheets"
+    },
+    "filterSortTitle": "Filter & sort",
+    "@filterSortTitle": {
+        "description": "Title for filter and sort sheets"
+    },
+    "filterLabel": "Filter",
+    "@filterLabel": {
+        "description": "Label for filter sections"
+    },
+    "sortDefault": "Default",
+    "@sortDefault": {
+        "description": "Sort option label for default order"
+    },
+    "sortRecentlyUpdated": "Recently updated",
+    "@sortRecentlyUpdated": {
+        "description": "Sort option label for recently updated order"
+    },
+    "sortAlphabetical": "Alphabetical",
+    "@sortAlphabetical": {
+        "description": "Sort option label for alphabetical order"
+    },
+    "sortPriority": "Priority",
+    "@sortPriority": {
+        "description": "Sort option label for priority order"
+    },
+    "sortDueDate": "Due date",
+    "@sortDueDate": {
+        "description": "Sort option label for due date order"
+    },
+    "sortValuePriority": "Value priority",
+    "@sortValuePriority": {
+        "description": "Sort option label for value priority order"
+    },
+    "sortValueName": "Value name",
+    "@sortValueName": {
+        "description": "Sort option label for value name order"
+    },
+    "inboxLabel": "Inbox",
+    "@inboxLabel": {
+        "description": "Label for the Inbox project"
+    },
+    "projectDetailsTitle": "Project details",
+    "@projectDetailsTitle": {
+        "description": "Title for the project detail screen"
+    },
+    "remainingCountLabel": "{count, plural, =1{1 remaining} other{{count} remaining}}",
+    "@remainingCountLabel": {
+        "description": "Label showing remaining task count",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "completedLabel": "Completed",
+    "@completedLabel": {
+        "description": "Label for completed section headers"
+    },
+    "inboxEmptyTitle": "Inbox is for capture",
+    "@inboxEmptyTitle": {
+        "description": "Empty state title for the Inbox project"
+    },
+    "inboxEmptyDescription": "Add a task to get started.",
+    "@inboxEmptyDescription": {
+        "description": "Empty state description for the Inbox project"
+    },
+    "inboxEmptyAction": "Add to Inbox",
+    "@inboxEmptyAction": {
+        "description": "Empty state action label for adding an inbox task"
+    },
+    "projectTaskCompletionRatioLabel": "{completed, plural, =1{1 of {total} done} other{{completed} of {total} done}}",
+    "@projectTaskCompletionRatioLabel": {
+        "description": "Label showing completed tasks out of total tasks",
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "projectDueSoonLabel": "{count, plural, =1{1 due soon} other{{count} due soon}}",
+    "@projectDueSoonLabel": {
+        "description": "Label indicating how many tasks are due soon",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "editProjectLabel": "Edit project",
+    "@editProjectLabel": {
+        "description": "Tooltip label for editing a project"
+    },
+    "discardChangesTitle": "Discard changes?",
+    "@discardChangesTitle": {
+        "description": "Title for discard changes confirmation"
+    },
+    "discardChangesBody": "Your changes won't be saved.",
+    "@discardChangesBody": {
+        "description": "Body text for discard changes confirmation"
+    },
+    "keepEditingLabel": "Keep editing",
+    "@keepEditingLabel": {
+        "description": "Label for keep editing action"
+    },
+    "discardLabel": "Discard",
+    "@discardLabel": {
+        "description": "Label for discard action"
+    },
+    "projectsValueFiltersDisabled": "Value filters are disabled for this view.",
+    "@projectsValueFiltersDisabled": {
+        "description": "Message shown when value filters are disabled in the Projects filter sheet"
+    },
+    "searchLabel": "Search",
+    "@searchLabel": {
+        "description": "Tooltip label for search action"
+    },
+    "closeSearchLabel": "Close search",
+    "@closeSearchLabel": {
+        "description": "Tooltip label for closing search"
+    },
+    "projectsSearchNoMatchesTitle": "No matching projects",
+    "@projectsSearchNoMatchesTitle": {
+        "description": "Empty state title when project search has no matches"
+    },
+    "projectsSearchNoMatchesDescription": "Try a different search.",
+    "@projectsSearchNoMatchesDescription": {
+        "description": "Empty state description when project search has no matches"
+    },
+    "clearSearchLabel": "Clear search",
+    "@clearSearchLabel": {
+        "description": "Action label to clear search input"
+    },
+    "projectsValueScopeEmptyTitle": "No projects for this value",
+    "@projectsValueScopeEmptyTitle": {
+        "description": "Empty state title when no projects are aligned to the selected value"
+    },
+    "projectsProjectScopeEmptyTitle": "Project not found",
+    "@projectsProjectScopeEmptyTitle": {
+        "description": "Empty state title when the scoped project is missing"
+    },
+    "projectsValueScopeEmptyDescription": "Create a project aligned to this value.",
+    "@projectsValueScopeEmptyDescription": {
+        "description": "Empty state description when no projects are aligned to the selected value"
+    },
+    "projectsProjectScopeEmptyDescription": "This project may have been deleted.",
+    "@projectsProjectScopeEmptyDescription": {
+        "description": "Empty state description when the scoped project is missing"
+    },
+    "projectsEmptyBuildTitle": "No projects match your filters",
+    "@projectsEmptyBuildTitle": {
+        "description": "Empty state title when projects are filtered out"
+    },
+    "projectsEmptyBuildDescription": "Try adjusting the filters or show completed.",
+    "@projectsEmptyBuildDescription": {
+        "description": "Empty state description when projects are filtered out"
+    },
+    "dismissLabel": "Dismiss",
+    "@dismissLabel": {
+        "description": "Label for dismiss actions"
+    },
+    "insightConfidenceLabel": "{percent}% confidence",
+    "@insightConfidenceLabel": {
+        "description": "Label showing insight confidence percentage",
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "insightTypeCorrelationDiscovery": "Correlation discovery",
+    "@insightTypeCorrelationDiscovery": {
+        "description": "Label for correlation discovery insights"
+    },
+    "insightTypeTrendAlert": "Trend alert",
+    "@insightTypeTrendAlert": {
+        "description": "Label for trend alert insights"
+    },
+    "insightTypeAnomalyDetected": "Anomaly detected",
+    "@insightTypeAnomalyDetected": {
+        "description": "Label for anomaly detection insights"
+    },
+    "insightTypeProductivityPattern": "Productivity pattern",
+    "@insightTypeProductivityPattern": {
+        "description": "Label for productivity pattern insights"
+    },
+    "insightTypeMoodPattern": "Mood pattern",
+    "@insightTypeMoodPattern": {
+        "description": "Label for mood pattern insights"
+    },
+    "insightTypeRecommendation": "Recommendation",
+    "@insightTypeRecommendation": {
+        "description": "Label for recommendation insights"
+    },
     "projectsEmptyActiveTitle": "No active projects yet.",
     "@projectsEmptyActiveTitle": {
         "description": "Empty state title when no active projects exist"
@@ -1774,6 +1973,22 @@
     "settingsLanguageSystem": "System",
     "@settingsLanguageSystem": {
         "description": "Language option: system default"
+    },
+    "settingsLanguageEnglish": "English",
+    "@settingsLanguageEnglish": {
+        "description": "Language option: English"
+    },
+    "settingsLanguageSpanish": "Spanish",
+    "@settingsLanguageSpanish": {
+        "description": "Language option: Spanish"
+    },
+    "settingsHomeTimeZone": "Home Time Zone",
+    "@settingsHomeTimeZone": {
+        "description": "Home time zone setting label"
+    },
+    "settingsHomeTimeZoneSubtitle": "Fixed day boundary for \"today\" and My Day planning",
+    "@settingsHomeTimeZoneSubtitle": {
+        "description": "Home time zone setting subtitle"
     },
     "settingsDateFormat": "Date Format",
     "@settingsDateFormat": {
@@ -1989,6 +2204,10 @@
     "deadlineOverdue": "Overdue",
     "@deadlineOverdue": {
         "description": "Label shown when a due date has passed"
+    },
+    "scheduledOverdueEmptyLabel": "No overdue items",
+    "@scheduledOverdueEmptyLabel": {
+        "description": "Empty state label for the overdue section on the Scheduled screen"
     },
     "reflectorBuildingHistory": "Building your history...",
     "@reflectorBuildingHistory": {
@@ -2654,6 +2873,10 @@
             }
         }
     },
+    "myDayPlanSpotlightLabel": "Spotlight",
+    "@myDayPlanSpotlightLabel": {
+        "description": "Badge label for the highlighted value group in Plan My Day suggestions."
+    },
     "myDayPlanAcceptedCount": "{count, plural, one{1 accepted} other{{count} accepted}}",
     "@myDayPlanAcceptedCount": {
         "description": "Accepted count label used in section header counts.",
@@ -3161,6 +3384,1498 @@
     "routineDeletedSuccessfully": "Routine deleted",
     "@routineDeletedSuccessfully": {
         "description": "Toast message when routine is deleted"
+    },
+    "tileCatalogTitle": "Tile Catalog",
+    "syncAnomalySnack": "Sync anomaly: {summary}",
+    "debugBootstrapTemplateGenerated": "Template data generated.",
+    "debugBootstrapAccountWipeStarted": "Account wipe started.",
+    "debugBootstrapWipingAndSeeding": "Wiping and seeding demo data...",
+    "debugBootstrapWipingAccountData": "Wiping account data...",
+    "debugBootstrapTitle": "Debug Bootstrap",
+    "debugBootstrapSubtitle": "Quick actions for demo and debug.",
+    "debugBootstrapWipeSeedLabel": "Wipe & Seed Demo Data",
+    "debugBootstrapWipeSeedSubtitle": "Deletes account data and seeds demo content.",
+    "debugBootstrapWipeAccountLabel": "Wipe Account Data",
+    "debugBootstrapWipeAccountSubtitle": "Deletes all synced account data.",
+    "debugBootstrapSkipLaunch": "Skip on next launch",
+    "initialSyncTitle": "Setting up your data",
+    "initialSyncSubtitle": "Preparing your workspace",
+    "initialSyncPreparing": "Preparing...",
+    "initialSyncDownloading": "Downloading...",
+    "initialSyncUploading": "Uploading...",
+    "initialSyncFinalizing": "Finalizing...",
+    "initialSyncConnecting": "Connecting...",
+    "deleteItemsConfirmationTitle": "{count, plural, =1{Delete 1 item?} other{Delete {count} items?}}",
+    "displayDensityTitle": "Density",
+    "@displayDensityTitle": {
+        "description": "Title for the display density sheet/menu."
+    },
+    "displayDensityStandard": "Standard",
+    "displayDensityCompact": "Compact",
+    "pickDateLabel": "Pick a date",
+    "valuesPickerRequired": "Select at least one value.",
+    "valuesLabel": "Values",
+    "recurrenceUntilDate": "until {date}",
+    "recurrenceDayUnit": "{count, plural, =1{day} other{days}}",
+    "recurrenceWeekUnit": "{count, plural, =1{week} other{weeks}}",
+    "recurrenceMonthUnit": "{count, plural, =1{month} other{months}}",
+    "recurrenceYearUnit": "{count, plural, =1{year} other{years}}",
+    "applyLabel": "Apply",
+    "authAlreadyHaveAccount": "Already have an account?",
+    "authConfirmPasswordHint": "Re-enter your password",
+    "authConfirmPasswordLabel": "Confirm password",
+    "authConfirmPasswordRequired": "Confirm your password.",
+    "authEmailHint": "you@example.com",
+    "authEmailInvalid": "Enter a valid email.",
+    "authEmailLabel": "Email",
+    "authEmailRequired": "Email is required.",
+    "authForgotPasswordLink": "Forgot password?",
+    "authNoAccountPrompt": "Don't have an account?",
+    "authPasswordHint": "Enter your password",
+    "authPasswordLabel": "Password",
+    "authPasswordMinLength": "Password must be at least {min} characters.",
+    "authPasswordMismatch": "Passwords do not match.",
+    "authPasswordRequired": "Password is required.",
+    "authRememberPasswordPrompt": "Remember your password?",
+    "authResetPasswordEmailSent": "Reset email sent. Check your inbox.",
+    "authResetPasswordSubtitle": "We'll send a reset link to your email.",
+    "authResetPasswordTitle": "Reset password",
+    "authSignInButton": "Sign in",
+    "authSignInSubtitle": "Welcome back. Sign in to continue.",
+    "authSignUpButton": "Sign up",
+    "authSignUpSubtitle": "Create your account to get started.",
+    "authSignUpTitle": "Create account",
+    "authWelcomeTitle": "Welcome to Taskly",
+    "collapseLabel": "Collapse",
+    "expandLabel": "Expand",
+    "addLabel": "Add",
+    "createLabel": "Create",
+    "nameLabel": "Name",
+    "groupLabel": "Group",
+    "valueLabel": "Value",
+    "groupsTitle": "Groups",
+    "moveUpLabel": "Move up",
+    "moveDownLabel": "Move down",
+    "renameLabel": "Rename",
+    "removeLabel": "Remove",
+    "minLabel": "Min",
+    "maxLabel": "Max",
+    "stepLabel": "Step",
+    "minOptionalLabel": "Min (optional)",
+    "maxOptionalLabel": "Max (optional)",
+    "filterSortTooltip": "Filter & sort",
+    "journalAddEntry": "Add entry",
+    "journalAddLog": "Add log",
+    "journalAddOptionHint": "Add an option",
+    "journalChooseOptionLabel": "Choose an option",
+    "journalClearSelectionLabel": "Clear selection",
+    "journalDailyNoTrackers": "No trackers yet",
+    "journalDailySummaryTitle": "Daily summary",
+    "journalDateRangeTitle": "Date range",
+    "journalEditLargeNumberHint": "Use the editor to enter large numbers.",
+    "journalEditValueTitle": "Edit value",
+    "journalEditDaily": "Edit daily",
+    "journalEntriesTitle": "Entries",
+    "journalEntryCountLabel": "{count, plural, =1{1 entry} other{{count} entries}}",
+    "journalGroupNameHint": "Group name",
+    "journalGroupUngrouped": "Ungrouped",
+    "journalHistoryTooltip": "Journal history",
+    "journalLogsTitle": "Logs",
+    "journalManageTrackersLabel": "Manage trackers",
+    "journalManageTrackersTitle": "Manage trackers",
+    "journalMeasurementTitle": "Measurement",
+    "journalMoodAverageEmpty": "No mood data yet",
+    "journalMoodAverageValue": "Average {value}",
+    "journalMoodLabel": "Mood",
+    "journalMoodMinimumTitle": "Minimum mood",
+    "journalMoodSemanticsLabel": "Mood {value} of 5",
+    "journalNewGroupTitle": "New group",
+    "journalNewGroupTooltip": "New group",
+    "journalNewTrackerTitle": "New tracker",
+    "journalNewTrackerTooltip": "New tracker",
+    "journalNoGroupsYet": "No groups yet",
+    "journalNoLogsToday": "No logs yet today.",
+    "journalNoOptions": "No options",
+    "journalNoRecentLogs": "No recent logs.",
+    "journalNoteOptionalLabel": "Note (optional)",
+    "journalRenameGroupTitle": "Rename group",
+    "journalRenameTrackerTitle": "Rename tracker",
+    "journalScopeTitle": "Scope",
+    "journalScopeDailyTotal": "Daily total",
+    "journalScopeMomentary": "Per entry",
+    "journalScopeSleepNight": "Sleep night",
+    "journalSearchOptionsLabel": "Search options",
+    "journalSeeAll": "See all",
+    "journalTrackerFallbackName": "Tracker",
+    "journalTrackerMoreLabel": "+{count} more",
+    "journalTrackerOkLabel": "{name} ok",
+    "journalTrackerTypeScopeLabel": "{valueType} - {scope}",
+    "journalTrackerValueLabel": "{name}: {value}",
+    "journalTrackerNameHint": "Tracker name",
+    "journalTrackersTitle": "Trackers",
+    "journalUnsupportedValueType": "Unsupported value type: {valueType}",
+    "@journalUnsupportedValueType": {
+        "description": "Shown when a tracker value type is not supported",
+        "placeholders": {
+            "valueType": {
+                "type": "String"
+            }
+        }
+    },
+    "@journalTrackerTypeScopeLabel": {
+        "description": "Label combining tracker value type and scope",
+        "placeholders": {
+            "valueType": {
+                "type": "String"
+            },
+            "scope": {
+                "type": "String"
+            }
+        }
+    },
+    "rangeDaysShort": "{days} days",
+    "rangeLabel": "Range",
+    "selectMultipleLabel": "Select multiple",
+    "trackersTitle": "Trackers",
+    "valuesEmptyDescription": "Create values to track what matters most.",
+    "valuesEmptyTitle": "No values yet",
+    "journalAllDayEmpty": "No all-day items.",
+    "journalAllDayTitle": "All day",
+    "journalEditLogTitle": "Edit log",
+    "journalMeasurementChoiceSubtitle": "Pick one option",
+    "journalMeasurementChoiceTitle": "Choice",
+    "journalMeasurementQuantityDaySubtitle": "Sum once per day",
+    "journalMeasurementQuantityEntrySubtitle": "Track per entry",
+    "journalMeasurementQuantityTitle": "Quantity",
+    "journalMeasurementRatingSubtitle": "Rate on a scale",
+    "journalMeasurementRatingTitle": "Rating",
+    "journalMeasurementToggleSubtitle": "Yes / no",
+    "journalMeasurementToggleTitle": "Toggle",
+    "journalNewLogTitle": "New log",
+    "journalOptionHint": "Add an option",
+    "journalOptionLabel": "Option",
+    "journalRightNowSubtitle": "What happened right now?",
+    "journalRightNowTitle": "Right now",
+    "journalSavedLogSnack": "Log saved",
+    "journalSaveLogButton": "Save log",
+    "journalScopeDailyTotalSubtitle": "One total per day",
+    "journalScopeMomentarySubtitle": "Each entry has its own value",
+    "journalScopeSleepNightSubtitle": "Tracks sleep for the previous night",
+    "journalShowAll": "Show all",
+    "journalUnitOptionalLabel": "Unit (optional)",
+    "labelLabel": "Label",
+    "nextLabel": "Next",
+    "journalAddOptionHint": "Add at least one option.",
+    "journalHistoryTooltip": "History",
+    "maxLabel": "Max",
+    "maxOptionalLabel": "Max (optional)",
+    "minLabel": "Min",
+    "minOptionalLabel": "Min (optional)",
+    "removeLabel": "Remove",
+    "stepLabel": "Step",
+    "routineLogLabel": "Log",
+    "routineUnlogLabel": "Unlog",
+    "activateLabel": "Activate",
+    "deactivateLabel": "Deactivate",
+    "deleteRoutinesConfirmationTitle": "{count, plural, =1{Delete 1 routine?} other{Delete {count} routines?}}",
+    "moveNowLabel": "Move now",
+    "openEditorLabel": "Open editor",
+    "planMyDayExitWithoutSavingTitle": "Exit without saving?",
+    "planMyDayExitWithoutSavingBody": "Your plan changes won't be saved.",
+    "stayLabel": "Stay",
+    "exitLabel": "Exit",
+    "rateValuesLabel": "Rate values",
+    "switchToBehaviorBasedLabel": "Switch to behavior-based",
+    "accountTitle": "Account",
+    "userFallbackLabel": "User",
+    "signOutFailedMessage": "Sign out failed. Please try again.",
+    "signOutLabel": "Sign out",
+    "signOutConfirmTitle": "Sign out?",
+    "signOutConfirmBody": "You'll need to sign in again to access your tasks and projects.",
+    "appearanceTitle": "Appearance",
+    "themeTitle": "Theme",
+    "themeSubtitle": "Choose light or dark mode.",
+    "themeModeLabel": "Mode",
+    "themeModeSystem": "System",
+    "themeModeLight": "Light",
+    "themeModeDark": "Dark",
+    "accentPaletteTitle": "Accent palette",
+    "accentPaletteSubtitle": "Pick a color set for highlights.",
+    "textSizeTitle": "Text size",
+    "textSizeSubtitle": "Adjust the overall font scale.",
+    "textScaleLabel": "Scale",
+    "customLabel": "Custom",
+    "settingsTaskSuggestionsTitle": "Task Suggestions",
+    "suggestionSignalBehaviorSummary": "Behavior-based",
+    "suggestionSignalRatingsSummary": "Weekly ratings",
+    "suggestionSignalTitle": "Suggestion signal",
+    "suggestionSignalSubtitle": "Choose what Taskly uses to suggest tasks.",
+    "suggestionSignalBehaviorTitle": "Behavior-based",
+    "suggestionSignalBehaviorSubtitle": "Suggestions are based on your recent completions.",
+    "suggestionSignalRatingsTitle": "Weekly ratings",
+    "suggestionSignalRatingsSubtitle": "Suggestions are based on value ratings.",
+    "suggestionSignalRatingsFootnote": "Ratings appear in the Weekly Review.",
+    "weeklyReviewTitle": "Weekly Review",
+    "offLabel": "Off",
+    "weeklyReviewScheduleTitle": "Weekly review",
+    "weeklyReviewScheduleSubtitle": "A gentle check-in on a day that works for you.",
+    "weeklyReviewDayOfWeekLabel": "Day of week",
+    "weeklyReviewFrequencyLabel": "Frequency",
+    "onboardingStepProgress": "Step {current} of {total}",
+    "@onboardingStepProgress": {
+        "description": "Progress label for onboarding steps",
+        "placeholders": {
+            "current": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "onboardingGetStartedLabel": "Get started",
+    "onboardingContinueLabel": "Continue",
+    "onboardingFinishLabel": "Finish",
+    "onboardingWelcomeTitle": "Welcome to Taskly",
+    "onboardingWelcomeSubtitle1": "Let’s personalize your setup.",
+    "onboardingWelcomeSubtitle2": "Pick values to guide your day.",
+    "onboardingNameTitle": "What should we call you?",
+    "onboardingNameSubtitle": "This name appears on your home screen.",
+    "onboardingNameHint": "Your name",
+    "onboardingValuesTitle": "Choose your values",
+    "onboardingValuesSubtitle": "Pick what matters most to you.",
+    "onboardingValuesHint": "Search values",
+    "onboardingQuickPicksTitle": "Quick picks",
+    "onboardingCustomValueLabel": "Create a custom value",
+    "onboardingYourPicksTitle": "Your picks",
+    "onboardingPickAtLeastOneValue": "Pick at least one value to continue.",
+    "onboardingCustomValueSubtitle": "Add a value that isn't listed.",
+    "onboardingAddValueLabel": "Add value",
+    "valueNameLabel": "Value name",
+    "onboardingValueHealth": "Health",
+    "onboardingValueRelationships": "Relationships",
+    "onboardingValueCareer": "Career",
+    "onboardingValueLearning": "Learning",
+    "onboardingValueHome": "Home",
+    "onboardingValueAdventure": "Adventure",
+    "weeklyReviewTimeLabel": "Time",
+    "weeklyReviewRunNowLabel": "Run review now",
+    "weeklyReviewCadenceLabel": "{weeks, plural, =1{Every week} other{Every {weeks} weeks}}",
+    "weeklyReviewValuesTitle": "Values snapshot",
+    "weeklyReviewValuesSubtitle": "Show value balance and wins in each review.",
+    "weeklyReviewValuesSummarySummary": "{weeks, plural, =1{1-week lookback} other{{weeks}-week lookback}} - {wins, plural, =1{1 win} other{{wins} wins}}",
+    "weeklyReviewValuesLookbackLabel": "Lookback window",
+    "weeklyReviewValuesWinsLabel": "Value wins",
+    "weeklyReviewMaintenanceTitle": "Maintenance check",
+    "weeklyReviewMaintenanceSubtitle": "Optional prompts to keep things on track.",
+    "weeklyReviewDeadlineRiskTitle": "Deadline risk",
+    "weeklyReviewDueWithinLabel": "Due within",
+    "weeklyReviewUnscheduledTasksLabel": "Unscheduled tasks",
+    "weeklyReviewStaleTitle": "Stale tasks & projects",
+    "weeklyReviewTaskStaleAfterLabel": "Task stale after",
+    "weeklyReviewProjectIdleAfterLabel": "Project idle after",
+    "weeklyReviewFrequentSnoozedTitle": "Frequently snoozed tasks",
+    "weeklyReviewStaleItemsLabel": "Stale items",
+    "weeklyReviewFrequentSnoozesLabel": "Frequent snoozes",
+    "weeklyReviewNoChecksEnabled": "No checks enabled",
+    "weeklyReviewDeadlineRiskSummary": "{dueWithin, plural, =1{Due within 1 day} other{Due within {dueWithin} days}} - {unscheduled, plural, =1{1 unscheduled task} other{{unscheduled} unscheduled tasks}}",
+    "weeklyReviewStaleSummary": "{taskDays, plural, =1{Task stale after 1 day} other{Task stale after {taskDays} days}} - {projectDays, plural, =1{Project idle after 1 day} other{Project idle after {projectDays} days}}",
+    "weeksCountLabel": "{count, plural, =1{1 week} other{{count} weeks}}",
+    "winsCountLabel": "{count, plural, =1{1 win} other{{count} wins}}",
+    "daysCountLabel": "{count, plural, =1{1 day} other{{count} days}}",
+    "tasksCountLabel": "{count, plural, =1{1 task} other{{count} tasks}}",
+    "moreCountLabel": "+ {count, plural, =1{1 more} other{{count} more}}",
+    "onLabel": "On",
+    "viewLabel": "View",
+    "moreLabel": "More",
+    "@moreLabel": {
+        "description": "Label for more actions/overflow menus."
+    },
+    "searchDestinationsHint": "Search destinations",
+    "@searchDestinationsHint": {
+        "description": "Hint text for searching navigation destinations."
+    },
+    "journalSearchEntriesLabel": "Search entries",
+    "@journalSearchEntriesLabel": {
+        "description": "Label for the journal history search field."
+    },
+    "searchProjectsHint": "Search projects",
+    "@searchProjectsHint": {
+        "description": "Hint text for searching projects."
+    },
+    "allValuesLabel": "All values",
+    "showInactiveLabel": "Show inactive",
+    "previewLabel": "Preview",
+    "actionLabel": "Action",
+    "listItemLabel": "List item",
+    "supportingTextLabel": "Supporting text",
+    "chipLabel": "Chip",
+    "primaryLabel": "Primary",
+    "scheduledTitle": "Scheduled",
+    "scheduledJumpToDate": "Jump to date",
+    "viewOptionsTitle": "View options",
+    "projectsCountLabel": "{count, plural, =1{1 project} other{{count} projects}}",
+    "@projectsCountLabel": {
+        "description": "Label for project counts",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "itemsCountLabel": "{count, plural, =1{1 item} other{{count} items}}",
+    "@itemsCountLabel": {
+        "description": "Label for item counts",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "scheduledRescheduledMessage": "Rescheduled {label} to {date}",
+    "@scheduledRescheduledMessage": {
+        "description": "Snack message when scheduled items are rescheduled",
+        "placeholders": {
+            "label": {
+                "type": "String"
+            },
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "rescheduleAllLabel": "Reschedule all",
+    "rescheduleOverdueTooltip": "Reschedule overdue items",
+    "rescheduleAllSubtitle": "Choose a new day for these items.",
+    "rescheduleItemsHelpText": "{count, plural, =1{Reschedule 1 item} other{Reschedule {count} items}}",
+    "@rescheduleItemsHelpText": {
+        "description": "Help text when rescheduling items",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "scheduledTodayHeader": "Today, {date}",
+    "@scheduledTodayHeader": {
+        "description": "Header for today's scheduled section",
+        "placeholders": {
+            "date": {
+                "type": "String"
+            }
+        }
+    },
+    "skipLabel": "Skip",
+    "developerTitle": "Developer",
+    "viewAppLogsTitle": "View App Logs",
+    "viewAppLogsSubtitle": "View and share app logs for debugging",
+    "tileCatalogSubtitle": "Preview all task, project, and value tiles",
+    "resetOnboardingRunningMessage": "Wiping account data and signing out...",
+    "resetOnboardingSuccessMessage": "Wipe complete. Onboarding will run next sign-in.",
+    "resetOnboardingTitle": "Wipe account data and reset onboarding",
+    "resetOnboardingSubtitle": "Deletes all synced data for this account, then signs out.",
+    "resetOnboardingDialogTitle": "Wipe account data and reset onboarding",
+    "resetOnboardingDialogBody": "This will delete all synced data for this account (server + local) and then sign you out.\n\nYour auth account remains, and onboarding will run next sign-in.",
+    "resetOnboardingConfirmButton": "Wipe & Sign out",
+    "templateDataGeneratingMessage": "Generating template data...",
+    "templateDataGeneratedMessage": "Template data generated.",
+    "templateDataGenerateTitle": "Generate Template Data",
+    "templateDataGenerateSubtitle": "Wipes all account data and seeds a full demo dataset",
+    "templateDataGenerateDialogTitle": "Generate Template Data",
+    "templateDataGenerateDialogBody": "This will delete all synced account data (local + server) and then generate a sample dataset with values, projects, tasks, routines, and weekly ratings.\n\nWeekly review will be marked due immediately.\n\nThis is intended for debug/demo use only.",
+    "generateLabel": "Generate",
+    "journalTitle": "Journal",
+    "@journalTitle": {
+        "description": "Navigation label for the Journal destination"
+    },
+    "statisticsTitle": "Statistics",
+    "@statisticsTitle": {
+        "description": "Navigation label for the Statistics destination"
+    },
+    "journalAnyTimeLabel": "Any time",
+    "@journalAnyTimeLabel": {
+        "description": "Label shown when journal filters are not time bounded"
+    },
+    "filtersLabel": "Filters",
+    "@filtersLabel": {
+        "description": "Label for filter actions and sections"
+    },
+    "journalHistoryTitle": "Journal history",
+    "@journalHistoryTitle": {
+        "description": "Title for the Journal history screen"
+    },
+    "historyLabel": "History",
+    "@historyLabel": {
+        "description": "Label for history actions or sections"
+    },
+    "displayDensityTitle": "Display density",
+    "@displayDensityTitle": {
+        "description": "Title for display density settings"
+    },
+    "completeSeriesConfirmTitle": "Complete series?",
+    "@completeSeriesConfirmTitle": {
+        "description": "Title for the complete series confirmation dialog"
+    },
+    "completeSeriesConfirmBody": "This will complete all remaining occurrences of {entityName}.",
+    "@completeSeriesConfirmBody": {
+        "description": "Body text for the complete series confirmation dialog",
+        "placeholders": {
+            "entityName": {
+                "type": "String"
+            }
+        }
+    },
+    "moveToProjectQuickSubtitle": "Move now without opening the editor.",
+    "@moveToProjectQuickSubtitle": {
+        "description": "Subtitle for quick move-to-project action"
+    },
+    "moveToProjectEditorSubtitle": "Open the editor to adjust details.",
+    "@moveToProjectEditorSubtitle": {
+        "description": "Subtitle for move-to-project action that opens the editor"
+    },
+    "markIncompleteSemanticLabel": "Mark {taskName} incomplete",
+    "@markIncompleteSemanticLabel": {
+        "description": "Semantic label for marking a task incomplete",
+        "placeholders": {
+            "taskName": {
+                "type": "String"
+            }
+        }
+    },
+    "markCompleteSemanticLabel": "Mark {taskName} complete",
+    "@markCompleteSemanticLabel": {
+        "description": "Semantic label for marking a task complete",
+        "placeholders": {
+            "taskName": {
+                "type": "String"
+            }
+        }
+    },
+    "myDayLoadingTitle": "Loading your day",
+    "@myDayLoadingTitle": {
+        "description": "Title shown while My Day is loading"
+    },
+    "myDayPlannedCountLabel": "{count, plural, =1{1 planned} other{{count} planned}}",
+    "@myDayPlannedCountLabel": {
+        "description": "Label for planned count on My Day",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myDayCompletedCountLabel": "{count, plural, =1{1 completed} other{{count} completed}}",
+    "@myDayCompletedCountLabel": {
+        "description": "Label for completed count on My Day",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myDayAllClearTitle": "All clear",
+    "@myDayAllClearTitle": {
+        "description": "Title for the all-clear state on My Day"
+    },
+    "myDayAllClearSubtitle": "Everything planned is done.",
+    "@myDayAllClearSubtitle": {
+        "description": "Subtitle for the all-clear state on My Day"
+    },
+    "myDayNoPlanTitle": "No plan yet",
+    "@myDayNoPlanTitle": {
+        "description": "Title when there is no plan on My Day"
+    },
+    "myDayNoPlanSubtitle": "Plan your day to focus on what matters.",
+    "@myDayNoPlanSubtitle": {
+        "description": "Subtitle when there is no plan on My Day"
+    },
+    "myDayNoTasksTitle": "No tasks yet",
+    "@myDayNoTasksTitle": {
+        "description": "Title when there are no tasks for My Day"
+    },
+    "myDayNoTasksSubtitle": "Add tasks to get started.",
+    "@myDayNoTasksSubtitle": {
+        "description": "Subtitle when there are no tasks for My Day"
+    },
+    "myDayLoadFailedTitle": "Couldn't load My Day",
+    "@myDayLoadFailedTitle": {
+        "description": "Title when My Day fails to load"
+    },
+    "myDayLoadFailedSubtitle": "Check your connection and try again.",
+    "@myDayLoadFailedSubtitle": {
+        "description": "Subtitle when My Day fails to load"
+    },
+    "weeklyReviewReadyBanner": "Weekly review is ready",
+    "@weeklyReviewReadyBanner": {
+        "description": "Banner text when the weekly review is ready"
+    },
+    "overdueLabel": "Overdue",
+    "@overdueLabel": {
+        "description": "Label for overdue items"
+    },
+    "dueTodayLabel": "Due today",
+    "@dueTodayLabel": {
+        "description": "Label for items due today"
+    },
+    "planMyDayUpdatedSnack": "Plan updated.",
+    "@planMyDayUpdatedSnack": {
+        "description": "Snackbar message when Plan My Day updates"
+    },
+    "planMyDayExitTooltip": "Exit plan",
+    "@planMyDayExitTooltip": {
+        "description": "Tooltip for exiting Plan My Day"
+    },
+    "planMyDayBuildPlanTitle": "Build your plan",
+    "@planMyDayBuildPlanTitle": {
+        "description": "Title for Plan My Day build plan section"
+    },
+    "planMyDayDueTodayTitle": "Due today",
+    "@planMyDayDueTodayTitle": {
+        "description": "Title for the due today section in Plan My Day"
+    },
+    "planMyDayRescheduleAllDueAction": "Reschedule all",
+    "@planMyDayRescheduleAllDueAction": {
+        "description": "Action label to reschedule all due tasks"
+    },
+    "planMyDayRescheduleAllTitle": "Reschedule all",
+    "@planMyDayRescheduleAllTitle": {
+        "description": "Title for rescheduling all tasks in Plan My Day"
+    },
+    "planMyDayRescheduleAllSubtitle": "Choose a new day for these tasks.",
+    "@planMyDayRescheduleAllSubtitle": {
+        "description": "Subtitle for rescheduling all tasks in Plan My Day"
+    },
+    "planMyDayRescheduleTaskTitle": "Reschedule task",
+    "@planMyDayRescheduleTaskTitle": {
+        "description": "Title for rescheduling a single task in Plan My Day"
+    },
+    "planMyDayRescheduleTaskSubtitle": "Pick a new day for this task.",
+    "@planMyDayRescheduleTaskSubtitle": {
+        "description": "Subtitle for rescheduling a single task in Plan My Day"
+    },
+    "planMyDayDueTodayEmptyBody": "Nothing due today.",
+    "@planMyDayDueTodayEmptyBody": {
+        "description": "Empty-state body when there are no due today items in Plan My Day"
+    },
+    "planMyDayYesterdayTitle": "Yesterday",
+    "@planMyDayYesterdayTitle": {
+        "description": "Title for the yesterday section in Plan My Day"
+    },
+    "planMyDayRescheduleAllAction": "Reschedule all",
+    "@planMyDayRescheduleAllAction": {
+        "description": "Action label to reschedule all tasks in the yesterday section"
+    },
+    "planMyDayYesterdayEmptyBody": "Nothing left from yesterday.",
+    "@planMyDayYesterdayEmptyBody": {
+        "description": "Empty-state body when there are no yesterday items in Plan My Day"
+    },
+    "planMyDaySummaryLabel": "{count, plural, =1{1 planned item} other{{count} planned items}}",
+    "@planMyDaySummaryLabel": {
+        "description": "Summary label showing planned count in Plan My Day",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "planMyDayDecreaseLimitTooltip": "Decrease limit",
+    "@planMyDayDecreaseLimitTooltip": {
+        "description": "Tooltip for decreasing the daily limit in Plan My Day"
+    },
+    "planMyDayLimitLabel": "Limit {limit}",
+    "@planMyDayLimitLabel": {
+        "description": "Label showing the daily limit in Plan My Day",
+        "placeholders": {
+            "limit": {
+                "type": "int"
+            }
+        }
+    },
+    "planMyDayIncreaseLimitTooltip": "Increase limit",
+    "@planMyDayIncreaseLimitTooltip": {
+        "description": "Tooltip for increasing the daily limit in Plan My Day"
+    },
+    "planMyDaySuggestionsTitle": "Suggestions",
+    "@planMyDaySuggestionsTitle": {
+        "description": "Title for the suggestions section in Plan My Day"
+    },
+    "planMyDayOverCapacityMessage": "{count, plural, =1{1 item over limit} other{{count} items over limit}} (limit {limit})",
+    "@planMyDayOverCapacityMessage": {
+        "description": "Message shown when selections exceed the daily limit in Plan My Day",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "limit": {
+                "type": "int"
+            }
+        }
+    },
+    "planMyDaySwapSuggestionTitle": "Swap suggestion",
+    "@planMyDaySwapSuggestionTitle": {
+        "description": "Title for the swap suggestion sheet in Plan My Day"
+    },
+    "planMyDaySwapSuggestionBody": "Swap in another {valueName} task.",
+    "@planMyDaySwapSuggestionBody": {
+        "description": "Body text for the swap suggestion sheet in Plan My Day",
+        "placeholders": {
+            "valueName": {
+                "type": "String"
+            }
+        }
+    },
+    "planMyDaySwapSuggestionEmpty": "No swaps available.",
+    "@planMyDaySwapSuggestionEmpty": {
+        "description": "Empty-state text when no swap suggestions are available"
+    },
+    "planMyDayRatingsGateTitle": "Weekly ratings needed",
+    "@planMyDayRatingsGateTitle": {
+        "description": "Title for the Plan My Day ratings gate"
+    },
+    "planMyDayRatingsGateBody": "Rate your values to unlock suggestions.",
+    "@planMyDayRatingsGateBody": {
+        "description": "Body text for the Plan My Day ratings gate"
+    },
+    "analyticsCorrelationTitle": "Correlation: {source} vs {target}",
+    "@analyticsCorrelationTitle": {
+        "description": "Title for correlation cards",
+        "placeholders": {
+            "source": {
+                "type": "String"
+            },
+            "target": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsDifferenceLabel": "Difference: {percent}%",
+    "@analyticsDifferenceLabel": {
+        "description": "Label showing percent difference",
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsSampleSizeLabel": "Sample size: {count}",
+    "@analyticsSampleSizeLabel": {
+        "description": "Label showing sample size",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsStrengthStrongPositive": "Strong positive",
+    "@analyticsStrengthStrongPositive": {
+        "description": "Label for strong positive correlation strength"
+    },
+    "analyticsStrengthModeratePositive": "Moderate positive",
+    "@analyticsStrengthModeratePositive": {
+        "description": "Label for moderate positive correlation strength"
+    },
+    "analyticsStrengthWeakPositive": "Weak positive",
+    "@analyticsStrengthWeakPositive": {
+        "description": "Label for weak positive correlation strength"
+    },
+    "analyticsStrengthNegligible": "Negligible",
+    "@analyticsStrengthNegligible": {
+        "description": "Label for negligible correlation strength"
+    },
+    "analyticsStrengthWeakNegative": "Weak negative",
+    "@analyticsStrengthWeakNegative": {
+        "description": "Label for weak negative correlation strength"
+    },
+    "analyticsStrengthModerateNegative": "Moderate negative",
+    "@analyticsStrengthModerateNegative": {
+        "description": "Label for moderate negative correlation strength"
+    },
+    "analyticsStrengthStrongNegative": "Strong negative",
+    "@analyticsStrengthStrongNegative": {
+        "description": "Label for strong negative correlation strength"
+    },
+    "analyticsSignificantLabel": "Significant (p={pValue})",
+    "@analyticsSignificantLabel": {
+        "description": "Label when correlation is statistically significant",
+        "placeholders": {
+            "pValue": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsNotSignificantLabel": "Not significant (p={pValue})",
+    "@analyticsNotSignificantLabel": {
+        "description": "Label when correlation is not statistically significant",
+        "placeholders": {
+            "pValue": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsPerformanceLabel": "Computed in {ms}ms using {algorithm}",
+    "@analyticsPerformanceLabel": {
+        "description": "Label showing performance metrics for analytics",
+        "placeholders": {
+            "ms": {
+                "type": "int"
+            },
+            "algorithm": {
+                "type": "String"
+            }
+        }
+    },
+    "analyticsNoDataLabel": "No data yet",
+    "@analyticsNoDataLabel": {
+        "description": "Label shown when analytics charts have no data"
+    },
+    "analyticsStatTotalTasksLabel": "Total tasks",
+    "@analyticsStatTotalTasksLabel": {
+        "description": "Label for total tasks stat"
+    },
+    "analyticsStatCompletedLabel": "Completed",
+    "@analyticsStatCompletedLabel": {
+        "description": "Label for completed tasks stat"
+    },
+    "analyticsStatCompletionRateLabel": "Completion rate",
+    "@analyticsStatCompletionRateLabel": {
+        "description": "Label for completion rate stat"
+    },
+    "analyticsPercentValue": "{percent}%",
+    "@analyticsPercentValue": {
+        "description": "Percent value formatting for analytics",
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsStatStaleTasksLabel": "Stale tasks",
+    "@analyticsStatStaleTasksLabel": {
+        "description": "Label for stale tasks stat"
+    },
+    "analyticsStatOverdueLabel": "Overdue tasks",
+    "@analyticsStatOverdueLabel": {
+        "description": "Label for overdue tasks stat"
+    },
+    "analyticsStatAverageDaysLabel": "Avg days to complete",
+    "@analyticsStatAverageDaysLabel": {
+        "description": "Label for average days to complete stat"
+    },
+    "analyticsNotAvailableLabel": "N/A",
+    "@analyticsNotAvailableLabel": {
+        "description": "Label shown when analytics value is not available"
+    },
+    "analyticsDaysValue": "{days} days",
+    "@analyticsDaysValue": {
+        "description": "Label showing a number of days",
+        "placeholders": {
+            "days": {
+                "type": "double"
+            }
+        }
+    },
+    "analyticsStatCompletedThisWeekLabel": "Completed this week",
+    "@analyticsStatCompletedThisWeekLabel": {
+        "description": "Label for completed this week stat"
+    },
+    "analyticsStatVelocityLabel": "Velocity",
+    "@analyticsStatVelocityLabel": {
+        "description": "Label for velocity stat"
+    },
+    "analyticsVelocityValue": "{value} per week",
+    "@analyticsVelocityValue": {
+        "description": "Velocity value formatted per week",
+        "placeholders": {
+            "value": {
+                "type": "double"
+            }
+        }
+    },
+    "analyticsStaleDescription": "No activity in {days} days",
+    "@analyticsStaleDescription": {
+        "description": "Description for stale tasks stat",
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "analyticsWeekLabel": "Week {week}",
+    "@analyticsWeekLabel": {
+        "description": "Label for week number in analytics charts",
+        "placeholders": {
+            "week": {
+                "type": "int"
+            }
+        }
+    },
+    "valuesCompletionShareLabel": "{percent}% of completions",
+    "@valuesCompletionShareLabel": {
+        "description": "Label showing completion share for a value",
+        "placeholders": {
+            "percent": {
+                "type": "String"
+            }
+        }
+    },
+    "valuesCompletionShareSubtitle": "Share of completions",
+    "@valuesCompletionShareSubtitle": {
+        "description": "Subtitle for value completion share"
+    },
+    "valuesCompletionEmptyTitle": "No completions yet",
+    "@valuesCompletionEmptyTitle": {
+        "description": "Title when a value has no completions"
+    },
+    "valuesCompletionEmptySubtitle": "Complete aligned tasks to see stats.",
+    "@valuesCompletionEmptySubtitle": {
+        "description": "Subtitle when a value has no completions"
+    },
+    "notFoundTitle": "Page not found",
+    "@notFoundTitle": {
+        "description": "Title for the not found route"
+    },
+    "notFoundDescription": "This page doesn't exist or was moved.",
+    "@notFoundDescription": {
+        "description": "Description for the not found route"
+    },
+    "notFoundActionLabel": "Go to My Day",
+    "@notFoundActionLabel": {
+        "description": "Action label for the not found route"
+    },
+    "colorLabel": "Color",
+    "@colorLabel": {
+        "description": "Label for color picker fields"
+    },
+    "noProjectLabel": "No project",
+    "@noProjectLabel": {
+        "description": "Label for the no project option"
+    },
+    "statisticsValuesFocusTitle": "Values focus",
+    "@statisticsValuesFocusTitle": {
+        "description": "Title for the values focus section in Statistics"
+    },
+    "statisticsValuesFocusSubtitle": "{start} - {end}",
+    "@statisticsValuesFocusSubtitle": {
+        "description": "Subtitle showing the date range for values focus",
+        "placeholders": {
+            "start": {
+                "type": "String"
+            },
+            "end": {
+                "type": "String"
+            }
+        }
+    },
+    "statisticsProgressByValueTitle": "Progress by value",
+    "@statisticsProgressByValueTitle": {
+        "description": "Title for the progress by value section"
+    },
+    "statisticsMoodJournalTitle": "Mood journal",
+    "@statisticsMoodJournalTitle": {
+        "description": "Title for the mood journal section"
+    },
+    "statisticsCorrelationsTitle": "Correlations",
+    "@statisticsCorrelationsTitle": {
+        "description": "Title for the correlations section"
+    },
+    "statisticsCorrelationsSubtitle": "Relationships in your data",
+    "@statisticsCorrelationsSubtitle": {
+        "description": "Subtitle for the correlations section"
+    },
+    "statisticsValuesEmptyLabel": "No values yet",
+    "@statisticsValuesEmptyLabel": {
+        "description": "Empty state label when there are no values in statistics"
+    },
+    "statisticsCompletionShareLabel": "Total completions: {count}",
+    "@statisticsCompletionShareLabel": {
+        "description": "Label showing total completions",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsNeedsAttentionLabel": "Needs attention (> {percent}% gap)",
+    "@statisticsNeedsAttentionLabel": {
+        "description": "Label for values that need attention",
+        "placeholders": {
+            "percent": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsPrimarySecondaryTitle": "Primary vs secondary",
+    "@statisticsPrimarySecondaryTitle": {
+        "description": "Title for primary vs secondary section"
+    },
+    "statisticsTrendsEmptyLabel": "No trends yet",
+    "@statisticsTrendsEmptyLabel": {
+        "description": "Empty state label for value trends"
+    },
+    "statisticsWeeklyTrendLabel": "Weekly trend ({weeks} weeks)",
+    "@statisticsWeeklyTrendLabel": {
+        "description": "Label for weekly trend section",
+        "placeholders": {
+            "weeks": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsMoodEmptyLabel": "No mood data yet",
+    "@statisticsMoodEmptyLabel": {
+        "description": "Empty state label for mood stats"
+    },
+    "statisticsMoodTrendTitle": "Mood trend",
+    "@statisticsMoodTrendTitle": {
+        "description": "Title for mood trend chart"
+    },
+    "statisticsMoodDistributionTitle": "Mood distribution",
+    "@statisticsMoodDistributionTitle": {
+        "description": "Title for mood distribution chart"
+    },
+    "statisticsCorrelationsEmptyLabel": "No correlations yet",
+    "@statisticsCorrelationsEmptyLabel": {
+        "description": "Empty state label when no correlations are available"
+    },
+    "statisticsCorrelationsEmptyBody": "Track more data to see correlations.",
+    "@statisticsCorrelationsEmptyBody": {
+        "description": "Empty state body when no correlations are available"
+    },
+    "statisticsCorrelationDisclaimer": "Correlations are informational and not causal.",
+    "@statisticsCorrelationDisclaimer": {
+        "description": "Disclaimer text for correlations section"
+    },
+    "statisticsLoadSectionFailed": "Couldn't load this section.",
+    "@statisticsLoadSectionFailed": {
+        "description": "Fallback label when a statistics section fails to load"
+    },
+    "statisticsNoCompletionsLabel": "No completions yet",
+    "@statisticsNoCompletionsLabel": {
+        "description": "Label shown when there are no completions for statistics charts"
+    },
+    "statisticsNoCoverageLabel": "No coverage for {valueName}.",
+    "@statisticsNoCoverageLabel": {
+        "description": "Label shown when there is no coverage for a value",
+        "placeholders": {
+            "valueName": {
+                "type": "String"
+            }
+        }
+    },
+    "statisticsPrimarySecondaryTaskLabel": "Tasks: {primary}/{secondary}",
+    "@statisticsPrimarySecondaryTaskLabel": {
+        "description": "Label for primary vs secondary task counts",
+        "placeholders": {
+            "primary": {
+                "type": "int"
+            },
+            "secondary": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsPrimarySecondaryProjectLabel": "Projects: {primary}/{secondary}",
+    "@statisticsPrimarySecondaryProjectLabel": {
+        "description": "Label for primary vs secondary project counts",
+        "placeholders": {
+            "primary": {
+                "type": "int"
+            },
+            "secondary": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsAverageLabel": "Average",
+    "@statisticsAverageLabel": {
+        "description": "Label for average summary value"
+    },
+    "statisticsEntriesLabel": "Entries",
+    "@statisticsEntriesLabel": {
+        "description": "Label for total entries summary value"
+    },
+    "statisticsRangeLabel": "Range",
+    "@statisticsRangeLabel": {
+        "description": "Label for range summary value"
+    },
+    "statisticsCorrelationEarlyPatternLabel": "Early pattern (n={sampleSize})",
+    "@statisticsCorrelationEarlyPatternLabel": {
+        "description": "Insight label shown for early correlation patterns",
+        "placeholders": {
+            "sampleSize": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsCorrelationDirectionHigher": "higher",
+    "@statisticsCorrelationDirectionHigher": {
+        "description": "Direction label when correlation difference is higher"
+    },
+    "statisticsCorrelationDirectionLower": "lower",
+    "@statisticsCorrelationDirectionLower": {
+        "description": "Direction label when correlation difference is lower"
+    },
+    "statisticsCorrelationDifferenceLabel": "When {targetLabel} is present, {sourceLabel} is {absPercent}% {direction} (n={sampleSize}).",
+    "@statisticsCorrelationDifferenceLabel": {
+        "description": "Insight label when correlation difference percent is available",
+        "placeholders": {
+            "sourceLabel": {
+                "type": "String"
+            },
+            "targetLabel": {
+                "type": "String"
+            },
+            "absPercent": {
+                "type": "String"
+            },
+            "direction": {
+                "type": "String"
+            },
+            "sampleSize": {
+                "type": "int"
+            }
+        }
+    },
+    "statisticsCorrelationBasicLabel": "Correlation between {sourceLabel} and {targetLabel} (n={sampleSize}).",
+    "@statisticsCorrelationBasicLabel": {
+        "description": "Insight label when correlation difference percent is unavailable",
+        "placeholders": {
+            "sourceLabel": {
+                "type": "String"
+            },
+            "targetLabel": {
+                "type": "String"
+            },
+            "sampleSize": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewLoadFailureMessage": "Failed to load review.",
+    "@weeklyReviewLoadFailureMessage": {
+        "description": "Error message shown when the weekly review fails to load"
+    },
+    "weeklyReviewSkipCheckInAction": "Skip check-in",
+    "@weeklyReviewSkipCheckInAction": {
+        "description": "Action label to skip the weekly check-in step"
+    },
+    "continueLabel": "Continue",
+    "@continueLabel": {
+        "description": "Generic continue action label"
+    },
+    "weeklyReviewValuesInsightLabel": "Most aligned with {topValueName}. Least aligned with {bottomValueName}.",
+    "@weeklyReviewValuesInsightLabel": {
+        "description": "Insight summary for weekly review values snapshot",
+        "placeholders": {
+            "topValueName": {
+                "type": "String"
+            },
+            "bottomValueName": {
+                "type": "String"
+            }
+        }
+    },
+    "weeklyReviewValuesInsightEmptyLabel": "No completed tasks yet.",
+    "@weeklyReviewValuesInsightEmptyLabel": {
+        "description": "Insight shown when the values snapshot has no data"
+    },
+    "weeklyReviewValuesSnapshotSubtitle": "How your completed work aligned with what matters.",
+    "@weeklyReviewValuesSnapshotSubtitle": {
+        "description": "Subtitle for the values snapshot section in weekly review"
+    },
+    "weeklyReviewLastWeeksLabel": "Last {weeks} weeks",
+    "@weeklyReviewLastWeeksLabel": {
+        "description": "Label showing the last N weeks window",
+        "placeholders": {
+            "weeks": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewValueWinsSubtitle": "Small moments that added up.",
+    "@weeklyReviewValueWinsSubtitle": {
+        "description": "Subtitle for the value wins section in weekly review"
+    },
+    "weeklyReviewValueWinsEmpty": "No value wins yet.",
+    "@weeklyReviewValueWinsEmpty": {
+        "description": "Empty state for value wins in weekly review"
+    },
+    "weeklyReviewValueWinsRow": "{valueName} - {count} completions",
+    "@weeklyReviewValueWinsRow": {
+        "description": "Row label for a value win entry",
+        "placeholders": {
+            "valueName": {
+                "type": "String"
+            },
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewMaintenanceCheckSubtitle": "A short list to keep things from building up.",
+    "@weeklyReviewMaintenanceCheckSubtitle": {
+        "description": "Subtitle for the maintenance check section in weekly review"
+    },
+    "weeklyReviewDeadlineRiskEmptyMessage": "No deadline risks this week.",
+    "@weeklyReviewDeadlineRiskEmptyMessage": {
+        "description": "Empty message for deadline risk section"
+    },
+    "weeklyReviewStaleItemsEmptyMessage": "No stale items right now.",
+    "@weeklyReviewStaleItemsEmptyMessage": {
+        "description": "Empty message for stale items section"
+    },
+    "weeklyReviewFrequentSnoozedEmptyMessage": "No items are stuck in a snooze loop.",
+    "@weeklyReviewFrequentSnoozedEmptyMessage": {
+        "description": "Empty message for frequent snoozed section"
+    },
+    "weeklyReviewDeadlineRiskItemDescription": "Project is {dueLabel} with {unscheduledCount, plural, =1{1 unscheduled task} other{{unscheduledCount} unscheduled tasks}}.",
+    "@weeklyReviewDeadlineRiskItemDescription": {
+        "description": "Description for a deadline risk maintenance item",
+        "placeholders": {
+            "dueLabel": {
+                "type": "String"
+            },
+            "unscheduledCount": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewStaleItemDescription": "No activity in {days, plural, =1{1 day} other{{days} days}}.",
+    "@weeklyReviewStaleItemDescription": {
+        "description": "Description for a stale item maintenance entry",
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewFrequentSnoozeItemDescription": "Snoozed {snoozeCount, plural, =1{1 time} other{{snoozeCount} times}} in the last 28 days ({dayCount, plural, =1{1 day} other{{dayCount} days}} total).",
+    "@weeklyReviewFrequentSnoozeItemDescription": {
+        "description": "Description for a frequently snoozed maintenance item",
+        "placeholders": {
+            "snoozeCount": {
+                "type": "int"
+            },
+            "dayCount": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewDueSoonLabel": "due soon",
+    "@weeklyReviewDueSoonLabel": {
+        "description": "Due soon label for weekly review maintenance items"
+    },
+    "weeklyReviewDueTodayLabel": "due today",
+    "@weeklyReviewDueTodayLabel": {
+        "description": "Due today label for weekly review maintenance items"
+    },
+    "weeklyReviewDueTomorrowLabel": "due tomorrow",
+    "@weeklyReviewDueTomorrowLabel": {
+        "description": "Due tomorrow label for weekly review maintenance items"
+    },
+    "weeklyReviewOverdueByDaysLabel": "{days, plural, =1{overdue by 1 day} other{overdue by {days} days}}",
+    "@weeklyReviewOverdueByDaysLabel": {
+        "description": "Overdue by days label for weekly review maintenance items",
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewDueInDaysLabel": "{days, plural, =1{due in 1 day} other{due in {days} days}}",
+    "@weeklyReviewDueInDaysLabel": {
+        "description": "Due in days label for weekly review maintenance items",
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewCompletionTitle": "You're done.",
+    "@weeklyReviewCompletionTitle": {
+        "description": "Completion title for weekly review"
+    },
+    "weeklyReviewCompletionSubtitle": "Clear, calm, and ready to go.",
+    "@weeklyReviewCompletionSubtitle": {
+        "description": "Completion subtitle for weekly review"
+    },
+    "weeklyReviewCompletionFooter": "Run again whenever.",
+    "@weeklyReviewCompletionFooter": {
+        "description": "Completion footer for weekly review"
+    },
+    "weeklyReviewNoValuesForCheckIn": "No values available for check-in.",
+    "@weeklyReviewNoValuesForCheckIn": {
+        "description": "Empty state shown when no values are available for weekly check-in"
+    },
+    "weeklyReviewStepLabel": "Step {step} of {total}: {valueName}",
+    "@weeklyReviewStepLabel": {
+        "description": "Step label for weekly review check-in flow",
+        "placeholders": {
+            "step": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            },
+            "valueName": {
+                "type": "String"
+            }
+        }
+    },
+    "weeklyReviewWizardStepLabel": "Step {step} of {total}",
+    "@weeklyReviewWizardStepLabel": {
+        "description": "Step indicator for the weekly review wizard flow",
+        "placeholders": {
+            "step": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewCheckInInstruction": "Use the slider to rate your alignment with each value from 1 to 10.",
+    "@weeklyReviewCheckInInstruction": {
+        "description": "Instruction text for weekly review rating slider"
+    },
+    "weeklyReviewChartWheelLabel": "Wheel",
+    "@weeklyReviewChartWheelLabel": {
+        "description": "Label for the wheel chart toggle in weekly review"
+    },
+    "weeklyReviewChartRadarLabel": "Radar",
+    "@weeklyReviewChartRadarLabel": {
+        "description": "Label for the radar chart toggle in weekly review"
+    },
+    "weeklyReviewCompleteCheckInAction": "Complete check-in",
+    "@weeklyReviewCompleteCheckInAction": {
+        "description": "Action label to complete the weekly check-in"
+    },
+    "weeklyReviewNextValueAction": "Next value",
+    "@weeklyReviewNextValueAction": {
+        "description": "Action label to move to the next value in weekly check-in"
+    },
+    "weeklyReviewSelectedValueLabel": "Selected value",
+    "@weeklyReviewSelectedValueLabel": {
+        "description": "Label for the selected value summary card"
+    },
+    "trendLabel": "Trend",
+    "@trendLabel": {
+        "description": "Generic label for trend metrics"
+    },
+    "notAvailableShortLabel": "--",
+    "@notAvailableShortLabel": {
+        "description": "Short placeholder label when no value is available"
+    },
+    "weeklyReviewRateAlignmentLabel": "Rate your alignment",
+    "@weeklyReviewRateAlignmentLabel": {
+        "description": "Label above the weekly review rating slider"
+    },
+    "lowLabel": "Low",
+    "@lowLabel": {
+        "description": "Label for the low end of a range"
+    },
+    "highLabel": "High",
+    "@highLabel": {
+        "description": "Label for the high end of a range"
+    },
+    "weeklyReviewNoRatingsYet": "No ratings yet",
+    "@weeklyReviewNoRatingsYet": {
+        "description": "Label shown when there are no ratings yet"
+    },
+    "weeklyReviewLastRatingLabel": "Last rating {rating} ({weeks, plural, =1{1 week} other{{weeks} weeks}} ago)",
+    "@weeklyReviewLastRatingLabel": {
+        "description": "Label showing the last rating and how many weeks ago",
+        "placeholders": {
+            "rating": {
+                "type": "int"
+            },
+            "weeks": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewWeekTrendLabel": "{weeks}-week trend",
+    "@weeklyReviewWeekTrendLabel": {
+        "description": "Label for the weekly review trend section",
+        "placeholders": {
+            "weeks": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewNoTrendDataYet": "No trend data yet",
+    "@weeklyReviewNoTrendDataYet": {
+        "description": "Label shown when there is no trend data"
+    },
+    "weeklyReviewRecentRatingsTitle": "Recent ratings",
+    "@weeklyReviewRecentRatingsTitle": {
+        "description": "Title for recent ratings section"
+    },
+    "weeklyReviewNoRatingHistory": "No rating history yet.",
+    "@weeklyReviewNoRatingHistory": {
+        "description": "Empty state for rating history"
+    },
+    "settingsAppearanceTitle": "Appearance",
+    "@settingsAppearanceTitle": {
+        "description": "Title for appearance settings entry"
+    },
+    "settingsAppearanceSubtitle": "Theme, accent palette, and text size",
+    "@settingsAppearanceSubtitle": {
+        "description": "Subtitle for appearance settings entry"
+    },
+    "settingsTaskSuggestionsSubtitle": "Suggestion signal and values balance",
+    "@settingsTaskSuggestionsSubtitle": {
+        "description": "Subtitle for task suggestions settings entry"
+    },
+    "settingsGuidedTourTitle": "Guided tour",
+    "@settingsGuidedTourTitle": {
+        "description": "Title for guided tour settings entry"
+    },
+    "settingsGuidedTourSubtitle": "Walk through the core screens again",
+    "@settingsGuidedTourSubtitle": {
+        "description": "Subtitle for guided tour settings entry"
+    },
+    "settingsWeeklyReviewSubtitle": "Schedule, values snapshot, and maintenance",
+    "@settingsWeeklyReviewSubtitle": {
+        "description": "Subtitle for weekly review settings entry"
+    },
+    "settingsLanguageRegionTitle": "Language & Region",
+    "@settingsLanguageRegionTitle": {
+        "description": "Title for language and region settings entry"
+    },
+    "settingsLanguageRegionSubtitle": "Language and home timezone",
+    "@settingsLanguageRegionSubtitle": {
+        "description": "Subtitle for language and region settings entry"
+    },
+    "settingsAccountTitle": "Account",
+    "@settingsAccountTitle": {
+        "description": "Title for account settings entry"
+    },
+    "settingsAccountSubtitle": "Profile details and sign out",
+    "@settingsAccountSubtitle": {
+        "description": "Subtitle for account settings entry"
+    },
+    "settingsDeveloperTitle": "Developer",
+    "@settingsDeveloperTitle": {
+        "description": "Title for developer settings entry"
+    },
+    "settingsDeveloperSubtitle": "Logs, tile catalog, and template data",
+    "@settingsDeveloperSubtitle": {
+        "description": "Subtitle for developer settings entry"
+    },
+    "scopeHeaderLoadFailedMessage": "Couldn't load scope details.",
+    "@scopeHeaderLoadFailedMessage": {
+        "description": "Error message shown when the scope header fails to load"
+    },
+    "scopeHeaderMetricLabel": "{label}: {value}",
+    "@scopeHeaderMetricLabel": {
+        "description": "Label format for scope header metrics",
+        "placeholders": {
+            "label": {
+                "type": "String"
+            },
+            "value": {
+                "type": "int"
+            }
+        }
+    },
+    "scheduledScopeProjectTitle": "Project: {name}",
+    "@scheduledScopeProjectTitle": {
+        "description": "Scheduled scope header title for a project",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "scheduledScopeValueTitle": "Value: {name}",
+    "@scheduledScopeValueTitle": {
+        "description": "Scheduled scope header title for a value",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "scheduledScopeProjectNotFound": "Project not found",
+    "@scheduledScopeProjectNotFound": {
+        "description": "Error shown when the scheduled scope project is missing"
+    },
+    "scheduledScopeProjectLoadFailed": "Failed to load project",
+    "@scheduledScopeProjectLoadFailed": {
+        "description": "Error shown when the scheduled scope project fails to load"
+    },
+    "scheduledScopeValueNotFound": "Value not found",
+    "@scheduledScopeValueNotFound": {
+        "description": "Error shown when the scheduled scope value is missing"
+    },
+    "scheduledScopeValueLoadFailed": "Failed to load value",
+    "@scheduledScopeValueLoadFailed": {
+        "description": "Error shown when the scheduled scope value fails to load"
+    },
+    "taskFormIncludeInMyDayTitle": "Include in My Day today",
+    "@taskFormIncludeInMyDayTitle": {
+        "description": "Label for the include in My Day toggle in the task form"
+    },
+    "taskFormIncludeInMyDaySubtitle": "Adds this task to today's plan.",
+    "@taskFormIncludeInMyDaySubtitle": {
+        "description": "Subtitle for the include in My Day toggle in the task form"
+    },
+    "priorityP1Label": "P1",
+    "@priorityP1Label": {
+        "description": "Label for priority P1"
+    },
+    "priorityP2Label": "P2",
+    "@priorityP2Label": {
+        "description": "Label for priority P2"
+    },
+    "priorityP3Label": "P3",
+    "@priorityP3Label": {
+        "description": "Label for priority P3"
+    },
+    "priorityP4Label": "P4",
+    "@priorityP4Label": {
+        "description": "Label for priority P4"
+    },
+    "valueSortPriorityLabel": "Priority",
+    "@valueSortPriorityLabel": {
+        "description": "Sort option label for values by priority"
+    },
+    "valueSortAlphabeticalLabel": "A-Z",
+    "@valueSortAlphabeticalLabel": {
+        "description": "Sort option label for values alphabetically"
+    },
+    "valueSortMostActiveLabel": "Most active",
+    "@valueSortMostActiveLabel": {
+        "description": "Sort option label for values by activity"
+    },
+    "taskLabel": "Task",
+    "@taskLabel": {
+        "description": "Generic singular label for a task"
+    },
+    "itemLabel": "Item",
+    "@itemLabel": {
+        "description": "Generic singular label for an item"
+    },
+    "moodVeryLowLabel": "Very low",
+    "@moodVeryLowLabel": {
+        "description": "Label for very low mood rating"
+    },
+    "moodLowLabel": "Low",
+    "@moodLowLabel": {
+        "description": "Label for low mood rating"
+    },
+    "moodNeutralLabel": "Neutral",
+    "@moodNeutralLabel": {
+        "description": "Label for neutral mood rating"
+    },
+    "moodGoodLabel": "Good",
+    "@moodGoodLabel": {
+        "description": "Label for good mood rating"
+    },
+    "moodExcellentLabel": "Excellent",
+    "@moodExcellentLabel": {
+        "description": "Label for excellent mood rating"
     }
 }
 

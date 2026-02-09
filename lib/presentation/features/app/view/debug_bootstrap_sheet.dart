@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/config/debug_bootstrap_flags.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/debug_bootstrap_bloc.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -10,6 +11,7 @@ class DebugBootstrapSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
+    final l10n = context.l10n;
 
     return SafeArea(
       child: Padding(
@@ -32,8 +34,8 @@ class DebugBootstrapSheet extends StatelessWidget {
                   SnackBar(
                     content: Text(
                       action == DebugBootstrapAction.wipeAndSeed
-                          ? 'Template data generated.'
-                          : 'Account wipe started. Signing out...',
+                          ? l10n.debugBootstrapTemplateGenerated
+                          : l10n.debugBootstrapAccountWipeStarted,
                     ),
                   ),
                 );
@@ -56,9 +58,10 @@ class DebugBootstrapSheet extends StatelessWidget {
               final isRunning = status is DebugBootstrapRunning;
               final runningLabel = switch (status) {
                 DebugBootstrapRunning(:final action) => switch (action) {
-                  DebugBootstrapAction.wipeAndSeed => 'Wiping and seeding...',
+                  DebugBootstrapAction.wipeAndSeed =>
+                    l10n.debugBootstrapWipingAndSeeding,
                   DebugBootstrapAction.wipeAccountAndReset =>
-                    'Wiping account data...',
+                    l10n.debugBootstrapWipingAccountData,
                 },
                 _ => null,
               };
@@ -73,12 +76,12 @@ class DebugBootstrapSheet extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Debug Bootstrap',
+                    l10n.debugBootstrapTitle,
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   SizedBox(height: tokens.spaceXs),
                   Text(
-                    'Choose how to initialize demo data for this launch.',
+                    l10n.debugBootstrapSubtitle,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   SizedBox(height: tokens.spaceSm),
@@ -106,9 +109,8 @@ class DebugBootstrapSheet extends StatelessWidget {
                     SizedBox(height: tokens.spaceSm),
                   ],
                   _ActionButton(
-                    label: 'Wipe + Seed Demo Data (recommended)',
-                    subtitle:
-                        'Deletes all account data, then seeds template values, projects, tasks, routines, and ratings. Weekly review is due immediately.',
+                    label: l10n.debugBootstrapWipeSeedLabel,
+                    subtitle: l10n.debugBootstrapWipeSeedSubtitle,
                     isRunning: isRunning,
                     onTap: () async {
                       await context.read<DebugBootstrapBloc>().wipeAndSeed();
@@ -117,9 +119,8 @@ class DebugBootstrapSheet extends StatelessWidget {
                   if (DebugBootstrapFlags.enableAccountWipeOption) ...[
                     SizedBox(height: tokens.spaceSm),
                     _ActionButton(
-                      label: 'Wipe Account + Reset Onboarding',
-                      subtitle:
-                          'Deletes all synced data and signs you out. Onboarding runs next sign-in.',
+                      label: l10n.debugBootstrapWipeAccountLabel,
+                      subtitle: l10n.debugBootstrapWipeAccountSubtitle,
                       isRunning: isRunning,
                       danger: true,
                       onTap: () async {
@@ -136,7 +137,7 @@ class DebugBootstrapSheet extends StatelessWidget {
                       onPressed: isRunning
                           ? null
                           : () => Navigator.pop(context),
-                      child: const Text('Skip this launch'),
+                      child: Text(l10n.debugBootstrapSkipLaunch),
                     ),
                   ),
                 ],

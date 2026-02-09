@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -49,13 +50,13 @@ class ForgotPasswordView extends StatelessWidget {
                   ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Text(
-                    'Reset Password',
+                    context.l10n.authResetPasswordTitle,
                     style: Theme.of(context).textTheme.displaySmall,
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Text(
-                    'Enter your email to receive a password reset link',
+                    context.l10n.authResetPasswordSubtitle,
                     style: Theme.of(context).textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
@@ -78,9 +79,9 @@ class ForgotPasswordView extends StatelessWidget {
                       return SupaResetPassword(
                         onSuccess: (response) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(
                               content: Text(
-                                'Password reset email sent! Please check your inbox.',
+                                context.l10n.authResetPasswordEmailSent,
                               ),
                             ),
                           );
@@ -110,12 +111,12 @@ class ForgotPasswordView extends StatelessWidget {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
-                        'Remember your password? ',
+                        '${context.l10n.authRememberPasswordPrompt} ',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       TextButton(
                         onPressed: () => context.go('/sign-in'),
-                        child: const Text('Sign In'),
+                        child: Text(context.l10n.authSignInButton),
                       ),
                     ],
                   ),

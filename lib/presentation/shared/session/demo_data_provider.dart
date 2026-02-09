@@ -658,12 +658,30 @@ final class DemoDataProvider {
           tasks: entry.value,
           attentionNeeded: value.priority == ValuePriority.high,
           neglectScore: value.priority == ValuePriority.high ? 0.4 : 0.1,
-          visibleCount: entry.value.length.clamp(1, 3),
+          visibleCount: _minVisibleCount(
+            entry.value.length,
+            value.priority,
+            attentionNeeded: value.priority == ValuePriority.high,
+          ),
           expanded: true,
+          isSpotlight: value.id == _values.first.id,
         ),
       );
     }
 
     return groups;
+  }
+
+  int _minVisibleCount(
+    int taskCount,
+    ValuePriority priority, {
+    required bool attentionNeeded,
+  }) {
+    final defaultVisible = switch (priority) {
+      ValuePriority.high => attentionNeeded ? 4 : 3,
+      ValuePriority.medium => attentionNeeded ? 3 : 2,
+      ValuePriority.low => attentionNeeded ? 2 : 1,
+    };
+    return taskCount < defaultVisible ? taskCount : defaultVisible;
   }
 }

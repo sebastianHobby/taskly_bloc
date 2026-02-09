@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/analytics/widgets/correlation_card.dart';
 import 'package:taskly_bloc/presentation/features/analytics/widgets/distribution_chart.dart';
@@ -34,6 +35,7 @@ class StatisticsDashboardPage extends StatelessWidget {
         body: BlocBuilder<StatisticsDashboardBloc, StatisticsDashboardState>(
           builder: (context, state) {
             final tokens = TasklyTokens.of(context);
+            final l10n = context.l10n;
             return ListView(
               padding: EdgeInsets.symmetric(
                 horizontal: tokens.sectionPaddingH,
@@ -48,24 +50,26 @@ class StatisticsDashboardPage extends StatelessWidget {
                 ),
                 SizedBox(height: tokens.spaceLg),
                 _SectionHeader(
-                  title: 'Values Focus',
-                  subtitle:
-                      'Completions from ${_formatDate(state.range.start)} to ${_formatDate(state.range.end)}',
+                  title: l10n.statisticsValuesFocusTitle,
+                  subtitle: l10n.statisticsValuesFocusSubtitle(
+                    _formatDate(context, state.range.start),
+                    _formatDate(context, state.range.end),
+                  ),
                 ),
                 _ValuesFocusSection(section: state.valuesFocus),
                 SizedBox(height: tokens.spaceLg),
-                _SectionHeader(title: 'Progress by Value'),
+                _SectionHeader(title: l10n.statisticsProgressByValueTitle),
                 _ValueTrendsSection(
                   section: state.valueTrends,
                   valuesFocus: state.valuesFocus.data,
                 ),
                 SizedBox(height: tokens.spaceLg),
-                _SectionHeader(title: 'Mood & Journal'),
+                _SectionHeader(title: l10n.statisticsMoodJournalTitle),
                 _MoodStatsSection(section: state.moodStats),
                 SizedBox(height: tokens.spaceLg),
                 _SectionHeader(
-                  title: 'Correlations',
-                  subtitle: 'Early patterns shown with warnings',
+                  title: l10n.statisticsCorrelationsTitle,
+                  subtitle: l10n.statisticsCorrelationsSubtitle,
                 ),
                 _CorrelationsSection(section: state.correlations),
               ],
@@ -95,18 +99,30 @@ class _RangeSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Range',
+          context.l10n.rangeLabel,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         SizedBox(height: tokens.spaceSm),
         SegmentedButton<int>(
-          segments: const [
-            ButtonSegment(value: 30, label: Text('30d')),
-            ButtonSegment(value: 90, label: Text('90d')),
-            ButtonSegment(value: 180, label: Text('180d')),
-            ButtonSegment(value: 365, label: Text('365d')),
+          segments: [
+            ButtonSegment(
+              value: 30,
+              label: Text(context.l10n.rangeDaysShort(30)),
+            ),
+            ButtonSegment(
+              value: 90,
+              label: Text(context.l10n.rangeDaysShort(90)),
+            ),
+            ButtonSegment(
+              value: 180,
+              label: Text(context.l10n.rangeDaysShort(180)),
+            ),
+            ButtonSegment(
+              value: 365,
+              label: Text(context.l10n.rangeDaysShort(365)),
+            ),
           ],
           selected: {selectedDays},
           onSelectionChanged: (selection) {
@@ -168,7 +184,7 @@ class _ValuesFocusSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SectionStateContainer(
       section: section,
-      emptyMessage: 'No value activity yet.',
+      emptyMessage: context.l10n.statisticsValuesEmptyLabel,
       builder: (data) {
         final tokens = TasklyTokens.of(context);
 
@@ -183,7 +199,9 @@ class _ValuesFocusSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Completion share (total ${data.totalCompletions})',
+                    context.l10n.statisticsCompletionShareLabel(
+                      data.totalCompletions,
+                    ),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -205,7 +223,9 @@ class _ValuesFocusSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Needs attention (gap ≥ ${data.gapWarningThresholdPercent}%)',
+                      context.l10n.statisticsNeedsAttentionLabel(
+                        data.gapWarningThresholdPercent,
+                      ),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -225,7 +245,7 @@ class _ValuesFocusSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Primary vs secondary coverage',
+                    context.l10n.statisticsPrimarySecondaryTitle,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -258,7 +278,7 @@ class _ValueTrendsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SectionStateContainer(
       section: section,
-      emptyMessage: 'No trends yet.',
+      emptyMessage: context.l10n.statisticsTrendsEmptyLabel,
       builder: (data) {
         final tokens = TasklyTokens.of(context);
         final sorted = [...data.items];
@@ -281,7 +301,7 @@ class _ValueTrendsSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Weekly trend (last ${data.weeks} weeks)',
+                context.l10n.statisticsWeeklyTrendLabel(data.weeks),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -308,7 +328,7 @@ class _MoodStatsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SectionStateContainer(
       section: section,
-      emptyMessage: 'No mood data yet.',
+      emptyMessage: context.l10n.statisticsMoodEmptyLabel,
       builder: (data) {
         final tokens = TasklyTokens.of(context);
 
@@ -317,7 +337,7 @@ class _MoodStatsSection extends StatelessWidget {
           children: [
             TrendChart(
               data: data.trend,
-              title: 'Mood trend',
+              title: context.l10n.statisticsMoodTrendTitle,
               color: Theme.of(context).colorScheme.tertiary,
             ),
             SizedBox(height: tokens.spaceLg),
@@ -326,7 +346,7 @@ class _MoodStatsSection extends StatelessWidget {
                 for (final entry in data.distribution.entries)
                   entry.key.toString(): entry.value,
               },
-              title: 'Mood distribution',
+              title: context.l10n.statisticsMoodDistributionTitle,
             ),
             SizedBox(height: tokens.spaceLg),
             _MoodSummaryRow(summary: data.summary),
@@ -346,13 +366,13 @@ class _CorrelationsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SectionStateContainer(
       section: section,
-      emptyMessage: 'No correlations yet.',
+      emptyMessage: context.l10n.statisticsCorrelationsEmptyLabel,
       builder: (data) {
         final tokens = TasklyTokens.of(context);
         if (data.correlations.isEmpty) {
           return _Card(
             child: Text(
-              'No correlations yet. Keep tracking to surface patterns.',
+              context.l10n.statisticsCorrelationsEmptyBody,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           );
@@ -363,13 +383,13 @@ class _CorrelationsSection extends StatelessWidget {
             for (final correlation in data.correlations) ...[
               CorrelationCard(
                 correlation: correlation,
-                insightOverride: _correlationInsight(correlation),
+                insightOverride: _correlationInsight(context.l10n, correlation),
               ),
               SizedBox(height: tokens.spaceSm),
             ],
             SizedBox(height: tokens.spaceSm),
             Text(
-              'Correlation ≠ causation. Use these as hints, not proof.',
+              context.l10n.statisticsCorrelationDisclaimer,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -401,7 +421,7 @@ class _SectionStateContainer<T> extends StatelessWidget {
       StatisticsSectionStatus.failure => _Card(
         child: Text(
           friendlyErrorMessageForUi(
-            section.error ?? 'Unable to load section',
+            section.error ?? context.l10n.statisticsLoadSectionFailed,
             context.l10n,
           ),
         ),
@@ -444,7 +464,7 @@ class _LoadingRow extends StatelessWidget {
         ),
         SizedBox(width: TasklyTokens.of(context).spaceSm),
         Text(
-          'Loading...',
+          context.l10n.loadingTitle,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
       ],
@@ -528,7 +548,7 @@ class _CompletionShareChart extends StatelessWidget {
         height: tokens.spaceXl,
         alignment: Alignment.centerLeft,
         child: Text(
-          'No completions yet.',
+          context.l10n.statisticsNoCompletionsLabel,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -596,7 +616,7 @@ class _PrimarySecondaryRow extends StatelessWidget {
     final stats = item.primarySecondaryStats;
     if (stats == null) {
       return Text(
-        '${item.value.name}: no coverage yet',
+        context.l10n.statisticsNoCoverageLabel(item.value.name),
         style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
@@ -614,14 +634,20 @@ class _PrimarySecondaryRow extends StatelessWidget {
           ),
         ),
         Text(
-          'P ${stats.primaryTaskCount} / S ${stats.secondaryTaskCount}',
+          context.l10n.statisticsPrimarySecondaryTaskLabel(
+            stats.primaryTaskCount,
+            stats.secondaryTaskCount,
+          ),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         SizedBox(width: tokens.spaceSm),
         Text(
-          'Proj ${stats.primaryProjectCount}/${stats.secondaryProjectCount}',
+          context.l10n.statisticsPrimarySecondaryProjectLabel(
+            stats.primaryProjectCount,
+            stats.secondaryProjectCount,
+          ),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -662,7 +688,7 @@ class _ValueTrendRow extends StatelessWidget {
                   painter: SparklinePainter(data: data, color: color),
                 )
               : Text(
-                  'No data',
+                  context.l10n.analyticsNoDataLabel,
                   textAlign: TextAlign.right,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
@@ -671,7 +697,9 @@ class _ValueTrendRow extends StatelessWidget {
         ),
         SizedBox(width: tokens.spaceSm),
         Text(
-          data.isEmpty ? '0%' : '${data.last.toStringAsFixed(0)}%',
+          context.l10n.analyticsPercentValue(
+            data.isEmpty ? 0 : data.last.round(),
+          ),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -699,7 +727,7 @@ class _MoodSummaryRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Average',
+                  context.l10n.statisticsAverageLabel,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -721,7 +749,7 @@ class _MoodSummaryRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Entries',
+                  context.l10n.statisticsEntriesLabel,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -743,7 +771,7 @@ class _MoodSummaryRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Range',
+                  context.l10n.statisticsRangeLabel,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -764,25 +792,43 @@ class _MoodSummaryRow extends StatelessWidget {
   }
 }
 
-String _formatDate(DateTime date) => '${date.month}/${date.day}/${date.year}';
+String _formatDate(BuildContext context, DateTime date) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  return DateFormat.yMMMd(locale).format(date);
+}
 
-String _correlationInsight(CorrelationResult correlation) {
+String _correlationInsight(
+  AppLocalizations l10n,
+  CorrelationResult correlation,
+) {
   final sampleSize = correlation.sampleSize ?? 0;
   final significant =
       correlation.statisticalSignificance?.isSignificant ?? false;
   final difference = correlation.differencePercent;
 
   if (!significant || sampleSize < 10) {
-    return 'Early pattern (n=$sampleSize). Not statistically significant yet.';
+    return l10n.statisticsCorrelationEarlyPatternLabel(sampleSize);
   }
 
   if (difference != null) {
-    final direction = difference >= 0 ? 'higher' : 'lower';
+    final direction = difference >= 0
+        ? l10n.statisticsCorrelationDirectionHigher
+        : l10n.statisticsCorrelationDirectionLower;
     final absPercent = difference.abs().toStringAsFixed(0);
-    return 'When ${correlation.sourceLabel} is present, ${correlation.targetLabel} is $absPercent% $direction (n=$sampleSize).';
+    return l10n.statisticsCorrelationDifferenceLabel(
+      correlation.sourceLabel,
+      correlation.targetLabel,
+      absPercent,
+      direction,
+      sampleSize,
+    );
   }
 
-  return '${correlation.sourceLabel} correlates with ${correlation.targetLabel} (n=$sampleSize).';
+  return l10n.statisticsCorrelationBasicLabel(
+    correlation.sourceLabel,
+    correlation.targetLabel,
+    sampleSize,
+  );
 }
 
 class _StatisticsAppBarTitle extends StatelessWidget {
@@ -807,7 +853,7 @@ class _StatisticsAppBarTitle extends StatelessWidget {
         ),
         SizedBox(width: tokens.spaceSm),
         Text(
-          'Stats',
+          context.l10n.statisticsTitle,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w800,
           ),

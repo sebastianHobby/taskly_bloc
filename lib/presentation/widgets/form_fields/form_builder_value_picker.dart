@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -32,6 +33,7 @@ class FormBuilderValuePicker extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final l10n = context.l10n;
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -46,7 +48,7 @@ class FormBuilderValuePicker extends StatelessWidget {
           if (customError != null) return customError;
           if (!isRequired) return null;
           if (value == null || value.isEmpty) {
-            return 'Select at least one value.';
+            return l10n.valuesPickerRequired;
           }
           return null;
         },
@@ -68,15 +70,15 @@ class FormBuilderValuePicker extends StatelessWidget {
                 return StatefulBuilder(
                   builder: (context, setState) {
                     return AlertDialog(
-                      title: Text(label ?? 'Values'),
+                      title: Text(label ?? l10n.valuesLabel),
                       content: ConstrainedBox(
                         constraints: const BoxConstraints(
                           maxWidth: 500,
                           maxHeight: 420,
                         ),
                         child: availableValues.isEmpty
-                            ? const Center(
-                                child: Text('No values found.'),
+                            ? Center(
+                                child: Text(l10n.noValuesFound),
                               )
                             : ListView.builder(
                                 shrinkWrap: true,
@@ -119,12 +121,12 @@ class FormBuilderValuePicker extends StatelessWidget {
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(null),
-                          child: const Text('Cancel'),
+                          child: Text(l10n.cancelLabel),
                         ),
                         FilledButton(
                           onPressed: () =>
                               Navigator.of(context).pop(workingSelection),
-                          child: const Text('Done'),
+                          child: Text(l10n.doneLabel),
                         ),
                       ],
                     );
@@ -181,7 +183,7 @@ class FormBuilderValuePicker extends StatelessWidget {
               ),
               child: selectedValues.isEmpty
                   ? Text(
-                      hint ?? 'Select values',
+                      hint ?? l10n.selectValuesHint,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),

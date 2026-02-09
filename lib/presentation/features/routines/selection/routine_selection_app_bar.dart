@@ -45,17 +45,17 @@ class RoutineSelectionAppBar extends StatelessWidget
             },
             icon: const Icon(Icons.close),
           ),
-          title: Text('${state.selectedCount} selected'),
+          title: Text(context.l10n.selectedCountLabel(state.selectedCount)),
           actions: [
             if (canLog)
               IconButton(
-                tooltip: 'Log',
+                tooltip: context.l10n.routineLogLabel,
                 onPressed: () => _logSelected(context),
                 icon: const Icon(Icons.check_rounded),
               ),
             if (canUnlog)
               IconButton(
-                tooltip: 'Unlog',
+                tooltip: context.l10n.routineUnlogLabel,
                 onPressed: () => _unlogSelected(context),
                 icon: const Icon(Icons.restart_alt_rounded),
               ),
@@ -65,19 +65,19 @@ class RoutineSelectionAppBar extends StatelessWidget
               itemBuilder: (context) {
                 return <PopupMenuEntry<_RoutineSelectionMenuItem>>[
                   if (canActivate)
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: _RoutineSelectionMenuItem.activate,
-                      child: Text('Activate'),
+                      child: Text(context.l10n.activateLabel),
                     ),
                   if (canDeactivate)
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: _RoutineSelectionMenuItem.deactivate,
-                      child: Text('Deactivate'),
+                      child: Text(context.l10n.deactivateLabel),
                     ),
                   const PopupMenuDivider(),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: _RoutineSelectionMenuItem.delete,
-                    child: Text('Delete'),
+                    child: Text(context.l10n.deleteLabel),
                   ),
                 ];
               },
@@ -165,7 +165,7 @@ class RoutineSelectionAppBar extends StatelessWidget
 
     final confirmed = await ConfirmationDialog.show(
       context,
-      title: 'Delete ${metas.length} routine${metas.length == 1 ? '' : 's'}?',
+      title: context.l10n.deleteRoutinesConfirmationTitle(metas.length),
       confirmLabel: context.l10n.deleteLabel,
       cancelLabel: context.l10n.cancelLabel,
       isDestructive: true,
@@ -174,7 +174,7 @@ class RoutineSelectionAppBar extends StatelessWidget
       iconBackgroundColor: Theme.of(
         context,
       ).colorScheme.errorContainer.withValues(alpha: 0.3),
-      content: const Text('This action cannot be undone.'),
+      content: Text(context.l10n.deleteConfirmationIrreversibleDescription),
     );
 
     if (!context.mounted || !confirmed) return;

@@ -39,11 +39,22 @@ class RoutineEntityTile extends StatelessWidget {
         : 'Added';
     final isPlanPickStyle = style is TasklyRoutineRowStylePlanPick;
     final isCompactStyle = style is TasklyRoutineRowStyleCompact;
-    final useCompactLayout = isPlanPickStyle || isCompactStyle;
-    final showSelection = actions.onToggleSelected != null;
+    final isBulkSelectionStyle =
+        style is TasklyRoutineRowStyleBulkSelection ||
+        style is TasklyRoutineRowStyleBulkSelectionCompact;
+    final isBulkSelectionCompact =
+        style is TasklyRoutineRowStyleBulkSelectionCompact;
+    final useCompactLayout =
+        isPlanPickStyle || isCompactStyle || isBulkSelectionCompact;
+    final showSelectionRail = isBulkSelectionStyle;
+    final showSelectionToggle =
+        !isPlanPickStyle &&
+        !showSelectionRail &&
+        actions.onToggleSelected != null;
     final showPrimary =
         !isPlanPickStyle &&
-        !showSelection &&
+        !showSelectionRail &&
+        !showSelectionToggle &&
         primaryLabelText.isNotEmpty &&
         (actions.onPrimaryAction != null || model.completed);
     final showPicker = isPlanPickStyle && actions.onToggleSelected != null;
@@ -101,7 +112,10 @@ class RoutineEntityTile extends StatelessWidget {
             showPrimary: showPrimary,
             primaryLabelText: primaryLabelText,
             showPicker: showPicker,
-            showSelection: showSelection,
+            showSelection: showSelectionToggle,
+            showSelectionRail: showSelectionRail,
+            selectionCompact: isBulkSelectionCompact,
+            selectionEnabled: actions.onToggleSelected != null,
             selectionAddLabel: selectionAddLabel,
             selectionAddedLabel: selectionAddedLabel,
             leadingValueChip: leadingValueChip,
@@ -133,6 +147,14 @@ class RoutineEntityTile extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (showSelectionRail) ...[
+                          _SelectionRailButton(
+                            selected: model.selected,
+                            compact: isBulkSelectionCompact,
+                            onPressed: actions.onToggleSelected,
+                          ),
+                          SizedBox(width: tokens.spaceSm),
+                        ],
                         if (leadingValueChip != null) ...[
                           Icon(
                             leadingValueChip.icon,
@@ -202,7 +224,7 @@ class RoutineEntityTile extends StatelessWidget {
                                 ? selectionAddedLabel
                                 : selectionAddLabel,
                           ),
-                        ] else if (showSelection) ...[
+                        ] else if (showSelectionToggle) ...[
                           SizedBox(width: tokens.spaceSm),
                           _SelectionToggleButton(
                             selected: model.selected,
@@ -234,6 +256,9 @@ class _CompactRoutineTile extends StatelessWidget {
     required this.primaryLabelText,
     required this.showPicker,
     required this.showSelection,
+    required this.showSelectionRail,
+    required this.selectionCompact,
+    required this.selectionEnabled,
     required this.selectionAddLabel,
     required this.selectionAddedLabel,
     required this.leadingValueChip,
@@ -250,6 +275,9 @@ class _CompactRoutineTile extends StatelessWidget {
   final String primaryLabelText;
   final bool showPicker;
   final bool showSelection;
+  final bool showSelectionRail;
+  final bool selectionCompact;
+  final bool selectionEnabled;
   final String selectionAddLabel;
   final String selectionAddedLabel;
   final ValueChipData? leadingValueChip;
@@ -293,6 +321,16 @@ class _CompactRoutineTile extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  if (showSelectionRail) ...[
+                    _SelectionRailButton(
+                      selected: model.selected,
+                      compact: selectionCompact,
+                      onPressed: selectionEnabled
+                          ? actions.onToggleSelected
+                          : null,
+                    ),
+                    SizedBox(width: tokens.spaceSm),
+                  ],
                   if (leadingValueChip != null)
                     Icon(
                       leadingValueChip.icon,
@@ -399,6 +437,42 @@ class _ValueIconOnly extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     return Icon(data.icon, size: tokens.spaceMd2, color: data.color);
+  }
+}
+
+class _SelectionRailButton extends StatelessWidget {
+  const _SelectionRailButton({
+    required this.selected,
+    required this.compact,
+    required this.onPressed,
+  });
+
+  final bool selected;
+  final bool compact;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
+    final iconSize = compact ? tokens.spaceMd2 : tokens.spaceLg2;
+    final padding = compact ? tokens.spaceXs2 : tokens.spaceSm2;
+
+    return IconButton(
+      tooltip: selected ? 'Deselect' : 'Select',
+      onPressed: onPressed,
+      icon: Icon(
+        selected
+            ? Icons.check_circle_rounded
+            : Icons.radio_button_unchecked_rounded,
+        size: iconSize,
+        color: selected ? scheme.primary : scheme.onSurfaceVariant,
+      ),
+      style: IconButton.styleFrom(
+        minimumSize: Size.square(tokens.minTapTargetSize),
+        padding: EdgeInsets.all(padding),
+      ),
+    );
   }
 }
 

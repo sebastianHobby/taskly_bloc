@@ -99,12 +99,19 @@ class ValueRatingsRepository implements ValueRatingsRepositoryContract {
         )..where((row) => row.id.equals(id))).write(companion);
 
         if (updated == 0) {
-          await driftDb
-              .into(driftDb.valueRatingsWeeklyTable)
-              .insert(
-                companion.copyWith(createdAt: drift_pkg.Value(now)),
-                mode: drift_pkg.InsertMode.insert,
-              );
+          final existing =
+              await (driftDb.selectOnly(driftDb.valueRatingsWeeklyTable)
+                    ..addColumns([driftDb.valueRatingsWeeklyTable.id])
+                    ..where(driftDb.valueRatingsWeeklyTable.id.equals(id)))
+                  .getSingleOrNull();
+          if (existing == null) {
+            await driftDb
+                .into(driftDb.valueRatingsWeeklyTable)
+                .insert(
+                  companion.copyWith(createdAt: drift_pkg.Value(now)),
+                  mode: drift_pkg.InsertMode.insert,
+                );
+          }
         }
 
         AppLog.routineStructured(

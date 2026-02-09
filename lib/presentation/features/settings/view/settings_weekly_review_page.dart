@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:taskly_domain/settings.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/review/view/weekly_review_modal.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class SettingsWeeklyReviewPage extends StatelessWidget {
@@ -13,7 +16,7 @@ class SettingsWeeklyReviewPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Weekly Review'),
+        title: Text(context.l10n.weeklyReviewTitle),
       ),
       body: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
         builder: (context, state) {
@@ -22,15 +25,16 @@ class SettingsWeeklyReviewPage extends StatelessWidget {
           }
 
           final settings = state.settings;
+          final tokens = TasklyTokens.of(context);
 
           return ResponsiveBody(
             isExpandedLayout: context.isExpandedScreen,
             child: ListView(
+              padding: EdgeInsets.only(bottom: tokens.spaceSm),
               children: [
                 _WeeklyReviewSchedule(settings: settings),
                 _WeeklyReviewValuesSummary(settings: settings),
                 _WeeklyReviewMaintenance(settings: settings),
-                SizedBox(height: TasklyTokens.of(context).spaceSm),
               ],
             ),
           );
@@ -40,25 +44,39 @@ class SettingsWeeklyReviewPage extends StatelessWidget {
   }
 }
 
-class _WeeklyReviewSchedule extends StatelessWidget {
+class _WeeklyReviewSchedule extends StatefulWidget {
   const _WeeklyReviewSchedule({required this.settings});
 
   final GlobalSettings settings;
 
   @override
-  Widget build(BuildContext context) {
-    final isEnabled = settings.weeklyReviewEnabled;
-    final dayLabel = _weekdayLabel(settings.weeklyReviewDayOfWeek);
-    final cadenceLabel = _cadenceLabel(settings.weeklyReviewCadenceWeeks);
-    final timeLabel = _formatTime(context, settings.weeklyReviewTimeMinutes);
+  State<_WeeklyReviewSchedule> createState() => _WeeklyReviewScheduleState();
+}
 
-    return Column(
-      children: [
-        SwitchListTile.adaptive(
-          title: const Text('Weekly review'),
-          subtitle: const Text(
-            'A gentle check-in on a day that works for you.',
-          ),
+class _WeeklyReviewScheduleState extends State<_WeeklyReviewSchedule> {
+  bool _isExpanded = true;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = widget.settings;
+    final tokens = TasklyTokens.of(context);
+    final isEnabled = settings.weeklyReviewEnabled;
+    final dayLabel = _weekdayLabel(context, settings.weeklyReviewDayOfWeek);
+    final cadenceLabel = _cadenceLabel(
+      context,
+      settings.weeklyReviewCadenceWeeks,
+    );
+    final timeLabel = _formatTime(context, settings.weeklyReviewTimeMinutes);
+    final summary = isEnabled
+        ? '$dayLabel - $timeLabel - $cadenceLabel'
+        : context.l10n.offLabel;
+
+    return _SettingsSectionPadding(
+      child: TasklySettingsCard(
+        title: context.l10n.weeklyReviewScheduleTitle,
+        subtitle: context.l10n.weeklyReviewScheduleSubtitle,
+        summary: summary,
+        trailing: Switch.adaptive(
           value: isEnabled,
           onChanged: (enabled) {
             context.read<GlobalSettingsBloc>().add(
@@ -66,32 +84,35 @@ class _WeeklyReviewSchedule extends StatelessWidget {
             );
           },
         ),
-        ListTile(
-          title: const Text('Day of week'),
-          subtitle: Text(dayLabel),
+        isExpanded: _isExpanded,
+        onExpandedChanged: (next) => setState(() => _isExpanded = next),
+        child: _SettingsCardBody(
           enabled: isEnabled,
-          trailing: const Icon(Icons.chevron_right),
-          onTap: !isEnabled
-              ? null
-              : () async {
+          child: Column(
+            children: [
+              _SettingsNavigationRow(
+                title: context.l10n.weeklyReviewDayOfWeekLabel,
+                value: dayLabel,
+                enabled: isEnabled,
+                onTap: () async {
                   final selected = await _showDayPicker(
                     context,
                     selectedDay: settings.weeklyReviewDayOfWeek,
                   );
                   if (selected == null || !context.mounted) return;
                   context.read<GlobalSettingsBloc>().add(
-                    GlobalSettingsEvent.weeklyReviewDayOfWeekChanged(selected),
+                    GlobalSettingsEvent.weeklyReviewDayOfWeekChanged(
+                      selected,
+                    ),
                   );
                 },
-        ),
-        ListTile(
-          title: const Text('Frequency'),
-          subtitle: Text(cadenceLabel),
-          enabled: isEnabled,
-          trailing: const Icon(Icons.chevron_right),
-          onTap: !isEnabled
-              ? null
-              : () async {
+              ),
+              SizedBox(height: tokens.spaceSm),
+              _SettingsNavigationRow(
+                title: context.l10n.weeklyReviewFrequencyLabel,
+                value: cadenceLabel,
+                enabled: isEnabled,
+                onTap: () async {
                   final selected = await _showCadencePicker(
                     context,
                     selectedWeeks: settings.weeklyReviewCadenceWeeks,
@@ -103,15 +124,13 @@ class _WeeklyReviewSchedule extends StatelessWidget {
                     ),
                   );
                 },
-        ),
-        ListTile(
-          title: const Text('Time'),
-          subtitle: Text(timeLabel),
-          enabled: isEnabled,
-          trailing: const Icon(Icons.chevron_right),
-          onTap: !isEnabled
-              ? null
-              : () async {
+              ),
+              SizedBox(height: tokens.spaceSm),
+              _SettingsNavigationRow(
+                title: context.l10n.weeklyReviewTimeLabel,
+                value: timeLabel,
+                enabled: isEnabled,
+                onTap: () async {
                   final timeOfDay = _timeOfDayFromMinutes(
                     settings.weeklyReviewTimeMinutes,
                   );
@@ -122,50 +141,50 @@ class _WeeklyReviewSchedule extends StatelessWidget {
                   if (picked == null || !context.mounted) return;
                   final minutes = picked.hour * 60 + picked.minute;
                   context.read<GlobalSettingsBloc>().add(
-                    GlobalSettingsEvent.weeklyReviewTimeMinutesChanged(minutes),
+                    GlobalSettingsEvent.weeklyReviewTimeMinutesChanged(
+                      minutes,
+                    ),
                   );
                 },
-        ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            TasklyTokens.of(context).spaceLg,
-            TasklyTokens.of(context).spaceXs,
-            TasklyTokens.of(context).spaceLg,
-            TasklyTokens.of(context).spaceSm,
+              ),
+              SizedBox(height: tokens.spaceMd),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.tonal(
+                  onPressed: isEnabled
+                      ? () => showWeeklyReviewModal(
+                          context,
+                          settings: settings,
+                        )
+                      : null,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.play_arrow_rounded),
+                      SizedBox(width: tokens.spaceSm),
+                      Text(context.l10n.weeklyReviewRunNowLabel),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: isEnabled
-                  ? () => showWeeklyReviewModal(
-                      context,
-                      settings: settings,
-                    )
-                  : null,
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('Run review now'),
-            ),
-          ),
         ),
-      ],
+      ),
     );
   }
 
-  String _weekdayLabel(int dayOfWeek) {
-    return switch (dayOfWeek.clamp(1, 7)) {
-      DateTime.monday => 'Monday',
-      DateTime.tuesday => 'Tuesday',
-      DateTime.wednesday => 'Wednesday',
-      DateTime.thursday => 'Thursday',
-      DateTime.friday => 'Friday',
-      DateTime.saturday => 'Saturday',
-      _ => 'Sunday',
-    };
+  String _weekdayLabel(BuildContext context, int dayOfWeek) {
+    final locale = Localizations.localeOf(context).toString();
+    final formatter = DateFormat.EEEE(locale);
+    final baseMonday = DateTime(2020, 1, 6);
+    final offset = dayOfWeek.clamp(1, 7) - DateTime.monday;
+    return formatter.format(baseMonday.add(Duration(days: offset)));
   }
 
-  String _cadenceLabel(int weeks) {
+  String _cadenceLabel(BuildContext context, int weeks) {
     final clamped = weeks.clamp(1, 12);
-    return clamped == 1 ? 'Every week' : 'Every $clamped weeks';
+    return context.l10n.weeklyReviewCadenceLabel(clamped);
   }
 
   String _formatTime(BuildContext context, int minutesOfDay) {
@@ -186,13 +205,13 @@ class _WeeklyReviewSchedule extends StatelessWidget {
     required int selectedDay,
   }) async {
     final items = <int, String>{
-      DateTime.monday: 'Monday',
-      DateTime.tuesday: 'Tuesday',
-      DateTime.wednesday: 'Wednesday',
-      DateTime.thursday: 'Thursday',
-      DateTime.friday: 'Friday',
-      DateTime.saturday: 'Saturday',
-      DateTime.sunday: 'Sunday',
+      DateTime.monday: _weekdayLabel(context, DateTime.monday),
+      DateTime.tuesday: _weekdayLabel(context, DateTime.tuesday),
+      DateTime.wednesday: _weekdayLabel(context, DateTime.wednesday),
+      DateTime.thursday: _weekdayLabel(context, DateTime.thursday),
+      DateTime.friday: _weekdayLabel(context, DateTime.friday),
+      DateTime.saturday: _weekdayLabel(context, DateTime.saturday),
+      DateTime.sunday: _weekdayLabel(context, DateTime.sunday),
     };
 
     return showModalBottomSheet<int>(
@@ -232,7 +251,7 @@ class _WeeklyReviewSchedule extends StatelessWidget {
           children: options
               .map((weeks) {
                 return ListTile(
-                  title: Text(weeks == 1 ? 'Every week' : 'Every $weeks weeks'),
+                  title: Text(context.l10n.weeklyReviewCadenceLabel(weeks)),
                   trailing: weeks == selectedWeeks
                       ? Icon(
                           Icons.check,
@@ -249,22 +268,36 @@ class _WeeklyReviewSchedule extends StatelessWidget {
   }
 }
 
-class _WeeklyReviewValuesSummary extends StatelessWidget {
+class _WeeklyReviewValuesSummary extends StatefulWidget {
   const _WeeklyReviewValuesSummary({required this.settings});
 
   final GlobalSettings settings;
 
   @override
+  State<_WeeklyReviewValuesSummary> createState() =>
+      _WeeklyReviewValuesSummaryState();
+}
+
+class _WeeklyReviewValuesSummaryState
+    extends State<_WeeklyReviewValuesSummary> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final settings = widget.settings;
     final enabled = settings.valuesSummaryEnabled;
     final weeks = settings.valuesSummaryWindowWeeks.clamp(1, 12);
     final wins = settings.valuesSummaryWinsCount.clamp(1, 5);
+    final summary = enabled
+        ? context.l10n.weeklyReviewValuesSummarySummary(weeks, wins)
+        : context.l10n.offLabel;
 
-    return Column(
-      children: [
-        SwitchListTile.adaptive(
-          title: const Text('Values Snapshot'),
-          subtitle: const Text('Show value balance and wins in each review.'),
+    return _SettingsSectionPadding(
+      child: TasklySettingsCard(
+        title: context.l10n.weeklyReviewValuesTitle,
+        subtitle: context.l10n.weeklyReviewValuesSubtitle,
+        summary: summary,
+        trailing: Switch.adaptive(
           value: enabled,
           onChanged: (value) {
             context.read<GlobalSettingsBloc>().add(
@@ -272,104 +305,79 @@ class _WeeklyReviewValuesSummary extends StatelessWidget {
             );
           },
         ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            TasklyTokens.of(context).spaceLg,
-            0,
-            TasklyTokens.of(context).spaceLg,
-            0,
-          ),
-          child: Opacity(
-            opacity: enabled ? 1 : 0.5,
-            child: IgnorePointer(
-              ignoring: !enabled,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Lookback window',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                      Text(
-                        '$weeks weeks',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
-                  _CommitSlider(
-                    value: weeks,
-                    min: 1,
-                    max: 12,
-                    divisions: 11,
-                    labelBuilder: (value) => '$value weeks',
-                    onCommit: (value) {
-                      context.read<GlobalSettingsBloc>().add(
-                        GlobalSettingsEvent.valuesSummaryWindowWeeksChanged(
-                          value,
-                        ),
-                      );
-                    },
-                  ),
-                  SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Value wins',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                      Text(
-                        '$wins items',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
-                  _CommitSlider(
-                    value: wins,
-                    min: 1,
-                    max: 5,
-                    divisions: 4,
-                    labelBuilder: (value) => '$value items',
-                    onCommit: (value) {
-                      context.read<GlobalSettingsBloc>().add(
-                        GlobalSettingsEvent.valuesSummaryWinsCountChanged(
-                          value,
-                        ),
-                      );
-                    },
-                  ),
-                ],
+        isExpanded: _isExpanded,
+        onExpandedChanged: (next) => setState(() => _isExpanded = next),
+        child: _SettingsCardBody(
+          enabled: enabled,
+          child: Column(
+            children: [
+              _RuleSlider(
+                label: context.l10n.weeklyReviewValuesLookbackLabel,
+                value: weeks,
+                min: 1,
+                max: 12,
+                valueLabel: context.l10n.weeksCountLabel(weeks),
+                onCommit: (value) {
+                  context.read<GlobalSettingsBloc>().add(
+                    GlobalSettingsEvent.valuesSummaryWindowWeeksChanged(
+                      value,
+                    ),
+                  );
+                },
               ),
-            ),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
+              _RuleSlider(
+                label: context.l10n.weeklyReviewValuesWinsLabel,
+                value: wins,
+                min: 1,
+                max: 5,
+                valueLabel: context.l10n.winsCountLabel(wins),
+                onCommit: (value) {
+                  context.read<GlobalSettingsBloc>().add(
+                    GlobalSettingsEvent.valuesSummaryWinsCountChanged(
+                      value,
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
 
-class _WeeklyReviewMaintenance extends StatelessWidget {
+class _WeeklyReviewMaintenance extends StatefulWidget {
   const _WeeklyReviewMaintenance({required this.settings});
 
   final GlobalSettings settings;
 
   @override
-  Widget build(BuildContext context) {
-    final enabled = settings.maintenanceEnabled;
-    final showDeadlineParams =
-        enabled && settings.maintenanceDeadlineRiskEnabled;
-    final showStaleParams = enabled && settings.maintenanceStaleEnabled;
+  State<_WeeklyReviewMaintenance> createState() =>
+      _WeeklyReviewMaintenanceState();
+}
 
-    return Column(
-      children: [
-        SwitchListTile.adaptive(
-          title: const Text('Maintenance Check'),
-          subtitle: const Text('Optional prompts to keep things on track.'),
+class _WeeklyReviewMaintenanceState extends State<_WeeklyReviewMaintenance> {
+  bool _isExpanded = false;
+  bool _deadlineExpanded = false;
+  bool _staleExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = widget.settings;
+    final tokens = TasklyTokens.of(context);
+    final enabled = settings.maintenanceEnabled;
+    final summary = enabled
+        ? _maintenanceSummary(context, settings)
+        : context.l10n.offLabel;
+
+    return _SettingsSectionPadding(
+      child: TasklySettingsCard(
+        title: context.l10n.weeklyReviewMaintenanceTitle,
+        subtitle: context.l10n.weeklyReviewMaintenanceSubtitle,
+        summary: summary,
+        trailing: Switch.adaptive(
           value: enabled,
           onChanged: (value) {
             context.read<GlobalSettingsBloc>().add(
@@ -377,164 +385,308 @@ class _WeeklyReviewMaintenance extends StatelessWidget {
             );
           },
         ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            TasklyTokens.of(context).spaceLg,
-            0,
-            TasklyTokens.of(context).spaceLg,
-            0,
-          ),
-          child: Opacity(
-            opacity: enabled ? 1 : 0.5,
-            child: IgnorePointer(
-              ignoring: !enabled,
-              child: Column(
-                children: [
-                  SwitchListTile.adaptive(
-                    title: const Text('Deadline risk'),
-                    value: settings.maintenanceDeadlineRiskEnabled,
-                    onChanged: (value) {
-                      context.read<GlobalSettingsBloc>().add(
-                        GlobalSettingsEvent.maintenanceDeadlineRiskChanged(
-                          value,
-                        ),
-                      );
-                    },
-                  ),
-                  if (showDeadlineParams)
-                    _RuleParamsSection(
-                      children: [
-                        _RuleSlider(
-                          label: 'Due within',
-                          value: settings.maintenanceDeadlineRiskDueWithinDays,
-                          min: GlobalSettings
-                              .maintenanceDeadlineRiskDueWithinDaysMin,
-                          max: GlobalSettings
-                              .maintenanceDeadlineRiskDueWithinDaysMax,
-                          valueLabel:
-                              '${settings.maintenanceDeadlineRiskDueWithinDays} days',
-                          onCommit: (value) {
-                            context.read<GlobalSettingsBloc>().add(
-                              GlobalSettingsEvent.maintenanceDeadlineRiskDueWithinDaysChanged(
-                                value,
-                              ),
-                            );
-                          },
-                        ),
-                        SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        _RuleSlider(
-                          label: 'Unscheduled tasks',
-                          value: settings
-                              .maintenanceDeadlineRiskMinUnscheduledCount,
-                          min: GlobalSettings
-                              .maintenanceDeadlineRiskMinUnscheduledCountMin,
-                          max: GlobalSettings
-                              .maintenanceDeadlineRiskMinUnscheduledCountMax,
-                          valueLabel:
-                              '${settings.maintenanceDeadlineRiskMinUnscheduledCount} tasks',
-                          onCommit: (value) {
-                            context.read<GlobalSettingsBloc>().add(
-                              GlobalSettingsEvent.maintenanceDeadlineRiskMinUnscheduledCountChanged(
-                                value,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+        isExpanded: _isExpanded,
+        onExpandedChanged: (next) => setState(() => _isExpanded = next),
+        child: _SettingsCardBody(
+          enabled: enabled,
+          child: Column(
+            children: [
+              _RuleCard(
+                title: context.l10n.weeklyReviewDeadlineRiskTitle,
+                summary: settings.maintenanceDeadlineRiskEnabled
+                    ? _deadlineSummary(context, settings)
+                    : context.l10n.offLabel,
+                enabled: settings.maintenanceDeadlineRiskEnabled,
+                isExpanded: _deadlineExpanded,
+                onExpandedChanged: (next) =>
+                    setState(() => _deadlineExpanded = next),
+                onEnabledChanged: (value) {
+                  context.read<GlobalSettingsBloc>().add(
+                    GlobalSettingsEvent.maintenanceDeadlineRiskChanged(
+                      value,
                     ),
-                  SwitchListTile.adaptive(
-                    title: const Text('Due soon (under control)'),
-                    value: settings.maintenanceDueSoonEnabled,
-                    onChanged: (value) {
-                      context.read<GlobalSettingsBloc>().add(
-                        GlobalSettingsEvent.maintenanceDueSoonChanged(value),
-                      );
-                    },
-                  ),
-                  SwitchListTile.adaptive(
-                    title: const Text('Stale tasks & projects'),
-                    value: settings.maintenanceStaleEnabled,
-                    onChanged: (value) {
-                      context.read<GlobalSettingsBloc>().add(
-                        GlobalSettingsEvent.maintenanceStaleChanged(value),
-                      );
-                    },
-                  ),
-                  if (showStaleParams)
-                    _RuleParamsSection(
-                      children: [
-                        _RuleSlider(
-                          label: 'Task stale after',
-                          value: settings.maintenanceTaskStaleThresholdDays,
-                          min: GlobalSettings.maintenanceStaleThresholdDaysMin,
-                          max: GlobalSettings.maintenanceStaleThresholdDaysMax,
-                          valueLabel:
-                              '${settings.maintenanceTaskStaleThresholdDays} days',
-                          onCommit: (value) {
-                            context.read<GlobalSettingsBloc>().add(
-                              GlobalSettingsEvent.maintenanceTaskStaleThresholdDaysChanged(
-                                value,
-                              ),
-                            );
-                          },
-                        ),
-                        SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        _RuleSlider(
-                          label: 'Project idle after',
-                          value: settings.maintenanceProjectIdleThresholdDays,
-                          min: GlobalSettings.maintenanceStaleThresholdDaysMin,
-                          max: GlobalSettings.maintenanceStaleThresholdDaysMax,
-                          valueLabel:
-                              '${settings.maintenanceProjectIdleThresholdDays} days',
-                          onCommit: (value) {
-                            context.read<GlobalSettingsBloc>().add(
-                              GlobalSettingsEvent.maintenanceProjectIdleThresholdDaysChanged(
-                                value,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                  );
+                },
+                child: Column(
+                  children: [
+                    _RuleSlider(
+                      label: context.l10n.weeklyReviewDueWithinLabel,
+                      value: settings.maintenanceDeadlineRiskDueWithinDays,
+                      min: GlobalSettings
+                          .maintenanceDeadlineRiskDueWithinDaysMin,
+                      max: GlobalSettings
+                          .maintenanceDeadlineRiskDueWithinDaysMax,
+                      valueLabel: context.l10n.daysCountLabel(
+                        settings.maintenanceDeadlineRiskDueWithinDays,
+                      ),
+                      onCommit: (value) {
+                        context.read<GlobalSettingsBloc>().add(
+                          GlobalSettingsEvent.maintenanceDeadlineRiskDueWithinDaysChanged(
+                            value,
+                          ),
+                        );
+                      },
                     ),
-                  SwitchListTile.adaptive(
-                    title: const Text('Frequently snoozed tasks'),
-                    value: settings.maintenanceFrequentSnoozedEnabled,
-                    onChanged: (value) {
-                      context.read<GlobalSettingsBloc>().add(
-                        GlobalSettingsEvent.maintenanceFrequentSnoozedChanged(
-                          value,
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                    SizedBox(height: tokens.spaceSm),
+                    _RuleSlider(
+                      label: context.l10n.weeklyReviewUnscheduledTasksLabel,
+                      value:
+                          settings.maintenanceDeadlineRiskMinUnscheduledCount,
+                      min: GlobalSettings
+                          .maintenanceDeadlineRiskMinUnscheduledCountMin,
+                      max: GlobalSettings
+                          .maintenanceDeadlineRiskMinUnscheduledCountMax,
+                      valueLabel: context.l10n.tasksCountLabel(
+                        settings.maintenanceDeadlineRiskMinUnscheduledCount,
+                      ),
+                      onCommit: (value) {
+                        context.read<GlobalSettingsBloc>().add(
+                          GlobalSettingsEvent.maintenanceDeadlineRiskMinUnscheduledCountChanged(
+                            value,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
+              SizedBox(height: tokens.spaceSm),
+              _RuleCard(
+                title: context.l10n.weeklyReviewStaleTitle,
+                summary: settings.maintenanceStaleEnabled
+                    ? _staleSummary(context, settings)
+                    : context.l10n.offLabel,
+                enabled: settings.maintenanceStaleEnabled,
+                isExpanded: _staleExpanded,
+                onExpandedChanged: (next) =>
+                    setState(() => _staleExpanded = next),
+                onEnabledChanged: (value) {
+                  context.read<GlobalSettingsBloc>().add(
+                    GlobalSettingsEvent.maintenanceStaleChanged(value),
+                  );
+                },
+                child: Column(
+                  children: [
+                    _RuleSlider(
+                      label: context.l10n.weeklyReviewTaskStaleAfterLabel,
+                      value: settings.maintenanceTaskStaleThresholdDays,
+                      min: GlobalSettings.maintenanceStaleThresholdDaysMin,
+                      max: GlobalSettings.maintenanceStaleThresholdDaysMax,
+                      valueLabel: context.l10n.daysCountLabel(
+                        settings.maintenanceTaskStaleThresholdDays,
+                      ),
+                      onCommit: (value) {
+                        context.read<GlobalSettingsBloc>().add(
+                          GlobalSettingsEvent.maintenanceTaskStaleThresholdDaysChanged(
+                            value,
+                          ),
+                        );
+                      },
+                    ),
+                    SizedBox(height: tokens.spaceSm),
+                    _RuleSlider(
+                      label: context.l10n.weeklyReviewProjectIdleAfterLabel,
+                      value: settings.maintenanceProjectIdleThresholdDays,
+                      min: GlobalSettings.maintenanceStaleThresholdDaysMin,
+                      max: GlobalSettings.maintenanceStaleThresholdDaysMax,
+                      valueLabel: context.l10n.daysCountLabel(
+                        settings.maintenanceProjectIdleThresholdDays,
+                      ),
+                      onCommit: (value) {
+                        context.read<GlobalSettingsBloc>().add(
+                          GlobalSettingsEvent.maintenanceProjectIdleThresholdDaysChanged(
+                            value,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: tokens.spaceSm),
+              _RuleCard(
+                title: context.l10n.weeklyReviewFrequentSnoozedTitle,
+                summary: settings.maintenanceFrequentSnoozedEnabled
+                    ? context.l10n.onLabel
+                    : context.l10n.offLabel,
+                enabled: settings.maintenanceFrequentSnoozedEnabled,
+                onEnabledChanged: (value) {
+                  context.read<GlobalSettingsBloc>().add(
+                    GlobalSettingsEvent.maintenanceFrequentSnoozedChanged(
+                      value,
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
-      ],
+      ),
+    );
+  }
+
+  String _maintenanceSummary(BuildContext context, GlobalSettings settings) {
+    final labels = <String>[];
+    if (settings.maintenanceDeadlineRiskEnabled) {
+      labels.add(context.l10n.weeklyReviewDeadlineRiskTitle);
+    }
+    if (settings.maintenanceStaleEnabled) {
+      labels.add(context.l10n.weeklyReviewStaleItemsLabel);
+    }
+    if (settings.maintenanceFrequentSnoozedEnabled) {
+      labels.add(context.l10n.weeklyReviewFrequentSnoozesLabel);
+    }
+    if (labels.isEmpty) {
+      return context.l10n.weeklyReviewNoChecksEnabled;
+    }
+    if (labels.length <= 2) {
+      return labels.join(' - ');
+    }
+    final preview = labels.take(2).join(' - ');
+    return '$preview ${context.l10n.moreCountLabel(labels.length - 2)}';
+  }
+
+  String _deadlineSummary(BuildContext context, GlobalSettings settings) {
+    final dueWithin = settings.maintenanceDeadlineRiskDueWithinDays;
+    final unscheduled = settings.maintenanceDeadlineRiskMinUnscheduledCount;
+    return context.l10n.weeklyReviewDeadlineRiskSummary(
+      dueWithin,
+      unscheduled,
+    );
+  }
+
+  String _staleSummary(BuildContext context, GlobalSettings settings) {
+    final taskDays = settings.maintenanceTaskStaleThresholdDays;
+    final projectDays = settings.maintenanceProjectIdleThresholdDays;
+    return context.l10n.weeklyReviewStaleSummary(taskDays, projectDays);
+  }
+}
+
+class _SettingsSectionPadding extends StatelessWidget {
+  const _SettingsSectionPadding({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spaceLg,
+        tokens.spaceSm,
+        tokens.spaceLg,
+        0,
+      ),
+      child: child,
     );
   }
 }
 
-class _RuleParamsSection extends StatelessWidget {
-  const _RuleParamsSection({required this.children});
+class _SettingsCardBody extends StatelessWidget {
+  const _SettingsCardBody({required this.enabled, required this.child});
 
-  final List<Widget> children;
+  final bool enabled;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        TasklyTokens.of(context).spaceLg,
-        0,
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceSm,
+    return Opacity(
+      opacity: enabled ? 1 : 0.5,
+      child: IgnorePointer(
+        ignoring: !enabled,
+        child: child,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
+    );
+  }
+}
+
+class _SettingsNavigationRow extends StatelessWidget {
+  const _SettingsNavigationRow({
+    required this.title,
+    required this.value,
+    required this.onTap,
+    required this.enabled,
+  });
+
+  final String title;
+  final String value;
+  final VoidCallback onTap;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final textTheme = Theme.of(context).textTheme;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(tokens.radiusMd),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spaceSm,
+          vertical: tokens.spaceSm,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: textTheme.titleSmall),
+                  SizedBox(height: tokens.spaceXs2),
+                  Text(
+                    value,
+                    style: textTheme.bodySmall?.copyWith(color: muted),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: muted,
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _RuleCard extends StatelessWidget {
+  const _RuleCard({
+    required this.title,
+    required this.summary,
+    required this.enabled,
+    required this.onEnabledChanged,
+    this.isExpanded = false,
+    this.onExpandedChanged,
+    this.child,
+  });
+
+  final String title;
+  final String summary;
+  final bool enabled;
+  final ValueChanged<bool> onEnabledChanged;
+  final bool isExpanded;
+  final ValueChanged<bool>? onExpandedChanged;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TasklySettingsCard(
+      title: title,
+      summary: summary,
+      trailing: Switch.adaptive(
+        value: enabled,
+        onChanged: onEnabledChanged,
+      ),
+      density: TasklySettingsCardDensity.compact,
+      isExpanded: isExpanded,
+      onExpandedChanged: child == null ? null : onExpandedChanged,
+      child: child == null
+          ? null
+          : _SettingsCardBody(enabled: enabled, child: child!),
     );
   }
 }
@@ -569,12 +721,12 @@ class _RuleSlider extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.titleSmall,
             ),
           ),
           Text(
             valueLabel,
-            style: Theme.of(context).textTheme.titleMedium,
+            style: Theme.of(context).textTheme.titleSmall,
           ),
         ],
       ),

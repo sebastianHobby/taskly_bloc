@@ -148,22 +148,29 @@ class JournalRepositoryImpl
             );
 
         if (updated == 0) {
-          await _database
-              .into(_database.journalEntries)
-              .insert(
-                JournalEntriesCompanion(
-                  id: Value(entryId),
-                  entryDate: Value(entry.entryDate),
-                  entryTime: Value(entry.entryTime),
-                  occurredAt: Value(entry.occurredAt),
-                  localDate: Value(entry.localDate),
-                  journalText: Value(entry.journalText),
-                  createdAt: Value(entry.createdAt),
-                  updatedAt: Value(entry.updatedAt),
-                  deletedAt: Value(entry.deletedAt),
-                ),
-                mode: InsertMode.insertOrAbort,
-              );
+          final existing =
+              await (_database.selectOnly(_database.journalEntries)
+                    ..addColumns([_database.journalEntries.id])
+                    ..where(_database.journalEntries.id.equals(entryId)))
+                  .getSingleOrNull();
+          if (existing == null) {
+            await _database
+                .into(_database.journalEntries)
+                .insert(
+                  JournalEntriesCompanion(
+                    id: Value(entryId),
+                    entryDate: Value(entry.entryDate),
+                    entryTime: Value(entry.entryTime),
+                    occurredAt: Value(entry.occurredAt),
+                    localDate: Value(entry.localDate),
+                    journalText: Value(entry.journalText),
+                    createdAt: Value(entry.createdAt),
+                    updatedAt: Value(entry.updatedAt),
+                    deletedAt: Value(entry.deletedAt),
+                  ),
+                  mode: InsertMode.insertOrAbort,
+                );
+          }
         }
 
         return entryId;
@@ -307,39 +314,46 @@ class JournalRepositoryImpl
             );
 
         if (updated == 0) {
-          await _database
-              .into(_database.trackerDefinitions)
-              .insert(
-                TrackerDefinitionsCompanion(
-                  id: Value(id),
-                  name: Value(definition.name),
-                  description: Value(definition.description),
-                  groupId: Value(definition.groupId),
-                  scope: Value(definition.scope),
-                  roles: Value(jsonEncode(definition.roles)),
-                  valueType: Value(definition.valueType),
-                  config: Value(jsonEncode(definition.config)),
-                  goal: Value(jsonEncode(definition.goal)),
-                  isActive: Value(definition.isActive),
-                  sortOrder: Value(definition.sortOrder),
-                  createdAt: Value(definition.createdAt),
-                  updatedAt: Value(definition.updatedAt),
-                  deletedAt: Value(definition.deletedAt),
-                  source: Value(definition.source),
-                  systemKey: Value(definition.systemKey),
-                  opKind: Value(definition.opKind),
-                  valueKind: Value(definition.valueKind),
-                  unitKind: Value(definition.unitKind),
-                  minInt: Value(definition.minInt),
-                  maxInt: Value(definition.maxInt),
-                  stepInt: Value(definition.stepInt),
-                  linkedValueId: Value(definition.linkedValueId),
-                  isOutcome: Value(definition.isOutcome),
-                  isInsightEnabled: Value(definition.isInsightEnabled),
-                  higherIsBetter: Value(definition.higherIsBetter),
-                ),
-                mode: InsertMode.insertOrAbort,
-              );
+          final existing =
+              await (_database.selectOnly(_database.trackerDefinitions)
+                    ..addColumns([_database.trackerDefinitions.id])
+                    ..where(_database.trackerDefinitions.id.equals(id)))
+                  .getSingleOrNull();
+          if (existing == null) {
+            await _database
+                .into(_database.trackerDefinitions)
+                .insert(
+                  TrackerDefinitionsCompanion(
+                    id: Value(id),
+                    name: Value(definition.name),
+                    description: Value(definition.description),
+                    groupId: Value(definition.groupId),
+                    scope: Value(definition.scope),
+                    roles: Value(jsonEncode(definition.roles)),
+                    valueType: Value(definition.valueType),
+                    config: Value(jsonEncode(definition.config)),
+                    goal: Value(jsonEncode(definition.goal)),
+                    isActive: Value(definition.isActive),
+                    sortOrder: Value(definition.sortOrder),
+                    createdAt: Value(definition.createdAt),
+                    updatedAt: Value(definition.updatedAt),
+                    deletedAt: Value(definition.deletedAt),
+                    source: Value(definition.source),
+                    systemKey: Value(definition.systemKey),
+                    opKind: Value(definition.opKind),
+                    valueKind: Value(definition.valueKind),
+                    unitKind: Value(definition.unitKind),
+                    minInt: Value(definition.minInt),
+                    maxInt: Value(definition.maxInt),
+                    stepInt: Value(definition.stepInt),
+                    linkedValueId: Value(definition.linkedValueId),
+                    isOutcome: Value(definition.isOutcome),
+                    isInsightEnabled: Value(definition.isInsightEnabled),
+                    higherIsBetter: Value(definition.higherIsBetter),
+                  ),
+                  mode: InsertMode.insertOrAbort,
+                );
+          }
         }
       },
       area: 'data.journal',
@@ -371,19 +385,26 @@ class JournalRepositoryImpl
             );
 
         if (updated == 0) {
-          await _database
-              .into(_database.trackerGroups)
-              .insert(
-                TrackerGroupsCompanion(
-                  id: Value(id),
-                  name: Value(group.name),
-                  sortOrder: Value(group.sortOrder),
-                  isActive: Value(group.isActive),
-                  createdAt: Value(group.createdAt),
-                  updatedAt: Value(group.updatedAt),
-                ),
-                mode: InsertMode.insertOrAbort,
-              );
+          final existing =
+              await (_database.selectOnly(_database.trackerGroups)
+                    ..addColumns([_database.trackerGroups.id])
+                    ..where(_database.trackerGroups.id.equals(id)))
+                  .getSingleOrNull();
+          if (existing == null) {
+            await _database
+                .into(_database.trackerGroups)
+                .insert(
+                  TrackerGroupsCompanion(
+                    id: Value(id),
+                    name: Value(group.name),
+                    sortOrder: Value(group.sortOrder),
+                    isActive: Value(group.isActive),
+                    createdAt: Value(group.createdAt),
+                    updatedAt: Value(group.updatedAt),
+                  ),
+                  mode: InsertMode.insertOrAbort,
+                );
+          }
         }
       },
       area: 'data.journal',
@@ -447,22 +468,29 @@ class JournalRepositoryImpl
             );
 
         if (updated == 0) {
-          await _database
-              .into(_database.trackerPreferences)
-              .insert(
-                TrackerPreferencesCompanion(
-                  id: Value(id),
-                  trackerId: Value(preference.trackerId),
-                  isActive: Value(preference.isActive),
-                  sortOrder: Value(preference.sortOrder),
-                  pinned: Value(preference.pinned),
-                  showInQuickAdd: Value(preference.showInQuickAdd),
-                  color: Value(preference.color),
-                  createdAt: Value(preference.createdAt),
-                  updatedAt: Value(preference.updatedAt),
-                ),
-                mode: InsertMode.insertOrAbort,
-              );
+          final existing =
+              await (_database.selectOnly(_database.trackerPreferences)
+                    ..addColumns([_database.trackerPreferences.id])
+                    ..where(_database.trackerPreferences.id.equals(id)))
+                  .getSingleOrNull();
+          if (existing == null) {
+            await _database
+                .into(_database.trackerPreferences)
+                .insert(
+                  TrackerPreferencesCompanion(
+                    id: Value(id),
+                    trackerId: Value(preference.trackerId),
+                    isActive: Value(preference.isActive),
+                    sortOrder: Value(preference.sortOrder),
+                    pinned: Value(preference.pinned),
+                    showInQuickAdd: Value(preference.showInQuickAdd),
+                    color: Value(preference.color),
+                    createdAt: Value(preference.createdAt),
+                    updatedAt: Value(preference.updatedAt),
+                  ),
+                  mode: InsertMode.insertOrAbort,
+                );
+          }
         }
       },
       area: 'data.journal',
@@ -501,21 +529,28 @@ class JournalRepositoryImpl
             );
 
         if (updated == 0) {
-          await _database
-              .into(_database.trackerDefinitionChoices)
-              .insert(
-                TrackerDefinitionChoicesCompanion(
-                  id: Value(id),
-                  trackerId: Value(choice.trackerId),
-                  choiceKey: Value(choice.choiceKey),
-                  label: Value(choice.label),
-                  sortOrder: Value(choice.sortOrder),
-                  isActive: Value(choice.isActive),
-                  createdAt: Value(choice.createdAt),
-                  updatedAt: Value(choice.updatedAt),
-                ),
-                mode: InsertMode.insertOrAbort,
-              );
+          final existing =
+              await (_database.selectOnly(_database.trackerDefinitionChoices)
+                    ..addColumns([_database.trackerDefinitionChoices.id])
+                    ..where(_database.trackerDefinitionChoices.id.equals(id)))
+                  .getSingleOrNull();
+          if (existing == null) {
+            await _database
+                .into(_database.trackerDefinitionChoices)
+                .insert(
+                  TrackerDefinitionChoicesCompanion(
+                    id: Value(id),
+                    trackerId: Value(choice.trackerId),
+                    choiceKey: Value(choice.choiceKey),
+                    label: Value(choice.label),
+                    sortOrder: Value(choice.sortOrder),
+                    isActive: Value(choice.isActive),
+                    createdAt: Value(choice.createdAt),
+                    updatedAt: Value(choice.updatedAt),
+                  ),
+                  mode: InsertMode.insertOrAbort,
+                );
+          }
         }
       },
       area: 'data.journal',

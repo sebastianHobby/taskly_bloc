@@ -64,7 +64,9 @@ void main() {
       await repo.upsertJournalEntry(entry2);
 
       final results = await repo
-          .watchJournalEntriesByQuery(JournalQuery.byId('e2'))
+          .watchJournalEntriesByQuery(
+            const JournalQuery().addPredicate(JournalIdPredicate(id: 'e2')),
+          )
           .first;
       expect(results.length, equals(1));
       expect(results.single.id, equals('e2'));

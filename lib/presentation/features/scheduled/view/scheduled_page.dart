@@ -20,10 +20,8 @@ import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_se
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
-import 'package:taskly_bloc/presentation/shared/widgets/display_density_toggle.dart';
-import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/reschedule_picker.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_domain/analytics.dart';
@@ -42,10 +40,6 @@ class ScheduledPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompactScreen = Breakpoints.isCompact(
-      MediaQuery.sizeOf(context).width,
-    );
-
     return MultiBlocProvider(
       providers: [
         BlocProvider(
@@ -69,9 +63,7 @@ class ScheduledPage extends StatelessWidget {
           create: (context) => DisplayDensityBloc(
             settingsRepository: context.read<SettingsRepositoryContract>(),
             pageKey: PageKey.scheduled,
-            defaultDensity: isCompactScreen
-                ? DisplayDensity.compact
-                : DisplayDensity.standard,
+            defaultDensity: DisplayDensity.compact,
           )..add(const DisplayDensityStarted()),
         ),
         BlocProvider(create: (_) => SelectionBloc()),
@@ -82,8 +74,8 @@ class ScheduledPage extends StatelessWidget {
 }
 
 enum _ScheduledMenuAction {
+  density,
   selectMultiple,
-  viewOptions,
 }
 
 class _ScheduledTimelineView extends StatefulWidget {
@@ -184,7 +176,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
       initialDate: safeInitial,
       firstDate: today,
       lastDate: lastDate,
-      helpText: 'Jump to date',
+      helpText: context.l10n.scheduledJumpToDate,
     );
 
     if (picked == null || !mounted) return;
@@ -196,29 +188,13 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     );
   }
 
-  Future<void> _showViewOptionsSheet(DisplayDensity density) async {
-    await showFilterSortSheet(
+  Future<void> _showDensitySheet(DisplayDensity density) async {
+    await showDisplayDensitySheet(
       context: context,
-      title: 'View options',
-      sections: [
-        FilterSortSection(
-          title: 'View',
-          child: Builder(
-            builder: (sheetContext) {
-              return DisplayDensityToggle(
-                density: density,
-                onChanged: (next) {
-                  if (next == density) return;
-                  context.read<DisplayDensityBloc>().add(
-                    DisplayDensitySet(next),
-                  );
-                  Navigator.of(sheetContext).pop();
-                },
-              );
-            },
-          ),
-        ),
-      ],
+      density: density,
+      onChanged: (next) {
+        context.read<DisplayDensityBloc>().add(DisplayDensitySet(next));
+      },
     );
   }
 
@@ -263,15 +239,18 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
 
                 final parts = <String>[];
                 if (taskCount > 0) {
-                  parts.add(taskCount == 1 ? '1 task' : '$taskCount tasks');
+                  parts.add(context.l10n.tasksCountLabel(taskCount));
                 }
                 if (projectCount > 0) {
-                  parts.add(
-                    projectCount == 1 ? '1 project' : '$projectCount projects',
-                  );
+                  parts.add(context.l10n.projectsCountLabel(projectCount));
                 }
-                final label = parts.isEmpty ? '0 items' : parts.join(' + ');
-                final message = 'Rescheduled $label to $formatted';
+                final label = parts.isEmpty
+                    ? context.l10n.itemsCountLabel(0)
+                    : parts.join(' + ');
+                final message = context.l10n.scheduledRescheduledMessage(
+                  label,
+                  formatted,
+                );
                 ScaffoldMessenger.of(
                   context,
                 ).showSnackBar(SnackBar(content: Text(message)));
@@ -344,44 +323,50 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                     icon: Icons.calendar_month_rounded,
                     onPressed: null,
                   ),
-                    TasklyOverflowMenuButton<_ScheduledMenuAction>(
-                      tooltip: 'More',
-                      icon: Icons.more_vert,
-                      style: IconButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(
+                  TasklyOverflowMenuButton<_ScheduledMenuAction>(
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).moreButtonTooltip,
+                    icon: Icons.more_vert,
+                    style: IconButton.styleFrom(
+                      backgroundColor:
+                          Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest.withValues(
+                            alpha: TasklyTokens.of(
                               context,
-                            ).colorScheme.surfaceContainerHighest.withValues(
-                              alpha: TasklyTokens.of(
-                                context,
-                              ).iconButtonBackgroundAlpha,
-                            ),
-                        foregroundColor: Theme.of(context).colorScheme.onSurface,
-                        shape: const CircleBorder(),
-                        minimumSize: Size.square(
-                          TasklyTokens.of(context).iconButtonMinSize,
-                        ),
-                        padding: TasklyTokens.of(context).iconButtonPadding,
+                            ).iconButtonBackgroundAlpha,
+                          ),
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
+                      shape: const CircleBorder(),
+                      minimumSize: Size.square(
+                        TasklyTokens.of(context).iconButtonMinSize,
                       ),
-                      itemsBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: _ScheduledMenuAction.viewOptions,
-                          child: TasklyMenuItemLabel('View options'),
-                        ),
-                        const PopupMenuItem(
-                          value: _ScheduledMenuAction.selectMultiple,
-                          child: TasklyMenuItemLabel('Select multiple'),
-                        ),
-                      ],
-                      onSelected: (action) {
-                        switch (action) {
-                          case _ScheduledMenuAction.viewOptions:
-                            _showViewOptionsSheet(density);
-                          case _ScheduledMenuAction.selectMultiple:
-                            context.read<SelectionBloc>().enterSelectionMode();
-                        }
-                      },
+                      padding: TasklyTokens.of(context).iconButtonPadding,
                     ),
+                    itemsBuilder: (context) => [
+                      PopupMenuItem(
+                        value: _ScheduledMenuAction.density,
+                        child: TasklyMenuItemLabel(
+                          context.l10n.displayDensityTitle,
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: _ScheduledMenuAction.selectMultiple,
+                        child: TasklyMenuItemLabel(
+                          context.l10n.selectMultipleLabel,
+                        ),
+                      ),
+                    ],
+                    onSelected: (action) {
+                      switch (action) {
+                        case _ScheduledMenuAction.density:
+                          _showDensitySheet(density);
+                        case _ScheduledMenuAction.selectMultiple:
+                          context.read<SelectionBloc>().enterSelectionMode();
+                      }
+                    },
+                  ),
                 ],
               ),
               floatingActionButton: _buildAddSpeedDial(_fallbackTodayLocal()),
@@ -406,44 +391,50 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                     icon: Icons.calendar_month_rounded,
                     onPressed: null,
                   ),
-                    TasklyOverflowMenuButton<_ScheduledMenuAction>(
-                      tooltip: 'More',
-                      icon: Icons.more_vert,
-                      style: IconButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(
+                  TasklyOverflowMenuButton<_ScheduledMenuAction>(
+                    tooltip: MaterialLocalizations.of(
+                      context,
+                    ).moreButtonTooltip,
+                    icon: Icons.more_vert,
+                    style: IconButton.styleFrom(
+                      backgroundColor:
+                          Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest.withValues(
+                            alpha: TasklyTokens.of(
                               context,
-                            ).colorScheme.surfaceContainerHighest.withValues(
-                              alpha: TasklyTokens.of(
-                                context,
-                              ).iconButtonBackgroundAlpha,
-                            ),
-                        foregroundColor: Theme.of(context).colorScheme.onSurface,
-                        shape: const CircleBorder(),
-                        minimumSize: Size.square(
-                          TasklyTokens.of(context).iconButtonMinSize,
-                        ),
-                        padding: TasklyTokens.of(context).iconButtonPadding,
+                            ).iconButtonBackgroundAlpha,
+                          ),
+                      foregroundColor: Theme.of(context).colorScheme.onSurface,
+                      shape: const CircleBorder(),
+                      minimumSize: Size.square(
+                        TasklyTokens.of(context).iconButtonMinSize,
                       ),
-                      itemsBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: _ScheduledMenuAction.viewOptions,
-                          child: TasklyMenuItemLabel('View options'),
-                        ),
-                        const PopupMenuItem(
-                          value: _ScheduledMenuAction.selectMultiple,
-                          child: TasklyMenuItemLabel('Select multiple'),
-                        ),
-                      ],
-                      onSelected: (action) {
-                        switch (action) {
-                          case _ScheduledMenuAction.viewOptions:
-                            _showViewOptionsSheet(density);
-                          case _ScheduledMenuAction.selectMultiple:
-                            context.read<SelectionBloc>().enterSelectionMode();
-                        }
-                      },
+                      padding: TasklyTokens.of(context).iconButtonPadding,
                     ),
+                    itemsBuilder: (context) => [
+                      PopupMenuItem(
+                        value: _ScheduledMenuAction.density,
+                        child: TasklyMenuItemLabel(
+                          context.l10n.displayDensityTitle,
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: _ScheduledMenuAction.selectMultiple,
+                        child: TasklyMenuItemLabel(
+                          context.l10n.selectMultipleLabel,
+                        ),
+                      ),
+                    ],
+                    onSelected: (action) {
+                      switch (action) {
+                        case _ScheduledMenuAction.density:
+                          _showDensitySheet(density);
+                        case _ScheduledMenuAction.selectMultiple:
+                          context.read<SelectionBloc>().enterSelectionMode();
+                      }
+                    },
+                  ),
                 ],
               ),
               floatingActionButton: _buildAddSpeedDial(_fallbackTodayLocal()),
@@ -454,7 +445,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                     child: TasklyFeedRenderer(
                       spec: TasklyFeedSpec.error(
                         message: message,
-                        retryLabel: 'Retry',
+                        retryLabel: context.l10n.retryButton,
                         onRetry: () =>
                             context.read<ScheduledTimelineBloc>().add(
                               const ScheduledTimelineStarted(),
@@ -598,17 +589,18 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
             )
             .whereType<TasklyRowSpec>()
             .toList(growable: false);
-        final overdueCountLabel = overdueRows.isEmpty
-            ? '0 tasks'
-            : (overdueRows.length == 1
-                  ? '1 task'
-                  : '${overdueRows.length} tasks');
+        final overdueCountLabel = context.l10n.tasksCountLabel(
+          overdueRows.length,
+        );
 
         final feedTokens = TasklyTokens.of(context);
 
         return Scaffold(
           appBar: selectionState.isSelectionMode
-              ? SelectionAppBar(baseTitle: 'Schedule', onExit: () {})
+              ? SelectionAppBar(
+                  baseTitle: context.l10n.scheduledTitle,
+                  onExit: () {},
+                )
               : AppBar(
                   toolbarHeight: TasklyTokens.of(
                     context,
@@ -624,7 +616,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                       },
                     ),
                     TasklyOverflowMenuButton<_ScheduledMenuAction>(
-                      tooltip: 'More',
+                      tooltip: MaterialLocalizations.of(
+                        context,
+                      ).moreButtonTooltip,
                       icon: Icons.more_vert,
                       style: IconButton.styleFrom(
                         backgroundColor:
@@ -645,19 +639,23 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                         padding: TasklyTokens.of(context).iconButtonPadding,
                       ),
                       itemsBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: _ScheduledMenuAction.viewOptions,
-                          child: TasklyMenuItemLabel('View options'),
+                        PopupMenuItem(
+                          value: _ScheduledMenuAction.density,
+                          child: TasklyMenuItemLabel(
+                            context.l10n.displayDensityTitle,
+                          ),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: _ScheduledMenuAction.selectMultiple,
-                          child: TasklyMenuItemLabel('Select multiple'),
+                          child: TasklyMenuItemLabel(
+                            context.l10n.selectMultipleLabel,
+                          ),
                         ),
                       ],
                       onSelected: (action) {
                         switch (action) {
-                          case _ScheduledMenuAction.viewOptions:
-                            _showViewOptionsSheet(density);
+                          case _ScheduledMenuAction.density:
+                            _showDensitySheet(density);
                           case _ScheduledMenuAction.selectMultiple:
                             context.read<SelectionBloc>().enterSelectionMode();
                         }
@@ -690,7 +688,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                       return TasklyFeedRenderer.buildSection(
                         TasklySectionSpec.scheduledOverdue(
                           id: 'scheduled-overdue',
-                          title: 'Overdue',
+                          title: context.l10n.deadlineOverdue,
                           countLabel: overdueCountLabel,
                           rows: overdueRows,
                           showMoreLabelBuilder: (remaining, total) {
@@ -700,8 +698,11 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                               total,
                             );
                           },
-                          actionLabel: actionEnabled ? 'Reschedule all' : null,
-                          actionTooltip: 'Reschedule overdue items',
+                          emptyLabel: context.l10n.scheduledOverdueEmptyLabel,
+                          actionLabel: actionEnabled
+                              ? context.l10n.rescheduleAllLabel
+                              : null,
+                          actionTooltip: context.l10n.rescheduleOverdueTooltip,
                           onActionPressed:
                               selectionState.isSelectionMode || !actionEnabled
                               ? null
@@ -709,18 +710,19 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                                   final choice =
                                       await showRescheduleChoiceSheet(
                                         context,
-                                        title: 'Reschedule all',
+                                        title: context.l10n.rescheduleAllLabel,
                                         subtitle:
-                                            'Choose a new day for these items.',
+                                            context.l10n.rescheduleAllSubtitle,
                                         dayKeyUtc: today,
                                       );
                                   if (choice == null || !context.mounted) {
                                     return;
                                   }
 
-                                  final helpText = overdueRows.length == 1
-                                      ? 'Reschedule 1 item'
-                                      : 'Reschedule ${overdueRows.length} items';
+                                  final helpText = context.l10n
+                                      .rescheduleItemsHelpText(
+                                        overdueRows.length,
+                                      );
                                   final todayDate = dateOnly(today);
 
                                   final newDeadlineDay = switch (choice) {
@@ -793,12 +795,14 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                       context,
                     ).toLanguageTag();
                     final header = dayIndex == 0
-                        ? 'Today, ${DateFormat('MMM d', locale).format(day)}'
+                        ? context.l10n.scheduledTodayHeader(
+                            DateFormat('MMM d', locale).format(day),
+                          )
                         : DateFormat('EEEE, MMM d', locale).format(day);
                     final count = rows.length;
                     final countLabel = count == 0
                         ? null
-                        : (count == 1 ? '1 task' : '$count tasks');
+                        : context.l10n.tasksCountLabel(count);
 
                     return Padding(
                       key: dayIndex == 0
@@ -878,9 +882,9 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     String? deadlineLabel;
     if (dateOnlyDeadline != null) {
       if (dateOnlyDeadline.isBefore(today)) {
-        deadlineLabel = 'Overdue';
+        deadlineLabel = context.l10n.deadlineOverdue;
       } else if (dateOnlyDeadline.isAtSameMomentAs(today)) {
-        deadlineLabel = 'Due today';
+        deadlineLabel = context.l10n.deadlineFormatDays(0);
       } else {
         deadlineLabel = MaterialLocalizations.of(context).formatMediumDate(
           deadline!,
@@ -951,7 +955,11 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
             'scheduled-task-${task.id}-${occurrence.localDay.toIso8601String()}',
         data: data,
         style: selectionState.isSelectionMode
-            ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
+            ? (density == DisplayDensity.compact
+                  ? TasklyTaskRowStyle.bulkSelectionCompact(
+                      selected: isSelected,
+                    )
+                  : TasklyTaskRowStyle.bulkSelection(selected: isSelected))
             : (density == DisplayDensity.compact
                   ? const TasklyTaskRowStyle.compact()
                   : const TasklyTaskRowStyle.standard()),
@@ -993,7 +1001,11 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
             'scheduled-project-${project.id}-${occurrence.localDay.toIso8601String()}',
         data: data,
         preset: selectionState.isSelectionMode
-            ? TasklyProjectRowPreset.bulkSelection(selected: isSelected)
+            ? (density == DisplayDensity.compact
+                  ? TasklyProjectRowPreset.bulkSelectionCompact(
+                      selected: isSelected,
+                    )
+                  : TasklyProjectRowPreset.bulkSelection(selected: isSelected))
             : (density == DisplayDensity.compact
                   ? const TasklyProjectRowPreset.compact()
                   : const TasklyProjectRowPreset.standard()),
@@ -1052,7 +1064,7 @@ class _ScheduledTitleHeader extends StatelessWidget {
           ),
           SizedBox(width: tokens.spaceSm),
           Text(
-            'Schedule',
+            context.l10n.scheduledTitle,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),

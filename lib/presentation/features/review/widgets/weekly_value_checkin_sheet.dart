@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/review/bloc/weekly_review_cubit.dart';
 import 'package:taskly_bloc/presentation/features/review/widgets/weekly_rating_details_sheet.dart';
 import 'package:taskly_bloc/presentation/features/review/widgets/weekly_rating_radar.dart';
@@ -74,6 +75,9 @@ class WeeklyValueCheckInContent extends StatefulWidget {
     required this.onComplete,
     super.key,
     this.onChartToggle,
+    this.wizardStep,
+    this.wizardTotal,
+    this.onWizardBack,
   });
 
   final String? initialValueId;
@@ -82,13 +86,17 @@ class WeeklyValueCheckInContent extends StatefulWidget {
   final ValueChanged<bool>? onChartToggle;
   final VoidCallback onExit;
   final VoidCallback onComplete;
+  final int? wizardStep;
+  final int? wizardTotal;
+  final VoidCallback? onWizardBack;
 
   @override
   State<WeeklyValueCheckInContent> createState() =>
       _WeeklyValueCheckInContentState();
 }
 
-class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
+class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent>
+    with AutomaticKeepAliveClientMixin {
   final Map<String, int> _draftRatings = <String, int>{};
 
   @override
@@ -105,19 +113,21 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
 
     return SafeArea(
       child: BlocBuilder<WeeklyReviewBloc, WeeklyReviewState>(
         builder: (context, state) {
+          final l10n = context.l10n;
           final summary = state.ratingsSummary;
           if (summary == null || summary.entries.isEmpty) {
             return Padding(
               padding: EdgeInsets.all(tokens.spaceLg),
               child: Center(
                 child: Text(
-                  'No values available for check-in.',
+                  l10n.weeklyReviewNoValuesForCheckIn,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
@@ -145,6 +155,14 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
           );
           final iconData =
               getIconDataFromName(selected.value.iconName) ?? Icons.star;
+          final wizardStep = widget.wizardStep;
+          final wizardTotal = widget.wizardTotal;
+          final wizardLabel = wizardStep == null || wizardTotal == null
+              ? null
+              : l10n.weeklyReviewWizardStepLabel(
+                  wizardStep,
+                  wizardTotal,
+                );
 
           return LayoutBuilder(
             builder: (context, constraints) {
@@ -159,6 +177,9 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
               final chartBoxHeight = baseSize + extraHeight;
 
               return SingleChildScrollView(
+                key: const PageStorageKey<String>(
+                  'weekly_review_checkin_scroll',
+                ),
                 padding: EdgeInsets.fromLTRB(
                   tokens.spaceLg,
                   tokens.spaceSm,
@@ -179,19 +200,23 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
                             entry: selected,
                             windowWeeks: widget.windowWeeks,
                           ),
+                          onWizardBack: widget.onWizardBack,
+                          wizardLabel: wizardLabel,
                         ),
                         SizedBox(height: tokens.spaceSm),
                         Text(
-                          'Step ${stepIndex + 1} of ${entries.length}: '
-                          '${selected.value.name}',
+                          l10n.weeklyReviewStepLabel(
+                            stepIndex + 1,
+                            entries.length,
+                            selected.value.name,
+                          ),
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         SizedBox(height: tokens.spaceXs),
                         Text(
-                          'Use the slider to rate your alignment with each '
-                          'value from 1 to 10.',
+                          l10n.weeklyReviewCheckInInstruction,
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: scheme.onSurfaceVariant),
@@ -202,7 +227,9 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                useRatingWheel ? 'Wheel' : 'Radar',
+                                useRatingWheel
+                                    ? l10n.weeklyReviewChartWheelLabel
+                                    : l10n.weeklyReviewChartRadarLabel,
                                 style: Theme.of(context).textTheme.labelMedium
                                     ?.copyWith(
                                       color: scheme.onSurfaceVariant,
@@ -299,7 +326,7 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
                                   WeeklyReviewValueSelected(previous.value.id),
                                 );
                               },
-                              child: const Text('Back'),
+                              child: Text(context.l10n.backLabel),
                             ),
                             const Spacer(),
                             FilledButton(
@@ -346,7 +373,9 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
                                     const Icon(Icons.arrow_forward),
                                   SizedBox(width: tokens.spaceSm),
                                   Text(
-                                    isLast ? 'Complete Check-in' : 'Next Value',
+                                    isLast
+                                        ? l10n.weeklyReviewCompleteCheckInAction
+                                        : l10n.weeklyReviewNextValueAction,
                                   ),
                                 ],
                               ),
@@ -364,23 +393,50 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent> {
       ),
     );
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
 
 class _TopControlsRow extends StatelessWidget {
   const _TopControlsRow({
     required this.onHistory,
+    this.onWizardBack,
+    this.wizardLabel,
   });
 
   final VoidCallback onHistory;
+  final VoidCallback? onWizardBack;
+  final String? wizardLabel;
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
     return Row(
       children: [
-        const Spacer(),
+        if (onWizardBack == null)
+          SizedBox(width: tokens.iconButtonMinSize)
+        else
+          TextButton(
+            onPressed: onWizardBack,
+            child: Text(context.l10n.backLabel),
+          ),
+        Expanded(
+          child: Center(
+            child: wizardLabel == null
+                ? const SizedBox.shrink()
+                : Text(
+                    wizardLabel!,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+          ),
+        ),
         Container(
           width: tokens.iconButtonMinSize,
           height: tokens.iconButtonMinSize,
@@ -389,7 +445,7 @@ class _TopControlsRow extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            tooltip: 'History',
+            tooltip: context.l10n.historyLabel,
             onPressed: onHistory,
             icon: const Icon(Icons.info_outline, size: 18),
           ),
@@ -418,7 +474,9 @@ class _ValueSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final ratingLabel = rating > 0 ? rating.toString() : '--';
+    final ratingLabel = rating > 0
+        ? rating.toString()
+        : context.l10n.notAvailableShortLabel;
 
     return Container(
       padding: EdgeInsets.all(tokens.spaceMd2),
@@ -457,7 +515,7 @@ class _ValueSummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Selected Value',
+                  context.l10n.weeklyReviewSelectedValueLabel,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: accent,
                     fontWeight: FontWeight.w700,
@@ -510,6 +568,7 @@ class _StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
 
@@ -542,12 +601,12 @@ class _StatsRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           _StatColumn(
-            label: 'Tasks',
+            label: l10n.tasksTitle,
             value: taskCount.toString(),
           ),
           _DividerLine(),
           _StatColumn(
-            label: 'Routines',
+            label: l10n.routinesTitle,
             value: routineCount.toString(),
           ),
           _DividerLine(),
@@ -555,7 +614,7 @@ class _StatsRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'Trend',
+                l10n.trendLabel,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: scheme.onSurfaceVariant,
                   fontWeight: FontWeight.w700,
@@ -568,8 +627,10 @@ class _StatsRow extends StatelessWidget {
                   SizedBox(width: tokens.spaceXxs),
                   Text(
                     trendPercent == null
-                        ? '--'
-                        : '${trendPercent!.abs().round()}%',
+                        ? l10n.notAvailableShortLabel
+                        : l10n.analyticsPercentValue(
+                            trendPercent!.abs().round(),
+                          ),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: trendColor,
                       fontWeight: FontWeight.w700,
@@ -645,6 +706,7 @@ class _RatingSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
     final tokens = TasklyTokens.of(context);
     final clamped = rating <= 0 ? 1 : rating;
@@ -655,7 +717,7 @@ class _RatingSlider extends StatelessWidget {
         Row(
           children: [
             Text(
-              'Rate your alignment',
+              l10n.weeklyReviewRateAlignmentLabel,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                 color: scheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
@@ -685,14 +747,14 @@ class _RatingSlider extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Low',
+              l10n.lowLabel,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: scheme.onSurfaceVariant,
                 fontWeight: FontWeight.w700,
               ),
             ),
             Text(
-              'High',
+              l10n.highLabel,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 color: scheme.onSurfaceVariant,
                 fontWeight: FontWeight.w700,

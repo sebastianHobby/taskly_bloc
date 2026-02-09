@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -80,7 +81,7 @@ class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
               children: [
                 Expanded(
                   child: Text(
-                    'More',
+                    context.l10n.moreLabel,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -96,9 +97,9 @@ class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
             SizedBox(height: tokens.spaceSm),
             TextField(
               onChanged: _handleSearchChanged,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search destinations',
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: context.l10n.searchDestinationsHint,
               ),
             ),
             SizedBox(height: tokens.spaceMd),

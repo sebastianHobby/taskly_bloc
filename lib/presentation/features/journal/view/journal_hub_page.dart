@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_today_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
@@ -65,7 +66,7 @@ class _JournalHubPageState extends State<JournalHubPage> {
       appBar: AppBar(
         actions: [
           IconButton(
-            tooltip: 'History',
+            tooltip: context.l10n.journalHistoryTooltip,
             onPressed: () => Routing.pushScreenKey(
               context,
               'journal_history',
@@ -73,7 +74,7 @@ class _JournalHubPageState extends State<JournalHubPage> {
             icon: const Icon(Icons.search),
           ),
           IconButton(
-            tooltip: 'Manage trackers',
+            tooltip: context.l10n.journalManageTrackersTitle,
             onPressed: () => Routing.pushScreenKey(
               context,
               'journal_manage_trackers',
@@ -99,7 +100,7 @@ class _JournalHubPageState extends State<JournalHubPage> {
           selectedDayLocal: _selectedDay,
         ),
         icon: const Icon(Icons.add),
-        label: const Text('Add entry'),
+        label: Text(context.l10n.journalAddEntry),
       ),
     );
   }

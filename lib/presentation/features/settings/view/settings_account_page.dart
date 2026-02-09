@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
@@ -13,7 +14,7 @@ class SettingsAccountPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Account'),
+        title: Text(context.l10n.accountTitle),
       ),
       body: ResponsiveBody(
         isExpandedLayout: context.isExpandedScreen,
@@ -59,7 +60,7 @@ class _AccountInfo extends StatelessWidget {
             ),
           ),
           title: Text(
-            displayName ?? 'User',
+            displayName ?? context.l10n.userFallbackLabel,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           subtitle: email != null ? Text(email) : null,
@@ -94,9 +95,9 @@ class _SignOutItem extends StatelessWidget {
       listener: (context, state) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Sign out failed. Please try again.'),
+            content: Text(context.l10n.signOutFailedMessage),
             action: SnackBarAction(
-              label: 'Retry',
+              label: context.l10n.retryButton,
               onPressed: () => _performSignOut(context),
             ),
           ),
@@ -110,7 +111,7 @@ class _SignOutItem extends StatelessWidget {
         child: OutlinedButton.icon(
           onPressed: () => _performSignOut(context),
           icon: const Icon(Icons.logout_rounded),
-          label: const Text('Sign Out'),
+          label: Text(context.l10n.signOutLabel),
           style: OutlinedButton.styleFrom(
             foregroundColor: Theme.of(context).colorScheme.error,
           ),
@@ -125,11 +126,11 @@ class _SignOutItem extends StatelessWidget {
 
     final confirmed = await ConfirmationDialog.show(
       context,
-      title: 'Sign Out?',
-      confirmLabel: 'Sign Out',
-      cancelLabel: 'Cancel',
+      title: context.l10n.signOutConfirmTitle,
+      confirmLabel: context.l10n.signOutLabel,
+      cancelLabel: context.l10n.cancelLabel,
       content: Text(
-        "You'll need to sign in again to access your tasks and projects.",
+        context.l10n.signOutConfirmBody,
         textAlign: TextAlign.center,
         style: theme.textTheme.bodyMedium?.copyWith(
           color: colorScheme.onSurfaceVariant,

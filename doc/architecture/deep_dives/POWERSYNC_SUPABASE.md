@@ -49,6 +49,18 @@ See: [../INVARIANTS.md](../INVARIANTS.md#52-sqlite-views-no-local-upsert-against
 
 Use these patterns when writing to tables that are part of the PowerSync schema.
 
+**Rowcount caveat for PowerSync views**
+
+SQLite views can report `0` updated rows even when the update actually applies.
+Do not treat rowcount alone as proof that the write failed.
+
+Recommended safeguards:
+
+- For bulk updates, re-select the target rows and verify the expected fields
+  before throwing or rolling back.
+- For upsert-style updates, if `updated == 0`, check whether the row exists
+  before attempting an insert (avoid unique constraint errors).
+
 **1) Update-then-insert (recommended for “upsert” semantics)**
 
 ```dart

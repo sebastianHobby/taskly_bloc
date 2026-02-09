@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// A form field for selecting task priority (1-4).
@@ -11,7 +12,6 @@ class FormBuilderPriorityPicker extends FormBuilderFieldDecoration<int?> {
     super.validator,
     super.onChanged,
     super.decoration = const InputDecoration(
-      labelText: 'Priority',
       border: InputBorder.none,
       contentPadding: EdgeInsets.zero,
     ),
@@ -19,8 +19,12 @@ class FormBuilderPriorityPicker extends FormBuilderFieldDecoration<int?> {
          builder: (FormFieldState<int?> field) {
            final scheme = Theme.of(field.context).colorScheme;
            final tokens = TasklyTokens.of(field.context);
+           final l10n = field.context.l10n;
+           final effectiveDecoration = decoration.copyWith(
+             labelText: decoration.labelText ?? l10n.priorityLabel,
+           );
            return InputDecorator(
-             decoration: decoration,
+             decoration: effectiveDecoration,
              child: Row(
                children: [
                  _PriorityChip(

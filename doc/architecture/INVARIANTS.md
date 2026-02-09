@@ -388,6 +388,17 @@ Forbidden:
 - Immediate per-keystroke sync is allowed only for local UI state and must not
   trigger global rebuilds or writes.
 
+### 2.1.6 Localization encoding hygiene (strict)
+
+- User-visible strings must come from AppLocalizations/ARB; do not hardcode UI
+  copy in screens or widgets.
+- Localization source files (ARB) must be UTF-8 and kept free of mojibake
+  sequences; always regenerate `lib/l10n/gen/` after translation updates.
+- Any UI change that introduces or modifies user-visible strings must update
+  the corresponding ARB entries and regenerated localization output.
+- When missing or stale localizations are discovered, they must be updated as
+  part of the same change.
+
 ### 2.2 `taskly_ui` shared surface governance (strict)
 
 Changes to `packages/taskly_ui` are governed by shared-surface rules.

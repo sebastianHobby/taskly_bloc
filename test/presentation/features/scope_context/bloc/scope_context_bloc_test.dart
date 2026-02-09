@@ -71,10 +71,20 @@ void main() {
     },
     expect: () => [
       isA<ScopeContextLoaded>()
-          .having((s) => s.title, 'title', 'Alpha')
+          .having(
+            (s) => s.title.kind,
+            'title.kind',
+            ScopeContextTitleKind.project,
+          )
+          .having((s) => s.title.name, 'title.name', 'Alpha')
           .having((s) => s.taskCount, 'taskCount', 0),
       isA<ScopeContextLoaded>()
-          .having((s) => s.title, 'title', 'Alpha')
+          .having(
+            (s) => s.title.kind,
+            'title.kind',
+            ScopeContextTitleKind.project,
+          )
+          .having((s) => s.title.name, 'title.name', 'Alpha')
           .having((s) => s.taskCount, 'taskCount', 3),
     ],
   );
@@ -93,15 +103,30 @@ void main() {
     },
     expect: () => [
       isA<ScopeContextLoaded>()
-          .having((s) => s.title, 'title', 'Purpose')
+          .having(
+            (s) => s.title.kind,
+            'title.kind',
+            ScopeContextTitleKind.value,
+          )
+          .having((s) => s.title.name, 'title.name', 'Purpose')
           .having((s) => s.taskCount, 'taskCount', 0)
           .having((s) => s.projectCount, 'projectCount', 0),
       isA<ScopeContextLoaded>()
-          .having((s) => s.title, 'title', 'Purpose')
+          .having(
+            (s) => s.title.kind,
+            'title.kind',
+            ScopeContextTitleKind.value,
+          )
+          .having((s) => s.title.name, 'title.name', 'Purpose')
           .having((s) => s.taskCount, 'taskCount', 2)
           .having((s) => s.projectCount, 'projectCount', 0),
       isA<ScopeContextLoaded>()
-          .having((s) => s.title, 'title', 'Purpose')
+          .having(
+            (s) => s.title.kind,
+            'title.kind',
+            ScopeContextTitleKind.value,
+          )
+          .having((s) => s.title.name, 'title.name', 'Purpose')
           .having((s) => s.taskCount, 'taskCount', 2)
           .having((s) => s.projectCount, 'projectCount', 5),
     ],

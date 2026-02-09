@@ -206,7 +206,9 @@ void main() {
       () => settingsRepository.watch(SettingsKey.allocation),
     ).thenAnswer((_) => allocationConfigController.stream);
     when(
-      () => allocationOrchestrator.getAllocationSnapshot(),
+      () => allocationOrchestrator.getAllocationSnapshot(
+        context: any(named: 'context'),
+      ),
     ).thenAnswer(
       (_) async => const AllocationResult(
         allocatedTasks: <AllocatedTask>[],
@@ -266,7 +268,9 @@ void main() {
     );
 
     when(
-      () => allocationOrchestrator.getAllocationSnapshot(),
+      () => allocationOrchestrator.getAllocationSnapshot(
+        context: any(named: 'context'),
+      ),
     ).thenAnswer((_) async => allocation);
 
     final picks = my_day.MyDayDayPicks(

@@ -11,6 +11,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../helpers/test_imports.dart';
 import '../../mocks/repository_mocks.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
@@ -72,6 +73,10 @@ void main() {
     debugPrint('[my_day_test] setUpAll');
   });
   setUp(setUpTestEnvironment);
+
+  AppLocalizations l10nFor(WidgetTester tester) {
+    return tester.element(find.byType(MyDayPage)).l10n;
+  }
 
   late MyDaySessionQueryService myDaySessionQueryService;
   late MyDayGateQueryService myDayGateQueryService;
@@ -281,6 +286,7 @@ void main() {
         batchCount: any(named: 'batchCount'),
         nowUtc: any(named: 'nowUtc'),
         routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+        context: any(named: 'context'),
       ),
     ).thenAnswer(
       (_) async => AllocationResult(
@@ -299,6 +305,7 @@ void main() {
         suggestedTaskTarget: any(named: 'suggestedTaskTarget'),
         nowUtc: any(named: 'nowUtc'),
         routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+        context: any(named: 'context'),
       ),
     ).thenAnswer(
       (_) async => AllocationResult(
@@ -312,7 +319,11 @@ void main() {
         excludedTasks: const <ExcludedTask>[],
       ),
     );
-    when(() => allocationOrchestrator.getAllocationSnapshot()).thenAnswer(
+    when(
+      () => allocationOrchestrator.getAllocationSnapshot(
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer(
       (_) async => const AllocationResult(
         allocatedTasks: <AllocatedTask>[],
         reasoning: AllocationReasoning(
@@ -474,6 +485,9 @@ void main() {
         RepositoryProvider<RoutineRepositoryContract>.value(
           value: routineRepository,
         ),
+        RepositoryProvider<ProjectAnchorStateRepositoryContract>.value(
+          value: projectAnchorStateRepository,
+        ),
         RepositoryProvider<TaskWriteService>.value(value: taskWriteService),
         RepositoryProvider<DemoModeService>.value(value: demoModeService),
         RepositoryProvider<DemoDataProvider>.value(value: demoDataProvider),
@@ -534,10 +548,8 @@ void main() {
 
     await pumpMyDay(tester);
 
-    expect(
-      find.text('Preparing a calm list for today...'),
-      findsOneWidget,
-    );
+    final l10n = l10nFor(tester);
+    expect(find.text(l10n.myDayLoadingTitle), findsOneWidget);
 
     completer.complete(
       my_day.MyDayDayPicks(
@@ -579,8 +591,9 @@ void main() {
       await pumpMyDay(tester);
       await tester.pumpForStream();
 
+      final l10n = l10nFor(tester);
       expect(find.byKey(ValueKey('myday-accepted-${task.id}')), findsOneWidget);
-      expect(find.text("Couldn't load your list."), findsNothing);
+      expect(find.text(l10n.myDayLoadFailedTitle), findsNothing);
     },
   );
 

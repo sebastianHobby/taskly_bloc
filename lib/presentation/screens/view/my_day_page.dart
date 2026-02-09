@@ -16,6 +16,7 @@ import 'package:taskly_bloc/presentation/shared/widgets/app_loading_screen.dart'
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
@@ -30,7 +31,6 @@ import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
@@ -47,6 +47,7 @@ import 'package:taskly_ui/taskly_ui_tokens.dart';
 enum _MyDayMode { execute, plan }
 
 enum _MyDayMenuAction {
+  density,
   selectMultiple,
   settings,
 }
@@ -122,16 +123,17 @@ class _MyDayPageState extends State<MyDayPage> {
   }
 
   Future<void> _showFilterSheet(BuildContext context) async {
+    final l10n = context.l10n;
     await showFilterSortSheet(
       context: context,
       sortGroups: [
         FilterSortRadioGroup(
-          title: 'Sort',
+          title: l10n.sortLabel,
           options: [
             for (final order in _MyDayTaskSortOrder.values)
               FilterSortRadioOption(
                 value: order,
-                label: order.label,
+                label: order.label(l10n),
               ),
           ],
           selectedValue: _sortOrder,
@@ -142,7 +144,7 @@ class _MyDayPageState extends State<MyDayPage> {
       ],
       toggles: [
         FilterSortToggle(
-          title: 'Show completed',
+          title: l10n.showCompletedLabel,
           value: _showCompleted,
           onChanged: (_) => _toggleShowCompleted(),
         ),
@@ -150,13 +152,21 @@ class _MyDayPageState extends State<MyDayPage> {
     );
   }
 
+  Future<void> _showDensitySheet(BuildContext context) async {
+    final density = context.read<DisplayDensityBloc>().state.density;
+    await showDisplayDensitySheet(
+      context: context,
+      density: density,
+      onChanged: (next) {
+        context.read<DisplayDensityBloc>().add(DisplayDensitySet(next));
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dayKeyUtc = context.read<HomeDayService>().todayDayKeyUtc();
     final today = dayKeyUtc.toLocal();
-    final isCompactScreen = Breakpoints.isCompact(
-      MediaQuery.sizeOf(context).width,
-    );
 
     return MultiBlocProvider(
       providers: [
@@ -195,9 +205,7 @@ class _MyDayPageState extends State<MyDayPage> {
           create: (context) => DisplayDensityBloc(
             settingsRepository: context.read<SettingsRepositoryContract>(),
             pageKey: PageKey.myDay,
-            defaultDensity: isCompactScreen
-                ? DisplayDensity.compact
-                : DisplayDensity.standard,
+            defaultDensity: DisplayDensity.compact,
           )..add(const DisplayDensityStarted()),
         ),
         BlocProvider(create: (_) => SelectionBloc()),
@@ -243,16 +251,24 @@ class _MyDayPageState extends State<MyDayPage> {
                           toolbarHeight: 56,
                           actions: [
                             IconButton(
-                              tooltip: 'Filter & sort',
+                              tooltip: context.l10n.filterSortTooltip,
                               icon: const Icon(Icons.tune_rounded),
                               onPressed: () => _showFilterSheet(context),
                             ),
                             TasklyOverflowMenuButton<_MyDayMenuAction>(
-                              tooltip: 'More',
+                              tooltip: context.l10n.moreLabel,
                               itemsBuilder: (context) => [
-                                const PopupMenuItem(
+                                PopupMenuItem(
+                                  value: _MyDayMenuAction.density,
+                                  child: TasklyMenuItemLabel(
+                                    context.l10n.displayDensityTitle,
+                                  ),
+                                ),
+                                PopupMenuItem(
                                   value: _MyDayMenuAction.selectMultiple,
-                                  child: TasklyMenuItemLabel('Select multiple'),
+                                  child: TasklyMenuItemLabel(
+                                    context.l10n.selectMultipleLabel,
+                                  ),
                                 ),
                                 PopupMenuItem(
                                   value: _MyDayMenuAction.settings,
@@ -263,6 +279,8 @@ class _MyDayPageState extends State<MyDayPage> {
                               ],
                               onSelected: (action) {
                                 switch (action) {
+                                  case _MyDayMenuAction.density:
+                                    _showDensitySheet(context);
                                   case _MyDayMenuAction.selectMultiple:
                                     context
                                         .read<SelectionBloc>()
@@ -360,7 +378,7 @@ class _MyDayLoadedBody extends StatelessWidget {
               return switch (state) {
                 MyDayLoading() => Center(
                   child: AppLoadingContent(
-                    title: 'Preparing a calm list for today...',
+                    title: context.l10n.myDayLoadingTitle,
                     subtitle: '',
                     icon: Icons.auto_awesome,
                   ),
@@ -441,6 +459,8 @@ class _MyDaySummaryHeader extends StatelessWidget {
     final tokens = TasklyTokens.of(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final planned = plannedCount;
+    final completed = completedCount;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -474,10 +494,14 @@ class _MyDaySummaryHeader extends StatelessWidget {
             runSpacing: tokens.spaceXs2,
             children: [
               _MyDaySummaryPill(label: dateLabel),
-              if (plannedCount != null)
-                _MyDaySummaryPill(label: '$plannedCount planned'),
-              if (completedCount != null)
-                _MyDaySummaryPill(label: '$completedCount completed'),
+              if (planned != null)
+                _MyDaySummaryPill(
+                  label: context.l10n.myDayPlannedCountLabel(planned),
+                ),
+              if (completed != null)
+                _MyDaySummaryPill(
+                  label: context.l10n.myDayCompletedCountLabel(completed),
+                ),
             ],
           ),
         ],
@@ -689,12 +713,18 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
       final hasPlan = widget.hasPlan;
 
       final (title, description) = hasPlan
-          ? ('All clear for today.', "You've finished today's plan.")
+          ? (
+              l10n.myDayAllClearTitle,
+              l10n.myDayAllClearSubtitle,
+            )
           : hasTasks
-          ? ('No plan yet.', "Build today's plan from your task list.")
+          ? (
+              l10n.myDayNoPlanTitle,
+              l10n.myDayNoPlanSubtitle,
+            )
           : (
-              'No tasks yet.',
-              "Start a project or add tasks to build today's plan.",
+              l10n.myDayNoTasksTitle,
+              l10n.myDayNoTasksSubtitle,
             );
 
       final String? actionLabel;
@@ -855,13 +885,13 @@ class _MyDayErrorState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "Couldn't load your list.",
+              context.l10n.myDayLoadFailedTitle,
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             SizedBox(height: TasklyTokens.of(context).spaceSm),
             Text(
-              'Your tasks are safe. Please try again.',
+              context.l10n.myDayLoadFailedSubtitle,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -870,7 +900,7 @@ class _MyDayErrorState extends StatelessWidget {
             SizedBox(height: TasklyTokens.of(context).spaceSm),
             FilledButton(
               onPressed: onRetry,
-              child: const Text('Retry'),
+              child: Text(context.l10n.retryButton),
             ),
           ],
         ),
@@ -916,7 +946,7 @@ class _WeeklyReviewBanner extends StatelessWidget {
               SizedBox(height: TasklyTokens.of(context).spaceSm),
               Expanded(
                 child: Text(
-                  'Weekly review is ready. Take 3 minutes to reset.',
+                  l10n.weeklyReviewReadyBanner,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
@@ -929,7 +959,7 @@ class _WeeklyReviewBanner extends StatelessWidget {
               ),
               TextButton(
                 onPressed: onReview,
-                child: const Text('Review'),
+                child: Text(context.l10n.reviewExcludedTasks),
               ),
             ],
           ),
@@ -1053,7 +1083,9 @@ TasklyRowSpec _buildTaskRowSpec(
     data: data,
     depth: depthOffset,
     style: selectionMode
-        ? TasklyTaskRowStyle.bulkSelection(selected: isSelected)
+        ? (useCompactDensity
+              ? TasklyTaskRowStyle.bulkSelectionCompact(selected: isSelected)
+              : TasklyTaskRowStyle.bulkSelection(selected: isSelected))
         : (useCompactDensity
               ? const TasklyTaskRowStyle.compact()
               : const TasklyTaskRowStyle.standard()),
@@ -1171,9 +1203,9 @@ class _MyDayEmptyState extends StatelessWidget {
   String? deadlineLabel;
   if (dateOnlyDeadline != null) {
     if (dateOnlyDeadline.isBefore(today)) {
-      deadlineLabel = 'Overdue';
+      deadlineLabel = context.l10n.overdueLabel;
     } else if (dateOnlyDeadline.isAtSameMomentAs(today)) {
-      deadlineLabel = 'Due today';
+      deadlineLabel = context.l10n.dueTodayLabel;
     } else {
       deadlineLabel = MaterialLocalizations.of(context).formatMediumDate(
         deadline!,
@@ -1213,13 +1245,13 @@ enum _MyDayTaskSortOrder {
 }
 
 extension _MyDayTaskSortOrderLabels on _MyDayTaskSortOrder {
-  String get label {
+  String label(AppLocalizations l10n) {
     return switch (this) {
-      _MyDayTaskSortOrder.defaultOrder => 'Default',
-      _MyDayTaskSortOrder.recentlyUpdated => 'Recently updated',
-      _MyDayTaskSortOrder.alphabetical => 'A–Z',
-      _MyDayTaskSortOrder.priority => 'Priority',
-      _MyDayTaskSortOrder.dueDate => 'Due date',
+      _MyDayTaskSortOrder.defaultOrder => l10n.sortDefault,
+      _MyDayTaskSortOrder.recentlyUpdated => l10n.sortRecentlyUpdated,
+      _MyDayTaskSortOrder.alphabetical => l10n.sortAlphabetical,
+      _MyDayTaskSortOrder.priority => l10n.sortPriority,
+      _MyDayTaskSortOrder.dueDate => l10n.sortDueDate,
     };
   }
 }

@@ -678,8 +678,9 @@ class TaskRepository implements TaskRepositoryContract {
     required DateTime deadlineDate,
     OperationContext? context,
   }) async {
-    final ids = taskIds
-        .map((id) => id.trim())
+    final rawIds = taskIds.toList(growable: false);
+    final trimmedIds = rawIds.map((id) => id.trim()).toList(growable: false);
+    final ids = trimmedIds
         .where((id) => id.isNotEmpty)
         .toSet()
         .toList(growable: false);
@@ -688,8 +689,24 @@ class TaskRepository implements TaskRepositoryContract {
     return FailureGuard.run(
       () async {
         final normalizedDeadline = dateOnlyOrNull(deadlineDate);
+        final normalizedDeadlineEncoded = encodeDateOnlyOrNull(
+          normalizedDeadline,
+        );
         final now = _clock.nowUtc();
         final psMetadata = encodeCrudMetadata(context, clock: _clock);
+        final baseFields = context?.toLogFields() ?? const <String, Object?>{};
+        final nonEmptyIds = trimmedIds
+            .where((id) => id.isNotEmpty)
+            .toList(growable: false);
+        final duplicateIdCount =
+            nonEmptyIds.length - nonEmptyIds.toSet().length;
+        final emptyIdCount = trimmedIds.length - nonEmptyIds.length;
+
+        List<String> sampleIds(Iterable<String> values, {int max = 20}) {
+          final list = values.toList(growable: false);
+          if (list.length <= max) return list;
+          return list.take(max).toList(growable: false);
+        }
 
         return driftDb.transaction(() async {
           final existingIds =
@@ -700,6 +717,26 @@ class TaskRepository implements TaskRepositoryContract {
                   .get();
 
           if (existingIds.length != ids.length) {
+            final existingSet = existingIds.toSet();
+            final missingIds = ids
+                .where((id) => !existingSet.contains(id))
+                .toList(growable: false);
+            AppLog.warnStructured(
+              'data.task',
+              'bulk deadline update missing tasks',
+              fields: <String, Object?>{
+                ...baseFields,
+                'taskCount': ids.length,
+                'inputTaskCount': rawIds.length,
+                'emptyIdCount': emptyIdCount,
+                'duplicateIdCount': duplicateIdCount,
+                'deadlineDate': deadlineDate.toIso8601String(),
+                'normalizedDeadline': normalizedDeadlineEncoded,
+                'missingTaskCount': missingIds.length,
+                'missingTaskIdsSample': sampleIds(missingIds),
+                'requestedTaskIdsSample': sampleIds(ids),
+              },
+            );
             throw RepositoryNotFoundException(
               'Some tasks were not found for bulk deadline update',
             );
@@ -719,7 +756,68 @@ class TaskRepository implements TaskRepositoryContract {
               );
 
           if (updated != ids.length) {
-            throw RepositoryException('Bulk task deadline update failed');
+            final rows =
+                await (driftDb.selectOnly(driftDb.taskTable)
+                      ..addColumns([
+                        driftDb.taskTable.id,
+                        driftDb.taskTable.deadlineDate,
+                        driftDb.taskTable.updatedAt,
+                      ])
+                      ..where(driftDb.taskTable.id.isIn(ids)))
+                    .get();
+            final rowSnapshots = <Map<String, Object?>>[];
+            final matchingDeadlineIds = <String>[];
+            final nonMatchingDeadlineIds = <String>[];
+            var snapshotCount = 0;
+            for (final row in rows) {
+              final id = row.read(driftDb.taskTable.id)!;
+              final dbDeadline = row.read(driftDb.taskTable.deadlineDate);
+              final dbUpdatedAt = row.read(driftDb.taskTable.updatedAt);
+              if (dbDeadline == normalizedDeadlineEncoded) {
+                matchingDeadlineIds.add(id);
+              } else {
+                nonMatchingDeadlineIds.add(id);
+              }
+              if (snapshotCount < 20) {
+                rowSnapshots.add(<String, Object?>{
+                  'id': id,
+                  'deadlineDate': dbDeadline,
+                  'updatedAt': dbUpdatedAt?.toIso8601String(),
+                });
+                snapshotCount += 1;
+              }
+            }
+
+            final verified =
+                rows.length == ids.length && nonMatchingDeadlineIds.isEmpty;
+            AppLog.warnStructured(
+              'data.task',
+              verified
+                  ? 'bulk deadline update rowcount mismatch (verified)'
+                  : 'bulk deadline update rowcount mismatch',
+              fields: <String, Object?>{
+                ...baseFields,
+                'taskCount': ids.length,
+                'inputTaskCount': rawIds.length,
+                'emptyIdCount': emptyIdCount,
+                'duplicateIdCount': duplicateIdCount,
+                'updatedCount': updated,
+                'rowCount': rows.length,
+                'deadlineDate': deadlineDate.toIso8601String(),
+                'normalizedDeadline': normalizedDeadlineEncoded,
+                'matchingDeadlineCount': matchingDeadlineIds.length,
+                'nonMatchingDeadlineCount': nonMatchingDeadlineIds.length,
+                'nonMatchingDeadlineIdsSample': sampleIds(
+                  nonMatchingDeadlineIds,
+                ),
+                'rowSnapshotSample': rowSnapshots,
+                'requestedTaskIdsSample': sampleIds(ids),
+              },
+            );
+            if (!verified) {
+              throw RepositoryException('Bulk task deadline update failed');
+            }
+            return ids.length;
           }
 
           return updated;
@@ -737,8 +835,9 @@ class TaskRepository implements TaskRepositoryContract {
     required DateTime startDate,
     OperationContext? context,
   }) async {
-    final ids = taskIds
-        .map((id) => id.trim())
+    final rawIds = taskIds.toList(growable: false);
+    final trimmedIds = rawIds.map((id) => id.trim()).toList(growable: false);
+    final ids = trimmedIds
         .where((id) => id.isNotEmpty)
         .toSet()
         .toList(growable: false);
@@ -747,8 +846,16 @@ class TaskRepository implements TaskRepositoryContract {
     return FailureGuard.run(
       () async {
         final normalizedStart = dateOnlyOrNull(startDate);
+        final normalizedStartEncoded = encodeDateOnlyOrNull(normalizedStart);
         final now = _clock.nowUtc();
         final psMetadata = encodeCrudMetadata(context, clock: _clock);
+        final baseFields = context?.toLogFields() ?? const <String, Object?>{};
+        final nonEmptyIds = trimmedIds
+            .where((id) => id.isNotEmpty)
+            .toList(growable: false);
+        final duplicateIdCount =
+            nonEmptyIds.length - nonEmptyIds.toSet().length;
+        final emptyIdCount = trimmedIds.length - nonEmptyIds.length;
 
         return driftDb.transaction(() async {
           final existingIds =
@@ -759,6 +866,28 @@ class TaskRepository implements TaskRepositoryContract {
                   .get();
 
           if (existingIds.length != ids.length) {
+            final existingSet = existingIds.toSet();
+            final missingIds = ids
+                .where((id) => !existingSet.contains(id))
+                .toList(growable: false);
+            AppLog.warnStructured(
+              'data.task',
+              'bulk start update missing tasks',
+              fields: <String, Object?>{
+                ...baseFields,
+                'taskCount': ids.length,
+                'inputTaskCount': rawIds.length,
+                'emptyIdCount': emptyIdCount,
+                'duplicateIdCount': duplicateIdCount,
+                'startDate': startDate.toIso8601String(),
+                'normalizedStart': normalizedStartEncoded,
+                'missingTaskCount': missingIds.length,
+                'missingTaskIdsSample': missingIds
+                    .take(20)
+                    .toList(growable: false),
+                'requestedTaskIdsSample': ids.take(20).toList(growable: false),
+              },
+            );
             throw RepositoryNotFoundException(
               'Some tasks were not found for bulk start update',
             );
@@ -778,7 +907,68 @@ class TaskRepository implements TaskRepositoryContract {
               );
 
           if (updated != ids.length) {
-            throw RepositoryException('Bulk task start update failed');
+            final rows =
+                await (driftDb.selectOnly(driftDb.taskTable)
+                      ..addColumns([
+                        driftDb.taskTable.id,
+                        driftDb.taskTable.startDate,
+                        driftDb.taskTable.updatedAt,
+                      ])
+                      ..where(driftDb.taskTable.id.isIn(ids)))
+                    .get();
+            final rowSnapshots = <Map<String, Object?>>[];
+            final matchingStartIds = <String>[];
+            final nonMatchingStartIds = <String>[];
+            var snapshotCount = 0;
+            for (final row in rows) {
+              final id = row.read(driftDb.taskTable.id)!;
+              final dbStart = row.read(driftDb.taskTable.startDate);
+              final dbUpdatedAt = row.read(driftDb.taskTable.updatedAt);
+              if (dbStart == normalizedStartEncoded) {
+                matchingStartIds.add(id);
+              } else {
+                nonMatchingStartIds.add(id);
+              }
+              if (snapshotCount < 20) {
+                rowSnapshots.add(<String, Object?>{
+                  'id': id,
+                  'startDate': dbStart,
+                  'updatedAt': dbUpdatedAt?.toIso8601String(),
+                });
+                snapshotCount += 1;
+              }
+            }
+
+            final verified =
+                rows.length == ids.length && nonMatchingStartIds.isEmpty;
+            AppLog.warnStructured(
+              'data.task',
+              verified
+                  ? 'bulk start update rowcount mismatch (verified)'
+                  : 'bulk start update rowcount mismatch',
+              fields: <String, Object?>{
+                ...baseFields,
+                'taskCount': ids.length,
+                'inputTaskCount': rawIds.length,
+                'emptyIdCount': emptyIdCount,
+                'duplicateIdCount': duplicateIdCount,
+                'updatedCount': updated,
+                'rowCount': rows.length,
+                'startDate': startDate.toIso8601String(),
+                'normalizedStart': normalizedStartEncoded,
+                'matchingStartCount': matchingStartIds.length,
+                'nonMatchingStartCount': nonMatchingStartIds.length,
+                'nonMatchingStartIdsSample': nonMatchingStartIds
+                    .take(20)
+                    .toList(growable: false),
+                'rowSnapshotSample': rowSnapshots,
+                'requestedTaskIdsSample': ids.take(20).toList(growable: false),
+              },
+            );
+            if (!verified) {
+              throw RepositoryException('Bulk task start update failed');
+            }
+            return ids.length;
           }
 
           return updated;

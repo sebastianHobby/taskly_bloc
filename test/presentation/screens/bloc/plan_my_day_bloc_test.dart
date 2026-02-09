@@ -261,6 +261,7 @@ void main() {
           batchCount: any(named: 'batchCount'),
           nowUtc: any(named: 'nowUtc'),
           routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+          context: any(named: 'context'),
         ),
       ).thenAnswer((_) async => allocation);
       when(
@@ -268,6 +269,7 @@ void main() {
           suggestedTaskTarget: any(named: 'suggestedTaskTarget'),
           nowUtc: any(named: 'nowUtc'),
           routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+          context: any(named: 'context'),
         ),
       ).thenAnswer((_) async => allocation);
 
@@ -326,6 +328,107 @@ void main() {
       final ready = bloc.state as PlanMyDayReady;
       expect(ready.selectedTaskIds, contains(swapToId));
       expect(ready.selectedTaskIds, isNot(contains(swapFromId)));
+    },
+  );
+
+  blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
+    'pins spotlight group first when spotlight value is not attention-leading',
+    build: () {
+      final spotlightValue = TestData.value(
+        id: 'value-spotlight',
+        name: 'Family',
+        priority: ValuePriority.low,
+      );
+      final otherValue = TestData.value(
+        id: 'value-other',
+        name: 'Health',
+        priority: ValuePriority.high,
+      );
+      final spotlightTask = TestData.task(
+        id: 'task-spotlight',
+        name: 'Call parents',
+        projectId: 'project-spotlight',
+        project: TestData.project(
+          id: 'project-spotlight',
+          name: 'Family Project',
+          values: [spotlightValue],
+        ).copyWith(primaryValueId: spotlightValue.id),
+      );
+      final otherTask = TestData.task(
+        id: 'task-other',
+        name: 'Morning walk',
+        projectId: 'project-other',
+        project: TestData.project(
+          id: 'project-other',
+          name: 'Health Project',
+          values: [otherValue],
+        ).copyWith(primaryValueId: otherValue.id),
+      );
+
+      when(() => taskRepository.getAll(any())).thenAnswer(
+        (_) async => [spotlightTask, otherTask],
+      );
+      when(() => taskRepository.watchAll(any())).thenAnswer(
+        (_) => Stream.value([spotlightTask, otherTask]),
+      );
+
+      final allocation = AllocationResult(
+        allocatedTasks: [
+          AllocatedTask(
+            task: otherTask,
+            qualifyingValueId: otherValue.id,
+            allocationScore: 0.9,
+            reasonCodes: const [],
+          ),
+          AllocatedTask(
+            task: spotlightTask,
+            qualifyingValueId: spotlightValue.id,
+            allocationScore: 0.8,
+            reasonCodes: const [],
+          ),
+        ],
+        reasoning: AllocationReasoning(
+          strategyUsed: 'test',
+          categoryAllocations: const {},
+          categoryWeights: const {},
+          explanation: 'test',
+          neglectDeficits: {
+            otherValue.id: 0.3,
+            spotlightValue.id: 0.1,
+          },
+          topNeglectScore: 0.25,
+          topNeglectValueId: spotlightValue.id,
+        ),
+        excludedTasks: const <ExcludedTask>[],
+      );
+
+      when(
+        () => allocationOrchestrator.getSuggestedSnapshot(
+          batchCount: any(named: 'batchCount'),
+          nowUtc: any(named: 'nowUtc'),
+          routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async => allocation);
+      when(
+        () => allocationOrchestrator.getSuggestedSnapshotForTargetCount(
+          suggestedTaskTarget: any(named: 'suggestedTaskTarget'),
+          nowUtc: any(named: 'nowUtc'),
+          routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async => allocation);
+
+      return buildBloc();
+    },
+    act: (bloc) async {
+      if (bloc.state is! PlanMyDayReady) {
+        await bloc.stream.firstWhere((state) => state is PlanMyDayReady);
+      }
+    },
+    verify: (bloc) {
+      final ready = bloc.state as PlanMyDayReady;
+      expect(ready.valueSuggestionGroups.first.valueId, 'value-spotlight');
     },
   );
 
@@ -390,7 +493,8 @@ void main() {
     },
     verify: (bloc) {
       final state = bloc.state as PlanMyDayReady;
-      expect(state.toast?.message, isNotEmpty);
+      expect(state.toast?.kind, PlanMyDayToastKind.error);
+      expect(state.toast?.error, isNotNull);
     },
   );
 }

@@ -94,12 +94,19 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
               .write(_ruleToCompanion(rule, forUpdate: true));
 
       if (updated == 0) {
-        await _db
-            .into(_db.attentionRules)
-            .insert(
-              _ruleToCompanion(rule, forUpdate: false),
-              mode: InsertMode.insertOrAbort,
-            );
+        final existing =
+            await (_db.selectOnly(_db.attentionRules)
+                  ..addColumns([_db.attentionRules.id])
+                  ..where(_db.attentionRules.id.equals(rule.id)))
+                .getSingleOrNull();
+        if (existing == null) {
+          await _db
+              .into(_db.attentionRules)
+              .insert(
+                _ruleToCompanion(rule, forUpdate: false),
+                mode: InsertMode.insertOrAbort,
+              );
+        }
       }
       talker.repositoryLog('AttentionV2', 'Upserted rule: ${rule.id}');
     } catch (e, stackTrace) {
@@ -237,9 +244,19 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
         );
 
     if (updated == 0) {
-      await _db
-          .into(_db.attentionResolutions)
-          .insert(_resolutionToCompanion(resolution), mode: InsertMode.insert);
+      final existing =
+          await (_db.selectOnly(_db.attentionResolutions)
+                ..addColumns([_db.attentionResolutions.id])
+                ..where(_db.attentionResolutions.id.equals(resolution.id)))
+              .getSingleOrNull();
+      if (existing == null) {
+        await _db
+            .into(_db.attentionResolutions)
+            .insert(
+              _resolutionToCompanion(resolution),
+              mode: InsertMode.insert,
+            );
+      }
     }
 
     if (correlationId != null && correlationId.isNotEmpty) {
@@ -303,12 +320,19 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
             .write(_runtimeStateToCompanion(state, forUpdate: true));
 
     if (updated == 0) {
-      await _db
-          .into(_db.attentionRuleRuntimeStates)
-          .insert(
-            _runtimeStateToCompanion(state, forUpdate: false),
-            mode: InsertMode.insertOrAbort,
-          );
+      final existing =
+          await (_db.selectOnly(_db.attentionRuleRuntimeStates)
+                ..addColumns([_db.attentionRuleRuntimeStates.id])
+                ..where(_db.attentionRuleRuntimeStates.id.equals(state.id)))
+              .getSingleOrNull();
+      if (existing == null) {
+        await _db
+            .into(_db.attentionRuleRuntimeStates)
+            .insert(
+              _runtimeStateToCompanion(state, forUpdate: false),
+              mode: InsertMode.insertOrAbort,
+            );
+      }
     }
   }
 

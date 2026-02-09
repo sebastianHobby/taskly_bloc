@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 
 import '../../../helpers/test_imports.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
@@ -105,8 +106,9 @@ void main() {
   testWidgetsSafe('shows welcome step content', (tester) async {
     await pumpPage(tester);
 
-    expect(find.text('Meet Taskly'), findsOneWidget);
-    expect(find.text('Get started'), findsOneWidget);
+    final l10n = _l10n(tester);
+    expect(find.text(l10n.onboardingWelcomeTitle), findsOneWidget);
+    expect(find.text(l10n.onboardingGetStartedLabel), findsOneWidget);
   });
 
   testWidgetsSafe('shows loading state while saving name', (tester) async {
@@ -120,7 +122,8 @@ void main() {
 
     await pumpPage(tester);
 
-    await tester.tap(find.text('Get started'));
+    final l10n = _l10n(tester);
+    await tester.tap(find.text(l10n.onboardingGetStartedLabel));
     await tester.pump();
     final found = await tester.pumpUntilFound(find.byType(TextField));
     expect(found, isTrue);
@@ -128,7 +131,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Jordan');
     await tester.pump();
 
-    await tester.tap(find.text('Continue'));
+    await tester.tap(find.text(l10n.onboardingContinueLabel));
     await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -146,7 +149,8 @@ void main() {
 
     await pumpPage(tester);
 
-    await tester.tap(find.text('Get started'));
+    final l10n = _l10n(tester);
+    await tester.tap(find.text(l10n.onboardingGetStartedLabel));
     await tester.pump();
     final found = await tester.pumpUntilFound(find.byType(TextField));
     expect(found, isTrue);
@@ -154,7 +158,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Jordan');
     await tester.pump();
 
-    await tester.tap(find.text('Continue'));
+    await tester.tap(find.text(l10n.onboardingContinueLabel));
     await tester.pumpForStream();
 
     expect(
@@ -162,4 +166,8 @@ void main() {
       findsOneWidget,
     );
   });
+}
+
+AppLocalizations _l10n(WidgetTester tester) {
+  return tester.element(find.byType(OnboardingFlowPage)).l10n;
 }

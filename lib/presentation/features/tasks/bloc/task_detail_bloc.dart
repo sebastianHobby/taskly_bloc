@@ -269,10 +269,10 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     );
     final createAction = event.includeInMyDay
         ? () => _taskMyDayWriteService.createAndPickForToday(
-              event.command,
-              bucket: MyDayPickBucket.manual,
-              context: context,
-            )
+            event.command,
+            bucket: MyDayPickBucket.manual,
+            context: context,
+          )
         : () => _taskWriteService.create(event.command, context: context);
     await _executeValidatedCommand(
       emit,
