@@ -8,7 +8,7 @@ The Flutter app uses entrypoint-based build-time configuration:
 - Local dev: `lib/main_local.dart`
 - Prod: `lib/main_prod.dart`
 
-## Workflow 1: Deterministic local E2E run
+## Workflow 1: Local stack run
 
 ### Prereqs
 - Docker Desktop running
@@ -22,31 +22,20 @@ The Flutter app uses entrypoint-based build-time configuration:
    - Ensure `PS_SUPABASE_JWT_SECRET` matches `supabase status -o json` (`JWT_SECRET`).
 
 ### Start stack (optionally reset DB)
-- Start without reset:
-  - PowerShell 7: `pwsh -File tool/e2e/Start-LocalE2EStack.ps1`
-  - Windows PowerShell: `powershell -File tool/e2e/Start-LocalE2EStack.ps1`
-- Start + clean reset (recommended for deterministic runs):
-  - PowerShell 7: `pwsh -File tool/e2e/Start-LocalE2EStack.ps1 -ResetDb`
-  - Windows PowerShell: `powershell -File tool/e2e/Start-LocalE2EStack.ps1 -ResetDb`
-
-What reset does:
-- `supabase db reset` recreates local Postgres and applies the locally generated schema (via `supabase/migrations/`).
-  - In this repo, migrations are expected to be generated via `supabase db pull` (CI does this automatically).
-  - Developers can run `supabase db pull` before reset when needed.
-
-### Run tests
-- PowerShell 7: `pwsh -File tool/e2e/Run-LocalPipelineIntegrationTests.ps1 -ResetDb`
-- Windows PowerShell: `powershell -File tool/e2e/Run-LocalPipelineIntegrationTests.ps1 -ResetDb`
+- Start Supabase:
+  - `supabase start`
+- Optional clean reset (recommended for deterministic runs):
+  - `supabase db reset --no-seed`
+  - In this repo, migrations are expected to be generated via `supabase db pull`.
+- Start PowerSync:
+  - `docker compose -f infra/powersync_local/docker-compose.yml --env-file infra/powersync_local/.env up -d`
 
 Notes:
 - The app's local endpoints/keys are selected via `lib/main_local.dart`.
 - PowerSync sync rules are mounted from `supabase/powersync-sync-rules.yaml`.
-- Pipeline tests are **integration-test-only** and will self-skip unless the
-  integration test binding is active; always run them via the entrypoint below
-  or the script above (not plain `flutter test -t pipeline`).
 
-What the test script runs:
-- `flutter test integration_test/powersync_pipeline_entrypoint_test.dart -d windows`
+### Run the app against the local stack
+- `flutter run -t lib/main_local.dart`
 
 ## Schema notes (prod -> local)
 

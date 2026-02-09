@@ -35,15 +35,6 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Setup Node (for Supabase CLI)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install Supabase CLI
-        run: npm install -g supabase
-      
       - name: Cache pub dependencies
         uses: actions/cache@v4
         with:
@@ -76,63 +67,9 @@ jobs:
         working-directory: packages/taskly_data
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: Link to Supabase Cloud (prod)
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: |
-          supabase link --project-ref "${{ secrets.SUPABASE_PROD_PROJECT_REF }}"
-
-      - name: Pull latest prod schema into migrations (Option A)
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: |
-          supabase db pull
-
-      - name: Start Supabase local stack
-        run: supabase start
-
-      - name: Apply migrations (no seed)
-        run: supabase db reset --no-seed
-
-      - name: Write PowerSync env file
-        run: |
-          cp infra/powersync_local/powersync.env.example infra/powersync_local/.env
-
-      - name: Start PowerSync
-        run: |
-          docker compose -f infra/powersync_local/docker-compose.yml --env-file infra/powersync_local/.env up -d
-
-      - name: Wait for PowerSync liveness
-        run: |
-          for i in {1..60}; do
-            if curl -fsS http://127.0.0.1:8080/probes/liveness > /dev/null; then
-              echo "PowerSync is live";
-              exit 0;
-            fi
-            sleep 1;
-          done
-          echo "PowerSync did not become live";
-          docker compose -f infra/powersync_local/docker-compose.yml --env-file infra/powersync_local/.env ps;
-          docker compose -f infra/powersync_local/docker-compose.yml --env-file infra/powersync_local/.env logs --tail=200;
-          exit 1
-
       - name: Run tests
         run: |
           flutter test --reporter=expanded
-
-      - name: Dump docker logs on failure
-        if: failure()
-        run: |
-          echo "== supabase status ==";
-          supabase status || true;
-          echo "== docker ps ==";
-          docker ps -a || true;
-          echo "== powersync logs ==";
-          docker compose -f infra/powersync_local/docker-compose.yml --env-file infra/powersync_local/.env logs --tail=400 || true;
-
-      - name: Stop Supabase
-        if: always()
-        run: supabase stop
       
 
 

@@ -176,216 +176,178 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent>
               final extraHeight = useRatingWheel ? tokens.spaceLg2 * 2 : 0.0;
               final chartBoxHeight = baseSize + extraHeight;
 
-              return SingleChildScrollView(
-                key: const PageStorageKey<String>(
-                  'weekly_review_checkin_scroll',
-                ),
-                padding: EdgeInsets.fromLTRB(
-                  tokens.spaceLg,
-                  tokens.spaceSm,
-                  tokens.spaceLg,
-                  tokens.spaceLg,
-                ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight - tokens.spaceLg * 2,
-                  ),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _TopControlsRow(
-                          onHistory: () => showWeeklyRatingDetailsSheet(
-                            context,
-                            entry: selected,
-                            windowWeeks: widget.windowWeeks,
+              return Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      key: const PageStorageKey<String>(
+                        'weekly_review_checkin_scroll',
+                      ),
+                      padding: EdgeInsets.fromLTRB(
+                        tokens.spaceLg,
+                        tokens.spaceSm,
+                        tokens.spaceLg,
+                        tokens.spaceSm,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _TopControlsRow(
+                            onHistory: () => showWeeklyRatingDetailsSheet(
+                              context,
+                              entry: selected,
+                              windowWeeks: widget.windowWeeks,
+                            ),
+                            onWizardBack: widget.onWizardBack,
+                            wizardLabel: wizardLabel,
                           ),
-                          onWizardBack: widget.onWizardBack,
-                          wizardLabel: wizardLabel,
-                        ),
-                        SizedBox(height: tokens.spaceSm),
-                        Text(
-                          l10n.weeklyReviewStepLabel(
-                            stepIndex + 1,
-                            entries.length,
-                            selected.value.name,
-                          ),
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        SizedBox(height: tokens.spaceXs),
-                        Text(
-                          l10n.weeklyReviewCheckInInstruction,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: scheme.onSurfaceVariant),
-                        ),
-                        if (widget.onChartToggle != null) ...[
                           SizedBox(height: tokens.spaceSm),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                useRatingWheel
-                                    ? l10n.weeklyReviewChartWheelLabel
-                                    : l10n.weeklyReviewChartRadarLabel,
-                                style: Theme.of(context).textTheme.labelMedium
-                                    ?.copyWith(
-                                      color: scheme.onSurfaceVariant,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                              SizedBox(width: tokens.spaceXs),
-                              Switch(
-                                value: useRatingWheel,
-                                onChanged: widget.onChartToggle,
-                              ),
-                            ],
+                          Text(
+                            l10n.weeklyReviewStepLabel(
+                              stepIndex + 1,
+                              entries.length,
+                              selected.value.name,
+                            ),
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w700),
                           ),
-                        ],
-                        SizedBox(height: tokens.spaceLg),
-                        SizedBox(
-                          height: chartBoxHeight,
-                          child: Center(
-                            child: SizedBox(
-                              width: baseSize,
-                              height: baseSize,
-                              child: useRatingWheel
-                                  ? WeeklyRatingWheel(
-                                      entries: entries,
-                                      maxRating: maxRating,
-                                      selectedValueId: selected.value.id,
-                                      enableTap: false,
-                                      onValueSelected: (valueId) =>
-                                          context.read<WeeklyReviewBloc>().add(
-                                            WeeklyReviewValueSelected(
-                                              valueId,
+                          SizedBox(height: tokens.spaceXs),
+                          Text(
+                            l10n.weeklyReviewCheckInInstruction,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: scheme.onSurfaceVariant),
+                          ),
+                          if (widget.onChartToggle != null) ...[
+                            SizedBox(height: tokens.spaceSm),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  useRatingWheel
+                                      ? l10n.weeklyReviewChartWheelLabel
+                                      : l10n.weeklyReviewChartRadarLabel,
+                                  style: Theme.of(context).textTheme.labelMedium
+                                      ?.copyWith(
+                                        color: scheme.onSurfaceVariant,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                                SizedBox(width: tokens.spaceXs),
+                                Switch(
+                                  value: useRatingWheel,
+                                  onChanged: widget.onChartToggle,
+                                ),
+                              ],
+                            ),
+                          ],
+                          SizedBox(height: tokens.spaceLg),
+                          SizedBox(
+                            height: chartBoxHeight,
+                            child: Center(
+                              child: SizedBox(
+                                width: baseSize,
+                                height: baseSize,
+                                child: useRatingWheel
+                                    ? WeeklyRatingWheel(
+                                        entries: entries,
+                                        maxRating: maxRating,
+                                        selectedValueId: selected.value.id,
+                                        enableTap: false,
+                                        onValueSelected: (valueId) => context
+                                            .read<WeeklyReviewBloc>()
+                                            .add(
+                                              WeeklyReviewValueSelected(
+                                                valueId,
+                                              ),
                                             ),
-                                          ),
-                                      onRatingChanged: (valueId, rating) =>
-                                          context.read<WeeklyReviewBloc>().add(
-                                            WeeklyReviewValueRatingChanged(
-                                              valueId: valueId,
-                                              rating: rating,
+                                        onRatingChanged: (valueId, rating) =>
+                                            context.read<WeeklyReviewBloc>().add(
+                                              WeeklyReviewValueRatingChanged(
+                                                valueId: valueId,
+                                                rating: rating,
+                                              ),
                                             ),
-                                          ),
-                                    )
-                                  : WeeklyRatingRadar(
-                                      entries: entries,
-                                      maxRating: maxRating,
-                                      selectedValueId: selected.value.id,
-                                      showIcons: true,
-                                    ),
+                                      )
+                                    : WeeklyRatingRadar(
+                                        entries: entries,
+                                        maxRating: maxRating,
+                                        selectedValueId: selected.value.id,
+                                        showIcons: true,
+                                      ),
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(height: tokens.spaceLg),
-                        _ValueSummaryCard(
-                          valueName: selected.value.name,
-                          iconData: iconData,
-                          accent: accent,
-                          rating: rating,
-                          maxRating: maxRating,
-                        ),
-                        SizedBox(height: tokens.spaceSm),
-                        _StatsRow(
-                          taskCount: selected.taskCompletions,
-                          routineCount: selected.routineCompletions,
-                          trendPercent: trend,
-                        ),
-                        SizedBox(height: tokens.spaceSm),
-                        _RatingSlider(
-                          rating: rating,
-                          maxRating: maxRating,
-                          accent: accent,
-                          onChanged: (value) => setState(() {
-                            _draftRatings[selected.value.id] = value;
-                          }),
-                          onCommit: (value) {
+                          SizedBox(height: tokens.spaceLg),
+                          _ValueSummaryCard(
+                            valueName: selected.value.name,
+                            iconData: iconData,
+                            accent: accent,
+                            rating: rating,
+                            maxRating: maxRating,
+                          ),
+                          SizedBox(height: tokens.spaceSm),
+                          _StatsRow(
+                            taskCount: selected.taskCompletions,
+                            routineCount: selected.routineCompletions,
+                            trendPercent: trend,
+                          ),
+                          SizedBox(height: tokens.spaceSm),
+                        ],
+                      ),
+                    ),
+                  ),
+                  _RatingActionsBar(
+                    rating: rating,
+                    maxRating: maxRating,
+                    accent: accent,
+                    isLast: isLast,
+                    onBack: () {
+                      if (isFirst) {
+                        widget.onExit();
+                        return;
+                      }
+                      final previous = entries[stepIndex - 1];
+                      context.read<WeeklyReviewBloc>().add(
+                        WeeklyReviewValueSelected(previous.value.id),
+                      );
+                    },
+                    onNext: rating <= 0
+                        ? null
+                        : () {
+                            if (rating != selected.rating) {
+                              context.read<WeeklyReviewBloc>().add(
+                                WeeklyReviewValueRatingChanged(
+                                  valueId: selected.value.id,
+                                  rating: rating,
+                                ),
+                              );
+                            }
+                            if (isLast) {
+                              widget.onComplete();
+                              return;
+                            }
+                            final next = entries[stepIndex + 1];
                             context.read<WeeklyReviewBloc>().add(
-                              WeeklyReviewValueRatingChanged(
-                                valueId: selected.value.id,
-                                rating: value,
+                              WeeklyReviewValueSelected(
+                                next.value.id,
                               ),
                             );
                           },
+                    onRatingChanged: (value) => setState(() {
+                      _draftRatings[selected.value.id] = value;
+                    }),
+                    onRatingCommit: (value) {
+                      context.read<WeeklyReviewBloc>().add(
+                        WeeklyReviewValueRatingChanged(
+                          valueId: selected.value.id,
+                          rating: value,
                         ),
-                        const Spacer(),
-                        SizedBox(height: tokens.spaceLg),
-                        Row(
-                          children: [
-                            TextButton(
-                              onPressed: () {
-                                if (isFirst) {
-                                  widget.onExit();
-                                  return;
-                                }
-                                final previous = entries[stepIndex - 1];
-                                context.read<WeeklyReviewBloc>().add(
-                                  WeeklyReviewValueSelected(previous.value.id),
-                                );
-                              },
-                              child: Text(context.l10n.backLabel),
-                            ),
-                            const Spacer(),
-                            FilledButton(
-                              onPressed: rating <= 0
-                                  ? null
-                                  : () {
-                                      if (rating != selected.rating) {
-                                        context.read<WeeklyReviewBloc>().add(
-                                          WeeklyReviewValueRatingChanged(
-                                            valueId: selected.value.id,
-                                            rating: rating,
-                                          ),
-                                        );
-                                      }
-                                      if (isLast) {
-                                        widget.onComplete();
-                                        return;
-                                      }
-                                      final next = entries[stepIndex + 1];
-                                      context.read<WeeklyReviewBloc>().add(
-                                        WeeklyReviewValueSelected(
-                                          next.value.id,
-                                        ),
-                                      );
-                                    },
-                              style: FilledButton.styleFrom(
-                                padding: EdgeInsets.symmetric(
-                                  vertical: tokens.spaceMd2,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                    tokens.radiusXxl,
-                                  ),
-                                ),
-                                backgroundColor: scheme.onSurface,
-                                foregroundColor: scheme.surface,
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  if (isLast)
-                                    const Icon(Icons.check_circle)
-                                  else
-                                    const Icon(Icons.arrow_forward),
-                                  SizedBox(width: tokens.spaceSm),
-                                  Text(
-                                    isLast
-                                        ? l10n.weeklyReviewCompleteCheckInAction
-                                        : l10n.weeklyReviewNextValueAction,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                ),
+                ],
               );
             },
           );
@@ -763,6 +725,104 @@ class _RatingSlider extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _RatingActionsBar extends StatelessWidget {
+  const _RatingActionsBar({
+    required this.rating,
+    required this.maxRating,
+    required this.accent,
+    required this.isLast,
+    required this.onRatingChanged,
+    required this.onRatingCommit,
+    required this.onBack,
+    required this.onNext,
+  });
+
+  final int rating;
+  final int maxRating;
+  final Color accent;
+  final bool isLast;
+  final ValueChanged<int> onRatingChanged;
+  final ValueChanged<int> onRatingCommit;
+  final VoidCallback onBack;
+  final VoidCallback? onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spaceLg,
+        tokens.spaceSm,
+        tokens.spaceLg,
+        tokens.spaceLg,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.35),
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _RatingSlider(
+            rating: rating,
+            maxRating: maxRating,
+            accent: accent,
+            onChanged: onRatingChanged,
+            onCommit: onRatingCommit,
+          ),
+          SizedBox(height: tokens.spaceMd),
+          Row(
+            children: [
+              TextButton(
+                onPressed: onBack,
+                child: Text(l10n.backLabel),
+              ),
+              const Spacer(),
+              FilledButton(
+                onPressed: onNext,
+                style: FilledButton.styleFrom(
+                  padding: EdgeInsets.symmetric(
+                    vertical: tokens.spaceMd2,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(
+                      tokens.radiusXxl,
+                    ),
+                  ),
+                  backgroundColor: scheme.onSurface,
+                  foregroundColor: scheme.surface,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (isLast)
+                      const Icon(Icons.check_circle)
+                    else
+                      const Icon(Icons.arrow_forward),
+                    SizedBox(width: tokens.spaceSm),
+                    Text(
+                      isLast
+                          ? l10n.weeklyReviewCompleteCheckInAction
+                          : l10n.weeklyReviewNextValueAction,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

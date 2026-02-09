@@ -23,9 +23,7 @@ Core principles:
 
 - **Layer-aligned tests**: test at the lowest layer that gives confidence.
 - **Hermetic-by-default**: unit/widget tests do not require network.
-- **Explicit real-stack boundaries**: pipeline tests are opt-in and tagged.
-- **Integration-only execution**: pipeline tests only execute under the
-  integration test binding; standard `flutter test` runs will skip them.
+- **Explicit IO boundaries**: integration/repository tests are opt-in and tagged.
 - **Artifact-first**: structured output exists to debug failures.
 
 ## 2) Non-goals
@@ -125,8 +123,6 @@ testing standards in `INVARIANTS.md`. They are directional, not hard gates.
   transitions.
 - **Widget**: UI composition, BLoC wiring, and critical shared UI components.
 - **Repository/Integration**: persistence behavior against real local DB.
-- **Pipeline**: local Supabase/PowerSync flows, offline → online sync,
-  and round-trips of critical entities.
 
 ## 7) Enforcement and guardrails
 

@@ -2,7 +2,7 @@
 
 > Audience: developers + architects
 >
-> Scope: the *current* offline-first persistence + sync pipeline in this repo (Drift -> PowerSync client -> PowerSync server -> Supabase/Postgres/PostgREST), plus how we validate it in integration tests.
+> Scope: the *current* offline-first persistence + sync pipeline in this repo (Drift -> PowerSync client -> PowerSync server -> Supabase/Postgres/PostgREST), plus how we validate it in tests and local runs.
 
 ## 1) Executive Summary
 
@@ -141,17 +141,14 @@ Recent schema additions that must be reflected in both Supabase and PowerSync:
 
 Note: this repo currently does not ship a dedicated migration for PowerSync replication/publication setup.
 
-### Local E2E scripts + docs
-- Deterministic local stack docs:
+### Local stack docs
+- Local stack runbook:
   - [../runbooks/LOCAL_E2E_STACK.md](../runbooks/LOCAL_E2E_STACK.md)
-- PowerShell helpers:
-  - [tool/e2e/Start-LocalE2EStack.ps1](../../tool/e2e/Start-LocalE2EStack.ps1)
-  - [tool/e2e/Run-LocalPipelineIntegrationTests.ps1](../../tool/e2e/Run-LocalPipelineIntegrationTests.ps1)
 
 ### Tests + CI
-- Pipeline integration tests:
-  - Live under `test/` and are tagged `pipeline`.
-- GitHub Actions workflow (local stack + full suite):
+- Integration/repository tests:
+  - Live under `test/` and are tagged `integration` or `repository`.
+- GitHub Actions workflow (standard test suite):
   - [.github/workflows/main.yaml](../../.github/workflows/main.yaml)
 
 ---
@@ -354,38 +351,22 @@ This proves the "remote change propagates locally" loop:
 
 ## 7) How We Test This
 
-### 7.1 Local deterministic test run (Windows + Docker)
+### 7.1 Local stack runs (Windows + Docker)
 
-The repo provides scripts to:
+Use the local stack when validating sync behavior end-to-end.
 
-- start Supabase
-- optionally reset DB (`supabase db reset` applies the locally generated schema + seed)
-- start PowerSync (compose)
-
-Entry points:
+Entry point:
 - [../runbooks/LOCAL_E2E_STACK.md](../runbooks/LOCAL_E2E_STACK.md)
-- [tool/e2e/Start-LocalE2EStack.ps1](../../tool/e2e/Start-LocalE2EStack.ps1)
-- [tool/e2e/Run-LocalPipelineIntegrationTests.ps1](../../tool/e2e/Run-LocalPipelineIntegrationTests.ps1)
 
-### 7.2 Pipeline integration test (ground-truth validation)
+### 7.2 Automated tests
 
-The pipeline integration test validates *both directions*:
-
-- Upload: Drift write -> PowerSync upload -> PostgREST read validates row
-- Download: PostgREST update -> PowerSync download -> Drift read validates row
-
-See:
-- Pipeline tests live under `test/` and are tagged `pipeline`.
+Repository/integration tests validate local persistence and multi-component flows.
+Sync pipeline behavior is validated via manual local-stack runs when needed.
 
 ### 7.3 CI workflow
 
-GitHub Actions runs the full test suite against a fully local stack on `ubuntu-latest` (pipeline-tagged tests included):
+GitHub Actions runs the standard test suite (no local stack):
 
-- `supabase start` + `supabase db reset`
-- PowerSync compose up + liveness wait
-- `flutter test ...`
-
-See:
 - [.github/workflows/main.yaml](../../.github/workflows/main.yaml)
 
 ---
@@ -395,8 +376,8 @@ See:
 Local schema is kept in sync with production by pulling schema from Supabase
 Cloud (`supabase db pull`) before starting the local stack.
 
-This is the default in CI so pipeline-tagged tests run against a fully local
-stack that matches prod schema.
+Run this before local-stack validation so the stack matches the latest prod
+schema.
 
 
 

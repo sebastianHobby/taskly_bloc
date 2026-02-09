@@ -47,7 +47,7 @@ These are descriptive playbooks. They must not introduce new "must/shall" rules.
 
 ## Runbooks (operational)
 
-- Local Supabase + PowerSync E2E stack: [runbooks/LOCAL_E2E_STACK.md](runbooks/LOCAL_E2E_STACK.md)
+- Local Supabase + PowerSync stack: [runbooks/LOCAL_E2E_STACK.md](runbooks/LOCAL_E2E_STACK.md)
 
 ## Tooling
 

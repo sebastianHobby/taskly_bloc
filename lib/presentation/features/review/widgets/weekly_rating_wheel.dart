@@ -25,8 +25,8 @@ class WeeklyRatingWheel extends StatelessWidget {
   final bool enableTap;
 
   static const double _hubRadiusFactor = 0.18;
-  static const double _sliceGapRadians = 0.08;
-  static const double _ringGap = 2.5;
+  static const double _sliceGapRadians = 0;
+  static const double _ringGap = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -265,24 +265,6 @@ class _WeeklyRatingWheelPainter extends CustomPainter {
 
         canvas.drawPath(path, paint);
       }
-    }
-
-    final spokePaint = Paint()
-      ..color = hubBorderColor.withOpacity(0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-
-    for (var i = 0; i < entries.length; i++) {
-      final angle = startAngle + i * sliceAngle;
-      final start = Offset(
-        center.dx + math.cos(angle) * hubRadius,
-        center.dy + math.sin(angle) * hubRadius,
-      );
-      final end = Offset(
-        center.dx + math.cos(angle) * radius,
-        center.dy + math.sin(angle) * radius,
-      );
-      canvas.drawLine(start, end, spokePaint);
     }
 
     if (selectedIndex >= 0 && selectedIndex < entries.length) {

@@ -141,6 +141,8 @@ void main() {
       final now = DateTime.utc(2025, 1, 1);
       final v1 = _value('v1', 'Health', now);
       final v2 = _value('v2', 'Work', now);
+      final completedAt1 = now.subtract(const Duration(days: 2));
+      final completedAt2 = now.subtract(const Duration(days: 9));
 
       final task1 = Task(
         id: 't1',
@@ -158,6 +160,12 @@ void main() {
           primaryValueId: 'v1',
         ),
         projectId: 'p1',
+        occurrence: OccurrenceData(
+          date: completedAt1,
+          isRescheduled: false,
+          completionId: 'c1',
+          completedAt: completedAt1,
+        ),
       );
       final task2 = Task(
         id: 't2',
@@ -175,17 +183,17 @@ void main() {
           primaryValueId: 'v2',
         ),
         projectId: 'p2',
+        occurrence: OccurrenceData(
+          date: completedAt2,
+          isRescheduled: false,
+          completionId: 'c2',
+          completedAt: completedAt2,
+        ),
       );
 
       final taskRepo = _FakeTaskRepository([
-        _TaskItem(
-          task: task1,
-          completedAt: now.subtract(const Duration(days: 2)),
-        ),
-        _TaskItem(
-          task: task2,
-          completedAt: now.subtract(const Duration(days: 9)),
-        ),
+        _TaskItem(task: task1, completedAt: completedAt1),
+        _TaskItem(task: task2, completedAt: completedAt2),
       ]);
 
       final dayKeyService = HomeDayKeyService(
@@ -938,7 +946,12 @@ class _FakeOccurrenceExpander implements OccurrenceStreamExpanderContract {
     required DateTime rangeStart,
     required DateTime rangeEnd,
     bool Function(Task p1)? postExpansionFilter,
-  }) => tasksStream;
+  }) {
+    if (postExpansionFilter == null) return tasksStream;
+    return tasksStream.map(
+      (tasks) => tasks.where(postExpansionFilter).toList(growable: false),
+    );
+  }
 
   @override
   Stream<List<Project>> expandProjectOccurrences({
@@ -948,7 +961,12 @@ class _FakeOccurrenceExpander implements OccurrenceStreamExpanderContract {
     required DateTime rangeStart,
     required DateTime rangeEnd,
     bool Function(Project p1)? postExpansionFilter,
-  }) => projectsStream;
+  }) {
+    if (postExpansionFilter == null) return projectsStream;
+    return projectsStream.map(
+      (projects) => projects.where(postExpansionFilter).toList(growable: false),
+    );
+  }
 
   @override
   List<Task> expandTaskOccurrencesSync({
@@ -958,7 +976,10 @@ class _FakeOccurrenceExpander implements OccurrenceStreamExpanderContract {
     required DateTime rangeStart,
     required DateTime rangeEnd,
     bool Function(Task p1)? postExpansionFilter,
-  }) => tasks;
+  }) {
+    if (postExpansionFilter == null) return tasks;
+    return tasks.where(postExpansionFilter).toList(growable: false);
+  }
 
   @override
   List<Project> expandProjectOccurrencesSync({
@@ -968,5 +989,8 @@ class _FakeOccurrenceExpander implements OccurrenceStreamExpanderContract {
     required DateTime rangeStart,
     required DateTime rangeEnd,
     bool Function(Project p1)? postExpansionFilter,
-  }) => projects;
+  }) {
+    if (postExpansionFilter == null) return projects;
+    return projects.where(postExpansionFilter).toList(growable: false);
+  }
 }
