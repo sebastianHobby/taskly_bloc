@@ -555,7 +555,7 @@ Tests tagged `unit` or `widget` must be hermetic. They must not:
 - depend on wall-clock time (`DateTime.now()`)
 
 If the behavior requires real persistence/network, it must be tested under an
-explicit tag such as `integration`, `repository`, or `pipeline`.
+explicit tag such as `integration` or `repository`.
 
 #### TG-002-A -- Mandatory safe wrappers for new tests
 
@@ -652,7 +652,7 @@ Normative rules:
 
 - New or changed behavior must add tests at the appropriate layer
   (unit/widget for pure logic and UI wiring, repository/integration for
-  persistence and multi-component flows, pipeline for sync stack behavior).
+  persistence and multi-component flows).
 - Filtered coverage must not regress for packages touched by the change.
 - If a package is materially below its coverage goals, changes touching that
   package must include tests that increase coverage or an explicit exception.
@@ -672,7 +672,6 @@ Operational guidance (non-normative):
 | `test/presentation/**` | `widget` (or `unit` for pure BLoC/state) | hermetic | widget composition + BLoC wiring |
 | `test/data/**` | `repository` / `integration` | local DB only | repository behavior against real DB |
 | `test/integration/**` | `integration` | local DB only | multi-component flows without network |
-| `test/integration_test/**` | `pipeline` | local stack only | local Supabase/PowerSync pipeline |
 | `test/contracts/**` | `unit` | hermetic | shared expectations across impls |
 | `test/diagnosis/**` | `diagnosis` (optional) | varies | repros/investigations (not default) |
 

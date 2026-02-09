@@ -297,40 +297,73 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
                   ? l10n.weeklyReviewSkipCheckInAction
                   : l10n.continueLabel);
 
+        final header = Padding(
+          padding: EdgeInsets.fromLTRB(
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceXs2,
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceXs2,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.weeklyReviewTitle,
+                  style: theme.textTheme.titleLarge,
+                ),
+              ),
+              TextButton(
+                onPressed: _openSettings,
+                child: Text(context.l10n.settingsTitle),
+              ),
+              IconButton(
+                tooltip: context.l10n.closeLabel,
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+        );
+
+        final footer = Padding(
+          padding: EdgeInsets.fromLTRB(
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceSm,
+            TasklyTokens.of(context).spaceLg,
+            TasklyTokens.of(context).spaceLg,
+          ),
+          child: Row(
+            children: [
+              if (_pageIndex > 0)
+                TextButton(
+                  onPressed: () => _controller.previousPage(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                  ),
+                  child: Text(context.l10n.backLabel),
+                ),
+              const Spacer(),
+              FilledButton(
+                onPressed: _goNext,
+                child: Text(buttonLabel),
+              ),
+            ],
+          ),
+        );
+
         return Scaffold(
           body: SafeArea(
             child: Column(
               children: [
-                if (!isCheckInPage)
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      TasklyTokens.of(context).spaceLg,
-                      TasklyTokens.of(context).spaceXs2,
-                      TasklyTokens.of(context).spaceLg,
-                      TasklyTokens.of(context).spaceXs2,
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            l10n.weeklyReviewTitle,
-                            style: theme.textTheme.titleLarge,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: _openSettings,
-                          child: Text(context.l10n.settingsTitle),
-                        ),
-                        IconButton(
-                          tooltip: context.l10n.closeLabel,
-                          onPressed: () => Navigator.of(context).maybePop(),
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
-                    ),
-                  ),
+                Offstage(
+                  offstage: isCheckInPage,
+                  child: header,
+                ),
                 Expanded(
                   child: PageView(
+                    key: const PageStorageKey<String>(
+                      'weekly_review_page_view',
+                    ),
                     controller: _controller,
                     onPageChanged: (index) {
                       AppLog.warnStructured(
@@ -346,32 +379,10 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
                     children: pages,
                   ),
                 ),
-                if (!isCheckInPage)
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      TasklyTokens.of(context).spaceLg,
-                      TasklyTokens.of(context).spaceSm,
-                      TasklyTokens.of(context).spaceLg,
-                      TasklyTokens.of(context).spaceLg,
-                    ),
-                    child: Row(
-                      children: [
-                        if (_pageIndex > 0)
-                          TextButton(
-                            onPressed: () => _controller.previousPage(
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeOut,
-                            ),
-                            child: Text(context.l10n.backLabel),
-                          ),
-                        const Spacer(),
-                        FilledButton(
-                          onPressed: _goNext,
-                          child: Text(buttonLabel),
-                        ),
-                      ],
-                    ),
-                  ),
+                Offstage(
+                  offstage: isCheckInPage,
+                  child: footer,
+                ),
               ],
             ),
           ),

@@ -11,8 +11,6 @@ import 'dart:io';
 /// - test/** (all Dart files)
 ///
 /// Allowed directories:
-/// - test/integration_test/** (pipeline/local-stack; still recommended to be
-///   deterministic, but not enforced here)
 /// - test/diagnosis/** (ad-hoc debugging repros)
 ///
 /// Escape hatch:
@@ -45,9 +43,6 @@ Future<void> main(List<String> args) async {
     final relativePath = _toRelativePath(repoRoot.path, entity.path);
     final normalizedRelPath = _normalize(relativePath);
 
-    if (normalizedRelPath.startsWith('test/integration_test/')) {
-      continue;
-    }
     if (normalizedRelPath.startsWith('test/diagnosis/')) {
       continue;
     }

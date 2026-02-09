@@ -14,6 +14,9 @@ class _MockGoTrueClient extends Mock implements supabase.GoTrueClient {}
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
+  setUpAll(() {
+    registerFallbackValue(supabase.UserAttributes());
+  });
   setUp(setUpTestEnvironment);
 
   late _MockSupabaseClient client;

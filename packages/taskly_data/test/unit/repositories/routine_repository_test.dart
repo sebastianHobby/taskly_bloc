@@ -53,7 +53,10 @@ void main() {
       );
       final routineId = (await db.select(db.routinesTable).getSingle()).id;
 
-      await repo.recordCompletion(routineId: routineId);
+      await repo.recordCompletion(
+        routineId: routineId,
+        completedAtUtc: DateTime.utc(2025, 1, 15, 12),
+      );
       final removed = await repo.removeLatestCompletionForDay(
         routineId: routineId,
         dayKeyUtc: DateTime.utc(2025, 1, 15),

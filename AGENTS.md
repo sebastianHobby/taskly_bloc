@@ -86,16 +86,6 @@ When asked to design UI/UX:
   sandbox: spawn setup refresh”), rerun it with escalated permissions.
 
 
-### E2E / pipeline tests (strict)
-
-- Follow `doc/architecture/runbooks/LOCAL_E2E_STACK.md`.
-- Start the local stack before running pipeline tests:
-  - `powershell -File tool/e2e/Start-LocalE2EStack.ps1 -ResetDb`
-- Run pipeline tests via the helper script (not direct `flutter test`):
-  - `powershell -File tool/e2e/Run-LocalPipelineIntegrationTests.ps1 -ResetDb`
-- If the script reports missing app tables, run `supabase db pull` (after
-  linking/auth) and re-run the start script.
-
 ### Code generation
 
 - If build_runner output is needed after changes, run build_runner.

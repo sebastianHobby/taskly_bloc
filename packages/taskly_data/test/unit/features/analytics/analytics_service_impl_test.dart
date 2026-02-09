@@ -193,7 +193,7 @@ void main() {
         clock: FixedClock(now),
       );
       final occurrenceReadService = OccurrenceReadService(
-        taskRepository: _FakeTaskRepository(const []),
+        taskRepository: taskRepo,
         projectRepository: _FakeProjectRepository(const []),
         dayKeyService: dayKeyService,
         occurrenceExpander: _FakeOccurrenceExpander(),

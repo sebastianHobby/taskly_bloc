@@ -9,7 +9,6 @@ import 'dart:io';
 /// - test/presentation/**    -> must include tag: widget OR unit
 /// - test/data/**            -> must include tag: repository OR integration
 /// - test/integration/**     -> must include tag: integration
-/// - test/integration_test/**-> must include tag: pipeline
 /// - test/diagnosis/**       -> must include tag: diagnosis
 ///
 /// Implementation: enforce a file-level annotation:
@@ -123,10 +122,6 @@ List<String>? _expectedTagsForPath(String normalizedRelPath) {
 
   if (normalizedRelPath.startsWith('test/integration/')) {
     return const ['integration'];
-  }
-
-  if (normalizedRelPath.startsWith('test/integration_test/')) {
-    return const ['pipeline'];
   }
 
   if (normalizedRelPath.startsWith('test/diagnosis/')) {

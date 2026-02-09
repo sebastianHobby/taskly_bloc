@@ -12,7 +12,6 @@ test/
 â”œâ”€â”€ domain/             # Domain models, queries, and business logic tests
 â”œâ”€â”€ presentation/       # BLoC and UI tests
 â”œâ”€â”€ integration/        # Integration tests with real database
-â”œâ”€â”€ integration_test/   # Local-stack pipeline tests (Supabase + PowerSync)
 â”œâ”€â”€ contracts/          # Shared contract tests across implementations
 â”œâ”€â”€ diagnosis/          # Debugging and investigation tests
 â”œâ”€â”€ helpers/            # Shared test utilities and helpers
@@ -31,15 +30,6 @@ Fast, isolated tests using mocks. Located throughout the directory structure.
 Tests using real in-memory database. Located in `integration/`.
 - **Run:** `flutter test --tags=integration`
 - **Coverage:** End-to-end CRUD operations, cross-feature workflows
-
-### Pipeline Tests (local Supabase + PowerSync)
-Pipeline tests require a real local stack and run via the integration test
-entrypoint to allow plugins + real HTTP.
-- **Integration-only behavior:** these tests self-skip when not running under
-  `IntegrationTestWidgetsFlutterBinding`, so `flutter test -t pipeline` will
-  not execute them. Always use the entrypoint below.
-- **Run (Windows):** `powershell -File tool/e2e/Run-LocalPipelineIntegrationTests.ps1 -ResetDb`
-- **Entrypoint:** `integration_test/powersync_pipeline_entrypoint_test.dart`
 
 ### Widget Tests
 Flutter widget tests. Located in `test/presentation/**`.
@@ -61,12 +51,10 @@ Common presets:
 Note: `flutter test` does not currently support `--preset` in this repo's
 Flutter SDK. Use tag filters (or the VS Code tasks) instead.
 
-- Fast loop: `flutter test -x integration -x slow -x repository -x flaky -x pipeline -x diagnosis`
-- Broader: `flutter test -x slow -x flaky -x pipeline -x diagnosis`
+- Fast loop: `flutter test -x integration -x slow -x repository -x flaky -x diagnosis`
+- Broader: `flutter test -x slow -x flaky -x diagnosis`
 - DB confidence: `flutter test -t integration -t repository`
-- Exclude local-stack pipeline: `flutter test -x pipeline -x diagnosis`
-  - Note: pipeline tests are integration-test-only and will not execute under
-    plain `flutter test`. Use the pipeline script/entrypoint.
+- Exclude diagnosis: `flutter test -x diagnosis`
 
 ### All Tests
 ```bash
@@ -101,7 +89,7 @@ tool/Run-Coverage.ps1 -CoveragePackage "^(taskly_bloc|taskly_core|taskly_data|ta
 
 ### Fast Tests Only
 ```bash
-flutter test -x integration -x slow -x repository -x flaky -x pipeline -x diagnosis
+flutter test -x integration -x slow -x repository -x flaky -x diagnosis
 ```
 
 ### Specific Feature
@@ -275,10 +263,9 @@ void main() {
 
 ```text
 1) flutter analyze
-2) small loop: flutter test -x integration -x slow -x repository -x flaky -x pipeline -x diagnosis
-3) broader loop (before merging): flutter test -x slow -x flaky -x pipeline -x diagnosis or -t integration -t repository
-4) when touching sync/persistence pipelines: run tag=pipeline intentionally
-5) when failures happen: inspect test/last_run.json artifacts
+2) small loop: flutter test -x integration -x slow -x repository -x flaky -x diagnosis
+3) broader loop (before merging): flutter test -x slow -x flaky -x diagnosis or -t integration -t repository
+4) when failures happen: inspect test/last_run.json artifacts
 ```
 ```dart
 expect(state, isLoadingState());
