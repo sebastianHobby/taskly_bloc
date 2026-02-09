@@ -104,6 +104,10 @@ abstract class AnalyticsService {
   /// Used to determine if Reflector mode has sufficient history.
   Future<int> getTotalRecentCompletions({required int days});
 
+  /// Returns the total number of completed task occurrences in the last [days]
+  /// days.
+  Future<int> getRecentTaskCompletionsCount({required int days});
+
   // === Enhanced Values Screen Analytics ===
 
   /// Returns completion distribution by value over the last [weeks] weeks.

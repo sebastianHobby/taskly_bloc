@@ -57,7 +57,7 @@ class RoutineSelectionAppBar extends StatelessWidget
               IconButton(
                 tooltip: context.l10n.routineUnlogLabel,
                 onPressed: () => _unlogSelected(context),
-                icon: const Icon(Icons.restart_alt_rounded),
+                icon: const Icon(Icons.undo_rounded),
               ),
             PopupMenuButton<_RoutineSelectionMenuItem>(
               tooltip: MaterialLocalizations.of(context).moreButtonTooltip,

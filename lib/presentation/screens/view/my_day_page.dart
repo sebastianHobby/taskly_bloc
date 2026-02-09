@@ -362,6 +362,10 @@ class _MyDayLoadedBody extends StatelessWidget {
                 ),
               _ => (null, null),
             };
+            final hasPlan = switch (state) {
+              MyDayLoaded(:final ritualStatus) => ritualStatus.hasAnyPick,
+              _ => false,
+            };
 
             return _MyDaySummaryHeader(
               icon: iconSet.selectedIcon,
@@ -369,6 +373,8 @@ class _MyDayLoadedBody extends StatelessWidget {
               dateLabel: dateLabel,
               plannedCount: plannedCount,
               completedCount: completedCount,
+              hasPlan: hasPlan,
+              onEditPlan: onOpenPlan,
             );
           },
         ),
@@ -408,13 +414,6 @@ class _MyDayLoadedBody extends StatelessWidget {
                         ),
                         SizedBox(height: TasklyTokens.of(context).spaceSm),
                       ],
-                      if (state.ritualStatus.hasAnyPick) ...[
-                        _MyDayHeaderRow(
-                          hasPlan: state.ritualStatus.hasAnyPick,
-                          onUpdatePlan: onOpenPlan,
-                        ),
-                        SizedBox(height: TasklyTokens.of(context).spaceSm),
-                      ],
                       _MyDayTaskList(
                         today: today,
                         dayKeyUtc: dayKeyUtc,
@@ -446,6 +445,8 @@ class _MyDaySummaryHeader extends StatelessWidget {
     required this.dateLabel,
     required this.plannedCount,
     required this.completedCount,
+    required this.hasPlan,
+    required this.onEditPlan,
   });
 
   final IconData icon;
@@ -453,6 +454,8 @@ class _MyDaySummaryHeader extends StatelessWidget {
   final String dateLabel;
   final int? plannedCount;
   final int? completedCount;
+  final bool hasPlan;
+  final VoidCallback? onEditPlan;
 
   @override
   Widget build(BuildContext context) {
@@ -461,6 +464,7 @@ class _MyDaySummaryHeader extends StatelessWidget {
     final scheme = theme.colorScheme;
     final planned = plannedCount;
     final completed = completedCount;
+    final l10n = context.l10n;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -473,6 +477,7 @@ class _MyDaySummaryHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Icon(
                 icon,
@@ -480,12 +485,25 @@ class _MyDaySummaryHeader extends StatelessWidget {
                 size: tokens.spaceLg3,
               ),
               SizedBox(width: tokens.spaceSm),
-              Text(
-                title,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
+              if (hasPlan && onEditPlan != null)
+                TextButton(
+                  key: GuidedTourAnchors.myDayPlanButton,
+                  onPressed: onEditPlan,
+                  style: TextButton.styleFrom(
+                    textStyle: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  child: Text(l10n.myDayUpdatePlanTitle),
+                ),
             ],
           ),
           SizedBox(height: tokens.spaceSm),
@@ -537,60 +555,6 @@ class _MyDaySummaryPill extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _MyDayHeaderRow extends StatelessWidget {
-  const _MyDayHeaderRow({
-    required this.hasPlan,
-    required this.onUpdatePlan,
-  });
-
-  final bool hasPlan;
-  final VoidCallback onUpdatePlan;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = context.l10n;
-    final tokens = TasklyTokens.of(context);
-
-    final button = hasPlan
-        ? OutlinedButton(
-            key: GuidedTourAnchors.myDayPlanButton,
-            onPressed: onUpdatePlan,
-            style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: tokens.spaceLg),
-              textStyle: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            child: Text(l10n.myDayUpdatePlanTitle),
-          )
-        : FilledButton(
-            key: GuidedTourAnchors.myDayPlanButton,
-            onPressed: onUpdatePlan,
-            style: FilledButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: tokens.spaceLg),
-              textStyle: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            child: Text(l10n.myDayPlanMyDayTitle),
-          );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Spacer(),
-            button,
-          ],
-        ),
-      ],
     );
   }
 }

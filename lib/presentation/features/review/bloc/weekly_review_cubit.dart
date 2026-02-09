@@ -5,6 +5,7 @@ import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart';
 import 'package:taskly_domain/time.dart';
@@ -58,28 +59,38 @@ class WeeklyReviewConfig {
 
 enum WeeklyReviewStatus { loading, ready, failure }
 
-class WeeklyReviewValueRing {
-  const WeeklyReviewValueRing({
+class WeeklyReviewValueShare {
+  const WeeklyReviewValueShare({
     required this.value,
-    required this.percent,
+    required this.completionCount,
+    required this.actualPercent,
+    required this.expectedPercent,
   });
 
   final Value value;
-  final double percent;
+  final int completionCount;
+  final double actualPercent;
+  final double expectedPercent;
+
+  double get deltaPercent => actualPercent - expectedPercent;
 }
 
 class WeeklyReviewValuesSummary {
   const WeeklyReviewValuesSummary({
-    required this.rings,
-    required this.topValueName,
-    required this.bottomValueName,
-    required this.hasData,
+    required this.shares,
+    required this.taskCompletions,
+    required this.routineCompletions,
+    required this.alignedCompletions,
+    required this.hasValues,
+    required this.hasCompletions,
   });
 
-  final List<WeeklyReviewValueRing> rings;
-  final String? topValueName;
-  final String? bottomValueName;
-  final bool hasData;
+  final List<WeeklyReviewValueShare> shares;
+  final int taskCompletions;
+  final int routineCompletions;
+  final int alignedCompletions;
+  final bool hasValues;
+  final bool hasCompletions;
 }
 
 class WeeklyReviewValueWin {
@@ -152,6 +163,42 @@ class WeeklyReviewRatingsSummary {
   }
 }
 
+enum WeeklyReviewEvidenceStatus { idle, loading, ready, failure }
+
+enum WeeklyReviewEvidenceRange { lastWeek, last30Days, last90Days }
+
+class WeeklyReviewEvidenceItem {
+  const WeeklyReviewEvidenceItem({
+    required this.id,
+    required this.name,
+    required this.count,
+    this.lastCompletedAtUtc,
+  });
+
+  final String id;
+  final String name;
+  final int count;
+  final DateTime? lastCompletedAtUtc;
+}
+
+class WeeklyReviewEvidenceState {
+  const WeeklyReviewEvidenceState({
+    required this.valueId,
+    required this.range,
+    required this.status,
+    required this.taskItems,
+    required this.routineItems,
+    this.error,
+  });
+
+  final String valueId;
+  final WeeklyReviewEvidenceRange range;
+  final WeeklyReviewEvidenceStatus status;
+  final List<WeeklyReviewEvidenceItem> taskItems;
+  final List<WeeklyReviewEvidenceItem> routineItems;
+  final Object? error;
+}
+
 enum WeeklyReviewMaintenanceSectionType {
   deadlineRisk,
   staleItems,
@@ -213,6 +260,7 @@ class WeeklyReviewState {
     this.valuesSummary,
     this.valueWins = const [],
     this.maintenanceSections = const [],
+    this.evidence,
     this.error,
   });
 
@@ -221,6 +269,7 @@ class WeeklyReviewState {
   final WeeklyReviewValuesSummary? valuesSummary;
   final List<WeeklyReviewValueWin> valueWins;
   final List<WeeklyReviewMaintenanceSection> maintenanceSections;
+  final WeeklyReviewEvidenceState? evidence;
   final Object? error;
 
   WeeklyReviewState copyWith({
@@ -229,6 +278,7 @@ class WeeklyReviewState {
     WeeklyReviewValuesSummary? valuesSummary,
     List<WeeklyReviewValueWin>? valueWins,
     List<WeeklyReviewMaintenanceSection>? maintenanceSections,
+    WeeklyReviewEvidenceState? evidence,
     Object? error,
   }) {
     return WeeklyReviewState(
@@ -237,6 +287,7 @@ class WeeklyReviewState {
       valuesSummary: valuesSummary ?? this.valuesSummary,
       valueWins: valueWins ?? this.valueWins,
       maintenanceSections: maintenanceSections ?? this.maintenanceSections,
+      evidence: evidence ?? this.evidence,
       error: error,
     );
   }
@@ -268,6 +319,16 @@ final class WeeklyReviewValueRatingChanged extends WeeklyReviewEvent {
   final int rating;
 }
 
+final class WeeklyReviewEvidenceRequested extends WeeklyReviewEvent {
+  const WeeklyReviewEvidenceRequested({
+    required this.valueId,
+    required this.range,
+  });
+
+  final String valueId;
+  final WeeklyReviewEvidenceRange range;
+}
+
 class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
   WeeklyReviewBloc({
     required AnalyticsService analyticsService,
@@ -292,6 +353,10 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     on<WeeklyReviewValueRatingChanged>(
       _onValueRatingChanged,
       transformer: sequential(),
+    );
+    on<WeeklyReviewEvidenceRequested>(
+      _onEvidenceRequested,
+      transformer: restartable(),
     );
   }
 
@@ -334,12 +399,24 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       );
 
       final shouldShowValuesSummary = config.valuesSummaryEnabled;
-      final summary = shouldShowValuesSummary
-          ? await _buildValuesSummary(config)
-          : null;
-      final wins = shouldShowValuesSummary
-          ? await _buildValueWins(config)
-          : const <WeeklyReviewValueWin>[];
+      WeeklyReviewValuesSummary? summary;
+      List<WeeklyReviewValueWin> wins = const <WeeklyReviewValueWin>[];
+      if (shouldShowValuesSummary) {
+        final values = await _valueRepository.getAll();
+        final completionStats = await _buildValuesCompletionStats(
+          config: config,
+          values: values,
+        );
+        summary = _buildValuesSummary(
+          values: values,
+          stats: completionStats,
+        );
+        wins = _buildValueWins(
+          config: config,
+          values: values,
+          stats: completionStats,
+        );
+      }
 
       if (emit.isDone) return;
 
@@ -365,7 +442,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
           'ratingsEnabled': ratingsSummary.ratingsEnabled,
           'ratingsEntries': ratingsSummary.entries.length,
           'ratingsComplete': ratingsSummary.isComplete,
-          'valuesSummary': summary?.hasData ?? false,
+          'valuesSummary': summary?.hasCompletions ?? false,
           'valueWins': wins.length,
         },
       );
@@ -458,6 +535,58 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     );
   }
 
+  Future<void> _onEvidenceRequested(
+    WeeklyReviewEvidenceRequested event,
+    Emitter<WeeklyReviewState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        evidence: WeeklyReviewEvidenceState(
+          valueId: event.valueId,
+          range: event.range,
+          status: WeeklyReviewEvidenceStatus.loading,
+          taskItems: const [],
+          routineItems: const [],
+        ),
+      ),
+    );
+
+    try {
+      final (tasks, routines) = await _buildEvidenceItems(
+        valueId: event.valueId,
+        range: event.range,
+      );
+
+      if (emit.isDone) return;
+
+      emit(
+        state.copyWith(
+          evidence: WeeklyReviewEvidenceState(
+            valueId: event.valueId,
+            range: event.range,
+            status: WeeklyReviewEvidenceStatus.ready,
+            taskItems: tasks,
+            routineItems: routines,
+          ),
+        ),
+      );
+    } catch (error) {
+      if (emit.isDone) return;
+      emit(
+        state.copyWith(
+          evidence: WeeklyReviewEvidenceState(
+            valueId: event.valueId,
+            range: event.range,
+            status: WeeklyReviewEvidenceStatus.failure,
+            taskItems: const [],
+            routineItems: const [],
+            error: error,
+          ),
+        ),
+      );
+    }
+  }
+
   Future<WeeklyReviewRatingsSummary> _buildRatingsSummary({
     required WeeklyReviewConfig config,
   }) async {
@@ -511,13 +640,15 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     final taskCompletions = await _analyticsService.getRecentCompletionsByValue(
       days: days,
     );
-    final valueTrends = await _analyticsService.getValueWeeklyTrends(
-      weeks: windowWeeks,
-    );
-
     final routines = await _routineRepository.getAll(includeInactive: true);
     final routineById = {for (final routine in routines) routine.id: routine};
     final routineCompletions = await _routineRepository.getCompletions();
+    final completionTrends = await _buildCompletionTrends(
+      values: values,
+      weeks: windowWeeks,
+      routineById: routineById,
+      routineCompletions: routineCompletions,
+    );
     final startDay = dateOnly(nowUtc).subtract(Duration(days: days - 1));
     final endDay = dateOnly(nowUtc);
 
@@ -558,7 +689,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
           history: valueHistory.take(4).toList(growable: false),
           taskCompletions: taskCompletions[value.id] ?? 0,
           routineCompletions: routineCounts[value.id] ?? 0,
-          trend: valueTrends[value.id] ?? const <double>[],
+          trend: completionTrends[value.id] ?? const <double>[],
         ),
       );
     }
@@ -665,77 +796,230 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     return today.subtract(Duration(days: today.weekday - 1));
   }
 
-  Future<WeeklyReviewValuesSummary> _buildValuesSummary(
-    WeeklyReviewConfig config,
-  ) async {
-    final values = await _valueRepository.getAll();
+  Future<(List<WeeklyReviewEvidenceItem>, List<WeeklyReviewEvidenceItem>)>
+  _buildEvidenceItems({
+    required String valueId,
+    required WeeklyReviewEvidenceRange range,
+  }) async {
+    final nowUtc = _nowService.nowUtc();
+    final days = _evidenceRangeDays(range);
+    final startDay = dateOnly(nowUtc).subtract(Duration(days: days - 1));
+    final endDay = dateOnly(nowUtc);
+
+    final completions = await _taskRepository.watchCompletionHistory().first;
+    final taskCounts = <String, int>{};
+    final taskLatestCompletion = <String, DateTime>{};
+
+    for (final completion in completions) {
+      final day = dateOnly(completion.completedAt);
+      if (day.isBefore(startDay) || day.isAfter(endDay)) continue;
+      final current = taskCounts[completion.entityId] ?? 0;
+      taskCounts[completion.entityId] = current + 1;
+      final latest = taskLatestCompletion[completion.entityId];
+      if (latest == null || completion.completedAt.isAfter(latest)) {
+        taskLatestCompletion[completion.entityId] = completion.completedAt;
+      }
+    }
+
+    final tasks = taskCounts.isEmpty
+        ? const <Task>[]
+        : await _taskRepository.getByIds(taskCounts.keys);
+
+    final taskItems =
+        tasks
+            .where((task) => _taskMatchesValue(task, valueId))
+            .map(
+              (task) => WeeklyReviewEvidenceItem(
+                id: task.id,
+                name: task.name,
+                count: taskCounts[task.id] ?? 0,
+                lastCompletedAtUtc: taskLatestCompletion[task.id],
+              ),
+            )
+            .where((item) => item.count > 0)
+            .toList(growable: false)
+          ..sort(_compareEvidenceItems);
+
+    final routines = await _routineRepository.getAll(includeInactive: true);
+    final routineById = {for (final routine in routines) routine.id: routine};
+    final routineCompletions = await _routineRepository.getCompletions();
+    final routineCounts = <String, int>{};
+    final routineLatestCompletion = <String, DateTime>{};
+
+    for (final completion in routineCompletions) {
+      final day = dateOnly(completion.completedAtUtc);
+      if (day.isBefore(startDay) || day.isAfter(endDay)) continue;
+      final routine = routineById[completion.routineId];
+      if (routine == null) continue;
+      if (routine.valueId != valueId) continue;
+      final current = routineCounts[completion.routineId] ?? 0;
+      routineCounts[completion.routineId] = current + 1;
+      final latest = routineLatestCompletion[completion.routineId];
+      if (latest == null || completion.completedAtUtc.isAfter(latest)) {
+        routineLatestCompletion[completion.routineId] =
+            completion.completedAtUtc;
+      }
+    }
+
+    final routineItems =
+        routineCounts.entries
+            .map((entry) {
+              final routine = routineById[entry.key];
+              if (routine == null) return null;
+              return WeeklyReviewEvidenceItem(
+                id: routine.id,
+                name: routine.name,
+                count: entry.value,
+                lastCompletedAtUtc: routineLatestCompletion[entry.key],
+              );
+            })
+            .whereType<WeeklyReviewEvidenceItem>()
+            .toList(growable: false)
+          ..sort(_compareEvidenceItems);
+
+    return (taskItems, routineItems);
+  }
+
+  int _evidenceRangeDays(WeeklyReviewEvidenceRange range) {
+    return switch (range) {
+      WeeklyReviewEvidenceRange.lastWeek => 7,
+      WeeklyReviewEvidenceRange.last30Days => 30,
+      WeeklyReviewEvidenceRange.last90Days => 90,
+    };
+  }
+
+  bool _taskMatchesValue(Task task, String valueId) {
+    final taskValueIds = <String>{
+      for (final value in task.values) value.id,
+      for (final value in task.project?.values ?? const <Value>[]) value.id,
+    };
+    return taskValueIds.contains(valueId);
+  }
+
+  int _compareEvidenceItems(
+    WeeklyReviewEvidenceItem a,
+    WeeklyReviewEvidenceItem b,
+  ) {
+    final aDate = a.lastCompletedAtUtc;
+    final bDate = b.lastCompletedAtUtc;
+    if (aDate != null && bDate != null) {
+      final dateCompare = bDate.compareTo(aDate);
+      if (dateCompare != 0) return dateCompare;
+    } else if (aDate != null) {
+      return -1;
+    } else if (bDate != null) {
+      return 1;
+    }
+    return a.name.compareTo(b.name);
+  }
+
+  Future<_ValuesCompletionStats> _buildValuesCompletionStats({
+    required WeeklyReviewConfig config,
+    required List<Value> values,
+  }) async {
     if (values.isEmpty) {
-      return const WeeklyReviewValuesSummary(
-        rings: [],
-        topValueName: null,
-        bottomValueName: null,
-        hasData: false,
-      );
+      return const _ValuesCompletionStats.empty();
     }
 
     final weeks = config.valuesWindowWeeks.clamp(1, 12);
     final days = weeks * 7;
-    final completions = await _analyticsService.getRecentCompletionsByValue(
-      days: days,
-    );
+    final taskCompletionsByValue = await _analyticsService
+        .getRecentCompletionsByValue(days: days);
+    final taskCompletions = await _analyticsService
+        .getRecentTaskCompletionsCount(days: days);
+    final routineStats = await _buildRoutineCompletionsByValue(days: days);
 
-    final total = completions.values.fold<int>(0, (sum, count) => sum + count);
-    if (total == 0) {
-      return const WeeklyReviewValuesSummary(
-        rings: [],
-        topValueName: null,
-        bottomValueName: null,
-        hasData: false,
-      );
+    final combinedByValue = <String, int>{
+      for (final value in values) value.id: 0,
+    };
+    for (final entry in taskCompletionsByValue.entries) {
+      final current = combinedByValue[entry.key];
+      if (current == null) continue;
+      combinedByValue[entry.key] = current + entry.value;
+    }
+    for (final entry in routineStats.counts.entries) {
+      final current = combinedByValue[entry.key];
+      if (current == null) continue;
+      combinedByValue[entry.key] = current + entry.value;
     }
 
-    final entries =
-        values
-            .map((value) {
-              final count = completions[value.id] ?? 0;
-              final percent = total == 0 ? 0.0 : count / total * 100;
-              return WeeklyReviewValueRing(
-                value: value,
-                percent: percent,
-              );
-            })
-            .toList(growable: false)
-          ..sort((a, b) => b.percent.compareTo(a.percent));
+    final alignedCompletions = combinedByValue.values.fold<int>(
+      0,
+      (sum, count) => sum + count,
+    );
 
-    final topValue = entries.isEmpty ? null : entries.first.value.name;
-    final bottomValue = entries.isEmpty ? null : entries.last.value.name;
-    final rings = entries.take(5).toList(growable: false);
-
-    return WeeklyReviewValuesSummary(
-      rings: rings,
-      topValueName: topValue,
-      bottomValueName: bottomValue,
-      hasData: true,
+    return _ValuesCompletionStats(
+      completionsByValue: combinedByValue,
+      taskCompletions: taskCompletions,
+      routineCompletions: routineStats.totalCount,
+      alignedCompletions: alignedCompletions,
     );
   }
 
-  Future<List<WeeklyReviewValueWin>> _buildValueWins(
-    WeeklyReviewConfig config,
-  ) async {
-    final values = await _valueRepository.getAll();
-    if (values.isEmpty) return const <WeeklyReviewValueWin>[];
+  WeeklyReviewValuesSummary _buildValuesSummary({
+    required List<Value> values,
+    required _ValuesCompletionStats stats,
+  }) {
+    if (values.isEmpty) {
+      return WeeklyReviewValuesSummary(
+        shares: const [],
+        taskCompletions: stats.taskCompletions,
+        routineCompletions: stats.routineCompletions,
+        alignedCompletions: stats.alignedCompletions,
+        hasValues: false,
+        hasCompletions: false,
+      );
+    }
 
-    final weeks = config.valuesWindowWeeks.clamp(1, 12);
-    final days = weeks * 7;
-    final completions = await _analyticsService.getRecentCompletionsByValue(
-      days: days,
+    final totalWeight = values.fold<int>(
+      0,
+      (sum, value) => sum + value.priority.weight,
     );
+    final alignedTotal = stats.alignedCompletions;
 
-    if (completions.isEmpty) return const <WeeklyReviewValueWin>[];
+    final shares =
+        values
+            .map((value) {
+              final count = stats.completionsByValue[value.id] ?? 0;
+              final actualPercent = alignedTotal == 0
+                  ? 0.0
+                  : count / alignedTotal * 100;
+              final expectedPercent = totalWeight == 0
+                  ? 0.0
+                  : value.priority.weight / totalWeight * 100;
+              return WeeklyReviewValueShare(
+                value: value,
+                completionCount: count,
+                actualPercent: actualPercent,
+                expectedPercent: expectedPercent,
+              );
+            })
+            .toList(growable: false)
+          ..sort((a, b) => b.actualPercent.compareTo(a.actualPercent));
+
+    return WeeklyReviewValuesSummary(
+      shares: shares,
+      taskCompletions: stats.taskCompletions,
+      routineCompletions: stats.routineCompletions,
+      alignedCompletions: stats.alignedCompletions,
+      hasValues: true,
+      hasCompletions: alignedTotal > 0,
+    );
+  }
+
+  List<WeeklyReviewValueWin> _buildValueWins({
+    required WeeklyReviewConfig config,
+    required List<Value> values,
+    required _ValuesCompletionStats stats,
+  }) {
+    if (values.isEmpty) return const <WeeklyReviewValueWin>[];
+    if (stats.completionsByValue.isEmpty) {
+      return const <WeeklyReviewValueWin>[];
+    }
 
     final valueById = {for (final v in values) v.id: v};
 
-    final ranked = completions.entries.toList()
+    final ranked = stats.completionsByValue.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
     final maxCount = config.valueWinsCount.clamp(1, 5);
@@ -751,6 +1035,110 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
           );
         })
         .toList(growable: false);
+  }
+
+  Future<_RoutineCompletionStats> _buildRoutineCompletionsByValue({
+    required int days,
+  }) async {
+    final routines = await _routineRepository.getAll(includeInactive: true);
+    if (routines.isEmpty) return const _RoutineCompletionStats.empty();
+
+    final routineById = {for (final routine in routines) routine.id: routine};
+    final completions = await _routineRepository.getCompletions();
+    if (completions.isEmpty) return const _RoutineCompletionStats.empty();
+
+    final nowLocal = _nowService.nowLocal();
+    final endDay = dateOnly(nowLocal);
+    final startDay = endDay.subtract(Duration(days: days - 1));
+
+    final counts = <String, int>{};
+    var totalCount = 0;
+
+    for (final completion in completions) {
+      final routine = routineById[completion.routineId];
+      if (routine == null) continue;
+      final completedDay = dateOnly(completion.completedAtUtc.toLocal());
+      if (completedDay.isBefore(startDay) || completedDay.isAfter(endDay)) {
+        continue;
+      }
+      totalCount += 1;
+      counts[routine.valueId] = (counts[routine.valueId] ?? 0) + 1;
+    }
+
+    return _RoutineCompletionStats(
+      counts: counts,
+      totalCount: totalCount,
+    );
+  }
+
+  Future<Map<String, List<double>>> _buildCompletionTrends({
+    required List<Value> values,
+    required int weeks,
+    required Map<String, Routine> routineById,
+    required List<RoutineCompletion> routineCompletions,
+  }) async {
+    final safeWeeks = weeks.clamp(1, 12);
+    final trends = <String, List<double>>{
+      for (final value in values) value.id: List.filled(safeWeeks, 0),
+    };
+    if (values.isEmpty) return trends;
+
+    final nowLocal = _nowService.nowLocal();
+    final endDay = dateOnly(nowLocal);
+    final startDay = endDay.subtract(Duration(days: safeWeeks * 7 - 1));
+
+    final taskCompletions = await _taskRepository
+        .watchCompletionHistory()
+        .first;
+    final taskIds = taskCompletions
+        .where((completion) {
+          final day = dateOnly(completion.completedAt.toLocal());
+          return !(day.isBefore(startDay) || day.isAfter(endDay));
+        })
+        .map((completion) => completion.entityId)
+        .toSet();
+
+    final tasks = taskIds.isEmpty
+        ? const <Task>[]
+        : await _taskRepository.getByIds(taskIds);
+    final taskById = {for (final task in tasks) task.id: task};
+
+    for (final completion in taskCompletions) {
+      final day = dateOnly(completion.completedAt.toLocal());
+      if (day.isBefore(startDay) || day.isAfter(endDay)) continue;
+      final index = day.difference(startDay).inDays ~/ 7;
+      if (index < 0 || index >= safeWeeks) continue;
+      final task = taskById[completion.entityId];
+      if (task == null) continue;
+      final valueIds = _effectiveValueIdsForTask(task);
+      if (valueIds.isEmpty) continue;
+      for (final valueId in valueIds) {
+        final series = trends[valueId];
+        if (series == null) continue;
+        series[index] = series[index] + 1;
+      }
+    }
+
+    for (final completion in routineCompletions) {
+      final day = dateOnly(completion.completedAtUtc.toLocal());
+      if (day.isBefore(startDay) || day.isAfter(endDay)) continue;
+      final index = day.difference(startDay).inDays ~/ 7;
+      if (index < 0 || index >= safeWeeks) continue;
+      final routine = routineById[completion.routineId];
+      if (routine == null) continue;
+      final series = trends[routine.valueId];
+      if (series == null) continue;
+      series[index] = series[index] + 1;
+    }
+
+    return trends;
+  }
+
+  Set<String> _effectiveValueIdsForTask(Task task) {
+    return <String>{
+      for (final value in task.values) value.id,
+      for (final value in task.project?.values ?? const <Value>[]) value.id,
+    };
   }
 
   List<WeeklyReviewMaintenanceSection> _buildMaintenanceSections(
@@ -926,4 +1314,38 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
   ) {
     return _buildMaintenanceSections(const [], config);
   }
+}
+
+class _ValuesCompletionStats {
+  const _ValuesCompletionStats({
+    required this.completionsByValue,
+    required this.taskCompletions,
+    required this.routineCompletions,
+    required this.alignedCompletions,
+  });
+
+  const _ValuesCompletionStats.empty()
+    : completionsByValue = const <String, int>{},
+      taskCompletions = 0,
+      routineCompletions = 0,
+      alignedCompletions = 0;
+
+  final Map<String, int> completionsByValue;
+  final int taskCompletions;
+  final int routineCompletions;
+  final int alignedCompletions;
+}
+
+class _RoutineCompletionStats {
+  const _RoutineCompletionStats({
+    required this.counts,
+    required this.totalCount,
+  });
+
+  const _RoutineCompletionStats.empty()
+    : counts = const <String, int>{},
+      totalCount = 0;
+
+  final Map<String, int> counts;
+  final int totalCount;
 }

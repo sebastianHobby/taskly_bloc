@@ -58,7 +58,7 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
                 tooltip: context.l10n.markIncompleteAction,
                 onPressed: () =>
                     _completeOrUncomplete(context, completed: false),
-                icon: const Icon(Icons.restart_alt_rounded),
+                icon: const Icon(Icons.undo_rounded),
               ),
             PopupMenuButton<_SelectionMenuItem>(
               tooltip: MaterialLocalizations.of(context).moreButtonTooltip,

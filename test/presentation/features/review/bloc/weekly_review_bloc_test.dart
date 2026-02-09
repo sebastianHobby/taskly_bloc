@@ -9,7 +9,9 @@ import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/review/bloc/weekly_review_cubit.dart';
 import 'package:taskly_domain/attention.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
 
@@ -65,6 +67,11 @@ void main() {
       ),
     ).thenAnswer((_) async => {'v-1': 3});
     when(
+      () => analyticsService.getRecentTaskCompletionsCount(
+        days: any(named: 'days'),
+      ),
+    ).thenAnswer((_) async => 3);
+    when(
       () => analyticsService.getValueWeeklyTrends(weeks: any(named: 'weeks')),
     ).thenAnswer(
       (_) async => {
@@ -100,6 +107,9 @@ void main() {
       ),
     ).thenAnswer((_) async => {});
     when(() => taskRepository.getByIds(any())).thenAnswer((_) async => []);
+    when(() => taskRepository.watchCompletionHistory()).thenAnswer(
+      (_) => Stream.value(const <CompletionHistoryData>[]),
+    );
   });
 
   blocTestSafe<WeeklyReviewBloc, WeeklyReviewState>(
@@ -130,7 +140,11 @@ void main() {
       ),
       isA<WeeklyReviewState>()
           .having((s) => s.status, 'status', WeeklyReviewStatus.ready)
-          .having((s) => s.valuesSummary?.hasData, 'hasData', true),
+          .having(
+            (s) => s.valuesSummary?.hasCompletions,
+            'hasCompletions',
+            true,
+          ),
     ],
   );
 
@@ -275,5 +289,85 @@ void main() {
       expect(ctx.operation, 'value.rating.upsert');
       expect(ctx.entityId, 'v-1');
     },
+  );
+
+  blocTestSafe<WeeklyReviewBloc, WeeklyReviewState>(
+    'evidence requested loads task and routine evidence',
+    build: buildBloc,
+    setUp: () {
+      final value = TestData.value(id: 'v-1', name: 'Value');
+      when(() => taskRepository.watchCompletionHistory()).thenAnswer(
+        (_) => Stream.value(
+          [
+            CompletionHistoryData(
+              id: 'c-1',
+              entityId: 'task-1',
+              completedAt: DateTime.utc(2025, 1, 14),
+            ),
+          ],
+        ),
+      );
+      when(() => taskRepository.getByIds(any())).thenAnswer(
+        (_) async => [
+          TestData.task(
+            id: 'task-1',
+            name: 'Task',
+            values: [value],
+          ),
+        ],
+      );
+      when(() => routineRepository.getAll(includeInactive: true)).thenAnswer(
+        (_) async => [
+          Routine(
+            id: 'routine-1',
+            createdAt: DateTime.utc(2025, 1, 1),
+            updatedAt: DateTime.utc(2025, 1, 1),
+            name: 'Routine',
+            valueId: 'v-1',
+            routineType: RoutineType.weeklyFixed,
+            targetCount: 1,
+          ),
+        ],
+      );
+      when(() => routineRepository.getCompletions()).thenAnswer(
+        (_) async => [
+          RoutineCompletion(
+            id: 'rc-1',
+            routineId: 'routine-1',
+            completedAtUtc: DateTime.utc(2025, 1, 13),
+            createdAtUtc: DateTime.utc(2025, 1, 13),
+          ),
+        ],
+      );
+    },
+    act: (bloc) => bloc.add(
+      const WeeklyReviewEvidenceRequested(
+        valueId: 'v-1',
+        range: WeeklyReviewEvidenceRange.lastWeek,
+      ),
+    ),
+    expect: () => [
+      isA<WeeklyReviewState>().having(
+        (s) => s.evidence?.status,
+        'status',
+        WeeklyReviewEvidenceStatus.loading,
+      ),
+      isA<WeeklyReviewState>()
+          .having(
+            (s) => s.evidence?.status,
+            'status',
+            WeeklyReviewEvidenceStatus.ready,
+          )
+          .having(
+            (s) => s.evidence?.taskItems.length,
+            'task items',
+            1,
+          )
+          .having(
+            (s) => s.evidence?.routineItems.length,
+            'routine items',
+            1,
+          ),
+    ],
   );
 }

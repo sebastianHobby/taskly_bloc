@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_core/env.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/src/infrastructure/powersync/powersync_log_forwarding.dart';
+import 'package:taskly_data/src/infrastructure/powersync/powersync_status_stream.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/attention/maintenance/attention_seeder.dart';
 import 'package:taskly_data/src/features/journal/maintenance/journal_tracker_seeder.dart';
@@ -752,7 +753,7 @@ Future<PowerSyncDatabase> openDatabase({
 
   // Log sync status changes only when diagnostics are enabled.
   if (enableDbDiagnostics) {
-    db.statusStream.listen((status) {
+    sharedPowerSyncStatusStream(db).listen((status) {
       final now = clock.nowUtc();
       talker.debug(
         '[POWERSYNC SYNC STATUS] at $now\n'

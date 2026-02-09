@@ -1,10 +1,11 @@
 import 'package:powersync/powersync.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_data/src/infrastructure/powersync/powersync_status_stream.dart';
 
 final class PowerSyncInitialSyncService implements InitialSyncService {
   PowerSyncInitialSyncService(this._db)
-    : _progress = _db.statusStream
+    : _progress = sharedPowerSyncStatusStream(_db)
           .map((status) {
             final progress = status.downloadProgress;
             final fraction = progress?.downloadedFraction;
@@ -33,8 +34,8 @@ final class PowerSyncInitialSyncService implements InitialSyncService {
 
   @override
   Future<void> waitForFirstSync() async {
-    final status = await _db.statusStream.first;
-    if (status.hasSynced ?? false) return;
+    final initial = await _progress.first;
+    if (initial.hasSynced) return;
 
     await _db.waitForFirstSync();
   }

@@ -123,7 +123,7 @@ class _ResetOnboardingItem extends StatelessWidget {
       },
       child: ListTile(
         leading: Icon(
-          Icons.restart_alt_outlined,
+          Icons.logout_rounded,
           color: Theme.of(context).colorScheme.error,
         ),
         title: Text(context.l10n.resetOnboardingTitle),

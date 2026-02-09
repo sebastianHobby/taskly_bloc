@@ -4475,9 +4475,49 @@
             }
         }
     },
-    "weeklyReviewValuesInsightEmptyLabel": "No completed tasks yet.",
+    "weeklyReviewValuesInsightEmptyLabel": "No completed tasks or routines yet.",
     "@weeklyReviewValuesInsightEmptyLabel": {
         "description": "Insight shown when the values snapshot has no data"
+    },
+    "weeklyReviewValuesCompletionSummary": "{taskCount, plural, =0{0 tasks} =1{1 task} other{{taskCount} tasks}} and {routineCount, plural, =0{0 routines} =1{1 routine} other{{routineCount} routines}} completed",
+    "@weeklyReviewValuesCompletionSummary": {
+        "description": "Summary line showing task and routine completions for the values snapshot.",
+        "placeholders": {
+            "taskCount": {
+                "type": "int"
+            },
+            "routineCount": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewValuesCompletionsLabel": "Completions",
+    "@weeklyReviewValuesCompletionsLabel": {
+        "description": "Label under the values snapshot donut center total."
+    },
+    "weeklyReviewValuesNoValuesLabel": "No values yet.",
+    "@weeklyReviewValuesNoValuesLabel": {
+        "description": "Empty state shown when there are no values to summarize in the weekly review."
+    },
+    "weeklyReviewValuesPriorityTargetsTitle": "Priority targets",
+    "@weeklyReviewValuesPriorityTargetsTitle": {
+        "description": "Title for the priority targets section in the weekly review values snapshot."
+    },
+    "weeklyReviewValuesPriorityTargetsSubtitle": "Targets are derived from your value priorities.",
+    "@weeklyReviewValuesPriorityTargetsSubtitle": {
+        "description": "Subtitle explaining how priority targets are calculated."
+    },
+    "weeklyReviewValuesTargetShareLabel": "Target share",
+    "@weeklyReviewValuesTargetShareLabel": {
+        "description": "Label for the expected share based on value priority."
+    },
+    "weeklyReviewValuesActualShareLabel": "This period",
+    "@weeklyReviewValuesActualShareLabel": {
+        "description": "Label for the actual share in the current window."
+    },
+    "weeklyReviewValuesDeltaLabel": "vs target",
+    "@weeklyReviewValuesDeltaLabel": {
+        "description": "Suffix label for the delta between actual and target share."
     },
     "weeklyReviewValuesSnapshotSubtitle": "How your completed work aligned with what matters.",
     "@weeklyReviewValuesSnapshotSubtitle": {
@@ -4634,17 +4674,110 @@
             }
         }
     },
-    "weeklyReviewCheckInInstruction": "Use the slider to rate your alignment with each value from 1 to 10.",
+    "weeklyReviewCheckInTitle": "Check-in",
+    "@weeklyReviewCheckInTitle": {
+        "description": "Top bar title for weekly review check-in"
+    },
+    "weeklyReviewCheckInPromptTitle": "How satisfied are you?",
+    "@weeklyReviewCheckInPromptTitle": {
+        "description": "Primary question for weekly review check-in prompt"
+    },
+    "weeklyReviewCheckInPromptSubtitle": "Rate your '{valueName}' satisfaction from 1 to {maxRating}.",
+    "@weeklyReviewCheckInPromptSubtitle": {
+        "description": "Subtitle for weekly review check-in prompt",
+        "placeholders": {
+            "valueName": {
+                "type": "String"
+            },
+            "maxRating": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewActivityMixTitle": "Activity Mix",
+    "@weeklyReviewActivityMixTitle": {
+        "description": "Section title for activity mix summary in weekly review check-in"
+    },
+    "weeklyReviewActivityMixViewDetails": "View detailed breakdown",
+    "@weeklyReviewActivityMixViewDetails": {
+        "description": "CTA label to open activity mix breakdown details"
+    },
+    "weeklyReviewActivityMixWeeklyLabel": "Weekly",
+    "@weeklyReviewActivityMixWeeklyLabel": {
+        "description": "Pill label for weekly activity mix range"
+    },
+    "weeklyReviewActivityMixValueThisWeekLabel": "{valueName} (This Week)",
+    "@weeklyReviewActivityMixValueThisWeekLabel": {
+        "description": "Label for the selected value activity mix row",
+        "placeholders": {
+            "valueName": {
+                "type": "String"
+            }
+        }
+    },
+    "weeklyReviewActivityMixAvgOtherValuesLabel": "Avg. Other Values",
+    "@weeklyReviewActivityMixAvgOtherValuesLabel": {
+        "description": "Label for the average of other values in activity mix"
+    },
+    "weeklyReviewActivityMixTotalLabel": "{total} total",
+    "@weeklyReviewActivityMixTotalLabel": {
+        "description": "Total count label in activity mix rows",
+        "placeholders": {
+            "total": {
+                "type": "String"
+            }
+        }
+    },
+    "weeklyReviewActivityMixInsightMore": "You are putting significantly more effort into {valueName} than your average life area this week.",
+    "@weeklyReviewActivityMixInsightMore": {
+        "description": "Insight text when selected value has more effort than average",
+        "placeholders": {
+            "valueName": {
+                "type": "String"
+            }
+        }
+    },
+    "weeklyReviewActivityMixInsightLess": "You are putting significantly less effort into {valueName} than your average life area this week.",
+    "@weeklyReviewActivityMixInsightLess": {
+        "description": "Insight text when selected value has less effort than average",
+        "placeholders": {
+            "valueName": {
+                "type": "String"
+            }
+        }
+    },
+    "weeklyReviewActivityMixInsightSame": "You are putting about the same effort into {valueName} as your average life area this week.",
+    "@weeklyReviewActivityMixInsightSame": {
+        "description": "Insight text when selected value matches average effort",
+        "placeholders": {
+            "valueName": {
+                "type": "String"
+            }
+        }
+    },
+    "weeklyReviewCheckInInstruction": "How satisfied are you with this value this week?",
     "@weeklyReviewCheckInInstruction": {
         "description": "Instruction text for weekly review rating slider"
     },
-    "weeklyReviewChartWheelLabel": "Wheel",
-    "@weeklyReviewChartWheelLabel": {
-        "description": "Label for the wheel chart toggle in weekly review"
+    "weeklyReviewActivityTabLabel": "Activity",
+    "@weeklyReviewActivityTabLabel": {
+        "description": "Label for the activity tab in weekly review check-in"
     },
-    "weeklyReviewChartRadarLabel": "Radar",
-    "@weeklyReviewChartRadarLabel": {
-        "description": "Label for the radar chart toggle in weekly review"
+    "weeklyReviewMomentumTabLabel": "Momentum",
+    "@weeklyReviewMomentumTabLabel": {
+        "description": "Label for the momentum tab in weekly review check-in"
+    },
+    "weeklyReviewActivityCtaLabel": "View all activity",
+    "@weeklyReviewActivityCtaLabel": {
+        "description": "CTA label to open weekly review activity details"
+    },
+    "weeklyReviewRatingTrendLabel": "Rating trend",
+    "@weeklyReviewRatingTrendLabel": {
+        "description": "Label for the rating trend sparkline in weekly review"
+    },
+    "weeklyReviewCompletionTrendLabel": "Completion trend",
+    "@weeklyReviewCompletionTrendLabel": {
+        "description": "Label for the completion trend sparkline in weekly review"
     },
     "weeklyReviewCompleteCheckInAction": "Complete check-in",
     "@weeklyReviewCompleteCheckInAction": {
@@ -4654,7 +4787,7 @@
     "@weeklyReviewNextValueAction": {
         "description": "Action label to move to the next value in weekly check-in"
     },
-    "weeklyReviewSelectedValueLabel": "Selected value",
+    "weeklyReviewSelectedValueLabel": "Current Selection",
     "@weeklyReviewSelectedValueLabel": {
         "description": "Label for the selected value summary card"
     },
@@ -4666,9 +4799,75 @@
     "@notAvailableShortLabel": {
         "description": "Short placeholder label when no value is available"
     },
-    "weeklyReviewRateAlignmentLabel": "Rate your alignment",
+    "weeklyReviewRateAlignmentLabel": "Satisfaction this week",
     "@weeklyReviewRateAlignmentLabel": {
         "description": "Label above the weekly review rating slider"
+    },
+    "weeklyReviewSatisfactionLowLabel": "Not satisfied",
+    "@weeklyReviewSatisfactionLowLabel": {
+        "description": "Label for the low end of the satisfaction slider in weekly review"
+    },
+    "weeklyReviewSatisfactionHighLabel": "Very satisfied",
+    "@weeklyReviewSatisfactionHighLabel": {
+        "description": "Label for the high end of the satisfaction slider in weekly review"
+    },
+    "weeklyReviewLastRatingTitle": "Last rating",
+    "@weeklyReviewLastRatingTitle": {
+        "description": "Short label for the last rating column in weekly review stats"
+    },
+    "weeklyReviewLastRatedShortLabel": "Last rated {weeks, plural, =1{1 week} other{{weeks} weeks}} ago",
+    "@weeklyReviewLastRatedShortLabel": {
+        "description": "Short label showing how long ago the last rating was submitted",
+        "placeholders": {
+            "weeks": {
+                "type": "int"
+            }
+        }
+    },
+    "weeklyReviewEvidenceTitle": "What supported this rating?",
+    "@weeklyReviewEvidenceTitle": {
+        "description": "Title for the weekly review evidence bottom sheet"
+    },
+    "weeklyReviewEvidenceSubtitle": "Completed for {valueName}",
+    "@weeklyReviewEvidenceSubtitle": {
+        "description": "Subtitle for the weekly review evidence bottom sheet",
+        "placeholders": {
+            "valueName": {
+                "type": "String"
+            }
+        }
+    },
+    "weeklyReviewEvidenceRangeLastWeek": "Last week",
+    "@weeklyReviewEvidenceRangeLastWeek": {
+        "description": "Range label for last week in weekly review evidence toggle"
+    },
+    "weeklyReviewEvidenceRange30Days": "30 days",
+    "@weeklyReviewEvidenceRange30Days": {
+        "description": "Range label for 30 days in weekly review evidence toggle"
+    },
+    "weeklyReviewEvidenceRange90Days": "90 days",
+    "@weeklyReviewEvidenceRange90Days": {
+        "description": "Range label for 90 days in weekly review evidence toggle"
+    },
+    "weeklyReviewEvidenceTasksTitle": "Completed tasks",
+    "@weeklyReviewEvidenceTasksTitle": {
+        "description": "Section title for completed tasks in weekly review evidence sheet"
+    },
+    "weeklyReviewEvidenceRoutinesTitle": "Completed routines",
+    "@weeklyReviewEvidenceRoutinesTitle": {
+        "description": "Section title for completed routines in weekly review evidence sheet"
+    },
+    "weeklyReviewEvidenceTasksEmpty": "No completed tasks for this value.",
+    "@weeklyReviewEvidenceTasksEmpty": {
+        "description": "Empty state for completed tasks in weekly review evidence sheet"
+    },
+    "weeklyReviewEvidenceRoutinesEmpty": "No completed routines for this value.",
+    "@weeklyReviewEvidenceRoutinesEmpty": {
+        "description": "Empty state for completed routines in weekly review evidence sheet"
+    },
+    "weeklyReviewEvidenceLoadError": "Couldn't load details.",
+    "@weeklyReviewEvidenceLoadError": {
+        "description": "Error message shown when evidence details fail to load"
     },
     "lowLabel": "Low",
     "@lowLabel": {

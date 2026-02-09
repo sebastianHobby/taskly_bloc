@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
-import 'package:taskly_bloc/core/startup/app_restart_service.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
@@ -47,11 +46,9 @@ final class InitialSyncGateBloc
     required AuthenticatedAppServicesCoordinator coordinator,
     required InitialSyncService initialSyncService,
     required SessionSharedDataService sharedDataService,
-    required AppRestartService appRestartService,
   }) : _coordinator = coordinator,
        _initialSyncService = initialSyncService,
        _sharedDataService = sharedDataService,
-       _appRestartService = appRestartService,
        super(const InitialSyncGateInProgress(progress: null)) {
     on<InitialSyncGateStarted>(_onStarted, transformer: restartable());
     on<InitialSyncGateRetryRequested>(_onRetryRequested);
@@ -60,8 +57,6 @@ final class InitialSyncGateBloc
   final AuthenticatedAppServicesCoordinator _coordinator;
   final InitialSyncService _initialSyncService;
   final SessionSharedDataService _sharedDataService;
-  final AppRestartService _appRestartService;
-  bool _recoveryAttempted = false;
 
   Future<void> _onStarted(
     InitialSyncGateStarted event,
@@ -91,7 +86,6 @@ final class InitialSyncGateBloc
     try {
       await _coordinator.start();
     } catch (e) {
-      if (await _tryRecover(e)) return;
       yield InitialSyncGateFailure(
         message: 'Failed to start sync session: $e',
         progress: null,
@@ -120,26 +114,11 @@ final class InitialSyncGateBloc
 
       yield const InitialSyncGateReady();
     } catch (e) {
-      if (await _tryRecover(e)) return;
       yield InitialSyncGateFailure(
         message: 'Failed while waiting for sync: $e',
         progress: null,
       );
     }
-  }
-
-  Future<bool> _tryRecover(Object error) async {
-    if (_recoveryAttempted) return false;
-    if (!_isAlreadyListenedError(error)) return false;
-
-    _recoveryAttempted = true;
-    return _appRestartService.restart(
-      reason: 'powersync-stream-already-listened',
-    );
-  }
-
-  bool _isAlreadyListenedError(Object error) {
-    return error.toString().contains('Stream has already been listened to');
   }
 
   Future<bool> _shouldBlock(InitialSyncProgress progress) async {

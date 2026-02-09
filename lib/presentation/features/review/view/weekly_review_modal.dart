@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
@@ -78,7 +80,6 @@ class _WeeklyReviewModal extends StatefulWidget {
 class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   late final PageController _controller = PageController();
   int _pageIndex = 0;
-  bool _useRatingWheel = true;
   int _pageCount = 1;
   int _lastLoggedPageCount = -1;
 
@@ -219,7 +220,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
               key: const ValueKey('weekly_review_check_in'),
               initialValueId: initialCheckInValueId,
               windowWeeks: widget.config.valuesWindowWeeks,
-              useRatingWheel: _useRatingWheel,
               wizardStep: checkInStep,
               wizardTotal: pageCount,
               onWizardBack: () {
@@ -232,9 +232,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
                   Navigator.of(context).maybePop();
                 }
               },
-              onChartToggle: (value) => setState(() {
-                _useRatingWheel = value;
-              }),
               onExit: () {
                 AppLog.warnStructured(
                   'weekly_review',
@@ -413,14 +410,15 @@ class _ValuesSnapshotPage extends StatelessWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-
-    final hasSummary = summary?.hasData ?? false;
-    final insight = hasSummary
-        ? l10n.weeklyReviewValuesInsightLabel(
-            summary?.topValueName ?? l10n.valueLabel,
-            summary?.bottomValueName ?? l10n.valueLabel,
-          )
-        : l10n.weeklyReviewValuesInsightEmptyLabel;
+    final shares = summary?.shares ?? const <WeeklyReviewValueShare>[];
+    final hasValues = summary?.hasValues ?? false;
+    final hasCompletions = summary?.hasCompletions ?? false;
+    final completionSummary = summary == null
+        ? null
+        : l10n.weeklyReviewValuesCompletionSummary(
+            summary!.taskCompletions,
+            summary!.routineCompletions,
+          );
 
     return ListView(
       key: const PageStorageKey<String>(
@@ -445,23 +443,50 @@ class _ValuesSnapshotPage extends StatelessWidget {
           ),
         ),
         SizedBox(height: TasklyTokens.of(context).spaceSm),
-        if (summary?.hasData ?? false) ...[
-          Text(
-            l10n.weeklyReviewLastWeeksLabel(config.valuesWindowWeeks),
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: TasklyTokens.of(context).spaceSm),
-          _RingsRow(rings: summary?.rings ?? const []),
-          SizedBox(height: TasklyTokens.of(context).spaceSm),
-        ],
         Text(
-          insight,
-          style: theme.textTheme.bodyMedium,
+          l10n.weeklyReviewLastWeeksLabel(config.valuesWindowWeeks),
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         SizedBox(height: TasklyTokens.of(context).spaceSm),
+        if (completionSummary != null)
+          Text(
+            completionSummary,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        SizedBox(height: TasklyTokens.of(context).spaceSm),
+        if (hasValues)
+          _ValuesDonutChart(
+            shares: shares,
+            totalCompletions: summary?.alignedCompletions ?? 0,
+          )
+        else
+          Text(
+            l10n.weeklyReviewValuesNoValuesLabel,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        if (hasValues) ...[
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
+          _ValuesLegend(shares: shares),
+          if (!hasCompletions) ...[
+            SizedBox(height: TasklyTokens.of(context).spaceSm),
+            Text(
+              l10n.weeklyReviewValuesInsightEmptyLabel,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          SizedBox(height: TasklyTokens.of(context).spaceLg),
+          _PriorityTargetsSection(shares: shares),
+          SizedBox(height: TasklyTokens.of(context).spaceLg),
+        ],
         Text(
           l10n.weeklyReviewValuesWinsLabel,
           style: theme.textTheme.titleMedium?.copyWith(
@@ -511,85 +536,389 @@ class _ValuesSnapshotPage extends StatelessWidget {
   }
 }
 
-class _RingsRow extends StatelessWidget {
-  const _RingsRow({required this.rings});
+class _ValuesDonutChart extends StatelessWidget {
+  const _ValuesDonutChart({
+    required this.shares,
+    required this.totalCompletions,
+  });
 
-  final List<WeeklyReviewValueRing> rings;
+  final List<WeeklyReviewValueShare> shares;
+  final int totalCompletions;
+
+  static const double _maxSize = 240;
 
   @override
   Widget build(BuildContext context) {
-    if (rings.isEmpty) {
-      return SizedBox.shrink();
-    }
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
+    final colors = shares
+        .map(
+          (share) => ColorUtils.valueColorForTheme(
+            context,
+            share.value.color,
+          ),
+        )
+        .toList(growable: false);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: rings
-            .map(
-              (ring) => Padding(
-                padding: EdgeInsets.only(
-                  bottom: TasklyTokens.of(context).spaceSm,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = math.min(constraints.maxWidth, _maxSize);
+        final strokeWidth = size * 0.16;
+
+        return Center(
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CustomPaint(
+                  size: Size.square(size),
+                  painter: _ValuesDonutPainter(
+                    shares: shares,
+                    colors: colors,
+                    totalCompletions: totalCompletions,
+                    strokeWidth: strokeWidth,
+                    backgroundColor: scheme.surfaceContainerHighest,
+                  ),
                 ),
-                child: _ValueRing(ring: ring),
-              ),
-            )
-            .toList(growable: false),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      totalCompletions.toString(),
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: tokens.spaceXs),
+                    Text(
+                      context.l10n.weeklyReviewValuesCompletionsLabel,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ValuesDonutPainter extends CustomPainter {
+  _ValuesDonutPainter({
+    required this.shares,
+    required this.colors,
+    required this.totalCompletions,
+    required this.strokeWidth,
+    required this.backgroundColor,
+  });
+
+  final List<WeeklyReviewValueShare> shares;
+  final List<Color> colors;
+  final int totalCompletions;
+  final double strokeWidth;
+  final Color backgroundColor;
+
+  static const double _gapRadians = 0.05;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = size.shortestSide / 2 - strokeWidth / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final backgroundPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(rect, 0, math.pi * 2, false, backgroundPaint);
+
+    if (totalCompletions <= 0 || shares.isEmpty) return;
+
+    var startAngle = -math.pi / 2;
+
+    for (var i = 0; i < shares.length; i++) {
+      final share = shares[i];
+      if (share.actualPercent <= 0) continue;
+
+      final sweep = math.pi * 2 * (share.actualPercent / 100);
+      final gap = math.min(_gapRadians, sweep * 0.35);
+      if (sweep <= gap) {
+        startAngle += sweep;
+        continue;
+      }
+
+      final paint = Paint()
+        ..color = colors[i]
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
+
+      canvas.drawArc(
+        rect,
+        startAngle + gap / 2,
+        sweep - gap,
+        false,
+        paint,
+      );
+
+      startAngle += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ValuesDonutPainter oldDelegate) {
+    return oldDelegate.shares != shares ||
+        oldDelegate.colors != colors ||
+        oldDelegate.totalCompletions != totalCompletions;
+  }
+}
+
+class _ValuesLegend extends StatelessWidget {
+  const _ValuesLegend({required this.shares});
+
+  final List<WeeklyReviewValueShare> shares;
+
+  @override
+  Widget build(BuildContext context) {
+    if (shares.isEmpty) return const SizedBox.shrink();
+
+    final tokens = TasklyTokens.of(context);
+
+    return Wrap(
+      spacing: tokens.spaceSm,
+      runSpacing: tokens.spaceSm,
+      children: shares
+          .map(
+            (share) => _ValueLegendChip(share: share),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _ValueLegendChip extends StatelessWidget {
+  const _ValueLegendChip({required this.share});
+
+  final WeeklyReviewValueShare share;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final accent = ColorUtils.valueColorForTheme(
+      context,
+      share.value.color,
+    );
+    final percentLabel = share.actualPercent.round();
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceSm,
+        vertical: tokens.spaceXs,
+      ),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(tokens.radiusLg),
+        border: Border.all(color: accent.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: tokens.spaceXs,
+            height: tokens.spaceXs,
+            decoration: BoxDecoration(
+              color: accent,
+              shape: BoxShape.circle,
+            ),
+          ),
+          SizedBox(width: tokens.spaceXs),
+          Text(
+            share.value.name,
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+          SizedBox(width: tokens.spaceXs),
+          Text(
+            context.l10n.analyticsPercentValue(percentLabel),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(width: tokens.spaceXs),
+          Text(
+            '(${share.completionCount})',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ValueRing extends StatelessWidget {
-  const _ValueRing({required this.ring});
+class _PriorityTargetsSection extends StatelessWidget {
+  const _PriorityTargetsSection({required this.shares});
 
-  final WeeklyReviewValueRing ring;
+  final List<WeeklyReviewValueShare> shares;
+
+  @override
+  Widget build(BuildContext context) {
+    if (shares.isEmpty) return const SizedBox.shrink();
+
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.weeklyReviewValuesPriorityTargetsTitle,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: tokens.spaceSm),
+        Text(
+          l10n.weeklyReviewValuesPriorityTargetsSubtitle,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: tokens.spaceSm),
+        ...shares.map(
+          (share) => Padding(
+            padding: EdgeInsets.only(bottom: tokens.spaceSm),
+            child: _PriorityTargetRow(share: share),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PriorityTargetRow extends StatelessWidget {
+  const _PriorityTargetRow({required this.share});
+
+  final WeeklyReviewValueShare share;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
     final accent = ColorUtils.valueColorForTheme(
       context,
-      ring.value.color,
+      share.value.color,
     );
-    final percentLabel = ring.percent.round();
+    final expectedPercent = share.expectedPercent.round();
+    final actualPercent = share.actualPercent.round();
+    final delta = share.deltaPercent.round();
 
-    return Column(
-      children: [
-        SizedBox(
-          width: 64,
-          height: 64,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              CircularProgressIndicator(
-                value: ring.percent / 100,
-                strokeWidth: 6,
-                backgroundColor: scheme.surfaceContainerHighest,
-                valueColor: AlwaysStoppedAnimation<Color>(accent),
-              ),
-              Text(
-                l10n.analyticsPercentValue(percentLabel),
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+    return Container(
+      padding: EdgeInsets.all(tokens.spaceMd),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
+        border: Border.all(color: scheme.outlineVariant.withOpacity(0.6)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: tokens.spaceSm,
+            height: tokens.spaceSm,
+            decoration: BoxDecoration(
+              color: accent,
+              shape: BoxShape.circle,
+            ),
+          ),
+          SizedBox(width: tokens.spaceSm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  share.value.name,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+                SizedBox(height: tokens.spaceXs),
+                Wrap(
+                  spacing: tokens.spaceSm,
+                  runSpacing: tokens.spaceXs,
+                  children: [
+                    _TargetMetric(
+                      label: l10n.weeklyReviewValuesTargetShareLabel,
+                      percent: expectedPercent,
+                    ),
+                    _TargetMetric(
+                      label: l10n.weeklyReviewValuesActualShareLabel,
+                      percent: actualPercent,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-        SizedBox(height: TasklyTokens.of(context).spaceSm),
-        SizedBox(
-          width: 72,
-          child: Text(
-            ring.value.name,
-            style: Theme.of(context).textTheme.labelSmall,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
+          SizedBox(width: tokens.spaceSm),
+          Text(
+            _deltaText(l10n, delta),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: _deltaColor(scheme, delta),
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  String _deltaText(AppLocalizations l10n, int delta) {
+    final absLabel = l10n.analyticsPercentValue(delta.abs());
+    final sign = delta > 0 ? '+' : (delta < 0 ? '-' : '');
+    return '$sign$absLabel ${l10n.weeklyReviewValuesDeltaLabel}';
+  }
+
+  Color _deltaColor(ColorScheme scheme, int delta) {
+    if (delta > 0) return scheme.primary;
+    if (delta < 0) return scheme.error;
+    return scheme.onSurfaceVariant;
+  }
+}
+
+class _TargetMetric extends StatelessWidget {
+  const _TargetMetric({
+    required this.label,
+    required this.percent,
+  });
+
+  final String label;
+  final int percent;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = '$label ${context.l10n.analyticsPercentValue(percent)}';
+
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: scheme.onSurfaceVariant,
+      ),
     );
   }
 }

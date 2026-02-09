@@ -670,6 +670,19 @@ class AnalyticsServiceImpl implements AnalyticsService {
   }
 
   @override
+  Future<int> getRecentTaskCompletionsCount({required int days}) async {
+    final windowDays = days.clamp(1, 365);
+    final endDay = dateOnly(_clock.nowLocal());
+    final startDay = endDay.subtract(Duration(days: windowDays - 1));
+
+    final completedTasks = await _getCompletedOccurrences(
+      range: DateRange(start: startDay, end: endDay),
+    );
+
+    return completedTasks.length;
+  }
+
+  @override
   Future<Map<String, List<double>>> getValueWeeklyTrends({
     required int weeks,
   }) async {

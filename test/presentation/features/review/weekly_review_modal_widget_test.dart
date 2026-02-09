@@ -107,12 +107,22 @@ void main() {
     when(
       () => taskRepository.getByIds(any()),
     ).thenAnswer((_) async => <Task>[]);
+    when(
+      () => taskRepository.watchCompletionHistory(),
+    ).thenAnswer(
+      (_) => Stream.value(const <CompletionHistoryData>[]),
+    );
 
     when(
       () => analyticsService.getRecentCompletionsByValue(
         days: any(named: 'days'),
       ),
     ).thenAnswer((_) async => <String, int>{});
+    when(
+      () => analyticsService.getRecentTaskCompletionsCount(
+        days: any(named: 'days'),
+      ),
+    ).thenAnswer((_) async => 0);
     when(
       () => analyticsService.getValueWeeklyTrends(weeks: any(named: 'weeks')),
     ).thenAnswer((_) async => <String, List<double>>{});
@@ -242,7 +252,7 @@ void main() {
       await tester.drag(find.byType(PageView), const Offset(-500, 0));
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text(l10n.weeklyReviewCheckInInstruction), findsOneWidget);
+      expect(find.text(l10n.weeklyReviewCheckInPromptTitle), findsOneWidget);
     },
   );
 }

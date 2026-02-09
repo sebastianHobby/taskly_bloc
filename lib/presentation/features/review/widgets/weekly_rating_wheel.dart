@@ -78,6 +78,9 @@ class WeeklyRatingWheel extends StatelessWidget {
                     hubBorderColor: Theme.of(
                       context,
                     ).colorScheme.outlineVariant,
+                    gridColor: Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant.withValues(alpha: 0.3),
                   ),
                 ),
                 ..._buildIconOverlays(
@@ -146,6 +149,7 @@ class WeeklyRatingWheel extends StatelessWidget {
     const startAngle = -math.pi / 2;
 
     final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final overlays = <Widget>[];
 
     for (var i = 0; i < entries.length; i++) {
@@ -158,9 +162,14 @@ class WeeklyRatingWheel extends StatelessWidget {
       final iconData = getIconDataFromName(entry.value.iconName) ?? Icons.star;
       final color = colors[i];
       final isSelected = entry.value.id == selectedValueId;
-      final scale = isSelected ? 1.15 : 1.0;
-      final background = color.withValues(alpha: isSelected ? 0.2 : 0.12);
-      final border = color.withValues(alpha: isSelected ? 0.4 : 0.25);
+      final scale = isSelected ? 1.1 : 1.0;
+      final background = isSelected ? scheme.surface : Colors.transparent;
+      final border = isSelected
+          ? color.withValues(alpha: 0.6)
+          : Colors.transparent;
+      final iconColor = isSelected
+          ? color
+          : scheme.onSurfaceVariant.withValues(alpha: 0.7);
 
       overlays.add(
         Positioned(
@@ -191,7 +200,7 @@ class WeeklyRatingWheel extends StatelessWidget {
                 child: Icon(
                   iconData,
                   size: tokens.spaceMd2,
-                  color: color,
+                  color: iconColor,
                 ),
               ),
             ),
@@ -215,6 +224,7 @@ class _WeeklyRatingWheelPainter extends CustomPainter {
     required this.selectedIndex,
     required this.hubColor,
     required this.hubBorderColor,
+    required this.gridColor,
   });
 
   final List<WeeklyReviewRatingEntry> entries;
@@ -226,6 +236,7 @@ class _WeeklyRatingWheelPainter extends CustomPainter {
   final int selectedIndex;
   final Color hubColor;
   final Color hubBorderColor;
+  final Color gridColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -255,7 +266,7 @@ class _WeeklyRatingWheelPainter extends CustomPainter {
 
         final isFilled = rating >= ringIndex + 1;
         final paint = Paint()
-          ..color = isFilled ? color.withOpacity(0.92) : color.withOpacity(0.18)
+          ..color = isFilled ? color.withOpacity(0.92) : color.withOpacity(0.14)
           ..style = PaintingStyle.fill;
 
         final path = Path()
@@ -267,12 +278,28 @@ class _WeeklyRatingWheelPainter extends CustomPainter {
       }
     }
 
-    if (selectedIndex >= 0 && selectedIndex < entries.length) {
-      final highlightPaint = Paint()
-        ..color = colors[selectedIndex].withOpacity(0.3)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2;
+    final gridPaint = Paint()
+      ..color = gridColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    for (var ringIndex = 1; ringIndex <= maxRating; ringIndex++) {
+      final ringRadius = hubRadius + ringIndex * (ringThickness + ringGap);
+      canvas.drawCircle(center, ringRadius, gridPaint);
+    }
+    for (var sliceIndex = 0; sliceIndex < entries.length; sliceIndex++) {
+      final angle = startAngle + sliceIndex * sliceAngle;
+      final lineEnd = Offset(
+        center.dx + math.cos(angle) * radius,
+        center.dy + math.sin(angle) * radius,
+      );
+      final lineStart = Offset(
+        center.dx + math.cos(angle) * hubRadius,
+        center.dy + math.sin(angle) * hubRadius,
+      );
+      canvas.drawLine(lineStart, lineEnd, gridPaint);
+    }
 
+    if (selectedIndex >= 0 && selectedIndex < entries.length) {
       final sliceStart = startAngle + selectedIndex * sliceAngle + gapAngle / 2;
       final sweep = sliceAngle - gapAngle;
       final rectOuter = Rect.fromCircle(center: center, radius: radius);
@@ -281,6 +308,18 @@ class _WeeklyRatingWheelPainter extends CustomPainter {
         ..addArc(rectOuter, sliceStart, sweep)
         ..arcTo(rectInner, sliceStart + sweep, -sweep, false)
         ..close();
+
+      final glowPaint = Paint()
+        ..color = colors[selectedIndex].withOpacity(0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 6
+        ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 6);
+      canvas.drawPath(path, glowPaint);
+
+      final highlightPaint = Paint()
+        ..color = colors[selectedIndex].withOpacity(0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2;
       canvas.drawPath(path, highlightPaint);
     }
 
@@ -300,7 +339,8 @@ class _WeeklyRatingWheelPainter extends CustomPainter {
   bool shouldRepaint(covariant _WeeklyRatingWheelPainter oldDelegate) {
     return oldDelegate.entries != entries ||
         oldDelegate.selectedIndex != selectedIndex ||
-        oldDelegate.colors != colors;
+        oldDelegate.colors != colors ||
+        oldDelegate.gridColor != gridColor;
   }
 }
 

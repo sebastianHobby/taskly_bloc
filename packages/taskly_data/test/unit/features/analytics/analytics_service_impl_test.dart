@@ -225,6 +225,9 @@ void main() {
       final total = await service.getTotalRecentCompletions(days: 7);
       expect(total, equals(1));
 
+      final taskCount = await service.getRecentTaskCompletionsCount(days: 7);
+      expect(taskCount, equals(1));
+
       final trends = await service.getValueWeeklyTrends(weeks: 2);
       expect(trends.keys, containsAll(<String>['v1', 'v2']));
       expect(trends['v1']!.length, equals(2));
