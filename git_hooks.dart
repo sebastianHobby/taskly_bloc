@@ -1,6 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:git_hooks/git_hooks.dart';
+
+const _testLogDir = 'tool/logs';
+const _testLogPrefix = 'pre-push-tests-';
+const _testLogRetention = Duration(days: 7);
+const _testLogMaxFiles = 20;
 
 void main(List<String> arguments) {
   final params = <Git, UserBackFun>{
@@ -91,13 +97,20 @@ Future<bool> _runTests() async {
         'pipeline',
         '-x',
         'diagnosis',
+        '--reporter',
+        'json',
       ],
       runInShell: true,
     );
 
+    final stdout = (result.stdout as String).trimRight();
+    final stderr = (result.stderr as String).trimRight();
+
     if (result.exitCode != 0) {
-      print(result.stdout);
-      print('   ❌ Tests failed.');
+      final logPath = _writeTestOutput(stdout, stderr);
+      print('   ❌ Tests failed (exit code ${result.exitCode}).');
+      _printTestFailures(stdout);
+      print('   Full output saved to: $logPath');
       return false;
     }
 
@@ -106,6 +119,162 @@ Future<bool> _runTests() async {
   } catch (e) {
     print('   ⚠️  Could not run tests: $e');
     return false;
+  }
+}
+
+void _printTestFailures(String stdout) {
+  if (stdout.isEmpty) {
+    print('   No test output captured.');
+    return;
+  }
+
+  final testNames = <int, String>{};
+  final failures = <int, _TestFailure>{};
+
+  for (final line in stdout.split('\n')) {
+    if (line.trim().isEmpty) continue;
+    Map<String, dynamic> event;
+    try {
+      event = jsonDecode(line) as Map<String, dynamic>;
+    } catch (_) {
+      continue;
+    }
+
+    final type = event['type'];
+    if (type == 'testStart') {
+      final test = event['test'];
+      if (test is Map<String, dynamic>) {
+        final id = test['id'];
+        final name = test['name'];
+        if (id is int && name is String) {
+          testNames[id] = name;
+        }
+      }
+    } else if (type == 'testDone') {
+      final result = event['result'];
+      final id = event['testID'];
+      if (id is int && result is String && result != 'success') {
+        failures.putIfAbsent(
+          id,
+          () => _TestFailure(
+            name: testNames[id] ?? 'Test $id',
+          ),
+        );
+      }
+    } else if (type == 'error') {
+      final id = event['testID'];
+      if (id is int) {
+        final failure = failures.putIfAbsent(
+          id,
+          () => _TestFailure(name: testNames[id] ?? 'Test $id'),
+        );
+        final error = event['error'];
+        final stack = event['stackTrace'];
+        if (error is String && error.isNotEmpty) {
+          failure.error ??= error;
+        }
+        if (stack is String && stack.isNotEmpty) {
+          failure.stackTrace ??= stack;
+        }
+      }
+    }
+  }
+
+  if (failures.isEmpty) {
+    print('   No structured failures found in test output.');
+    return;
+  }
+
+  for (final failure in failures.values) {
+    print('   FAIL: ${failure.name}');
+    if (failure.error != null) {
+      print('   ${failure.error}');
+    }
+    if (failure.stackTrace != null) {
+      final indented = failure.stackTrace!
+          .split('\n')
+          .map((l) => '   $l')
+          .join('\n');
+      print(indented);
+    }
+    print('');
+  }
+}
+
+class _TestFailure {
+  _TestFailure({required this.name});
+
+  final String name;
+  String? error;
+  String? stackTrace;
+}
+
+String _writeTestOutput(String stdout, String stderr) {
+  final logsDir = Directory(_testLogDir);
+  if (!logsDir.existsSync()) {
+    logsDir.createSync(recursive: true);
+  }
+  _pruneTestLogs(logsDir);
+  final timestamp = DateTime.now()
+      .toIso8601String()
+      .replaceAll(':', '-')
+      .replaceAll('.', '-');
+  final logPath = '${logsDir.path}/$_testLogPrefix$timestamp.log';
+  final buffer = StringBuffer();
+  buffer.writeln('Exit context: flutter test');
+  buffer.writeln('--- stdout ---');
+  if (stdout.isNotEmpty) {
+    buffer.writeln(stdout);
+  }
+  buffer.writeln('--- stderr ---');
+  if (stderr.isNotEmpty) {
+    buffer.writeln(stderr);
+  }
+  File(logPath).writeAsStringSync(buffer.toString());
+  return logPath;
+}
+
+void _pruneTestLogs(Directory logsDir) {
+  try {
+    if (!logsDir.existsSync()) return;
+    final now = DateTime.now();
+    final files = logsDir
+        .listSync()
+        .whereType<File>()
+        .where(
+          (file) =>
+              file.path.endsWith('.log') &&
+              file.uri.pathSegments.last.startsWith(_testLogPrefix),
+        )
+        .toList(growable: false);
+
+    for (final file in files) {
+      final modified = file.lastModifiedSync();
+      if (now.difference(modified) > _testLogRetention) {
+        file.deleteSync();
+      }
+    }
+
+    final remaining =
+        logsDir
+            .listSync()
+            .whereType<File>()
+            .where(
+              (file) =>
+                  file.path.endsWith('.log') &&
+                  file.uri.pathSegments.last.startsWith(_testLogPrefix),
+            )
+            .toList()
+          ..sort(
+            (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
+          );
+
+    if (remaining.length <= _testLogMaxFiles) return;
+    for (var i = _testLogMaxFiles; i < remaining.length; i++) {
+      remaining[i].deleteSync();
+    }
+  } catch (_) {
+    // Best-effort cleanup; do not block pre-push.
   }
 }
 

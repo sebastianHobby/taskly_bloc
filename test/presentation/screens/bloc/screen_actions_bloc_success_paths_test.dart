@@ -318,8 +318,6 @@ void main() {
             priority: any(named: 'priority'),
             repeatIcalRrule: any(named: 'repeatIcalRrule'),
             repeatFromCompletion: any(named: 'repeatFromCompletion'),
-            seriesEnded: any(named: 'seriesEnded'),
-            valueIds: any(named: 'valueIds'),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
@@ -353,8 +351,6 @@ void main() {
             priority: any(named: 'priority'),
             repeatIcalRrule: any(named: 'repeatIcalRrule'),
             repeatFromCompletion: any(named: 'repeatFromCompletion'),
-            seriesEnded: any(named: 'seriesEnded'),
-            valueIds: any(named: 'valueIds'),
             context: any(named: 'context'),
           ),
         ).called(1);
@@ -379,8 +375,6 @@ void main() {
             priority: any(named: 'priority'),
             repeatIcalRrule: any(named: 'repeatIcalRrule'),
             repeatFromCompletion: any(named: 'repeatFromCompletion'),
-            seriesEnded: any(named: 'seriesEnded'),
-            valueIds: any(named: 'valueIds'),
             context: any(named: 'context'),
           ),
         ).thenAnswer((_) async {});
@@ -412,14 +406,12 @@ void main() {
                     startDate: any(named: 'startDate'),
                     deadlineDate: any(named: 'deadlineDate'),
                     projectId: 'project-1',
-                    priority: any(named: 'priority'),
-                    repeatIcalRrule: any(named: 'repeatIcalRrule'),
-                    repeatFromCompletion: any(named: 'repeatFromCompletion'),
-                    seriesEnded: any(named: 'seriesEnded'),
-                    valueIds: any(named: 'valueIds'),
-                    context: captureAny(named: 'context'),
-                  ),
-                ).captured.single
+            priority: any(named: 'priority'),
+            repeatIcalRrule: any(named: 'repeatIcalRrule'),
+            repeatFromCompletion: any(named: 'repeatFromCompletion'),
+            context: captureAny(named: 'context'),
+          ),
+        ).captured.single
                 as OperationContext?;
 
         expect(captured, isNotNull);

@@ -230,8 +230,6 @@ void main() {
             priority: any(named: 'priority'),
             repeatIcalRrule: any(named: 'repeatIcalRrule'),
             repeatFromCompletion: any(named: 'repeatFromCompletion'),
-            seriesEnded: any(named: 'seriesEnded'),
-            valueIds: any(named: 'valueIds'),
             context: any(named: 'context'),
           ),
         ).thenThrow(
