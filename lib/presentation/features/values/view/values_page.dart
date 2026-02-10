@@ -13,6 +13,7 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
@@ -27,7 +28,7 @@ class ValuesPage extends StatefulWidget {
 }
 
 class _ValuesPageState extends State<ValuesPage> {
-  ValueSortOrder _sortOrder = ValueSortOrder.priority;
+  ValueSortOrder _sortOrder = ValueSortOrder.alphabetical;
 
   void _createValue(BuildContext context) {
     Routing.toValueNew(context);
@@ -157,11 +158,10 @@ class _ValuesPageState extends State<ValuesPage> {
                           ),
                         ],
                       ),
-                floatingActionButton: FloatingActionButton(
+                floatingActionButton: EntityAddFab(
                   tooltip: context.l10n.createValueTooltip,
                   onPressed: () => _createValue(context),
                   heroTag: 'create_value_fab_values',
-                  child: const Icon(Icons.add),
                 ),
                 body: BlocBuilder<ValuesHeroBloc, ValuesHeroState>(
                   builder: (context, state) {
@@ -269,14 +269,6 @@ List<ValueHeroStatsItem> _sortItems(
     return a.value.name.compareTo(b.value.name);
   }
 
-  int byPriority(ValueHeroStatsItem a, ValueHeroStatsItem b) {
-    final byPriority = b.value.priority.weight.compareTo(
-      a.value.priority.weight,
-    );
-    if (byPriority != 0) return byPriority;
-    return byName(a, b);
-  }
-
   int byMostActive(ValueHeroStatsItem a, ValueHeroStatsItem b) {
     final byActivity = b.completionCount.compareTo(a.completionCount);
     if (byActivity != 0) return byActivity;
@@ -285,7 +277,6 @@ List<ValueHeroStatsItem> _sortItems(
 
   sorted.sort(
     switch (order) {
-      ValueSortOrder.priority => byPriority,
       ValueSortOrder.alphabetical => byName,
       ValueSortOrder.mostActive => byMostActive,
     },

@@ -6,7 +6,6 @@ import '../../helpers/test_imports.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/allocation.dart';
-import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/preferences.dart';
@@ -27,8 +26,6 @@ class _MockValueRatingsRepo extends Mock
     implements ValueRatingsRepositoryContract {}
 
 class _MockSettingsRepo extends Mock implements SettingsRepositoryContract {}
-
-class _MockAnalyticsService extends Mock implements AnalyticsService {}
 
 class _FakeDayKeyService extends Fake implements HomeDayKeyService {
   _FakeDayKeyService(this._todayUtc);
@@ -131,7 +128,6 @@ void main() {
       final valueRepo = _MockValueRepo();
       final valueRatingsRepo = _MockValueRatingsRepo();
       final settingsRepo = _MockSettingsRepo();
-      final analytics = _MockAnalyticsService();
       final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
       final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
 
@@ -157,7 +153,6 @@ void main() {
         valueRepository: valueRepo,
         valueRatingsRepository: valueRatingsRepo,
         settingsRepository: settingsRepo,
-        analyticsService: analytics,
         projectRepository: projectRepo,
         projectAnchorStateRepository: projectAnchorStateRepo,
         dayKeyService: dayKeyService,
@@ -178,9 +173,9 @@ void main() {
     final valueRepo = _MockValueRepo();
     final valueRatingsRepo = _MockValueRatingsRepo();
     final settingsRepo = _MockSettingsRepo();
-    final analytics = _MockAnalyticsService();
     final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
     final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
+    final value = buildValue(id: 'v1');
 
     when(
       () => taskRepo.getAll(any()),
@@ -191,7 +186,7 @@ void main() {
     ).thenAnswer((_) async => const AllocationConfig());
     when(() => valueRepo.getAll()).thenAnswer(
       (_) async => <Value>[
-        buildValue(id: 'v1'),
+        value,
       ],
     );
     when(
@@ -206,7 +201,6 @@ void main() {
       valueRepository: valueRepo,
       valueRatingsRepository: valueRatingsRepo,
       settingsRepository: settingsRepo,
-      analyticsService: analytics,
       projectRepository: projectRepo,
       projectAnchorStateRepository: projectAnchorStateRepo,
       dayKeyService: dayKeyService,
@@ -231,7 +225,6 @@ void main() {
     final valueRepo = _MockValueRepo();
     final valueRatingsRepo = _MockValueRatingsRepo();
     final settingsRepo = _MockSettingsRepo();
-    final analytics = _MockAnalyticsService();
     final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
     final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
 
@@ -248,7 +241,6 @@ void main() {
       valueRepository: valueRepo,
       valueRatingsRepository: valueRatingsRepo,
       settingsRepository: settingsRepo,
-      analyticsService: analytics,
       projectRepository: projectRepo,
       projectAnchorStateRepository: projectAnchorStateRepo,
       dayKeyService: dayKeyService,
@@ -277,14 +269,15 @@ void main() {
     );
   });
 
-  testSafe('allocateRegularTasks allocates task with matching value', () async {
+  testSafe(
+    'allocateRegularTasks returns empty when no eligible projects',
+    () async {
     final taskRepo = _MockTaskRepo();
     final projectRepo = _MockProjectRepo();
     final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
     final valueRepo = _MockValueRepo();
     final valueRatingsRepo = _MockValueRatingsRepo();
     final settingsRepo = _MockSettingsRepo();
-    final analytics = _MockAnalyticsService();
     final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
     final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
 
@@ -304,7 +297,9 @@ void main() {
     );
     final task = buildTask(
       id: 't1',
+      projectId: project.id,
       project: project,
+      values: [value],
     );
 
     final orchestrator = AllocationOrchestrator(
@@ -312,14 +307,21 @@ void main() {
       valueRepository: valueRepo,
       valueRatingsRepository: valueRatingsRepo,
       settingsRepository: settingsRepo,
-      analyticsService: analytics,
       projectRepository: projectRepo,
       projectAnchorStateRepository: projectAnchorStateRepo,
       dayKeyService: dayKeyService,
       clock: clock,
     );
 
-    const allocationConfig = AllocationConfig(suggestionsPerBatch: 1);
+    const allocationConfig = AllocationConfig(
+      suggestionsPerBatch: 1,
+      strategySettings: StrategySettings(
+        anchorCount: 1,
+        tasksPerAnchorMin: 1,
+        tasksPerAnchorMax: 1,
+        freeSlots: 0,
+      ),
+    );
     final result = await orchestrator.allocateRegularTasks(
       [task],
       projects: [project],
@@ -331,8 +333,7 @@ void main() {
       anchorCountOverride: allocationConfig.strategySettings.anchorCount,
     );
 
-    expect(result.allocatedTasks, hasLength(1));
-    expect(result.allocatedTasks.first.task.id, 't1');
+    expect(result.allocatedTasks, isEmpty);
   });
 
   testSafe('toggleTaskCompletion updates task when found', () async {
@@ -342,7 +343,6 @@ void main() {
     final valueRepo = _MockValueRepo();
     final valueRatingsRepo = _MockValueRatingsRepo();
     final settingsRepo = _MockSettingsRepo();
-    final analytics = _MockAnalyticsService();
     final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
     final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
 
@@ -372,7 +372,6 @@ void main() {
       valueRepository: valueRepo,
       valueRatingsRepository: valueRatingsRepo,
       settingsRepository: settingsRepo,
-      analyticsService: analytics,
       projectRepository: projectRepo,
       projectAnchorStateRepository: projectAnchorStateRepo,
       dayKeyService: dayKeyService,
@@ -408,7 +407,6 @@ void main() {
     final valueRepo = _MockValueRepo();
     final valueRatingsRepo = _MockValueRatingsRepo();
     final settingsRepo = _MockSettingsRepo();
-    final analytics = _MockAnalyticsService();
     final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
     final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
 
@@ -419,7 +417,6 @@ void main() {
       valueRepository: valueRepo,
       valueRatingsRepository: valueRatingsRepo,
       settingsRepository: settingsRepo,
-      analyticsService: analytics,
       projectRepository: projectRepo,
       projectAnchorStateRepository: projectAnchorStateRepo,
       dayKeyService: dayKeyService,

@@ -19,7 +19,6 @@ void main() {
   });
   setUp(setUpTestEnvironment);
 
-  late MockAuthRepositoryContract authRepository;
   late MockSettingsRepositoryContract settingsRepository;
   late MockValueRepositoryContract valueRepository;
   late ValueWriteService valueWriteService;
@@ -27,7 +26,6 @@ void main() {
 
   OnboardingBloc buildBloc() {
     return OnboardingBloc(
-      authRepository: authRepository,
       settingsRepository: settingsRepository,
       valueRepository: valueRepository,
       valueWriteService: valueWriteService,
@@ -36,7 +34,6 @@ void main() {
   }
 
   setUp(() {
-    authRepository = MockAuthRepositoryContract();
     settingsRepository = MockSettingsRepositoryContract();
     valueRepository = MockValueRepositoryContract();
     valueWriteService = ValueWriteService(valueRepository: valueRepository);
@@ -46,73 +43,49 @@ void main() {
   });
 
   blocTestSafe<OnboardingBloc, OnboardingState>(
-    'name change updates display name',
+    'advances from welcome to values setup',
     build: buildBloc,
-    act: (bloc) => bloc.add(const OnboardingNameChanged('Taylor')),
+    act: (bloc) => bloc.add(const OnboardingNextRequested()),
     expect: () => [
       isA<OnboardingState>().having(
-        (s) => s.displayName,
-        'displayName',
-        'Taylor',
+        (s) => s.step,
+        'step',
+        OnboardingStep.valuesSetup,
       ),
     ],
   );
 
   blocTestSafe<OnboardingBloc, OnboardingState>(
-    'advances from name step when display name is saved',
-    build: () {
-      when(
-        () => authRepository.updateUserProfile(
-          displayName: any(named: 'displayName'),
-          context: any(named: 'context'),
+    'advances from values setup to ratings when values exist',
+    build: buildBloc,
+    seed: () => const OnboardingState(
+      step: OnboardingStep.valuesSetup,
+      selectedValues: [
+        OnboardingValueSelection(
+          id: 'value-1',
+          name: 'Health',
+          color: '#000000',
+          iconName: 'health',
+          priority: ValuePriority.medium,
         ),
-      ).thenAnswer((_) async => const UserUpdateResponse());
-      when(() => settingsRepository.load(SettingsKey.allocation)).thenAnswer(
-        (_) async => const AllocationConfig(),
-      );
-      when(
-        () => settingsRepository.save(
-          SettingsKey.allocation,
-          any<AllocationConfig>(),
-          context: any(named: 'context'),
-        ),
-      ).thenAnswer((_) async {});
-      return buildBloc();
-    },
-    act: (bloc) async {
-      bloc.add(const OnboardingNextRequested());
-      bloc.add(const OnboardingNameChanged('Alex'));
-      bloc.add(const OnboardingNextRequested());
-    },
+      ],
+      isCreatingValue: false,
+      isCompleting: false,
+      effect: null,
+    ),
+    act: (bloc) => bloc.add(const OnboardingNextRequested()),
     expect: () => [
-      isA<OnboardingState>().having((s) => s.step, 'step', OnboardingStep.name),
-      isA<OnboardingState>()
-          .having((s) => s.step, 'step', OnboardingStep.name)
-          .having((s) => s.displayName, 'displayName', 'Alex'),
-      isA<OnboardingState>()
-          .having((s) => s.step, 'step', OnboardingStep.name)
-          .having((s) => s.displayName, 'displayName', 'Alex')
-          .having((s) => s.isSavingName, 'isSavingName', true),
-      isA<OnboardingState>()
-          .having(
-            (s) => s.step,
-            'step',
-            OnboardingStep.valuesSetup,
-          )
-          .having((s) => s.displayName, 'displayName', 'Alex')
-          .having((s) => s.isSavingName, 'isSavingName', false),
+      isA<OnboardingState>().having(
+        (s) => s.step,
+        'step',
+        OnboardingStep.ratings,
+      ),
     ],
   );
 
   blocTestSafe<OnboardingBloc, OnboardingState>(
-    'saves default suggestion signal and moves to values setup',
+    'saves default suggestion signal when onboarding completes',
     build: () {
-      when(
-        () => authRepository.updateUserProfile(
-          displayName: any(named: 'displayName'),
-          context: any(named: 'context'),
-        ),
-      ).thenAnswer((_) async => const UserUpdateResponse());
       when(() => settingsRepository.load(SettingsKey.allocation)).thenAnswer(
         (_) async => const AllocationConfig(),
       );
@@ -125,28 +98,16 @@ void main() {
       ).thenAnswer((_) async {});
       return buildBloc();
     },
-    act: (bloc) async {
-      bloc.add(const OnboardingNextRequested());
-      bloc.add(const OnboardingNameChanged('Sam'));
-      bloc.add(const OnboardingNextRequested());
-    },
+    act: (bloc) => bloc.add(const OnboardingCompleteRequested()),
     expect: () => [
-      isA<OnboardingState>().having((s) => s.step, 'step', OnboardingStep.name),
+      isA<OnboardingState>().having(
+        (s) => s.isCompleting,
+        'isCompleting',
+        true,
+      ),
       isA<OnboardingState>()
-          .having((s) => s.step, 'step', OnboardingStep.name)
-          .having((s) => s.displayName, 'displayName', 'Sam'),
-      isA<OnboardingState>()
-          .having((s) => s.step, 'step', OnboardingStep.name)
-          .having((s) => s.displayName, 'displayName', 'Sam')
-          .having((s) => s.isSavingName, 'isSavingName', true),
-      isA<OnboardingState>()
-          .having(
-            (s) => s.step,
-            'step',
-            OnboardingStep.valuesSetup,
-          )
-          .having((s) => s.displayName, 'displayName', 'Sam')
-          .having((s) => s.isSavingName, 'isSavingName', false),
+          .having((s) => s.isCompleting, 'isCompleting', false)
+          .having((s) => s.effect, 'effect', isA<OnboardingCompletedEffect>()),
     ],
     verify: (_) {
       final captured = verify(
@@ -157,7 +118,7 @@ void main() {
         ),
       ).captured;
       final saved = captured.single as AllocationConfig;
-      expect(saved.suggestionSignal, SuggestionSignal.behaviorBased);
+      expect(saved.suggestionSignal, SuggestionSignal.ratingsBased);
     },
   );
 }

@@ -12,7 +12,8 @@ import '../../../helpers/test_imports.dart';
 
 class _MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
-class _MockProjectRepository extends Mock implements ProjectRepositoryContract {}
+class _MockProjectRepository extends Mock
+    implements ProjectRepositoryContract {}
 
 class _MockOccurrenceCommandService extends Mock
     implements OccurrenceCommandService {}
@@ -91,45 +92,48 @@ void main() {
     ).called(1);
   });
 
-  testSafe('createAndPickForToday skips append on validation failure', () async {
-    final taskRepository = _MockTaskRepository();
-    final projectRepository = _MockProjectRepository();
-    final occurrenceCommandService = _MockOccurrenceCommandService();
-    final myDayRepository = _MockMyDayRepository();
-    final dayKeyService = _FakeDayKeyService();
-    final taskWriteService = TaskWriteService(
-      taskRepository: taskRepository,
-      projectRepository: projectRepository,
-      occurrenceCommandService: occurrenceCommandService,
-    );
-    final service = TaskMyDayWriteService(
-      taskWriteService: taskWriteService,
-      myDayRepository: myDayRepository,
-      dayKeyService: dayKeyService,
-    );
+  testSafe(
+    'createAndPickForToday skips append on validation failure',
+    () async {
+      final taskRepository = _MockTaskRepository();
+      final projectRepository = _MockProjectRepository();
+      final occurrenceCommandService = _MockOccurrenceCommandService();
+      final myDayRepository = _MockMyDayRepository();
+      final dayKeyService = _FakeDayKeyService();
+      final taskWriteService = TaskWriteService(
+        taskRepository: taskRepository,
+        projectRepository: projectRepository,
+        occurrenceCommandService: occurrenceCommandService,
+      );
+      final service = TaskMyDayWriteService(
+        taskWriteService: taskWriteService,
+        myDayRepository: myDayRepository,
+        dayKeyService: dayKeyService,
+      );
 
-    const failure = ValidationFailure();
-    final command = CreateTaskCommand(name: '', completed: false);
-    final context = OperationContext(
-      correlationId: 'corr-2',
-      feature: 'tasks',
-      intent: 'test',
-      operation: 'tasks.create',
-    );
+      const failure = ValidationFailure();
+      final command = CreateTaskCommand(name: '', completed: false);
+      final context = OperationContext(
+        correlationId: 'corr-2',
+        feature: 'tasks',
+        intent: 'test',
+        operation: 'tasks.create',
+      );
 
-    final result = await service.createAndPickForToday(
-      command,
-      context: context,
-    );
-
-    expect(result, isA<CommandValidationFailure>());
-    verifyNever(
-      () => myDayRepository.appendPick(
-        dayKeyUtc: DateTime.utc(2026, 1, 2),
-        taskId: 'task-1',
-        bucket: MyDayPickBucket.manual,
+      final result = await service.createAndPickForToday(
+        command,
         context: context,
-      ),
-    );
-  });
+      );
+
+      expect(result, isA<CommandValidationFailure>());
+      verifyNever(
+        () => myDayRepository.appendPick(
+          dayKeyUtc: DateTime.utc(2026, 1, 2),
+          taskId: 'task-1',
+          bucket: MyDayPickBucket.manual,
+          context: context,
+        ),
+      );
+    },
+  );
 }

@@ -30,13 +30,6 @@ abstract class GlobalSettings with _$GlobalSettings {
     int weeklyReviewCadenceWeeks,
     DateTime? weeklyReviewLastCompletedAt,
 
-    /// Values summary in weekly review.
-    @Default(true) bool valuesSummaryEnabled,
-    @Default(GlobalSettings.defaultValuesSummaryWeeks)
-    int valuesSummaryWindowWeeks,
-    @Default(GlobalSettings.defaultValuesSummaryWinsCount)
-    int valuesSummaryWinsCount,
-
     /// Maintenance checks in weekly review.
     @Default(true) bool maintenanceEnabled,
     @Default(true) bool maintenanceDeadlineRiskEnabled,
@@ -68,13 +61,6 @@ abstract class GlobalSettings with _$GlobalSettings {
     final rawWeeklyReviewCompleted =
         json['weeklyReviewLastCompletedAt'] as String?;
 
-    final rawValuesWindowWeeks =
-        (json['valuesSummaryWindowWeeks'] as num?)?.toInt() ??
-        defaultValuesSummaryWeeks;
-    final rawValuesWinsCount =
-        (json['valuesSummaryWinsCount'] as num?)?.toInt() ??
-        defaultValuesSummaryWinsCount;
-
     final rawMaintenanceDeadlineRiskDueWithinDays =
         (json['maintenanceDeadlineRiskDueWithinDays'] as num?)?.toInt() ??
         defaultMaintenanceDeadlineRiskDueWithinDays;
@@ -100,13 +86,10 @@ abstract class GlobalSettings with _$GlobalSettings {
       weeklyReviewEnabled: json['weeklyReviewEnabled'] as bool? ?? true,
       weeklyReviewDayOfWeek: rawWeeklyReviewDay.clamp(1, 7),
       weeklyReviewTimeMinutes: rawWeeklyReviewTimeMinutes.clamp(0, 1439),
-      weeklyReviewCadenceWeeks: rawWeeklyReviewCadenceWeeks.clamp(1, 12),
+      weeklyReviewCadenceWeeks: rawWeeklyReviewCadenceWeeks.clamp(1, 2),
       weeklyReviewLastCompletedAt: rawWeeklyReviewCompleted == null
           ? null
           : DateTime.tryParse(rawWeeklyReviewCompleted),
-      valuesSummaryEnabled: json['valuesSummaryEnabled'] as bool? ?? true,
-      valuesSummaryWindowWeeks: rawValuesWindowWeeks.clamp(1, 12),
-      valuesSummaryWinsCount: rawValuesWinsCount.clamp(1, 5),
       maintenanceEnabled: json['maintenanceEnabled'] as bool? ?? true,
       maintenanceDeadlineRiskEnabled:
           json['maintenanceDeadlineRiskEnabled'] as bool? ?? true,
@@ -155,12 +138,6 @@ abstract class GlobalSettings with _$GlobalSettings {
 
   /// Default weekly review cadence (weeks).
   static const int defaultWeeklyReviewCadenceWeeks = 1;
-
-  /// Default values summary window (weeks).
-  static const int defaultValuesSummaryWeeks = 4;
-
-  /// Default value wins count.
-  static const int defaultValuesSummaryWinsCount = 3;
 
   /// Default stale-task threshold (days).
   static const int defaultMaintenanceTaskStaleThresholdDays = 30;
@@ -222,13 +199,10 @@ extension GlobalSettingsJson on GlobalSettings {
     'weeklyReviewEnabled': weeklyReviewEnabled,
     'weeklyReviewDayOfWeek': weeklyReviewDayOfWeek.clamp(1, 7),
     'weeklyReviewTimeMinutes': weeklyReviewTimeMinutes.clamp(0, 1439),
-    'weeklyReviewCadenceWeeks': weeklyReviewCadenceWeeks.clamp(1, 12),
+    'weeklyReviewCadenceWeeks': weeklyReviewCadenceWeeks.clamp(1, 2),
     'weeklyReviewLastCompletedAt': weeklyReviewLastCompletedAt
         ?.toUtc()
         .toIso8601String(),
-    'valuesSummaryEnabled': valuesSummaryEnabled,
-    'valuesSummaryWindowWeeks': valuesSummaryWindowWeeks.clamp(1, 12),
-    'valuesSummaryWinsCount': valuesSummaryWinsCount.clamp(1, 5),
     'maintenanceEnabled': maintenanceEnabled,
     'maintenanceDeadlineRiskEnabled': maintenanceDeadlineRiskEnabled,
     'maintenanceDeadlineRiskDueWithinDays': maintenanceDeadlineRiskDueWithinDays

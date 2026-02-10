@@ -11,7 +11,6 @@ import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_b
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/model/guided_tour_step.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/view/guided_tour_overlay.dart';
-import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/view/plan_my_day_page.dart';
@@ -22,10 +21,6 @@ import '../../../helpers/test_imports.dart';
 
 class MockGuidedTourBloc extends MockBloc<GuidedTourEvent, GuidedTourState>
     implements GuidedTourBloc {}
-
-class MockGlobalSettingsBloc
-    extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
-    implements GlobalSettingsBloc {}
 
 class MockPlanMyDayBloc extends MockBloc<PlanMyDayEvent, PlanMyDayState>
     implements PlanMyDayBloc {}
@@ -57,9 +52,6 @@ void main() {
     tester,
   ) async {
     final guidedTourBloc = MockGuidedTourBloc();
-    final settingsBloc = MockGlobalSettingsBloc();
-
-    const settingsState = GlobalSettingsState();
 
     final steps = [
       GuidedTourStep(
@@ -93,13 +85,6 @@ void main() {
       guidedTourBloc,
       stateController.stream,
       initialState: initialState,
-    );
-
-    when(() => settingsBloc.state).thenReturn(settingsState);
-    whenListen(
-      settingsBloc,
-      const Stream<GlobalSettingsState>.empty(),
-      initialState: settingsState,
     );
 
     final router = GoRouter(
@@ -143,7 +128,6 @@ void main() {
       MultiBlocProvider(
         providers: [
           BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
-          BlocProvider<GlobalSettingsBloc>.value(value: settingsBloc),
         ],
         child: MaterialApp.router(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -181,9 +165,6 @@ void main() {
       });
 
       final guidedTourBloc = MockGuidedTourBloc();
-      final settingsBloc = MockGlobalSettingsBloc();
-
-      const settingsState = GlobalSettingsState();
 
       final steps = [
         GuidedTourStep(
@@ -219,13 +200,6 @@ void main() {
         guidedTourBloc,
         stateController.stream,
         initialState: initialState,
-      );
-
-      when(() => settingsBloc.state).thenReturn(settingsState);
-      whenListen(
-        settingsBloc,
-        const Stream<GlobalSettingsState>.empty(),
-        initialState: settingsState,
       );
 
       final router = GoRouter(
@@ -264,7 +238,6 @@ void main() {
         MultiBlocProvider(
           providers: [
             BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
-            BlocProvider<GlobalSettingsBloc>.value(value: settingsBloc),
           ],
           child: MaterialApp.router(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -298,10 +271,7 @@ void main() {
     'waits for Plan My Day anchor to mount before showing coachmark',
     (tester) async {
       final guidedTourBloc = MockGuidedTourBloc();
-      final settingsBloc = MockGlobalSettingsBloc();
       final planMyDayBloc = MockPlanMyDayBloc();
-
-      const settingsState = GlobalSettingsState();
       final readyState = DemoDataProvider().buildPlanMyDayReady();
       final planStates = TestStreamController<PlanMyDayState>.seeded(
         readyState,
@@ -344,13 +314,6 @@ void main() {
         initialState: initialState,
       );
 
-      when(() => settingsBloc.state).thenReturn(settingsState);
-      whenListen(
-        settingsBloc,
-        const Stream<GlobalSettingsState>.empty(),
-        initialState: settingsState,
-      );
-
       when(() => planMyDayBloc.state).thenAnswer(
         (_) => planStates.value ?? readyState,
       );
@@ -379,7 +342,6 @@ void main() {
         MultiBlocProvider(
           providers: [
             BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
-            BlocProvider<GlobalSettingsBloc>.value(value: settingsBloc),
             BlocProvider<PlanMyDayBloc>.value(value: planMyDayBloc),
           ],
           child: MaterialApp.router(
@@ -423,11 +385,9 @@ void main() {
     'keeps coachmark visible through Plan My Day loading churn',
     (tester) async {
       final guidedTourBloc = MockGuidedTourBloc();
-      final settingsBloc = MockGlobalSettingsBloc();
       final planMyDayBloc = MockPlanMyDayBloc();
       final gateBloc = MockMyDayGateBloc();
 
-      const settingsState = GlobalSettingsState();
       const gateState = MyDayGateLoaded(needsValuesSetup: false);
 
       final steps = [
@@ -484,13 +444,6 @@ void main() {
         initialState: const PlanMyDayLoading(),
       );
 
-      when(() => settingsBloc.state).thenReturn(settingsState);
-      whenListen(
-        settingsBloc,
-        const Stream<GlobalSettingsState>.empty(),
-        initialState: settingsState,
-      );
-
       when(() => gateBloc.state).thenReturn(gateState);
       whenListen(
         gateBloc,
@@ -523,7 +476,6 @@ void main() {
           child: MultiBlocProvider(
             providers: [
               BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
-              BlocProvider<GlobalSettingsBloc>.value(value: settingsBloc),
               BlocProvider<PlanMyDayBloc>.value(value: planMyDayBloc),
               BlocProvider<MyDayGateBloc>.value(value: gateBloc),
             ],
@@ -584,11 +536,8 @@ void main() {
       });
 
       final guidedTourBloc = MockGuidedTourBloc();
-      final settingsBloc = MockGlobalSettingsBloc();
       final scrollController = ScrollController();
       addTearDown(scrollController.dispose);
-
-      const settingsState = GlobalSettingsState();
 
       final steps = [
         GuidedTourStep(
@@ -626,13 +575,6 @@ void main() {
         initialState: initialState,
       );
 
-      when(() => settingsBloc.state).thenReturn(settingsState);
-      whenListen(
-        settingsBloc,
-        const Stream<GlobalSettingsState>.empty(),
-        initialState: settingsState,
-      );
-
       final router = GoRouter(
         initialLocation: '/my-day',
         routes: [
@@ -654,7 +596,6 @@ void main() {
         MultiBlocProvider(
           providers: [
             BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
-            BlocProvider<GlobalSettingsBloc>.value(value: settingsBloc),
           ],
           child: MaterialApp.router(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

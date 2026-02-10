@@ -13,15 +13,15 @@ automatically includes:
 - tasks planned for today or earlier (start <= today)
 
 Users can quickly bulk-reschedule due/planned items. Suggestions fill remaining
-capacity using value-balanced allocation. My Day remains the execute screen,
-with compact rows and cleaned copy.
+capacity using ratings-led allocation. My Day remains the execute screen, with
+compact rows and cleaned copy.
 
 ## Goals
 
 - Ensure due/planned items are never missed (auto-included by default).
 - Make it fast to reschedule many items when over capacity.
 - Keep Plan My Day lightweight and mobile-friendly.
-- Preserve values-based suggestions without heavy UI chrome.
+- Preserve ratings-led suggestions without heavy UI chrome.
 - Keep My Day calm and compact.
 
 ## Non-goals
@@ -56,7 +56,7 @@ Inputs:
 - tasks due today or overdue
 - tasks with start <= today (planned)
 - previously selected items (if any)
-- value weights
+- value rating summaries
 
 Steps:
 1) Start with auto-included items (base plan):
@@ -71,12 +71,12 @@ Steps:
    - provide bulk reschedule actions for Due Today and Planned shelves
 
 3) If base plan count < daily limit:
-   - fill remaining slots using value-balanced allocation
+   - fill remaining slots using ratings-led allocation
    - suggestions are drawn from the pool excluding already selected items
 
 ## Allocation details (fill stage)
 
-- Compute value quotas proportional to value priority/weights.
+- Compute value quotas proportional to value rating averages.
 - Within each value, choose tasks with this tie-break order:
   1) due soon (next 7 days, excluding due today)
   2) priority
@@ -117,12 +117,12 @@ in Plan My Day to support bulk actions, but list items themselves are compact.
 
 ### Suggestions shelf
 
-- Value-balanced suggestions to fill remaining slots.
-- Single flat list ordered by value priority (neglected first, then high -> low).
-- Insert small inline value chips as dividers; chips do not collapse content.
+- Ratings-led suggestions to fill remaining slots.
+- Value groups ordered by **lowest average rating first** (default), with an
+  optional sort that prioritizes **most negative trend**.
+- Each value group shows its average rating and trend delta.
 - **Cap**: show a max of 3 items per value in the main list (mobile cap).
-- **Swap-only full list**: the full value list is available only via Swap (no
-  inline "Show more").
+- **Show more** reveals the remaining pool for the value (no re-allocation).
 - No "Recently active" shelf.
 
 ### No values state (Plan My Day)
@@ -130,7 +130,7 @@ in Plan My Day to support bulk actions, but list items themselves are compact.
 - If the user has zero values configured:
   - Suggestions shelf is replaced by an empty state card.
   - Title: "No values yet."
-  - Body: "Set up values to get balanced suggestions."
+  - Body: "Set up values to get ratings-led suggestions."
   - CTA: "Set up values"
 
 ### Bulk reschedule

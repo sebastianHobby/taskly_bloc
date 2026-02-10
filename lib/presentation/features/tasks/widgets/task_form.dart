@@ -719,9 +719,11 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                       child: Builder(
                         builder: (chipContext) => TasklyFormProjectRow(
                           label:
-                              selectedProject?.name ??
-                              context.l10n.addProjectAction,
+                              selectedProject?.name ?? context.l10n.inboxLabel,
                           hasValue: selectedProject != null,
+                          icon: selectedProject == null
+                              ? Icons.inbox_outlined
+                              : Icons.folder_rounded,
                           onTap: () async {
                             final result = await _showProjectPicker(
                               anchorContext: chipContext,
@@ -1610,7 +1612,7 @@ class _ProjectPickerContentState extends State<_ProjectPickerContent> {
                     ? colorScheme.primary
                     : colorScheme.onSurfaceVariant,
               ),
-              title: Text(l10n.projectPickerNoProjectInbox),
+              title: Text(l10n.inboxLabel),
               trailing: currentId.isEmpty
                   ? Icon(Icons.check, color: colorScheme.primary)
                   : null,

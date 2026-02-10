@@ -20,7 +20,6 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/core/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
-import 'package:taskly_bloc/presentation/features/settings/bloc/allocation_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/services/projects_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
@@ -194,7 +193,6 @@ Future<void> setupDependencies() async {
         valueRepository: getIt<ValueRepositoryContract>(),
         valueRatingsRepository: getIt<ValueRatingsRepositoryContract>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
-        analyticsService: getIt<AnalyticsService>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
         projectAnchorStateRepository:
             getIt<ProjectAnchorStateRepositoryContract>(),
@@ -206,6 +204,7 @@ Future<void> setupDependencies() async {
       () => TaskSuggestionService(
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
         taskRepository: getIt<TaskRepositoryContract>(),
+        valueRatingsRepository: getIt<ValueRatingsRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
         clock: getIt<Clock>(),
       ),
@@ -405,6 +404,7 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
         nowService: getIt<NowService>(),
+        valueRatingsRepository: getIt<ValueRatingsRepositoryContract>(),
         demoModeService: getIt<DemoModeService>(),
         demoDataProvider: getIt<DemoDataProvider>(),
       ),
@@ -414,11 +414,6 @@ Future<void> setupDependencies() async {
         templateDataService: getIt<TemplateDataService>(),
         userDataWipeService: getIt<UserDataWipeService>(),
         authRepository: getIt<AuthRepositoryContract>(),
-      ),
-    )
-    ..registerFactory<AllocationSettingsBloc>(
-      () => AllocationSettingsBloc(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
       ),
     );
 }

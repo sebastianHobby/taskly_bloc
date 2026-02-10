@@ -67,6 +67,18 @@ class WeeklyValueCheckInContent extends StatefulWidget {
     this.wizardStep,
     this.wizardTotal,
     this.onWizardBack,
+    this.showHistory = true,
+    this.showActivityMix = true,
+    this.showTopBar = true,
+    this.useWizardFooter = false,
+    this.introTitle,
+    this.introBody,
+    this.promptTitleOverride,
+    this.promptTitleBuilder,
+    this.promptSubtitleBuilder,
+    this.scaleHint,
+    this.nextActionLabel,
+    this.completeActionLabel,
   });
 
   final String? initialValueId;
@@ -76,6 +88,18 @@ class WeeklyValueCheckInContent extends StatefulWidget {
   final int? wizardStep;
   final int? wizardTotal;
   final VoidCallback? onWizardBack;
+  final bool showHistory;
+  final bool showActivityMix;
+  final bool showTopBar;
+  final bool useWizardFooter;
+  final String? introTitle;
+  final String? introBody;
+  final String? promptTitleOverride;
+  final String Function(String valueName, int maxRating)? promptTitleBuilder;
+  final String Function(String valueName, int maxRating)? promptSubtitleBuilder;
+  final String? scaleHint;
+  final String? nextActionLabel;
+  final String? completeActionLabel;
 
   @override
   State<WeeklyValueCheckInContent> createState() =>
@@ -147,32 +171,92 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent>
                   wizardTotal,
                 );
 
+          void handleBack() {
+            final onWizardBack = widget.onWizardBack;
+            if (onWizardBack != null) {
+              onWizardBack();
+              return;
+            }
+            if (isFirst) {
+              widget.onExit();
+              return;
+            }
+            final previous = entries[stepIndex - 1];
+            context.read<WeeklyReviewBloc>().add(
+              WeeklyReviewValueSelected(previous.value.id),
+            );
+          }
+
+          void handleNext() {
+            if (rating != selected.rating) {
+              context.read<WeeklyReviewBloc>().add(
+                WeeklyReviewValueRatingChanged(
+                  valueId: selected.value.id,
+                  rating: rating,
+                ),
+              );
+            }
+            if (isLast) {
+              widget.onComplete();
+              return;
+            }
+            final next = entries[stepIndex + 1];
+            context.read<WeeklyReviewBloc>().add(
+              WeeklyReviewValueSelected(next.value.id),
+            );
+          }
+
+          final onNext = rating <= 0 ? null : handleNext;
+
           return Column(
             children: [
-              _CheckInTopBar(
-                title: l10n.weeklyReviewCheckInTitle,
-                wizardLabel: wizardLabel,
-                onBack: () {
-                  final onWizardBack = widget.onWizardBack;
-                  if (onWizardBack != null) {
-                    onWizardBack();
-                    return;
-                  }
-                  if (isFirst) {
-                    widget.onExit();
-                    return;
-                  }
-                  final previous = entries[stepIndex - 1];
-                  context.read<WeeklyReviewBloc>().add(
-                    WeeklyReviewValueSelected(previous.value.id),
-                  );
-                },
-                onHistory: () => showWeeklyRatingDetailsSheet(
-                  context,
-                  entry: selected,
-                  windowWeeks: widget.windowWeeks,
+              if (widget.showTopBar)
+                _CheckInTopBar(
+                  title: l10n.weeklyReviewCheckInTitle,
+                  wizardLabel: wizardLabel,
+                  onBack: handleBack,
+                  onHistory: widget.showHistory
+                      ? () => showWeeklyRatingDetailsSheet(
+                          context,
+                          entry: selected,
+                          windowWeeks: widget.windowWeeks,
+                        )
+                      : null,
                 ),
-              ),
+              if (widget.introTitle != null || widget.introBody != null)
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.spaceLg,
+                    tokens.spaceLg,
+                    tokens.spaceLg,
+                    tokens.spaceSm,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (widget.introTitle != null)
+                        Text(
+                          widget.introTitle!,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      if (widget.introBody != null) ...[
+                        SizedBox(height: tokens.spaceXs),
+                        Text(
+                          widget.introBody!,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   tokens.spaceLg,
@@ -184,7 +268,12 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent>
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      l10n.weeklyReviewCheckInPromptTitle,
+                      widget.promptTitleBuilder?.call(
+                            selected.value.name,
+                            maxRating,
+                          ) ??
+                          widget.promptTitleOverride ??
+                          l10n.weeklyReviewCheckInPromptTitle,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
@@ -192,15 +281,29 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent>
                           ),
                     ),
                     SizedBox(height: tokens.spaceXs),
-                    Text(
-                      l10n.weeklyReviewCheckInPromptSubtitle(
-                        selected.value.name,
-                        maxRating,
-                      ),
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final subtitle =
+                            widget.promptSubtitleBuilder?.call(
+                              selected.value.name,
+                              maxRating,
+                            ) ??
+                            l10n.weeklyReviewCheckInPromptSubtitle(
+                              selected.value.name,
+                              maxRating,
+                            );
+                        if (subtitle.trim().isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return Text(
+                          subtitle,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -236,11 +339,11 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent>
                                   .add(WeeklyReviewValueSelected(valueId)),
                               onRatingChanged: (valueId, rating) =>
                                   context.read<WeeklyReviewBloc>().add(
-                                        WeeklyReviewValueRatingChanged(
-                                          valueId: valueId,
-                                          rating: rating,
-                                        ),
-                                      ),
+                                    WeeklyReviewValueRatingChanged(
+                                      valueId: valueId,
+                                      rating: rating,
+                                    ),
+                                  ),
                             ),
                           ),
                           SizedBox(height: tokens.spaceSm),
@@ -255,52 +358,49 @@ class _WeeklyValueCheckInContentState extends State<WeeklyValueCheckInContent>
                             }),
                             onRatingCommit: (value) {
                               context.read<WeeklyReviewBloc>().add(
-                                    WeeklyReviewValueRatingChanged(
-                                      valueId: selected.value.id,
-                                      rating: value,
-                                    ),
-                                  );
+                                WeeklyReviewValueRatingChanged(
+                                  valueId: selected.value.id,
+                                  rating: value,
+                                ),
+                              );
                             },
+                            scaleHint: widget.scaleHint,
                           ),
                           SizedBox(height: tokens.spaceSm),
-                          _ActivityMixPanel(
-                            entries: entries,
-                            entry: selected,
-                            accent: accent,
-                            onViewAll: () => showWeeklyRatingEvidenceSheet(
-                              context,
+                          if (widget.showActivityMix)
+                            _ActivityMixPanel(
+                              entries: entries,
                               entry: selected,
+                              accent: accent,
+                              onViewAll: () => showWeeklyRatingEvidenceSheet(
+                                context,
+                                entry: selected,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     );
                   },
                 ),
               ),
-              _RatingActionsBar(
-                isLast: isLast,
-                onNext: rating <= 0
-                    ? null
-                    : () {
-                        if (rating != selected.rating) {
-                          context.read<WeeklyReviewBloc>().add(
-                            WeeklyReviewValueRatingChanged(
-                              valueId: selected.value.id,
-                              rating: rating,
-                            ),
-                          );
-                        }
-                        if (isLast) {
-                          widget.onComplete();
-                          return;
-                        }
-                        final next = entries[stepIndex + 1];
-                        context.read<WeeklyReviewBloc>().add(
-                          WeeklyReviewValueSelected(next.value.id),
-                        );
-                      },
-              ),
+              if (widget.useWizardFooter)
+                _WizardActionsFooter(
+                  stepLabel: wizardLabel,
+                  primaryLabel: isLast
+                      ? (widget.completeActionLabel ??
+                            l10n.weeklyReviewCompleteCheckInAction)
+                      : (widget.nextActionLabel ??
+                            l10n.weeklyReviewNextValueAction),
+                  onPrimary: onNext,
+                  onBack: handleBack,
+                )
+              else
+                _RatingActionsBar(
+                  isLast: isLast,
+                  nextLabel: widget.nextActionLabel,
+                  completeLabel: widget.completeActionLabel,
+                  onNext: onNext,
+                ),
             ],
           );
         },
@@ -316,13 +416,13 @@ class _CheckInTopBar extends StatelessWidget {
   const _CheckInTopBar({
     required this.title,
     required this.onBack,
-    required this.onHistory,
+    this.onHistory,
     this.wizardLabel,
   });
 
   final String title;
   final VoidCallback onBack;
-  final VoidCallback onHistory;
+  final VoidCallback? onHistory;
   final String? wizardLabel;
 
   @override
@@ -339,10 +439,10 @@ class _CheckInTopBar extends StatelessWidget {
         tokens.spaceSm,
       ),
       decoration: BoxDecoration(
-        color: scheme.surface,
+        color: scheme.surfaceContainerLowest,
         border: Border(
           bottom: BorderSide(
-            color: scheme.outlineVariant.withValues(alpha: 0.4),
+            color: scheme.outlineVariant.withValues(alpha: 0.3),
           ),
         ),
       ),
@@ -373,19 +473,22 @@ class _CheckInTopBar extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            width: tokens.iconButtonMinSize,
-            height: tokens.iconButtonMinSize,
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              tooltip: context.l10n.historyLabel,
-              onPressed: onHistory,
-              icon: const Icon(Icons.info_outline, size: 18),
-            ),
-          ),
+          if (onHistory != null)
+            Container(
+              width: tokens.iconButtonMinSize,
+              height: tokens.iconButtonMinSize,
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHighest,
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                tooltip: context.l10n.historyLabel,
+                onPressed: onHistory,
+                icon: const Icon(Icons.info_outline, size: 18),
+              ),
+            )
+          else
+            SizedBox(width: tokens.iconButtonMinSize),
         ],
       ),
     );
@@ -401,6 +504,7 @@ class _ValueSummaryCard extends StatelessWidget {
     required this.maxRating,
     required this.onRatingChanged,
     required this.onRatingCommit,
+    this.scaleHint,
   });
 
   final String valueName;
@@ -410,6 +514,7 @@ class _ValueSummaryCard extends StatelessWidget {
   final int maxRating;
   final ValueChanged<int> onRatingChanged;
   final ValueChanged<int> onRatingCommit;
+  final String? scaleHint;
 
   @override
   Widget build(BuildContext context) {
@@ -501,6 +606,7 @@ class _ValueSummaryCard extends StatelessWidget {
             accent: accent,
             onChanged: onRatingChanged,
             onCommit: onRatingCommit,
+            scaleHint: scaleHint,
           ),
         ],
       ),
@@ -569,11 +675,15 @@ class _ActivityMixPanel extends StatelessWidget {
             ),
             TextButton.icon(
               onPressed: onViewAll,
-              icon: const Icon(Icons.arrow_forward, size: 16),
+              icon: const Icon(Icons.arrow_forward, size: 14),
               label: Text(l10n.weeklyReviewActivityMixViewDetails),
               style: TextButton.styleFrom(
                 foregroundColor: accent,
-                padding: EdgeInsets.symmetric(horizontal: tokens.spaceSm),
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spaceXs,
+                  vertical: tokens.spaceXxs,
+                ),
+                minimumSize: Size.square(tokens.minTapTargetSize),
                 textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -612,7 +722,7 @@ class _ActivityMixPanel extends StatelessWidget {
           background: scheme.surfaceContainerHighest,
           isMuted: false,
         ),
-        SizedBox(height: tokens.spaceSm),
+        SizedBox(height: tokens.spaceXs2),
         _ActivityMixBar(
           label: l10n.weeklyReviewActivityMixAvgOtherValuesLabel,
           totalLabel: l10n.weeklyReviewActivityMixTotalLabel(
@@ -670,6 +780,7 @@ class _ActivityMixBar extends StatelessWidget {
     final total = taskCount + routineCount;
     final taskFlex = _segmentFlex(taskCount, total);
     final routineFlex = _segmentFlex(routineCount, total);
+    final barHeight = tokens.spaceLg3 + tokens.spaceXxs;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -696,7 +807,7 @@ class _ActivityMixBar extends StatelessWidget {
         ),
         SizedBox(height: tokens.spaceXxs),
         Container(
-          height: 28,
+          height: barHeight,
           decoration: BoxDecoration(
             color: background,
             borderRadius: BorderRadius.circular(tokens.radiusLg),
@@ -797,6 +908,7 @@ class _RatingSlider extends StatelessWidget {
     required this.accent,
     required this.onChanged,
     required this.onCommit,
+    this.scaleHint,
   });
 
   final int rating;
@@ -804,6 +916,7 @@ class _RatingSlider extends StatelessWidget {
   final Color accent;
   final ValueChanged<int> onChanged;
   final ValueChanged<int> onCommit;
+  final String? scaleHint;
 
   @override
   Widget build(BuildContext context) {
@@ -824,6 +937,15 @@ class _RatingSlider extends StatelessWidget {
           ),
         ),
         SizedBox(height: tokens.spaceSm),
+        if (scaleHint != null) ...[
+          Text(
+            scaleHint!,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: tokens.spaceSm),
+        ],
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -850,13 +972,26 @@ class _RatingSlider extends StatelessWidget {
             ),
           ],
         ),
+        SizedBox(height: tokens.spaceXs2),
+        _RatingTickRow(
+          maxRating: maxRating,
+          rating: clamped,
+          accent: accent,
+        ),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             activeTrackColor: accent,
             thumbColor: accent,
             overlayColor: accent.withValues(alpha: 0.15),
-            inactiveTrackColor: scheme.surfaceContainerHighest,
-            trackHeight: 6,
+            inactiveTrackColor: scheme.surfaceContainerHighest.withValues(
+              alpha: 0.8,
+            ),
+            trackHeight: 4,
+            thumbShape: _OutlinedThumbShape(
+              radius: tokens.spaceSm,
+              borderColor: scheme.surface,
+              borderWidth: 2,
+            ),
           ),
           child: Slider(
             value: clamped.toDouble(),
@@ -872,14 +1007,102 @@ class _RatingSlider extends StatelessWidget {
   }
 }
 
+class _RatingTickRow extends StatelessWidget {
+  const _RatingTickRow({
+    required this.maxRating,
+    required this.rating,
+    required this.accent,
+  });
+
+  final int maxRating;
+  final int rating;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tokens = TasklyTokens.of(context);
+    final dotSize = tokens.spaceXxs2;
+    final inactive = scheme.onSurfaceVariant.withValues(alpha: 0.35);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(
+        maxRating,
+        (index) {
+          final value = index + 1;
+          final color = value <= rating ? accent : inactive;
+          return Container(
+            width: dotSize,
+            height: dotSize,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _OutlinedThumbShape extends SliderComponentShape {
+  const _OutlinedThumbShape({
+    required this.radius,
+    required this.borderColor,
+    required this.borderWidth,
+  });
+
+  final double radius;
+  final Color borderColor;
+  final double borderWidth;
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) {
+    return Size.fromRadius(radius);
+  }
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final canvas = context.canvas;
+    final fillPaint = Paint()
+      ..color = sliderTheme.thumbColor ?? Colors.white
+      ..style = PaintingStyle.fill;
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = borderWidth;
+
+    canvas.drawCircle(center, radius, fillPaint);
+    canvas.drawCircle(center, radius - borderWidth / 2, borderPaint);
+  }
+}
+
 class _RatingActionsBar extends StatelessWidget {
   const _RatingActionsBar({
     required this.isLast,
     required this.onNext,
+    this.nextLabel,
+    this.completeLabel,
   });
 
   final bool isLast;
   final VoidCallback? onNext;
+  final String? nextLabel;
+  final String? completeLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -905,35 +1128,115 @@ class _RatingActionsBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          FilledButton(
-            onPressed: onNext,
-            style: FilledButton.styleFrom(
-              padding: EdgeInsets.symmetric(
-                vertical: tokens.spaceMd2,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  tokens.radiusXxl,
-                ),
-              ),
-              backgroundColor: scheme.onSurface,
-              foregroundColor: scheme.surface,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isLast)
-                  const Icon(Icons.check_circle)
-                else
-                  const Icon(Icons.arrow_forward),
-                SizedBox(width: tokens.spaceSm),
-                Text(
-                  isLast
-                      ? l10n.weeklyReviewCompleteCheckInAction
-                      : l10n.weeklyReviewNextValueAction,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(tokens.radiusXxl),
+              boxShadow: [
+                BoxShadow(
+                  color: scheme.shadow.withValues(alpha: 0.18),
+                  blurRadius: tokens.spaceLg,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
+            child: FilledButton(
+              onPressed: onNext,
+              style: FilledButton.styleFrom(
+                padding: EdgeInsets.symmetric(
+                  vertical: tokens.spaceMd2,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    tokens.radiusXxl,
+                  ),
+                ),
+                backgroundColor: scheme.onSurface,
+                foregroundColor: scheme.surface,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isLast)
+                    const Icon(Icons.check_circle)
+                  else
+                    const Icon(Icons.arrow_forward),
+                  SizedBox(width: tokens.spaceSm),
+                  Text(
+                    isLast
+                        ? (completeLabel ??
+                              l10n.weeklyReviewCompleteCheckInAction)
+                        : (nextLabel ?? l10n.weeklyReviewNextValueAction),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WizardActionsFooter extends StatelessWidget {
+  const _WizardActionsFooter({
+    required this.stepLabel,
+    required this.primaryLabel,
+    required this.onPrimary,
+    required this.onBack,
+  });
+
+  final String? stepLabel;
+  final String primaryLabel;
+  final VoidCallback? onPrimary;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spaceLg,
+        tokens.spaceSm,
+        tokens.spaceLg,
+        tokens.spaceLg,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.35),
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (stepLabel != null) ...[
+            Text(
+              stepLabel!,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: tokens.spaceSm),
+          ],
+          FilledButton(
+            onPressed: onPrimary,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: tokens.spaceMd,
+              ),
+              child: Text(primaryLabel),
+            ),
+          ),
+          SizedBox(height: tokens.spaceSm),
+          TextButton(
+            onPressed: onBack,
+            child: Text(context.l10n.backLabel),
           ),
         ],
       ),

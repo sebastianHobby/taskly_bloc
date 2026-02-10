@@ -560,25 +560,9 @@
     "@valueFormColorMoreColors": {
         "description": "Label for the advanced color picker entry in the value editor"
     },
-    "valuePriorityLowLabel": "Baja",
-    "@valuePriorityLowLabel": {
-        "description": "Etiqueta para prioridad baja del valor"
-    },
-    "valuePriorityMediumLabel": "Media",
-    "@valuePriorityMediumLabel": {
-        "description": "Etiqueta para prioridad media del valor"
-    },
-    "valuePriorityHighLabel": "Alta",
-    "@valuePriorityHighLabel": {
-        "description": "Etiqueta para prioridad alta del valor"
-    },
     "valueMissingLabel": "Sin valor",
     "@valueMissingLabel": {
         "description": "Etiqueta mostrada cuando una entidad no tiene un valor asociado."
-    },
-    "valuePriorityHelper": "Esto ayuda a Taskly a sugerir un enfoque equilibrado, dando más espacio a tus valores principales.",
-    "@valuePriorityHelper": {
-        "description": "Texto de ayuda que se muestra debajo del selector de prioridad en el formulario de valores."
     },
     "createLabelTooltip": "Crear etiqueta",
     "@createLabelTooltip": {
@@ -1219,7 +1203,7 @@
     "@myDayWhyTheseTitle": {
         "description": "Title for the explainability bottom sheet in the My Day ritual."
     },
-    "myDayWhyTheseWhatMattersBody": "Alineado con valores destaca tareas vinculadas a tus valores. Las sugerencias también pueden reequilibrar valores descuidados y considerar la urgencia y la prioridad.",
+    "myDayWhyTheseWhatMattersBody": "Alineado con valores destaca tareas vinculadas a tus valores. Las sugerencias se basan en tus valoraciones semanales y consideran la urgencia.",
     "@myDayWhyTheseWhatMattersBody": {
         "description": "Body text for the 'Why these?' sheet for the What matters section."
     },
@@ -3527,7 +3511,6 @@
     "stayLabel": "Quedarse",
     "exitLabel": "Salir",
     "rateValuesLabel": "Valorar valores",
-    "switchToBehaviorBasedLabel": "Cambiar a basado en comportamiento",
     "accountTitle": "Cuenta",
     "userFallbackLabel": "Usuario",
     "signOutFailedMessage": "No se pudo cerrar sesión. Inténtalo de nuevo.",
@@ -3547,22 +3530,12 @@
     "textSizeSubtitle": "Ajusta la escala general de la fuente.",
     "textScaleLabel": "Escala",
     "customLabel": "Personalizado",
-    "settingsTaskSuggestionsTitle": "Sugerencias de tareas",
-    "suggestionSignalBehaviorSummary": "Basado en comportamiento",
-    "suggestionSignalRatingsSummary": "Valoraciones semanales",
-    "suggestionSignalTitle": "Señal de sugerencias",
-    "suggestionSignalSubtitle": "Elige qué usa Taskly para sugerir tareas.",
-    "suggestionSignalBehaviorTitle": "Basado en comportamiento",
-    "suggestionSignalBehaviorSubtitle": "Las sugerencias se basan en tus completaciones recientes.",
-    "suggestionSignalRatingsTitle": "Valoraciones semanales",
-    "suggestionSignalRatingsSubtitle": "Las sugerencias se basan en las valoraciones de valores.",
-    "suggestionSignalRatingsFootnote": "Las valoraciones aparecen en la Revisión semanal.",
     "weeklyReviewTitle": "Revisión semanal",
     "offLabel": "Desactivado",
     "weeklyReviewScheduleTitle": "Revisión semanal",
-    "weeklyReviewScheduleSubtitle": "Un check-in suave en un día que te funcione.",
+    "weeklyReviewScheduleSubtitle": "Elige un día y una cadencia que se ajuste a tu revisión.",
     "weeklyReviewDayOfWeekLabel": "Día de la semana",
-    "weeklyReviewFrequencyLabel": "Frecuencia",
+    "weeklyReviewFrequencyLabel": "Frecuencia de revisión",
     "onboardingStepProgress": "Paso {current} de {total}",
     "@onboardingStepProgress": {
         "description": "Etiqueta de progreso de los pasos de onboarding",
@@ -3579,20 +3552,81 @@
     "onboardingContinueLabel": "Continuar",
     "onboardingFinishLabel": "Finalizar",
     "onboardingWelcomeTitle": "Bienvenido a Taskly",
-    "onboardingWelcomeSubtitle1": "Personalicemos tu configuración.",
-    "onboardingWelcomeSubtitle2": "Elige valores que guíen tu día.",
-    "onboardingNameTitle": "¿Cómo te llamas?",
-    "onboardingNameSubtitle": "Este nombre aparece en tu pantalla de inicio.",
-    "onboardingNameHint": "Tu nombre",
-    "onboardingValuesTitle": "Elige tus valores",
-    "onboardingValuesSubtitle": "Selecciona lo que más te importa.",
-    "onboardingValuesHint": "Buscar valores",
-    "onboardingQuickPicksTitle": "Selecciones rápidas",
-    "onboardingCustomValueLabel": "Crear un valor personalizado",
-    "onboardingYourPicksTitle": "Tus selecciones",
+    "onboardingWelcomeSubtitle1": "Agrega algunos valores para que Taskly sugiera tareas alineadas con lo que te importa.",
+    "onboardingWelcomeSubtitle2": "Puedes cambiarlos cuando quieras.",
+    "onboardingValuesTitle": "Agrega tus valores",
+    "onboardingValuesSubtitle": "Los valores ayudan a Taskly a sugerir tareas que coinciden con lo que es importante para ti.",
+    "onboardingValuesHint": "La mayoría empieza con 3-5. Puedes agregar hasta 8.",
+    "onboardingValueQuickAddTitle": "Agregar un valor",
+    "onboardingValueNameHint": "Escribe un valor (p. ej., Salud, Aprendizaje)",
+    "onboardingValueIconLabel": "Icono",
+    "onboardingValueColorLabel": "Color",
+    "onboardingValueIdeasLabel": "¿Necesitas ideas?",
+    "onboardingYourValuesTitle": "Tus valores ({current} de {max})",
+    "@onboardingYourValuesTitle": {
+        "description": "Etiqueta para la lista de valores seleccionados en onboarding",
+        "placeholders": {
+            "current": {
+                "type": "int"
+            },
+            "max": {
+                "type": "int"
+            }
+        }
+    },
     "onboardingPickAtLeastOneValue": "Elige al menos un valor para continuar.",
-    "onboardingCustomValueSubtitle": "Agrega un valor que no esté en la lista.",
     "onboardingAddValueLabel": "Agregar valor",
+    "onboardingValuesMaxHint": "Has alcanzado el máximo de {max} valores.",
+    "@onboardingValuesMaxHint": {
+        "description": "Pista cuando se alcanza el máximo de valores en onboarding",
+        "placeholders": {
+            "max": {
+                "type": "int"
+            }
+        }
+    },
+    "onboardingRatingsTitle": "Establece tu primera calificación semanal",
+    "onboardingRatingsBody": "Usamos calificaciones semanales para sugerir tareas que coinciden con lo que te importa.",
+    "onboardingRatingsPrompt": "¿Qué tan satisfecho estás con {valueName} esta semana?",
+    "@onboardingRatingsPrompt": {
+        "description": "Pregunta principal para la calificación en onboarding",
+        "placeholders": {
+            "valueName": {
+                "type": "String"
+            }
+        }
+    },
+    "onboardingRatingsScaleHint": "1 (bajo) -> 10 (alto)",
+    "onboardingRatingsSaveAction": "Guardar calificación",
+    "onboardingReviewTitle": "Revisión semanal",
+    "onboardingReviewBody": "La revisión semanal incluye Calificaciones de valores y Chequeos de salud del proyecto. Las calificaciones guían las sugerencias; los chequeos de salud del proyecto mantienen proyectos y tareas saludables.",
+    "onboardingReviewFrequencyLabel": "Frecuencia de revisión",
+    "onboardingReviewWeeklyOption": "Semanal",
+    "onboardingReviewBiweeklyOption": "Cada 2 semanas",
+    "onboardingReviewFrequencyHint": "Puedes cambiar esto más tarde en Configuración.",
+    "onboardingMaintenanceTitle": "Chequeos de salud del proyecto",
+    "onboardingMaintenanceIntro": "Elige qué chequeos incluir por defecto. Puedes actualizarlo más tarde en Configuración.",
+    "onboardingMaintenanceDeadlineTitle": "Próximas fechas límite",
+    "onboardingMaintenanceDeadlineBody": "Marca proyectos con una fecha límite cercana y demasiadas tareas sin programar.",
+    "onboardingMaintenanceStaleTitle": "Necesita atención",
+    "onboardingMaintenanceStaleBody": "Marca tareas y proyectos sin progreso reciente.",
+    "onboardingMaintenanceDeferredTitle": "Pospuestas repetidamente",
+    "onboardingMaintenanceDeferredBody": "Marca tareas que se han pospuesto varias veces.",
+    "onboardingMaintenanceTuneLabel": "Ajustar",
+    "onboardingMaintenanceTuneDeadlineTitle": "Ajustar próximas fechas límite",
+    "onboardingMaintenanceTuneStaleTitle": "Ajustar necesita atención",
+    "weeklyReviewDeadlineRiskDescription": "Marca proyectos con una fecha límite cercana y demasiadas tareas sin programar.",
+    "@weeklyReviewDeadlineRiskDescription": {
+        "description": "Descripción para la regla de fechas límite en salud del proyecto"
+    },
+    "weeklyReviewStaleDescription": "Marca tareas y proyectos sin progreso reciente.",
+    "@weeklyReviewStaleDescription": {
+        "description": "Descripción para la regla de inactividad en salud del proyecto"
+    },
+    "weeklyReviewFrequentSnoozedDescription": "Marca tareas que se han pospuesto varias veces.",
+    "@weeklyReviewFrequentSnoozedDescription": {
+        "description": "Descripción para la regla de posposiciones en salud del proyecto"
+    },
     "valueNameLabel": "Nombre del valor",
     "onboardingValueHealth": "Salud",
     "onboardingValueRelationships": "Relaciones",
@@ -3600,30 +3634,23 @@
     "onboardingValueLearning": "Aprendizaje",
     "onboardingValueHome": "Hogar",
     "onboardingValueAdventure": "Aventura",
-    "weeklyReviewTimeLabel": "Hora",
     "weeklyReviewRunNowLabel": "Ejecutar revisión ahora",
     "weeklyReviewCadenceLabel": "{weeks, plural, =1{Cada semana} other{Cada {weeks} semanas}}",
-    "weeklyReviewValuesTitle": "Instantánea de valores",
-    "weeklyReviewValuesSubtitle": "Muestra el balance de valores y logros en cada revisión.",
-    "weeklyReviewValuesSummarySummary": "{weeks, plural, =1{Ventana de 1 semana} other{Ventana de {weeks} semanas}} - {wins, plural, =1{1 logro} other{{wins} logros}}",
-    "weeklyReviewValuesLookbackLabel": "Ventana de revisión",
-    "weeklyReviewValuesWinsLabel": "Logros de valores",
-    "weeklyReviewMaintenanceTitle": "Chequeo de mantenimiento",
-    "weeklyReviewMaintenanceSubtitle": "Indicaciones opcionales para mantener el rumbo.",
-    "weeklyReviewDeadlineRiskTitle": "Riesgo de fecha límite",
+    "weeklyReviewMaintenanceTitle": "Chequeos de salud del proyecto",
+    "weeklyReviewMaintenanceSubtitle": "Indicaciones opcionales para mantener proyectos y tareas saludables.",
+    "weeklyReviewDeadlineRiskTitle": "Próximas fechas límite",
     "weeklyReviewDueWithinLabel": "Vence en",
-    "weeklyReviewUnscheduledTasksLabel": "Tareas sin programar",
-    "weeklyReviewStaleTitle": "Tareas y proyectos inactivos",
+    "weeklyReviewUnscheduledTasksLabel": "Mín. sin programar",
+    "weeklyReviewStaleTitle": "Necesita atención",
     "weeklyReviewTaskStaleAfterLabel": "Tarea inactiva después de",
     "weeklyReviewProjectIdleAfterLabel": "Proyecto inactivo después de",
-    "weeklyReviewFrequentSnoozedTitle": "Tareas pospuestas con frecuencia",
-    "weeklyReviewStaleItemsLabel": "Elementos inactivos",
-    "weeklyReviewFrequentSnoozesLabel": "Posposiciones frecuentes",
+    "weeklyReviewFrequentSnoozedTitle": "Pospuestas repetidamente",
+    "weeklyReviewStaleItemsLabel": "Necesita atención",
+    "weeklyReviewFrequentSnoozesLabel": "Pospuestas repetidamente",
     "weeklyReviewNoChecksEnabled": "No hay chequeos activos",
     "weeklyReviewDeadlineRiskSummary": "{dueWithin, plural, =1{Vence en 1 día} other{Vence en {dueWithin} días}} - {unscheduled, plural, =1{1 tarea sin programar} other{{unscheduled} tareas sin programar}}",
     "weeklyReviewStaleSummary": "{taskDays, plural, =1{Tarea inactiva después de 1 día} other{Tarea inactiva después de {taskDays} días}} - {projectDays, plural, =1{Proyecto inactivo después de 1 día} other{Proyecto inactivo después de {projectDays} días}}",
     "weeksCountLabel": "{count, plural, =1{1 semana} other{{count} semanas}}",
-    "winsCountLabel": "{count, plural, =1{1 logro} other{{count} logros}}",
     "daysCountLabel": "{count, plural, =1{1 día} other{{count} días}}",
     "tasksCountLabel": "{count, plural, =1{1 tarea} other{{count} tareas}}",
     "moreCountLabel": "+ {count, plural, =1{1 más} other{{count} más}}",
@@ -3729,10 +3756,6 @@
     "journalTitle": "Diario",
     "@journalTitle": {
         "description": "Etiqueta de navegación para Diario"
-    },
-    "statisticsTitle": "Estadísticas",
-    "@statisticsTitle": {
-        "description": "Etiqueta de navegación para Estadísticas"
     },
     "journalAnyTimeLabel": "En cualquier momento",
     "@journalAnyTimeLabel": {
@@ -3937,9 +3960,61 @@
     "@planMyDayIncreaseLimitTooltip": {
         "description": "Tooltip para aumentar el límite diario en Planificar mi día"
     },
-    "planMyDaySuggestionsTitle": "Sugerencias",
+    "planMyDaySuggestionsTitle": "Sugerencias de valores",
     "@planMyDaySuggestionsTitle": {
         "description": "Titulo para la sección de sugerencias en Planificar mi día"
+    },
+    "planMyDaySuggestionsSubtitle": "Basado en tus valoraciones semanales (últimas 4 semanas).",
+    "@planMyDaySuggestionsSubtitle": {
+        "description": "Subtitle for the value suggestions section in Plan My Day."
+    },
+    "planMyDaySortByLabel": "Ordenar por: {label}",
+    "@planMyDaySortByLabel": {
+        "description": "Label for the sort menu in Plan My Day.",
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "planMyDaySortLowestAverage": "Promedio más bajo",
+    "@planMyDaySortLowestAverage": {
+        "description": "Sort label for lowest average rating in Plan My Day."
+    },
+    "planMyDaySortTrendingDown": "Tendencia a la baja",
+    "@planMyDaySortTrendingDown": {
+        "description": "Sort label for trending down values in Plan My Day."
+    },
+    "planMyDayNeedsRatingTitle": "Necesita valoración",
+    "@planMyDayNeedsRatingTitle": {
+        "description": "Title for the needs rating section in Plan My Day."
+    },
+    "planMyDayAverageLabel": "Prom. {value}",
+    "@planMyDayAverageLabel": {
+        "description": "Average rating label in Plan My Day.",
+        "placeholders": {
+            "value": {
+                "type": "String"
+            }
+        }
+    },
+    "planMyDayTrendDownLabel": "↓ {value}",
+    "@planMyDayTrendDownLabel": {
+        "description": "Trend down label for Plan My Day.",
+        "placeholders": {
+            "value": {
+                "type": "String"
+            }
+        }
+    },
+    "planMyDayTrendUpLabel": "↑ {value}",
+    "@planMyDayTrendUpLabel": {
+        "description": "Trend up label for Plan My Day.",
+        "placeholders": {
+            "value": {
+                "type": "String"
+            }
+        }
     },
     "planMyDayOverCapacityMessage": "{count, plural, =1{1 elemento sobre el límite} other{{count} elementos sobre el límite}} (límite {limit})",
     "@planMyDayOverCapacityMessage": {
@@ -4192,207 +4267,6 @@
     "@noProjectLabel": {
         "description": "Etiqueta para la opción sin proyecto"
     },
-    "statisticsValuesFocusTitle": "Enfoque en valores",
-    "@statisticsValuesFocusTitle": {
-        "description": "Titulo para la sección de enfoque de valores"
-    },
-    "statisticsValuesFocusSubtitle": "{start} - {end}",
-    "@statisticsValuesFocusSubtitle": {
-        "description": "Subtitulo para el rango de enfoque de valores",
-        "placeholders": {
-            "start": {
-                "type": "String"
-            },
-            "end": {
-                "type": "String"
-            }
-        }
-    },
-    "statisticsProgressByValueTitle": "Progreso por valor",
-    "@statisticsProgressByValueTitle": {
-        "description": "Titulo para la sección de progreso por valor"
-    },
-    "statisticsMoodJournalTitle": "Diario de ánimo",
-    "@statisticsMoodJournalTitle": {
-        "description": "Titulo para la sección de diario de ánimo"
-    },
-    "statisticsCorrelationsTitle": "Correlaciones",
-    "@statisticsCorrelationsTitle": {
-        "description": "Titulo para la sección de correlaciones"
-    },
-    "statisticsCorrelationsSubtitle": "Relaciones en tus datos",
-    "@statisticsCorrelationsSubtitle": {
-        "description": "Subtitulo para la sección de correlaciones"
-    },
-    "statisticsValuesEmptyLabel": "Aún no hay valores",
-    "@statisticsValuesEmptyLabel": {
-        "description": "Etiqueta cuando no hay valores"
-    },
-    "statisticsCompletionShareLabel": "Total de completadas: {count}",
-    "@statisticsCompletionShareLabel": {
-        "description": "Etiqueta con el total de completadas",
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "statisticsNeedsAttentionLabel": "Requiere atención (> {percent}% de brecha)",
-    "@statisticsNeedsAttentionLabel": {
-        "description": "Etiqueta cuando un valor necesita atención",
-        "placeholders": {
-            "percent": {
-                "type": "int"
-            }
-        }
-    },
-    "statisticsPrimarySecondaryTitle": "Primario vs secundario",
-    "@statisticsPrimarySecondaryTitle": {
-        "description": "Titulo para la sección de primario vs secundario"
-    },
-    "statisticsTrendsEmptyLabel": "Aún no hay tendencias",
-    "@statisticsTrendsEmptyLabel": {
-        "description": "Etiqueta vacía para tendencias de valores"
-    },
-    "statisticsWeeklyTrendLabel": "Tendencia semanal ({weeks} semanas)",
-    "@statisticsWeeklyTrendLabel": {
-        "description": "Etiqueta para la sección de tendencia semanal",
-        "placeholders": {
-            "weeks": {
-                "type": "int"
-            }
-        }
-    },
-    "statisticsMoodEmptyLabel": "Aún no hay datos de ánimo",
-    "@statisticsMoodEmptyLabel": {
-        "description": "Etiqueta cuando no hay datos de ánimo"
-    },
-    "statisticsMoodTrendTitle": "Tendencia de ánimo",
-    "@statisticsMoodTrendTitle": {
-        "description": "Titulo para el gráfico de tendencia de ánimo"
-    },
-    "statisticsMoodDistributionTitle": "Distribución de ánimo",
-    "@statisticsMoodDistributionTitle": {
-        "description": "Titulo para el gráfico de distribución de ánimo"
-    },
-    "statisticsCorrelationsEmptyLabel": "Aún no hay correlaciones",
-    "@statisticsCorrelationsEmptyLabel": {
-        "description": "Etiqueta cuando no hay correlaciones disponibles"
-    },
-    "statisticsCorrelationsEmptyBody": "Registra más datos para ver correlaciones.",
-    "@statisticsCorrelationsEmptyBody": {
-        "description": "Cuerpo cuando no hay correlaciones disponibles"
-    },
-    "statisticsCorrelationDisclaimer": "Las correlaciones son informativas y no causales.",
-    "@statisticsCorrelationDisclaimer": {
-        "description": "Texto de descargo para la sección de correlaciones"
-    },
-    "statisticsLoadSectionFailed": "No se pudo cargar esta sección.",
-    "@statisticsLoadSectionFailed": {
-        "description": "Etiqueta cuando una sección de estadísticas falla al cargar"
-    },
-    "statisticsNoCompletionsLabel": "Sin completadas aún",
-    "@statisticsNoCompletionsLabel": {
-        "description": "Etiqueta cuando no hay completadas para estadísticas"
-    },
-    "statisticsNoCoverageLabel": "Sin cobertura para {valueName}.",
-    "@statisticsNoCoverageLabel": {
-        "description": "Etiqueta cuando no hay cobertura para un valor",
-        "placeholders": {
-            "valueName": {
-                "type": "String"
-            }
-        }
-    },
-    "statisticsPrimarySecondaryTaskLabel": "Tareas: {primary}/{secondary}",
-    "@statisticsPrimarySecondaryTaskLabel": {
-        "description": "Etiqueta para conteos de tareas primarias vs secundarias",
-        "placeholders": {
-            "primary": {
-                "type": "int"
-            },
-            "secondary": {
-                "type": "int"
-            }
-        }
-    },
-    "statisticsPrimarySecondaryProjectLabel": "Proyectos: {primary}/{secondary}",
-    "@statisticsPrimarySecondaryProjectLabel": {
-        "description": "Etiqueta para conteos de proyectos primarios vs secundarios",
-        "placeholders": {
-            "primary": {
-                "type": "int"
-            },
-            "secondary": {
-                "type": "int"
-            }
-        }
-    },
-    "statisticsAverageLabel": "Promedio",
-    "@statisticsAverageLabel": {
-        "description": "Etiqueta para el valor promedio"
-    },
-    "statisticsEntriesLabel": "Entradas",
-    "@statisticsEntriesLabel": {
-        "description": "Etiqueta para el total de entradas"
-    },
-    "statisticsRangeLabel": "Rango",
-    "@statisticsRangeLabel": {
-        "description": "Etiqueta para el rango"
-    },
-    "statisticsCorrelationEarlyPatternLabel": "Patrón temprano (n={sampleSize})",
-    "@statisticsCorrelationEarlyPatternLabel": {
-        "description": "Etiqueta de insight para patrones de correlación tempranos",
-        "placeholders": {
-            "sampleSize": {
-                "type": "int"
-            }
-        }
-    },
-    "statisticsCorrelationDirectionHigher": "mayor",
-    "@statisticsCorrelationDirectionHigher": {
-        "description": "Etiqueta de dirección cuando la diferencia es mayor"
-    },
-    "statisticsCorrelationDirectionLower": "menor",
-    "@statisticsCorrelationDirectionLower": {
-        "description": "Etiqueta de dirección cuando la diferencia es menor"
-    },
-    "statisticsCorrelationDifferenceLabel": "Cuando {targetLabel} está presente, {sourceLabel} es {absPercent}% {direction} (n={sampleSize}).",
-    "@statisticsCorrelationDifferenceLabel": {
-        "description": "Etiqueta de insight cuando hay porcentaje de diferencia",
-        "placeholders": {
-            "sourceLabel": {
-                "type": "String"
-            },
-            "targetLabel": {
-                "type": "String"
-            },
-            "absPercent": {
-                "type": "String"
-            },
-            "direction": {
-                "type": "String"
-            },
-            "sampleSize": {
-                "type": "int"
-            }
-        }
-    },
-    "statisticsCorrelationBasicLabel": "Correlación entre {sourceLabel} y {targetLabel} (n={sampleSize}).",
-    "@statisticsCorrelationBasicLabel": {
-        "description": "Etiqueta de insight cuando no hay porcentaje de diferencia",
-        "placeholders": {
-            "sourceLabel": {
-                "type": "String"
-            },
-            "targetLabel": {
-                "type": "String"
-            },
-            "sampleSize": {
-                "type": "int"
-            }
-        }
-    },
     "weeklyReviewLoadFailureMessage": "No se pudo cargar la revisión.",
     "@weeklyReviewLoadFailureMessage": {
         "description": "Error message shown when the weekly review fails to load"
@@ -4405,66 +4279,6 @@
     "@continueLabel": {
         "description": "Generic continue action label"
     },
-    "weeklyReviewValuesInsightLabel": "Más alineado con {topValueName}. Menos alineado con {bottomValueName}.",
-    "@weeklyReviewValuesInsightLabel": {
-        "description": "Insight summary for weekly review values snapshot",
-        "placeholders": {
-            "topValueName": {
-                "type": "String"
-            },
-            "bottomValueName": {
-                "type": "String"
-            }
-        }
-    },
-    "weeklyReviewValuesInsightEmptyLabel": "Aún no hay tareas o rutinas completadas.",
-    "@weeklyReviewValuesInsightEmptyLabel": {
-        "description": "Insight shown when the values snapshot has no data"
-    },
-    "weeklyReviewValuesCompletionSummary": "{taskCount, plural, =0{0 tareas} =1{1 tarea} other{{taskCount} tareas}} y {routineCount, plural, =0{0 rutinas} =1{1 rutina} other{{routineCount} rutinas}} completadas",
-    "@weeklyReviewValuesCompletionSummary": {
-        "description": "Summary line showing task and routine completions for the values snapshot.",
-        "placeholders": {
-            "taskCount": {
-                "type": "int"
-            },
-            "routineCount": {
-                "type": "int"
-            }
-        }
-    },
-    "weeklyReviewValuesCompletionsLabel": "Completadas",
-    "@weeklyReviewValuesCompletionsLabel": {
-        "description": "Label under the values snapshot donut center total."
-    },
-    "weeklyReviewValuesNoValuesLabel": "Aún no hay valores.",
-    "@weeklyReviewValuesNoValuesLabel": {
-        "description": "Empty state shown when there are no values to summarize in the weekly review."
-    },
-    "weeklyReviewValuesPriorityTargetsTitle": "Objetivos de prioridad",
-    "@weeklyReviewValuesPriorityTargetsTitle": {
-        "description": "Title for the priority targets section in the weekly review values snapshot."
-    },
-    "weeklyReviewValuesPriorityTargetsSubtitle": "Los objetivos se derivan de tus prioridades de valores.",
-    "@weeklyReviewValuesPriorityTargetsSubtitle": {
-        "description": "Subtitle explaining how priority targets are calculated."
-    },
-    "weeklyReviewValuesTargetShareLabel": "Objetivo",
-    "@weeklyReviewValuesTargetShareLabel": {
-        "description": "Label for the expected share based on value priority."
-    },
-    "weeklyReviewValuesActualShareLabel": "Este periodo",
-    "@weeklyReviewValuesActualShareLabel": {
-        "description": "Label for the actual share in the current window."
-    },
-    "weeklyReviewValuesDeltaLabel": "vs objetivo",
-    "@weeklyReviewValuesDeltaLabel": {
-        "description": "Suffix label for the delta between actual and target share."
-    },
-    "weeklyReviewValuesSnapshotSubtitle": "Cómo tu trabajo completado se alineó con lo que importa.",
-    "@weeklyReviewValuesSnapshotSubtitle": {
-        "description": "Subtitle for the values snapshot section in weekly review"
-    },
     "weeklyReviewLastWeeksLabel": "Últimas {weeks} semanas",
     "@weeklyReviewLastWeeksLabel": {
         "description": "Label showing the last N weeks window",
@@ -4474,29 +4288,17 @@
             }
         }
     },
-    "weeklyReviewValueWinsSubtitle": "Pequeños momentos que sumaron.",
-    "@weeklyReviewValueWinsSubtitle": {
-        "description": "Subtitle for the value wins section in weekly review"
-    },
-    "weeklyReviewValueWinsEmpty": "Aún no hay logros de valores.",
-    "@weeklyReviewValueWinsEmpty": {
-        "description": "Empty state for value wins in weekly review"
-    },
-    "weeklyReviewValueWinsRow": "{valueName} - {count} completaciones",
-    "@weeklyReviewValueWinsRow": {
-        "description": "Row label for a value win entry",
-        "placeholders": {
-            "valueName": {
-                "type": "String"
-            },
-            "count": {
-                "type": "int"
-            }
-        }
-    },
-    "weeklyReviewMaintenanceCheckSubtitle": "Una lista breve para que no se acumule.",
+    "weeklyReviewMaintenanceCheckSubtitle": "Una lista breve para mantener proyectos y tareas saludables.",
     "@weeklyReviewMaintenanceCheckSubtitle": {
         "description": "Subtitle for the maintenance check section in weekly review"
+    },
+    "weeklyReviewMaintenanceAllClearTitle": "Todo en orden",
+    "@weeklyReviewMaintenanceAllClearTitle": {
+        "description": "Title for the all-clear state in weekly review maintenance"
+    },
+    "weeklyReviewMaintenanceAllClearSubtitle": "No hay elementos de mantenimiento pendientes esta semana.",
+    "@weeklyReviewMaintenanceAllClearSubtitle": {
+        "description": "Subtitle for the all-clear state in weekly review maintenance"
     },
     "weeklyReviewDeadlineRiskEmptyMessage": "No hay riesgos de fecha límite esta semana.",
     "@weeklyReviewDeadlineRiskEmptyMessage": {
@@ -4636,7 +4438,7 @@
             }
         }
     },
-    "weeklyReviewActivityMixTitle": "Mezcla de actividad",
+    "weeklyReviewActivityMixTitle": "Resumen de actividad",
     "@weeklyReviewActivityMixTitle": {
         "description": "Section title for activity mix summary in weekly review check-in"
     },
@@ -4864,10 +4666,6 @@
     "@settingsAppearanceSubtitle": {
         "description": "Subtitle for appearance settings entry"
     },
-    "settingsTaskSuggestionsSubtitle": "Señal de sugerencias y equilibrio de valores",
-    "@settingsTaskSuggestionsSubtitle": {
-        "description": "Subtitle for task suggestions settings entry"
-    },
     "settingsGuidedTourTitle": "Recorrido guiado",
     "@settingsGuidedTourTitle": {
         "description": "Title for guided tour settings entry"
@@ -4876,7 +4674,7 @@
     "@settingsGuidedTourSubtitle": {
         "description": "Subtitle for guided tour settings entry"
     },
-    "settingsWeeklyReviewSubtitle": "Horario, balance de valores y mantenimiento",
+    "settingsWeeklyReviewSubtitle": "Horario y salud del proyecto",
     "@settingsWeeklyReviewSubtitle": {
         "description": "Subtitle for weekly review settings entry"
     },

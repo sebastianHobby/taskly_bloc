@@ -55,12 +55,14 @@ void main() {
     List<Task> dueTodayTasks = const <Task>[],
     List<Task> plannedTasks = const <Task>[],
     Set<String> selectedTaskIds = const <String>{},
+    List<Value> unratedValues = const <Value>[],
+    PlanMyDayValueSort valueSort = PlanMyDayValueSort.lowestAverage,
   }) {
     return PlanMyDayReady(
       needsPlan: true,
       dayKeyUtc: DateTime.utc(2025, 1, 15),
       globalSettings: const settings.GlobalSettings(),
-      suggestionSignal: SuggestionSignal.behaviorBased,
+      suggestionSignal: SuggestionSignal.ratingsBased,
       dailyLimit: 8,
       requiresValueSetup: requiresValueSetup,
       requiresRatings: requiresRatings,
@@ -75,8 +77,8 @@ void main() {
       allTasks: const <Task>[],
       routineSelectionsByValue: const <String, int>{},
       valueSuggestionGroups: valueGroups,
-      valueSort: PlanMyDayValueSort.attentionFirst,
-      spotlightTaskId: null,
+      unratedValues: unratedValues,
+      valueSort: valueSort,
       overCapacity: false,
       toastRequestId: 0,
     );
@@ -156,11 +158,13 @@ void main() {
           valueId: value.id,
           value: value,
           tasks: [task],
-          attentionNeeded: false,
-          neglectScore: 0,
+          averageRating: 7.4,
+          trendDelta: -0.6,
+          hasRatings: true,
+          isTrendingDown: true,
+          isLowAverage: false,
           visibleCount: 1,
           expanded: true,
-          isSpotlight: false,
         ),
       ],
     );
@@ -187,7 +191,7 @@ void main() {
     expect(find.text('Morning walk'), findsOneWidget);
   });
 
-  testWidgetsSafe('plan my day shows spotlight badge for value group', (
+  testWidgetsSafe('plan my day shows trend label for value group', (
     tester,
   ) async {
     final value = TestData.value(id: 'value-1', name: 'Family');
@@ -202,11 +206,13 @@ void main() {
           valueId: value.id,
           value: value,
           tasks: [task],
-          attentionNeeded: true,
-          neglectScore: 0.3,
+          averageRating: 6.1,
+          trendDelta: -0.5,
+          hasRatings: true,
+          isTrendingDown: true,
+          isLowAverage: true,
           visibleCount: 1,
           expanded: true,
-          isSpotlight: true,
         ),
       ],
     );
@@ -230,14 +236,14 @@ void main() {
     await tester.pumpForStream();
 
     final l10n = l10nFor(tester);
-    expect(find.text(l10n.myDayPlanSpotlightLabel), findsOneWidget);
     expect(find.text('Family'), findsOneWidget);
+    expect(find.text(l10n.planMyDayTrendDownLabel('0.5')), findsOneWidget);
   });
 
   testWidgetsSafe(
-    'plan my day renders spotlight group before other values',
+    'plan my day renders sort label for trending down',
     (tester) async {
-      final spotlightValue = TestData.value(
+      final value = TestData.value(
         id: 'value-spotlight',
         name: 'Family',
       );
@@ -245,10 +251,10 @@ void main() {
         id: 'value-other',
         name: 'Health',
       );
-      final spotlightTask = TestData.task(
+      final task = TestData.task(
         id: 'task-spotlight',
         name: 'Call parents',
-        values: [spotlightValue],
+        values: [value],
       );
       final otherTask = TestData.task(
         id: 'task-other',
@@ -259,26 +265,31 @@ void main() {
       final state = buildReady(
         valueGroups: [
           PlanMyDayValueSuggestionGroup(
-            valueId: spotlightValue.id,
-            value: spotlightValue,
-            tasks: [spotlightTask],
-            attentionNeeded: true,
-            neglectScore: 0.3,
+            valueId: value.id,
+            value: value,
+            tasks: [task],
+            averageRating: 5.9,
+            trendDelta: -0.4,
+            hasRatings: true,
+            isTrendingDown: true,
+            isLowAverage: true,
             visibleCount: 1,
             expanded: true,
-            isSpotlight: true,
           ),
           PlanMyDayValueSuggestionGroup(
             valueId: otherValue.id,
             value: otherValue,
             tasks: [otherTask],
-            attentionNeeded: false,
-            neglectScore: 0.0,
+            averageRating: 7.4,
+            trendDelta: 0.2,
+            hasRatings: true,
+            isTrendingDown: false,
+            isLowAverage: false,
             visibleCount: 1,
             expanded: true,
-            isSpotlight: false,
           ),
         ],
+        valueSort: PlanMyDayValueSort.trendingDown,
       );
       const gateState = MyDayGateLoaded(needsValuesSetup: false);
 
@@ -299,10 +310,9 @@ void main() {
       );
       await tester.pumpForStream();
 
-      final spotlightOffset = tester.getTopLeft(find.text('Family'));
-      final otherOffset = tester.getTopLeft(find.text('Health'));
-
-      expect(spotlightOffset.dy, lessThan(otherOffset.dy));
+      final label = l10nFor(tester).planMyDaySortTrendingDown;
+      final header = l10nFor(tester).planMyDaySortByLabel(label);
+      expect(find.text(header), findsOneWidget);
     },
   );
 

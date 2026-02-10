@@ -396,8 +396,8 @@ class SettingsRepository implements SettingsRepositoryContract {
     final group = overrides['pageDisplay'];
     if (group == null) return null;
     if (group is! Map<String, dynamic>) {
-      final repaired =
-          Map<String, dynamic>.from(overrides)..remove('pageDisplay');
+      final repaired = Map<String, dynamic>.from(overrides)
+        ..remove('pageDisplay');
       _scheduleRepair(
         profileId: profileId,
         repaired: _withRepairMeta(

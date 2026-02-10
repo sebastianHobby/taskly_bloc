@@ -128,7 +128,7 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.text('Morning note'), findsOneWidget);
-    expect(find.text('Add entry'), findsOneWidget);
+    expect(find.byTooltip('Add entry'), findsOneWidget);
   });
 }
 

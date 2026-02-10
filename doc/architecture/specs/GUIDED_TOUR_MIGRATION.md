@@ -90,7 +90,7 @@ Use the following copy in the tour steps:
 
 7) Values framing (card)
 - Title: "Values guide your focus"
-- Body: "Values keep your days balanced. They shape suggestions and help you choose what matters most."
+- Body: "Values shape your weekly ratings and help you choose what matters most."
 
 8) Values list (coachmark)
 - Title: "Define what matters"
@@ -122,7 +122,7 @@ Use the following copy in the tour steps:
 
 15) Plan My Day - value picks (coachmark)
 - Title: "Value-based tasks"
-- Body: "Add tasks that support your values to balance today's plan. Suggestions follow task completions by default, or weekly check-ins if you want a more reflective approach."
+- Body: "Add tasks that support your values. Suggestions follow your weekly value ratings."
 
 16) Plan My Day - summary (card)
 - Title: "Review and confirm"

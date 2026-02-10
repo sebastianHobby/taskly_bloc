@@ -28,7 +28,6 @@ import 'package:taskly_bloc/presentation/features/routines/view/routines_page.da
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/values_page.dart';
-import 'package:taskly_bloc/presentation/features/statistics/view/statistics_dashboard_page.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/projects_page.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
 import 'package:taskly_domain/taskly_domain.dart'
@@ -39,7 +38,6 @@ import 'package:taskly_bloc/presentation/screens/view/my_day_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_appearance_page.dart';
-import 'package:taskly_bloc/presentation/features/settings/view/settings_task_suggestions_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_weekly_review_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_language_region_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_account_page.dart';
@@ -432,20 +430,12 @@ GoRouter createRouter({
             builder: (_, __) => const ValuesPage(),
           ),
           GoRoute(
-            path: Routing.screenPath('statistics'),
-            builder: (_, __) => const StatisticsDashboardPage(),
-          ),
-          GoRoute(
             path: Routing.screenPath('settings'),
             builder: (_, __) => const SettingsScreen(),
           ),
           GoRoute(
             path: '${Routing.screenPath('settings')}/appearance',
             builder: (_, __) => const SettingsAppearancePage(),
-          ),
-          GoRoute(
-            path: '${Routing.screenPath('settings')}/task-suggestions',
-            builder: (_, __) => const SettingsTaskSuggestionsPage(),
           ),
           GoRoute(
             path: '${Routing.screenPath('settings')}/weekly-review',

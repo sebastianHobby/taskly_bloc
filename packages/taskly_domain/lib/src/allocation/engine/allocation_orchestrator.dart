@@ -18,7 +18,6 @@ import 'package:taskly_domain/src/queries/task_query.dart';
 import 'package:taskly_domain/src/allocation/engine/allocation_strategy.dart';
 import 'package:taskly_domain/src/allocation/engine/suggested_picks_engine.dart';
 import 'package:taskly_domain/src/allocation/engine/urgency_detector.dart';
-import 'package:taskly_domain/src/services/analytics/analytics_service.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/time/clock.dart';
 import 'package:taskly_domain/time.dart' show dateOnly;
@@ -35,7 +34,6 @@ class AllocationOrchestrator {
     required ValueRepositoryContract valueRepository,
     required ValueRatingsRepositoryContract valueRatingsRepository,
     required SettingsRepositoryContract settingsRepository,
-    required AnalyticsService analyticsService,
     required ProjectRepositoryContract projectRepository,
     required ProjectAnchorStateRepositoryContract projectAnchorStateRepository,
     required HomeDayKeyService dayKeyService,
@@ -44,7 +42,6 @@ class AllocationOrchestrator {
        _valueRepository = valueRepository,
        _valueRatingsRepository = valueRatingsRepository,
        _settingsRepository = settingsRepository,
-       _analyticsService = analyticsService,
        _projectRepository = projectRepository,
        _projectAnchorStateRepository = projectAnchorStateRepository,
        _dayKeyService = dayKeyService,
@@ -54,18 +51,13 @@ class AllocationOrchestrator {
   final ValueRepositoryContract _valueRepository;
   final ValueRatingsRepositoryContract _valueRatingsRepository;
   final SettingsRepositoryContract _settingsRepository;
-  final AnalyticsService _analyticsService;
   final ProjectRepositoryContract _projectRepository;
   final ProjectAnchorStateRepositoryContract _projectAnchorStateRepository;
   final HomeDayKeyService _dayKeyService;
   final Clock _clock;
 
-  static const int _neglectLookbackDays = 14;
-  static const double _neglectSmoothingAlpha = 0.20;
   static const int _ratingsLookbackWeeks = 4;
-  static const int _ratingsGraceWeeks = 2;
-  static const double _ratingsSmoothingAlpha = 0.40;
-  static const int _ratingsMax = 8;
+  static const int _ratingsMax = 10;
 
   /// Compute a single allocation snapshot.
   ///
@@ -355,38 +347,28 @@ class AllocationOrchestrator {
       '${values.length} values',
     );
 
-    final useRatingsSignal =
-        allocationConfig.suggestionSignal == SuggestionSignal.ratingsBased;
-
-    // Build category map - use value priority (behavior mode) or ratings
+    // Build category map (ratings only).
     final categories = <String, double>{};
 
     if (values.isNotEmpty) {
-      if (useRatingsSignal) {
-        final ratingSignal = await _buildRatingsSignal(
-          values: values,
-          todayDayKeyUtc: todayDayKeyUtc,
+      final ratingSignal = await _buildRatingsSignal(
+        values: values,
+        todayDayKeyUtc: todayDayKeyUtc,
+      );
+      if (ratingSignal.isStale) {
+        return AllocationResult(
+          allocatedTasks: const [],
+          reasoning: AllocationReasoning(
+            strategyUsed: 'ratings',
+            categoryAllocations: const {},
+            categoryWeights: const {},
+            explanation: ratingSignal.explanation,
+          ),
+          excludedTasks: const [],
+          requiresRatings: true,
         );
-        if (ratingSignal.isStale) {
-          return AllocationResult(
-            allocatedTasks: const [],
-            reasoning: AllocationReasoning(
-              strategyUsed: 'ratings',
-              categoryAllocations: const {},
-              categoryWeights: const {},
-              explanation: ratingSignal.explanation,
-            ),
-            excludedTasks: const [],
-            requiresRatings: true,
-          );
-        }
-        categories.addAll(ratingSignal.weights);
-      } else {
-        // Use priority from value
-        for (final value in values) {
-          categories[value.id] = value.priority.weight.toDouble();
-        }
       }
+      categories.addAll(ratingSignal.weights);
     }
 
     // If still no categories, exclude all tasks
@@ -427,29 +409,9 @@ class AllocationOrchestrator {
       '${categories.length} categories',
     );
 
-    // Fetch recent completions by value if value balancing is enabled.
-    final settings = allocationConfig.strategySettings;
-    Map<String, double> completionsByValue = const {};
-    if (!useRatingsSignal && settings.enableNeglectWeighting) {
-      final dailyCompletions = await _analyticsService
-          .getDailyCompletionsByValue(days: _neglectLookbackDays);
-      final smoothedCompletions = _smoothCompletionsByValue(
-        dailyCompletions: dailyCompletions,
-        valueIds: categories.keys,
-        days: _neglectLookbackDays,
-      );
-
-      final totalCompletions = smoothedCompletions.values.fold<double>(
-        0,
-        (sum, v) => sum + v,
-      );
-      if (totalCompletions > 0) {
-        completionsByValue = smoothedCompletions;
-      }
-    }
-
     // Run allocation
     final maxTasks = maxTasksOverride;
+    final settings = allocationConfig.strategySettings;
 
     final parameters = AllocationParameters(
       nowUtc: nowUtc,
@@ -466,11 +428,6 @@ class AllocationOrchestrator {
       rotationPressureDays: settings.rotationPressureDays,
       readinessFilter: settings.readinessFilter,
       taskUrgencyThresholdDays: settings.taskUrgencyThresholdDays,
-      keepValuesInBalance:
-          !useRatingsSignal &&
-          settings.enableNeglectWeighting &&
-          completionsByValue.isNotEmpty,
-      completionsByValue: completionsByValue,
       routineSelectionsByValue: routineSelectionsByValue,
     );
 
@@ -485,33 +442,13 @@ class AllocationOrchestrator {
       weeks: _ratingsLookbackWeeks,
     );
     final ratingsByValue = <String, Map<DateTime, int>>{};
-    final latestByValue = <String, DateTime>{};
 
     for (final rating in ratings) {
       final weekStart = dateOnly(rating.weekStartUtc);
       (ratingsByValue[rating.valueId] ??= {})[weekStart] = rating.rating;
-      final latest = latestByValue[rating.valueId];
-      if (latest == null || weekStart.isAfter(latest)) {
-        latestByValue[rating.valueId] = weekStart;
-      }
     }
 
     final nowWeekStart = _weekStartFor(todayDayKeyUtc);
-    final graceCutoff = nowWeekStart.subtract(
-      Duration(days: _ratingsGraceWeeks * 7),
-    );
-
-    for (final value in values) {
-      final latest = latestByValue[value.id];
-      if (latest == null || latest.isBefore(graceCutoff)) {
-        return const _RatingsSignal(
-          isStale: true,
-          weights: {},
-          explanation: 'Ratings are overdue',
-        );
-      }
-    }
-
     final window = <DateTime>[
       for (var i = _ratingsLookbackWeeks - 1; i >= 0; i--)
         nowWeekStart.subtract(Duration(days: i * 7)),
@@ -520,23 +457,15 @@ class AllocationOrchestrator {
     final weights = <String, double>{};
     for (final value in values) {
       final perWeek = ratingsByValue[value.id] ?? const {};
-      int? lastKnown;
-      double? ema;
+      final windowRatings = <int>[];
       for (final week in window) {
         final raw = perWeek[week];
-        if (raw != null) {
-          lastKnown = raw;
-        }
-        final rating = lastKnown;
-        if (rating == null) continue;
-        final clamped = rating.clamp(1, _ratingsMax).toDouble();
-        ema = ema == null
-            ? clamped
-            : (_ratingsSmoothingAlpha * clamped) +
-                  ((1 - _ratingsSmoothingAlpha) * ema);
+        if (raw == null) continue;
+        windowRatings.add(raw.clamp(1, _ratingsMax));
       }
-      if (ema != null) {
-        weights[value.id] = ema;
+      if (windowRatings.isNotEmpty) {
+        final sum = windowRatings.fold<int>(0, (total, v) => total + v);
+        weights[value.id] = sum / windowRatings.length;
       }
     }
 
@@ -576,36 +505,6 @@ class AllocationOrchestrator {
       projectId: task.projectId,
       repeatIcalRrule: task.repeatIcalRrule,
     );
-  }
-
-  Map<String, double> _smoothCompletionsByValue({
-    required Map<String, List<int>> dailyCompletions,
-    required Iterable<String> valueIds,
-    required int days,
-  }) {
-    final smoothed = <String, double>{};
-
-    for (final valueId in valueIds) {
-      final raw = dailyCompletions[valueId] ?? const <int>[];
-      final normalized = raw.length >= days
-          ? raw.sublist(raw.length - days)
-          : [
-              ...List.filled(days - raw.length, 0),
-              ...raw,
-            ];
-
-      double? ema;
-      for (final count in normalized) {
-        final current = count.toDouble();
-        ema = ema == null
-            ? current
-            : (_neglectSmoothingAlpha * current) +
-                  ((1 - _neglectSmoothingAlpha) * ema);
-      }
-      smoothed[valueId] = ema ?? 0.0;
-    }
-
-    return smoothed;
   }
 }
 

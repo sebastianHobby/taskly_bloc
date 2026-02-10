@@ -7,6 +7,7 @@ import 'package:rxdart/rxdart.dart';
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/presentation_mocks.dart';
 import '../../../mocks/repository_mocks.dart';
+import '../../../mocks/feature_mocks.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
@@ -41,6 +42,7 @@ void main() {
   late MockTaskRepositoryContract taskRepository;
   late MockProjectRepositoryContract projectRepository;
   late MockProjectAnchorStateRepositoryContract projectAnchorStateRepository;
+  late MockValueRatingsRepositoryContract valueRatingsRepository;
   late MockRoutineRepositoryContract routineRepository;
   late TaskWriteService taskWriteService;
   late RoutineWriteService routineWriteService;
@@ -61,6 +63,7 @@ void main() {
     taskRepository = MockTaskRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
     projectAnchorStateRepository = MockProjectAnchorStateRepositoryContract();
+    valueRatingsRepository = MockValueRatingsRepositoryContract();
     routineRepository = MockRoutineRepositoryContract();
     occurrenceCommandService = MockOccurrenceCommandService();
     dayKeyService = MockHomeDayKeyService();
@@ -106,6 +109,16 @@ void main() {
     ).thenAnswer((_) async => []);
     when(() => routineRepository.getCompletions()).thenAnswer((_) async => []);
     when(() => routineRepository.getSkips()).thenAnswer((_) async => []);
+    when(
+      () => valueRatingsRepository.watchAll(
+        weeks: any(named: 'weeks'),
+      ),
+    ).thenAnswer((_) => Stream.value(const <ValueWeeklyRating>[]));
+    when(
+      () => valueRatingsRepository.getAll(
+        weeks: any(named: 'weeks'),
+      ),
+    ).thenAnswer((_) async => const <ValueWeeklyRating>[]);
 
     final defaultAllocation = AllocationResult(
       allocatedTasks: const <AllocatedTask>[],
@@ -138,6 +151,7 @@ void main() {
       allocationOrchestrator: allocationOrchestrator,
       taskRepository: taskRepository,
       dayKeyService: dayKeyService,
+      valueRatingsRepository: valueRatingsRepository,
     );
 
     taskWriteService = TaskWriteService(
@@ -167,6 +181,7 @@ void main() {
       dayKeyService: dayKeyService,
       temporalTriggerService: temporalTriggerService,
       nowService: nowService,
+      valueRatingsRepository: valueRatingsRepository,
       demoModeService: demoModeService,
       demoDataProvider: demoDataProvider,
     );
@@ -177,6 +192,7 @@ void main() {
     build: buildBloc,
     expect: () => [
       const PlanMyDayLoading(),
+      isA<PlanMyDayReady>(),
       isA<PlanMyDayReady>(),
       isA<PlanMyDayReady>(),
     ],
@@ -278,6 +294,7 @@ void main() {
     expect: () => [
       const PlanMyDayLoading(),
       isA<PlanMyDayReady>(),
+      isA<PlanMyDayReady>(),
       isA<PlanMyDayReady>()
           .having(
             (s) => s.dueTodayTasks.map((t) => t.id).toList(),
@@ -332,72 +349,90 @@ void main() {
   );
 
   blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
-    'pins spotlight group first when spotlight value is not attention-leading',
+    'sorts value groups by lowest average rating first',
     build: () {
-      final spotlightValue = TestData.value(
-        id: 'value-spotlight',
+      final lowValue = TestData.value(
+        id: 'value-low',
         name: 'Family',
-        priority: ValuePriority.low,
       );
-      final otherValue = TestData.value(
-        id: 'value-other',
+      final highValue = TestData.value(
+        id: 'value-high',
         name: 'Health',
-        priority: ValuePriority.high,
       );
-      final spotlightTask = TestData.task(
-        id: 'task-spotlight',
+      final lowTask = TestData.task(
+        id: 'task-low',
         name: 'Call parents',
-        projectId: 'project-spotlight',
+        projectId: 'project-low',
         project: TestData.project(
-          id: 'project-spotlight',
+          id: 'project-low',
           name: 'Family Project',
-          values: [spotlightValue],
-        ).copyWith(primaryValueId: spotlightValue.id),
+          values: [lowValue],
+        ).copyWith(primaryValueId: lowValue.id),
       );
-      final otherTask = TestData.task(
-        id: 'task-other',
+      final highTask = TestData.task(
+        id: 'task-high',
         name: 'Morning walk',
-        projectId: 'project-other',
+        projectId: 'project-high',
         project: TestData.project(
-          id: 'project-other',
+          id: 'project-high',
           name: 'Health Project',
-          values: [otherValue],
-        ).copyWith(primaryValueId: otherValue.id),
+          values: [highValue],
+        ).copyWith(primaryValueId: highValue.id),
       );
 
       when(() => taskRepository.getAll(any())).thenAnswer(
-        (_) async => [spotlightTask, otherTask],
+        (_) async => [lowTask, highTask],
       );
       when(() => taskRepository.watchAll(any())).thenAnswer(
-        (_) => Stream.value([spotlightTask, otherTask]),
+        (_) => Stream.value([lowTask, highTask]),
       );
+
+      final weekStart = DateTime.utc(2025, 1, 13);
+      final ratings = <ValueWeeklyRating>[
+        ValueWeeklyRating(
+          id: 'rating-low',
+          valueId: lowValue.id,
+          weekStartUtc: weekStart,
+          rating: 3,
+          createdAtUtc: weekStart,
+          updatedAtUtc: weekStart,
+        ),
+        ValueWeeklyRating(
+          id: 'rating-high',
+          valueId: highValue.id,
+          weekStartUtc: weekStart,
+          rating: 8,
+          createdAtUtc: weekStart,
+          updatedAtUtc: weekStart,
+        ),
+      ];
+      when(
+        () => valueRatingsRepository.getAll(weeks: any(named: 'weeks')),
+      ).thenAnswer((_) async => ratings);
+      when(
+        () => valueRatingsRepository.watchAll(weeks: any(named: 'weeks')),
+      ).thenAnswer((_) => Stream.value(ratings));
 
       final allocation = AllocationResult(
         allocatedTasks: [
           AllocatedTask(
-            task: otherTask,
-            qualifyingValueId: otherValue.id,
+            task: lowTask,
+            qualifyingValueId: lowValue.id,
             allocationScore: 0.9,
             reasonCodes: const [],
           ),
           AllocatedTask(
-            task: spotlightTask,
-            qualifyingValueId: spotlightValue.id,
+            task: highTask,
+            qualifyingValueId: highValue.id,
             allocationScore: 0.8,
             reasonCodes: const [],
           ),
         ],
-        reasoning: AllocationReasoning(
+        reasoning: const AllocationReasoning(
           strategyUsed: 'test',
-          categoryAllocations: const {},
-          categoryWeights: const {},
+          categoryAllocations: {},
+          categoryWeights: {},
           explanation: 'test',
-          neglectDeficits: {
-            otherValue.id: 0.3,
-            spotlightValue.id: 0.1,
-          },
-          topNeglectScore: 0.25,
-          topNeglectValueId: spotlightValue.id,
         ),
         excludedTasks: const <ExcludedTask>[],
       );
@@ -428,7 +463,7 @@ void main() {
     },
     verify: (bloc) {
       final ready = bloc.state as PlanMyDayReady;
-      expect(ready.valueSuggestionGroups.first.valueId, 'value-spotlight');
+      expect(ready.valueSuggestionGroups.first.valueId, 'value-low');
     },
   );
 

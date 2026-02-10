@@ -5,7 +5,6 @@ enum ProjectsSortOrder {
   alphabetical,
   priority,
   dueDate,
-  valuePriority,
   valueName,
 }
 
@@ -16,7 +15,6 @@ extension ProjectsSortOrderLabels on ProjectsSortOrder {
       ProjectsSortOrder.alphabetical => l10n.sortAlphabetical,
       ProjectsSortOrder.priority => l10n.sortPriority,
       ProjectsSortOrder.dueDate => l10n.sortDueDate,
-      ProjectsSortOrder.valuePriority => l10n.sortValuePriority,
       ProjectsSortOrder.valueName => l10n.sortValueName,
     };
   }

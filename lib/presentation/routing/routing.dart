@@ -51,7 +51,6 @@ abstract final class Routing {
     'routines',
     'journal',
     'values',
-    'statistics',
     'settings',
   };
 
@@ -82,9 +81,6 @@ abstract final class Routing {
 
   static void pushSettingsAppearance(BuildContext context) =>
       GoRouter.of(context).push(_settingsSubPath('appearance'));
-
-  static void pushSettingsTaskSuggestions(BuildContext context) =>
-      GoRouter.of(context).push(_settingsSubPath('task-suggestions'));
 
   static void pushSettingsWeeklyReview(BuildContext context) =>
       GoRouter.of(context).push(_settingsSubPath('weekly-review'));

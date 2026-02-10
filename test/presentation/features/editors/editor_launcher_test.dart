@@ -19,8 +19,10 @@ import '../../../mocks/feature_mocks.dart';
 import '../../../mocks/repository_mocks.dart';
 
 class MockNowService extends Mock implements NowService {}
+
 class MockMyDayRepositoryContract extends Mock
     implements MyDayRepositoryContract {}
+
 class MockHomeDayKeyService extends Mock implements HomeDayKeyService {}
 
 Widget _buildTestModal(BuildContext context, String label) {

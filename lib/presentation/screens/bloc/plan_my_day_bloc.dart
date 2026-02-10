@@ -68,15 +68,16 @@ final class PlanMyDayConfirm extends PlanMyDayEvent {
   final bool closeOnSuccess;
 }
 
-final class PlanMyDaySwitchToBehaviorSuggestionsRequested
-    extends PlanMyDayEvent {
-  const PlanMyDaySwitchToBehaviorSuggestionsRequested();
-}
-
 final class PlanMyDayDailyLimitChanged extends PlanMyDayEvent {
   const PlanMyDayDailyLimitChanged(this.limit);
 
   final int limit;
+}
+
+final class PlanMyDayValueSortChanged extends PlanMyDayEvent {
+  const PlanMyDayValueSortChanged(this.sort);
+
+  final PlanMyDayValueSort sort;
 }
 
 final class PlanMyDayBulkRescheduleDueRequested extends PlanMyDayEvent {
@@ -122,10 +123,8 @@ final class PlanMyDaySnoozeTaskRequested extends PlanMyDayEvent {
 }
 
 enum PlanMyDayValueSort {
-  attentionFirst,
-  priorityFirst,
-  mostSuggested,
-  alphabetical,
+  lowestAverage,
+  trendingDown,
 }
 
 sealed class PlanMyDayState {
@@ -171,23 +170,40 @@ final class PlanMyDayValueSuggestionGroup {
     required this.valueId,
     required this.value,
     required this.tasks,
-    required this.attentionNeeded,
-    required this.neglectScore,
+    required this.averageRating,
+    required this.trendDelta,
+    required this.hasRatings,
+    required this.isTrendingDown,
+    required this.isLowAverage,
     required this.visibleCount,
     required this.expanded,
-    required this.isSpotlight,
   });
 
   final String valueId;
   final Value value;
   final List<Task> tasks;
-  final bool attentionNeeded;
-  final double neglectScore;
+  final double? averageRating;
+  final double? trendDelta;
+  final bool hasRatings;
+  final bool isTrendingDown;
+  final bool isLowAverage;
   final int visibleCount;
   final bool expanded;
-  final bool isSpotlight;
 
   int get totalCount => tasks.length;
+}
+
+@immutable
+final class PlanMyDayValueRatingSummary {
+  const PlanMyDayValueRatingSummary({
+    required this.valueId,
+    required this.averageRating,
+    required this.trendDelta,
+  });
+
+  final String valueId;
+  final double? averageRating;
+  final double? trendDelta;
 }
 
 @immutable
@@ -227,6 +243,12 @@ final class _PlanMyDayTasksUpdated extends _PlanMyDayStreamEvent {
   final List<Task> tasks;
 }
 
+final class _PlanMyDayRatingsUpdated extends _PlanMyDayStreamEvent {
+  const _PlanMyDayRatingsUpdated(this.ratings);
+
+  final List<ValueWeeklyRating> ratings;
+}
+
 @immutable
 final class PlanMyDayReady extends PlanMyDayState {
   const PlanMyDayReady({
@@ -241,6 +263,7 @@ final class PlanMyDayReady extends PlanMyDayState {
     required this.plannedTasks,
     required this.suggested,
     required this.valueSuggestionGroups,
+    required this.unratedValues,
     required this.scheduledRoutines,
     required this.flexibleRoutines,
     required this.allRoutines,
@@ -250,7 +273,6 @@ final class PlanMyDayReady extends PlanMyDayState {
     required this.routineSelectionsByValue,
     required this.overCapacity,
     required this.valueSort,
-    required this.spotlightTaskId,
     required this.toastRequestId,
     this.nav,
     this.navRequestId = 0,
@@ -268,6 +290,7 @@ final class PlanMyDayReady extends PlanMyDayState {
   final List<Task> plannedTasks;
   final List<Task> suggested;
   final List<PlanMyDayValueSuggestionGroup> valueSuggestionGroups;
+  final List<Value> unratedValues;
   final List<PlanMyDayRoutineItem> scheduledRoutines;
   final List<PlanMyDayRoutineItem> flexibleRoutines;
   final List<PlanMyDayRoutineItem> allRoutines;
@@ -277,7 +300,6 @@ final class PlanMyDayReady extends PlanMyDayState {
   final Map<String, int> routineSelectionsByValue;
   final bool overCapacity;
   final PlanMyDayValueSort valueSort;
-  final String? spotlightTaskId;
   final int toastRequestId;
   final PlanMyDayNav? nav;
   final int navRequestId;
@@ -297,6 +319,7 @@ final class PlanMyDayReady extends PlanMyDayState {
     List<Task>? plannedTasks,
     List<Task>? suggested,
     List<PlanMyDayValueSuggestionGroup>? valueSuggestionGroups,
+    List<Value>? unratedValues,
     List<PlanMyDayRoutineItem>? scheduledRoutines,
     List<PlanMyDayRoutineItem>? flexibleRoutines,
     List<PlanMyDayRoutineItem>? allRoutines,
@@ -306,7 +329,6 @@ final class PlanMyDayReady extends PlanMyDayState {
     Map<String, int>? routineSelectionsByValue,
     bool? overCapacity,
     PlanMyDayValueSort? valueSort,
-    String? spotlightTaskId,
     int? toastRequestId,
     PlanMyDayNav? nav,
     int? navRequestId,
@@ -325,6 +347,7 @@ final class PlanMyDayReady extends PlanMyDayState {
       suggested: suggested ?? this.suggested,
       valueSuggestionGroups:
           valueSuggestionGroups ?? this.valueSuggestionGroups,
+      unratedValues: unratedValues ?? this.unratedValues,
       scheduledRoutines: scheduledRoutines ?? this.scheduledRoutines,
       flexibleRoutines: flexibleRoutines ?? this.flexibleRoutines,
       allRoutines: allRoutines ?? this.allRoutines,
@@ -335,7 +358,6 @@ final class PlanMyDayReady extends PlanMyDayState {
           routineSelectionsByValue ?? this.routineSelectionsByValue,
       overCapacity: overCapacity ?? this.overCapacity,
       valueSort: valueSort ?? this.valueSort,
-      spotlightTaskId: spotlightTaskId ?? this.spotlightTaskId,
       toastRequestId: toastRequestId ?? this.toastRequestId,
       nav: nav ?? this.nav,
       navRequestId: navRequestId ?? this.navRequestId,
@@ -350,6 +372,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     required MyDayRepositoryContract myDayRepository,
     required TaskSuggestionService taskSuggestionService,
     required TaskRepositoryContract taskRepository,
+    required ValueRatingsRepositoryContract valueRatingsRepository,
     required RoutineRepositoryContract routineRepository,
     required ProjectAnchorStateRepositoryContract projectAnchorStateRepository,
     required TaskWriteService taskWriteService,
@@ -364,6 +387,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
        _myDayRepository = myDayRepository,
        _taskSuggestionService = taskSuggestionService,
        _taskRepository = taskRepository,
+       _valueRatingsRepository = valueRatingsRepository,
        _routineRepository = routineRepository,
        _projectAnchorStateRepository = projectAnchorStateRepository,
        _taskWriteService = taskWriteService,
@@ -382,10 +406,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     on<PlanMyDaySwapSuggestionRequested>(_onSwapSuggestionRequested);
     on<PlanMyDayPauseRoutineRequested>(_onPauseRoutineRequested);
     on<PlanMyDayConfirm>(_onConfirm);
-    on<PlanMyDaySwitchToBehaviorSuggestionsRequested>(
-      _onSwitchToBehaviorSuggestionsRequested,
-    );
     on<PlanMyDayDailyLimitChanged>(_onDailyLimitChanged);
+    on<PlanMyDayValueSortChanged>(_onValueSortChanged);
     on<PlanMyDayBulkRescheduleDueRequested>(_onBulkRescheduleDue);
     on<PlanMyDayRescheduleDueTaskRequested>(_onRescheduleDueTask);
     on<PlanMyDayBulkReschedulePlannedRequested>(_onBulkReschedulePlanned);
@@ -398,6 +420,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   final MyDayRepositoryContract _myDayRepository;
   final TaskSuggestionService _taskSuggestionService;
   final TaskRepositoryContract _taskRepository;
+  final ValueRatingsRepositoryContract _valueRatingsRepository;
   final RoutineRepositoryContract _routineRepository;
   final ProjectAnchorStateRepositoryContract _projectAnchorStateRepository;
   final TaskWriteService _taskWriteService;
@@ -412,15 +435,18 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
-  static const double _attentionDeficitThreshold = 0.20;
   static const int _poolExtraCount = 6;
+  static const int _ratingsWindowWeeks = 4;
+  static const int _ratingsHistoryWeeks = 8;
+  static const double _trendEmphasisThreshold = -0.6;
+  static const double _lowAverageThreshold = 4.5;
 
   settings.GlobalSettings _globalSettings = const settings.GlobalSettings();
   AllocationConfig _allocationConfig = const AllocationConfig();
   DateTime _dayKeyUtc;
 
   TaskSuggestionSnapshot? _suggestionSnapshot;
-  Map<String, double> _lastNeglectDeficits = const {};
+  List<ValueWeeklyRating> _ratingHistory = const <ValueWeeklyRating>[];
   List<Task> _tasks = const <Task>[];
   List<Task> _incompleteTasks = const <Task>[];
   List<Routine> _routines = const <Routine>[];
@@ -442,7 +468,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   Set<String> _lockedCompletedPickIds = const <String>{};
   Set<String> _lockedCompletedRoutineIds = const <String>{};
 
-  final PlanMyDayValueSort _valuesSort = PlanMyDayValueSort.attentionFirst;
+  PlanMyDayValueSort _valuesSort = PlanMyDayValueSort.lowestAverage;
   String _taskRevisionStamp = '';
 
   Completer<void>? _refreshCompleter;
@@ -470,6 +496,9 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       _taskRepository
           .watchAll(TaskQuery.incomplete())
           .map(_PlanMyDayTasksUpdated.new),
+      _valueRatingsRepository
+          .watchAll(weeks: _ratingsHistoryWeeks)
+          .map(_PlanMyDayRatingsUpdated.new),
     ]);
 
     await emit.onEach<_PlanMyDayStreamEvent>(
@@ -513,6 +542,17 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
             final revision = _buildTaskRevision(tasks);
             if (revision == _taskRevisionStamp) return;
             _taskRevisionStamp = revision;
+            final allowSuggestionRefresh =
+                _dayPicks.ritualCompletedAtUtc == null;
+            await _refreshSnapshots(
+              resetSelection: false,
+              allowSuggestionRefresh: allowSuggestionRefresh,
+            );
+            if (emit.isDone || _isDemoMode) return;
+            _emitReady(emit);
+          case _PlanMyDayRatingsUpdated(:final ratings):
+            if (_isDemoMode) return;
+            _ratingHistory = ratings;
             final allowSuggestionRefresh =
                 _dayPicks.ritualCompletedAtUtc == null;
             await _refreshSnapshots(
@@ -879,42 +919,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     _emitReady(emit);
   }
 
-  Future<void> _onSwitchToBehaviorSuggestionsRequested(
-    PlanMyDaySwitchToBehaviorSuggestionsRequested event,
-    Emitter<PlanMyDayState> emit,
-  ) async {
-    if (_isDemoMode) return;
-    final allocation = await _settingsRepository.load(
-      SettingsKey.allocation,
-    );
-    final updated = allocation.copyWith(
-      suggestionSignal: SuggestionSignal.behaviorBased,
-    );
-
-    final context = _contextFactory.create(
-      feature: 'my_day',
-      screen: 'plan_my_day',
-      intent: 'switch_suggestion_signal',
-      operation: 'settings.allocation.save',
-      entityType: 'settings',
-      extraFields: <String, Object?>{
-        'suggestionSignal': SuggestionSignal.behaviorBased.name,
-      },
-    );
-
-    await _settingsRepository.save(
-      SettingsKey.allocation,
-      updated,
-      context: context,
-    );
-
-    _allocationConfig = updated;
-
-    await _refreshSnapshots(resetSelection: false);
-    if (emit.isDone) return;
-    _emitReady(emit);
-  }
-
   Future<void> _onSnoozeTaskRequested(
     PlanMyDaySnoozeTaskRequested event,
     Emitter<PlanMyDayState> emit,
@@ -953,6 +957,15 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     final next = event.limit.clamp(1, 50);
     if (next == _dailyLimit) return;
     _dailyLimit = next;
+    _emitReady(emit);
+  }
+
+  void _onValueSortChanged(
+    PlanMyDayValueSortChanged event,
+    Emitter<PlanMyDayState> emit,
+  ) {
+    if (_valuesSort == event.sort) return;
+    _valuesSort = event.sort;
     _emitReady(emit);
   }
 
@@ -1145,6 +1158,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       final results = await Future.wait([
         _settingsRepository.load<settings.GlobalSettings>(SettingsKey.global),
         _settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
+        _valueRatingsRepository.getAll(weeks: _ratingsHistoryWeeks),
         _myDayRepository.loadDay(_dayKeyUtc),
         _myDayRepository.loadDay(yesterdayDayKeyUtc),
         _taskRepository.getAll(TaskQuery.incomplete()),
@@ -1155,18 +1169,19 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
       _globalSettings = results[0] as settings.GlobalSettings;
       _allocationConfig = results[1] as AllocationConfig;
+      _ratingHistory = results[2] as List<ValueWeeklyRating>;
 
-      final picks = results[2] as my_day.MyDayDayPicks;
+      final picks = results[3] as my_day.MyDayDayPicks;
       _dayPicks = picks;
-      _yesterdayDayPicks = results[3] as my_day.MyDayDayPicks;
+      _yesterdayDayPicks = results[4] as my_day.MyDayDayPicks;
 
-      final incompleteTasks = results[4] as List<Task>;
+      final incompleteTasks = results[5] as List<Task>;
       _incompleteTasks = incompleteTasks;
       _taskRevisionStamp = _buildTaskRevision(incompleteTasks);
 
-      final routines = results[5] as List<Routine>;
-      final completions = results[6] as List<RoutineCompletion>;
-      final skips = results[7] as List<RoutineSkip>;
+      final routines = results[6] as List<Routine>;
+      final completions = results[7] as List<RoutineCompletion>;
+      final skips = results[8] as List<RoutineSkip>;
 
       _routines = routines;
       _routineCompletions = completions;
@@ -1262,16 +1277,23 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       nowUtc: _nowService.nowUtc(),
       context: context,
     );
-    _lastNeglectDeficits = _suggestionSnapshot?.neglectDeficits ?? const {};
   }
 
   void _emitReady(Emitter<PlanMyDayState> emit) {
     final snapshot = _suggestionSnapshot;
     final suggestedEntries = snapshot?.suggested ?? const <SuggestedTask>[];
+    final ratingSummaries = _buildRatingSummaries(
+      tasks: _incompleteTasks,
+      ratings: _ratingHistory,
+      nowUtc: _nowService.nowUtc(),
+    );
     final valueGroups = _buildValueSuggestionGroups(
       suggestedEntries,
-      deficits: snapshot?.neglectDeficits ?? const {},
-      spotlightTaskId: snapshot?.spotlightTaskId,
+      ratingSummaries: ratingSummaries,
+    );
+    final unratedValues = _buildUnratedValues(
+      tasks: _incompleteTasks,
+      ratingSummaries: ratingSummaries,
     );
     final suggested = valueGroups
         .expand((group) => group.tasks)
@@ -1367,6 +1389,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         plannedTasks: plannedTasks,
         suggested: suggested,
         valueSuggestionGroups: valueGroups,
+        unratedValues: unratedValues,
         scheduledRoutines: scheduledRoutines,
         flexibleRoutines: flexibleRoutines,
         allRoutines: allRoutines,
@@ -1376,7 +1399,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         routineSelectionsByValue: _routineSelectionsByValue(),
         overCapacity: overCapacity,
         valueSort: _valuesSort,
-        spotlightTaskId: snapshot?.spotlightTaskId,
         toastRequestId: toastRequestId,
         toast: toast,
       ),
@@ -1460,12 +1482,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     if (a.isCatchUpDay != b.isCatchUpDay) {
       return a.isCatchUpDay ? -1 : 1;
     }
-    if (a.isCatchUpDay && b.isCatchUpDay) {
-      final byValuePriority = _valuePriorityRank(
-        a.routine.value?.priority,
-      ).compareTo(_valuePriorityRank(b.routine.value?.priority));
-      if (byValuePriority != 0) return byValuePriority;
-    }
+    if (a.isCatchUpDay && b.isCatchUpDay) {}
 
     final byLastScheduled = _compareLastScheduledDay(a, b);
     if (byLastScheduled != 0) return byLastScheduled;
@@ -1485,11 +1502,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     );
     if (byRemaining != 0) return byRemaining;
 
-    final byValuePriority = _valuePriorityRank(
-      a.routine.value?.priority,
-    ).compareTo(_valuePriorityRank(b.routine.value?.priority));
-    if (byValuePriority != 0) return byValuePriority;
-
     return a.routine.name.compareTo(b.routine.name);
   }
 
@@ -1503,15 +1515,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     if (aDay == null) return 1;
     if (bDay == null) return -1;
     return aDay.compareTo(bDay);
-  }
-
-  int _valuePriorityRank(ValuePriority? priority) {
-    return switch (priority) {
-      ValuePriority.high => 0,
-      ValuePriority.medium => 1,
-      ValuePriority.low => 2,
-      null => 1,
-    };
   }
 
   Map<String, int> _routineSelectionsByValue() {
@@ -1577,28 +1580,110 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   }
 
   int _suggestionPoolTargetCount() {
-    final valuesById = <String, Value>{};
-    for (final task in _incompleteTasks) {
-      final value = task.effectivePrimaryValue;
-      if (value != null) {
-        valuesById[value.id] = value;
-      }
-    }
-
-    if (valuesById.isEmpty) return 0;
+    final summaries = _buildRatingSummaries(
+      tasks: _incompleteTasks,
+      ratings: _ratingHistory,
+      nowUtc: _nowService.nowUtc(),
+    );
+    if (summaries.isEmpty) return 0;
 
     var total = 0;
-    for (final value in valuesById.values) {
-      final deficit = _lastNeglectDeficits[value.id] ?? 0.0;
-      final attentionNeeded = deficit >= _attentionDeficitThreshold;
-      final defaultVisible = _defaultVisibleCount(
-        value.priority,
-        attentionNeeded: attentionNeeded,
-      );
+    for (final summary in summaries.values) {
+      final defaultVisible = _defaultVisibleCount(summary);
       total += defaultVisible + _poolExtraCount;
     }
 
     return total * _suggestionBatchCount;
+  }
+
+  Map<String, Value> _valuesByIdFromTasks(List<Task> tasks) {
+    final valuesById = <String, Value>{};
+    for (final task in tasks) {
+      for (final value in task.effectiveValues) {
+        valuesById[value.id] = value;
+      }
+    }
+    return valuesById;
+  }
+
+  Map<String, PlanMyDayValueRatingSummary> _buildRatingSummaries({
+    required List<Task> tasks,
+    required List<ValueWeeklyRating> ratings,
+    required DateTime nowUtc,
+  }) {
+    final valuesById = _valuesByIdFromTasks(tasks);
+    if (valuesById.isEmpty) return const {};
+
+    final ratingsByValue = <String, Map<DateTime, int>>{};
+    for (final rating in ratings) {
+      final weekStart = _weekStartFor(rating.weekStartUtc);
+      (ratingsByValue[rating.valueId] ??= {})[weekStart] = rating.rating.clamp(
+        1,
+        10,
+      );
+    }
+
+    final nowWeekStart = _weekStartFor(nowUtc);
+    final recentWeeks = <DateTime>[
+      for (var i = _ratingsWindowWeeks - 1; i >= 0; i--)
+        nowWeekStart.subtract(Duration(days: i * 7)),
+    ];
+    final priorWeeks = <DateTime>[
+      for (var i = (_ratingsWindowWeeks * 2) - 1; i >= _ratingsWindowWeeks; i--)
+        nowWeekStart.subtract(Duration(days: i * 7)),
+    ];
+
+    final summaries = <String, PlanMyDayValueRatingSummary>{};
+    for (final entry in valuesById.entries) {
+      final valueId = entry.key;
+      final perWeek = ratingsByValue[valueId] ?? const {};
+      final recentRatings = <int>[
+        for (final week in recentWeeks)
+          if (perWeek[week] != null) perWeek[week]!,
+      ];
+      final priorRatings = <int>[
+        for (final week in priorWeeks)
+          if (perWeek[week] != null) perWeek[week]!,
+      ];
+
+      final averageRating = recentRatings.isEmpty
+          ? null
+          : recentRatings.fold<int>(0, (sum, v) => sum + v) /
+                recentRatings.length;
+      final priorAverage = priorRatings.isEmpty
+          ? null
+          : priorRatings.fold<int>(0, (sum, v) => sum + v) /
+                priorRatings.length;
+      final trendDelta = (averageRating != null && priorAverage != null)
+          ? averageRating - priorAverage
+          : null;
+
+      summaries[valueId] = PlanMyDayValueRatingSummary(
+        valueId: valueId,
+        averageRating: averageRating,
+        trendDelta: trendDelta,
+      );
+    }
+
+    return summaries;
+  }
+
+  List<Value> _buildUnratedValues({
+    required List<Task> tasks,
+    required Map<String, PlanMyDayValueRatingSummary> ratingSummaries,
+  }) {
+    final valuesById = _valuesByIdFromTasks(tasks);
+    if (valuesById.isEmpty) return const <Value>[];
+
+    final unrated = <Value>[];
+    for (final entry in valuesById.entries) {
+      final summary = ratingSummaries[entry.key];
+      if (summary?.averageRating != null) continue;
+      unrated.add(entry.value);
+    }
+
+    unrated.sort((a, b) => a.name.compareTo(b.name));
+    return unrated;
   }
 
   bool _shouldRefreshSuggestions() {
@@ -1631,6 +1716,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       ..write('|')
       ..write(_taskRevisionStamp)
       ..write('|')
+      ..write(_buildRatingsSignature())
+      ..write('|')
       ..write(targetCount)
       ..write('|')
       ..write(_mapSignature(selectionCounts));
@@ -1644,16 +1731,27 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     return entries.map((entry) => '${entry.key}:${entry.value}').join('|');
   }
 
+  String _buildRatingsSignature() {
+    if (_ratingHistory.isEmpty) return '';
+    final entries =
+        _ratingHistory
+            .map(
+              (rating) =>
+                  '${rating.valueId}:${dateOnly(rating.weekStartUtc).toIso8601String()}:${rating.rating}',
+            )
+            .toList()
+          ..sort();
+    return entries.join('|');
+  }
+
   List<PlanMyDayValueSuggestionGroup> _buildValueSuggestionGroups(
     List<SuggestedTask> suggested, {
-    required Map<String, double> deficits,
-    String? spotlightTaskId,
+    required Map<String, PlanMyDayValueRatingSummary> ratingSummaries,
   }) {
     if (suggested.isEmpty) return const [];
 
     final groupsById = <String, List<Task>>{};
     final valueById = <String, Value>{};
-    final deficitById = <String, double>{};
 
     for (final entry in suggested) {
       final valueId = entry.qualifyingValueId?.trim().isNotEmpty ?? false
@@ -1666,20 +1764,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
       groupsById.putIfAbsent(valueId, () => []).add(entry.task);
       valueById[valueId] = value;
-      deficitById[valueId] = deficits[valueId] ?? 0.0;
-    }
-
-    String? spotlightValueId;
-    if (spotlightTaskId != null) {
-      for (final entry in groupsById.entries) {
-        final hasSpotlight = entry.value.any(
-          (task) => task.id == spotlightTaskId,
-        );
-        if (hasSpotlight) {
-          spotlightValueId = entry.key;
-          break;
-        }
-      }
     }
 
     final groups = <PlanMyDayValueSuggestionGroup>[];
@@ -1688,12 +1772,15 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       final value = valueById[valueId];
       if (value == null) continue;
 
-      final deficit = deficitById[valueId] ?? 0.0;
-      final attentionNeeded = deficit >= _attentionDeficitThreshold;
-      final defaultVisible = _defaultVisibleCount(
-        value.priority,
-        attentionNeeded: attentionNeeded,
-      );
+      final summary = ratingSummaries[valueId];
+      final averageRating = summary?.averageRating;
+      final trendDelta = summary?.trendDelta;
+      final hasRatings = averageRating != null;
+      final isTrendingDown =
+          trendDelta != null && trendDelta <= _trendEmphasisThreshold;
+      final isLowAverage =
+          averageRating != null && averageRating <= _lowAverageThreshold;
+      final defaultVisible = _defaultVisibleCount(summary);
       final visibleCount = entry.value.length < defaultVisible
           ? entry.value.length
           : defaultVisible;
@@ -1703,52 +1790,38 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
           valueId: valueId,
           value: value,
           tasks: entry.value,
-          attentionNeeded: attentionNeeded,
-          neglectScore: deficit,
+          averageRating: averageRating,
+          trendDelta: trendDelta,
+          hasRatings: hasRatings,
+          isTrendingDown: isTrendingDown,
+          isLowAverage: isLowAverage,
           visibleCount: visibleCount,
           expanded: true,
-          isSpotlight: valueId == spotlightValueId,
         ),
       );
     }
 
     groups.sort((a, b) {
-      if (spotlightValueId != null) {
-        if (a.valueId == spotlightValueId && b.valueId != spotlightValueId) {
-          return -1;
-        }
-        if (b.valueId == spotlightValueId && a.valueId != spotlightValueId) {
-          return 1;
-        }
-      }
       switch (_valuesSort) {
-        case PlanMyDayValueSort.attentionFirst:
-          if (a.attentionNeeded != b.attentionNeeded) {
-            return a.attentionNeeded ? -1 : 1;
-          }
-          final byPriority = _valuePriorityRank(
-            a.value.priority,
-          ).compareTo(_valuePriorityRank(b.value.priority));
-          if (byPriority != 0) return byPriority;
-          final byDeficit = b.neglectScore.compareTo(a.neglectScore);
-          if (byDeficit != 0) return byDeficit;
+        case PlanMyDayValueSort.lowestAverage:
+          final avgA = a.averageRating ?? double.infinity;
+          final avgB = b.averageRating ?? double.infinity;
+          final byAvg = avgA.compareTo(avgB);
+          if (byAvg != 0) return byAvg;
+          final trendA = a.trendDelta ?? double.infinity;
+          final trendB = b.trendDelta ?? double.infinity;
+          final byTrend = trendA.compareTo(trendB);
+          if (byTrend != 0) return byTrend;
           return a.value.name.compareTo(b.value.name);
-        case PlanMyDayValueSort.priorityFirst:
-          final byPriority = _valuePriorityRank(
-            a.value.priority,
-          ).compareTo(_valuePriorityRank(b.value.priority));
-          if (byPriority != 0) return byPriority;
-          if (a.attentionNeeded != b.attentionNeeded) {
-            return a.attentionNeeded ? -1 : 1;
-          }
-          final byDeficit = b.neglectScore.compareTo(a.neglectScore);
-          if (byDeficit != 0) return byDeficit;
-          return a.value.name.compareTo(b.value.name);
-        case PlanMyDayValueSort.mostSuggested:
-          final byCount = b.totalCount.compareTo(a.totalCount);
-          if (byCount != 0) return byCount;
-          return a.value.name.compareTo(b.value.name);
-        case PlanMyDayValueSort.alphabetical:
+        case PlanMyDayValueSort.trendingDown:
+          final trendA = a.trendDelta ?? double.infinity;
+          final trendB = b.trendDelta ?? double.infinity;
+          final byTrend = trendA.compareTo(trendB);
+          if (byTrend != 0) return byTrend;
+          final avgA = a.averageRating ?? double.infinity;
+          final avgB = b.averageRating ?? double.infinity;
+          final byAvg = avgA.compareTo(avgB);
+          if (byAvg != 0) return byAvg;
           return a.value.name.compareTo(b.value.name);
       }
     });
@@ -1756,15 +1829,17 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     return groups;
   }
 
-  int _defaultVisibleCount(
-    ValuePriority priority, {
-    required bool attentionNeeded,
-  }) {
-    return switch (priority) {
-      ValuePriority.high => attentionNeeded ? 4 : 3,
-      ValuePriority.medium => attentionNeeded ? 3 : 2,
-      ValuePriority.low => attentionNeeded ? 2 : 1,
-    };
+  int _defaultVisibleCount(PlanMyDayValueRatingSummary? summary) {
+    final averageRating = summary?.averageRating;
+    if (averageRating == null) return 0;
+    final trendDelta = summary?.trendDelta;
+    if (trendDelta != null && trendDelta <= _trendEmphasisThreshold) {
+      return 3;
+    }
+    if (averageRating <= _lowAverageThreshold) {
+      return 2;
+    }
+    return 1;
   }
 
   Value? _resolveValueForTask(Task task, String valueId) {
@@ -1804,6 +1879,11 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
   bool _isSameDayUtc(DateTime a, DateTime b) {
     return dateOnly(a).isAtSameMomentAs(dateOnly(b));
+  }
+
+  DateTime _weekStartFor(DateTime dateTime) {
+    final day = dateOnly(dateTime);
+    return day.subtract(Duration(days: day.weekday - 1));
   }
 
   String _buildTaskRevision(List<Task> tasks) {

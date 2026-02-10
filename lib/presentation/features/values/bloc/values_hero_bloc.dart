@@ -218,8 +218,6 @@ class ValuesHeroBloc extends Bloc<ValuesHeroEvent, ValuesHeroState> {
 
     final sorted = [...values];
     sorted.sort((a, b) {
-      final byPriority = b.priority.weight.compareTo(a.priority.weight);
-      if (byPriority != 0) return byPriority;
       return compareAsciiLowerCase(a.name, b.name);
     });
 

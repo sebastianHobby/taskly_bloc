@@ -19,13 +19,13 @@ values in focus."
 ## Benefits (3)
 
 1) Everything captured, nothing forgotten.
-2) Balance deadlines with values-aligned priorities.
+2) Balance deadlines with values-aligned ratings.
 3) A calmer rhythm for real life, even on busy weeks.
 
 ## Feature callouts (My Day framing)
 
 - Projects is the source for today's plan; My Day surfaces values and due dates.
-- Values-based suggestions that keep your values in focus.
+- Ratings-led suggestions that keep your values in focus.
 - Routines that support a steadier week.
 
 ## Target user

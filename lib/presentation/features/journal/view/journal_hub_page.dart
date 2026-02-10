@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/features/journal/view/journal_today_pag
 import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -94,13 +95,13 @@ class _JournalHubPageState extends State<JournalHubPage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: EntityAddFab(
+        tooltip: context.l10n.journalAddEntry,
+        heroTag: 'journal_add_entry_fab',
         onPressed: () => AddLogSheet.show(
           context: context,
           selectedDayLocal: _selectedDay,
         ),
-        icon: const Icon(Icons.add),
-        label: Text(context.l10n.journalAddEntry),
       ),
     );
   }

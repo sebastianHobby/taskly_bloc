@@ -28,8 +28,6 @@ DateTime _scheduledDateTimeForWeek({
 }
 
 bool isWeeklyReviewReady(GlobalSettings settings, DateTime nowLocal) {
-  if (!settings.weeklyReviewEnabled) return false;
-
   final scheduled = _scheduledDateTimeForWeek(
     nowLocal: nowLocal,
     dayOfWeek: settings.weeklyReviewDayOfWeek,
@@ -41,7 +39,7 @@ bool isWeeklyReviewReady(GlobalSettings settings, DateTime nowLocal) {
   final lastCompleted = settings.weeklyReviewLastCompletedAt;
   if (lastCompleted == null) return true;
 
-  final cadenceWeeks = settings.weeklyReviewCadenceWeeks.clamp(1, 12);
+  final cadenceWeeks = settings.weeklyReviewCadenceWeeks.clamp(1, 2);
   final lastCompletedLocal = lastCompleted.toLocal();
   if (!lastCompletedLocal.isBefore(scheduled)) return false;
 

@@ -66,20 +66,6 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
     int cadenceWeeks,
   ) = GlobalSettingsWeeklyReviewCadenceWeeksChanged;
 
-  /// User toggled values summary in weekly review.
-  const factory GlobalSettingsEvent.valuesSummaryEnabledChanged(bool enabled) =
-      GlobalSettingsValuesSummaryEnabledChanged;
-
-  /// User changed values summary lookback window.
-  const factory GlobalSettingsEvent.valuesSummaryWindowWeeksChanged(
-    int weeks,
-  ) = GlobalSettingsValuesSummaryWindowWeeksChanged;
-
-  /// User changed values summary wins count.
-  const factory GlobalSettingsEvent.valuesSummaryWinsCountChanged(
-    int count,
-  ) = GlobalSettingsValuesSummaryWinsCountChanged;
-
   /// User toggled weekly review maintenance.
   const factory GlobalSettingsEvent.maintenanceEnabledChanged(bool enabled) =
       GlobalSettingsMaintenanceEnabledChanged;
@@ -237,18 +223,6 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsWeeklyReviewCadenceWeeksChanged>(
       _onWeeklyReviewCadenceWeeksChanged,
-      transformer: sequential(),
-    );
-    on<GlobalSettingsValuesSummaryEnabledChanged>(
-      _onValuesSummaryEnabledChanged,
-      transformer: sequential(),
-    );
-    on<GlobalSettingsValuesSummaryWindowWeeksChanged>(
-      _onValuesSummaryWindowWeeksChanged,
-      transformer: sequential(),
-    );
-    on<GlobalSettingsValuesSummaryWinsCountChanged>(
-      _onValuesSummaryWinsCountChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsMaintenanceEnabledChanged>(
@@ -679,7 +653,7 @@ class GlobalSettingsBloc
     GlobalSettingsWeeklyReviewCadenceWeeksChanged event,
     Emitter<GlobalSettingsState> emit,
   ) async {
-    final clamped = event.cadenceWeeks.clamp(1, 12);
+    final clamped = event.cadenceWeeks.clamp(1, 2);
     final updated = state.settings.copyWith(
       weeklyReviewCadenceWeeks: clamped,
     );
@@ -687,46 +661,6 @@ class GlobalSettingsBloc
       updated,
       intent: 'settings_weekly_review_cadence_changed',
       extraFields: <String, Object?>{'weeks': clamped},
-    );
-  }
-
-  Future<void> _onValuesSummaryEnabledChanged(
-    GlobalSettingsValuesSummaryEnabledChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final updated = state.settings.copyWith(
-      valuesSummaryEnabled: event.enabled,
-    );
-    await _persistSettings(
-      updated,
-      intent: 'settings_values_summary_enabled_changed',
-      extraFields: <String, Object?>{'enabled': event.enabled},
-    );
-  }
-
-  Future<void> _onValuesSummaryWindowWeeksChanged(
-    GlobalSettingsValuesSummaryWindowWeeksChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final clamped = event.weeks.clamp(1, 12);
-    final updated = state.settings.copyWith(valuesSummaryWindowWeeks: clamped);
-    await _persistSettings(
-      updated,
-      intent: 'settings_values_summary_window_changed',
-      extraFields: <String, Object?>{'weeks': clamped},
-    );
-  }
-
-  Future<void> _onValuesSummaryWinsCountChanged(
-    GlobalSettingsValuesSummaryWinsCountChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final clamped = event.count.clamp(1, 5);
-    final updated = state.settings.copyWith(valuesSummaryWinsCount: clamped);
-    await _persistSettings(
-      updated,
-      intent: 'settings_values_summary_wins_changed',
-      extraFields: <String, Object?>{'count': clamped},
     );
   }
 

@@ -4,17 +4,24 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
+import 'package:taskly_bloc/presentation/features/review/bloc/weekly_review_cubit.dart';
+import 'package:taskly_bloc/presentation/features/review/widgets/weekly_value_checkin_sheet.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/reschedule_picker.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/attention.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/settings.dart' as settings;
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -22,6 +29,7 @@ import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 
 const Key kPlanMyDayBottomFadeKey = Key('plan_my_day_bottom_fade');
 const Key kPlanMyDayLastChildKey = Key('plan_my_day_last_child');
+const double _planMyDayTrendDisplayThreshold = 0.3;
 
 class PlanMyDayPage extends StatelessWidget {
   const PlanMyDayPage({
@@ -185,9 +193,9 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
 
     if (data.requiresRatings) {
       return _RatingsGate(
-        onRateRequested: () => Routing.toScreenKey(context, 'settings'),
-        onSwitchRequested: () => context.read<PlanMyDayBloc>().add(
-          const PlanMyDaySwitchToBehaviorSuggestionsRequested(),
+        onRateRequested: () => _openRatingWizard(
+          context,
+          settings: data.globalSettings,
         ),
       );
     }
@@ -725,7 +733,8 @@ class _SuggestionsShelf extends StatelessWidget {
       suggestions.add(
         _ValueSuggestionChip(
           value: group.value,
-          showSpotlightBadge: group.isSpotlight,
+          averageRating: group.averageRating,
+          trendDelta: group.trendDelta,
           anchorKey: i == 0 ? GuidedTourAnchors.planMyDayValuesCard : null,
         ),
       );
@@ -762,14 +771,49 @@ class _SuggestionsShelf extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.planMyDaySuggestionsTitle,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            _ValueSortMenu(data: data),
+          ],
+        ),
+        SizedBox(height: tokens.spaceXs2),
         Text(
-          l10n.planMyDaySuggestionsTitle,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
+          l10n.planMyDaySuggestionsSubtitle,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         SizedBox(height: tokens.spaceSm),
         ...suggestions,
+        if (data.unratedValues.isNotEmpty) ...[
+          SizedBox(height: tokens.spaceLg),
+          Text(
+            l10n.planMyDayNeedsRatingTitle,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SizedBox(height: tokens.spaceSm),
+          for (final value in data.unratedValues) ...[
+            _NeedsRatingRow(
+              value: value,
+              onRate: () => _openRatingWizard(
+                context,
+                settings: data.globalSettings,
+                initialValueId: value.id,
+              ),
+            ),
+            SizedBox(height: tokens.spaceSm),
+          ],
+        ],
       ],
     );
   }
@@ -778,12 +822,14 @@ class _SuggestionsShelf extends StatelessWidget {
 class _ValueSuggestionChip extends StatelessWidget {
   const _ValueSuggestionChip({
     required this.value,
-    required this.showSpotlightBadge,
+    required this.averageRating,
+    required this.trendDelta,
     this.anchorKey,
   });
 
   final Value value;
-  final bool showSpotlightBadge;
+  final double? averageRating;
+  final double? trendDelta;
   final Key? anchorKey;
 
   @override
@@ -824,33 +870,143 @@ class _ValueSuggestionChip extends StatelessWidget {
       ),
     );
 
-    if (!showSpotlightBadge) {
-      return chip;
-    }
+    final averageLabel = averageRating == null
+        ? l10n.planMyDayAverageLabel(l10n.notAvailableShortLabel)
+        : l10n.planMyDayAverageLabel(averageRating!.toStringAsFixed(1));
 
-    return Wrap(
-      spacing: tokens.spaceXs2,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    final showTrend =
+        trendDelta != null &&
+        trendDelta!.abs() >= _planMyDayTrendDisplayThreshold;
+    final trendLabel = showTrend
+        ? (trendDelta!.isNegative
+              ? l10n.planMyDayTrendDownLabel(
+                  trendDelta!.abs().toStringAsFixed(1),
+                )
+              : l10n.planMyDayTrendUpLabel(
+                  trendDelta!.abs().toStringAsFixed(1),
+                ))
+        : null;
+    final trendColor = trendDelta == null
+        ? scheme.onSurfaceVariant
+        : trendDelta!.isNegative
+        ? scheme.error
+        : scheme.primary;
+
+    return Row(
       children: [
-        chip,
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spaceXs2,
-            vertical: tokens.spaceXxs2,
-          ),
-          decoration: BoxDecoration(
-            color: scheme.primaryContainer,
-            borderRadius: BorderRadius.circular(tokens.radiusPill),
-          ),
-          child: Text(
-            l10n.myDayPlanSpotlightLabel,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: scheme.onPrimaryContainer,
-            ),
+        Flexible(child: chip),
+        SizedBox(width: tokens.spaceSm),
+        Text(
+          averageLabel,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: scheme.onSurfaceVariant,
+            fontWeight: FontWeight.w700,
           ),
         ),
+        if (trendLabel != null) ...[
+          SizedBox(width: tokens.spaceXs2),
+          Text(
+            trendLabel,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: trendColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ],
+    );
+  }
+}
+
+class _ValueSortMenu extends StatelessWidget {
+  const _ValueSortMenu({required this.data});
+
+  final PlanMyDayReady data;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final currentLabel = _sortLabel(context, data.valueSort);
+
+    return PopupMenuButton<PlanMyDayValueSort>(
+      tooltip: l10n.sortMenuTitle,
+      onSelected: (value) =>
+          context.read<PlanMyDayBloc>().add(PlanMyDayValueSortChanged(value)),
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: PlanMyDayValueSort.lowestAverage,
+          child: Text(l10n.planMyDaySortLowestAverage),
+        ),
+        PopupMenuItem(
+          value: PlanMyDayValueSort.trendingDown,
+          child: Text(l10n.planMyDaySortTrendingDown),
+        ),
+      ],
+      child: TextButton.icon(
+        onPressed: null,
+        icon: const Icon(Icons.sort),
+        label: Text(l10n.planMyDaySortByLabel(currentLabel)),
+      ),
+    );
+  }
+
+  String _sortLabel(BuildContext context, PlanMyDayValueSort sort) {
+    final l10n = context.l10n;
+    return switch (sort) {
+      PlanMyDayValueSort.lowestAverage => l10n.planMyDaySortLowestAverage,
+      PlanMyDayValueSort.trendingDown => l10n.planMyDaySortTrendingDown,
+    };
+  }
+}
+
+class _NeedsRatingRow extends StatelessWidget {
+  const _NeedsRatingRow({
+    required this.value,
+    required this.onRate,
+  });
+
+  final Value value;
+  final VoidCallback onRate;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final chipData = value.toChipData(context);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceSm,
+        vertical: tokens.spaceXs2,
+      ),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(tokens.radiusPill),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            chipData.icon,
+            size: tokens.spaceMd2,
+            color: chipData.color,
+          ),
+          SizedBox(width: tokens.spaceXxs2),
+          Expanded(
+            child: Text(
+              chipData.label,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: onRate,
+            child: Text(context.l10n.rateValuesLabel),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1269,14 +1425,47 @@ Future<void> _showSwapSheet(
   );
 }
 
+Future<void> _openRatingWizard(
+  BuildContext context, {
+  required settings.GlobalSettings settings,
+  String? initialValueId,
+}) {
+  final config = WeeklyReviewConfig.fromSettings(settings);
+  final parentContext = context;
+
+  return Navigator.of(context, rootNavigator: true).push<void>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (context) {
+        return BlocProvider(
+          create: (context) => WeeklyReviewBloc(
+            analyticsService: parentContext.read<AnalyticsService>(),
+            attentionEngine: parentContext.read<AttentionEngineContract>(),
+            valueRepository: parentContext.read<ValueRepositoryContract>(),
+            valueRatingsRepository: parentContext
+                .read<ValueRatingsRepositoryContract>(),
+            valueRatingsWriteService: parentContext
+                .read<ValueRatingsWriteService>(),
+            routineRepository: parentContext.read<RoutineRepositoryContract>(),
+            taskRepository: parentContext.read<TaskRepositoryContract>(),
+            nowService: parentContext.read<NowService>(),
+          )..add(WeeklyReviewRequested(config)),
+          child: WeeklyValueCheckInSheet(
+            initialValueId: initialValueId,
+            windowWeeks: config.checkInWindowWeeks,
+          ),
+        );
+      },
+    ),
+  );
+}
+
 class _RatingsGate extends StatelessWidget {
   const _RatingsGate({
     required this.onRateRequested,
-    required this.onSwitchRequested,
   });
 
   final VoidCallback onRateRequested;
-  final VoidCallback onSwitchRequested;
 
   @override
   Widget build(BuildContext context) {
@@ -1310,11 +1499,6 @@ class _RatingsGate extends StatelessWidget {
             FilledButton(
               onPressed: onRateRequested,
               child: Text(context.l10n.rateValuesLabel),
-            ),
-            SizedBox(height: tokens.spaceSm),
-            TextButton(
-              onPressed: onSwitchRequested,
-              child: Text(context.l10n.switchToBehaviorBasedLabel),
             ),
           ],
         ),

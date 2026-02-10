@@ -33,12 +33,6 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => Routing.pushSettingsAppearance(context),
             ),
             _SettingsNavItem(
-              icon: Icons.auto_awesome_outlined,
-              title: l10n.settingsTaskSuggestionsTitle,
-              subtitle: l10n.settingsTaskSuggestionsSubtitle,
-              onTap: () => Routing.pushSettingsTaskSuggestions(context),
-            ),
-            _SettingsNavItem(
               icon: Icons.flag_outlined,
               title: l10n.settingsGuidedTourTitle,
               subtitle: l10n.settingsGuidedTourSubtitle,

@@ -10,7 +10,7 @@ import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/preferences.dart';
 
-enum OnboardingStep { welcome, name, valuesSetup }
+enum OnboardingStep { welcome, valuesSetup, ratings, reviewSettings }
 
 @immutable
 final class OnboardingValueSelection {
@@ -77,9 +77,7 @@ final class OnboardingCompletedEffect extends OnboardingEffect {
 final class OnboardingState {
   const OnboardingState({
     required this.step,
-    required this.displayName,
     required this.selectedValues,
-    required this.isSavingName,
     required this.isCreatingValue,
     required this.isCompleting,
     required this.effect,
@@ -87,18 +85,14 @@ final class OnboardingState {
 
   factory OnboardingState.initial() => const OnboardingState(
     step: OnboardingStep.welcome,
-    displayName: '',
     selectedValues: <OnboardingValueSelection>[],
-    isSavingName: false,
     isCreatingValue: false,
     isCompleting: false,
     effect: null,
   );
 
   final OnboardingStep step;
-  final String displayName;
   final List<OnboardingValueSelection> selectedValues;
-  final bool isSavingName;
   final bool isCreatingValue;
   final bool isCompleting;
   final OnboardingEffect? effect;
@@ -107,18 +101,14 @@ final class OnboardingState {
 
   OnboardingState copyWith({
     OnboardingStep? step,
-    String? displayName,
     List<OnboardingValueSelection>? selectedValues,
-    bool? isSavingName,
     bool? isCreatingValue,
     bool? isCompleting,
     OnboardingEffect? effect,
   }) {
     return OnboardingState(
       step: step ?? this.step,
-      displayName: displayName ?? this.displayName,
       selectedValues: selectedValues ?? this.selectedValues,
-      isSavingName: isSavingName ?? this.isSavingName,
       isCreatingValue: isCreatingValue ?? this.isCreatingValue,
       isCompleting: isCompleting ?? this.isCompleting,
       effect: effect,
@@ -131,22 +121,12 @@ sealed class OnboardingEvent {
   const OnboardingEvent();
 }
 
-final class OnboardingNameChanged extends OnboardingEvent {
-  const OnboardingNameChanged(this.displayName);
-  final String displayName;
-}
-
 final class OnboardingNextRequested extends OnboardingEvent {
   const OnboardingNextRequested();
 }
 
 final class OnboardingBackRequested extends OnboardingEvent {
   const OnboardingBackRequested();
-}
-
-final class OnboardingQuickPickConfirmed extends OnboardingEvent {
-  const OnboardingQuickPickConfirmed(this.draft);
-  final ValueDraft draft;
 }
 
 final class OnboardingCustomValueConfirmed extends OnboardingEvent {
@@ -168,35 +148,35 @@ final class OnboardingCompleteRequested extends OnboardingEvent {
   const OnboardingCompleteRequested();
 }
 
+final class OnboardingRatingsCompleted extends OnboardingEvent {
+  const OnboardingRatingsCompleted();
+}
+
 final class OnboardingEffectHandled extends OnboardingEvent {
   const OnboardingEffectHandled();
 }
 
 class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
   OnboardingBloc({
-    required AuthRepositoryContract authRepository,
     required SettingsRepositoryContract settingsRepository,
     required ValueRepositoryContract valueRepository,
     required ValueWriteService valueWriteService,
     required AppErrorReporter errorReporter,
-  }) : _authRepository = authRepository,
-       _settingsRepository = settingsRepository,
+  }) : _settingsRepository = settingsRepository,
        _valueRepository = valueRepository,
        _valueWriteService = valueWriteService,
        _errorReporter = errorReporter,
        super(OnboardingState.initial()) {
-    on<OnboardingNameChanged>(_onNameChanged);
     on<OnboardingNextRequested>(_onNextRequested);
     on<OnboardingBackRequested>(_onBackRequested);
-    on<OnboardingQuickPickConfirmed>(_onQuickPickConfirmed);
     on<OnboardingCustomValueConfirmed>(_onCustomValueConfirmed);
     on<OnboardingValueRemoved>(_onValueRemoved);
     on<OnboardingValueRefreshRequested>(_onValueRefreshRequested);
     on<OnboardingCompleteRequested>(_onCompleteRequested);
+    on<OnboardingRatingsCompleted>(_onRatingsCompleted);
     on<OnboardingEffectHandled>(_onEffectHandled);
   }
 
-  final AuthRepositoryContract _authRepository;
   final SettingsRepositoryContract _settingsRepository;
   final ValueRepositoryContract _valueRepository;
   final ValueWriteService _valueWriteService;
@@ -204,31 +184,13 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
-  void _onNameChanged(
-    OnboardingNameChanged event,
-    Emitter<OnboardingState> emit,
-  ) {
-    emit(state.copyWith(displayName: event.displayName, effect: null));
-  }
-
   Future<void> _onNextRequested(
     OnboardingNextRequested event,
     Emitter<OnboardingState> emit,
   ) async {
     switch (state.step) {
       case OnboardingStep.welcome:
-        emit(state.copyWith(step: OnboardingStep.name, effect: null));
-      case OnboardingStep.name:
-        final trimmed = state.displayName.trim();
-        if (trimmed.isEmpty) {
-          emit(
-            state.copyWith(
-              effect: const OnboardingEffect.error('Please enter a name.'),
-            ),
-          );
-          return;
-        }
-        await _saveDisplayName(trimmed, emit);
+        emit(state.copyWith(step: OnboardingStep.valuesSetup, effect: null));
       case OnboardingStep.valuesSetup:
         if (!state.hasMinimumValues) {
           emit(
@@ -238,6 +200,10 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
           );
           return;
         }
+        emit(state.copyWith(step: OnboardingStep.ratings, effect: null));
+      case OnboardingStep.ratings:
+        break;
+      case OnboardingStep.reviewSettings:
         add(const OnboardingCompleteRequested());
     }
   }
@@ -248,82 +214,16 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
   ) {
     final step = state.step;
     if (step == OnboardingStep.welcome) return;
-    final previousIndex = step.index - 1;
-    emit(
-      state.copyWith(
-        step: OnboardingStep.values[previousIndex],
-        effect: null,
-      ),
-    );
-  }
-
-  Future<void> _saveDisplayName(
-    String name,
-    Emitter<OnboardingState> emit,
-  ) async {
-    emit(state.copyWith(isSavingName: true, effect: null));
-
-    final profileContext = _newContext(
-      intent: 'onboarding_name_set',
-      operation: 'auth.update_profile',
-    );
-    try {
-      await _authRepository.updateUserProfile(
-        displayName: name,
-        context: profileContext,
-      );
-    } catch (error, stackTrace) {
-      _reportUnexpected(error, stackTrace, profileContext);
-      emit(
-        state.copyWith(
-          isSavingName: false,
-          effect: const OnboardingEffect.error(
-            'Could not save your name. Please try again.',
-          ),
-        ),
-      );
-      return;
+    switch (step) {
+      case OnboardingStep.valuesSetup:
+        emit(state.copyWith(step: OnboardingStep.welcome, effect: null));
+      case OnboardingStep.ratings:
+        emit(state.copyWith(step: OnboardingStep.valuesSetup, effect: null));
+      case OnboardingStep.reviewSettings:
+        emit(state.copyWith(step: OnboardingStep.ratings, effect: null));
+      case OnboardingStep.welcome:
+        break;
     }
-
-    final settingsContext = _newContext(
-      intent: 'onboarding_suggestion_signal_set',
-      operation: 'settings.allocation_signal',
-    );
-    try {
-      final allocation = await _settingsRepository.load(SettingsKey.allocation);
-      final updated = allocation.copyWith(
-        suggestionSignal: SuggestionSignal.behaviorBased,
-      );
-      await _settingsRepository.save(
-        SettingsKey.allocation,
-        updated,
-        context: settingsContext,
-      );
-      emit(
-        state.copyWith(
-          isSavingName: false,
-          step: OnboardingStep.valuesSetup,
-          effect: null,
-        ),
-      );
-    } catch (error, stackTrace) {
-      _reportUnexpected(error, stackTrace, settingsContext);
-      emit(
-        state.copyWith(
-          isSavingName: false,
-          effect: const OnboardingEffect.error(
-            'Could not save your preferences. Please try again.',
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _onQuickPickConfirmed(
-    OnboardingQuickPickConfirmed event,
-    Emitter<OnboardingState> emit,
-  ) async {
-    await _createValueFromDraft(event.draft, emit);
   }
 
   Future<void> _onCustomValueConfirmed(
@@ -444,16 +344,53 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
     emit(state.copyWith(selectedValues: updated, effect: null));
   }
 
-  void _onCompleteRequested(
+  Future<void> _onCompleteRequested(
     OnboardingCompleteRequested event,
     Emitter<OnboardingState> emit,
-  ) {
+  ) async {
+    if (state.isCompleting) return;
+    emit(state.copyWith(isCompleting: true, effect: null));
+
+    final settingsContext = _newContext(
+      intent: 'onboarding_suggestion_signal_set',
+      operation: 'settings.allocation_signal',
+    );
+    try {
+      final allocation = await _settingsRepository.load(SettingsKey.allocation);
+      final updated = allocation.copyWith(
+        suggestionSignal: SuggestionSignal.ratingsBased,
+      );
+      await _settingsRepository.save(
+        SettingsKey.allocation,
+        updated,
+        context: settingsContext,
+      );
+    } catch (error, stackTrace) {
+      _reportUnexpected(error, stackTrace, settingsContext);
+      emit(
+        state.copyWith(
+          isCompleting: false,
+          effect: const OnboardingEffect.error(
+            'Could not save your preferences. Please try again.',
+          ),
+        ),
+      );
+      return;
+    }
+
     emit(
       state.copyWith(
-        isCompleting: true,
+        isCompleting: false,
         effect: const OnboardingEffect.completed(),
       ),
     );
+  }
+
+  void _onRatingsCompleted(
+    OnboardingRatingsCompleted event,
+    Emitter<OnboardingState> emit,
+  ) {
+    emit(state.copyWith(step: OnboardingStep.reviewSettings, effect: null));
   }
 
   void _onEffectHandled(

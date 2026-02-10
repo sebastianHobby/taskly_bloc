@@ -2,9 +2,7 @@
 library;
 
 import '../../helpers/test_imports.dart';
-import '../../mocks/feature_mocks.dart';
 import '../../mocks/fake_repositories.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
@@ -20,7 +18,6 @@ void main() {
     late FakeSettingsRepository settingsRepository;
     late FakeProjectRepository projectRepository;
     late FakeProjectAnchorStateRepository projectAnchorStateRepository;
-    late MockAnalyticsService analyticsService;
     late HomeDayKeyService dayKeyService;
 
     setUp(() {
@@ -32,14 +29,7 @@ void main() {
       );
       projectRepository = FakeProjectRepository();
       projectAnchorStateRepository = FakeProjectAnchorStateRepository();
-      analyticsService = MockAnalyticsService();
       dayKeyService = HomeDayKeyService(settingsRepository: settingsRepository);
-
-      when(
-        () => analyticsService.getRecentCompletionsByValue(
-          days: any(named: 'days'),
-        ),
-      ).thenAnswer((_) async => const <String, int>{});
     });
 
     testSafe('returns requiresValueSetup when no values exist', () async {
@@ -48,7 +38,6 @@ void main() {
         valueRepository: valueRepository,
         valueRatingsRepository: valueRatingsRepository,
         settingsRepository: settingsRepository,
-        analyticsService: analyticsService,
         projectRepository: projectRepository,
         projectAnchorStateRepository: projectAnchorStateRepository,
         dayKeyService: dayKeyService,

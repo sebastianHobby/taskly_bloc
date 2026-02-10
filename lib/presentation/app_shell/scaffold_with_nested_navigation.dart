@@ -41,7 +41,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'inbox',
       if (kDebugMode) 'journal',
       'values',
-      if (kDebugMode) 'statistics',
       'settings',
     ];
 
@@ -53,7 +52,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'routines': l10n.routinesTitle,
       'journal': l10n.journalTitle,
       'values': l10n.valuesTitle,
-      'statistics': l10n.statisticsTitle,
       'settings': l10n.settingsTitle,
     };
 
@@ -65,7 +63,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'inbox': 4,
       'journal': 5,
       'values': 6,
-      'statistics': 7,
       'settings': 100,
     };
 

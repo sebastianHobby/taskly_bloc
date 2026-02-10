@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
@@ -8,7 +6,6 @@ import 'package:taskly_bloc/presentation/features/review/widgets/weekly_value_ch
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
-import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -28,7 +25,6 @@ Future<void> showWeeklyReviewModal(
     'weekly_review',
     'open_modal',
     fields: <String, Object?>{
-      'valuesSummaryEnabled': config.valuesSummaryEnabled,
       'maintenanceEnabled': config.maintenanceEnabled,
     },
   );
@@ -121,7 +117,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
     AppLog.warn('weekly_review', 'open_settings');
     Navigator.of(context).maybePop();
     if (!widget.parentContext.mounted) return;
-    Routing.toScreenKey(widget.parentContext, 'settings');
+    Routing.pushSettingsWeeklyReview(widget.parentContext);
   }
 
   void _ensurePageInRange(int pageCount) {
@@ -145,7 +141,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
 
   void _logPageCountChange({
     required int pageCount,
-    required bool showValuesOverview,
     required bool ratingsEnabled,
     required bool ratingsSummary,
     required bool maintenanceEnabled,
@@ -158,7 +153,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
         'pageIndex': _pageIndex,
         'previousPageCount': _lastLoggedPageCount,
         'pageCount': pageCount,
-        'valuesOverview': showValuesOverview,
         'ratingsEnabled': ratingsEnabled,
         'ratingsSummary': ratingsSummary,
         'maintenanceEnabled': maintenanceEnabled,
@@ -198,56 +192,28 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
         final initialCheckInValueId = ratingsSummary == null
             ? null
             : _initialValueId(ratingsSummary);
-
-        final showValuesOverview = widget.config.valuesSummaryEnabled;
         final hasCheckIn = ratingsEnabled && ratingsSummary != null;
         final pageCount =
-            (showValuesOverview ? 1 : 0) +
             (hasCheckIn ? 1 : 0) +
             (widget.config.maintenanceEnabled ? 1 : 0) +
             1;
-        final checkInStep = showValuesOverview ? 2 : 1;
         final pages = <Widget>[
-          if (showValuesOverview)
-            _ValuesSnapshotPage(
-              key: const ValueKey('weekly_review_values_snapshot'),
-              config: widget.config,
-              summary: state.valuesSummary,
-              wins: state.valueWins,
-            ),
           if (hasCheckIn)
             WeeklyValueCheckInContent(
               key: const ValueKey('weekly_review_check_in'),
               initialValueId: initialCheckInValueId,
-              windowWeeks: widget.config.valuesWindowWeeks,
-              wizardStep: checkInStep,
+              windowWeeks: widget.config.checkInWindowWeeks,
+              wizardStep: 1,
               wizardTotal: pageCount,
-              onWizardBack: () {
-                if (showValuesOverview) {
-                  _controller.previousPage(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOut,
-                  );
-                } else {
-                  Navigator.of(context).maybePop();
-                }
-              },
               onExit: () {
                 AppLog.warnStructured(
                   'weekly_review',
                   'exit_checkin',
                   fields: <String, Object?>{
-                    'hasValuesOverview': showValuesOverview,
+                    'maintenanceEnabled': widget.config.maintenanceEnabled,
                   },
                 );
-                if (showValuesOverview) {
-                  _controller.previousPage(
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOut,
-                  );
-                } else {
-                  Navigator.of(context).maybePop();
-                }
+                Navigator.of(context).maybePop();
               },
               onComplete: _goNext,
             ),
@@ -265,7 +231,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
           'weekly_review',
           'build_pages',
           fields: <String, Object?>{
-            'valuesOverview': showValuesOverview,
             'ratingsEnabled': ratingsEnabled,
             'ratingsSummary': ratingsSummary != null,
             'maintenanceEnabled': widget.config.maintenanceEnabled,
@@ -276,14 +241,13 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
         _pageCount = pageCount;
         _logPageCountChange(
           pageCount: pageCount,
-          showValuesOverview: showValuesOverview,
           ratingsEnabled: ratingsEnabled,
           ratingsSummary: ratingsSummary != null,
           maintenanceEnabled: widget.config.maintenanceEnabled,
         );
         _ensurePageInRange(pageCount);
 
-        final checkInIndex = showValuesOverview ? 1 : 0;
+        const checkInIndex = 0;
         final isCheckInPage =
             ratingsEnabled &&
             ratingsSummary != null &&
@@ -331,7 +295,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
           ),
           child: Row(
             children: [
-              if (_pageIndex > 0)
+              if (_pageIndex > 0) ...[
                 TextButton(
                   onPressed: () => _controller.previousPage(
                     duration: const Duration(milliseconds: 200),
@@ -339,6 +303,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
                   ),
                   child: Text(context.l10n.backLabel),
                 ),
+              ],
               const Spacer(),
               FilledButton(
                 onPressed: _goNext,
@@ -393,536 +358,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   }
 }
 
-class _ValuesSnapshotPage extends StatelessWidget {
-  const _ValuesSnapshotPage({
-    required this.config,
-    required this.summary,
-    required this.wins,
-    super.key,
-  });
-
-  final WeeklyReviewConfig config;
-  final WeeklyReviewValuesSummary? summary;
-  final List<WeeklyReviewValueWin> wins;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final shares = summary?.shares ?? const <WeeklyReviewValueShare>[];
-    final hasValues = summary?.hasValues ?? false;
-    final hasCompletions = summary?.hasCompletions ?? false;
-    final completionSummary = summary == null
-        ? null
-        : l10n.weeklyReviewValuesCompletionSummary(
-            summary!.taskCompletions,
-            summary!.routineCompletions,
-          );
-
-    return ListView(
-      key: const PageStorageKey<String>(
-        'weekly_review_values_snapshot_list',
-      ),
-      padding: EdgeInsets.fromLTRB(
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceXs,
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceXl,
-      ),
-      children: [
-        Text(
-          l10n.weeklyReviewValuesTitle,
-          style: theme.textTheme.titleLarge,
-        ),
-        SizedBox(height: TasklyTokens.of(context).spaceSm),
-        Text(
-          l10n.weeklyReviewValuesSnapshotSubtitle,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: TasklyTokens.of(context).spaceSm),
-        Text(
-          l10n.weeklyReviewLastWeeksLabel(config.valuesWindowWeeks),
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        SizedBox(height: TasklyTokens.of(context).spaceSm),
-        if (completionSummary != null)
-          Text(
-            completionSummary,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-        SizedBox(height: TasklyTokens.of(context).spaceSm),
-        if (hasValues)
-          _ValuesDonutChart(
-            shares: shares,
-            totalCompletions: summary?.alignedCompletions ?? 0,
-          )
-        else
-          Text(
-            l10n.weeklyReviewValuesNoValuesLabel,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-        if (hasValues) ...[
-          SizedBox(height: TasklyTokens.of(context).spaceSm),
-          _ValuesLegend(shares: shares),
-          if (!hasCompletions) ...[
-            SizedBox(height: TasklyTokens.of(context).spaceSm),
-            Text(
-              l10n.weeklyReviewValuesInsightEmptyLabel,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          SizedBox(height: TasklyTokens.of(context).spaceLg),
-          _PriorityTargetsSection(shares: shares),
-          SizedBox(height: TasklyTokens.of(context).spaceLg),
-        ],
-        Text(
-          l10n.weeklyReviewValuesWinsLabel,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        SizedBox(height: TasklyTokens.of(context).spaceSm),
-        Text(
-          l10n.weeklyReviewValueWinsSubtitle,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: TasklyTokens.of(context).spaceSm),
-        if (wins.isEmpty)
-          Text(
-            l10n.weeklyReviewValueWinsEmpty,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          )
-        else
-          ...wins.map(
-            (win) => Padding(
-              padding: EdgeInsets.only(
-                bottom: TasklyTokens.of(context).spaceSm,
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.star_rounded, size: 18),
-                  SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  Expanded(
-                    child: Text(
-                      l10n.weeklyReviewValueWinsRow(
-                        win.valueName ?? l10n.valueLabel,
-                        win.completionCount,
-                      ),
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _ValuesDonutChart extends StatelessWidget {
-  const _ValuesDonutChart({
-    required this.shares,
-    required this.totalCompletions,
-  });
-
-  final List<WeeklyReviewValueShare> shares;
-  final int totalCompletions;
-
-  static const double _maxSize = 240;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final tokens = TasklyTokens.of(context);
-    final colors = shares
-        .map(
-          (share) => ColorUtils.valueColorForTheme(
-            context,
-            share.value.color,
-          ),
-        )
-        .toList(growable: false);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final size = math.min(constraints.maxWidth, _maxSize);
-        final strokeWidth = size * 0.16;
-
-        return Center(
-          child: SizedBox(
-            width: size,
-            height: size,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CustomPaint(
-                  size: Size.square(size),
-                  painter: _ValuesDonutPainter(
-                    shares: shares,
-                    colors: colors,
-                    totalCompletions: totalCompletions,
-                    strokeWidth: strokeWidth,
-                    backgroundColor: scheme.surfaceContainerHighest,
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      totalCompletions.toString(),
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: tokens.spaceXs),
-                    Text(
-                      context.l10n.weeklyReviewValuesCompletionsLabel,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _ValuesDonutPainter extends CustomPainter {
-  _ValuesDonutPainter({
-    required this.shares,
-    required this.colors,
-    required this.totalCompletions,
-    required this.strokeWidth,
-    required this.backgroundColor,
-  });
-
-  final List<WeeklyReviewValueShare> shares;
-  final List<Color> colors;
-  final int totalCompletions;
-  final double strokeWidth;
-  final Color backgroundColor;
-
-  static const double _gapRadians = 0.05;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final radius = size.shortestSide / 2 - strokeWidth / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    final backgroundPaint = Paint()
-      ..color = backgroundColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(rect, 0, math.pi * 2, false, backgroundPaint);
-
-    if (totalCompletions <= 0 || shares.isEmpty) return;
-
-    var startAngle = -math.pi / 2;
-
-    for (var i = 0; i < shares.length; i++) {
-      final share = shares[i];
-      if (share.actualPercent <= 0) continue;
-
-      final sweep = math.pi * 2 * (share.actualPercent / 100);
-      final gap = math.min(_gapRadians, sweep * 0.35);
-      if (sweep <= gap) {
-        startAngle += sweep;
-        continue;
-      }
-
-      final paint = Paint()
-        ..color = colors[i]
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.round;
-
-      canvas.drawArc(
-        rect,
-        startAngle + gap / 2,
-        sweep - gap,
-        false,
-        paint,
-      );
-
-      startAngle += sweep;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _ValuesDonutPainter oldDelegate) {
-    return oldDelegate.shares != shares ||
-        oldDelegate.colors != colors ||
-        oldDelegate.totalCompletions != totalCompletions;
-  }
-}
-
-class _ValuesLegend extends StatelessWidget {
-  const _ValuesLegend({required this.shares});
-
-  final List<WeeklyReviewValueShare> shares;
-
-  @override
-  Widget build(BuildContext context) {
-    if (shares.isEmpty) return const SizedBox.shrink();
-
-    final tokens = TasklyTokens.of(context);
-
-    return Wrap(
-      spacing: tokens.spaceSm,
-      runSpacing: tokens.spaceSm,
-      children: shares
-          .map(
-            (share) => _ValueLegendChip(share: share),
-          )
-          .toList(growable: false),
-    );
-  }
-}
-
-class _ValueLegendChip extends StatelessWidget {
-  const _ValueLegendChip({required this.share});
-
-  final WeeklyReviewValueShare share;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final accent = ColorUtils.valueColorForTheme(
-      context,
-      share.value.color,
-    );
-    final percentLabel = share.actualPercent.round();
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spaceSm,
-        vertical: tokens.spaceXs,
-      ),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(tokens.radiusLg),
-        border: Border.all(color: accent.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: tokens.spaceXs,
-            height: tokens.spaceXs,
-            decoration: BoxDecoration(
-              color: accent,
-              shape: BoxShape.circle,
-            ),
-          ),
-          SizedBox(width: tokens.spaceXs),
-          Text(
-            share.value.name,
-            style: Theme.of(context).textTheme.labelSmall,
-          ),
-          SizedBox(width: tokens.spaceXs),
-          Text(
-            context.l10n.analyticsPercentValue(percentLabel),
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(width: tokens.spaceXs),
-          Text(
-            '(${share.completionCount})',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PriorityTargetsSection extends StatelessWidget {
-  const _PriorityTargetsSection({required this.shares});
-
-  final List<WeeklyReviewValueShare> shares;
-
-  @override
-  Widget build(BuildContext context) {
-    if (shares.isEmpty) return const SizedBox.shrink();
-
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final tokens = TasklyTokens.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.weeklyReviewValuesPriorityTargetsTitle,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        SizedBox(height: tokens.spaceSm),
-        Text(
-          l10n.weeklyReviewValuesPriorityTargetsSubtitle,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: tokens.spaceSm),
-        ...shares.map(
-          (share) => Padding(
-            padding: EdgeInsets.only(bottom: tokens.spaceSm),
-            child: _PriorityTargetRow(share: share),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _PriorityTargetRow extends StatelessWidget {
-  const _PriorityTargetRow({required this.share});
-
-  final WeeklyReviewValueShare share;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final tokens = TasklyTokens.of(context);
-    final accent = ColorUtils.valueColorForTheme(
-      context,
-      share.value.color,
-    );
-    final expectedPercent = share.expectedPercent.round();
-    final actualPercent = share.actualPercent.round();
-    final delta = share.deltaPercent.round();
-
-    return Container(
-      padding: EdgeInsets.all(tokens.spaceMd),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(tokens.radiusMd),
-        border: Border.all(color: scheme.outlineVariant.withOpacity(0.6)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: tokens.spaceSm,
-            height: tokens.spaceSm,
-            decoration: BoxDecoration(
-              color: accent,
-              shape: BoxShape.circle,
-            ),
-          ),
-          SizedBox(width: tokens.spaceSm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  share.value.name,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: tokens.spaceXs),
-                Wrap(
-                  spacing: tokens.spaceSm,
-                  runSpacing: tokens.spaceXs,
-                  children: [
-                    _TargetMetric(
-                      label: l10n.weeklyReviewValuesTargetShareLabel,
-                      percent: expectedPercent,
-                    ),
-                    _TargetMetric(
-                      label: l10n.weeklyReviewValuesActualShareLabel,
-                      percent: actualPercent,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: tokens.spaceSm),
-          Text(
-            _deltaText(l10n, delta),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: _deltaColor(scheme, delta),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _deltaText(AppLocalizations l10n, int delta) {
-    final absLabel = l10n.analyticsPercentValue(delta.abs());
-    final sign = delta > 0 ? '+' : (delta < 0 ? '-' : '');
-    return '$sign$absLabel ${l10n.weeklyReviewValuesDeltaLabel}';
-  }
-
-  Color _deltaColor(ColorScheme scheme, int delta) {
-    if (delta > 0) return scheme.primary;
-    if (delta < 0) return scheme.error;
-    return scheme.onSurfaceVariant;
-  }
-}
-
-class _TargetMetric extends StatelessWidget {
-  const _TargetMetric({
-    required this.label,
-    required this.percent,
-  });
-
-  final String label;
-  final int percent;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = '$label ${context.l10n.analyticsPercentValue(percent)}';
-
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: scheme.onSurfaceVariant,
-      ),
-    );
-  }
-}
-
 class _MaintenancePage extends StatelessWidget {
   const _MaintenancePage({
     required this.sections,
@@ -936,64 +371,65 @@ class _MaintenancePage extends StatelessWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
+    final hasAnyItems = sections.any((section) => section.items.isNotEmpty);
 
     return ListView(
       key: const PageStorageKey<String>(
         'weekly_review_maintenance_list',
       ),
       padding: EdgeInsets.fromLTRB(
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceXs,
-        TasklyTokens.of(context).spaceLg,
-        TasklyTokens.of(context).spaceXl,
+        tokens.spaceLg,
+        tokens.spaceXs,
+        tokens.spaceLg,
+        tokens.spaceXl,
       ),
       children: [
         Text(
           l10n.weeklyReviewMaintenanceTitle,
           style: theme.textTheme.titleLarge,
         ),
-        SizedBox(height: TasklyTokens.of(context).spaceSm),
+        SizedBox(height: tokens.spaceSm),
         Text(
           l10n.weeklyReviewMaintenanceCheckSubtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: scheme.onSurfaceVariant,
           ),
         ),
-        SizedBox(height: TasklyTokens.of(context).spaceSm),
-        for (final section in sections) ...[
-          Text(
-            _sectionTitle(l10n, section.type),
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(height: TasklyTokens.of(context).spaceSm),
-          if (section.items.isEmpty)
-            Padding(
-              padding: EdgeInsets.only(
-                bottom: TasklyTokens.of(context).spaceSm,
-              ),
-              child: Text(
-                _sectionEmptyMessage(l10n, section.type),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
+        SizedBox(height: tokens.spaceSm),
+        if (!hasAnyItems)
+          _MaintenanceAllClearCard(
+            title: l10n.weeklyReviewMaintenanceAllClearTitle,
+            subtitle: l10n.weeklyReviewMaintenanceAllClearSubtitle,
+          )
+        else
+          ...sections
+              .where((section) => section.items.isNotEmpty)
+              .map(
+                (section) => Padding(
+                  padding: EdgeInsets.only(bottom: tokens.spaceSm),
+                  child: _MaintenanceSectionCard(
+                    title: _sectionTitle(l10n, section.type),
+                    icon: _sectionIcon(section.type),
+                    accent: _sectionAccent(context, section.type),
+                    itemCount: section.items.length,
+                    children: section.items
+                        .map(
+                          (item) => Padding(
+                            padding: EdgeInsets.only(bottom: tokens.spaceSm),
+                            child: _MaintenanceItem(
+                              title: _itemTitle(l10n, item),
+                              description: _itemDescription(l10n, item),
+                              accent: _sectionAccent(context, section.type),
+                              badgeLabel: _itemBadgeLabel(l10n, item),
+                              onTap: _onItemTap(context, item),
+                            ),
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
                 ),
               ),
-            )
-          else
-            ...section.items.map(
-              (item) => Padding(
-                padding: EdgeInsets.only(
-                  bottom: TasklyTokens.of(context).spaceSm,
-                ),
-                child: _MaintenanceItem(
-                  title: _itemTitle(l10n, item),
-                  description: _itemDescription(l10n, item),
-                ),
-              ),
-            ),
-          SizedBox(height: TasklyTokens.of(context).spaceSm),
-        ],
       ],
     );
   }
@@ -1009,20 +445,6 @@ class _MaintenancePage extends StatelessWidget {
         l10n.weeklyReviewStaleTitle,
       WeeklyReviewMaintenanceSectionType.frequentlySnoozed =>
         l10n.weeklyReviewFrequentSnoozedTitle,
-    };
-  }
-
-  String _sectionEmptyMessage(
-    AppLocalizations l10n,
-    WeeklyReviewMaintenanceSectionType type,
-  ) {
-    return switch (type) {
-      WeeklyReviewMaintenanceSectionType.deadlineRisk =>
-        l10n.weeklyReviewDeadlineRiskEmptyMessage,
-      WeeklyReviewMaintenanceSectionType.staleItems =>
-        l10n.weeklyReviewStaleItemsEmptyMessage,
-      WeeklyReviewMaintenanceSectionType.frequentlySnoozed =>
-        l10n.weeklyReviewFrequentSnoozedEmptyMessage,
     };
   }
 
@@ -1062,6 +484,65 @@ class _MaintenancePage extends StatelessWidget {
     };
   }
 
+  IconData _sectionIcon(WeeklyReviewMaintenanceSectionType type) {
+    return switch (type) {
+      WeeklyReviewMaintenanceSectionType.deadlineRisk =>
+        Icons.warning_amber_rounded,
+      WeeklyReviewMaintenanceSectionType.staleItems =>
+        Icons.hourglass_bottom_rounded,
+      WeeklyReviewMaintenanceSectionType.frequentlySnoozed =>
+        Icons.snooze_rounded,
+    };
+  }
+
+  Color _sectionAccent(
+    BuildContext context,
+    WeeklyReviewMaintenanceSectionType type,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    return switch (type) {
+      WeeklyReviewMaintenanceSectionType.deadlineRisk => scheme.error,
+      WeeklyReviewMaintenanceSectionType.staleItems => scheme.tertiary,
+      WeeklyReviewMaintenanceSectionType.frequentlySnoozed => scheme.secondary,
+    };
+  }
+
+  String? _itemBadgeLabel(
+    AppLocalizations l10n,
+    WeeklyReviewMaintenanceItem item,
+  ) {
+    return switch (item) {
+      WeeklyReviewDeadlineRiskItem(:final dueInDays) => _dueLabel(
+        l10n,
+        dueInDays,
+      ),
+      WeeklyReviewStaleItem(:final thresholdDays) => l10n.daysCountLabel(
+        thresholdDays,
+      ),
+      WeeklyReviewFrequentSnoozedItem(:final snoozeCount) => '${snoozeCount}x',
+    };
+  }
+
+  VoidCallback? _onItemTap(
+    BuildContext context,
+    WeeklyReviewMaintenanceItem item,
+  ) {
+    final entityId = item.entityId;
+    final attentionType = item.entityType;
+    final routeType = _routeEntityType(attentionType);
+    if (entityId == null || routeType == null) return null;
+    return () => Routing.toEntity(context, routeType, entityId);
+  }
+
+  EntityType? _routeEntityType(AttentionEntityType? attentionType) {
+    return switch (attentionType) {
+      AttentionEntityType.task => EntityType.task,
+      AttentionEntityType.project => EntityType.project,
+      AttentionEntityType.value => EntityType.value,
+      _ => null,
+    };
+  }
+
   String _dueLabel(AppLocalizations l10n, int? dueInDays) {
     return switch (dueInDays) {
       null => l10n.weeklyReviewDueSoonLabel,
@@ -1077,37 +558,254 @@ class _MaintenanceItem extends StatelessWidget {
   const _MaintenanceItem({
     required this.title,
     required this.description,
+    required this.accent,
+    this.badgeLabel,
+    this.onTap,
   });
 
   final String title;
   final String description;
+  final Color accent;
+  final String? badgeLabel;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
+    final cardColor = scheme.surfaceContainerLowest;
+    final borderColor = scheme.outlineVariant.withValues(alpha: 0.6);
+    final isInteractive = onTap != null;
+
+    return Material(
+      color: cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
+        side: BorderSide(color: borderColor),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.spaceLg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (badgeLabel != null)
+                    _MaintenanceBadge(
+                      label: badgeLabel!,
+                      accent: accent,
+                    ),
+                  if (isInteractive)
+                    Padding(
+                      padding: EdgeInsets.only(left: tokens.spaceXs),
+                      child: Icon(
+                        Icons.chevron_right,
+                        size: tokens.spaceMd,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+              SizedBox(height: tokens.spaceSm),
+              Text(
+                description,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MaintenanceSectionCard extends StatelessWidget {
+  const _MaintenanceSectionCard({
+    required this.title,
+    required this.icon,
+    required this.accent,
+    required this.itemCount,
+    required this.children,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color accent;
+  final int itemCount;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final countLabel = context.l10n.itemsCountLabel(itemCount);
 
     return Container(
-      padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
+      padding: EdgeInsets.all(tokens.spaceLg),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
-        border: Border.all(color: scheme.outlineVariant.withOpacity(0.6)),
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(tokens.radiusXxl),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.shadow.withValues(alpha: 0.06),
+            blurRadius: tokens.spaceLg,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w700,
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(tokens.radiusLg),
+                ),
+                child: Icon(icon, color: accent),
+              ),
+              SizedBox(width: tokens.spaceSm),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spaceSm,
+                  vertical: tokens.spaceXxs,
+                ),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(tokens.radiusPill),
+                ),
+                child: Text(
+                  countLabel,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spaceSm),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _MaintenanceBadge extends StatelessWidget {
+  const _MaintenanceBadge({
+    required this.label,
+    required this.accent,
+  });
+
+  final String label;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceSm,
+        vertical: tokens.spaceXxs,
+      ),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(tokens.radiusPill),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: accent,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _MaintenanceAllClearCard extends StatelessWidget {
+  const _MaintenanceAllClearCard({
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: EdgeInsets.all(tokens.spaceLg),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(tokens.radiusXxl),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(tokens.radiusLg),
+            ),
+            child: Icon(
+              Icons.check_circle,
+              color: scheme.primary,
             ),
           ),
-          SizedBox(height: TasklyTokens.of(context).spaceSm),
-          Text(
-            description,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
+          SizedBox(width: tokens.spaceSm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: tokens.spaceXxs),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

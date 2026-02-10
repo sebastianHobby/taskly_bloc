@@ -220,39 +220,31 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpForStream();
 
-    final l10n = await l10nFor();
-    expect(find.text(l10n.weeklyReviewTitle), findsOneWidget);
+    expect(
+      find.byKey(const PageStorageKey<String>('weekly_review_page_view')),
+      findsOneWidget,
+    );
   });
 
-  testWidgetsSafe(
-    'shows check-in page after swiping from values snapshot',
-    (tester) async {
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      await tester.pump();
+  testWidgetsSafe('shows check-in page when loaded', (tester) async {
+    final now = DateTime(2025, 1, 15, 9);
+    when(() => valueRepository.getAll()).thenAnswer(
+      (_) async => [
+        Value(
+          id: 'value-1',
+          createdAt: now.toUtc(),
+          updatedAt: now.toUtc(),
+          name: 'Focus',
+        ),
+      ],
+    );
 
-      final now = DateTime(2025, 1, 15, 9);
-      when(() => valueRepository.getAll()).thenAnswer(
-        (_) async => [
-          Value(
-            id: 'value-1',
-            createdAt: now.toUtc(),
-            updatedAt: now.toUtc(),
-            name: 'Focus',
-          ),
-        ],
-      );
+    await pumpModal(tester);
+    await tester.tap(find.text('Open'));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpForStream();
 
-      await pumpModal(tester);
-      await tester.tap(find.text('Open'));
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.pumpForStream();
-
-      final l10n = await l10nFor();
-      await tester.drag(find.byType(PageView), const Offset(-500, 0));
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.text(l10n.weeklyReviewCheckInPromptTitle), findsOneWidget);
-    },
-  );
+    final l10n = await l10nFor();
+    expect(find.text(l10n.weeklyReviewCheckInPromptTitle), findsOneWidget);
+  });
 }

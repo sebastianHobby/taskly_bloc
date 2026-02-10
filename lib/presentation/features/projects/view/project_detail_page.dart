@@ -1115,7 +1115,6 @@ enum _ProjectTaskSortOrder {
   alphabetical,
   priority,
   dueDate,
-  valuePriority,
   valueName,
 }
 
@@ -1127,7 +1126,6 @@ extension _ProjectTaskSortOrderLabels on _ProjectTaskSortOrder {
       _ProjectTaskSortOrder.alphabetical => l10n.sortAlphabetical,
       _ProjectTaskSortOrder.priority => l10n.sortPriority,
       _ProjectTaskSortOrder.dueDate => l10n.sortDueDate,
-      _ProjectTaskSortOrder.valuePriority => l10n.sortValuePriority,
       _ProjectTaskSortOrder.valueName => l10n.sortValueName,
     };
   }
@@ -1168,20 +1166,6 @@ List<Task> _sortTasks(List<Task> tasks, _ProjectTaskSortOrder order) {
     return byName(a, b);
   }
 
-  int byValuePriority(Task a, Task b) {
-    final byPrimary = _compareValuesByPriority(
-      a.effectivePrimaryValue,
-      b.effectivePrimaryValue,
-    );
-    if (byPrimary != 0) return byPrimary;
-    final bySecondary = _compareValueListsByPriority(
-      a.effectiveSecondaryValues,
-      b.effectiveSecondaryValues,
-    );
-    if (bySecondary != 0) return bySecondary;
-    return byName(a, b);
-  }
-
   int byValueName(Task a, Task b) {
     final byPrimary = _compareValuesByName(
       a.effectivePrimaryValue,
@@ -1203,23 +1187,11 @@ List<Task> _sortTasks(List<Task> tasks, _ProjectTaskSortOrder order) {
       _ProjectTaskSortOrder.alphabetical => byName,
       _ProjectTaskSortOrder.priority => byPriority,
       _ProjectTaskSortOrder.dueDate => byDueDate,
-      _ProjectTaskSortOrder.valuePriority => byValuePriority,
       _ProjectTaskSortOrder.valueName => byValueName,
       _ProjectTaskSortOrder.listOrder => byName,
     },
   );
   return sorted;
-}
-
-int _compareValueListsByPriority(List<Value> a, List<Value> b) {
-  final maxLen = a.length > b.length ? a.length : b.length;
-  for (var i = 0; i < maxLen; i++) {
-    final aValue = i < a.length ? a[i] : null;
-    final bValue = i < b.length ? b[i] : null;
-    final compare = _compareValuesByPriority(aValue, bValue);
-    if (compare != 0) return compare;
-  }
-  return 0;
 }
 
 int _compareValueListsByName(List<Value> a, List<Value> b) {
@@ -1231,16 +1203,6 @@ int _compareValueListsByName(List<Value> a, List<Value> b) {
     if (compare != 0) return compare;
   }
   return 0;
-}
-
-int _compareValuesByPriority(Value? a, Value? b) {
-  if (a == null && b == null) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
-
-  final byPriority = b.priority.weight.compareTo(a.priority.weight);
-  if (byPriority != 0) return byPriority;
-  return _compareValueNames(a, b);
 }
 
 int _compareValuesByName(Value? a, Value? b) {

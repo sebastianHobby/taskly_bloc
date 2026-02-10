@@ -34,8 +34,6 @@ class AllocationParameters {
     required this.readinessFilter,
     required this.maxTasks,
     this.taskUrgencyThresholdDays = 3,
-    this.keepValuesInBalance = false,
-    this.completionsByValue = const {},
     this.routineSelectionsByValue = const {},
   });
 
@@ -82,13 +80,6 @@ class AllocationParameters {
 
   /// Days threshold for task urgency.
   final int taskUrgencyThresholdDays;
-
-  /// Whether the engine may use completion history to do bounded balancing.
-  final bool keepValuesInBalance;
-
-  /// Recent completions by value ID (pre-computed for Reflector mode).
-  /// Passed in from orchestrator to avoid async in allocate().
-  final Map<String, double> completionsByValue;
 
   /// Routine selections for today by value ID.
   final Map<String, int> routineSelectionsByValue;

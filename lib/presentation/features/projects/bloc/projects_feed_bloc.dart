@@ -245,7 +245,6 @@ class ProjectsFeedBloc extends Bloc<ProjectsFeedEvent, ProjectsFeedState> {
       ProjectsSortOrder.alphabetical => _compareByName(a, b),
       ProjectsSortOrder.priority => _compareByPriority(a, b),
       ProjectsSortOrder.dueDate => _compareByDueDate(a, b),
-      ProjectsSortOrder.valuePriority => _compareByValuePriority(a, b),
       ProjectsSortOrder.valueName => _compareByValueName(a, b),
     };
   }
@@ -334,15 +333,6 @@ int _compareByDueDate(_ProjectAggregate a, _ProjectAggregate b) {
   return _compareByName(a, b);
 }
 
-int _compareByValuePriority(_ProjectAggregate a, _ProjectAggregate b) {
-  final byValue = _compareValuesByPriority(
-    a.project?.primaryValue,
-    b.project?.primaryValue,
-  );
-  if (byValue != 0) return byValue;
-  return _compareByName(a, b);
-}
-
 int _compareByValueName(_ProjectAggregate a, _ProjectAggregate b) {
   final byValue = _compareValuesByName(
     a.project?.primaryValue,
@@ -352,16 +342,6 @@ int _compareByValueName(_ProjectAggregate a, _ProjectAggregate b) {
   return _compareByName(a, b);
 }
 
-int _compareValuesByPriority(Value? a, Value? b) {
-  if (a == null && b == null) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
-
-  final byPriority = b.priority.weight.compareTo(a.priority.weight);
-  if (byPriority != 0) return byPriority;
-  return _compareValueNames(a, b);
-}
-
 int _compareValuesByName(Value? a, Value? b) {
   if (a == null && b == null) return 0;
   if (a == null) return 1;
@@ -369,7 +349,7 @@ int _compareValuesByName(Value? a, Value? b) {
 
   final byName = _compareValueNames(a, b);
   if (byName != 0) return byName;
-  return b.priority.weight.compareTo(a.priority.weight);
+  return 0;
 }
 
 int _compareValueNames(Value a, Value b) {

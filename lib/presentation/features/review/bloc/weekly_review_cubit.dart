@@ -14,9 +14,7 @@ import 'package:taskly_core/logging.dart';
 
 class WeeklyReviewConfig {
   WeeklyReviewConfig({
-    required this.valuesSummaryEnabled,
-    required this.valuesWindowWeeks,
-    required this.valueWinsCount,
+    required this.checkInWindowWeeks,
     required this.maintenanceEnabled,
     required this.showDeadlineRisk,
     required this.showStaleItems,
@@ -29,9 +27,7 @@ class WeeklyReviewConfig {
 
   factory WeeklyReviewConfig.fromSettings(GlobalSettings settings) {
     return WeeklyReviewConfig(
-      valuesSummaryEnabled: settings.valuesSummaryEnabled,
-      valuesWindowWeeks: settings.valuesSummaryWindowWeeks,
-      valueWinsCount: settings.valuesSummaryWinsCount,
+      checkInWindowWeeks: defaultCheckInWindowWeeks,
       maintenanceEnabled: settings.maintenanceEnabled,
       showDeadlineRisk: settings.maintenanceDeadlineRiskEnabled,
       showStaleItems: settings.maintenanceStaleEnabled,
@@ -44,9 +40,7 @@ class WeeklyReviewConfig {
     );
   }
 
-  final bool valuesSummaryEnabled;
-  final int valuesWindowWeeks;
-  final int valueWinsCount;
+  final int checkInWindowWeeks;
   final bool maintenanceEnabled;
   final bool showDeadlineRisk;
   final bool showStaleItems;
@@ -55,53 +49,11 @@ class WeeklyReviewConfig {
   final int deadlineRiskDueWithinDays;
   final int deadlineRiskMinUnscheduledCount;
   final bool showFrequentSnoozed;
+
+  static const int defaultCheckInWindowWeeks = 4;
 }
 
 enum WeeklyReviewStatus { loading, ready, failure }
-
-class WeeklyReviewValueShare {
-  const WeeklyReviewValueShare({
-    required this.value,
-    required this.completionCount,
-    required this.actualPercent,
-    required this.expectedPercent,
-  });
-
-  final Value value;
-  final int completionCount;
-  final double actualPercent;
-  final double expectedPercent;
-
-  double get deltaPercent => actualPercent - expectedPercent;
-}
-
-class WeeklyReviewValuesSummary {
-  const WeeklyReviewValuesSummary({
-    required this.shares,
-    required this.taskCompletions,
-    required this.routineCompletions,
-    required this.alignedCompletions,
-    required this.hasValues,
-    required this.hasCompletions,
-  });
-
-  final List<WeeklyReviewValueShare> shares;
-  final int taskCompletions;
-  final int routineCompletions;
-  final int alignedCompletions;
-  final bool hasValues;
-  final bool hasCompletions;
-}
-
-class WeeklyReviewValueWin {
-  const WeeklyReviewValueWin({
-    required this.valueName,
-    required this.completionCount,
-  });
-
-  final String? valueName;
-  final int completionCount;
-}
 
 class WeeklyReviewRatingEntry {
   const WeeklyReviewRatingEntry({
@@ -206,9 +158,15 @@ enum WeeklyReviewMaintenanceSectionType {
 }
 
 sealed class WeeklyReviewMaintenanceItem {
-  const WeeklyReviewMaintenanceItem({required this.name});
+  const WeeklyReviewMaintenanceItem({
+    required this.name,
+    this.entityId,
+    this.entityType,
+  });
 
   final String? name;
+  final String? entityId;
+  final AttentionEntityType? entityType;
 }
 
 final class WeeklyReviewDeadlineRiskItem extends WeeklyReviewMaintenanceItem {
@@ -216,6 +174,8 @@ final class WeeklyReviewDeadlineRiskItem extends WeeklyReviewMaintenanceItem {
     required super.name,
     required this.dueInDays,
     required this.unscheduledCount,
+    super.entityId,
+    super.entityType,
   });
 
   final int? dueInDays;
@@ -226,6 +186,8 @@ final class WeeklyReviewStaleItem extends WeeklyReviewMaintenanceItem {
   const WeeklyReviewStaleItem({
     required super.name,
     required this.thresholdDays,
+    super.entityId,
+    super.entityType,
   });
 
   final int thresholdDays;
@@ -237,6 +199,8 @@ final class WeeklyReviewFrequentSnoozedItem
     required super.name,
     required this.snoozeCount,
     required this.totalSnoozeDays,
+    super.entityId,
+    super.entityType,
   });
 
   final int snoozeCount;
@@ -257,8 +221,6 @@ class WeeklyReviewState {
   const WeeklyReviewState({
     this.status = WeeklyReviewStatus.loading,
     this.ratingsSummary,
-    this.valuesSummary,
-    this.valueWins = const [],
     this.maintenanceSections = const [],
     this.evidence,
     this.error,
@@ -266,8 +228,6 @@ class WeeklyReviewState {
 
   final WeeklyReviewStatus status;
   final WeeklyReviewRatingsSummary? ratingsSummary;
-  final WeeklyReviewValuesSummary? valuesSummary;
-  final List<WeeklyReviewValueWin> valueWins;
   final List<WeeklyReviewMaintenanceSection> maintenanceSections;
   final WeeklyReviewEvidenceState? evidence;
   final Object? error;
@@ -275,8 +235,6 @@ class WeeklyReviewState {
   WeeklyReviewState copyWith({
     WeeklyReviewStatus? status,
     WeeklyReviewRatingsSummary? ratingsSummary,
-    WeeklyReviewValuesSummary? valuesSummary,
-    List<WeeklyReviewValueWin>? valueWins,
     List<WeeklyReviewMaintenanceSection>? maintenanceSections,
     WeeklyReviewEvidenceState? evidence,
     Object? error,
@@ -284,8 +242,6 @@ class WeeklyReviewState {
     return WeeklyReviewState(
       status: status ?? this.status,
       ratingsSummary: ratingsSummary ?? this.ratingsSummary,
-      valuesSummary: valuesSummary ?? this.valuesSummary,
-      valueWins: valueWins ?? this.valueWins,
       maintenanceSections: maintenanceSections ?? this.maintenanceSections,
       evidence: evidence ?? this.evidence,
       error: error,
@@ -385,9 +341,8 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       'weekly_review',
       'requested',
       fields: <String, Object?>{
-        'valuesSummaryEnabled': config.valuesSummaryEnabled,
         'maintenanceEnabled': config.maintenanceEnabled,
-        'valuesWindowWeeks': config.valuesWindowWeeks,
+        'checkInWindowWeeks': config.checkInWindowWeeks,
       },
     );
 
@@ -397,26 +352,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       final ratingsSummary = await _buildRatingsSummary(
         config: config,
       );
-
-      final shouldShowValuesSummary = config.valuesSummaryEnabled;
-      WeeklyReviewValuesSummary? summary;
-      List<WeeklyReviewValueWin> wins = const <WeeklyReviewValueWin>[];
-      if (shouldShowValuesSummary) {
-        final values = await _valueRepository.getAll();
-        final completionStats = await _buildValuesCompletionStats(
-          config: config,
-          values: values,
-        );
-        summary = _buildValuesSummary(
-          values: values,
-          stats: completionStats,
-        );
-        wins = _buildValueWins(
-          config: config,
-          values: values,
-          stats: completionStats,
-        );
-      }
 
       if (emit.isDone) return;
 
@@ -428,8 +363,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
         state.copyWith(
           status: WeeklyReviewStatus.ready,
           ratingsSummary: ratingsSummary,
-          valuesSummary: summary,
-          valueWins: wins,
           maintenanceSections: initialSections,
           error: null,
         ),
@@ -442,8 +375,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
           'ratingsEnabled': ratingsSummary.ratingsEnabled,
           'ratingsEntries': ratingsSummary.entries.length,
           'ratingsComplete': ratingsSummary.isComplete,
-          'valuesSummary': summary?.hasCompletions ?? false,
-          'valueWins': wins.length,
         },
       );
 
@@ -634,7 +565,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       entry.value.sort((a, b) => b.weekStartUtc.compareTo(a.weekStartUtc));
     }
 
-    final windowWeeks = config.valuesWindowWeeks.clamp(1, 12);
+    final windowWeeks = config.checkInWindowWeeks.clamp(1, 12);
     final days = windowWeeks * 7;
 
     final taskCompletions = await _analyticsService.getRecentCompletionsByValue(
@@ -913,164 +844,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     return a.name.compareTo(b.name);
   }
 
-  Future<_ValuesCompletionStats> _buildValuesCompletionStats({
-    required WeeklyReviewConfig config,
-    required List<Value> values,
-  }) async {
-    if (values.isEmpty) {
-      return const _ValuesCompletionStats.empty();
-    }
-
-    final weeks = config.valuesWindowWeeks.clamp(1, 12);
-    final days = weeks * 7;
-    final taskCompletionsByValue = await _analyticsService
-        .getRecentCompletionsByValue(days: days);
-    final taskCompletions = await _analyticsService
-        .getRecentTaskCompletionsCount(days: days);
-    final routineStats = await _buildRoutineCompletionsByValue(days: days);
-
-    final combinedByValue = <String, int>{
-      for (final value in values) value.id: 0,
-    };
-    for (final entry in taskCompletionsByValue.entries) {
-      final current = combinedByValue[entry.key];
-      if (current == null) continue;
-      combinedByValue[entry.key] = current + entry.value;
-    }
-    for (final entry in routineStats.counts.entries) {
-      final current = combinedByValue[entry.key];
-      if (current == null) continue;
-      combinedByValue[entry.key] = current + entry.value;
-    }
-
-    final alignedCompletions = combinedByValue.values.fold<int>(
-      0,
-      (sum, count) => sum + count,
-    );
-
-    return _ValuesCompletionStats(
-      completionsByValue: combinedByValue,
-      taskCompletions: taskCompletions,
-      routineCompletions: routineStats.totalCount,
-      alignedCompletions: alignedCompletions,
-    );
-  }
-
-  WeeklyReviewValuesSummary _buildValuesSummary({
-    required List<Value> values,
-    required _ValuesCompletionStats stats,
-  }) {
-    if (values.isEmpty) {
-      return WeeklyReviewValuesSummary(
-        shares: const [],
-        taskCompletions: stats.taskCompletions,
-        routineCompletions: stats.routineCompletions,
-        alignedCompletions: stats.alignedCompletions,
-        hasValues: false,
-        hasCompletions: false,
-      );
-    }
-
-    final totalWeight = values.fold<int>(
-      0,
-      (sum, value) => sum + value.priority.weight,
-    );
-    final alignedTotal = stats.alignedCompletions;
-
-    final shares =
-        values
-            .map((value) {
-              final count = stats.completionsByValue[value.id] ?? 0;
-              final actualPercent = alignedTotal == 0
-                  ? 0.0
-                  : count / alignedTotal * 100;
-              final expectedPercent = totalWeight == 0
-                  ? 0.0
-                  : value.priority.weight / totalWeight * 100;
-              return WeeklyReviewValueShare(
-                value: value,
-                completionCount: count,
-                actualPercent: actualPercent,
-                expectedPercent: expectedPercent,
-              );
-            })
-            .toList(growable: false)
-          ..sort((a, b) => b.actualPercent.compareTo(a.actualPercent));
-
-    return WeeklyReviewValuesSummary(
-      shares: shares,
-      taskCompletions: stats.taskCompletions,
-      routineCompletions: stats.routineCompletions,
-      alignedCompletions: stats.alignedCompletions,
-      hasValues: true,
-      hasCompletions: alignedTotal > 0,
-    );
-  }
-
-  List<WeeklyReviewValueWin> _buildValueWins({
-    required WeeklyReviewConfig config,
-    required List<Value> values,
-    required _ValuesCompletionStats stats,
-  }) {
-    if (values.isEmpty) return const <WeeklyReviewValueWin>[];
-    if (stats.completionsByValue.isEmpty) {
-      return const <WeeklyReviewValueWin>[];
-    }
-
-    final valueById = {for (final v in values) v.id: v};
-
-    final ranked = stats.completionsByValue.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    final maxCount = config.valueWinsCount.clamp(1, 5);
-
-    return ranked
-        .where((entry) => entry.value > 0)
-        .take(maxCount)
-        .map((entry) {
-          final valueName = valueById[entry.key]?.name;
-          return WeeklyReviewValueWin(
-            valueName: valueName,
-            completionCount: entry.value,
-          );
-        })
-        .toList(growable: false);
-  }
-
-  Future<_RoutineCompletionStats> _buildRoutineCompletionsByValue({
-    required int days,
-  }) async {
-    final routines = await _routineRepository.getAll(includeInactive: true);
-    if (routines.isEmpty) return const _RoutineCompletionStats.empty();
-
-    final routineById = {for (final routine in routines) routine.id: routine};
-    final completions = await _routineRepository.getCompletions();
-    if (completions.isEmpty) return const _RoutineCompletionStats.empty();
-
-    final nowLocal = _nowService.nowLocal();
-    final endDay = dateOnly(nowLocal);
-    final startDay = endDay.subtract(Duration(days: days - 1));
-
-    final counts = <String, int>{};
-    var totalCount = 0;
-
-    for (final completion in completions) {
-      final routine = routineById[completion.routineId];
-      if (routine == null) continue;
-      final completedDay = dateOnly(completion.completedAtUtc.toLocal());
-      if (completedDay.isBefore(startDay) || completedDay.isAfter(endDay)) {
-        continue;
-      }
-      totalCount += 1;
-      counts[routine.valueId] = (counts[routine.valueId] ?? 0) + 1;
-    }
-
-    return _RoutineCompletionStats(
-      counts: counts,
-      totalCount: totalCount,
-    );
-  }
-
   Future<Map<String, List<double>>> _buildCompletionTrends({
     required List<Value> values,
     required int weeks,
@@ -1264,6 +1037,8 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       items.add(
         WeeklyReviewFrequentSnoozedItem(
           name: task.name,
+          entityId: task.id,
+          entityType: AttentionEntityType.task,
           snoozeCount: stats.snoozeCount,
           totalSnoozeDays: stats.totalSnoozeDays,
         ),
@@ -1285,6 +1060,8 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
     return WeeklyReviewDeadlineRiskItem(
       name: name,
+      entityId: item.entityId,
+      entityType: item.entityType,
       dueInDays: dueInDays,
       unscheduledCount: unscheduled,
     );
@@ -1305,6 +1082,8 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
     return WeeklyReviewStaleItem(
       name: name,
+      entityId: item.entityId,
+      entityType: item.entityType,
       thresholdDays: thresholdDays,
     );
   }
@@ -1314,38 +1093,4 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
   ) {
     return _buildMaintenanceSections(const [], config);
   }
-}
-
-class _ValuesCompletionStats {
-  const _ValuesCompletionStats({
-    required this.completionsByValue,
-    required this.taskCompletions,
-    required this.routineCompletions,
-    required this.alignedCompletions,
-  });
-
-  const _ValuesCompletionStats.empty()
-    : completionsByValue = const <String, int>{},
-      taskCompletions = 0,
-      routineCompletions = 0,
-      alignedCompletions = 0;
-
-  final Map<String, int> completionsByValue;
-  final int taskCompletions;
-  final int routineCompletions;
-  final int alignedCompletions;
-}
-
-class _RoutineCompletionStats {
-  const _RoutineCompletionStats({
-    required this.counts,
-    required this.totalCount,
-  });
-
-  const _RoutineCompletionStats.empty()
-    : counts = const <String, int>{},
-      totalCount = 0;
-
-  final Map<String, int> counts;
-  final int totalCount;
 }

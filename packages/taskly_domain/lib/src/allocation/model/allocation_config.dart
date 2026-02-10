@@ -43,7 +43,7 @@ abstract class AllocationConfig with _$AllocationConfig {
     @Default(DisplaySettings()) DisplaySettings displaySettings,
 
     /// What signal drives suggestion weighting.
-    @Default(SuggestionSignal.behaviorBased) SuggestionSignal suggestionSignal,
+    @Default(SuggestionSignal.ratingsBased) SuggestionSignal suggestionSignal,
   }) = _AllocationConfig;
 
   factory AllocationConfig.fromJson(Map<String, dynamic> json) =>

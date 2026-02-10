@@ -17,7 +17,7 @@ Short version:
 - **My Day** is a curated, stable focus list for today. It is not exhaustive.
 - **Plan My Day** is a ritual flow that helps the user select a small set of
   tasks (and routines) for today.
-- **Suggested picks** provide calm, values-led recommendations to seed the
+- **Suggested picks** provide calm, ratings-led recommendations to seed the
   ritual.
 
 ## 2) High-level architecture (layers + boundaries)
@@ -119,7 +119,7 @@ Key integration facts:
 - Suggested picks are **ephemeral**; only the user selection is persisted.
 - Routine picks are stored in `my_day_picks` using `routine_id` (see
   [../../product/SPEC_ROUTINES.md](../../product/SPEC_ROUTINES.md)).
-- If enabled, routine selections decrement value quotas used by the allocator.
+- Routine selections decrement value quotas used by the allocator.
 - My Day renders routine picks inline with tasks (distinct visual treatment).
 
 ## 6) Guardrails to keep in mind

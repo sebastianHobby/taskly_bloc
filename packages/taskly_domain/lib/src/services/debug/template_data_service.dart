@@ -310,47 +310,50 @@ class TemplateDataService {
     final today = dateOnly(_clock.nowUtc());
     DateTime day(int offset) => today.add(Duration(days: offset));
 
-    final projectSeeds = <({
-      String name,
-      String description,
-      int priority,
-      int startOffset,
-      int deadlineOffset,
-      String valueName,
-    })>[
-      (
-        name: 'Learning',
-        description: 'Courses, reading, and study sessions',
-        priority: 1,
-        startOffset: -7,
-        deadlineOffset: 21,
-        valueName: 'Learning',
-      ),
-      (
-        name: 'Self-care',
-        description: 'Appointments, movement, and daily energy',
-        priority: 2,
-        startOffset: -10,
-        deadlineOffset: 30,
-        valueName: 'Health',
-      ),
-      (
-        name: 'Work',
-        description: 'Planning, updates, and delivery',
-        priority: 1,
-        startOffset: -5,
-        deadlineOffset: 14,
-        valueName: 'Career',
-      ),
-      (
-        name: 'People',
-        description: 'Family, friends, and invites',
-        priority: 3,
-        startOffset: -3,
-        deadlineOffset: 10,
-        valueName: 'Social',
-      ),
-    ];
+    final projectSeeds =
+        <
+          ({
+            String name,
+            String description,
+            int priority,
+            int startOffset,
+            int deadlineOffset,
+            String valueName,
+          })
+        >[
+          (
+            name: 'Learning',
+            description: 'Courses, reading, and study sessions',
+            priority: 1,
+            startOffset: -7,
+            deadlineOffset: 21,
+            valueName: 'Learning',
+          ),
+          (
+            name: 'Self-care',
+            description: 'Appointments, movement, and daily energy',
+            priority: 2,
+            startOffset: -10,
+            deadlineOffset: 30,
+            valueName: 'Health',
+          ),
+          (
+            name: 'Work',
+            description: 'Planning, updates, and delivery',
+            priority: 1,
+            startOffset: -5,
+            deadlineOffset: 14,
+            valueName: 'Career',
+          ),
+          (
+            name: 'People',
+            description: 'Family, friends, and invites',
+            priority: 3,
+            startOffset: -3,
+            deadlineOffset: 10,
+            valueName: 'Social',
+          ),
+        ];
 
     for (final seed in projectSeeds) {
       final valueId = valueIdByName[seed.valueName];

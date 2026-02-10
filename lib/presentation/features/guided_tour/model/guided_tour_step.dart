@@ -103,12 +103,12 @@ List<GuidedTourStep> buildGuidedTourSteps() {
       id: 'plan_my_day_values',
       route: '/my-day',
       title: 'Suggestions by value',
-      body: "Add value-aligned tasks to balance today's plan.",
+      body: 'Add value-aligned tasks based on your latest ratings.',
       kind: GuidedTourStepKind.coachmark,
       coachmark: GuidedTourCoachmark(
         targetId: 'plan_my_day_values_card',
         title: 'Suggestions by value',
-        body: "Add value-aligned tasks to balance today's plan.",
+        body: 'Add value-aligned tasks based on your latest ratings.',
       ),
     ),
     GuidedTourStep(
@@ -159,8 +159,8 @@ List<GuidedTourStep> buildGuidedTourSteps() {
       route: '/projects',
       title: 'Values-led suggestions',
       body:
-          'Assign a value to each project. Taskly uses those values as the '
-          'foundation for suggestions.',
+          'Assign a value to each project. Taskly uses your ratings to guide '
+          'suggestions.',
       kind: GuidedTourStepKind.card,
     ),
     GuidedTourStep(
@@ -168,9 +168,8 @@ List<GuidedTourStep> buildGuidedTourSteps() {
       route: '/project/${DemoDataProvider.demoProjectGymId}/detail',
       title: 'How suggestions work',
       body:
-          'Taskly balances suggestions using value priorities. If a value has '
-          'fewer tasks completed than expected for its value priority, it gets '
-          'more suggestions.',
+          'Taskly uses your weekly value ratings to guide suggestions. Lower '
+          'ratings or downward trends can surface more tasks.',
       kind: GuidedTourStepKind.card,
     ),
     GuidedTourStep(

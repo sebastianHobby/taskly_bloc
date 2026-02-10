@@ -49,7 +49,6 @@ enum _MyDayMode { execute, plan }
 enum _MyDayMenuAction {
   density,
   selectMultiple,
-  settings,
 }
 
 class MyDayPage extends StatefulWidget {
@@ -61,7 +60,7 @@ class MyDayPage extends StatefulWidget {
 
 class _MyDayPageState extends State<MyDayPage> {
   _MyDayMode _mode = _MyDayMode.execute;
-  bool _showCompleted = false;
+  bool _showCompleted = true;
   _MyDayTaskSortOrder _sortOrder = _MyDayTaskSortOrder.defaultOrder;
 
   Future<void> _openNewTaskEditor(
@@ -197,6 +196,8 @@ class _MyDayPageState extends State<MyDayPage> {
             dayKeyService: context.read<HomeDayKeyService>(),
             temporalTriggerService: context.read<TemporalTriggerService>(),
             nowService: context.read<NowService>(),
+            valueRatingsRepository: context
+                .read<ValueRatingsRepositoryContract>(),
             demoModeService: context.read<DemoModeService>(),
             demoDataProvider: context.read<DemoDataProvider>(),
           ),
@@ -270,12 +271,6 @@ class _MyDayPageState extends State<MyDayPage> {
                                     context.l10n.selectMultipleLabel,
                                   ),
                                 ),
-                                PopupMenuItem(
-                                  value: _MyDayMenuAction.settings,
-                                  child: TasklyMenuItemLabel(
-                                    context.l10n.settingsTitle,
-                                  ),
-                                ),
                               ],
                               onSelected: (action) {
                                 switch (action) {
@@ -285,8 +280,6 @@ class _MyDayPageState extends State<MyDayPage> {
                                     context
                                         .read<SelectionBloc>()
                                         .enterSelectionMode();
-                                  case _MyDayMenuAction.settings:
-                                    Routing.toScreenKey(context, 'settings');
                                 }
                               },
                             ),

@@ -15,8 +15,7 @@ into an urgency/priority optimizer.
 
 Key goals:
 
-- Values-led distribution (proportional to value weights)
-- Optional, bounded value balancing (a gentle nudge)
+- Ratings-led distribution (based on weekly value ratings)
 - Explainability ("Why suggested") with stable reason codes
 - Offline-first: local DB remains the source of truth
 
@@ -31,7 +30,7 @@ Key goals:
 Primary entrypoints:
 
 - `TaskSuggestionService.getSnapshot(...)` produces the **Suggested** snapshot
-  (ephemeral suggestions + ranking/pooling/spotlight + snoozed filtering).
+  (ephemeral suggestions + ranking/pooling + snoozed filtering).
 - `AllocationOrchestrator.getSuggestedSnapshot(...)` computes the raw
   allocation used by the suggestion service.
 - `MyDayRepositoryContract.watchDay(dayKeyUtc)` provides the **persisted ritual
@@ -54,14 +53,12 @@ Ritual flow (Presentation)
     -> TaskRepository.getAll(incomplete)
     -> AllocationOrchestrator.getSuggestedSnapshot(...):
        -> repositories (tasks, projects, anchor state, settings)
-       -> build value weights (Value.priority OR weekly ratings)
-       -> (optional) AnalyticsService.getDailyCompletionsByValue()
+       -> build value weights (weekly ratings only)
        -> SuggestedPicksEngine.allocate(parameters)
        -> AllocationResult (allocatedTasks + excludedTasks + reasoning)
     -> filter snoozed tasks from suggested list
-    -> spotlight ordering (if top neglect >= 20%)
     -> per-value pooling + rank reindexing
-    -> TaskSuggestionSnapshot (suggested + deficits + spotlight id)
+    -> TaskSuggestionSnapshot (suggested + rating summaries)
   -> user selects tasks (including non-suggested due/starts/planned)
   -> optional: pass triage + routine selection counts by value to adjust quotas
   -> MyDayRepository.setDayPicks(dayKeyUtc, picks, ritualCompletedAtUtc)
@@ -100,32 +97,17 @@ Selection is then done per value using a calm tie-break sort:
 
 ### 4.1.1 Ratings-based signal (weekly values)
 
-When **Suggestion signal** is set to ratings-based:
+Suggested picks always use weekly value ratings:
 
-- Category weights come from weekly value ratings (1-8 scale).
-- Ratings are smoothed with EMA over a 4-week window (α = 0.40).
-- Value priority is ignored (ratings are the primary signal).
-- Ratings are required weekly; a 2-week grace window allows last ratings to
-  remain active before suggestions are blocked.
-- If ratings are missing or stale, allocation returns `requiresRatings = true`.
+- Category weights come from weekly value ratings (1-10 scale).
+- Ratings are averaged over a 4-week window (simple mean).
+- Ratings are required weekly; if no rated values exist, allocation returns
+  `requiresRatings = true`.
 
-### 4.2 Bounded value balancing ("Keep my values in balance")
+### 4.2 Value balancing (removed)
 
-Value balancing is **enabled by default** in behavior-based mode and is not
-user-tunable. The engine may perform a **bounded quota repair** pass:
-
-- Uses recent completion counts per value (via analytics) to identify values the
-  user has focused on less recently.
-- Completion history is smoothed with EMA (α = 0.20) over the lookback window
-  before computing deficits.
-- Computes deficits as `targetShare - actualShare` per value.
-- Performs a small, capped reallocation of **anchor quotas** toward the most
-  neglected values.
-- Move budget: `round(anchorCount * 0.25 * topNeglect)` clamped and then capped
-  by `max(1, round(valueCount / 2))`.
-
-This produces explainability via the reason code `neglectBalance` for any tasks
-that enter the selection due to the quota repair step.
+Value balancing based on recent completions is no longer part of the suggested
+picks model. Ratings are the only weighting signal.
 
 ### 4.3 Calm ordering (no multiplicative boosts)
 
@@ -146,24 +128,16 @@ an implicit global optimizer.
   anchors using the same calm ordering.
 - `readinessFilter` skips projects with no actionable tasks.
 
-### 4.5 Spotlight cue (ordering only)
+### 4.5 Spotlight cue (removed)
 
-When value balancing is enabled and a value deficit crosses the spotlight
-threshold (20%), the top task for the most-neglected value is **moved to the
-front** of the suggestion list. This does not change quotas; it is a visual
-ordering cue for the first row only.
-
-Plan My Day presentation mirrors this cue by pinning the spotlight value group
-first and surfacing a "Spotlight" badge on that value header while preserving
-the domain ordering within the group.
+The completion-based spotlight cue is no longer used.
 
 ### 4.6 Per-value suggestion pools (Plan My Day)
 
 For the Plan My Day ritual, suggested picks are now **pooled per value** to
 support progressive disclosure in the UI:
 
-- Each value gets a **default visible count** based on priority + neglect
-  status.
+- Each value gets a **default visible count** based on rating average + trend.
 - The suggestion service returns a **per-value pool** sized to
   `defaultVisible + 6` (showMoreIncrement = 3).
 - UI reveals the pool progressively ("Show more") without re-running allocation.
@@ -173,15 +147,7 @@ support progressive disclosure in the UI:
 
 User-facing setting:
 
-- **Suggestion signal** -> `AllocationConfig.suggestionSignal`
-  - Behavior-based (Completions + balance)
-  - Ratings-based (Values + weekly ratings)
 - **Suggested batch size** -> `AllocationConfig.suggestionsPerBatch`
-
-Internal default (not user-facing):
-
-- `AllocationConfig.strategySettings.enableNeglectWeighting` defaults to `true`
-  and controls whether bounded value balancing runs in behavior-based mode.
 
 Implementation notes:
 
@@ -227,7 +193,6 @@ Important reason codes:
 - `crossValue` -- task spans multiple values
 - `urgency` -- deadline is near
 - `priority` -- task has explicit priority metadata
-- `neglectBalance` -- selected due to bounded value balancing
 
 ## 7) Guardrails + failure modes
 
@@ -235,7 +200,6 @@ Important reason codes:
 - **ratings missing/stale** (ratings-based mode): allocation returns
   `requiresRatings = true`.
 - **maxTasks <= 0 / anchorCount == 0**: allocation returns no suggestions.
-- **No completion history**: balancing is disabled automatically.
 - **No eligible projects**: allocation returns no suggestions with exclusions.
 - **Category has no projects**: remaining anchors are filled from best remaining
   projects across other categories.

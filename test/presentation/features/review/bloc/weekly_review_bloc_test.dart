@@ -113,14 +113,12 @@ void main() {
   });
 
   blocTestSafe<WeeklyReviewBloc, WeeklyReviewState>(
-    'requested loads values summary when ratings disabled',
+    'requested loads ratings summary when values exist',
     build: buildBloc,
     act: (bloc) => bloc.add(
       WeeklyReviewRequested(
         WeeklyReviewConfig(
-          valuesSummaryEnabled: true,
-          valuesWindowWeeks: 4,
-          valueWinsCount: 2,
+          checkInWindowWeeks: 4,
           maintenanceEnabled: false,
           showDeadlineRisk: false,
           showStaleItems: false,
@@ -141,10 +139,11 @@ void main() {
       isA<WeeklyReviewState>()
           .having((s) => s.status, 'status', WeeklyReviewStatus.ready)
           .having(
-            (s) => s.valuesSummary?.hasCompletions,
-            'hasCompletions',
+            (s) => s.ratingsSummary?.ratingsEnabled,
+            'ratingsEnabled',
             true,
-          ),
+          )
+          .having((s) => s.ratingsSummary?.entries.length, 'entries', 1),
     ],
   );
 
@@ -157,9 +156,7 @@ void main() {
     act: (bloc) => bloc.add(
       WeeklyReviewRequested(
         WeeklyReviewConfig(
-          valuesSummaryEnabled: false,
-          valuesWindowWeeks: 4,
-          valueWinsCount: 2,
+          checkInWindowWeeks: 4,
           maintenanceEnabled: false,
           showDeadlineRisk: false,
           showStaleItems: false,
@@ -201,9 +198,7 @@ void main() {
     act: (bloc) => bloc.add(
       WeeklyReviewRequested(
         WeeklyReviewConfig(
-          valuesSummaryEnabled: true,
-          valuesWindowWeeks: 4,
-          valueWinsCount: 2,
+          checkInWindowWeeks: 4,
           maintenanceEnabled: true,
           showDeadlineRisk: true,
           showStaleItems: true,

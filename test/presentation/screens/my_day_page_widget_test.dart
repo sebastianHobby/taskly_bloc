@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../../helpers/test_imports.dart';
+import '../../mocks/feature_mocks.dart';
 import '../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
@@ -102,6 +103,7 @@ void main() {
   late MockProjectRepositoryContract projectRepository;
   late MockRoutineRepositoryContract routineRepository;
   late MockProjectAnchorStateRepositoryContract projectAnchorStateRepository;
+  late MockValueRatingsRepositoryContract valueRatingsRepository;
   late MockMyDayRepositoryContract myDayRepository;
   late MockSettingsRepositoryContract settingsRepository;
   late MockEditorLauncher editorLauncher;
@@ -136,6 +138,7 @@ void main() {
     projectRepository = MockProjectRepositoryContract();
     routineRepository = MockRoutineRepositoryContract();
     projectAnchorStateRepository = MockProjectAnchorStateRepositoryContract();
+    valueRatingsRepository = MockValueRatingsRepositoryContract();
     allocationOrchestrator = MockAllocationOrchestrator();
     occurrenceCommandService = MockOccurrenceCommandService();
     myDayRepository = MockMyDayRepositoryContract();
@@ -255,6 +258,12 @@ void main() {
     when(() => routineRepository.watchSkips()).thenAnswer(
       (_) => skipsSubject.stream,
     );
+    when(
+      () => valueRatingsRepository.getAll(weeks: any(named: 'weeks')),
+    ).thenAnswer((_) async => const <ValueWeeklyRating>[]);
+    when(
+      () => valueRatingsRepository.watchAll(weeks: any(named: 'weeks')),
+    ).thenAnswer((_) => Stream.value(const <ValueWeeklyRating>[]));
 
     when(() => projectRepository.getAll()).thenAnswer((_) async => []);
     when(() => projectRepository.getAll(any())).thenAnswer((_) async => []);
@@ -350,6 +359,7 @@ void main() {
       allocationOrchestrator: allocationOrchestrator,
       taskRepository: taskRepository,
       dayKeyService: dayKeyService,
+      valueRatingsRepository: valueRatingsRepository,
     );
 
     sessionStreamCacheManager = SessionStreamCacheManager(
@@ -481,6 +491,9 @@ void main() {
         ),
         RepositoryProvider<TaskRepositoryContract>.value(
           value: taskRepository,
+        ),
+        RepositoryProvider<ValueRatingsRepositoryContract>.value(
+          value: valueRatingsRepository,
         ),
         RepositoryProvider<RoutineRepositoryContract>.value(
           value: routineRepository,

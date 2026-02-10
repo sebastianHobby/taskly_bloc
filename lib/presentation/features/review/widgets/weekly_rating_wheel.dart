@@ -24,7 +24,7 @@ class WeeklyRatingWheel extends StatelessWidget {
   final void Function(String valueId, int rating) onRatingChanged;
   final bool enableTap;
 
-  static const double _hubRadiusFactor = 0.18;
+  static const double _hubRadiusFactor = 0.14;
   static const double _sliceGapRadians = 0;
   static const double _ringGap = 0;
 
@@ -80,7 +80,7 @@ class WeeklyRatingWheel extends StatelessWidget {
                     ).colorScheme.outlineVariant,
                     gridColor: Theme.of(
                       context,
-                    ).colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    ).colorScheme.outlineVariant.withValues(alpha: 0.25),
                   ),
                 ),
                 ..._buildIconOverlays(
@@ -144,11 +144,11 @@ class WeeklyRatingWheel extends StatelessWidget {
   }) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2;
-    final iconRadius = radius + 18;
+    final tokens = TasklyTokens.of(context);
+    final iconRadius = radius + tokens.spaceSm;
     final sliceAngle = (math.pi * 2) / entries.length;
     const startAngle = -math.pi / 2;
 
-    final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
     final overlays = <Widget>[];
 
@@ -162,27 +162,31 @@ class WeeklyRatingWheel extends StatelessWidget {
       final iconData = getIconDataFromName(entry.value.iconName) ?? Icons.star;
       final color = colors[i];
       final isSelected = entry.value.id == selectedValueId;
-      final scale = isSelected ? 1.1 : 1.0;
-      final background = isSelected ? scheme.surface : Colors.transparent;
+      final scale = isSelected ? 1.05 : 1.0;
+      final background = isSelected
+          ? scheme.surfaceContainerHighest
+          : Colors.transparent;
       final border = isSelected
           ? color.withValues(alpha: 0.6)
           : Colors.transparent;
       final iconColor = isSelected
           ? color
           : scheme.onSurfaceVariant.withValues(alpha: 0.7);
+      final iconSize = tokens.spaceMd2;
+      final targetSize = tokens.minTapTargetSize;
 
       overlays.add(
         Positioned(
-          left: iconOffset.dx - (tokens.spaceLg3 + tokens.spaceSm) / 2,
-          top: iconOffset.dy - (tokens.spaceLg3 + tokens.spaceSm) / 2,
+          left: iconOffset.dx - targetSize / 2,
+          top: iconOffset.dy - targetSize / 2,
           child: Transform.scale(
             scale: scale,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: () => onValueSelected(entry.value.id),
               child: Container(
-                width: tokens.spaceLg3 + tokens.spaceSm,
-                height: tokens.spaceLg3 + tokens.spaceSm,
+                width: targetSize,
+                height: targetSize,
                 decoration: BoxDecoration(
                   color: background,
                   shape: BoxShape.circle,
@@ -191,7 +195,7 @@ class WeeklyRatingWheel extends StatelessWidget {
                       ? [
                           BoxShadow(
                             color: color.withValues(alpha: 0.25),
-                            blurRadius: tokens.spaceSm,
+                            blurRadius: tokens.spaceXs2,
                             offset: const Offset(0, 4),
                           ),
                         ]
@@ -199,7 +203,7 @@ class WeeklyRatingWheel extends StatelessWidget {
                 ),
                 child: Icon(
                   iconData,
-                  size: tokens.spaceMd2,
+                  size: iconSize,
                   color: iconColor,
                 ),
               ),
@@ -257,31 +261,42 @@ class _WeeklyRatingWheelPainter extends CustomPainter {
       final rating = entries[sliceIndex].rating;
       final sliceStart = startAngle + sliceIndex * sliceAngle + gapAngle / 2;
       final sweep = sliceAngle - gapAngle;
+      final basePaint = Paint()
+        ..color = color.withValues(alpha: 0.12)
+        ..style = PaintingStyle.fill;
+      final rectOuter = Rect.fromCircle(center: center, radius: radius);
+      final rectInner = Rect.fromCircle(center: center, radius: hubRadius);
+      final basePath = Path()
+        ..addArc(rectOuter, sliceStart, sweep)
+        ..arcTo(rectInner, sliceStart + sweep, -sweep, false)
+        ..close();
+      canvas.drawPath(basePath, basePaint);
 
-      for (var ringIndex = 0; ringIndex < maxRating; ringIndex++) {
-        final innerRadius = hubRadius + ringIndex * (ringThickness + ringGap);
-        final outerRadius = innerRadius + ringThickness;
-        final rectOuter = Rect.fromCircle(center: center, radius: outerRadius);
-        final rectInner = Rect.fromCircle(center: center, radius: innerRadius);
-
-        final isFilled = rating >= ringIndex + 1;
-        final paint = Paint()
-          ..color = isFilled ? color.withOpacity(0.92) : color.withOpacity(0.14)
-          ..style = PaintingStyle.fill;
-
-        final path = Path()
-          ..addArc(rectOuter, sliceStart, sweep)
+      final clampedRating = rating.clamp(0, maxRating);
+      if (clampedRating > 0) {
+        final filledRadius =
+            hubRadius +
+            clampedRating * ringThickness +
+            math.max(0, clampedRating - 1) * ringGap;
+        final filledOuter = Rect.fromCircle(
+          center: center,
+          radius: filledRadius,
+        );
+        final filledPath = Path()
+          ..addArc(filledOuter, sliceStart, sweep)
           ..arcTo(rectInner, sliceStart + sweep, -sweep, false)
           ..close();
-
-        canvas.drawPath(path, paint);
+        final fillPaint = Paint()
+          ..color = color.withValues(alpha: 0.9)
+          ..style = PaintingStyle.fill;
+        canvas.drawPath(filledPath, fillPaint);
       }
     }
 
     final gridPaint = Paint()
       ..color = gridColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
+      ..strokeWidth = 0.9;
     for (var ringIndex = 1; ringIndex <= maxRating; ringIndex++) {
       final ringRadius = hubRadius + ringIndex * (ringThickness + ringGap);
       canvas.drawCircle(center, ringRadius, gridPaint);
@@ -302,7 +317,16 @@ class _WeeklyRatingWheelPainter extends CustomPainter {
     if (selectedIndex >= 0 && selectedIndex < entries.length) {
       final sliceStart = startAngle + selectedIndex * sliceAngle + gapAngle / 2;
       final sweep = sliceAngle - gapAngle;
-      final rectOuter = Rect.fromCircle(center: center, radius: radius);
+      final selectedRating = entries[selectedIndex].rating.clamp(0, maxRating);
+      final selectedOuterRadius = selectedRating == 0
+          ? radius
+          : hubRadius +
+                selectedRating * ringThickness +
+                math.max(0, selectedRating - 1) * ringGap;
+      final rectOuter = Rect.fromCircle(
+        center: center,
+        radius: selectedOuterRadius,
+      );
       final rectInner = Rect.fromCircle(center: center, radius: hubRadius);
       final path = Path()
         ..addArc(rectOuter, sliceStart, sweep)
@@ -310,16 +334,16 @@ class _WeeklyRatingWheelPainter extends CustomPainter {
         ..close();
 
       final glowPaint = Paint()
-        ..color = colors[selectedIndex].withOpacity(0.35)
+        ..color = colors[selectedIndex].withValues(alpha: 0.3)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 6
-        ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 6);
+        ..strokeWidth = 5
+        ..maskFilter = const MaskFilter.blur(BlurStyle.outer, 5);
       canvas.drawPath(path, glowPaint);
 
       final highlightPaint = Paint()
-        ..color = colors[selectedIndex].withOpacity(0.35)
+        ..color = colors[selectedIndex].withValues(alpha: 0.35)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2;
+        ..strokeWidth = 1.5;
       canvas.drawPath(path, highlightPaint);
     }
 

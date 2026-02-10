@@ -139,8 +139,7 @@ class ProjectEntityTile extends StatelessWidget {
                         _SelectionRailButton(
                           selected: _selected ?? false,
                           compact: _isCompact,
-                          onPressed:
-                              actions.onToggleSelected ?? actions.onTap,
+                          onPressed: actions.onToggleSelected ?? actions.onTap,
                         ),
                         SizedBox(width: selectionGap),
                       ],

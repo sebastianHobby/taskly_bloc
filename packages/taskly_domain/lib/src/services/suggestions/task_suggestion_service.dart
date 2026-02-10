@@ -5,6 +5,7 @@ import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/src/services/values/effective_values.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/time/clock.dart';
+import 'package:taskly_domain/time.dart' show dateOnly;
 import 'package:taskly_domain/telemetry.dart';
 
 final class SuggestedTask {
@@ -19,6 +20,16 @@ final class SuggestedTask {
   final int rank;
   final String? qualifyingValueId;
   final List<AllocationReasonCode> reasonCodes;
+}
+
+final class ValueRatingSummary {
+  const ValueRatingSummary({
+    required this.averageRating,
+    required this.trendDelta,
+  });
+
+  final double? averageRating;
+  final double? trendDelta;
 }
 
 final class TaskSuggestionSnapshot {
@@ -47,20 +58,25 @@ final class TaskSuggestionService {
   TaskSuggestionService({
     required AllocationOrchestrator allocationOrchestrator,
     required TaskRepositoryContract taskRepository,
+    required ValueRatingsRepositoryContract valueRatingsRepository,
     required HomeDayKeyService dayKeyService,
     Clock clock = systemClock,
   }) : _allocationOrchestrator = allocationOrchestrator,
        _taskRepository = taskRepository,
+       _valueRatingsRepository = valueRatingsRepository,
        _dayKeyService = dayKeyService,
        _clock = clock;
 
   final AllocationOrchestrator _allocationOrchestrator;
   final TaskRepositoryContract _taskRepository;
+  final ValueRatingsRepositoryContract _valueRatingsRepository;
   final HomeDayKeyService _dayKeyService;
   final Clock _clock;
 
-  static const double _spotlightDeficitThreshold = 0.20;
-  static const double _attentionDeficitThreshold = 0.20;
+  static const int _ratingsWindowWeeks = 4;
+  static const int _ratingsHistoryWeeks = 8;
+  static const double _trendEmphasisThreshold = -0.6;
+  static const double _lowAverageThreshold = 4.5;
   static const int _showMoreIncrement = 3;
   static const int _poolExtraCount = _showMoreIncrement * 2;
 
@@ -94,25 +110,20 @@ final class TaskSuggestionService {
             context: context,
           );
 
+    final ratingSummaries = await _buildRatingSummaries(
+      tasks: tasks,
+      nowUtc: resolvedNowUtc,
+    );
     final baseSuggested = _buildSuggested(
       allocation,
       excludedIds: snoozedIds,
     );
-    final spotlightValueId = _spotlightValueId(allocation);
-    final orderedSuggested = _applySpotlightOrder(
-      baseSuggested,
-      spotlightValueId: spotlightValueId,
-    );
-    final rankedSuggested = _applyRanks(orderedSuggested);
+    final rankedSuggested = _applyRanks(baseSuggested);
     final pooledSuggested = _applyPerValuePools(
       rankedSuggested,
-      deficits: allocation.reasoning.neglectDeficits,
+      ratingSummaries: ratingSummaries,
     );
     final suggested = _applyRanks(pooledSuggested);
-    final spotlightTaskId = _spotlightTaskId(
-      suggested,
-      spotlightValueId: spotlightValueId,
-    );
 
     return TaskSuggestionSnapshot(
       dayKeyUtc: dayKeyUtc,
@@ -122,7 +133,7 @@ final class TaskSuggestionService {
       requiresRatings: allocation.requiresRatings,
       neglectDeficits: allocation.reasoning.neglectDeficits,
       anchorProjectIds: allocation.anchorProjectIds,
-      spotlightTaskId: spotlightTaskId,
+      spotlightTaskId: null,
     );
   }
 
@@ -159,23 +170,6 @@ final class TaskSuggestionService {
     return suggested;
   }
 
-  List<SuggestedTask> _applySpotlightOrder(
-    List<SuggestedTask> suggested, {
-    required String? spotlightValueId,
-  }) {
-    if (spotlightValueId == null || suggested.isEmpty) return suggested;
-
-    final index = suggested.indexWhere(
-      (entry) => entry.qualifyingValueId == spotlightValueId,
-    );
-    if (index <= 0) return suggested;
-
-    final reordered = [...suggested];
-    final spotlightTask = reordered.removeAt(index);
-    reordered.insert(0, spotlightTask);
-    return reordered;
-  }
-
   List<SuggestedTask> _applyRanks(List<SuggestedTask> suggested) {
     return [
       for (var i = 0; i < suggested.length; i++)
@@ -190,7 +184,7 @@ final class TaskSuggestionService {
 
   List<SuggestedTask> _applyPerValuePools(
     List<SuggestedTask> suggested, {
-    required Map<String, double> deficits,
+    required Map<String, ValueRatingSummary> ratingSummaries,
   }) {
     if (suggested.isEmpty) return suggested;
 
@@ -199,14 +193,8 @@ final class TaskSuggestionService {
       final valueId = _qualifyingValueId(entry);
       if (valueId == null) continue;
       if (poolLimits.containsKey(valueId)) continue;
-      final value = _resolveValue(entry.task, valueId);
-      if (value == null) continue;
-      final deficit = deficits[valueId] ?? 0.0;
-      final attentionNeeded = deficit >= _attentionDeficitThreshold;
-      final defaultVisible = _defaultVisibleCount(
-        value.priority,
-        attentionNeeded: attentionNeeded,
-      );
+      final summary = ratingSummaries[valueId];
+      final defaultVisible = _defaultVisibleCount(summary);
       poolLimits[valueId] = defaultVisible + _poolExtraCount;
     }
 
@@ -228,15 +216,17 @@ final class TaskSuggestionService {
     return pooled;
   }
 
-  int _defaultVisibleCount(
-    ValuePriority priority, {
-    required bool attentionNeeded,
-  }) {
-    return switch (priority) {
-      ValuePriority.high => attentionNeeded ? 4 : 3,
-      ValuePriority.medium => attentionNeeded ? 3 : 2,
-      ValuePriority.low => attentionNeeded ? 2 : 1,
-    };
+  int _defaultVisibleCount(ValueRatingSummary? summary) {
+    final averageRating = summary?.averageRating;
+    if (averageRating == null) return 0;
+    final trendDelta = summary?.trendDelta;
+    if (trendDelta != null && trendDelta <= _trendEmphasisThreshold) {
+      return 3;
+    }
+    if (averageRating <= _lowAverageThreshold) {
+      return 2;
+    }
+    return 1;
   }
 
   String? _qualifyingValueId(SuggestedTask entry) {
@@ -245,29 +235,76 @@ final class TaskSuggestionService {
     return raw;
   }
 
-  Value? _resolveValue(Task task, String valueId) {
-    for (final value in task.effectiveValues) {
-      if (value.id == valueId) return value;
-    }
-    return null;
-  }
-
-  String? _spotlightValueId(AllocationResult allocation) {
-    final topNeglectScore = allocation.reasoning.topNeglectScore ?? 0.0;
-    if (topNeglectScore < _spotlightDeficitThreshold) return null;
-    return allocation.reasoning.topNeglectValueId;
-  }
-
-  String? _spotlightTaskId(
-    List<SuggestedTask> suggested, {
-    required String? spotlightValueId,
-  }) {
-    if (spotlightValueId == null || suggested.isEmpty) return null;
-    for (final entry in suggested) {
-      if (entry.qualifyingValueId == spotlightValueId) {
-        return entry.task.id;
+  Future<Map<String, ValueRatingSummary>> _buildRatingSummaries({
+    required List<Task> tasks,
+    required DateTime nowUtc,
+  }) async {
+    final valuesById = <String, Value>{};
+    for (final task in tasks) {
+      for (final value in task.effectiveValues) {
+        valuesById[value.id] = value;
       }
     }
-    return null;
+
+    if (valuesById.isEmpty) return const {};
+
+    final ratings = await _valueRatingsRepository.getAll(
+      weeks: _ratingsHistoryWeeks,
+    );
+    final ratingsByValue = <String, Map<DateTime, int>>{};
+    for (final rating in ratings) {
+      final weekStart = _weekStartFor(rating.weekStartUtc);
+      (ratingsByValue[rating.valueId] ??= {})[weekStart] = rating.rating.clamp(
+        1,
+        10,
+      );
+    }
+
+    final nowWeekStart = _weekStartFor(nowUtc);
+    final recentWeeks = <DateTime>[
+      for (var i = _ratingsWindowWeeks - 1; i >= 0; i--)
+        nowWeekStart.subtract(Duration(days: i * 7)),
+    ];
+    final priorWeeks = <DateTime>[
+      for (var i = (_ratingsWindowWeeks * 2) - 1; i >= _ratingsWindowWeeks; i--)
+        nowWeekStart.subtract(Duration(days: i * 7)),
+    ];
+
+    final summaries = <String, ValueRatingSummary>{};
+    for (final valueId in valuesById.keys) {
+      final perWeek = ratingsByValue[valueId] ?? const {};
+      final recentRatings = <int>[
+        for (final week in recentWeeks)
+          if (perWeek[week] != null) perWeek[week]!,
+      ];
+      final priorRatings = <int>[
+        for (final week in priorWeeks)
+          if (perWeek[week] != null) perWeek[week]!,
+      ];
+
+      final averageRating = recentRatings.isEmpty
+          ? null
+          : recentRatings.fold<int>(0, (sum, v) => sum + v) /
+                recentRatings.length;
+      final priorAverage = priorRatings.isEmpty
+          ? null
+          : priorRatings.fold<int>(0, (sum, v) => sum + v) /
+                priorRatings.length;
+      final trendDelta = (averageRating != null && priorAverage != null)
+          ? averageRating - priorAverage
+          : null;
+
+      summaries[valueId] = ValueRatingSummary(
+        averageRating: averageRating,
+        trendDelta: trendDelta,
+      );
+    }
+
+    return summaries;
+  }
+
+  DateTime _weekStartFor(DateTime dateTime) {
+    final day = dateOnly(dateTime);
+    return day.subtract(Duration(days: day.weekday - 1));
   }
 }

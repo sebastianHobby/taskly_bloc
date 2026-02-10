@@ -7,7 +7,6 @@ import 'package:taskly_bloc/presentation/features/app/view/app.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/model/guided_tour_step.dart';
-import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
@@ -67,22 +66,6 @@ class _GuidedTourOverlayHostState extends State<GuidedTourOverlayHost> {
               prev.navRequestId != next.navRequestId ||
               prev.active != next.active,
           listener: _onTourStateChanged,
-        ),
-        BlocListener<GlobalSettingsBloc, GlobalSettingsState>(
-          listenWhen: (prev, next) =>
-              prev.settings.guidedTourCompleted !=
-                  next.settings.guidedTourCompleted ||
-              prev.settings.onboardingCompleted !=
-                  next.settings.onboardingCompleted,
-          listener: (context, state) {
-            final shouldStart =
-                state.settings.onboardingCompleted &&
-                !state.settings.guidedTourCompleted;
-            final tour = context.read<GuidedTourBloc>();
-            if (shouldStart && !tour.state.active) {
-              tour.add(const GuidedTourStarted());
-            }
-          },
         ),
       ],
       child: widget.child,

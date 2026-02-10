@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/onboarding/bloc/onboarding_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/features/review/bloc/weekly_review_cubit.dart';
+import 'package:taskly_bloc/presentation/features/review/widgets/weekly_value_checkin_sheet.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
-import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
-import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_color_picker.dart';
-import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
+import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/settings.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
+import 'package:taskly_ui/taskly_ui_icons.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class OnboardingFlowPage extends StatelessWidget {
@@ -27,7 +28,6 @@ class OnboardingFlowPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => OnboardingBloc(
-        authRepository: context.read<AuthRepositoryContract>(),
         settingsRepository: context.read<SettingsRepositoryContract>(),
         valueRepository: context.read<ValueRepositoryContract>(),
         valueWriteService: context.read<ValueWriteService>(),
@@ -46,159 +46,184 @@ class _OnboardingFlowView extends StatefulWidget {
 }
 
 class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
-  late final OnboardingBloc _bloc;
   late final PageController _pageController;
-  final TextEditingController _nameController = TextEditingController();
+  late final WeeklyReviewBloc _weeklyReviewBloc;
+  bool _ratingsRequested = false;
 
   @override
   void initState() {
     super.initState();
-    _bloc = context.read<OnboardingBloc>();
     _pageController = PageController();
-    _nameController.addListener(_handleNameChanged);
+    _weeklyReviewBloc = WeeklyReviewBloc(
+      analyticsService: context.read<AnalyticsService>(),
+      attentionEngine: context.read<AttentionEngineContract>(),
+      valueRepository: context.read<ValueRepositoryContract>(),
+      valueRatingsRepository: context.read<ValueRatingsRepositoryContract>(),
+      valueRatingsWriteService: context.read<ValueRatingsWriteService>(),
+      routineRepository: context.read<RoutineRepositoryContract>(),
+      taskRepository: context.read<TaskRepositoryContract>(),
+      nowService: context.read<NowService>(),
+    );
   }
 
   @override
   void dispose() {
-    _nameController.removeListener(_handleNameChanged);
     _pageController.dispose();
-    _nameController.dispose();
+    _weeklyReviewBloc.close();
     super.dispose();
-  }
-
-  void _handleNameChanged() {
-    _bloc.add(OnboardingNameChanged(_nameController.text));
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
 
-    return Scaffold(
-      body: SafeArea(
-        child: BlocConsumer<OnboardingBloc, OnboardingState>(
-          listenWhen: (prev, next) =>
-              prev.effect != next.effect || prev.step != next.step,
-          listener: (context, state) async {
-            final effect = state.effect;
-            if (effect is OnboardingErrorEffect) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(effect.message),
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                ),
-              );
-              context.read<OnboardingBloc>().add(
-                const OnboardingEffectHandled(),
-              );
-            } else if (effect is OnboardingCompletedEffect) {
-              context.read<OnboardingBloc>().add(
-                const OnboardingEffectHandled(),
-              );
-              context.read<GlobalSettingsBloc>().add(
-                const GlobalSettingsEvent.onboardingCompleted(),
-              );
-              context.read<GuidedTourBloc>().add(
-                const GuidedTourStarted(force: true),
-              );
-              Routing.toScreenKey(context, 'projects');
-            }
-
-            final targetPage = state.step.index;
-            if (_pageController.hasClients &&
-                _pageController.page?.round() != targetPage) {
-              await _pageController.animateToPage(
-                targetPage,
-                duration: const Duration(milliseconds: 240),
-                curve: Curves.easeOut,
-              );
-            }
-          },
-          builder: (context, state) {
-            final canGoBack = state.step != OnboardingStep.welcome;
-            final primaryLabel = _primaryLabelFor(state.step);
-            final isPrimaryBusy =
-                state.isSavingName ||
-                state.isCreatingValue ||
-                state.isCompleting;
-
-            return Column(
-              children: [
-                Expanded(
-                  child: PageView(
-                    controller: _pageController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [
-                      _WelcomeStep(tokens: tokens),
-                      _NameStep(controller: _nameController),
-                      _ValuesStep(
-                        selectedValues: state.selectedValues,
-                        isBusy: state.isCreatingValue,
-                      ),
-                    ],
+    return BlocProvider.value(
+      value: _weeklyReviewBloc,
+      child: Scaffold(
+        body: SafeArea(
+          child: BlocConsumer<OnboardingBloc, OnboardingState>(
+            listenWhen: (prev, next) =>
+                prev.effect != next.effect || prev.step != next.step,
+            listener: (context, state) async {
+              final effect = state.effect;
+              if (effect is OnboardingErrorEffect) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(effect.message),
+                    backgroundColor: Theme.of(context).colorScheme.error,
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    tokens.spaceLg,
-                    tokens.spaceSm,
-                    tokens.spaceLg,
-                    tokens.spaceLg,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        context.l10n.onboardingStepProgress(
-                          state.step.index + 1,
-                          OnboardingStep.values.length,
+                );
+                context.read<OnboardingBloc>().add(
+                  const OnboardingEffectHandled(),
+                );
+              } else if (effect is OnboardingCompletedEffect) {
+                context.read<OnboardingBloc>().add(
+                  const OnboardingEffectHandled(),
+                );
+                context.read<GlobalSettingsBloc>().add(
+                  const GlobalSettingsEvent.onboardingCompleted(),
+                );
+                Routing.toScreenKey(context, 'projects');
+              }
+
+              if (state.step == OnboardingStep.ratings) {
+                if (!_ratingsRequested) {
+                  _ratingsRequested = true;
+                  _weeklyReviewBloc.add(
+                    WeeklyReviewRequested(_onboardingReviewConfig()),
+                  );
+                }
+              } else {
+                _ratingsRequested = false;
+              }
+
+              final targetPage = state.step.index;
+              if (_pageController.hasClients &&
+                  _pageController.page?.round() != targetPage) {
+                await _pageController.animateToPage(
+                  targetPage,
+                  duration: const Duration(milliseconds: 240),
+                  curve: Curves.easeOut,
+                );
+              }
+            },
+            builder: (context, state) {
+              final showFooter = state.step != OnboardingStep.ratings;
+              final canGoBack = state.step != OnboardingStep.welcome;
+              final primaryLabel = _primaryLabelFor(state.step);
+              final isPrimaryBusy = state.isCreatingValue || state.isCompleting;
+
+              return Column(
+                children: [
+                  Expanded(
+                    child: PageView(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        _WelcomeStep(tokens: tokens),
+                        _ValuesStep(
+                          selectedValues: state.selectedValues,
+                          isBusy: state.isCreatingValue,
                         ),
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                      SizedBox(height: tokens.spaceSm),
-                      FilledButton(
-                        onPressed: isPrimaryBusy || !_isPrimaryEnabled(state)
-                            ? null
-                            : () => context.read<OnboardingBloc>().add(
-                                const OnboardingNextRequested(),
-                              ),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            vertical: tokens.spaceMd,
-                          ),
-                          child: isPrimaryBusy
-                              ? const SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : Text(primaryLabel),
-                        ),
-                      ),
-                      if (canGoBack) ...[
-                        SizedBox(height: tokens.spaceSm),
-                        TextButton(
-                          onPressed: () => context.read<OnboardingBloc>().add(
+                        _RatingsStep(
+                          wizardStep: state.step.index + 1,
+                          wizardTotal: OnboardingStep.values.length,
+                          onBack: () => context.read<OnboardingBloc>().add(
                             const OnboardingBackRequested(),
                           ),
-                          child: Text(context.l10n.backLabel),
+                          onComplete: () => context.read<OnboardingBloc>().add(
+                            const OnboardingRatingsCompleted(),
+                          ),
                         ),
+                        const _ReviewSettingsStep(),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                  if (showFooter)
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        tokens.spaceLg,
+                        tokens.spaceSm,
+                        tokens.spaceLg,
+                        tokens.spaceLg,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            context.l10n.onboardingStepProgress(
+                              state.step.index + 1,
+                              OnboardingStep.values.length,
+                            ),
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          SizedBox(height: tokens.spaceSm),
+                          FilledButton(
+                            onPressed:
+                                isPrimaryBusy || !_isPrimaryEnabled(state)
+                                ? null
+                                : () => context.read<OnboardingBloc>().add(
+                                    const OnboardingNextRequested(),
+                                  ),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                vertical: tokens.spaceMd,
+                              ),
+                              child: isPrimaryBusy
+                                  ? const SizedBox(
+                                      height: 18,
+                                      width: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text(primaryLabel),
+                            ),
+                          ),
+                          if (canGoBack) ...[
+                            SizedBox(height: tokens.spaceSm),
+                            TextButton(
+                              onPressed: () =>
+                                  context.read<OnboardingBloc>().add(
+                                    const OnboardingBackRequested(),
+                                  ),
+                              child: Text(context.l10n.backLabel),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -206,18 +231,38 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
 
   bool _isPrimaryEnabled(OnboardingState state) {
     return switch (state.step) {
-      OnboardingStep.name => state.displayName.trim().isNotEmpty,
       OnboardingStep.valuesSetup => state.hasMinimumValues,
-      _ => true,
+      OnboardingStep.reviewSettings => true,
+      OnboardingStep.welcome => true,
+      OnboardingStep.ratings => false,
     };
   }
 
   String _primaryLabelFor(OnboardingStep step) {
     return switch (step) {
       OnboardingStep.welcome => context.l10n.onboardingGetStartedLabel,
-      OnboardingStep.name => context.l10n.onboardingContinueLabel,
-      OnboardingStep.valuesSetup => context.l10n.onboardingFinishLabel,
+      OnboardingStep.valuesSetup => context.l10n.onboardingContinueLabel,
+      OnboardingStep.reviewSettings => context.l10n.onboardingFinishLabel,
+      OnboardingStep.ratings => context.l10n.onboardingContinueLabel,
     };
+  }
+
+  WeeklyReviewConfig _onboardingReviewConfig() {
+    return WeeklyReviewConfig(
+      checkInWindowWeeks: WeeklyReviewConfig.defaultCheckInWindowWeeks,
+      maintenanceEnabled: false,
+      showDeadlineRisk: false,
+      showStaleItems: false,
+      taskStaleThresholdDays:
+          GlobalSettings.defaultMaintenanceTaskStaleThresholdDays,
+      projectIdleThresholdDays:
+          GlobalSettings.defaultMaintenanceProjectIdleThresholdDays,
+      deadlineRiskDueWithinDays:
+          GlobalSettings.defaultMaintenanceDeadlineRiskDueWithinDays,
+      deadlineRiskMinUnscheduledCount:
+          GlobalSettings.defaultMaintenanceDeadlineRiskMinUnscheduledCount,
+      showFrequentSnoozed: false,
+    );
   }
 }
 
@@ -263,50 +308,7 @@ class _WelcomeStep extends StatelessWidget {
   }
 }
 
-class _NameStep extends StatelessWidget {
-  const _NameStep({
-    required this.controller,
-  });
-
-  final TextEditingController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = TasklyTokens.of(context);
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.spaceLg),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            context.l10n.onboardingNameTitle,
-            style: theme.textTheme.displaySmall,
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: tokens.spaceSm),
-          Text(
-            context.l10n.onboardingNameSubtitle,
-            style: theme.textTheme.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: tokens.spaceXl),
-          TextField(
-            controller: controller,
-            textInputAction: TextInputAction.done,
-            decoration: InputDecoration(
-              labelText: context.l10n.nameLabel,
-              hintText: context.l10n.onboardingNameHint,
-              border: const OutlineInputBorder(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ValuesStep extends StatelessWidget {
+class _ValuesStep extends StatefulWidget {
   const _ValuesStep({
     required this.selectedValues,
     required this.isBusy,
@@ -315,16 +317,47 @@ class _ValuesStep extends StatelessWidget {
   final List<OnboardingValueSelection> selectedValues;
   final bool isBusy;
 
-  static const int _maxValues = 3;
+  @override
+  State<_ValuesStep> createState() => _ValuesStepState();
+}
+
+class _ValuesStepState extends State<_ValuesStep> {
+  static const int _maxValues = 8;
+
+  final TextEditingController _nameController = TextEditingController();
+  String? _selectedIconName;
+  String _selectedColorId = ColorUtils.valueBlueId;
+  String? _nameError;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController.addListener(_clearNameError);
+  }
+
+  @override
+  void dispose() {
+    _nameController.removeListener(_clearNameError);
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _clearNameError() {
+    if (_nameError == null) return;
+    setState(() => _nameError = null);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = TasklyTokens.of(context);
     final scheme = theme.colorScheme;
+    final l10n = context.l10n;
 
-    final quickPicks = _quickPickTemplates(context.l10n);
-    final canAddMore = selectedValues.length < _maxValues;
+    final canAddMore = widget.selectedValues.length < _maxValues;
+    final isInputEnabled = canAddMore && !widget.isBusy;
+    final iconData = getIconDataFromName(_selectedIconName) ?? Icons.star;
+    final color = ColorUtils.valueColorForTheme(context, _selectedColorId);
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
@@ -337,118 +370,231 @@ class _ValuesStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            context.l10n.onboardingValuesTitle,
+            l10n.onboardingValuesTitle,
             style: theme.textTheme.displaySmall,
           ),
           SizedBox(height: tokens.spaceSm),
           Text(
-            context.l10n.onboardingValuesSubtitle,
+            l10n.onboardingValuesSubtitle,
             style: theme.textTheme.bodyLarge,
           ),
           SizedBox(height: tokens.spaceSm),
           Text(
-            context.l10n.onboardingValuesHint,
+            l10n.onboardingValuesHint,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: scheme.onSurfaceVariant,
             ),
           ),
           SizedBox(height: tokens.spaceLg),
           Text(
-            context.l10n.onboardingQuickPicksTitle,
+            l10n.onboardingValueQuickAddTitle,
             style: theme.textTheme.titleMedium,
           ),
           SizedBox(height: tokens.spaceSm),
-          _QuickPickGrid(
-            picks: quickPicks,
-            selectedValues: selectedValues,
-            enabled: canAddMore && !isBusy,
+          TextField(
+            controller: _nameController,
+            enabled: isInputEnabled,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(
+              labelText: l10n.valueNameLabel,
+              hintText: l10n.onboardingValueNameHint,
+              border: const OutlineInputBorder(),
+              errorText: _nameError,
+            ),
           ),
           SizedBox(height: tokens.spaceSm),
-          OutlinedButton.icon(
-            onPressed: canAddMore && !isBusy
-                ? () => _openCustomValueSheet(context)
-                : null,
-            icon: const Icon(Icons.add),
-            label: Text(context.l10n.onboardingCustomValueLabel),
+          Row(
+            children: [
+              Expanded(
+                child: _ValueQuickSelector(
+                  label: l10n.onboardingValueIconLabel,
+                  enabled: isInputEnabled,
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: scheme.surfaceContainerHighest,
+                    child: Icon(iconData, size: 18, color: scheme.onSurface),
+                  ),
+                  onTap: () => _openIconPicker(context),
+                ),
+              ),
+              SizedBox(width: tokens.spaceSm),
+              Expanded(
+                child: _ValueQuickSelector(
+                  label: l10n.onboardingValueColorLabel,
+                  enabled: isInputEnabled,
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: color,
+                    child: Icon(Icons.palette, size: 16, color: scheme.surface),
+                  ),
+                  onTap: () => _openColorPicker(context),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spaceSm),
+          FilledButton(
+            onPressed: isInputEnabled ? _handleAddValue : null,
+            child: Text(l10n.onboardingAddValueLabel),
+          ),
+          SizedBox(height: tokens.spaceXs),
+          TextButton(
+            onPressed: isInputEnabled ? () => _openIdeasSheet(context) : null,
+            child: Text(l10n.onboardingValueIdeasLabel),
           ),
           SizedBox(height: tokens.spaceLg),
           Text(
-            context.l10n.onboardingYourPicksTitle,
+            l10n.onboardingYourValuesTitle(
+              widget.selectedValues.length,
+              _maxValues,
+            ),
             style: theme.textTheme.titleMedium,
           ),
           SizedBox(height: tokens.spaceSm),
-          if (selectedValues.isEmpty)
+          if (widget.selectedValues.isEmpty)
             Text(
-              context.l10n.onboardingPickAtLeastOneValue,
+              l10n.onboardingPickAtLeastOneValue,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
             )
           else
-            Column(
+            Wrap(
+              spacing: tokens.spaceSm,
+              runSpacing: tokens.spaceSm,
               children: [
-                for (final value in selectedValues) ...[
-                  _SelectedValueRow(
+                for (final value in widget.selectedValues)
+                  _ValueChip(
                     value: value,
                     onEdit: () => _openEditValue(context, value.id),
                     onRemove: () => context.read<OnboardingBloc>().add(
                       OnboardingValueRemoved(value.id),
                     ),
                   ),
-                  SizedBox(height: tokens.spaceSm),
-                ],
               ],
             ),
+          if (!canAddMore) ...[
+            SizedBox(height: tokens.spaceSm),
+            Text(
+              l10n.onboardingValuesMaxHint(_maxValues),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  List<_QuickPickTemplate> _quickPickTemplates(AppLocalizations l10n) {
+  Future<void> _openIconPicker(BuildContext context) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (context) => _IconPickerSheet(
+        selectedIconName: _selectedIconName,
+      ),
+    );
+    if (!context.mounted) return;
+    if (selected == null) return;
+    setState(() => _selectedIconName = selected);
+  }
+
+  Future<void> _openColorPicker(BuildContext context) async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (context) => _ColorPickerSheet(
+        selectedColorId: _selectedColorId,
+      ),
+    );
+    if (!context.mounted) return;
+    if (selected == null) return;
+    setState(() => _selectedColorId = selected);
+  }
+
+  Future<void> _openIdeasSheet(BuildContext context) async {
+    final selected = await showModalBottomSheet<ValueDraft>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (context) => _IdeasSheet(
+        templates: _ideaTemplates(context.l10n),
+      ),
+    );
+    if (!context.mounted) return;
+    if (selected == null) return;
+    context.read<OnboardingBloc>().add(
+      OnboardingCustomValueConfirmed(selected),
+    );
+  }
+
+  void _handleAddValue() {
+    final name = _nameController.text.trim();
+    final l10n = context.l10n;
+    if (name.isEmpty) {
+      setState(() => _nameError = l10n.valueFormNameRequired);
+      return;
+    }
+    if (name.length > ValueValidators.maxNameLength) {
+      setState(
+        () => _nameError = l10n.valueFormNameTooLong(
+          ValueValidators.maxNameLength,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _nameError = null);
+    context.read<OnboardingBloc>().add(
+      OnboardingCustomValueConfirmed(
+        ValueDraft(
+          name: name,
+          color: _selectedColorId,
+          priority: ValuePriority.medium,
+          iconName: _selectedIconName,
+        ),
+      ),
+    );
+    _nameController.clear();
+  }
+
+  List<_ValueIdeaTemplate> _ideaTemplates(AppLocalizations l10n) {
     return [
-      _QuickPickTemplate(
+      _ValueIdeaTemplate(
         name: l10n.onboardingValueHealth,
         iconName: 'health',
         colorId: ColorUtils.valueGreenId,
       ),
-      _QuickPickTemplate(
+      _ValueIdeaTemplate(
         name: l10n.onboardingValueRelationships,
         iconName: 'group',
         colorId: ColorUtils.valueRoseId,
       ),
-      _QuickPickTemplate(
+      _ValueIdeaTemplate(
         name: l10n.onboardingValueCareer,
         iconName: 'work',
         colorId: ColorUtils.valueBlueId,
       ),
-      _QuickPickTemplate(
+      _ValueIdeaTemplate(
         name: l10n.onboardingValueLearning,
         iconName: 'lightbulb',
         colorId: ColorUtils.valueVioletId,
       ),
-      _QuickPickTemplate(
+      _ValueIdeaTemplate(
         name: l10n.onboardingValueHome,
         iconName: 'home',
         colorId: ColorUtils.valueSlateId,
       ),
-      _QuickPickTemplate(
+      _ValueIdeaTemplate(
         name: l10n.onboardingValueAdventure,
         iconName: 'rocket',
         colorId: ColorUtils.valueAmberId,
       ),
     ];
-  }
-
-  Future<void> _openCustomValueSheet(BuildContext context) async {
-    final sheetContext = _navigatorContext(context);
-    final draft = await showModalBottomSheet<ValueDraft>(
-      context: sheetContext,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => const _CustomValueSheet(),
-    );
-    if (draft == null || !context.mounted) return;
-    context.read<OnboardingBloc>().add(OnboardingCustomValueConfirmed(draft));
   }
 
   Future<void> _openEditValue(BuildContext context, String valueId) async {
@@ -464,8 +610,8 @@ class _ValuesStep extends StatelessWidget {
   }
 }
 
-class _QuickPickTemplate {
-  const _QuickPickTemplate({
+class _ValueIdeaTemplate {
+  const _ValueIdeaTemplate({
     required this.name,
     required this.iconName,
     required this.colorId,
@@ -476,110 +622,49 @@ class _QuickPickTemplate {
   final String colorId;
 }
 
-class _QuickPickGrid extends StatelessWidget {
-  const _QuickPickGrid({
-    required this.picks,
-    required this.selectedValues,
+class _ValueQuickSelector extends StatelessWidget {
+  const _ValueQuickSelector({
+    required this.label,
+    required this.child,
+    required this.onTap,
     required this.enabled,
   });
 
-  final List<_QuickPickTemplate> picks;
-  final List<OnboardingValueSelection> selectedValues;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    return GridView.count(
-      crossAxisCount: 2,
-      childAspectRatio: 2.3,
-      crossAxisSpacing: tokens.spaceSm,
-      mainAxisSpacing: tokens.spaceSm,
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      children: [
-        for (final pick in picks)
-          _QuickPickCard(
-            template: pick,
-            isSelected: selectedValues.any(
-              (value) => value.name.toLowerCase() == pick.name.toLowerCase(),
-            ),
-            enabled: enabled,
-          ),
-      ],
-    );
-  }
-}
-
-class _QuickPickCard extends StatelessWidget {
-  const _QuickPickCard({
-    required this.template,
-    required this.isSelected,
-    required this.enabled,
-  });
-
-  final _QuickPickTemplate template;
-  final bool isSelected;
+  final String label;
+  final Widget child;
+  final VoidCallback onTap;
   final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final iconData = getIconDataFromName(template.iconName) ?? Icons.star;
-    final color = ColorUtils.valueColorForTheme(context, template.colorId);
-
-    final background = isSelected
-        ? Color.alphaBlend(
-            color.withValues(alpha: 0.18),
-            scheme.surfaceContainerHighest,
-          )
-        : scheme.surfaceContainerLow;
 
     return InkWell(
-      onTap: enabled
-          ? () async {
-              if (isSelected) return;
-              final draft = ValueDraft(
-                name: template.name,
-                color: template.colorId,
-                priority: ValuePriority.medium,
-                iconName: template.iconName,
-              );
-              context.read<OnboardingBloc>().add(
-                OnboardingQuickPickConfirmed(draft),
-              );
-            }
-          : null,
+      onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(tokens.radiusLg),
       child: Container(
         padding: EdgeInsets.all(tokens.spaceSm),
         decoration: BoxDecoration(
-          color: background,
+          color: scheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(tokens.radiusLg),
-          border: Border.all(
-            color: isSelected
-                ? color.withValues(alpha: 0.4)
-                : scheme.outlineVariant.withValues(alpha: 0.5),
-          ),
+          border: Border.all(color: scheme.outlineVariant),
         ),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: color.withValues(alpha: 0.2),
-              child: Icon(iconData, color: color, size: 18),
-            ),
+            child,
             SizedBox(width: tokens.spaceSm),
             Expanded(
               child: Text(
-                template.name,
-                style: Theme.of(context).textTheme.labelLarge,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                label,
+                style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
-            if (isSelected) Icon(Icons.check_rounded, size: 18, color: color),
+            Icon(
+              Icons.chevron_right,
+              size: tokens.spaceMd,
+              color: scheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),
@@ -587,8 +672,8 @@ class _QuickPickCard extends StatelessWidget {
   }
 }
 
-class _SelectedValueRow extends StatelessWidget {
-  const _SelectedValueRow({
+class _ValueChip extends StatelessWidget {
+  const _ValueChip({
     required this.value,
     required this.onEdit,
     required this.onRemove,
@@ -600,16 +685,467 @@ class _SelectedValueRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = ColorUtils.valueColorForTheme(context, value.color);
+    final iconData = getIconDataFromName(value.iconName) ?? Icons.star;
+    final tokens = TasklyTokens.of(context);
+
+    return InputChip(
+      avatar: CircleAvatar(
+        backgroundColor: color.withValues(alpha: 0.2),
+        child: Icon(iconData, size: 16, color: color),
+      ),
+      label: Text(value.name),
+      onPressed: onEdit,
+      onDeleted: onRemove,
+      deleteIcon: const Icon(Icons.close),
+      side: BorderSide(
+        color: Theme.of(context).colorScheme.outlineVariant,
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceXs,
+        vertical: tokens.spaceXxs,
+      ),
+    );
+  }
+}
+
+class _IconPickerSheet extends StatelessWidget {
+  const _IconPickerSheet({
+    required this.selectedIconName,
+  });
+
+  final String? selectedIconName;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spaceLg,
+        tokens.spaceSm,
+        tokens.spaceLg,
+        tokens.spaceLg,
+      ),
+      child: TasklyFormIconSearchPicker(
+        icons: tasklySymbolIcons,
+        selectedIconName: selectedIconName,
+        searchHintText: context.l10n.valueFormIconSearchHint,
+        noIconsFoundLabel: context.l10n.valueFormIconNoResults,
+        tooltipBuilder: formatIconLabel,
+        onSelected: (iconName) => Navigator.of(context).pop(iconName),
+      ),
+    );
+  }
+}
+
+class _ColorPickerSheet extends StatelessWidget {
+  const _ColorPickerSheet({
+    required this.selectedColorId,
+  });
+
+  final String selectedColorId;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final palette = ColorUtils.valuePaletteColorsFor(
+      Theme.of(context).brightness,
+    );
+    final selectedColor = ColorUtils.valueColorForTheme(
+      context,
+      selectedColorId,
+    );
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spaceLg,
+        tokens.spaceLg,
+        tokens.spaceLg,
+        tokens.spaceLg,
+      ),
+      child: TasklyFormColorPalettePicker(
+        colors: palette,
+        selectedColor: selectedColor,
+        onSelected: (color) => Navigator.of(context).pop(
+          ColorUtils.valuePaletteIdOrHex(color),
+        ),
+      ),
+    );
+  }
+}
+
+class _IdeasSheet extends StatelessWidget {
+  const _IdeasSheet({
+    required this.templates,
+  });
+
+  final List<_ValueIdeaTemplate> templates;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: templates
+          .map(
+            (template) => ListTile(
+              leading: CircleAvatar(
+                backgroundColor: ColorUtils.valueColorForTheme(
+                  context,
+                  template.colorId,
+                ).withValues(alpha: 0.2),
+                child: Icon(
+                  getIconDataFromName(template.iconName) ?? Icons.star,
+                  color: ColorUtils.valueColorForTheme(
+                    context,
+                    template.colorId,
+                  ),
+                ),
+              ),
+              title: Text(template.name),
+              trailing: Icon(
+                Icons.add,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              onTap: () => Navigator.of(context).pop(
+                ValueDraft(
+                  name: template.name,
+                  color: template.colorId,
+                  priority: ValuePriority.medium,
+                  iconName: template.iconName,
+                ),
+              ),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _RatingsStep extends StatelessWidget {
+  const _RatingsStep({
+    required this.wizardStep,
+    required this.wizardTotal,
+    required this.onBack,
+    required this.onComplete,
+  });
+
+  final int wizardStep;
+  final int wizardTotal;
+  final VoidCallback onBack;
+  final VoidCallback onComplete;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return WeeklyValueCheckInContent(
+      initialValueId: null,
+      windowWeeks: WeeklyReviewConfig.defaultCheckInWindowWeeks,
+      onExit: onBack,
+      onComplete: onComplete,
+      wizardStep: wizardStep,
+      wizardTotal: wizardTotal,
+      onWizardBack: onBack,
+      showHistory: false,
+      showActivityMix: false,
+      showTopBar: false,
+      useWizardFooter: true,
+      introTitle: l10n.onboardingRatingsTitle,
+      introBody: l10n.onboardingRatingsBody,
+      promptTitleBuilder: (String valueName, int _) =>
+          l10n.onboardingRatingsPrompt(valueName),
+      promptSubtitleBuilder: (String _, int __) => '',
+      scaleHint: l10n.onboardingRatingsScaleHint,
+      nextActionLabel: l10n.onboardingRatingsSaveAction,
+      completeActionLabel: l10n.onboardingRatingsSaveAction,
+    );
+  }
+}
+
+class _ReviewSettingsStep extends StatelessWidget {
+  const _ReviewSettingsStep();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final l10n = context.l10n;
+
+    return BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
+      builder: (context, state) {
+        final settings = state.settings;
+        final cadence = settings.weeklyReviewCadenceWeeks.clamp(1, 2);
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spaceLg,
+            tokens.spaceXl,
+            tokens.spaceLg,
+            tokens.spaceLg,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                l10n.onboardingReviewTitle,
+                style: theme.textTheme.displaySmall,
+              ),
+              SizedBox(height: tokens.spaceSm),
+              Text(
+                l10n.onboardingReviewBody,
+                style: theme.textTheme.bodyLarge,
+              ),
+              SizedBox(height: tokens.spaceLg),
+              Text(
+                l10n.onboardingReviewFrequencyLabel,
+                style: theme.textTheme.titleMedium,
+              ),
+              SizedBox(height: tokens.spaceSm),
+              SegmentedButton<int>(
+                segments: [
+                  ButtonSegment<int>(
+                    value: 1,
+                    label: Text(l10n.onboardingReviewWeeklyOption),
+                  ),
+                  ButtonSegment<int>(
+                    value: 2,
+                    label: Text(l10n.onboardingReviewBiweeklyOption),
+                  ),
+                ],
+                selected: {cadence},
+                onSelectionChanged: (selection) {
+                  final next = selection.first;
+                  context.read<GlobalSettingsBloc>().add(
+                    GlobalSettingsEvent.weeklyReviewCadenceWeeksChanged(next),
+                  );
+                },
+              ),
+              SizedBox(height: tokens.spaceXs),
+              Text(
+                l10n.onboardingReviewFrequencyHint,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(height: tokens.spaceLg),
+              Text(
+                l10n.onboardingMaintenanceTitle,
+                style: theme.textTheme.titleMedium,
+              ),
+              SizedBox(height: tokens.spaceXs),
+              Text(
+                l10n.onboardingMaintenanceIntro,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(height: tokens.spaceSm),
+              _MaintenanceToggle(
+                title: l10n.onboardingMaintenanceDeadlineTitle,
+                subtitle: l10n.onboardingMaintenanceDeadlineBody,
+                value: settings.maintenanceDeadlineRiskEnabled,
+                onChanged: (value) => context.read<GlobalSettingsBloc>().add(
+                  GlobalSettingsEvent.maintenanceDeadlineRiskChanged(value),
+                ),
+                onTune: () => _showDeadlineTuneSheet(context, settings),
+                tuneLabel: l10n.onboardingMaintenanceTuneLabel,
+              ),
+              SizedBox(height: tokens.spaceSm),
+              _MaintenanceToggle(
+                title: l10n.onboardingMaintenanceStaleTitle,
+                subtitle: l10n.onboardingMaintenanceStaleBody,
+                value: settings.maintenanceStaleEnabled,
+                onChanged: (value) => context.read<GlobalSettingsBloc>().add(
+                  GlobalSettingsEvent.maintenanceStaleChanged(value),
+                ),
+                onTune: () => _showStaleTuneSheet(context, settings),
+                tuneLabel: l10n.onboardingMaintenanceTuneLabel,
+              ),
+              SizedBox(height: tokens.spaceSm),
+              _MaintenanceToggle(
+                title: l10n.onboardingMaintenanceDeferredTitle,
+                subtitle: l10n.onboardingMaintenanceDeferredBody,
+                value: settings.maintenanceFrequentSnoozedEnabled,
+                onChanged: (value) => context.read<GlobalSettingsBloc>().add(
+                  GlobalSettingsEvent.maintenanceFrequentSnoozedChanged(value),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showDeadlineTuneSheet(
+    BuildContext context,
+    GlobalSettings settings,
+  ) {
+    final tokens = TasklyTokens.of(context);
+    final l10n = context.l10n;
+
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        var dueWithin = settings.maintenanceDeadlineRiskDueWithinDays;
+        var minUnscheduled = settings.maintenanceDeadlineRiskMinUnscheduledCount;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.spaceLg,
+                tokens.spaceLg,
+                tokens.spaceLg,
+                tokens.spaceLg,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.onboardingMaintenanceTuneDeadlineTitle,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  SizedBox(height: tokens.spaceLg),
+                  _TuneSlider(
+                    label: l10n.weeklyReviewDueWithinLabel,
+                    value: dueWithin,
+                    min: GlobalSettings.maintenanceDeadlineRiskDueWithinDaysMin,
+                    max: GlobalSettings.maintenanceDeadlineRiskDueWithinDaysMax,
+                    valueLabel: l10n.daysCountLabel(dueWithin),
+                    onChanged: (next) => setState(() => dueWithin = next),
+                    onCommit: (next) {
+                      context.read<GlobalSettingsBloc>().add(
+                        GlobalSettingsEvent
+                            .maintenanceDeadlineRiskDueWithinDaysChanged(next),
+                      );
+                    },
+                  ),
+                  SizedBox(height: tokens.spaceSm),
+                  _TuneSlider(
+                    label: l10n.weeklyReviewUnscheduledTasksLabel,
+                    value: minUnscheduled,
+                    min: GlobalSettings
+                        .maintenanceDeadlineRiskMinUnscheduledCountMin,
+                    max: GlobalSettings
+                        .maintenanceDeadlineRiskMinUnscheduledCountMax,
+                    valueLabel: l10n.tasksCountLabel(minUnscheduled),
+                    onChanged: (next) => setState(() => minUnscheduled = next),
+                    onCommit: (next) {
+                      context.read<GlobalSettingsBloc>().add(
+                        GlobalSettingsEvent
+                            .maintenanceDeadlineRiskMinUnscheduledCountChanged(
+                          next,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _showStaleTuneSheet(
+    BuildContext context,
+    GlobalSettings settings,
+  ) {
+    final tokens = TasklyTokens.of(context);
+    final l10n = context.l10n;
+
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        var taskDays = settings.maintenanceTaskStaleThresholdDays;
+        var projectDays = settings.maintenanceProjectIdleThresholdDays;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                tokens.spaceLg,
+                tokens.spaceLg,
+                tokens.spaceLg,
+                tokens.spaceLg,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    l10n.onboardingMaintenanceTuneStaleTitle,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  SizedBox(height: tokens.spaceLg),
+                  _TuneSlider(
+                    label: l10n.weeklyReviewTaskStaleAfterLabel,
+                    value: taskDays,
+                    min: GlobalSettings.maintenanceStaleThresholdDaysMin,
+                    max: GlobalSettings.maintenanceStaleThresholdDaysMax,
+                    valueLabel: l10n.daysCountLabel(taskDays),
+                    onChanged: (next) => setState(() => taskDays = next),
+                    onCommit: (next) {
+                      context.read<GlobalSettingsBloc>().add(
+                        GlobalSettingsEvent
+                            .maintenanceTaskStaleThresholdDaysChanged(next),
+                      );
+                    },
+                  ),
+                  SizedBox(height: tokens.spaceSm),
+                  _TuneSlider(
+                    label: l10n.weeklyReviewProjectIdleAfterLabel,
+                    value: projectDays,
+                    min: GlobalSettings.maintenanceStaleThresholdDaysMin,
+                    max: GlobalSettings.maintenanceStaleThresholdDaysMax,
+                    valueLabel: l10n.daysCountLabel(projectDays),
+                    onChanged: (next) => setState(() => projectDays = next),
+                    onCommit: (next) {
+                      context.read<GlobalSettingsBloc>().add(
+                        GlobalSettingsEvent
+                            .maintenanceProjectIdleThresholdDaysChanged(next),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _MaintenanceToggle extends StatelessWidget {
+  const _MaintenanceToggle({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+    this.onTune,
+    this.tuneLabel,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback? onTune;
+  final String? tuneLabel;
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final iconData = getIconDataFromName(value.iconName) ?? Icons.star;
-    final color = ColorUtils.valueColorForTheme(context, value.color);
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spaceSm,
-        vertical: tokens.spaceXs2,
-      ),
+      padding: EdgeInsets.all(tokens.spaceMd),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(tokens.radiusLg),
@@ -617,27 +1153,39 @@ class _SelectedValueRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: color.withValues(alpha: 0.2),
-            child: Icon(iconData, color: color, size: 18),
-          ),
-          SizedBox(width: tokens.spaceSm),
           Expanded(
-            child: Text(
-              value.name,
-              style: Theme.of(context).textTheme.bodyLarge,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                SizedBox(height: tokens.spaceXxs),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                ),
+                if (onTune != null && tuneLabel != null) ...[
+                  SizedBox(height: tokens.spaceXs),
+                  TextButton(
+                    onPressed: onTune,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.square(tokens.minTapTargetSize),
+                      alignment: Alignment.centerLeft,
+                    ),
+                    child: Text(tuneLabel!),
+                  ),
+                ],
+              ],
             ),
           ),
-          IconButton(
-            tooltip: context.l10n.editLabel,
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: onEdit,
-          ),
-          IconButton(
-            tooltip: context.l10n.removeLabel,
-            icon: const Icon(Icons.close),
-            onPressed: onRemove,
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
           ),
         ],
       ),
@@ -645,126 +1193,54 @@ class _SelectedValueRow extends StatelessWidget {
   }
 }
 
-class _CustomValueSheet extends StatefulWidget {
-  const _CustomValueSheet();
+class _TuneSlider extends StatelessWidget {
+  const _TuneSlider({
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.valueLabel,
+    required this.onChanged,
+    required this.onCommit,
+  });
 
-  @override
-  State<_CustomValueSheet> createState() => _CustomValueSheetState();
-}
-
-class _CustomValueSheetState extends State<_CustomValueSheet> {
-  final _formKey = GlobalKey<FormBuilderState>();
+  final String label;
+  final int value;
+  final int min;
+  final int max;
+  final String valueLabel;
+  final ValueChanged<int> onChanged;
+  final ValueChanged<int> onCommit;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        left: tokens.spaceLg,
-        right: tokens.spaceLg,
-        top: tokens.spaceLg,
-        bottom: MediaQuery.of(context).viewInsets.bottom + tokens.spaceLg,
-      ),
-      child: FormBuilder(
-        key: _formKey,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
           children: [
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
             Text(
-              context.l10n.onboardingCustomValueLabel,
-              style: theme.textTheme.titleLarge,
-            ),
-            SizedBox(height: tokens.spaceSm),
-            Text(
-              context.l10n.onboardingCustomValueSubtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            SizedBox(height: tokens.spaceLg),
-            FormBuilderTextField(
-              name: ValueFieldKeys.name.id,
-              textInputAction: TextInputAction.next,
-              maxLength: ValueValidators.maxNameLength,
-              decoration: InputDecoration(
-                labelText: context.l10n.valueNameLabel,
-                border: const OutlineInputBorder(),
-              ),
-              validator: toFormBuilderValidator<String>(
-                ValueValidators.name,
-                context,
-              ),
-            ),
-            SizedBox(height: tokens.spaceMd),
-            TasklyFormSectionLabel(text: context.l10n.valueFormIconLabel),
-            SizedBox(height: tokens.spaceSm),
-            FormBuilderIconPicker(
-              name: ValueFieldKeys.iconName.id,
-              searchHintText: context.l10n.valueFormIconSearchHint,
-              noIconsFoundLabel: context.l10n.valueFormIconNoResults,
-              gridHeight: 200,
-            ),
-            SizedBox(height: tokens.spaceMd),
-            TasklyFormSectionLabel(text: context.l10n.valueFormColorLabel),
-            SizedBox(height: tokens.spaceSm),
-            FormBuilderColorPicker(
-              name: ValueFieldKeys.colour.id,
-              title: context.l10n.valueFormColorLabel,
-              showLabel: false,
-              compact: true,
-              validator: toFormBuilderValidator<Color>(
-                (value) => ValueValidators.color(
-                  value == null ? null : ColorUtils.toHex(value),
-                ),
-                context,
-              ),
-            ),
-            SizedBox(height: tokens.spaceLg),
-            FilledButton(
-              onPressed: _handleSave,
-              child: Text(context.l10n.onboardingAddValueLabel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(context.l10n.cancelLabel),
+              valueLabel,
+              style: Theme.of(context).textTheme.titleSmall,
             ),
           ],
         ),
-      ),
+        Slider(
+          value: value.toDouble(),
+          min: min.toDouble(),
+          max: max.toDouble(),
+          divisions: max - min,
+          label: valueLabel,
+          onChanged: (next) => onChanged(next.round()),
+          onChangeEnd: (next) => onCommit(next.round()),
+        ),
+      ],
     );
   }
-
-  void _handleSave() {
-    final formState = _formKey.currentState;
-    if (formState == null) return;
-    if (!formState.saveAndValidate()) return;
-
-    final values = formState.value;
-    final name = (values[ValueFieldKeys.name.id] as String? ?? '').trim();
-    final iconName = (values[ValueFieldKeys.iconName.id] as String?)?.trim();
-    final colorValue = values[ValueFieldKeys.colour.id] as Color?;
-    final colorHex = colorValue != null
-        ? ColorUtils.valuePaletteIdOrHex(colorValue)
-        : ColorUtils.valueBlueId;
-
-    Navigator.pop(
-      context,
-      ValueDraft(
-        name: name,
-        color: colorHex,
-        priority: ValuePriority.medium,
-        iconName: iconName,
-      ),
-    );
-  }
-}
-
-BuildContext _navigatorContext(BuildContext context) {
-  return GoRouter.of(context).routerDelegate.navigatorKey.currentContext ??
-      context;
 }

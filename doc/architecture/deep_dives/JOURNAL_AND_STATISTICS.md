@@ -210,13 +210,12 @@ Key design points:
 Current UI surfaces include:
 
 - Value detail statistics modal(s) (trend charts etc.)
-- A system screen `statistics` (values-centric dashboard) driven by a
-  presentation-layer BLoC
+- The system `statistics` screen has been removed from the app shell; only
+  value-focused stat surfaces remain in the UI.
 
 Entry points:
 
-- [lib/presentation/routing/router.dart](../../../lib/presentation/routing/router.dart)
-- [lib/presentation/routing/routing.dart](../../../lib/presentation/routing/routing.dart)
+- Value detail modal: [lib/presentation/features/values/widgets/value_detail_modal.dart](../../../lib/presentation/features/values/widgets/value_detail_modal.dart)
 
 ---
 
@@ -240,8 +239,8 @@ Ownership and layering rules live in:
 This document describes the current system as implemented. Likely next steps
 for the product/architecture:
 
-- Replace the `statisticsDashboard` placeholder with an explicit statistics
-  dashboard screen driven by a presentation-layer BLoC.
+- Decide whether a dedicated statistics dashboard should return, and if so,
+  define its scope and presentation contract.
 - Define stable "journal stats" read models/APIs for commonly requested
   analytics (mood trend, distributions, correlations).
 - Decide which computations should be *purely derived* vs *persisted* (snapshots)

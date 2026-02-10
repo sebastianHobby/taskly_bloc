@@ -482,16 +482,13 @@ final class DemoDataProvider {
       demoRoutineVocabId,
     };
 
-    final groups = _buildValueSuggestionGroups(
-      suggestedTasks,
-      selectedTaskIds: selectedTaskIds,
-    );
+    final groups = _buildValueSuggestionGroups(suggestedTasks);
 
     return PlanMyDayReady(
       needsPlan: true,
       dayKeyUtc: dayKeyUtc,
       globalSettings: const settings.GlobalSettings(),
-      suggestionSignal: SuggestionSignal.behaviorBased,
+      suggestionSignal: SuggestionSignal.ratingsBased,
       dailyLimit: 8,
       requiresValueSetup: false,
       requiresRatings: false,
@@ -506,8 +503,8 @@ final class DemoDataProvider {
       allTasks: tasks,
       routineSelectionsByValue: _routineSelectionsByValue(selectedRoutineIds),
       valueSuggestionGroups: groups,
-      valueSort: PlanMyDayValueSort.attentionFirst,
-      spotlightTaskId: suggestedTasks.first.id,
+      unratedValues: const [],
+      valueSort: PlanMyDayValueSort.lowestAverage,
       overCapacity: false,
       toastRequestId: 0,
     );
@@ -637,9 +634,8 @@ final class DemoDataProvider {
   }
 
   List<PlanMyDayValueSuggestionGroup> _buildValueSuggestionGroups(
-    List<Task> tasks, {
-    required Set<String> selectedTaskIds,
-  }) {
+    List<Task> tasks,
+  ) {
     final byValue = <String, List<Task>>{};
     for (final task in tasks) {
       final valueId = task.effectivePrimaryValueId;
@@ -651,20 +647,26 @@ final class DemoDataProvider {
     for (final entry in byValue.entries) {
       final value = _valuesById[entry.key];
       if (value == null) continue;
+      final summary = _demoRatingSummary(value);
+      final hasRatings = summary.averageRating != null;
+      final isTrendingDown = hasRatings && (summary.trendDelta ?? 0) <= -0.2;
+      final isLowAverage = hasRatings && (summary.averageRating ?? 0) <= 6.0;
       groups.add(
         PlanMyDayValueSuggestionGroup(
           valueId: value.id,
           value: value,
           tasks: entry.value,
-          attentionNeeded: value.priority == ValuePriority.high,
-          neglectScore: value.priority == ValuePriority.high ? 0.4 : 0.1,
+          averageRating: summary.averageRating,
+          trendDelta: summary.trendDelta,
+          hasRatings: hasRatings,
+          isTrendingDown: isTrendingDown,
+          isLowAverage: isLowAverage,
           visibleCount: _minVisibleCount(
             entry.value.length,
-            value.priority,
-            attentionNeeded: value.priority == ValuePriority.high,
+            isTrendingDown: isTrendingDown,
+            isLowAverage: isLowAverage,
           ),
           expanded: true,
-          isSpotlight: value.id == _values.first.id,
         ),
       );
     }
@@ -673,15 +675,29 @@ final class DemoDataProvider {
   }
 
   int _minVisibleCount(
-    int taskCount,
-    ValuePriority priority, {
-    required bool attentionNeeded,
+    int taskCount, {
+    required bool isTrendingDown,
+    required bool isLowAverage,
   }) {
-    final defaultVisible = switch (priority) {
-      ValuePriority.high => attentionNeeded ? 4 : 3,
-      ValuePriority.medium => attentionNeeded ? 3 : 2,
-      ValuePriority.low => attentionNeeded ? 2 : 1,
-    };
+    final defaultVisible = isTrendingDown || isLowAverage ? 3 : 2;
     return taskCount < defaultVisible ? taskCount : defaultVisible;
+  }
+
+  PlanMyDayValueRatingSummary _demoRatingSummary(Value value) {
+    final index = _values.indexWhere((entry) => entry.id == value.id);
+    if (index == 2) {
+      return PlanMyDayValueRatingSummary(
+        valueId: value.id,
+        averageRating: null,
+        trendDelta: null,
+      );
+    }
+    final average = 7.2 - (index * 0.8);
+    final trend = index.isEven ? -0.4 : 0.2;
+    return PlanMyDayValueRatingSummary(
+      valueId: value.id,
+      averageRating: average,
+      trendDelta: trend,
+    );
   }
 }

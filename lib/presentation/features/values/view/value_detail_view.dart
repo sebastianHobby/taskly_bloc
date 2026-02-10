@@ -120,14 +120,9 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
         ? ColorUtils.valuePaletteIdOrHex(colorValue)
         : _draft.color;
 
-    final priority =
-        (formValues[ValueFieldKeys.priority.id] as ValuePriority?) ??
-        _draft.priority;
-
     _draft = _draft.copyWith(
       name: name,
       color: color,
-      priority: priority,
       iconName: iconName,
     );
   }
@@ -149,7 +144,6 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
         'name': _draft.name,
         'color': _draft.color,
         'iconName': _draft.iconName,
-        'priority': _draft.priority.name,
       },
     );
 

@@ -260,17 +260,15 @@ Scheduled Today:
 - Show up to 3 items, then "Show more (X)".
 - Sorting:
   1) Catch-up first
-  2) Value priority (break ties within catch-ups)
-  3) Last scheduled day (oldest missed first)
-  4) Name
+  2) Last scheduled day (oldest missed first)
+  3) Name
 
 Flexible Focus:
 - Show up to 4 items, then "Show more (X)".
 - Sorting:
   1) Fewest days left
   2) Remaining count (highest first)
-  3) Value priority
-  4) Name
+  3) Name
 
 ## Future Enhancements
 
