@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:git_hooks/git_hooks.dart';
@@ -17,88 +16,508 @@ void main(List<String> arguments) {
 }
 
 Future<bool> preCommit() async {
-  print('🔍 Running pre-commit checks...\n');
+  print('Running pre-commit checks...\n');
 
-  print('\n✅ All pre-commit checks passed!');
+  print('\nAll pre-commit checks passed!');
   return true;
 }
 
 Future<bool> prePush() async {
-  print('🚀 Running pre-push checks...\n');
+  print('Running pre-push checks...\n');
 
-  // 1. Check for unsafe testWidgets usage
-  if (!await _checkUnsafeTests()) {
+  // 1. Get dependencies
+  if (!await _runPubGet()) {
     _printFailure();
     return false;
   }
 
-  // 2. Check for raw StreamController usage in tests
-  if (!await _checkRawStreamController()) {
+  // 2. Generate code
+  if (!await _runBuildRunner()) {
     _printFailure();
     return false;
   }
 
-  // 3. Enforce seeded subjects in widget tests
-  if (!await _checkNoUnseededWidgetSubjects()) {
+  // 3. Run repo guardrails
+  if (!await _runGuardrails()) {
     _printFailure();
     return false;
   }
 
-  // 4. Block deep imports into local package internals (lib/src)
-  if (!await _checkNoLocalPackageSrcDeepImports()) {
-    _printFailure();
-    return false;
-  }
-
-  // 5. Block DateTime.now() usage in presentation
-  if (!await _checkNoDateTimeNowInPresentation()) {
-    _printFailure();
-    return false;
-  }
-
-  // 6. Enforce USM tile action guardrails (no DI/mutations/SnackBars in tiles)
-  if (!await _runUsmTileActionGuardrail()) {
-    _printFailure();
-    return false;
-  }
-
-  // 7. Run flutter analyze (no warnings allowed)
+  // 4. Run flutter analyze
   if (!await _runAnalyze()) {
     _printFailure();
     return false;
   }
 
-  // 8. Validate IdGenerator table registration
+  // 5. Check formatting
+  if (!await _runFormatCheck()) {
+    _printFailure();
+    return false;
+  }
+
+  // 6. Check for unsafe testWidgets usage
+  if (!await _checkUnsafeTestWidgets()) {
+    _printFailure();
+    return false;
+  }
+
+  // 7. Check for unsafe async test() with StreamController
+  if (!await _checkUnsafeAsyncTestWithStreamController()) {
+    _printFailure();
+    return false;
+  }
+
+  // 8. Check for raw StreamController usage in tests
+  if (!await _checkRawStreamControllerUsage()) {
+    _printFailure();
+    return false;
+  }
+
+  // 9. Validate IdGenerator table registration
   if (!await _validateTableRegistration()) {
     _printFailure();
     return false;
   }
 
-  // 9. Run tests (no coverage gate)
+  // 10. Run tests (no coverage gate)
   if (!await _runTests()) {
     _printFailure();
     return false;
   }
 
-  print('\n✅ All pre-push checks passed!');
+  print('\nAll pre-push checks passed!');
   return true;
 }
 
+Future<bool> _runPubGet() async {
+  print('Getting dependencies...');
+
+  try {
+    final rootResult = await Process.run(
+      'flutter',
+      ['pub', 'get'],
+      runInShell: true,
+    );
+    if (rootResult.exitCode != 0) {
+      stdout.write(rootResult.stdout);
+      stderr.write(rootResult.stderr);
+      return false;
+    }
+
+    final domainResult = await Process.run(
+      'flutter',
+      ['pub', 'get'],
+      workingDirectory: 'packages/taskly_domain',
+      runInShell: true,
+    );
+    if (domainResult.exitCode != 0) {
+      stdout.write(domainResult.stdout);
+      stderr.write(domainResult.stderr);
+      return false;
+    }
+
+    final dataResult = await Process.run(
+      'flutter',
+      ['pub', 'get'],
+      workingDirectory: 'packages/taskly_data',
+      runInShell: true,
+    );
+    if (dataResult.exitCode != 0) {
+      stdout.write(dataResult.stdout);
+      stderr.write(dataResult.stderr);
+      return false;
+    }
+
+    print('   Dependencies resolved.');
+    return true;
+  } catch (e) {
+    print('   Could not get dependencies: $e');
+    return false;
+  }
+}
+
+Future<bool> _runBuildRunner() async {
+  print('Generating code...');
+
+  Future<bool> runFor(String? workingDirectory) async {
+    final result = await Process.run(
+      'dart',
+      ['run', 'build_runner', 'build', '--delete-conflicting-outputs'],
+      workingDirectory: workingDirectory,
+      runInShell: true,
+    );
+    if (result.exitCode != 0) {
+      stdout.write(result.stdout);
+      stderr.write(result.stderr);
+      return false;
+    }
+    return true;
+  }
+
+  try {
+    if (!await runFor(null)) return false;
+    if (!await runFor('packages/taskly_domain')) return false;
+    if (!await runFor('packages/taskly_data')) return false;
+
+    print('   Code generation completed.');
+    return true;
+  } catch (e) {
+    print('   Could not run build_runner: $e');
+    return false;
+  }
+}
+
+Future<bool> _runGuardrails() async {
+  print('Running repo guardrails...');
+
+  try {
+    final result = await Process.run(
+      'dart',
+      ['run', 'tool/guardrails.dart'],
+      runInShell: true,
+    );
+
+    stdout.write(result.stdout);
+    stderr.write(result.stderr);
+
+    if (result.exitCode != 0) {
+      return false;
+    }
+    return true;
+  } catch (e) {
+    print('   Could not run guardrails: $e');
+    return false;
+  }
+}
+
+Future<bool> _runAnalyze() async {
+  print('Running flutter analyze...');
+
+  try {
+    final result = await Process.run(
+      'flutter',
+      ['analyze', '--fatal-warnings', '--no-fatal-infos'],
+      runInShell: true,
+    );
+
+    final stdout = (result.stdout as String).trim();
+    final stderr = (result.stderr as String).trim();
+
+    if (result.exitCode != 0) {
+      print('   Analysis found issues:\n');
+      if (stdout.isNotEmpty) {
+        final indented = stdout.split('\n').map((l) => '   $l').join('\n');
+        print(indented);
+      }
+      if (stderr.isNotEmpty) {
+        final indented = stderr.split('\n').map((l) => '   $l').join('\n');
+        print(indented);
+      }
+      print('');
+      return false;
+    }
+
+    print('   No analysis issues found.');
+    return true;
+  } catch (e) {
+    print('   Could not run analyzer: $e');
+    return false;
+  }
+}
+
+Future<bool> _runFormatCheck() async {
+  print('Checking formatting...');
+
+  try {
+    final result = await Process.run(
+      'dart',
+      ['format', '--set-exit-if-changed', '.'],
+      runInShell: true,
+    );
+
+    stdout.write(result.stdout);
+    stderr.write(result.stderr);
+
+    if (result.exitCode != 0) {
+      print('   Formatting check failed.');
+      return false;
+    }
+
+    print('   Formatting is up to date.');
+    return true;
+  } catch (e) {
+    print('   Could not run format check: $e');
+    return false;
+  }
+}
+
+Future<bool> _checkUnsafeTestWidgets() async {
+  print('Checking for unsafe testWidgets usage...');
+
+  try {
+    final testFiles = Directory('test')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((file) => file.path.endsWith('_test.dart'))
+        .toList(growable: false);
+
+    if (testFiles.isEmpty) {
+      print('   No test files found.');
+      return true;
+    }
+
+    final violations = <String>[];
+
+    for (final file in testFiles) {
+      final content = file.readAsStringSync();
+      if (!content.contains('pumpAndSettle')) continue;
+      if (!content.contains('testWidgets(')) continue;
+      if (content.contains('testWidgetsSafe(')) continue;
+      if (content.contains('// safe:')) continue;
+      violations.add(file.path);
+    }
+
+    if (violations.isNotEmpty) {
+      print('   Found testWidgets() in files using pumpAndSettle():');
+      for (final file in violations) {
+        print('   $file');
+      }
+      print('');
+      print('   This combination can hang indefinitely with BLoC streams.');
+      print(
+        '   Replace testWidgets() with testWidgetsSafe() from test_helpers.dart',
+      );
+      return false;
+    }
+
+    print('   No unsafe testWidgets patterns found.');
+    return true;
+  } catch (e) {
+    print('   Could not check test files: $e');
+    return false;
+  }
+}
+
+Future<bool> _checkUnsafeAsyncTestWithStreamController() async {
+  print('Checking for unsafe async test() with StreamController...');
+
+  try {
+    final testFiles = Directory('test')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((file) => file.path.endsWith('_test.dart'))
+        .toList(growable: false);
+
+    if (testFiles.isEmpty) {
+      print('   No test files found.');
+      return true;
+    }
+
+    final violations = <String>[];
+
+    for (final file in testFiles) {
+      final content = file.readAsStringSync();
+      if (!content.contains('StreamController')) continue;
+      if (!content.contains('test(')) continue;
+      if (!content.contains('async')) continue;
+      if (content.contains('testSafe(')) continue;
+      if (content.contains('// safe:')) continue;
+      violations.add(file.path);
+    }
+
+    if (violations.isNotEmpty) {
+      print('   Found async test() in files using StreamController:');
+      for (final file in violations) {
+        print('   $file');
+      }
+      print('');
+      print('   This combination can hang indefinitely with BLoC streams.');
+      print('   Replace test() with testSafe() for async tests using streams');
+      return false;
+    }
+
+    print('   No unsafe async test patterns found.');
+    return true;
+  } catch (e) {
+    print('   Could not check async tests with StreamController: $e');
+    return false;
+  }
+}
+
+Future<bool> _checkRawStreamControllerUsage() async {
+  print('Checking for raw StreamController usage in tests...');
+
+  try {
+    final testFiles = Directory('test')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((file) => file.path.endsWith('_test.dart'))
+        .toList(growable: false);
+
+    if (testFiles.isEmpty) {
+      print('   No test files found.');
+      return true;
+    }
+
+    final violations = <String>[];
+    final pattern = RegExp(r'StreamController\s*<');
+
+    for (final file in testFiles) {
+      final lines = file.readAsStringSync().split('\n');
+      for (var i = 0; i < lines.length; i++) {
+        final line = lines[i];
+        if (!pattern.hasMatch(line)) continue;
+        if (line.contains('TestStreamController')) continue;
+        if (line.contains('// ignore-stream-controller')) continue;
+        violations.add('${file.path}:${i + 1}: ${line.trim()}');
+      }
+    }
+
+    if (violations.isNotEmpty) {
+      print('   Found raw StreamController usage in test files:');
+      for (final violation in violations.take(20)) {
+        print('   $violation');
+      }
+      if (violations.length > 20) {
+        print('   ... and ${violations.length - 20} more');
+      }
+      print('');
+      print('   Raw StreamController can cause tests to hang indefinitely.');
+      print(
+        '   Use TestStreamController from bloc_test_patterns.dart instead.',
+      );
+      print('   Add "// ignore-stream-controller" to line if intentional.');
+      return false;
+    }
+
+    print('   No raw StreamController usage found in tests.');
+    return true;
+  } catch (e) {
+    print('   Could not check for raw StreamController: $e');
+    return false;
+  }
+}
+
+void _printFailure() {
+  print('\nPre-push checks failed. Fix issues before pushing.');
+  print('   Use "git push --no-verify" to bypass (not recommended).');
+}
+
+/// Validates that all PowerSync tables are registered in IdGenerator.
+///
+/// Parses both files and compares table names to find missing registrations.
+Future<bool> _validateTableRegistration() async {
+  print('Validating IdGenerator table registration...');
+
+  try {
+    // Path to IdGenerator
+    const idGeneratorPath = 'packages/taskly_data/lib/src/id/id_generator.dart';
+
+    // Path to PowerSync schema
+    const schemaPath =
+        'packages/taskly_data/lib/src/infrastructure/powersync/schema.dart';
+
+    final idGeneratorFile = File(idGeneratorPath);
+    final schemaFile = File(schemaPath);
+
+    if (!idGeneratorFile.existsSync()) {
+      print('   IdGenerator file not found at $idGeneratorPath');
+      return true; // Don't block if file doesn't exist yet
+    }
+
+    if (!schemaFile.existsSync()) {
+      print('   Schema file not found at $schemaPath');
+      return true; // Don't block if file doesn't exist yet
+    }
+
+    final idGeneratorContent = idGeneratorFile.readAsStringSync();
+    final schemaContent = schemaFile.readAsStringSync();
+
+    // Extract table names from PowerSync schema
+    // Pattern: Table('table_name', [...])
+    final schemaTablePattern = RegExp(r"Table\(\s*'(\w+)'");
+    final schemaTables = schemaTablePattern
+        .allMatches(schemaContent)
+        .map((m) => m.group(1)!)
+        .toSet();
+
+    // Extract tables from v5Tables set
+    // Pattern: 'table_name',
+    final v5Pattern = RegExp(r'v5Tables\s*=\s*\{([^}]+)\}');
+    final v5Match = v5Pattern.firstMatch(idGeneratorContent);
+    final v5Tables = <String>{};
+    if (v5Match != null) {
+      final tablePattern = RegExp(r"'(\w+)'");
+      v5Tables.addAll(
+        tablePattern.allMatches(v5Match.group(1)!).map((m) => m.group(1)!),
+      );
+    }
+
+    // Extract tables from v4Tables set
+    final v4Pattern = RegExp(r'v4Tables\s*=\s*\{([^}]+)\}');
+    final v4Match = v4Pattern.firstMatch(idGeneratorContent);
+    final v4Tables = <String>{};
+    if (v4Match != null) {
+      final tablePattern = RegExp(r"'(\w+)'");
+      v4Tables.addAll(
+        tablePattern.allMatches(v4Match.group(1)!).map((m) => m.group(1)!),
+      );
+    }
+
+    // Combine registered tables
+    final registeredTables = {...v5Tables, ...v4Tables};
+
+    // Find tables in schema but not registered
+    final unregisteredTables = schemaTables.difference(registeredTables);
+
+    // Find tables registered but not in schema (orphaned)
+    final orphanedTables = registeredTables.difference(schemaTables);
+
+    var hasIssues = false;
+
+    if (unregisteredTables.isNotEmpty) {
+      print('   Tables in schema but NOT registered in IdGenerator:');
+      for (final table in unregisteredTables.toList()..sort()) {
+        print('      - $table');
+      }
+      print(
+        '   Add these to v5Tables or v4Tables in packages/taskly_data/lib/src/id/id_generator.dart',
+      );
+      hasIssues = true;
+    }
+
+    if (orphanedTables.isNotEmpty) {
+      print('   Tables registered in IdGenerator but NOT in schema:');
+      for (final table in orphanedTables.toList()..sort()) {
+        print('      - $table');
+      }
+      print('   Consider removing these from id_generator.dart');
+      // Warning only, don't fail
+    }
+
+    if (!hasIssues) {
+      print('   All ${schemaTables.length} tables are registered.');
+      print('     - v5 (deterministic): ${v5Tables.length} tables');
+      print('     - v4 (random): ${v4Tables.length} tables');
+    }
+
+    return !hasIssues;
+  } catch (e) {
+    print('   Could not validate table registration: $e');
+    return true; // Don't block on check failure
+  }
+}
+
 Future<bool> _runTests() async {
-  print('🧪 Running tests...');
+  print('Running tests...');
 
   try {
     final result = await Process.run(
       'flutter',
       [
         'test',
-        '--no-pub',
-        '-x',
-        'pipeline',
-        '-x',
-        'diagnosis',
         '--reporter',
-        'json',
+        'expanded',
       ],
       runInShell: true,
     );
@@ -108,105 +527,17 @@ Future<bool> _runTests() async {
 
     if (result.exitCode != 0) {
       final logPath = _writeTestOutput(stdout, stderr);
-      print('   ❌ Tests failed (exit code ${result.exitCode}).');
-      _printTestFailures(stdout);
+      print('   Tests failed (exit code ${result.exitCode}).');
       print('   Full output saved to: $logPath');
       return false;
     }
 
-    print('   ✓ All tests passed.');
+    print('   All tests passed.');
     return true;
   } catch (e) {
-    print('   ⚠️  Could not run tests: $e');
+    print('   Could not run tests: $e');
     return false;
   }
-}
-
-void _printTestFailures(String stdout) {
-  if (stdout.isEmpty) {
-    print('   No test output captured.');
-    return;
-  }
-
-  final testNames = <int, String>{};
-  final failures = <int, _TestFailure>{};
-
-  for (final line in stdout.split('\n')) {
-    if (line.trim().isEmpty) continue;
-    Map<String, dynamic> event;
-    try {
-      event = jsonDecode(line) as Map<String, dynamic>;
-    } catch (_) {
-      continue;
-    }
-
-    final type = event['type'];
-    if (type == 'testStart') {
-      final test = event['test'];
-      if (test is Map<String, dynamic>) {
-        final id = test['id'];
-        final name = test['name'];
-        if (id is int && name is String) {
-          testNames[id] = name;
-        }
-      }
-    } else if (type == 'testDone') {
-      final result = event['result'];
-      final id = event['testID'];
-      if (id is int && result is String && result != 'success') {
-        failures.putIfAbsent(
-          id,
-          () => _TestFailure(
-            name: testNames[id] ?? 'Test $id',
-          ),
-        );
-      }
-    } else if (type == 'error') {
-      final id = event['testID'];
-      if (id is int) {
-        final failure = failures.putIfAbsent(
-          id,
-          () => _TestFailure(name: testNames[id] ?? 'Test $id'),
-        );
-        final error = event['error'];
-        final stack = event['stackTrace'];
-        if (error is String && error.isNotEmpty) {
-          failure.error ??= error;
-        }
-        if (stack is String && stack.isNotEmpty) {
-          failure.stackTrace ??= stack;
-        }
-      }
-    }
-  }
-
-  if (failures.isEmpty) {
-    print('   No structured failures found in test output.');
-    return;
-  }
-
-  for (final failure in failures.values) {
-    print('   FAIL: ${failure.name}');
-    if (failure.error != null) {
-      print('   ${failure.error}');
-    }
-    if (failure.stackTrace != null) {
-      final indented = failure.stackTrace!
-          .split('\n')
-          .map((l) => '   $l')
-          .join('\n');
-      print(indented);
-    }
-    print('');
-  }
-}
-
-class _TestFailure {
-  _TestFailure({required this.name});
-
-  final String name;
-  String? error;
-  String? stackTrace;
 }
 
 String _writeTestOutput(String stdout, String stderr) {
@@ -275,491 +606,5 @@ void _pruneTestLogs(Directory logsDir) {
     }
   } catch (_) {
     // Best-effort cleanup; do not block pre-push.
-  }
-}
-
-Future<bool> _checkNoDateTimeNowInPresentation() async {
-  print('🕒 Checking for DateTime.now() in presentation...');
-
-  try {
-    final result = await Process.run(
-      'dart',
-      ['run', 'tool/no_datetime_now_in_presentation.dart'],
-      runInShell: true,
-    );
-
-    final stdout = (result.stdout as String).trim();
-    final stderr = (result.stderr as String).trim();
-
-    if (result.exitCode != 0) {
-      print('   ❌ Presentation DateTime.now guardrail failed:\n');
-      if (stdout.isNotEmpty) {
-        final indented = stdout.split('\n').map((l) => '   $l').join('\n');
-        print(indented);
-      }
-      if (stderr.isNotEmpty) {
-        final indented = stderr.split('\n').map((l) => '   $l').join('\n');
-        print(indented);
-      }
-      print('');
-      return false;
-    }
-
-    print('   ✓ No DateTime.now() usage found in presentation.');
-    return true;
-  } catch (e) {
-    print('   ⚠️  Could not run presentation DateTime.now guardrail: $e');
-    return false;
-  }
-}
-
-Future<bool> _checkNoLocalPackageSrcDeepImports() async {
-  print('🛡️  Checking for local package src deep imports...');
-
-  try {
-    final result = await Process.run(
-      'dart',
-      ['run', 'tool/no_local_package_src_deep_imports.dart'],
-      runInShell: true,
-    );
-
-    final stdout = (result.stdout as String).trim();
-    final stderr = (result.stderr as String).trim();
-
-    if (result.exitCode != 0) {
-      print('   ❌ Deep-import check failed:\n');
-      if (stdout.isNotEmpty) {
-        final indented = stdout.split('\n').map((l) => '   $l').join('\n');
-        print(indented);
-      }
-      if (stderr.isNotEmpty) {
-        final indented = stderr.split('\n').map((l) => '   $l').join('\n');
-        print(indented);
-      }
-      print('');
-      return false;
-    }
-
-    print('   ✓ No local package src deep imports found.');
-    return true;
-  } catch (e) {
-    print('   ⚠️  Could not run deep-import check: $e');
-    return false;
-  }
-}
-
-Future<bool> _runUsmTileActionGuardrail() async {
-  print('🧱 Running USM tile action guardrail...');
-
-  try {
-    final result = await Process.run(
-      'dart',
-      ['run', 'tool/usm_tile_action_guardrail.dart'],
-      runInShell: true,
-    );
-
-    final stdout = (result.stdout as String).trim();
-    final stderr = (result.stderr as String).trim();
-
-    if (result.exitCode != 0) {
-      print('   ❌ Tile action guardrail failed:\n');
-      if (stdout.isNotEmpty) {
-        final indented = stdout.split('\n').map((l) => '   $l').join('\n');
-        print(indented);
-      }
-      if (stderr.isNotEmpty) {
-        final indented = stderr.split('\n').map((l) => '   $l').join('\n');
-        print(indented);
-      }
-      print('');
-      return false;
-    }
-
-    print('   ✓ Tile action guardrail passed.');
-    return true;
-  } catch (e) {
-    print('   ⚠️  Could not run tile action guardrail: $e');
-    return false;
-  }
-}
-
-void _printFailure() {
-  print('\n❌ Pre-push checks failed. Fix issues before pushing.');
-  print('   Use "git push --no-verify" to bypass (not recommended).');
-}
-
-/// Validates that all PowerSync tables are registered in IdGenerator.
-///
-/// Parses both files and compares table names to find missing registrations.
-Future<bool> _validateTableRegistration() async {
-  print('📋 Validating IdGenerator table registration...');
-
-  try {
-    // Path to IdGenerator
-    const idGeneratorPath = 'lib/data/id/id_generator.dart';
-
-    // Path to PowerSync schema
-    const schemaPath = 'lib/data/infrastructure/powersync/schema.dart';
-
-    final idGeneratorFile = File(idGeneratorPath);
-    final schemaFile = File(schemaPath);
-
-    if (!idGeneratorFile.existsSync()) {
-      print('   ⚠️  IdGenerator file not found at $idGeneratorPath');
-      return true; // Don't block if file doesn't exist yet
-    }
-
-    if (!schemaFile.existsSync()) {
-      print('   ⚠️  Schema file not found at $schemaPath');
-      return true; // Don't block if file doesn't exist yet
-    }
-
-    final idGeneratorContent = idGeneratorFile.readAsStringSync();
-    final schemaContent = schemaFile.readAsStringSync();
-
-    // Extract table names from PowerSync schema
-    // Pattern: Table('table_name', [...])
-    final schemaTablePattern = RegExp(r"Table\(\s*'(\w+)'");
-    final schemaTables = schemaTablePattern
-        .allMatches(schemaContent)
-        .map((m) => m.group(1)!)
-        .toSet();
-
-    // Extract tables from v5Tables set
-    // Pattern: 'table_name',
-    final v5Pattern = RegExp(r'v5Tables\s*=\s*\{([^}]+)\}');
-    final v5Match = v5Pattern.firstMatch(idGeneratorContent);
-    final v5Tables = <String>{};
-    if (v5Match != null) {
-      final tablePattern = RegExp(r"'(\w+)'");
-      v5Tables.addAll(
-        tablePattern.allMatches(v5Match.group(1)!).map((m) => m.group(1)!),
-      );
-    }
-
-    // Extract tables from v4Tables set
-    final v4Pattern = RegExp(r'v4Tables\s*=\s*\{([^}]+)\}');
-    final v4Match = v4Pattern.firstMatch(idGeneratorContent);
-    final v4Tables = <String>{};
-    if (v4Match != null) {
-      final tablePattern = RegExp(r"'(\w+)'");
-      v4Tables.addAll(
-        tablePattern.allMatches(v4Match.group(1)!).map((m) => m.group(1)!),
-      );
-    }
-
-    // Combine registered tables
-    final registeredTables = {...v5Tables, ...v4Tables};
-
-    // Find tables in schema but not registered
-    final unregisteredTables = schemaTables.difference(registeredTables);
-
-    // Find tables registered but not in schema (orphaned)
-    final orphanedTables = registeredTables.difference(schemaTables);
-
-    var hasIssues = false;
-
-    if (unregisteredTables.isNotEmpty) {
-      print('   ❌ Tables in schema but NOT registered in IdGenerator:');
-      for (final table in unregisteredTables.toList()..sort()) {
-        print('      - $table');
-      }
-      print('   Add these to v5Tables or v4Tables in id_generator.dart');
-      hasIssues = true;
-    }
-
-    if (orphanedTables.isNotEmpty) {
-      print('   ⚠️  Tables registered in IdGenerator but NOT in schema:');
-      for (final table in orphanedTables.toList()..sort()) {
-        print('      - $table');
-      }
-      print('   Consider removing these from id_generator.dart');
-      // Warning only, don't fail
-    }
-
-    if (!hasIssues) {
-      print('   ✓ All ${schemaTables.length} tables are registered.');
-      print('     - v5 (deterministic): ${v5Tables.length} tables');
-      print('     - v4 (random): ${v4Tables.length} tables');
-    }
-
-    return !hasIssues;
-  } catch (e) {
-    print('   ⚠️  Could not validate table registration: $e');
-    return true; // Don't block on check failure
-  }
-}
-
-Future<bool> _checkUnsafeTests() async {
-  print('📋 Checking for unsafe testWidgets usage...');
-
-  try {
-    // Get staged dart test files
-    final result = await Process.run(
-      'git',
-      ['diff', '--cached', '--name-only', '--diff-filter=ACM'],
-    );
-
-    final stagedFiles = (result.stdout as String)
-        .split('\n')
-        .where((f) => f.endsWith('_test.dart'))
-        .toList();
-
-    if (stagedFiles.isEmpty) {
-      print('   No test files staged.');
-      return true;
-    }
-
-    var hasUnsafe = false;
-
-    for (final file in stagedFiles) {
-      final fileObj = File(file);
-      if (!fileObj.existsSync()) continue;
-
-      final content = fileObj.readAsStringSync();
-      final lines = content.split('\n');
-
-      // Check 1: testWidgets + pumpAndSettle (widget tests at risk of hanging)
-      final usesPumpAndSettle = content.contains('pumpAndSettle');
-      if (usesPumpAndSettle) {
-        for (var i = 0; i < lines.length; i++) {
-          final line = lines[i];
-          // Check for testWidgets( that is NOT testWidgetsSafe(
-          if (line.contains('testWidgets(') &&
-              !line.contains('testWidgetsSafe(') &&
-              !line.contains('// safe:')) {
-            print(
-              '   ⚠️  $file:${i + 1}: Use testWidgetsSafe() instead of testWidgets()',
-            );
-            hasUnsafe = true;
-          }
-        }
-      }
-
-      // Check 2: async test() + StreamController (unit tests at risk of hanging)
-      final usesStreamController = content.contains('StreamController');
-      if (usesStreamController) {
-        // Regex to find async tests: test('...', () async {
-        final asyncTestPattern = RegExp(r"^\s*test\s*\(\s*'");
-        for (var i = 0; i < lines.length; i++) {
-          final line = lines[i];
-          // Check for test( that is NOT testSafe( in files with StreamController
-          if (asyncTestPattern.hasMatch(line) &&
-              !line.contains('testSafe(') &&
-              !line.contains('// safe:')) {
-            // Look ahead to see if this test is async
-            final nextLines = lines
-                .skip(i)
-                .take(3)
-                .join('\n'); // Check next 3 lines
-            if (nextLines.contains('async')) {
-              print(
-                '   ⚠️  $file:${i + 1}: Use testSafe() instead of test() for async tests with streams',
-              );
-              hasUnsafe = true;
-            }
-          }
-        }
-      }
-    }
-
-    if (hasUnsafe) {
-      print('   ❌ Found unsafe test patterns.');
-      print('   These combinations can hang indefinitely with BLoC streams.');
-      print(
-        '   Replace testWidgets() with testWidgetsSafe() from test_helpers.dart',
-      );
-      print(
-        '   Replace test() with testSafe() for async tests using streams',
-      );
-      print(
-        '   Or add "// safe:" comment if you\'re certain the test cannot hang.',
-      );
-      return false;
-    }
-
-    print('   ✓ No unsafe test patterns found.');
-    return true;
-  } catch (e) {
-    print('   ⚠️  Could not check test files: $e');
-    return true; // Don't block on check failure
-  }
-}
-
-/// Checks for raw StreamController usage in bloc tests.
-///
-/// Raw StreamController can cause test hangs because:
-/// 1. `act()` fires event AND emits data simultaneously
-/// 2. Bloc's event handler subscribes to stream AFTER emit
-/// 3. Data is lost - test waits forever for states that never arrive
-///
-/// Use TestStreamController from bloc_test_patterns.dart instead.
-Future<bool> _checkRawStreamController() async {
-  print('🔄 Checking for raw StreamController usage in tests...');
-
-  try {
-    // Only scan staged test files so existing legacy tests don't permanently
-    // block pushes.
-    final result = await Process.run(
-      'git',
-      ['diff', '--cached', '--name-only', '--diff-filter=ACM'],
-    );
-
-    final testFiles = (result.stdout as String)
-        .split('\n')
-        .map((f) => f.trim())
-        .where((f) => f.isNotEmpty)
-        .where((f) => f.endsWith('_test.dart'))
-        .toList(growable: false);
-
-    if (testFiles.isEmpty) {
-      print('   No test files staged.');
-      return true;
-    }
-
-    final violations = <String>[];
-
-    // Patterns to detect raw StreamController usage
-    final streamControllerPattern = RegExp(
-      r'StreamController\s*<',
-      caseSensitive: true,
-    );
-
-    // Allowed patterns (whitelist)
-    final allowedPatterns = [
-      'TestStreamController', // Our safe wrapper
-      'bloc_test_patterns.dart', // The file that defines TestStreamController
-      '// ignore-stream-controller', // Explicit opt-out
-      'widget_test_helpers.dart', // Other test infrastructure
-      'fake_repositories.dart', // Fake repos use internal streams safely
-    ];
-
-    for (final filePath in testFiles) {
-      final file = File(filePath);
-      if (!file.existsSync()) continue;
-
-      final content = file.readAsStringSync();
-
-      // Skip if file uses allowed patterns
-      if (allowedPatterns.any(content.contains)) continue;
-
-      // Check for raw StreamController
-      if (streamControllerPattern.hasMatch(content)) {
-        final lines = content.split('\n');
-        for (var i = 0; i < lines.length; i++) {
-          final line = lines[i];
-          if (streamControllerPattern.hasMatch(line) &&
-              !line.contains('TestStreamController') &&
-              !line.contains('// ignore-stream-controller')) {
-            violations.add('   $filePath:${i + 1}: ${line.trim()}');
-          }
-        }
-      }
-    }
-
-    if (violations.isNotEmpty) {
-      print('   ❌ Found raw StreamController usage in test files:\n');
-      violations.take(10).forEach(print);
-      if (violations.length > 10) {
-        print('   ... and ${violations.length - 10} more');
-      }
-      print('');
-      print('   Raw StreamController can cause tests to hang indefinitely.');
-      print(
-        '   Use TestStreamController from bloc_test_patterns.dart instead:',
-      );
-      print('');
-      print('     // Before (can hang):');
-      print('     final controller = StreamController<List<Task>>();');
-      print('');
-      print('     // After (safe):');
-      print('     final controller = TestStreamController<List<Task>>();');
-      print(
-        '     controller.emit([task]);  // Safe - replays to late subscribers',
-      );
-      print('');
-      print('   Add "// ignore-stream-controller" to line if intentional.');
-      return false;
-    }
-
-    print('   ✓ No raw StreamController usage found in tests.');
-    return true;
-  } catch (e) {
-    print('   ⚠️  Could not check for raw StreamController: $e');
-    return true; // Don't block on check failure
-  }
-}
-
-Future<bool> _checkNoUnseededWidgetSubjects() async {
-  print('🧪 Checking for unseeded subjects in widget tests...');
-
-  try {
-    final result = await Process.run(
-      'dart',
-      ['run', 'tool/no_unseeded_subjects_in_widget_tests.dart'],
-      runInShell: true,
-    );
-
-    final stdout = (result.stdout as String).trim();
-    final stderr = (result.stderr as String).trim();
-
-    if (result.exitCode != 0) {
-      print('   ❌ Unseeded subject check failed:\n');
-      if (stdout.isNotEmpty) {
-        final indented = stdout.split('\n').map((l) => '   $l').join('\n');
-        print(indented);
-      }
-      if (stderr.isNotEmpty) {
-        final indented = stderr.split('\n').map((l) => '   $l').join('\n');
-        print(indented);
-      }
-      print('');
-      return false;
-    }
-
-    print('   ✓ No unseeded subjects found in widget tests.');
-    return true;
-  } catch (e) {
-    print('   ⚠️  Could not run unseeded subject guardrail: $e');
-    return false;
-  }
-}
-
-Future<bool> _runAnalyze() async {
-  print('🔬 Running flutter analyze...');
-
-  try {
-    final result = await Process.run('flutter', ['analyze'], runInShell: true);
-
-    final stdout = (result.stdout as String).trim();
-    final stderr = (result.stderr as String).trim();
-
-    if (result.exitCode != 0) {
-      print('   ❌ Analysis found issues:\n');
-      if (stdout.isNotEmpty) {
-        // Filter out info-level messages, keep only warnings and errors
-        // Format: "  info - path:line:col - message - rule"
-        final infoPattern = RegExp(r'^\s*info\s*-');
-        final lines = stdout.split('\n').where((line) {
-          return !infoPattern.hasMatch(line);
-        }).toList();
-        if (lines.isNotEmpty) {
-          final indented = lines.map((l) => '   $l').join('\n');
-          print(indented);
-        }
-      }
-      if (stderr.isNotEmpty) {
-        final indented = stderr.split('\n').map((l) => '   $l').join('\n');
-        print(indented);
-      }
-      print('');
-      return false;
-    }
-
-    print('   ✓ No analysis issues found.');
-    return true;
-  } catch (e) {
-    print('   ⚠️  Could not run analyzer: $e');
-    return false;
   }
 }
