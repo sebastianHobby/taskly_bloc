@@ -146,18 +146,38 @@ Future<bool> _runBuildRunner() async {
       workingDirectory: workingDirectory,
       runInShell: true,
     );
-    if (result.exitCode != 0) {
-      stdout.write(result.stdout);
-      stderr.write(result.stderr);
+    if (result.exitCode == 0) {
+      return true;
+    }
+
+    stdout.write(result.stdout);
+    stderr.write(result.stderr);
+    print('   build_runner failed; attempting clean + retry.');
+
+    final cleaned = await _runBuildRunnerClean(workingDirectory);
+    if (!cleaned) {
       return false;
     }
+
+    final retry = await Process.run(
+      'dart',
+      ['run', 'build_runner', 'build', '--delete-conflicting-outputs'],
+      workingDirectory: workingDirectory,
+      runInShell: true,
+    );
+    if (retry.exitCode != 0) {
+      stdout.write(retry.stdout);
+      stderr.write(retry.stderr);
+      return false;
+    }
+
     return true;
   }
 
   try {
-    if (!await runFor(null)) return false;
-    if (!await runFor('packages/taskly_domain')) return false;
     if (!await runFor('packages/taskly_data')) return false;
+    if (!await runFor('packages/taskly_domain')) return false;
+    if (!await runFor(null)) return false;
 
     print('   Code generation completed.');
     return true;
@@ -165,6 +185,21 @@ Future<bool> _runBuildRunner() async {
     print('   Could not run build_runner: $e');
     return false;
   }
+}
+
+Future<bool> _runBuildRunnerClean(String? workingDirectory) async {
+  final result = await Process.run(
+    'dart',
+    ['run', 'build_runner', 'clean'],
+    workingDirectory: workingDirectory,
+    runInShell: true,
+  );
+  if (result.exitCode != 0) {
+    stdout.write(result.stdout);
+    stderr.write(result.stderr);
+    return false;
+  }
+  return true;
 }
 
 Future<bool> _runGuardrails() async {

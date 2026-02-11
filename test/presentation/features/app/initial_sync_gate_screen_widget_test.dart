@@ -26,7 +26,7 @@ class MockAuthenticatedAppServicesCoordinator extends Mock
 class MockInitialSyncService extends Mock implements InitialSyncService {}
 
 class FakeAppLifecycleEvents implements AppLifecycleEvents {
-  final _controller = StreamController<AppLifecycleEvent>.broadcast();
+  final _controller = TestStreamController<AppLifecycleEvent>();
 
   @override
   Stream<AppLifecycleEvent> get events => _controller.stream;

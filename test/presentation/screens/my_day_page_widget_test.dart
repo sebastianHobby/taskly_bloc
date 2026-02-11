@@ -117,8 +117,8 @@ void main() {
   late BehaviorSubject<List<RoutineCompletion>> completionsSubject;
   late BehaviorSubject<List<RoutineSkip>> skipsSubject;
   late BehaviorSubject<my_day.MyDayDayPicks> dayPicksSubject;
-  late StreamController<TemporalTriggerEvent> temporalTriggerController;
-  late StreamController<AppLifecycleEvent> appLifecycleController;
+  late TestStreamController<TemporalTriggerEvent> temporalTriggerController;
+  late TestStreamController<AppLifecycleEvent> appLifecycleController;
 
   final dayKeyUtc = DateTime.utc(2025, 1, 15);
   final nowUtc = DateTime.utc(2025, 1, 15, 12);
@@ -166,9 +166,8 @@ void main() {
         picks: const <my_day.MyDayPick>[],
       ),
     );
-    temporalTriggerController =
-        StreamController<TemporalTriggerEvent>.broadcast();
-    appLifecycleController = StreamController<AppLifecycleEvent>.broadcast();
+    temporalTriggerController = TestStreamController<TemporalTriggerEvent>();
+    appLifecycleController = TestStreamController<AppLifecycleEvent>();
 
     when(() => nowService.nowUtc()).thenReturn(nowUtc);
     when(() => nowService.nowLocal()).thenReturn(DateTime(2025, 1, 15, 12));
@@ -450,8 +449,8 @@ void main() {
     addTearDown(completionsSubject.close);
     addTearDown(skipsSubject.close);
     addTearDown(dayPicksSubject.close);
-    addTearDown(() async => temporalTriggerController.close());
-    addTearDown(() async => appLifecycleController.close());
+    addTearDown(temporalTriggerController.close);
+    addTearDown(appLifecycleController.close);
     addTearDown(sessionDayKeyService.dispose);
     addTearDown(sessionStreamCacheManager.dispose);
     addTearDown(demoModeService.dispose);
@@ -530,7 +529,7 @@ void main() {
   Future<void> pumpMyDay(WidgetTester tester) async {
     debugPrint('[my_day_test] pumpMyDay start');
     myDaySessionQueryService.start();
-    appLifecycleController.add(AppLifecycleEvent.resumed);
+    appLifecycleController.emit(AppLifecycleEvent.resumed);
     await tester.pumpApp(buildSubject());
     debugPrint('[my_day_test] pumpMyDay after pumpApp');
     await tester.pumpForStream();
@@ -666,10 +665,13 @@ void main() {
         ),
       );
 
-      final deadline = DateTime.now().add(const Duration(seconds: 2));
+      final timeout = const Duration(seconds: 2);
+      final stopwatch = Stopwatch()..start();
       dynamic updatedVm;
-      while (DateTime.now().isBefore(deadline) && updatedVm == null) {
-        final nextVm = await queue.next.timeout(const Duration(seconds: 1));
+      while (stopwatch.elapsed < timeout && updatedVm == null) {
+        final remaining = timeout - stopwatch.elapsed;
+        if (remaining <= Duration.zero) break;
+        final nextVm = await queue.next.timeout(remaining);
         if (nextVm.plannedItems.any((item) => item.id == task2.id)) {
           updatedVm = nextVm;
         }

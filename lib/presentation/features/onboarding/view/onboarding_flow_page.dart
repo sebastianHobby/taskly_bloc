@@ -989,7 +989,8 @@ class _ReviewSettingsStep extends StatelessWidget {
       showDragHandle: true,
       builder: (context) {
         var dueWithin = settings.maintenanceDeadlineRiskDueWithinDays;
-        var minUnscheduled = settings.maintenanceDeadlineRiskMinUnscheduledCount;
+        var minUnscheduled =
+            settings.maintenanceDeadlineRiskMinUnscheduledCount;
 
         return StatefulBuilder(
           builder: (context, setState) {
@@ -1018,8 +1019,9 @@ class _ReviewSettingsStep extends StatelessWidget {
                     onChanged: (next) => setState(() => dueWithin = next),
                     onCommit: (next) {
                       context.read<GlobalSettingsBloc>().add(
-                        GlobalSettingsEvent
-                            .maintenanceDeadlineRiskDueWithinDaysChanged(next),
+                        GlobalSettingsEvent.maintenanceDeadlineRiskDueWithinDaysChanged(
+                          next,
+                        ),
                       );
                     },
                   ),
@@ -1035,8 +1037,7 @@ class _ReviewSettingsStep extends StatelessWidget {
                     onChanged: (next) => setState(() => minUnscheduled = next),
                     onCommit: (next) {
                       context.read<GlobalSettingsBloc>().add(
-                        GlobalSettingsEvent
-                            .maintenanceDeadlineRiskMinUnscheduledCountChanged(
+                        GlobalSettingsEvent.maintenanceDeadlineRiskMinUnscheduledCountChanged(
                           next,
                         ),
                       );
@@ -1092,8 +1093,9 @@ class _ReviewSettingsStep extends StatelessWidget {
                     onChanged: (next) => setState(() => taskDays = next),
                     onCommit: (next) {
                       context.read<GlobalSettingsBloc>().add(
-                        GlobalSettingsEvent
-                            .maintenanceTaskStaleThresholdDaysChanged(next),
+                        GlobalSettingsEvent.maintenanceTaskStaleThresholdDaysChanged(
+                          next,
+                        ),
                       );
                     },
                   ),
@@ -1107,8 +1109,9 @@ class _ReviewSettingsStep extends StatelessWidget {
                     onChanged: (next) => setState(() => projectDays = next),
                     onCommit: (next) {
                       context.read<GlobalSettingsBloc>().add(
-                        GlobalSettingsEvent
-                            .maintenanceProjectIdleThresholdDaysChanged(next),
+                        GlobalSettingsEvent.maintenanceProjectIdleThresholdDaysChanged(
+                          next,
+                        ),
                       );
                     },
                   ),
@@ -1165,8 +1168,8 @@ class _MaintenanceToggle extends StatelessWidget {
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
+                    color: scheme.onSurfaceVariant,
+                  ),
                 ),
                 if (onTune != null && tuneLabel != null) ...[
                   SizedBox(height: tokens.spaceXs),

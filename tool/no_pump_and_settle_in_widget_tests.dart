@@ -38,7 +38,8 @@ Future<void> main(List<String> args) async {
       final line = lines[lineIndex];
       final previousLine = lineIndex > 0 ? lines[lineIndex - 1] : '';
       final ignored =
-          line.contains(_ignoreComment) || previousLine.contains(_ignoreComment);
+          line.contains(_ignoreComment) ||
+          previousLine.contains(_ignoreComment);
       if (ignored) continue;
 
       violations.add(

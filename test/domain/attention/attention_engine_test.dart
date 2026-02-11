@@ -200,7 +200,7 @@ void main() {
       final attentionRepo = FakeAttentionRepository(rules: [rule]);
       final taskRepo = FakeTaskRepository();
       final projectRepo = FakeProjectRepository();
-      final invalidations = StreamController<void>.broadcast();
+      final invalidations = TestStreamController<void>();
       addTearDown(invalidations.close);
 
       taskRepo.pushTasks([
@@ -262,7 +262,7 @@ void main() {
 
       final taskRepo = FakeTaskRepository();
       final projectRepo = FakeProjectRepository();
-      final invalidations = StreamController<void>.broadcast();
+      final invalidations = TestStreamController<void>();
       addTearDown(invalidations.close);
 
       taskRepo.pushTasks([

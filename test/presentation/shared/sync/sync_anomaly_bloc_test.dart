@@ -39,13 +39,13 @@ void main() {
 }
 
 final class _FakeSyncAnomalyStream implements SyncAnomalyStream {
-  final StreamController<SyncAnomaly> _controller =
-      StreamController<SyncAnomaly>.broadcast();
+  final TestStreamController<SyncAnomaly> _controller =
+      TestStreamController<SyncAnomaly>();
 
   @override
   Stream<SyncAnomaly> get anomalies => _controller.stream;
 
-  void emit(SyncAnomaly anomaly) => _controller.add(anomaly);
+  void emit(SyncAnomaly anomaly) => _controller.emit(anomaly);
 
   Future<void> close() => _controller.close();
 }

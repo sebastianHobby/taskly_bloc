@@ -272,69 +272,70 @@ void main() {
   testSafe(
     'allocateRegularTasks returns empty when no eligible projects',
     () async {
-    final taskRepo = _MockTaskRepo();
-    final projectRepo = _MockProjectRepo();
-    final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
-    final valueRepo = _MockValueRepo();
-    final valueRatingsRepo = _MockValueRatingsRepo();
-    final settingsRepo = _MockSettingsRepo();
-    final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
-    final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
+      final taskRepo = _MockTaskRepo();
+      final projectRepo = _MockProjectRepo();
+      final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
+      final valueRepo = _MockValueRepo();
+      final valueRatingsRepo = _MockValueRatingsRepo();
+      final settingsRepo = _MockSettingsRepo();
+      final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
+      final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
 
-    final value = buildValue(id: 'v1');
-    when(() => valueRepo.getAll()).thenAnswer((_) async => <Value>[value]);
-    when(
-      () => projectAnchorStateRepo.getAll(),
-    ).thenAnswer((_) async => const <ProjectAnchorState>[]);
-    when(
-      () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
-    ).thenAnswer((_) async => const <ValueWeeklyRating>[]);
+      final value = buildValue(id: 'v1');
+      when(() => valueRepo.getAll()).thenAnswer((_) async => <Value>[value]);
+      when(
+        () => projectAnchorStateRepo.getAll(),
+      ).thenAnswer((_) async => const <ProjectAnchorState>[]);
+      when(
+        () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+      ).thenAnswer((_) async => const <ValueWeeklyRating>[]);
 
-    final project = buildProject(
-      id: 'p1',
-      values: [value],
-      primaryValueId: value.id,
-    );
-    final task = buildTask(
-      id: 't1',
-      projectId: project.id,
-      project: project,
-      values: [value],
-    );
+      final project = buildProject(
+        id: 'p1',
+        values: [value],
+        primaryValueId: value.id,
+      );
+      final task = buildTask(
+        id: 't1',
+        projectId: project.id,
+        project: project,
+        values: [value],
+      );
 
-    final orchestrator = AllocationOrchestrator(
-      taskRepository: taskRepo,
-      valueRepository: valueRepo,
-      valueRatingsRepository: valueRatingsRepo,
-      settingsRepository: settingsRepo,
-      projectRepository: projectRepo,
-      projectAnchorStateRepository: projectAnchorStateRepo,
-      dayKeyService: dayKeyService,
-      clock: clock,
-    );
+      final orchestrator = AllocationOrchestrator(
+        taskRepository: taskRepo,
+        valueRepository: valueRepo,
+        valueRatingsRepository: valueRatingsRepo,
+        settingsRepository: settingsRepo,
+        projectRepository: projectRepo,
+        projectAnchorStateRepository: projectAnchorStateRepo,
+        dayKeyService: dayKeyService,
+        clock: clock,
+      );
 
-    const allocationConfig = AllocationConfig(
-      suggestionsPerBatch: 1,
-      strategySettings: StrategySettings(
-        anchorCount: 1,
-        tasksPerAnchorMin: 1,
-        tasksPerAnchorMax: 1,
-        freeSlots: 0,
-      ),
-    );
-    final result = await orchestrator.allocateRegularTasks(
-      [task],
-      projects: [project],
-      projectAnchorStates: const <ProjectAnchorState>[],
-      allocationConfig: allocationConfig,
-      nowUtc: DateTime.utc(2026, 1, 1),
-      todayDayKeyUtc: DateTime.utc(2026, 1, 1),
-      maxTasksOverride: allocationConfig.suggestionsPerBatch,
-      anchorCountOverride: allocationConfig.strategySettings.anchorCount,
-    );
+      const allocationConfig = AllocationConfig(
+        suggestionsPerBatch: 1,
+        strategySettings: StrategySettings(
+          anchorCount: 1,
+          tasksPerAnchorMin: 1,
+          tasksPerAnchorMax: 1,
+          freeSlots: 0,
+        ),
+      );
+      final result = await orchestrator.allocateRegularTasks(
+        [task],
+        projects: [project],
+        projectAnchorStates: const <ProjectAnchorState>[],
+        allocationConfig: allocationConfig,
+        nowUtc: DateTime.utc(2026, 1, 1),
+        todayDayKeyUtc: DateTime.utc(2026, 1, 1),
+        maxTasksOverride: allocationConfig.suggestionsPerBatch,
+        anchorCountOverride: allocationConfig.strategySettings.anchorCount,
+      );
 
-    expect(result.allocatedTasks, isEmpty);
-  });
+      expect(result.allocatedTasks, isEmpty);
+    },
+  );
 
   testSafe('toggleTaskCompletion updates task when found', () async {
     final taskRepo = _MockTaskRepo();

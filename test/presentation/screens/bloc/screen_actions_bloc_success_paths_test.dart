@@ -406,12 +406,12 @@ void main() {
                     startDate: any(named: 'startDate'),
                     deadlineDate: any(named: 'deadlineDate'),
                     projectId: 'project-1',
-            priority: any(named: 'priority'),
-            repeatIcalRrule: any(named: 'repeatIcalRrule'),
-            repeatFromCompletion: any(named: 'repeatFromCompletion'),
-            context: captureAny(named: 'context'),
-          ),
-        ).captured.single
+                    priority: any(named: 'priority'),
+                    repeatIcalRrule: any(named: 'repeatIcalRrule'),
+                    repeatFromCompletion: any(named: 'repeatFromCompletion'),
+                    context: captureAny(named: 'context'),
+                  ),
+                ).captured.single
                 as OperationContext?;
 
         expect(captured, isNotNull);

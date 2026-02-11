@@ -52,7 +52,7 @@ Sort options:
 
 - Left: icon + value name
 - Right: "Avg 5.6" + trend badge ("? 0.8" or "? 0.4")
-- If no data: "Avg —" and no trend badge
+- If no data: "Avg -" and no trend badge
 
 ### Ordering
 
@@ -136,17 +136,17 @@ Based on your weekly ratings (last 4 weeks).
 Sort by: Lowest average ?
 
 [?? Health]                     Avg 5.6  ? 0.8
-  • Task A
-  • Task B
-  • Task C   (Show more)
+  - Task A
+  - Task B
+  - Task C   (Show more)
 
 [?? Learning]                   Avg 6.2  ? 0.4
-  • Task D
-  • Task E   (Show more)
+  - Task D
+  - Task E   (Show more)
 
 Needs rating
-[?? Creativity]  Avg —   (Rate)
-[?? Calm]        Avg —   (Rate)
+[?? Creativity]  Avg -   (Rate)
+[?? Calm]        Avg -   (Rate)
 
 Weekly Review:
 

@@ -179,10 +179,13 @@ void main() {
       expect(first.map((value) => value.name), contains('Work'));
 
       valuesSubject.add([valueA, valueB]);
-      final deadline = DateTime.now().add(const Duration(seconds: 2));
+      final timeout = const Duration(seconds: 2);
+      final stopwatch = Stopwatch()..start();
       List<Value>? updated;
-      while (DateTime.now().isBefore(deadline) && updated == null) {
-        final nextValues = await queue.next.timeout(const Duration(seconds: 1));
+      while (stopwatch.elapsed < timeout && updated == null) {
+        final remaining = timeout - stopwatch.elapsed;
+        if (remaining <= Duration.zero) break;
+        final nextValues = await queue.next.timeout(remaining);
         if (nextValues.any((value) => value.name == 'Family')) {
           updated = nextValues;
         }
