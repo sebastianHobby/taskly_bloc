@@ -9,11 +9,18 @@ import 'package:rxdart/rxdart.dart';
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/presentation_mocks.dart';
 import '../../../mocks/fake_repositories.dart';
+import '../../../mocks/repository_mocks.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
@@ -27,6 +34,8 @@ class MockEditorLauncher extends Mock implements EditorLauncher {}
 class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
 class MockRoutineRepository extends Mock implements RoutineRepositoryContract {}
+
+class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
 class MockGlobalSettingsBloc
     extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
@@ -54,11 +63,20 @@ void main() {
   late MockProjectRepository projectRepository;
   late MockTaskRepository taskRepository;
   late MockRoutineRepository routineRepository;
+  late MockValueRepositoryContract valueRepository;
   late FakeSettingsRepository settingsRepository;
+  late AppErrorReporter errorReporter;
   late OccurrenceReadService occurrenceReadService;
   late SessionDayKeyService sessionDayKeyService;
   late MockHomeDayKeyService dayKeyService;
   late MockTemporalTriggerService temporalTriggerService;
+  late MockAppLifecycleEvents appLifecycleEvents;
+  late SessionStreamCacheManager cacheManager;
+  late SessionSharedDataService sharedDataService;
+  late DemoModeService demoModeService;
+  late DemoDataProvider demoDataProvider;
+  late RoutineWriteService routineWriteService;
+  late GuidedTourBloc guidedTourBloc;
   late MockEditorLauncher editorLauncher;
   late MockGlobalSettingsBloc globalSettingsBloc;
 
@@ -76,7 +94,32 @@ void main() {
     projectRepository = MockProjectRepository();
     taskRepository = MockTaskRepository();
     routineRepository = MockRoutineRepository();
+    valueRepository = MockValueRepositoryContract();
+    appLifecycleEvents = MockAppLifecycleEvents();
+    demoModeService = DemoModeService();
+    demoDataProvider = DemoDataProvider();
     settingsRepository = FakeSettingsRepository();
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: appLifecycleEvents,
+    );
+    sharedDataService = SessionSharedDataService(
+      cacheManager: cacheManager,
+      valueRepository: valueRepository,
+      projectRepository: projectRepository,
+      taskRepository: taskRepository,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
+    );
+    routineWriteService = RoutineWriteService(
+      routineRepository: routineRepository,
+    );
+    errorReporter = AppErrorReporter(
+      messengerKey: GlobalKey<ScaffoldMessengerState>(),
+    );
+    guidedTourBloc = GuidedTourBloc(
+      settingsRepository: settingsRepository,
+      demoModeService: demoModeService,
+    );
     occurrenceReadService = OccurrenceReadService(
       taskRepository: taskRepository,
       projectRepository: projectRepository,
@@ -110,6 +153,9 @@ void main() {
     );
     routineSkipsSubject = BehaviorSubject.seeded(const <RoutineSkip>[]);
 
+    when(() => appLifecycleEvents.events).thenAnswer(
+      (_) => const Stream<AppLifecycleEvent>.empty(),
+    );
     when(() => globalSettingsBloc.state).thenReturn(
       const GlobalSettingsState(isLoading: false),
     );
@@ -137,11 +183,31 @@ void main() {
       () => routineRepository.watchAll(includeInactive: true),
     ).thenAnswer((_) => routinesSubject.stream);
     when(
+      () => routineRepository.getAll(includeInactive: true),
+    ).thenAnswer((_) async => routinesSubject.valueOrNull ?? const <Routine>[]);
+    when(
       () => routineRepository.watchCompletions(),
     ).thenAnswer((_) => routineCompletionsSubject.stream);
     when(
       () => routineRepository.watchSkips(),
     ).thenAnswer((_) => routineSkipsSubject.stream);
+    when(
+      () => routineRepository.getCompletions(),
+    ).thenAnswer(
+      (_) async =>
+          routineCompletionsSubject.valueOrNull ?? const <RoutineCompletion>[],
+    );
+    when(
+      () => routineRepository.getSkips(),
+    ).thenAnswer(
+      (_) async => routineSkipsSubject.valueOrNull ?? const <RoutineSkip>[],
+    );
+    when(() => valueRepository.watchAll()).thenAnswer(
+      (_) => const Stream<List<Value>>.empty(),
+    );
+    when(() => valueRepository.getAll()).thenAnswer(
+      (_) async => const <Value>[],
+    );
   });
 
   tearDown(() async {
@@ -154,6 +220,9 @@ void main() {
     await routinesSubject.close();
     await routineCompletionsSubject.close();
     await routineSkipsSubject.close();
+    await cacheManager.dispose();
+    await guidedTourBloc.close();
+    await demoModeService.dispose();
   });
 
   Future<void> pumpPage(
@@ -175,10 +244,18 @@ void main() {
           RepositoryProvider<RoutineRepositoryContract>.value(
             value: routineRepository,
           ),
+          RepositoryProvider<AppErrorReporter>.value(value: errorReporter),
+          RepositoryProvider<SessionSharedDataService>.value(
+            value: sharedDataService,
+          ),
+          RepositoryProvider<RoutineWriteService>.value(
+            value: routineWriteService,
+          ),
           RepositoryProvider<EditorLauncher>.value(value: editorLauncher),
           RepositoryProvider<NowService>.value(
             value: FakeNowService(DateTime(2025, 1, 15, 9)),
           ),
+          RepositoryProvider<DemoModeService>.value(value: demoModeService),
           RepositoryProvider<SettingsRepositoryContract>.value(
             value: settingsRepository,
           ),
@@ -186,12 +263,31 @@ void main() {
         child: MultiBlocProvider(
           providers: [
             BlocProvider<GlobalSettingsBloc>.value(value: globalSettingsBloc),
+            BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
           ],
           child: ProjectDetailPage(projectId: projectId),
         ),
       ),
     );
     await tester.pump(speedDialInitDelay);
+  }
+
+  Routine buildRoutine({
+    required String id,
+    required String name,
+    required String projectId,
+  }) {
+    return Routine(
+      id: id,
+      createdAt: DateTime(2025, 1, 1),
+      updatedAt: DateTime(2025, 1, 1),
+      name: name,
+      projectId: projectId,
+      periodType: RoutinePeriodType.week,
+      scheduleMode: RoutineScheduleMode.scheduled,
+      targetCount: 1,
+      scheduleDays: const [1],
+    );
   }
 
   testWidgetsSafe('shows loading state before project loads', (tester) async {
@@ -240,6 +336,42 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.text('Task B'), findsOneWidget);
+  });
+
+  testWidgetsSafe('shows routines empty state when project has no routines', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+
+    final project = TestData.project(id: 'project-1', name: 'Routine Project');
+    projectSubject.add(project);
+    tasksSubject.add(const <Task>[]);
+    routinesSubject.add(const <Routine>[]);
+    await tester.pumpForStream();
+
+    expect(find.text('No routines yet'), findsOneWidget);
+    expect(find.text('Create routine'), findsOneWidget);
+  });
+
+  testWidgetsSafe('shows routine log action for project routines', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+
+    final project = TestData.project(id: 'project-1', name: 'Routine Project');
+    final routine = buildRoutine(
+      id: 'routine-1',
+      name: 'Morning Flow',
+      projectId: project.id,
+    );
+
+    projectSubject.add(project);
+    tasksSubject.add(const <Task>[]);
+    routinesSubject.add([routine]);
+    await tester.pumpForStream();
+
+    expect(find.text('Morning Flow'), findsOneWidget);
+    expect(find.text('Log'), findsOneWidget);
   });
 
   testWidgetsSafe('shows inbox empty state when inbox has no tasks', (

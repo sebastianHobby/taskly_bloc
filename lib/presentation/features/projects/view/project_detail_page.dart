@@ -11,14 +11,22 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
+import 'package:taskly_bloc/presentation/features/routines/bloc/routine_list_bloc.dart';
+import 'package:taskly_bloc/presentation/features/routines/model/routine_list_item.dart';
+import 'package:taskly_bloc/presentation/features/routines/model/routine_sort_order.dart';
+import 'package:taskly_bloc/presentation/features/routines/selection/routine_selection_app_bar.dart';
+import 'package:taskly_bloc/presentation/features/routines/selection/routine_selection_bloc.dart';
+import 'package:taskly_bloc/presentation/features/routines/selection/routine_selection_models.dart';
+import 'package:taskly_bloc/presentation/features/routines/widgets/routines_list.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
-import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
-import 'package:taskly_bloc/presentation/shared/utils/routine_completion_utils.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rich_text_utils.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
@@ -26,7 +34,6 @@ import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.da
 import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
-import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_domain/preferences.dart';
@@ -65,6 +72,16 @@ class ProjectDetailPage extends StatelessWidget {
           ),
         ),
         BlocProvider(
+          create: (context) => RoutineListBloc(
+            routineRepository: context.read<RoutineRepositoryContract>(),
+            sessionDayKeyService: context.read<SessionDayKeyService>(),
+            errorReporter: context.read<AppErrorReporter>(),
+            sharedDataService: context.read<SessionSharedDataService>(),
+            routineWriteService: context.read<RoutineWriteService>(),
+            nowService: context.read<NowService>(),
+          )..add(const RoutineListEvent.subscriptionRequested()),
+        ),
+        BlocProvider(
           create: (context) => DisplayDensityBloc(
             settingsRepository: context.read<SettingsRepositoryContract>(),
             pageKey: PageKey.projectDetail,
@@ -72,6 +89,7 @@ class ProjectDetailPage extends StatelessWidget {
           )..add(const DisplayDensityStarted()),
         ),
         BlocProvider(create: (_) => SelectionBloc()),
+        BlocProvider(create: (_) => RoutineSelectionBloc()),
       ],
       child: _ProjectDetailView(projectId: projectId),
     );
@@ -277,135 +295,181 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
       padding: chrome.iconButtonPadding,
     );
 
-    return BlocBuilder<SelectionBloc, SelectionState>(
-      builder: (context, selectionState) {
-        final canPop = Navigator.of(context).canPop();
-        return Scaffold(
-          appBar: selectionState.isSelectionMode
-              ? SelectionAppBar(
-                  baseTitle: appBarTitle,
-                  onExit: () {},
-                )
-              : AppBar(
-                  centerTitle: true,
-                  toolbarHeight: chrome.projectsAppBarHeight,
-                  title: appBarTitle.isEmpty ? null : Text(appBarTitle),
-                  leading: canPop
-                      ? IconButton(
-                          tooltip: context.l10n.backLabel,
-                          icon: const Icon(Icons.arrow_back),
-                          style: iconButtonStyle,
-                          onPressed: () => Navigator.of(context).maybePop(),
-                        )
-                      : null,
-                  actions: [
-                    IconButton(
-                      tooltip: context.l10n.filterSortTooltip,
-                      icon: const Icon(Icons.tune_rounded),
-                      style: iconButtonStyle,
-                      onPressed: _showFilterSheet,
-                    ),
-                    BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
-                      builder: (context, state) {
-                        final project = state is ProjectOverviewLoaded
-                            ? state.project
-                            : null;
-                        final isInboxProject =
-                            project?.id == ProjectGroupingRef.inbox().stableKey;
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<RoutineSelectionBloc, RoutineSelectionState>(
+          listenWhen: (previous, current) =>
+              previous.isSelectionMode != current.isSelectionMode,
+          listener: (context, state) {
+            if (!state.isSelectionMode) return;
+            context.read<SelectionBloc>().exitSelectionMode();
+          },
+        ),
+        BlocListener<SelectionBloc, SelectionState>(
+          listenWhen: (previous, current) =>
+              previous.isSelectionMode != current.isSelectionMode,
+          listener: (context, state) {
+            if (!state.isSelectionMode) return;
+            context.read<RoutineSelectionBloc>().exitSelectionMode();
+          },
+        ),
+      ],
+      child: BlocBuilder<RoutineSelectionBloc, RoutineSelectionState>(
+        builder: (context, routineSelectionState) {
+          return BlocBuilder<SelectionBloc, SelectionState>(
+            builder: (context, selectionState) {
+              final canPop = Navigator.of(context).canPop();
+              final hasRoutineSelection = routineSelectionState.isSelectionMode;
+              final hasTaskSelection = selectionState.isSelectionMode;
+              final isSelectionMode = hasRoutineSelection || hasTaskSelection;
+              return Scaffold(
+                appBar: hasRoutineSelection
+                    ? RoutineSelectionAppBar(
+                        baseTitle: appBarTitle,
+                        onExit: () {},
+                      )
+                    : hasTaskSelection
+                    ? SelectionAppBar(
+                        baseTitle: appBarTitle,
+                        onExit: () {},
+                      )
+                    : AppBar(
+                        centerTitle: true,
+                        toolbarHeight: chrome.projectsAppBarHeight,
+                        title: appBarTitle.isEmpty ? null : Text(appBarTitle),
+                        leading: canPop
+                            ? IconButton(
+                                tooltip: context.l10n.backLabel,
+                                icon: const Icon(Icons.arrow_back),
+                                style: iconButtonStyle,
+                                onPressed: () =>
+                                    Navigator.of(context).maybePop(),
+                              )
+                            : null,
+                        actions: [
+                          IconButton(
+                            tooltip: context.l10n.filterSortTooltip,
+                            icon: const Icon(Icons.tune_rounded),
+                            style: iconButtonStyle,
+                            onPressed: _showFilterSheet,
+                          ),
+                          BlocBuilder<
+                            ProjectOverviewBloc,
+                            ProjectOverviewState
+                          >(
+                            builder: (context, state) {
+                              final project = state is ProjectOverviewLoaded
+                                  ? state.project
+                                  : null;
+                              final isInboxProject =
+                                  project?.id ==
+                                  ProjectGroupingRef.inbox().stableKey;
 
-                        return TasklyOverflowMenuButton<
-                          _ProjectDetailMenuAction
-                        >(
-                          tooltip: context.l10n.moreOptionsLabel,
-                          icon: Icons.more_vert,
-                          style: iconButtonStyle,
-                          itemsBuilder: (context) {
-                            final items =
-                                <PopupMenuEntry<_ProjectDetailMenuAction>>[
-                                  PopupMenuItem(
-                                    value: _ProjectDetailMenuAction.density,
-                                    child: TasklyMenuItemLabel(
-                                      context.l10n.displayDensityTitle,
-                                    ),
-                                  ),
-                                ];
+                              return TasklyOverflowMenuButton<
+                                _ProjectDetailMenuAction
+                              >(
+                                tooltip: context.l10n.moreOptionsLabel,
+                                icon: Icons.more_vert,
+                                style: iconButtonStyle,
+                                itemsBuilder: (context) {
+                                  final items =
+                                      <
+                                        PopupMenuEntry<_ProjectDetailMenuAction>
+                                      >[
+                                        PopupMenuItem(
+                                          value:
+                                              _ProjectDetailMenuAction.density,
+                                          child: TasklyMenuItemLabel(
+                                            context.l10n.displayDensityTitle,
+                                          ),
+                                        ),
+                                      ];
 
-                            if (project != null && !isInboxProject) {
-                              final label = project.completed
-                                  ? context.l10n.markIncompleteAction
-                                  : context.l10n.markCompleteAction;
-                              items.add(
-                                PopupMenuItem(
-                                  value:
-                                      _ProjectDetailMenuAction.toggleCompletion,
-                                  child: TasklyMenuItemLabel(label),
-                                ),
+                                  if (project != null && !isInboxProject) {
+                                    final label = project.completed
+                                        ? context.l10n.markIncompleteAction
+                                        : context.l10n.markCompleteAction;
+                                    items.add(
+                                      PopupMenuItem(
+                                        value: _ProjectDetailMenuAction
+                                            .toggleCompletion,
+                                        child: TasklyMenuItemLabel(label),
+                                      ),
+                                    );
+                                  }
+
+                                  return items;
+                                },
+                                onSelected: (action) {
+                                  switch (action) {
+                                    case _ProjectDetailMenuAction.density:
+                                      _showDensitySheet(density);
+                                    case _ProjectDetailMenuAction
+                                        .toggleCompletion:
+                                      if (project == null || isInboxProject) {
+                                        return;
+                                      }
+                                      unawaited(
+                                        _toggleProjectCompletion(project),
+                                      );
+                                  }
+                                },
                               );
-                            }
-
-                            return items;
-                          },
-                          onSelected: (action) {
-                            switch (action) {
-                              case _ProjectDetailMenuAction.density:
-                                _showDensitySheet(density);
-                              case _ProjectDetailMenuAction.toggleCompletion:
-                                if (project == null || isInboxProject) return;
-                                unawaited(_toggleProjectCompletion(project));
-                            }
-                          },
-                        );
-                      },
-                    ),
-                  ],
+                            },
+                          ),
+                        ],
+                      ),
+                floatingActionButton: isSelectionMode
+                    ? null
+                    : isInbox
+                    ? EntityAddFab(
+                        heroTag: 'add_speed_dial_project_detail',
+                        tooltip: context.l10n.addTaskAction,
+                        onPressed: () => _openNewTaskEditor(context),
+                      )
+                    : TaskRoutineAddSpeedDial(
+                        heroTag: 'add_speed_dial_project_detail',
+                        onCreateTask: () => _openNewTaskEditor(context),
+                        onCreateRoutine: () => _openNewRoutineEditor(context),
+                      ),
+                body: BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
+                  builder: (context, state) {
+                    return switch (state) {
+                      ProjectOverviewLoading() => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                      ProjectOverviewError(:final message) => Center(
+                        child: Text(message),
+                      ),
+                      ProjectOverviewLoaded(
+                        :final project,
+                        :final tasks,
+                        :final routines,
+                        :final todayDayKeyUtc,
+                      ) =>
+                        _ProjectDetailBody(
+                          project: project,
+                          tasks: tasks,
+                          routines: routines,
+                          todayDayKeyUtc: todayDayKeyUtc,
+                          selectionState: selectionState,
+                          sortOrder: _sortOrder,
+                          showCompleted: _showCompleted,
+                          tasksCollapsed: _tasksCollapsed,
+                          routinesCollapsed: _routinesCollapsed,
+                          onToggleTasksCollapsed: _toggleTasksCollapsed,
+                          onToggleRoutinesCollapsed: _toggleRoutinesCollapsed,
+                          onCreateRoutine: () => _openNewRoutineEditor(context),
+                          density: density,
+                        ),
+                    };
+                  },
                 ),
-          floatingActionButton: selectionState.isSelectionMode
-              ? null
-              : isInbox
-              ? EntityAddFab(
-                  heroTag: 'add_speed_dial_project_detail',
-                  tooltip: context.l10n.addTaskAction,
-                  onPressed: () => _openNewTaskEditor(context),
-                )
-              : TaskRoutineAddSpeedDial(
-                  heroTag: 'add_speed_dial_project_detail',
-                  onCreateTask: () => _openNewTaskEditor(context),
-                  onCreateRoutine: () => _openNewRoutineEditor(context),
-                ),
-          body: BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
-            builder: (context, state) {
-              return switch (state) {
-                ProjectOverviewLoading() => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                ProjectOverviewError(:final message) => Center(
-                  child: Text(message),
-                ),
-                ProjectOverviewLoaded(
-                  :final project,
-                  :final tasks,
-                  :final routines,
-                  :final todayDayKeyUtc,
-                ) =>
-                  _ProjectDetailBody(
-                    project: project,
-                    tasks: tasks,
-                    routines: routines,
-                    todayDayKeyUtc: todayDayKeyUtc,
-                    selectionState: selectionState,
-                    sortOrder: _sortOrder,
-                    showCompleted: _showCompleted,
-                    tasksCollapsed: _tasksCollapsed,
-                    routinesCollapsed: _routinesCollapsed,
-                    onToggleTasksCollapsed: _toggleTasksCollapsed,
-                    onToggleRoutinesCollapsed: _toggleRoutinesCollapsed,
-                    density: density,
-                  ),
-              };
+              );
             },
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -423,6 +487,7 @@ class _ProjectDetailBody extends StatelessWidget {
     required this.routinesCollapsed,
     required this.onToggleTasksCollapsed,
     required this.onToggleRoutinesCollapsed,
+    required this.onCreateRoutine,
     required this.density,
   });
 
@@ -437,6 +502,7 @@ class _ProjectDetailBody extends StatelessWidget {
   final bool routinesCollapsed;
   final VoidCallback onToggleTasksCollapsed;
   final VoidCallback onToggleRoutinesCollapsed;
+  final VoidCallback onCreateRoutine;
   final DisplayDensity density;
 
   @override
@@ -555,27 +621,30 @@ class _ProjectDetailBody extends StatelessWidget {
       ],
     ];
 
-    final routineRows = isInbox
+    final routineItems = routines
+        .map(
+          (item) => RoutineListItem(
+            routine: item.routine,
+            snapshot: item.snapshot,
+            dayKeyUtc: item.dayKeyUtc,
+            completionsInPeriod: item.completionsInPeriod,
+          ),
+        )
+        .toList(growable: false);
+
+    final routineHeaderRows = isInbox
         ? const <TasklyRowSpec>[]
         : <TasklyRowSpec>[
             TasklyRowSpec.header(
               key: 'project-detail-routines-header',
               title: context.l10n.routinesTitle,
-              trailingLabel: '${routines.length}',
+              trailingLabel: '${routineItems.length}',
               trailingIcon: routinesCollapsed
                   ? Icons.expand_more_rounded
                   : Icons.expand_less_rounded,
               onTap: onToggleRoutinesCollapsed,
               dividerOpacity: routinesCollapsed ? 0.25 : null,
             ),
-            if (!routinesCollapsed)
-              ...routines.map(
-                (item) => _buildProjectRoutineRow(
-                  context,
-                  item,
-                  selectionState,
-                ),
-              ),
           ];
 
     if (isInbox && tasks.isEmpty) {
@@ -644,14 +713,44 @@ class _ProjectDetailBody extends StatelessWidget {
                 rows: taskRows,
               ),
             ),
-            if (routineRows.isNotEmpty) ...[
+            if (routineHeaderRows.isNotEmpty) ...[
               SizedBox(height: tokens.spaceSm),
               TasklyFeedRenderer.buildSection(
                 TasklySectionSpec.standardList(
                   id: 'project-detail-routines',
-                  rows: routineRows,
+                  rows: routineHeaderRows,
                 ),
               ),
+              if (!routinesCollapsed)
+                Padding(
+                  padding: EdgeInsets.only(top: tokens.spaceSm),
+                  child: routineItems.isEmpty
+                      ? TasklyFeedRenderer(
+                          spec: TasklyFeedSpec.empty(
+                            empty: TasklyEmptyStateSpec(
+                              icon: Icons.auto_awesome,
+                              title: context.l10n.routineEmptyTitle,
+                              description: context.l10n.routineEmptyDescription,
+                              actionLabel: context.l10n.routineCreateCta,
+                              onAction: onCreateRoutine,
+                            ),
+                          ),
+                        )
+                      : RoutinesListView(
+                          items: routineItems,
+                          sortOrder: RoutineSortOrder.scheduledFirst,
+                          onEditRoutine: (id) =>
+                              Routing.toRoutineEdit(context, id),
+                          onLogRoutine: (id) {
+                            context.read<RoutineListBloc>().add(
+                              RoutineListEvent.logRequested(
+                                routineId: id,
+                              ),
+                            );
+                          },
+                          embedded: true,
+                        ),
+                ),
             ],
           ],
         ),
@@ -1140,51 +1239,6 @@ TasklyRowSpec _buildProjectTaskRow(
         task: task,
         tileCapabilities: tileCapabilities,
       ),
-    ),
-  );
-}
-
-TasklyRowSpec _buildProjectRoutineRow(
-  BuildContext context,
-  ProjectRoutineItem item,
-  SelectionState selectionState,
-) {
-  final routine = item.routine;
-  final completed = isRoutineCompleteForDay(
-    routine: routine,
-    snapshot: item.snapshot,
-    dayKeyUtc: item.dayKeyUtc,
-    completionsInPeriod: item.completionsInPeriod,
-  );
-
-  final data = buildRoutineRowData(
-    context,
-    routine: routine,
-    snapshot: item.snapshot,
-    completed: completed,
-    highlightCompleted: false,
-    showScheduleRow:
-        routine.periodType == RoutinePeriodType.week &&
-        routine.scheduleMode == RoutineScheduleMode.scheduled,
-    dayKeyUtc: item.dayKeyUtc,
-    completionsInPeriod: item.completionsInPeriod,
-  );
-
-  final isSelectionMode = selectionState.isSelectionMode;
-
-  return TasklyRowSpec.routine(
-    key: 'project-detail-routine-${routine.id}',
-    data: data,
-    style: const TasklyRoutineRowStyle.standard(),
-    actions: TasklyRoutineRowActions(
-      onTap: isSelectionMode
-          ? null
-          : () => context.read<EditorLauncher>().openRoutineEditor(
-              context,
-              routineId: routine.id,
-              openToProjectPicker: false,
-              showDragHandle: true,
-            ),
     ),
   );
 }

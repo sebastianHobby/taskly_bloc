@@ -21,6 +21,8 @@ class RoutinesListView extends StatelessWidget {
     required this.sortOrder,
     required this.onEditRoutine,
     required this.onLogRoutine,
+    this.embedded = false,
+    this.entityRowPadding,
     super.key,
   });
 
@@ -28,6 +30,8 @@ class RoutinesListView extends StatelessWidget {
   final RoutineSortOrder sortOrder;
   final ValueChanged<String> onEditRoutine;
   final ValueChanged<String> onLogRoutine;
+  final bool embedded;
+  final EdgeInsetsGeometry? entityRowPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -80,13 +84,60 @@ class RoutinesListView extends StatelessWidget {
           .toList(growable: false),
     );
 
+    final rowPadding =
+        entityRowPadding ??
+        EdgeInsets.symmetric(
+          horizontal: tokens.sectionPaddingH,
+        );
+
+    if (embedded) {
+      return _EmbeddedRoutinesList(
+        sections: sections,
+        entityRowPadding: rowPadding,
+      );
+    }
+
     return TasklyFeedRenderer(
       spec: TasklyFeedSpec.content(
         sections: sections,
       ),
-      entityRowPadding: EdgeInsets.symmetric(
-        horizontal: tokens.sectionPaddingH,
-      ),
+      entityRowPadding: rowPadding,
+    );
+  }
+}
+
+class _EmbeddedRoutinesList extends StatelessWidget {
+  const _EmbeddedRoutinesList({
+    required this.sections,
+    required this.entityRowPadding,
+  });
+
+  final List<TasklySectionSpec> sections;
+  final EdgeInsetsGeometry entityRowPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    if (sections.isEmpty) return const SizedBox.shrink();
+
+    final tokens = TasklyTokens.of(context);
+    final children = <Widget>[];
+    for (var i = 0; i < sections.length; i += 1) {
+      final section = sections[i];
+      children.add(
+        TasklyFeedRenderer.buildSection(
+          section,
+          entityRowPadding: entityRowPadding,
+        ),
+      );
+      final isLast = i == sections.length - 1;
+      if (!isLast) {
+        children.add(SizedBox(height: tokens.feedSectionSpacing));
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
     );
   }
 }
