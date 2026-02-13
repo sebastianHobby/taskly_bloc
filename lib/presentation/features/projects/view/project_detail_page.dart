@@ -749,6 +749,7 @@ class _ProjectDetailBody extends StatelessWidget {
                             );
                           },
                           embedded: true,
+                          showSectionHeaders: false,
                         ),
                 ),
             ],

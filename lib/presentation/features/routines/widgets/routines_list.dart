@@ -22,6 +22,7 @@ class RoutinesListView extends StatelessWidget {
     required this.onEditRoutine,
     required this.onLogRoutine,
     this.embedded = false,
+    this.showSectionHeaders = true,
     this.entityRowPadding,
     super.key,
   });
@@ -31,6 +32,7 @@ class RoutinesListView extends StatelessWidget {
   final ValueChanged<String> onEditRoutine;
   final ValueChanged<String> onLogRoutine;
   final bool embedded;
+  final bool showSectionHeaders;
   final EdgeInsetsGeometry? entityRowPadding;
 
   @override
@@ -49,26 +51,46 @@ class RoutinesListView extends StatelessWidget {
     if (sortOrder == RoutineSortOrder.scheduledFirst) {
       final split = _splitScheduled(items);
       visibleItems = [...split.scheduled, ...split.flexible];
-      sections = _buildScheduledSections(
-        context,
-        scheduled: split.scheduled,
-        flexible: split.flexible,
-        onEditRoutine: onEditRoutine,
-        onLogRoutine: onLogRoutine,
-        selection: selection,
-        showTourAnchors: showTourAnchors,
-      );
+      if (showSectionHeaders) {
+        sections = _buildScheduledSections(
+          context,
+          scheduled: split.scheduled,
+          flexible: split.flexible,
+          onEditRoutine: onEditRoutine,
+          onLogRoutine: onLogRoutine,
+          selection: selection,
+          showTourAnchors: showTourAnchors,
+        );
+      } else {
+        sections = _buildFlatRowsSection(
+          context,
+          visibleItems,
+          onEditRoutine: onEditRoutine,
+          onLogRoutine: onLogRoutine,
+          selection: selection,
+          showTourAnchors: showTourAnchors,
+        );
+      }
     } else {
       final sorted = _sortItems(items, sortOrder);
       visibleItems = sorted;
-      sections = _buildFlatSection(
-        context,
-        sorted,
-        onEditRoutine: onEditRoutine,
-        onLogRoutine: onLogRoutine,
-        selection: selection,
-        showTourAnchors: showTourAnchors,
-      );
+      sections = showSectionHeaders
+          ? _buildFlatSection(
+              context,
+              sorted,
+              onEditRoutine: onEditRoutine,
+              onLogRoutine: onLogRoutine,
+              selection: selection,
+              showTourAnchors: showTourAnchors,
+            )
+          : _buildFlatRowsSection(
+              context,
+              sorted,
+              onEditRoutine: onEditRoutine,
+              onLogRoutine: onLogRoutine,
+              selection: selection,
+              showTourAnchors: showTourAnchors,
+            );
     }
 
     selection.updateVisibleEntities(
@@ -235,6 +257,33 @@ List<TasklySectionSpec> _buildFlatSection(
           title: context.l10n.routinesTitle,
           trailingLabel: '${items.length}',
         ),
+        for (final item in items)
+          _buildRow(
+            context,
+            item,
+            onEditRoutine: onEditRoutine,
+            onLogRoutine: onLogRoutine,
+            selection: selection,
+            showTourAnchors: showTourAnchors,
+          ),
+      ],
+    ),
+  ];
+}
+
+List<TasklySectionSpec> _buildFlatRowsSection(
+  BuildContext context,
+  List<RoutineListItem> items, {
+  required ValueChanged<String> onEditRoutine,
+  required ValueChanged<String> onLogRoutine,
+  required RoutineSelectionBloc selection,
+  required bool showTourAnchors,
+}) {
+  if (items.isEmpty) return const <TasklySectionSpec>[];
+  return [
+    TasklySectionSpec.standardList(
+      id: 'routines-all',
+      rows: [
         for (final item in items)
           _buildRow(
             context,
