@@ -194,7 +194,10 @@ void main() {
 
     await pumpModal(tester);
     await tester.tap(find.text('Open'));
-    await tester.pump(const Duration(milliseconds: 300));
+    final foundLoading = await tester.pumpUntilFound(
+      find.byType(CircularProgressIndicator),
+    );
+    expect(foundLoading, isTrue);
     await tester.pumpForStream();
 
     expect(find.byType(CircularProgressIndicator), findsWidgets);
@@ -207,17 +210,23 @@ void main() {
 
     await pumpModal(tester);
     await tester.tap(find.text('Open'));
-    await tester.pump(const Duration(milliseconds: 300));
+    final l10n = await l10nFor();
+    final foundError = await tester.pumpUntilFound(
+      find.text(l10n.weeklyReviewLoadFailureMessage),
+    );
+    expect(foundError, isTrue);
     await tester.pumpForStream();
 
-    final l10n = await l10nFor();
     expect(find.text(l10n.weeklyReviewLoadFailureMessage), findsOneWidget);
   });
 
   testWidgetsSafe('renders weekly review content when loaded', (tester) async {
     await pumpModal(tester);
     await tester.tap(find.text('Open'));
-    await tester.pump(const Duration(milliseconds: 300));
+    final foundPage = await tester.pumpUntilFound(
+      find.byKey(const PageStorageKey<String>('weekly_review_page_view')),
+    );
+    expect(foundPage, isTrue);
     await tester.pumpForStream();
 
     expect(
@@ -241,10 +250,13 @@ void main() {
 
     await pumpModal(tester);
     await tester.tap(find.text('Open'));
-    await tester.pump(const Duration(milliseconds: 300));
+    final l10n = await l10nFor();
+    final foundCheckIn = await tester.pumpUntilFound(
+      find.text(l10n.weeklyReviewCheckInPromptTitle),
+    );
+    expect(foundCheckIn, isTrue);
     await tester.pumpForStream();
 
-    final l10n = await l10nFor();
     expect(find.text(l10n.weeklyReviewCheckInPromptTitle), findsOneWidget);
   });
 }

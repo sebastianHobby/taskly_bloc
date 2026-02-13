@@ -19,29 +19,37 @@ import 'package:taskly_ui/taskly_ui_sections.dart';
 class RoutineDetailSheetPage extends StatelessWidget {
   const RoutineDetailSheetPage({
     required this.routineRepository,
-    required this.valueRepository,
+    required this.projectRepository,
     required this.routineWriteService,
     this.routineId,
+    this.defaultProjectId,
+    this.openToProjectPicker = false,
     super.key,
   });
 
   final RoutineRepositoryContract routineRepository;
-  final ValueRepositoryContract valueRepository;
+  final ProjectRepositoryContract projectRepository;
   final RoutineWriteService routineWriteService;
   final String? routineId;
+  final String? defaultProjectId;
+  final bool openToProjectPicker;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => RoutineDetailBloc(
         routineRepository: routineRepository,
-        valueRepository: valueRepository,
+        projectRepository: projectRepository,
         routineWriteService: routineWriteService,
         errorReporter: context.read<AppErrorReporter>(),
         routineId: routineId,
       ),
       lazy: false,
-      child: RoutineDetailSheetView(routineId: routineId),
+      child: RoutineDetailSheetView(
+        routineId: routineId,
+        defaultProjectId: defaultProjectId,
+        openToProjectPicker: openToProjectPicker,
+      ),
     );
   }
 }
@@ -49,10 +57,14 @@ class RoutineDetailSheetPage extends StatelessWidget {
 class RoutineDetailSheetView extends StatefulWidget {
   const RoutineDetailSheetView({
     this.routineId,
+    this.defaultProjectId,
+    this.openToProjectPicker = false,
     super.key,
   });
 
   final String? routineId;
+  final String? defaultProjectId;
+  final bool openToProjectPicker;
 
   @override
   State<RoutineDetailSheetView> createState() => _RoutineDetailSheetViewState();
@@ -86,100 +98,73 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
 
   void _syncDraftFromFormValues(Map<String, dynamic> formValues) {
     final name = extractStringValue(formValues, RoutineFieldKeys.name.id);
-    final valueId = extractStringValue(
+    final projectId = extractStringValue(
       formValues,
-      RoutineFieldKeys.valueId.id,
+      RoutineFieldKeys.projectId.id,
     );
-    final routineType =
-        formValues[RoutineFieldKeys.routineType.id] as RoutineType? ??
-        _draft.routineType;
-
+    final periodType =
+        formValues[RoutineFieldKeys.periodType.id] as RoutinePeriodType? ??
+        _draft.periodType;
+    final scheduleMode =
+        formValues[RoutineFieldKeys.scheduleMode.id] as RoutineScheduleMode? ??
+        _draft.scheduleMode;
     final rawTarget = formValues[RoutineFieldKeys.targetCount.id] as int?;
     final rawScheduleDays =
         (formValues[RoutineFieldKeys.scheduleDays.id] as List<int>?) ??
         const <int>[];
-    final rawPreferredWeeks =
-        (formValues[RoutineFieldKeys.preferredWeeks.id] as List<int>?) ??
+    final rawScheduleMonthDays =
+        (formValues[RoutineFieldKeys.scheduleMonthDays.id] as List<int>?) ??
         const <int>[];
+    final scheduleTimeMinutes =
+        formValues[RoutineFieldKeys.scheduleTimeMinutes.id] as int?;
     final minSpacingDays =
         formValues[RoutineFieldKeys.minSpacingDays.id] as int?;
     final restDayBuffer = formValues[RoutineFieldKeys.restDayBuffer.id] as int?;
-    final fixedDayOfMonth =
-        formValues[RoutineFieldKeys.fixedDayOfMonth.id] as int?;
-    final fixedWeekday = formValues[RoutineFieldKeys.fixedWeekday.id] as int?;
-    final fixedWeekOfMonth =
-        formValues[RoutineFieldKeys.fixedWeekOfMonth.id] as int?;
     final isActive = extractBoolValue(
       formValues,
       RoutineFieldKeys.isActive.id,
       defaultValue: true,
     );
 
+    final resolvedPeriodType = periodType;
+    var resolvedScheduleMode = scheduleMode;
+    if (resolvedPeriodType == RoutinePeriodType.day) {
+      resolvedScheduleMode = RoutineScheduleMode.flexible;
+    }
+
     var targetCount = rawTarget ?? _draft.targetCount;
     var scheduleDays = rawScheduleDays;
-    var preferredWeeks = rawPreferredWeeks;
-    int? resolvedMinSpacing = minSpacingDays;
-    int? resolvedRestBuffer = restDayBuffer;
-    int? resolvedFixedDay = fixedDayOfMonth;
-    int? resolvedFixedWeekday = fixedWeekday;
-    int? resolvedFixedWeekOfMonth = fixedWeekOfMonth;
+    var scheduleMonthDays = rawScheduleMonthDays;
+    final int? resolvedMinSpacing = minSpacingDays;
+    final int? resolvedRestBuffer = restDayBuffer;
+    final sortedScheduleDays = scheduleDays.toSet().toList()..sort();
+    scheduleDays = sortedScheduleDays;
+    final sortedMonthDays = scheduleMonthDays.toSet().toList()..sort();
+    scheduleMonthDays = sortedMonthDays;
 
-    switch (routineType) {
-      case RoutineType.weeklyFixed:
-        final sorted = scheduleDays.toSet().toList()..sort();
-        scheduleDays = sorted;
-        targetCount = sorted.length;
-        preferredWeeks = const <int>[];
-        resolvedMinSpacing = null;
-        resolvedRestBuffer = null;
-        resolvedFixedDay = null;
-        resolvedFixedWeekday = null;
-        resolvedFixedWeekOfMonth = null;
-      case RoutineType.weeklyFlexible:
-        final sorted = scheduleDays.toSet().toList()..sort();
-        scheduleDays = sorted;
-        resolvedMinSpacing = null;
-        resolvedRestBuffer = null;
-        preferredWeeks = const <int>[];
-        resolvedFixedDay = null;
-        resolvedFixedWeekday = null;
-        resolvedFixedWeekOfMonth = null;
-      case RoutineType.monthlyFlexible:
+    if (resolvedScheduleMode == RoutineScheduleMode.scheduled) {
+      if (resolvedPeriodType == RoutinePeriodType.week) {
+        targetCount = scheduleDays.length;
+        scheduleMonthDays = const <int>[];
+      } else if (resolvedPeriodType == RoutinePeriodType.month) {
+        targetCount = scheduleMonthDays.length;
         scheduleDays = const <int>[];
-        resolvedMinSpacing = null;
-        resolvedRestBuffer = null;
-        resolvedFixedDay = null;
-        resolvedFixedWeekday = null;
-        resolvedFixedWeekOfMonth = null;
-        final sortedWeeks = preferredWeeks.toSet().toList()..sort();
-        preferredWeeks = sortedWeeks;
-      case RoutineType.monthlyFixed:
-        scheduleDays = const <int>[];
-        preferredWeeks = const <int>[];
-        resolvedMinSpacing = null;
-        resolvedRestBuffer = null;
-        targetCount = 1;
-        if (resolvedFixedDay != null) {
-          resolvedFixedWeekday = null;
-          resolvedFixedWeekOfMonth = null;
-        } else if (resolvedFixedWeekday != null ||
-            resolvedFixedWeekOfMonth != null) {
-          resolvedFixedDay = null;
-        }
+      } else {
+        resolvedScheduleMode = RoutineScheduleMode.flexible;
+      }
     }
 
     _draft = _draft.copyWith(
       name: name,
-      valueId: valueId,
-      routineType: routineType,
+      projectId: projectId,
+      periodType: resolvedPeriodType,
+      scheduleMode: resolvedScheduleMode,
       targetCount: targetCount,
       scheduleDays: scheduleDays,
+      scheduleMonthDays: scheduleMonthDays,
+      scheduleTimeMinutes: scheduleTimeMinutes,
       minSpacingDays: resolvedMinSpacing,
       restDayBuffer: resolvedRestBuffer,
-      preferredWeeks: preferredWeeks,
-      fixedDayOfMonth: resolvedFixedDay,
-      fixedWeekday: resolvedFixedWeekday,
-      fixedWeekOfMonth: resolvedFixedWeekOfMonth,
       isActive: isActive,
     );
   }
@@ -199,16 +184,15 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
         RoutineDetailEvent.create(
           command: CreateRoutineCommand(
             name: _draft.name,
-            valueId: _draft.valueId,
-            routineType: _draft.routineType,
+            projectId: _draft.projectId,
+            periodType: _draft.periodType,
+            scheduleMode: _draft.scheduleMode,
             targetCount: _draft.targetCount,
             scheduleDays: _draft.scheduleDays,
+            scheduleMonthDays: _draft.scheduleMonthDays,
+            scheduleTimeMinutes: _draft.scheduleTimeMinutes,
             minSpacingDays: _draft.minSpacingDays,
             restDayBuffer: _draft.restDayBuffer,
-            preferredWeeks: _draft.preferredWeeks,
-            fixedDayOfMonth: _draft.fixedDayOfMonth,
-            fixedWeekday: _draft.fixedWeekday,
-            fixedWeekOfMonth: _draft.fixedWeekOfMonth,
             isActive: _draft.isActive,
             pausedUntilUtc: _draft.pausedUntilUtc,
           ),
@@ -220,16 +204,15 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
           command: UpdateRoutineCommand(
             id: routineId,
             name: _draft.name,
-            valueId: _draft.valueId,
-            routineType: _draft.routineType,
+            projectId: _draft.projectId,
+            periodType: _draft.periodType,
+            scheduleMode: _draft.scheduleMode,
             targetCount: _draft.targetCount,
             scheduleDays: _draft.scheduleDays,
+            scheduleMonthDays: _draft.scheduleMonthDays,
+            scheduleTimeMinutes: _draft.scheduleTimeMinutes,
             minSpacingDays: _draft.minSpacingDays,
             restDayBuffer: _draft.restDayBuffer,
-            preferredWeeks: _draft.preferredWeeks,
-            fixedDayOfMonth: _draft.fixedDayOfMonth,
-            fixedWeekday: _draft.fixedWeekday,
-            fixedWeekOfMonth: _draft.fixedWeekOfMonth,
             isActive: _draft.isActive,
             pausedUntilUtc: _draft.pausedUntilUtc,
           ),
@@ -306,12 +289,14 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
             _draft = RoutineDraft.empty();
             return RoutineForm(
               formKey: _formKey,
-              availableValues: success.availableValues,
+              availableProjects: success.availableProjects,
               initialDraft: _draft,
               onChanged: _syncDraftFromFormValues,
               onSubmit: () => _onSubmit(null),
-              submitTooltip: context.l10n.actionCreate,
+              submitTooltip: context.l10n.routineCreateCta,
               onClose: () => unawaited(closeEditor(context)),
+              defaultProjectId: widget.defaultProjectId,
+              openToProjectPicker: widget.openToProjectPicker,
             );
           },
           loadSuccess: (success) {
@@ -319,7 +304,7 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
             _draft = RoutineDraft.fromRoutine(success.routine);
             return RoutineForm(
               formKey: _formKey,
-              availableValues: success.availableValues,
+              availableProjects: success.availableProjects,
               initialData: success.routine,
               onChanged: _syncDraftFromFormValues,
               onSubmit: () => _onSubmit(success.routine.id),
@@ -327,8 +312,9 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
                 id: success.routine.id,
                 name: success.routine.name,
               ),
-              submitTooltip: context.l10n.actionUpdate,
+              submitTooltip: context.l10n.saveLabel,
               onClose: () => unawaited(closeEditor(context)),
+              defaultProjectId: widget.defaultProjectId,
             );
           },
           loadInProgress: (_) =>

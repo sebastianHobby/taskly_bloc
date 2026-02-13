@@ -14,6 +14,7 @@ import 'package:taskly_domain/time.dart';
 import '../helpers/test_imports.dart';
 import '../helpers/test_db.dart';
 import '../mocks/fake_id_generator.dart';
+import '../mocks/repository_mocks.dart';
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
@@ -28,9 +29,18 @@ void main() {
       final clock = _FixedClock(DateTime.utc(2025, 1, 15, 12));
       final idGenerator = FakeIdGenerator('user-1');
       final contextFactory = TestOperationContextFactory();
+      final expander = MockOccurrenceStreamExpanderContract();
+      final writeHelper = MockOccurrenceWriteHelperContract();
 
       final valueRepository = ValueRepository(
         driftDb: db,
+        idGenerator: idGenerator,
+        clock: clock,
+      );
+      final projectRepository = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: expander,
+        occurrenceWriteHelper: writeHelper,
         idGenerator: idGenerator,
         clock: clock,
       );
@@ -53,6 +63,12 @@ void main() {
       );
 
       final valueRow = await db.select(db.valueTable).getSingle();
+      await projectRepository.create(
+        name: 'Health project',
+        valueIds: [valueRow.id],
+        context: valueContext,
+      );
+      final projectRow = await db.select(db.projectTable).getSingle();
 
       final routineContext = contextFactory.create(
         feature: 'routines',
@@ -62,8 +78,9 @@ void main() {
 
       await routineRepository.create(
         name: 'Morning walk',
-        valueId: valueRow.id,
-        routineType: RoutineType.weeklyFixed,
+        projectId: projectRow.id,
+        periodType: RoutinePeriodType.week,
+        scheduleMode: RoutineScheduleMode.scheduled,
         targetCount: 3,
         scheduleDays: const [1, 3, 5],
         context: routineContext,
@@ -78,10 +95,13 @@ void main() {
       await routineRepository.update(
         id: routineId,
         name: 'Morning walk updated',
-        valueId: valueRow.id,
-        routineType: RoutineType.weeklyFixed,
+        projectId: projectRow.id,
+        periodType: RoutinePeriodType.week,
+        scheduleMode: RoutineScheduleMode.scheduled,
         targetCount: 4,
         scheduleDays: const [2, 4],
+        scheduleMonthDays: const <int>[],
+        scheduleTimeMinutes: null,
         context: routineContext,
       );
 
@@ -98,6 +118,8 @@ void main() {
       await routineRepository.recordCompletion(
         routineId: routineId,
         completedAtUtc: DateTime.utc(2025, 1, 16),
+        completedDayLocal: DateTime.utc(2025, 1, 16),
+        completedTimeLocalMinutes: 8 * 60,
         context: routineContext,
       );
 

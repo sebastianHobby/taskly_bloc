@@ -36,11 +36,15 @@ final class RoutineWriteService {
   Future<void> recordCompletion({
     required String routineId,
     DateTime? completedAtUtc,
+    DateTime? completedDayLocal,
+    int? completedTimeLocalMinutes,
     OperationContext? context,
   }) {
     return _routineRepository.recordCompletion(
       routineId: routineId,
       completedAtUtc: completedAtUtc,
+      completedDayLocal: completedDayLocal,
+      completedTimeLocalMinutes: completedTimeLocalMinutes,
       context: context,
     );
   }
@@ -69,16 +73,15 @@ final class RoutineWriteService {
       UpdateRoutineCommand(
         id: routine.id,
         name: routine.name,
-        valueId: routine.valueId,
-        routineType: routine.routineType,
+        projectId: routine.projectId,
+        periodType: routine.periodType,
+        scheduleMode: routine.scheduleMode,
         targetCount: routine.targetCount,
         scheduleDays: routine.scheduleDays,
+        scheduleMonthDays: routine.scheduleMonthDays,
+        scheduleTimeMinutes: routine.scheduleTimeMinutes,
         minSpacingDays: routine.minSpacingDays,
         restDayBuffer: routine.restDayBuffer,
-        preferredWeeks: routine.preferredWeeks,
-        fixedDayOfMonth: routine.fixedDayOfMonth,
-        fixedWeekday: routine.fixedWeekday,
-        fixedWeekOfMonth: routine.fixedWeekOfMonth,
         isActive: routine.isActive,
         pausedUntilUtc: pausedUntilUtc,
       ),

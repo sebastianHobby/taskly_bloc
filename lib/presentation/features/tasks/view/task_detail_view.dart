@@ -16,27 +16,20 @@ import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_cata
 class TaskDetailSheet extends StatefulWidget {
   const TaskDetailSheet({
     this.defaultProjectId,
-    this.defaultValueIds,
     this.defaultStartDate,
     this.defaultDeadlineDate,
-    this.openToValues = false,
     this.openToProjectPicker = false,
     this.includeInMyDayDefault = false,
     super.key,
   });
 
   final String? defaultProjectId;
-  final List<String>? defaultValueIds;
 
   /// Optional planned day to prefill when creating a new task.
   final DateTime? defaultStartDate;
 
   /// Optional due date to prefill when creating a new task.
   final DateTime? defaultDeadlineDate;
-
-  /// When true, scrolls to the values section and opens the values alignment
-  /// sheet on first build.
-  final bool openToValues;
 
   /// When true, scrolls to the project picker chip and opens the picker on
   /// first build.
@@ -215,16 +208,14 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                     ),
                   );
                 },
-                submitTooltip: context.l10n.actionCreate,
+                submitTooltip: context.l10n.addTaskAction,
                 availableProjects: availableProjects,
                 availableValues: availableValues,
                 defaultProjectId: widget.defaultProjectId,
-                defaultValueIds: widget.defaultValueIds,
                 defaultStartDate: widget.defaultStartDate,
                 defaultDeadlineDate: widget.defaultDeadlineDate,
                 includeInMyDayDefault: widget.includeInMyDayDefault,
                 showMyDayToggle: true,
-                openToValues: widget.openToValues,
                 openToProjectPicker: widget.openToProjectPicker,
                 onClose: () => unawaited(closeEditor(context)),
               ),
@@ -272,14 +263,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                   isRepeating: task.isRepeating,
                   seriesEnded: task.seriesEnded,
                 ),
-                submitTooltip: context.l10n.actionUpdate,
+                submitTooltip: context.l10n.saveLabel,
                 availableProjects: availableProjects,
                 availableValues: availableValues,
                 defaultProjectId: widget.defaultProjectId,
-                defaultValueIds: widget.defaultValueIds,
                 includeInMyDayDefault: widget.includeInMyDayDefault,
                 showMyDayToggle: false,
-                openToValues: widget.openToValues,
                 openToProjectPicker: widget.openToProjectPicker,
                 onClose: () => unawaited(closeEditor(context)),
               ),

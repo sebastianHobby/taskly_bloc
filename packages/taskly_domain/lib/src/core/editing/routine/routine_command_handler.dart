@@ -24,16 +24,15 @@ final class RoutineCommandHandler {
 
     await _routineRepository.create(
       name: command.name.trim(),
-      valueId: command.valueId,
-      routineType: command.routineType,
+      projectId: command.projectId,
+      periodType: command.periodType,
+      scheduleMode: command.scheduleMode,
       targetCount: command.targetCount,
       scheduleDays: command.scheduleDays,
+      scheduleMonthDays: command.scheduleMonthDays,
+      scheduleTimeMinutes: command.scheduleTimeMinutes,
       minSpacingDays: command.minSpacingDays,
       restDayBuffer: command.restDayBuffer,
-      preferredWeeks: command.preferredWeeks,
-      fixedDayOfMonth: command.fixedDayOfMonth,
-      fixedWeekday: command.fixedWeekday,
-      fixedWeekOfMonth: command.fixedWeekOfMonth,
       isActive: command.isActive,
       pausedUntilUtc: command.pausedUntilUtc,
       context: context,
@@ -52,16 +51,15 @@ final class RoutineCommandHandler {
     await _routineRepository.update(
       id: command.id,
       name: command.name.trim(),
-      valueId: command.valueId,
-      routineType: command.routineType,
+      projectId: command.projectId,
+      periodType: command.periodType,
+      scheduleMode: command.scheduleMode,
       targetCount: command.targetCount,
       scheduleDays: command.scheduleDays,
+      scheduleMonthDays: command.scheduleMonthDays,
+      scheduleTimeMinutes: command.scheduleTimeMinutes,
       minSpacingDays: command.minSpacingDays,
       restDayBuffer: command.restDayBuffer,
-      preferredWeeks: command.preferredWeeks,
-      fixedDayOfMonth: command.fixedDayOfMonth,
-      fixedWeekday: command.fixedWeekday,
-      fixedWeekOfMonth: command.fixedWeekOfMonth,
       isActive: command.isActive,
       pausedUntilUtc: command.pausedUntilUtc,
       context: context,
@@ -72,25 +70,26 @@ final class RoutineCommandHandler {
 
   ValidationFailure? _validate(dynamic command) {
     final name = (command as dynamic).name as String;
-    final valueId = (command as dynamic).valueId as String;
-    final routineType = (command as dynamic).routineType as RoutineType;
+    final projectId = (command as dynamic).projectId as String;
+    final periodType = (command as dynamic).periodType as RoutinePeriodType;
+    final scheduleMode =
+        (command as dynamic).scheduleMode as RoutineScheduleMode;
     final targetCount = (command as dynamic).targetCount as int?;
     final scheduleDays = (command as dynamic).scheduleDays as List<int>;
-    final preferredWeeks = (command as dynamic).preferredWeeks as List<int>;
-    final fixedDayOfMonth = (command as dynamic).fixedDayOfMonth as int?;
-    final fixedWeekday = (command as dynamic).fixedWeekday as int?;
-    final fixedWeekOfMonth = (command as dynamic).fixedWeekOfMonth as int?;
+    final scheduleMonthDays =
+        (command as dynamic).scheduleMonthDays as List<int>;
 
     final fieldErrors = <FieldKey, List<ValidationError>>{};
     fieldErrors[RoutineFieldKeys.name] = RoutineValidators.name(name);
-    final valueErrors = RoutineValidators.valueId(valueId);
-    if (valueErrors.isNotEmpty) {
-      fieldErrors[RoutineFieldKeys.valueId] = valueErrors;
+    final projectErrors = RoutineValidators.projectId(projectId);
+    if (projectErrors.isNotEmpty) {
+      fieldErrors[RoutineFieldKeys.projectId] = projectErrors;
     }
 
     final targetErrors = RoutineValidators.targetCount(
       targetCount,
-      routineType: routineType,
+      periodType: periodType,
+      scheduleMode: scheduleMode,
     );
     if (targetErrors.isNotEmpty) {
       fieldErrors[RoutineFieldKeys.targetCount] = targetErrors;
@@ -98,28 +97,20 @@ final class RoutineCommandHandler {
 
     final scheduleErrors = RoutineValidators.scheduleDays(
       scheduleDays,
-      routineType: routineType,
+      periodType: periodType,
+      scheduleMode: scheduleMode,
     );
     if (scheduleErrors.isNotEmpty) {
       fieldErrors[RoutineFieldKeys.scheduleDays] = scheduleErrors;
     }
 
-    final preferredWeekErrors = RoutineValidators.preferredWeeks(
-      preferredWeeks,
-      routineType: routineType,
+    final monthDayErrors = RoutineValidators.scheduleMonthDays(
+      scheduleMonthDays,
+      periodType: periodType,
+      scheduleMode: scheduleMode,
     );
-    if (preferredWeekErrors.isNotEmpty) {
-      fieldErrors[RoutineFieldKeys.preferredWeeks] = preferredWeekErrors;
-    }
-
-    final fixedErrors = RoutineValidators.fixedMonthlyFields(
-      fixedDayOfMonth: fixedDayOfMonth,
-      fixedWeekday: fixedWeekday,
-      fixedWeekOfMonth: fixedWeekOfMonth,
-      routineType: routineType,
-    );
-    if (fixedErrors.isNotEmpty) {
-      fieldErrors[RoutineFieldKeys.fixedDayOfMonth] = fixedErrors;
+    if (monthDayErrors.isNotEmpty) {
+      fieldErrors[RoutineFieldKeys.scheduleMonthDays] = monthDayErrors;
     }
 
     final pruned = Map<FieldKey, List<ValidationError>>.fromEntries(

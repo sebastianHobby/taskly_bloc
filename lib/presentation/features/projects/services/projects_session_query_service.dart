@@ -15,32 +15,38 @@ final class ProjectsSnapshot {
     required this.projects,
     required this.inboxTaskCount,
     required this.values,
+    required this.ratings,
   });
 
   final List<Project> projects;
   final int? inboxTaskCount;
   final List<Value> values;
+  final List<ValueWeeklyRating> ratings;
 }
 
 final class ProjectsSessionQueryService {
   ProjectsSessionQueryService({
     required ProjectRepositoryContract projectRepository,
+    required ValueRatingsRepositoryContract valueRatingsRepository,
     required SessionStreamCacheManager cacheManager,
     required SessionSharedDataService sharedDataService,
     required DemoModeService demoModeService,
     required DemoDataProvider demoDataProvider,
   }) : _projectRepository = projectRepository,
+       _valueRatingsRepository = valueRatingsRepository,
        _cacheManager = cacheManager,
        _sharedDataService = sharedDataService,
        _demoModeService = demoModeService,
        _demoDataProvider = demoDataProvider;
 
   final ProjectRepositoryContract _projectRepository;
+  final ValueRatingsRepositoryContract _valueRatingsRepository;
   final SessionStreamCacheManager _cacheManager;
   final SessionSharedDataService _sharedDataService;
   final DemoModeService _demoModeService;
   final DemoDataProvider _demoDataProvider;
   final Set<_ScopeKey> _knownScopes = <_ScopeKey>{};
+  static const int _ratingsHistoryWeeks = 8;
 
   void start() {
     // Prewarm global scope for instant Projects tab load.
@@ -78,28 +84,45 @@ final class ProjectsSessionQueryService {
   Stream<ProjectsSnapshot> _buildScopeStream(ProjectsScope? scope) {
     final projects$ = _projectsForScope(scope);
     final values$ = _sharedDataService.watchValues();
+    final ratings$ = _ratingsStream();
 
     return switch (scope) {
       null =>
-        Rx.combineLatest3<List<Project>, int, List<Value>, ProjectsSnapshot>(
+        Rx.combineLatest4<
+          List<Project>,
+          int,
+          List<Value>,
+          List<ValueWeeklyRating>,
+          ProjectsSnapshot
+        >(
           projects$,
           _sharedDataService.watchInboxTaskCount(),
           values$,
-          (projects, inboxTaskCount, values) => ProjectsSnapshot(
+          ratings$,
+          (projects, inboxTaskCount, values, ratings) => ProjectsSnapshot(
             projects: projects,
             inboxTaskCount: inboxTaskCount,
             values: values,
+            ratings: ratings,
           ),
         ),
-      _ => Rx.combineLatest2<List<Project>, List<Value>, ProjectsSnapshot>(
-        projects$,
-        values$,
-        (projects, values) => ProjectsSnapshot(
-          projects: projects,
-          inboxTaskCount: null,
-          values: values,
+      _ =>
+        Rx.combineLatest3<
+          List<Project>,
+          List<Value>,
+          List<ValueWeeklyRating>,
+          ProjectsSnapshot
+        >(
+          projects$,
+          values$,
+          ratings$,
+          (projects, values, ratings) => ProjectsSnapshot(
+            projects: projects,
+            inboxTaskCount: null,
+            values: values,
+            ratings: ratings,
+          ),
         ),
-      ),
     };
   }
 
@@ -137,6 +160,19 @@ final class ProjectsSessionQueryService {
             .where((project) => project.primaryValueId == valueId)
             .toList(growable: false),
     };
+  }
+
+  Stream<List<ValueWeeklyRating>> _ratingsStream() {
+    return _demoModeService.enabled.distinct().switchMap((enabled) {
+      if (enabled) {
+        return Stream<List<ValueWeeklyRating>>.value(
+          _demoDataProvider.buildValueRatingsHistory(
+            weeks: _ratingsHistoryWeeks,
+          ),
+        );
+      }
+      return _valueRatingsRepository.watchAll(weeks: _ratingsHistoryWeeks);
+    });
   }
 }
 

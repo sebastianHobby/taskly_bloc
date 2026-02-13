@@ -162,7 +162,7 @@ class JournalTodayBloc extends Bloc<JournalTodayEvent, JournalTodayState> {
         },
       ),
       onData: emit.call,
-      onError: (Object e, StackTrace _) {
+      onError: (e, _) {
         emit(JournalTodayError('Failed to load Journal data: $e'));
       },
     );

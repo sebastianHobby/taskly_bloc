@@ -3,6 +3,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/presentation/shared/utils/routine_completion_utils.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -181,7 +182,7 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
     RoutineListLogRequested event,
     Emitter<RoutineListState> emit,
   ) async {
-    final completedToday = _isCompletedToday(event.routineId);
+    final completedToday = _isRoutineComplete(event.routineId);
     final dayKeyUtc =
         _dayKeyForRoutine(event.routineId) ?? dateOnly(_nowService.nowUtc());
     if (completedToday) {
@@ -211,9 +212,12 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
       entityId: event.routineId,
     );
 
+    final nowLocal = _nowService.nowLocal();
     await _routineWriteService.recordCompletion(
       routineId: event.routineId,
       completedAtUtc: _nowService.nowUtc(),
+      completedDayLocal: dateOnly(nowLocal),
+      completedTimeLocalMinutes: nowLocal.hour * 60 + nowLocal.minute,
       context: context,
     );
   }
@@ -221,7 +225,7 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
   Future<void> logRoutines(List<String> routineIds) async {
     if (routineIds.isEmpty) return;
     for (final routineId in routineIds) {
-      if (_isCompletedToday(routineId)) continue;
+      if (_isRoutineComplete(routineId)) continue;
       final context = _contextFactory.create(
         feature: 'routines',
         screen: 'routines_list',
@@ -231,9 +235,12 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
         entityId: routineId,
       );
       try {
+        final nowLocal = _nowService.nowLocal();
         await _routineWriteService.recordCompletion(
           routineId: routineId,
           completedAtUtc: _nowService.nowUtc(),
+          completedDayLocal: dateOnly(nowLocal),
+          completedTimeLocalMinutes: nowLocal.hour * 60 + nowLocal.minute,
           context: context,
         );
       } catch (error, stackTrace) {
@@ -297,16 +304,15 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
           UpdateRoutineCommand(
             id: routine.id,
             name: routine.name,
-            valueId: routine.valueId,
-            routineType: routine.routineType,
+            projectId: routine.projectId,
+            periodType: routine.periodType,
+            scheduleMode: routine.scheduleMode,
             targetCount: routine.targetCount,
             scheduleDays: routine.scheduleDays,
+            scheduleMonthDays: routine.scheduleMonthDays,
+            scheduleTimeMinutes: routine.scheduleTimeMinutes,
             minSpacingDays: routine.minSpacingDays,
             restDayBuffer: routine.restDayBuffer,
-            preferredWeeks: routine.preferredWeeks,
-            fixedDayOfMonth: routine.fixedDayOfMonth,
-            fixedWeekday: routine.fixedWeekday,
-            fixedWeekOfMonth: routine.fixedWeekOfMonth,
             isActive: false,
             pausedUntilUtc: routine.pausedUntil,
           ),
@@ -343,16 +349,15 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
           UpdateRoutineCommand(
             id: routine.id,
             name: routine.name,
-            valueId: routine.valueId,
-            routineType: routine.routineType,
+            projectId: routine.projectId,
+            periodType: routine.periodType,
+            scheduleMode: routine.scheduleMode,
             targetCount: routine.targetCount,
             scheduleDays: routine.scheduleDays,
+            scheduleMonthDays: routine.scheduleMonthDays,
+            scheduleTimeMinutes: routine.scheduleTimeMinutes,
             minSpacingDays: routine.minSpacingDays,
             restDayBuffer: routine.restDayBuffer,
-            preferredWeeks: routine.preferredWeeks,
-            fixedDayOfMonth: routine.fixedDayOfMonth,
-            fixedWeekday: routine.fixedWeekday,
-            fixedWeekOfMonth: routine.fixedWeekOfMonth,
             isActive: true,
             pausedUntilUtc: routine.pausedUntil,
           ),
@@ -459,7 +464,9 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
 
     for (final completion in completions) {
       if (completion.routineId != routine.id) continue;
-      final day = dateOnly(completion.completedAtUtc);
+      final day = dateOnly(
+        completion.completedDayLocal ?? completion.completedAtUtc,
+      );
       if (day.isBefore(periodStart) || day.isAfter(periodEnd)) continue;
       filtered.add(completion);
     }
@@ -467,14 +474,14 @@ class RoutineListBloc extends Bloc<RoutineListEvent, RoutineListState> {
     return filtered;
   }
 
-  bool _isCompletedToday(String routineId) {
+  bool _isRoutineComplete(String routineId) {
     for (final item in _latestItems) {
       if (item.routine.id != routineId) continue;
-      final today = dateOnly(item.dayKeyUtc);
-      return item.completionsInPeriod.any(
-        (completion) =>
-            completion.routineId == routineId &&
-            dateOnly(completion.completedAtUtc).isAtSameMomentAs(today),
+      return isRoutineCompleteForDay(
+        routine: item.routine,
+        snapshot: item.snapshot,
+        dayKeyUtc: item.dayKeyUtc,
+        completionsInPeriod: item.completionsInPeriod,
       );
     }
     return false;

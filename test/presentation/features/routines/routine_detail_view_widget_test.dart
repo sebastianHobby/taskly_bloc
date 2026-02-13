@@ -48,20 +48,26 @@ void main() {
 
   testWidgetsSafe('renders routine form for edit flow', (tester) async {
     final value = TestData.value(name: 'Health');
+    final project = TestData.projectWithValues(
+      id: 'project-1',
+      name: 'Project',
+      values: [value],
+    );
     final routine = Routine(
       id: 'routine-1',
       createdAt: DateTime(2025, 1, 1),
       updatedAt: DateTime(2025, 1, 1),
       name: 'Morning Stretch',
-      valueId: value.id,
-      routineType: RoutineType.weeklyFixed,
+      projectId: project.id,
+      periodType: RoutinePeriodType.week,
+      scheduleMode: RoutineScheduleMode.scheduled,
       targetCount: 1,
       scheduleDays: const [1],
       value: value,
     );
     final state = RoutineDetailState.loadSuccess(
       routine: routine,
-      availableValues: [value],
+      availableProjects: [project],
     );
     when(() => bloc.state).thenReturn(state);
     whenListen(bloc, Stream.value(state), initialState: state);
@@ -77,8 +83,13 @@ void main() {
 
   testWidgetsSafe('renders routine form for create flow', (tester) async {
     final value = TestData.value(name: 'Focus');
+    final project = TestData.projectWithValues(
+      id: 'project-1',
+      name: 'Project',
+      values: [value],
+    );
     final state = RoutineDetailState.initialDataLoadSuccess(
-      availableValues: [value],
+      availableProjects: [project],
     );
     when(() => bloc.state).thenReturn(state);
     whenListen(bloc, Stream.value(state), initialState: state);

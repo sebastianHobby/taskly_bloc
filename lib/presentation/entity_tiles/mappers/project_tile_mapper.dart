@@ -19,6 +19,9 @@ TasklyProjectRowData buildProjectRowData(
   String? overrideDeadlineDateLabel,
   bool? overrideIsOverdue,
   bool? overrideIsDueToday,
+  ValueChipData? valueChipOverride,
+  bool includeValueIcon = true,
+  Color? accentColor,
 }) {
   final scheme = Theme.of(context).colorScheme;
   final now = context.read<NowService>().nowLocal();
@@ -41,7 +44,9 @@ TasklyProjectRowData buildProjectRowData(
   final resolvedDeadlineDateLabel =
       overrideDeadlineDateLabel ?? deadlineDateLabel;
 
-  final primaryValueData = project.primaryValue?.toChipData(context);
+  final primaryValueData =
+      valueChipOverride ?? project.primaryValue?.toChipData(context);
+  final leadingChip = includeValueIcon ? primaryValueData : null;
 
   final subtitle = richTextPreview(project.description);
 
@@ -85,13 +90,29 @@ TasklyProjectRowData buildProjectRowData(
     completed: project.completed,
     pinned: false,
     meta: meta,
-    leadingChip: primaryValueData,
+    leadingChip: leadingChip,
+    accentColor: accentColor,
     subtitle: subtitle,
     taskCount: effectiveTaskCount,
     completedTaskCount: effectiveCompletedTaskCount,
     dueSoonCount: dueSoonCount,
     statusBadge: statusBadge,
     deemphasized: project.completed,
+  );
+}
+
+TasklyProjectRowData buildInboxProjectRowData(
+  BuildContext context, {
+  required int taskCount,
+}) {
+  final safeCount = taskCount < 0 ? 0 : taskCount;
+  return TasklyProjectRowData(
+    id: ProjectGroupingRef.inbox().stableKey,
+    title: context.l10n.inboxLabel,
+    completed: false,
+    pinned: false,
+    meta: const TasklyEntityMetaData(),
+    taskCount: safeCount,
   );
 }
 

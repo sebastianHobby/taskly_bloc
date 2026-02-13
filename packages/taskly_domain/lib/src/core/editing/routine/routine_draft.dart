@@ -1,19 +1,19 @@
 import 'package:taskly_domain/src/routines/model/routine.dart';
-import 'package:taskly_domain/src/routines/model/routine_type.dart';
+import 'package:taskly_domain/src/routines/model/routine_period_type.dart';
+import 'package:taskly_domain/src/routines/model/routine_schedule_mode.dart';
 
 final class RoutineDraft {
   const RoutineDraft({
     required this.name,
-    required this.valueId,
-    required this.routineType,
+    required this.projectId,
+    required this.periodType,
+    required this.scheduleMode,
     required this.targetCount,
     this.scheduleDays = const <int>[],
+    this.scheduleMonthDays = const <int>[],
+    this.scheduleTimeMinutes,
     this.minSpacingDays,
     this.restDayBuffer,
-    this.preferredWeeks = const <int>[],
-    this.fixedDayOfMonth,
-    this.fixedWeekday,
-    this.fixedWeekOfMonth,
     this.isActive = true,
     this.pausedUntilUtc,
   });
@@ -21,8 +21,9 @@ final class RoutineDraft {
   factory RoutineDraft.empty() {
     return const RoutineDraft(
       name: '',
-      valueId: '',
-      routineType: RoutineType.weeklyFlexible,
+      projectId: '',
+      periodType: RoutinePeriodType.week,
+      scheduleMode: RoutineScheduleMode.flexible,
       targetCount: 3,
     );
   }
@@ -30,62 +31,58 @@ final class RoutineDraft {
   factory RoutineDraft.fromRoutine(Routine routine) {
     return RoutineDraft(
       name: routine.name,
-      valueId: routine.valueId,
-      routineType: routine.routineType,
+      projectId: routine.projectId,
+      periodType: routine.periodType,
+      scheduleMode: routine.scheduleMode,
       targetCount: routine.targetCount,
       scheduleDays: routine.scheduleDays,
+      scheduleMonthDays: routine.scheduleMonthDays,
+      scheduleTimeMinutes: routine.scheduleTimeMinutes,
       minSpacingDays: routine.minSpacingDays,
       restDayBuffer: routine.restDayBuffer,
-      preferredWeeks: routine.preferredWeeks,
-      fixedDayOfMonth: routine.fixedDayOfMonth,
-      fixedWeekday: routine.fixedWeekday,
-      fixedWeekOfMonth: routine.fixedWeekOfMonth,
       isActive: routine.isActive,
       pausedUntilUtc: routine.pausedUntil,
     );
   }
 
   final String name;
-  final String valueId;
-  final RoutineType routineType;
+  final String projectId;
+  final RoutinePeriodType periodType;
+  final RoutineScheduleMode scheduleMode;
   final int targetCount;
   final List<int> scheduleDays;
+  final List<int> scheduleMonthDays;
+  final int? scheduleTimeMinutes;
   final int? minSpacingDays;
   final int? restDayBuffer;
-  final List<int> preferredWeeks;
-  final int? fixedDayOfMonth;
-  final int? fixedWeekday;
-  final int? fixedWeekOfMonth;
   final bool isActive;
   final DateTime? pausedUntilUtc;
 
   RoutineDraft copyWith({
     String? name,
-    String? valueId,
-    RoutineType? routineType,
+    String? projectId,
+    RoutinePeriodType? periodType,
+    RoutineScheduleMode? scheduleMode,
     int? targetCount,
     List<int>? scheduleDays,
+    List<int>? scheduleMonthDays,
+    int? scheduleTimeMinutes,
     int? minSpacingDays,
     int? restDayBuffer,
-    List<int>? preferredWeeks,
-    int? fixedDayOfMonth,
-    int? fixedWeekday,
-    int? fixedWeekOfMonth,
     bool? isActive,
     DateTime? pausedUntilUtc,
   }) {
     return RoutineDraft(
       name: name ?? this.name,
-      valueId: valueId ?? this.valueId,
-      routineType: routineType ?? this.routineType,
+      projectId: projectId ?? this.projectId,
+      periodType: periodType ?? this.periodType,
+      scheduleMode: scheduleMode ?? this.scheduleMode,
       targetCount: targetCount ?? this.targetCount,
       scheduleDays: scheduleDays ?? this.scheduleDays,
+      scheduleMonthDays: scheduleMonthDays ?? this.scheduleMonthDays,
+      scheduleTimeMinutes: scheduleTimeMinutes ?? this.scheduleTimeMinutes,
       minSpacingDays: minSpacingDays ?? this.minSpacingDays,
       restDayBuffer: restDayBuffer ?? this.restDayBuffer,
-      preferredWeeks: preferredWeeks ?? this.preferredWeeks,
-      fixedDayOfMonth: fixedDayOfMonth ?? this.fixedDayOfMonth,
-      fixedWeekday: fixedWeekday ?? this.fixedWeekday,
-      fixedWeekOfMonth: fixedWeekOfMonth ?? this.fixedWeekOfMonth,
       isActive: isActive ?? this.isActive,
       pausedUntilUtc: pausedUntilUtc ?? this.pausedUntilUtc,
     );

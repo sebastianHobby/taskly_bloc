@@ -89,7 +89,7 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.byType(TaskForm), findsOneWidget);
-    expect(find.text('New Task'), findsOneWidget);
+    expect(find.text('Add task'), findsOneWidget);
   });
 
   testWidgetsSafe('renders task form for edit flow', (tester) async {

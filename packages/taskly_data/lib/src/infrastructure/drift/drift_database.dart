@@ -526,30 +526,28 @@ class RoutinesTable extends Table {
   TextColumn get userId => text().nullable().named('user_id')();
 
   TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
-  TextColumn get valueId => text()
-      .named('value_id')
-      .references(ValueTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get projectId => text()
+      .named('project_id')
+      .references(ProjectTable, #id, onDelete: KeyAction.cascade)();
 
-  TextColumn get routineType => text().named('routine_type')();
+  TextColumn get periodType => text().named('period_type')();
+  TextColumn get scheduleMode => text().named('schedule_mode')();
   IntColumn get targetCount => integer().named('target_count')();
 
   TextColumn get scheduleDays => text()
       .map(const JsonIntListConverter())
       .nullable()
       .named('schedule_days')();
+  TextColumn get scheduleMonthDays => text()
+      .map(const JsonIntListConverter())
+      .nullable()
+      .named('schedule_month_days')();
+  IntColumn get scheduleTimeMinutes =>
+      integer().nullable().named('schedule_time_minutes')();
   IntColumn get minSpacingDays =>
       integer().nullable().named('min_spacing_days')();
   IntColumn get restDayBuffer =>
       integer().nullable().named('rest_day_buffer')();
-  TextColumn get preferredWeeks => text()
-      .map(const JsonIntListConverter())
-      .nullable()
-      .named('preferred_weeks')();
-  IntColumn get fixedDayOfMonth =>
-      integer().nullable().named('fixed_day_of_month')();
-  IntColumn get fixedWeekday => integer().nullable().named('fixed_weekday')();
-  IntColumn get fixedWeekOfMonth =>
-      integer().nullable().named('fixed_week_of_month')();
   BoolColumn get isActive =>
       boolean().clientDefault(() => true).named('is_active')();
   TextColumn get pausedUntil =>
@@ -577,6 +575,12 @@ class RoutineCompletionsTable extends Table {
       .named('routine_id')
       .references(RoutinesTable, #id, onDelete: KeyAction.cascade)();
   DateTimeColumn get completedAt => dateTime().named('completed_at')();
+  TextColumn get completedDayLocal => text()
+      .map(dateOnlyStringConverter)
+      .nullable()
+      .named('completed_day_local')();
+  IntColumn get completedTimeLocalMinutes =>
+      integer().nullable().named('completed_time_local_minutes')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
 

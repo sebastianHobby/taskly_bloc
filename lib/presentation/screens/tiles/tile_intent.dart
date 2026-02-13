@@ -59,15 +59,11 @@ final class TileIntentOpenEditor extends TileIntent {
   const TileIntentOpenEditor({
     required this.entityType,
     required this.entityId,
-    this.openToValues = false,
     this.openToProjectPicker = false,
   });
 
   final EntityType entityType;
   final String entityId;
-
-  /// When true, opens the editor and scrolls to/open the values alignment UX.
-  final bool openToValues;
 
   /// When true, opens the editor and immediately opens the project picker.
   ///

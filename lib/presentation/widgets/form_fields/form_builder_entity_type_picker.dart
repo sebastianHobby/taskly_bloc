@@ -21,7 +21,7 @@ class FormBuilderEntityTypePicker
     super.validator,
     super.autovalidateMode,
   }) : super(
-         builder: (FormFieldState<EntityType> field) {
+         builder: (field) {
            final state =
                field
                    as FormBuilderFieldDecorationState<

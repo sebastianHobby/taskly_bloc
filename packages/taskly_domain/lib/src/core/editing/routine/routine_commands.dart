@@ -1,36 +1,35 @@
 import 'package:flutter/foundation.dart';
 
-import 'package:taskly_domain/src/routines/model/routine_type.dart';
+import 'package:taskly_domain/src/routines/model/routine_period_type.dart';
+import 'package:taskly_domain/src/routines/model/routine_schedule_mode.dart';
 
 @immutable
 final class CreateRoutineCommand {
   const CreateRoutineCommand({
     required this.name,
-    required this.valueId,
-    required this.routineType,
+    required this.projectId,
+    required this.periodType,
+    required this.scheduleMode,
     required this.targetCount,
     this.scheduleDays = const <int>[],
+    this.scheduleMonthDays = const <int>[],
+    this.scheduleTimeMinutes,
     this.minSpacingDays,
     this.restDayBuffer,
-    this.preferredWeeks = const <int>[],
-    this.fixedDayOfMonth,
-    this.fixedWeekday,
-    this.fixedWeekOfMonth,
     this.isActive = true,
     this.pausedUntilUtc,
   });
 
   final String name;
-  final String valueId;
-  final RoutineType routineType;
+  final String projectId;
+  final RoutinePeriodType periodType;
+  final RoutineScheduleMode scheduleMode;
   final int targetCount;
   final List<int> scheduleDays;
+  final List<int> scheduleMonthDays;
+  final int? scheduleTimeMinutes;
   final int? minSpacingDays;
   final int? restDayBuffer;
-  final List<int> preferredWeeks;
-  final int? fixedDayOfMonth;
-  final int? fixedWeekday;
-  final int? fixedWeekOfMonth;
   final bool isActive;
   final DateTime? pausedUntilUtc;
 }
@@ -40,32 +39,30 @@ final class UpdateRoutineCommand {
   const UpdateRoutineCommand({
     required this.id,
     required this.name,
-    required this.valueId,
-    required this.routineType,
+    required this.projectId,
+    required this.periodType,
+    required this.scheduleMode,
     required this.targetCount,
     this.scheduleDays = const <int>[],
+    this.scheduleMonthDays = const <int>[],
+    this.scheduleTimeMinutes,
     this.minSpacingDays,
     this.restDayBuffer,
-    this.preferredWeeks = const <int>[],
-    this.fixedDayOfMonth,
-    this.fixedWeekday,
-    this.fixedWeekOfMonth,
     this.isActive = true,
     this.pausedUntilUtc,
   });
 
   final String id;
   final String name;
-  final String valueId;
-  final RoutineType routineType;
+  final String projectId;
+  final RoutinePeriodType periodType;
+  final RoutineScheduleMode scheduleMode;
   final int targetCount;
   final List<int> scheduleDays;
+  final List<int> scheduleMonthDays;
+  final int? scheduleTimeMinutes;
   final int? minSpacingDays;
   final int? restDayBuffer;
-  final List<int> preferredWeeks;
-  final int? fixedDayOfMonth;
-  final int? fixedWeekday;
-  final int? fixedWeekOfMonth;
   final bool isActive;
   final DateTime? pausedUntilUtc;
 }

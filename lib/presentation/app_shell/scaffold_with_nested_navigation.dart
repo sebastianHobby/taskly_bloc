@@ -38,7 +38,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'scheduled',
       'projects',
       'routines',
-      'inbox',
       if (kDebugMode) 'journal',
       'values',
       'settings',
@@ -46,7 +45,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
 
     final labels = <String, String>{
       'my_day': l10n.myDayTitle,
-      'inbox': l10n.inboxLabel,
       'scheduled': l10n.scheduledTitle,
       'projects': l10n.projectsTitle,
       'routines': l10n.routinesTitle,
@@ -60,7 +58,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'scheduled': 1,
       'projects': 2,
       'routines': 3,
-      'inbox': 4,
       'journal': 5,
       'values': 6,
       'settings': 100,

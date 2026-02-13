@@ -133,7 +133,7 @@ class JournalHistoryBloc
         },
       ),
       onData: emit.call,
-      onError: (Object e, StackTrace _) {
+      onError: (e, _) {
         emit(JournalHistoryError('Failed to load history: $e', filters));
       },
     );

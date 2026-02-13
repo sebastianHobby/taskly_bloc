@@ -2,9 +2,10 @@ import 'dart:math' as math;
 
 import 'package:taskly_domain/src/routines/model/routine.dart';
 import 'package:taskly_domain/src/routines/model/routine_completion.dart';
+import 'package:taskly_domain/src/routines/model/routine_period_type.dart';
 import 'package:taskly_domain/src/routines/model/routine_progress.dart';
 import 'package:taskly_domain/src/routines/model/routine_skip.dart';
-import 'package:taskly_domain/src/routines/model/routine_type.dart';
+import 'package:taskly_domain/src/routines/model/routine_schedule_mode.dart';
 import 'package:taskly_domain/time.dart';
 
 final class RoutineScheduleService {
@@ -17,12 +18,14 @@ final class RoutineScheduleService {
     required List<RoutineSkip> skips,
   }) {
     final today = dateOnly(dayKeyUtc);
-    final periodType = _periodTypeFor(routine.routineType);
+    final periodType = routine.periodType;
     final periodStart = switch (periodType) {
+      RoutinePeriodType.day => today,
       RoutinePeriodType.week => _weekStart(today),
       RoutinePeriodType.month => _monthStart(today),
     };
     final periodEnd = switch (periodType) {
+      RoutinePeriodType.day => periodStart,
       RoutinePeriodType.week => periodStart.add(const Duration(days: 6)),
       RoutinePeriodType.month => _monthEnd(today),
     };
@@ -57,17 +60,12 @@ final class RoutineScheduleService {
       isSkipped: skip,
     );
 
-    final windowPhase = periodType == RoutinePeriodType.month
-        ? _monthlyWindowPhase(routine, today: today)
-        : null;
-
     final nextRecommendedDayUtc = _nextRecommendedDay(
       routine,
       today: today,
       periodEndUtc: periodEnd,
       remainingCount: remaining,
       daysLeft: daysLeft,
-      windowPhase: windowPhase,
     );
 
     return RoutineCadenceSnapshot(
@@ -80,18 +78,8 @@ final class RoutineScheduleService {
       remainingCount: remaining,
       daysLeft: daysLeft,
       status: status,
-      windowPhase: windowPhase,
       nextRecommendedDayUtc: nextRecommendedDayUtc,
     );
-  }
-
-  RoutinePeriodType _periodTypeFor(RoutineType type) {
-    return switch (type) {
-      RoutineType.weeklyFixed => RoutinePeriodType.week,
-      RoutineType.weeklyFlexible => RoutinePeriodType.week,
-      RoutineType.monthlyFixed => RoutinePeriodType.month,
-      RoutineType.monthlyFlexible => RoutinePeriodType.month,
-    };
   }
 
   bool _hasSkipForPeriod(
@@ -144,27 +132,37 @@ final class RoutineScheduleService {
     required DateTime periodEndUtc,
     required int remainingCount,
     required int daysLeft,
-    required RoutineWindowPhase? windowPhase,
   }) {
     if (remainingCount <= 0) return null;
 
-    return switch (routine.routineType) {
-      RoutineType.weeklyFixed => _nextFixedDay(
-        today: today,
-        scheduleDays: routine.scheduleDays,
-      ),
-      RoutineType.weeklyFlexible => _nextFlexibleDay(
-        routine: routine,
-        today: today,
-        periodEndUtc: periodEndUtc,
-        remainingCount: remainingCount,
-        daysLeft: daysLeft,
-      ),
-      RoutineType.monthlyFixed ||
-      RoutineType.monthlyFlexible => _nextMonthlyWindowDay(
-        today: today,
-        windowPhase: windowPhase,
-      ),
+    return switch (routine.periodType) {
+      RoutinePeriodType.day => null,
+      RoutinePeriodType.week =>
+        routine.scheduleMode == RoutineScheduleMode.scheduled
+            ? _nextFixedDay(
+                today: today,
+                scheduleDays: routine.scheduleDays,
+              )
+            : _nextFlexibleDay(
+                routine: routine,
+                today: today,
+                periodEndUtc: periodEndUtc,
+                remainingCount: remainingCount,
+                daysLeft: daysLeft,
+              ),
+      RoutinePeriodType.month =>
+        routine.scheduleMode == RoutineScheduleMode.scheduled
+            ? _nextMonthlyScheduledDay(
+                today: today,
+                scheduleMonthDays: routine.scheduleMonthDays,
+              )
+            : _nextFlexibleDay(
+                routine: routine,
+                today: today,
+                periodEndUtc: periodEndUtc,
+                remainingCount: remainingCount,
+                daysLeft: daysLeft,
+              ),
     };
   }
 
@@ -212,68 +210,19 @@ final class RoutineScheduleService {
     return candidate;
   }
 
-  DateTime? _nextMonthlyWindowDay({
+  DateTime? _nextMonthlyScheduledDay({
     required DateTime today,
-    required RoutineWindowPhase? windowPhase,
+    required List<int> scheduleMonthDays,
   }) {
+    if (scheduleMonthDays.isEmpty) return null;
     final normalized = dateOnly(today);
-    return switch (windowPhase) {
-      RoutineWindowPhase.thisWeek => normalized.add(const Duration(days: 1)),
-      RoutineWindowPhase.nextWeek => _weekStart(normalized).add(
-        const Duration(days: 7),
-      ),
-      RoutineWindowPhase.laterThisMonth => _weekStart(normalized).add(
-        const Duration(days: 14),
-      ),
-      null => null,
-    };
-  }
-
-  RoutineWindowPhase _monthlyWindowPhase(
-    Routine routine, {
-    required DateTime today,
-  }) {
-    final currentWeek = _weekOfMonth(today);
-    final nextWeek = math.min(5, currentWeek + 1);
-    final isLastWeek = _isLastWeekOfMonth(today);
-    var preferred = routine.preferredWeeks;
-    if (routine.routineType == RoutineType.monthlyFixed && preferred.isEmpty) {
-      final derivedWeek = _deriveFixedWeek(routine, today: today);
-      if (derivedWeek != null) {
-        preferred = [derivedWeek];
-      }
+    final sorted = scheduleMonthDays.toSet().toList()..sort();
+    for (final day in sorted) {
+      if (day <= normalized.day) continue;
+      return DateTime.utc(normalized.year, normalized.month, day);
     }
-
-    final prefersCurrent =
-        preferred.contains(currentWeek) ||
-        (preferred.contains(5) && isLastWeek);
-    if (prefersCurrent) return RoutineWindowPhase.thisWeek;
-
-    final isNextLastWeek = _isLastWeekOfMonth(
-      today.add(const Duration(days: 7)),
-    );
-    final prefersNext =
-        preferred.contains(nextWeek) ||
-        (preferred.contains(5) && isNextLastWeek);
-    if (prefersNext) return RoutineWindowPhase.nextWeek;
-
-    return RoutineWindowPhase.laterThisMonth;
-  }
-
-  int? _deriveFixedWeek(
-    Routine routine, {
-    required DateTime today,
-  }) {
-    final fixedWeek = routine.fixedWeekOfMonth;
-    if (fixedWeek != null) return fixedWeek;
-
-    final fixedDay = routine.fixedDayOfMonth;
-    if (fixedDay == null) return null;
-
-    final monthEnd = _monthEnd(today).day;
-    final clampedDay = fixedDay.clamp(1, monthEnd);
-    final fixedDate = DateTime.utc(today.year, today.month, clampedDay);
-    return _weekOfMonth(fixedDate);
+    final nextMonth = DateTime.utc(normalized.year, normalized.month + 1, 1);
+    return DateTime.utc(nextMonth.year, nextMonth.month, sorted.first);
   }
 
   DateTime _weekStart(DateTime dayKeyUtc) {
@@ -290,19 +239,5 @@ final class RoutineScheduleService {
     final start = DateTime.utc(dayKeyUtc.year, dayKeyUtc.month);
     final nextMonth = DateTime.utc(start.year, start.month + 1);
     return nextMonth.subtract(const Duration(days: 1));
-  }
-
-  int _weekOfMonth(DateTime dayKeyUtc) {
-    final day = dayKeyUtc.day;
-    if (day <= 7) return 1;
-    if (day <= 14) return 2;
-    if (day <= 21) return 3;
-    if (day <= 28) return 4;
-    return 5;
-  }
-
-  bool _isLastWeekOfMonth(DateTime dayKeyUtc) {
-    final end = _monthEnd(dayKeyUtc);
-    return end.difference(dayKeyUtc).inDays < 7;
   }
 }

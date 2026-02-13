@@ -259,7 +259,7 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
 
   Future<void> _openEditor(BuildContext context, TileIntentOpenEditor intent) {
     // Prefer route-based navigation for standard editor opens.
-    if (!intent.openToValues && !intent.openToProjectPicker) {
+    if (!intent.openToProjectPicker) {
       Routing.toEntity(context, intent.entityType, intent.entityId);
       return SynchronousFuture(null);
     }
@@ -270,14 +270,12 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
         return _editorLauncher.openTaskEditor(
           context,
           taskId: intent.entityId,
-          openToValues: intent.openToValues,
           openToProjectPicker: intent.openToProjectPicker,
         );
       case EntityType.project:
         return _editorLauncher.openProjectEditor(
           context,
           projectId: intent.entityId,
-          openToValues: intent.openToValues,
         );
       case EntityType.value:
         return _editorLauncher.openValueEditor(

@@ -1,4 +1,4 @@
-﻿{
+{
     "selectedCountLabel": "{count, plural, one{1 seleccionado} other{{count} seleccionados}}",
     "moveToProjectAction": "Mover al proyecto",
     "completeSeriesAction": "Completar serie",
@@ -49,21 +49,13 @@
     "taskTagsSelectPrimaryTitle": "Selecciona la etiqueta 1",
     "taskTagsSelectSecondaryTitle": "Selecciona la etiqueta 2",
     "taskTagsMaxTwoHelper": "A\u00f1ade hasta dos etiquetas.",
-    "projectValueTitle": "Valor del proyecto",
-    "projectValueHelper": "Elige un valor para guiar este proyecto.",
+    "projectValueTitle": "Por que es importante?",
+    "projectValueHelper": "Selecciona un valor principal...",
     "projectFormSingleValueOnly": "Elige un solo valor.",
-    "taskProjectValueTitle": "Lo que apoya",
-    "taskProjectValueHelper": "Alineado con el valor en el que se basa tu proyecto.",
-    "taskProjectValueLockedLabel": "Bloqueado",
-    "taskProjectValueNotSet": "Valor no establecido.",
-    "taskProjectValueRow": "Valor: {valueName}",
-    "taskAdditionalValuesTitle": "Valores adicionales (opcional)",
-    "taskAdditionalValuesHelper": "A\u00f1ade hasta dos valores adicionales.",
-    "taskAdditionalValuesDisabled": "Establece un valor del proyecto para a\u00f1adir valores adicionales.",
-    "taskAdditionalValuePrimaryLabel": "Valor 1",
-    "taskAdditionalValueSecondaryLabel": "Valor 2",
-    "taskAdditionalValueSelectPrimaryTitle": "Selecciona el valor 1",
-    "taskAdditionalValueSelectSecondaryTitle": "Selecciona el valor 2",
+    "taskProjectValueTitle": "Por qué es importante?",
+    "taskProjectValueNotSet": "Aún no hay valor principal.",
+    "taskProjectValueRowLabel": "Valor principal (del proyecto)",
+    "taskProjectPickerValueSupport": "Las tareas de este proyecto apoyan {valueName}",
     "@valuesAlignedToTitle": {
         "description": "Título/etiqueta que indica alineación con valores."
     },
@@ -178,41 +170,17 @@
     "@taskProjectValueTitle": {
         "description": "T\u00edtulo de secci\u00f3n para el valor bloqueado del proyecto en la tarea."
     },
-    "@taskProjectValueHelper": {
-        "description": "Texto de ayuda que explica el valor heredado del proyecto en la tarea."
-    },
-    "@taskProjectValueLockedLabel": {
-        "description": "Etiqueta mostrada junto al valor bloqueado del proyecto."
-    },
     "@taskProjectValueNotSet": {
         "description": "Texto mostrado cuando el proyecto no tiene valor."
     },
-    "@taskProjectValueRow": {
-        "description": "Etiqueta que muestra el valor del proyecto en el selector.",
+    "@taskProjectValueRowLabel": {
+        "description": "Label for the compact project value summary row in task form."
+    },
+    "@taskProjectPickerValueSupport": {
+        "description": "Subtitle describing which value a project supports in the task project picker.",
         "placeholders": {
             "valueName": {}
         }
-    },
-    "@taskAdditionalValuesTitle": {
-        "description": "T\u00edtulo de secci\u00f3n para valores adicionales opcionales."
-    },
-    "@taskAdditionalValuesHelper": {
-        "description": "Texto de ayuda para valores adicionales opcionales."
-    },
-    "@taskAdditionalValuesDisabled": {
-        "description": "Texto de ayuda cuando los valores adicionales est\u00e1n deshabilitados."
-    },
-    "@taskAdditionalValuePrimaryLabel": {
-        "description": "Etiqueta para el primer valor adicional de la tarea."
-    },
-    "@taskAdditionalValueSecondaryLabel": {
-        "description": "Etiqueta para el segundo valor adicional de la tarea."
-    },
-    "@taskAdditionalValueSelectPrimaryTitle": {
-        "description": "T\u00edtulo para seleccionar el primer valor adicional."
-    },
-    "@taskAdditionalValueSelectSecondaryTitle": {
-        "description": "T\u00edtulo para seleccionar el segundo valor adicional."
     },
     "taskFormValuesRequired": "Selecciona un valor principal.",
     "@taskFormValuesRequired": {
@@ -1191,6 +1159,10 @@
     "@myDayAddedLabel": {
         "description": "Selected-state label for an item that has been added to My Day in the ritual."
     },
+    "myDayInMyDayLabel": "En Mi Día",
+    "@myDayInMyDayLabel": {
+        "description": "Selected-state label indicating a task is already in My Day."
+    },
     "myDaySnoozeAction": "Posponer",
     "@myDaySnoozeAction": {
         "description": "Action label for snoozing a task in the My Day ritual (S1)."
@@ -1691,6 +1663,74 @@
     "@sortValueName": {
         "description": "Etiqueta de orden por nombre del valor"
     },
+    "projectsSortProjectsOrderTitle": "Orden de proyectos",
+    "@projectsSortProjectsOrderTitle": {
+        "description": "Title for the Projects order sort group in the Projects filter sheet"
+    },
+    "projectsSortValuesOrderTitle": "Orden de valores",
+    "@projectsSortValuesOrderTitle": {
+        "description": "Title for the Values order sort group in the Projects filter sheet"
+    },
+    "projectsSortValuesLowestAverageRating": "Promedio de valoración más bajo",
+    "@projectsSortValuesLowestAverageRating": {
+        "description": "Sort option label for ordering values by lowest average rating in Projects"
+    },
+    "projectsSortValuesTrendingDown": "Tendencia de valoración a la baja",
+    "@projectsSortValuesTrendingDown": {
+        "description": "Sort option label for ordering values by rating trending down in Projects"
+    },
+    "projectsSortValuesAlphabetical": "Alfabético",
+    "@projectsSortValuesAlphabetical": {
+        "description": "Sort option label for ordering values alphabetically in Projects"
+    },
+    "projectsAverageRatingLabel": "Promedio de valoracion {value}",
+    "@projectsAverageRatingLabel": {
+        "description": "Average rating label shown in Projects value headers."
+    },
+    "projectsRatingLabel": "Valoracion {value}",
+    "@projectsRatingLabel": {
+        "description": "Rating label shown in Projects value header subtitle when there is no average.",
+        "placeholders": {
+            "value": {
+                "type": "String",
+                "example": "4.2"
+            }
+        }
+    },
+    "projectsAverageRatingUnavailable": "–",
+    "@projectsAverageRatingUnavailable": {
+        "description": "Placeholder shown when no average rating is available in Projects"
+    },
+    "projectsAverageRatingLastRatedLabel": "Ultima valoracion: {value}",
+    "@projectsAverageRatingLastRatedLabel": {
+        "description": "Label for the last rated line in the Projects value header subtitle",
+        "placeholders": {
+            "value": {
+                "type": "String",
+                "example": "Hace 3 dias"
+            }
+        }
+    },
+    "projectsAverageRatingNoRatings": "Aun no hay valoraciones",
+    "@projectsAverageRatingNoRatings": {
+        "description": "Fallback text when there are no ratings for a value in Projects"
+    },
+    "projectsValueProjectCountLabel": "{count}",
+    "@projectsValueProjectCountLabel": {
+        "description": "Project count label shown in Projects value headers"
+    },
+    "projectsValueHeaderSeparator": " · ",
+    "@projectsValueHeaderSeparator": {
+        "description": "Separator string used between stats in Projects value headers"
+    },
+    "projectsCollapseAllLabel": "Contraer todo",
+    "@projectsCollapseAllLabel": {
+        "description": "Menu label for collapsing all value sections in Projects"
+    },
+    "projectsExpandAllLabel": "Expandir todo",
+    "@projectsExpandAllLabel": {
+        "description": "Menu label for expanding all value sections in Projects"
+    },
     "inboxLabel": "Bandeja de entrada",
     "@inboxLabel": {
         "description": "Etiqueta para el proyecto Bandeja de entrada"
@@ -1712,17 +1752,21 @@
     "@completedLabel": {
         "description": "Etiqueta para secciones de completados"
     },
-    "inboxEmptyTitle": "La bandeja de entrada es para capturar",
+    "inboxEmptyTitle": "Captura primero, organiza despues",
     "@inboxEmptyTitle": {
         "description": "Titulo del estado vacio para la bandeja de entrada"
     },
-    "inboxEmptyDescription": "Agrega una tarea para comenzar.",
+    "inboxEmptyDescription": "Tu bandeja rapida para tareas sueltas.",
     "@inboxEmptyDescription": {
         "description": "Descripcion del estado vacio para la bandeja de entrada"
     },
-    "inboxEmptyAction": "Agregar a Bandeja de entrada",
+    "inboxEmptyAction": "Agregar rapido",
     "@inboxEmptyAction": {
         "description": "Etiqueta de accion para agregar una tarea en la bandeja de entrada"
+    },
+    "inboxNonEmptyHint": "Sigue capturando aqui y ordena cuando quieras.",
+    "@inboxNonEmptyHint": {
+        "description": "Helper text shown on the Inbox header when tasks exist"
     },
     "projectTaskCompletionRatioLabel": "{completed, plural, =1{1 de {total} completada} other{{completed} de {total} completadas}}",
     "@projectTaskCompletionRatioLabel": {
@@ -3006,7 +3050,7 @@
     "routineEmptyTitle": "Aun no hay rutinas",
     "routineEmptyDescription": "Crea una rutina para mantener la constancia.",
     "routineCreateCta": "Crear rutina",
-    "routineFormNameHint": "Nombre",
+    "routineFormNameHint": "p. ej. Meditacion matutina",
     "@routineFormNameHint": {
         "description": "Hint text for the routine name field"
     },
@@ -3070,18 +3114,78 @@
             }
         }
     },
-    "routineProgressCaptionMonthly": "{completed}/{target} este mes",
-    "@routineProgressCaptionMonthly": {
-        "description": "Progress caption for monthly routines.",
-        "placeholders": {
-            "completed": {
-                "type": "int"
-            },
-            "target": {
-                "type": "int"
-            }
-        }
-    },
+  "routineProgressCaptionMonthly": "{completed}/{target} este mes",
+  "@routineProgressCaptionMonthly": {
+    "description": "Progress caption for monthly routines.",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "routineActionLineFlexible": "{completed}/{target} completado - quedan {daysLeft} dias",
+  "@routineActionLineFlexible": {
+    "description": "Action line for flexible weekly/monthly routines.",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      },
+      "daysLeft": {
+        "type": "int"
+      }
+    }
+  },
+  "routineActionLineMonthlyScheduled": "{completed}/{target} este mes - Proximo: {nextDayLabel}",
+  "@routineActionLineMonthlyScheduled": {
+    "description": "Action line for scheduled monthly routines when next date is available.",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      },
+      "nextDayLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "routineActionLineMonthlyScheduledNoNext": "{completed}/{target} este mes",
+  "@routineActionLineMonthlyScheduledNoNext": {
+    "description": "Action line for scheduled monthly routines when no next date is available.",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "target": {
+        "type": "int"
+      }
+    }
+  },
+  "routineDailyGoalLabel": "Meta diaria: {count}x",
+  "@routineDailyGoalLabel": {
+    "description": "Label for daily routine goal text in dot row.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "routineDayOfMonthOrdinal": "{day}",
+  "@routineDayOfMonthOrdinal": {
+    "description": "Ordinal day-of-month label for monthly scheduled routines.",
+    "placeholders": {
+      "day": {
+        "type": "int"
+      }
+    }
+  },
     "routineWindowWeekly": "{daysLeft} days left ({startLabel}-{endLabel})",
     "@routineWindowWeekly": {
         "description": "Window label for weekly routines.",
@@ -3175,28 +3279,73 @@
     "@routineStatusRestWeek": {
         "description": "Status label when routine period is skipped."
     },
-    "routineFormValueLabel": "Valor",
-    "routineFormValueHint": "Selecciona un valor",
-    "routineFormTypeLabel": "Cadencia",
-    "routineTypeWeeklyFlexible": "Semanal (flexible)",
-    "@routineTypeWeeklyFlexible": {
-        "description": "Etiqueta para tipo de rutina semanal flexible"
+  "routineFormValueLabel": "Valor",
+  "@routineFormValueLabel": {
+    "description": "Etiqueta para seleccion de valor en rutina."
+  },
+  "routineFormValueHint": "Selecciona un valor principal",
+  "@routineFormValueHint": {
+    "description": "Hint text for routine value selection"
+  },
+  "routineFormValuePrompt": "Por que es importante?",
+  "@routineFormValuePrompt": {
+    "description": "Prompt label for routine value selection."
+  },
+  "routineFormValueHelper": "Selecciona un valor principal...",
+  "@routineFormValueHelper": {
+    "description": "Helper text for routine value selection card."
+  },
+  "routineFormValuePlaceholder": "Selecciona un valor principal",
+  "@routineFormValuePlaceholder": {
+    "description": "Placeholder title for routine value selection card."
+  },
+  "routineFormFrequencyLabel": "Frecuencia",
+  "@routineFormFrequencyLabel": {
+    "description": "Section label for routine frequency selection."
+  },
+  "routineFormTargetPrompt": "Quiero hacer esto",
+  "@routineFormTargetPrompt": {
+    "description": "Prompt label for routine target count selection."
+  },
+  "routineFormEveryLabel": "Cada",
+  "@routineFormEveryLabel": {
+    "description": "Label for routine cadence period selection when flexible."
+  },
+  "routineFormRepeatLabel": "Repetir",
+  "@routineFormRepeatLabel": {
+      "description": "Label for routine cadence period selection when scheduled."
     },
-    "myDaySubtitleChosenForToday": "Elegido para hoy",
+    "routineFormTypeLabel": "Cadencia",
+    "@routineFormTypeLabel": {
+      "description": "Label for routine cadence type selection."
+    },
+    "routineFormPeriodDaily": "Dia",
+  "@routineFormPeriodDaily": {
+    "description": "Label for daily routine period option."
+  },
+  "routineFormPeriodWeekly": "Semana",
+  "@routineFormPeriodWeekly": {
+    "description": "Label for weekly routine period option."
+  },
+  "routineFormPeriodMonthly": "Mes",
+  "@routineFormPeriodMonthly": {
+    "description": "Label for monthly routine period option."
+  },
+  "routineFormSelectDaysLabel": "Selecciona dias",
+  "@routineFormSelectDaysLabel": {
+    "description": "Label for selecting monthly scheduled days."
+  },
+  "projectValuePlaceholder": "Selecciona un valor principal",
+  "@projectValuePlaceholder": {
+    "description": "Placeholder title for project value selection card."
+  },
+  "myDaySubtitleChosenForToday": "Elegido para hoy",
     "@myDaySubtitleChosenForToday": {
         "description": "Subtitulo mostrado debajo del titulo de My Day."
-    },
-    "routineTypeWeeklyScheduled": "Semanal (programada)",
-    "@routineTypeWeeklyScheduled": {
-        "description": "Etiqueta para tipo de rutina semanal programada"
     },
     "routineFormScheduledDaysLabel": "Días programados",
     "@routineFormScheduledDaysLabel": {
         "description": "Etiqueta para seleccionar días programados en rutinas semanales programadas."
-    },
-    "routineTypeMonthlyFlexible": "Mensual (flexible)",
-    "@routineTypeMonthlyFlexible": {
-        "description": "Etiqueta para tipo de rutina mensual flexible"
     },
     "routineFormTargetWeeklyLabel": "Veces por semana",
     "@routineFormTargetWeeklyLabel": {
@@ -3998,7 +4147,7 @@
             }
         }
     },
-    "planMyDayTrendDownLabel": "↓ {value}",
+    "planMyDayTrendDownLabel": "? {value}",
     "@planMyDayTrendDownLabel": {
         "description": "Trend down label for Plan My Day.",
         "placeholders": {
@@ -4007,7 +4156,7 @@
             }
         }
     },
-    "planMyDayTrendUpLabel": "↑ {value}",
+    "planMyDayTrendUpLabel": "? {value}",
     "@planMyDayTrendUpLabel": {
         "description": "Trend up label for Plan My Day.",
         "placeholders": {
@@ -4817,6 +4966,10 @@
         "description": "Label for excellent mood rating"
     }
 }
+
+
+
+
 
 
 

@@ -21,7 +21,7 @@ class FormBuilderMoodRatingField
     this.selectedBorderColor,
     this.selectedBackgroundColor,
   }) : super(
-         builder: (FormFieldState<MoodRating> field) {
+         builder: (field) {
            final state =
                field
                    as FormBuilderFieldDecorationState<

@@ -45,7 +45,7 @@ final class MyDayPlannedItem {
   String? get valueId {
     final fromPick = qualifyingValueId;
     if (fromPick != null && fromPick.isNotEmpty) return fromPick;
-    return task?.effectivePrimaryValueId ?? routine?.valueId;
+    return task?.effectivePrimaryValueId ?? routine?.value?.id;
   }
 }
 

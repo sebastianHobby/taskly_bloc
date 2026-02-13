@@ -30,7 +30,8 @@ void main() {
     );
 
     await pumpLocalizedRouterApp(tester, router: router);
-    await tester.pumpForStream(5);
+    final foundPage = await tester.pumpUntilFound(find.text('FullPage'));
+    expect(foundPage, isTrue);
 
     expect(find.text('FullPage'), findsOneWidget);
     expect(modalOpened, isFalse);
@@ -80,10 +81,10 @@ void main() {
     );
 
     await pumpLocalizedRouterApp(tester, router: router);
-    await tester.pumpForStream(5);
+    final foundHome = await tester.pumpUntilFound(find.text('Home'));
+    expect(foundHome, isTrue);
 
     await tester.tap(find.text('Open Edit'));
-    await tester.pumpForStream(5);
 
     final foundModal = await tester.pumpUntilFound(
       find.text('Modal Content'),
@@ -93,13 +94,12 @@ void main() {
     expect(openCount, 1);
 
     await tester.tap(find.text('Close Modal'));
-    await tester.pumpForStream(5);
 
-    final foundHome = await tester.pumpUntilFound(
+    final foundHomeAfterClose = await tester.pumpUntilFound(
       find.text('Home'),
       timeout: const Duration(seconds: 2),
     );
-    expect(foundHome, isTrue);
+    expect(foundHomeAfterClose, isTrue);
   });
 
   testWidgetsSafe('does not auto-close when route changes during modal', (
@@ -155,10 +155,10 @@ void main() {
     );
 
     await pumpLocalizedRouterApp(tester, router: router);
-    await tester.pumpForStream(5);
+    final foundHome = await tester.pumpUntilFound(find.text('Home'));
+    expect(foundHome, isTrue);
 
     await tester.tap(find.text('Open Edit'));
-    await tester.pumpForStream(5);
 
     final foundModal = await tester.pumpUntilFound(
       find.text('Modal Content'),
@@ -168,7 +168,6 @@ void main() {
     expect(openCount, 1);
 
     router.go('/other');
-    await tester.pumpForStream(5);
 
     final foundOther = await tester.pumpUntilFound(
       find.text('Other'),

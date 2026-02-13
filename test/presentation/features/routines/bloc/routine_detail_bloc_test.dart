@@ -17,8 +17,9 @@ void main() {
     registerFallbackValue(
       const CreateRoutineCommand(
         name: 'Routine',
-        valueId: 'value-1',
-        routineType: RoutineType.weeklyFlexible,
+        projectId: 'project-1',
+        periodType: RoutinePeriodType.week,
+        scheduleMode: RoutineScheduleMode.flexible,
         targetCount: 1,
       ),
     );
@@ -26,14 +27,14 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockRoutineRepositoryContract routineRepository;
-  late MockValueRepositoryContract valueRepository;
+  late MockProjectRepositoryContract projectRepository;
   late RoutineWriteService routineWriteService;
   late AppErrorReporter errorReporter;
 
   RoutineDetailBloc buildBloc() {
     return RoutineDetailBloc(
       routineRepository: routineRepository,
-      valueRepository: valueRepository,
+      projectRepository: projectRepository,
       routineWriteService: routineWriteService,
       errorReporter: errorReporter,
       routineId: null,
@@ -42,7 +43,7 @@ void main() {
 
   setUp(() {
     routineRepository = MockRoutineRepositoryContract();
-    valueRepository = MockValueRepositoryContract();
+    projectRepository = MockProjectRepositoryContract();
     routineWriteService = RoutineWriteService(
       routineRepository: routineRepository,
     );
@@ -54,16 +55,16 @@ void main() {
   blocTestSafe<RoutineDetailBloc, RoutineDetailState>(
     'loads initial data for create',
     build: () {
-      when(() => valueRepository.getAll()).thenAnswer(
-        (_) async => [TestData.value(id: 'value-1', name: 'Health')],
+      when(() => projectRepository.getAll(ProjectQuery.all())).thenAnswer(
+        (_) async => [TestData.project(id: 'project-1', name: 'Health')],
       );
       return buildBloc();
     },
     expect: () => [
       const RoutineDetailState.loadInProgress(),
       isA<RoutineDetailInitialDataLoadSuccess>().having(
-        (s) => s.availableValues.length,
-        'values',
+        (s) => s.availableProjects.length,
+        'projects',
         1,
       ),
     ],
@@ -72,13 +73,15 @@ void main() {
   blocTestSafe<RoutineDetailBloc, RoutineDetailState>(
     'emits failure when routine not found',
     build: () {
-      when(() => valueRepository.getAll()).thenAnswer((_) async => []);
+      when(
+        () => projectRepository.getAll(ProjectQuery.all()),
+      ).thenAnswer((_) async => []);
       when(() => routineRepository.getById('missing')).thenAnswer(
         (_) async => null,
       );
       return RoutineDetailBloc(
         routineRepository: routineRepository,
-        valueRepository: valueRepository,
+        projectRepository: projectRepository,
         routineWriteService: routineWriteService,
         errorReporter: errorReporter,
         routineId: 'missing',

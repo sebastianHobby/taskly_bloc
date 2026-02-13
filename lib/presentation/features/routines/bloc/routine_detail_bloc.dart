@@ -10,6 +10,7 @@ import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/errors.dart';
+import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
@@ -40,10 +41,10 @@ sealed class RoutineDetailState with _$RoutineDetailState {
   const factory RoutineDetailState.loadInProgress() =
       RoutineDetailLoadInProgress;
   const factory RoutineDetailState.initialDataLoadSuccess({
-    required List<Value> availableValues,
+    required List<Project> availableProjects,
   }) = RoutineDetailInitialDataLoadSuccess;
   const factory RoutineDetailState.loadSuccess({
-    required List<Value> availableValues,
+    required List<Project> availableProjects,
     required Routine routine,
   }) = RoutineDetailLoadSuccess;
   const factory RoutineDetailState.validationFailure({
@@ -61,12 +62,12 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
     with DetailBlocMixin<RoutineDetailEvent, RoutineDetailState, Routine> {
   RoutineDetailBloc({
     required RoutineRepositoryContract routineRepository,
-    required ValueRepositoryContract valueRepository,
+    required ProjectRepositoryContract projectRepository,
     required RoutineWriteService routineWriteService,
     required AppErrorReporter errorReporter,
     String? routineId,
   }) : _routineRepository = routineRepository,
-       _valueRepository = valueRepository,
+       _projectRepository = projectRepository,
        _routineWriteService = routineWriteService,
        _errorReporter = errorReporter,
        super(const RoutineDetailState.initial()) {
@@ -87,7 +88,7 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
   }
 
   final RoutineRepositoryContract _routineRepository;
-  final ValueRepositoryContract _valueRepository;
+  final ProjectRepositoryContract _projectRepository;
   final RoutineWriteService _routineWriteService;
   final AppErrorReporter _errorReporter;
   final OperationContextFactory _contextFactory =
@@ -171,10 +172,10 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
   ) async {
     emit(const RoutineDetailState.loadInProgress());
     try {
-      final values = await _valueRepository.getAll();
+      final projects = await _projectRepository.getAll(ProjectQuery.all());
       emit(
         RoutineDetailState.initialDataLoadSuccess(
-          availableValues: values,
+          availableProjects: projects,
         ),
       );
     } catch (error, stackTrace) {
@@ -196,10 +197,10 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
     emit(const RoutineDetailState.loadInProgress());
     try {
       final results = await Future.wait([
-        _valueRepository.getAll(),
+        _projectRepository.getAll(ProjectQuery.all()),
         _routineRepository.getById(event.routineId),
       ]);
-      final values = (results[0] as List<Value>?) ?? const <Value>[];
+      final projects = (results[0] as List<Project>?) ?? const <Project>[];
       final routine = results[1] as Routine?;
       if (routine == null) {
         emit(
@@ -214,7 +215,7 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
 
       emit(
         RoutineDetailState.loadSuccess(
-          availableValues: values,
+          availableProjects: projects,
           routine: routine,
         ),
       );

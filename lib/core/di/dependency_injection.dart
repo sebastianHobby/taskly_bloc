@@ -365,6 +365,7 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<ProjectsSessionQueryService>(
       () => ProjectsSessionQueryService(
         projectRepository: getIt<ProjectRepositoryContract>(),
+        valueRatingsRepository: getIt<ValueRatingsRepositoryContract>(),
         cacheManager: getIt<SessionStreamCacheManager>(),
         sharedDataService: getIt<SessionSharedDataService>(),
         demoModeService: getIt<DemoModeService>(),

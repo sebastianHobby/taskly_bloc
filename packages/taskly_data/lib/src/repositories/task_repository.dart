@@ -1381,7 +1381,7 @@ class TaskRepository implements TaskRepositoryContract {
         switch (criterion.field) {
           case SortField.name:
             orderingFuncs.add(
-              ($TaskTableTable t) => drift_pkg.OrderingTerm(
+              (t) => drift_pkg.OrderingTerm(
                 expression: t.name,
                 mode: criterion.direction == SortDirection.ascending
                     ? drift_pkg.OrderingMode.asc
@@ -1390,7 +1390,7 @@ class TaskRepository implements TaskRepositoryContract {
             );
           case SortField.startDate:
             orderingFuncs.add(
-              ($TaskTableTable t) => drift_pkg.OrderingTerm(
+              (t) => drift_pkg.OrderingTerm(
                 expression: t.startDate,
                 mode: criterion.direction == SortDirection.ascending
                     ? drift_pkg.OrderingMode.asc
@@ -1399,7 +1399,7 @@ class TaskRepository implements TaskRepositoryContract {
             );
           case SortField.deadlineDate:
             orderingFuncs.add(
-              ($TaskTableTable t) => drift_pkg.OrderingTerm(
+              (t) => drift_pkg.OrderingTerm(
                 expression: t.deadlineDate,
                 mode: criterion.direction == SortDirection.ascending
                     ? drift_pkg.OrderingMode.asc
@@ -1408,7 +1408,7 @@ class TaskRepository implements TaskRepositoryContract {
             );
           case SortField.createdDate:
             orderingFuncs.add(
-              ($TaskTableTable t) => drift_pkg.OrderingTerm(
+              (t) => drift_pkg.OrderingTerm(
                 expression: t.createdAt,
                 mode: criterion.direction == SortDirection.ascending
                     ? drift_pkg.OrderingMode.asc
@@ -1417,7 +1417,7 @@ class TaskRepository implements TaskRepositoryContract {
             );
           case SortField.updatedDate:
             orderingFuncs.add(
-              ($TaskTableTable t) => drift_pkg.OrderingTerm(
+              (t) => drift_pkg.OrderingTerm(
                 expression: t.updatedAt,
                 mode: criterion.direction == SortDirection.ascending
                     ? drift_pkg.OrderingMode.asc

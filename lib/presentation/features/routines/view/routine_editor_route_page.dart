@@ -14,10 +14,14 @@ import 'package:taskly_domain/services.dart';
 class RoutineEditorRoutePage extends StatelessWidget {
   const RoutineEditorRoutePage({
     required this.routineId,
+    this.defaultProjectId,
+    this.openToProjectPicker = false,
     super.key,
   });
 
   final String? routineId;
+  final String? defaultProjectId;
+  final bool openToProjectPicker;
 
   @override
   Widget build(BuildContext context) {
@@ -25,17 +29,29 @@ class RoutineEditorRoutePage extends StatelessWidget {
       openModal: (context) => context.read<EditorLauncher>().openRoutineEditor(
         context,
         routineId: routineId,
+        defaultProjectId: defaultProjectId,
+        openToProjectPicker: openToProjectPicker,
         showDragHandle: true,
       ),
-      fullPageBuilder: (_) => _RoutineEditorFullPage(routineId: routineId),
+      fullPageBuilder: (_) => _RoutineEditorFullPage(
+        routineId: routineId,
+        defaultProjectId: defaultProjectId,
+        openToProjectPicker: openToProjectPicker,
+      ),
     );
   }
 }
 
 class _RoutineEditorFullPage extends StatelessWidget {
-  const _RoutineEditorFullPage({required this.routineId});
+  const _RoutineEditorFullPage({
+    required this.routineId,
+    this.defaultProjectId,
+    this.openToProjectPicker = false,
+  });
 
   final String? routineId;
+  final String? defaultProjectId;
+  final bool openToProjectPicker;
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +60,10 @@ class _RoutineEditorFullPage extends StatelessWidget {
         child: RoutineDetailSheetPage(
           routineId: routineId,
           routineRepository: context.read<RoutineRepositoryContract>(),
-          valueRepository: context.read<ValueRepositoryContract>(),
+          projectRepository: context.read<ProjectRepositoryContract>(),
           routineWriteService: context.read<RoutineWriteService>(),
+          defaultProjectId: defaultProjectId,
+          openToProjectPicker: openToProjectPicker,
         ),
       ),
     );

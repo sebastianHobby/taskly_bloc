@@ -89,7 +89,10 @@ void main() {
 
     await pumpView(tester, const SignInView());
     await tester.pumpForStream();
-    await tester.pump(const Duration(milliseconds: 200));
+    final foundError = await tester.pumpUntilFound(
+      find.text('Invalid credentials'),
+    );
+    expect(foundError, isTrue);
 
     expect(find.text('Invalid credentials'), findsOneWidget);
   });

@@ -266,7 +266,7 @@ class JournalDailyEditBloc
           dayStateByTrackerId: dayStateByTrackerId,
         );
       },
-      onError: (Object e, StackTrace st) {
+      onError: (e, st) {
         final context = _newContext(
           intent: 'stream_error',
           operation: 'journal.watchTrackerDefinitions+groups+stateDay',

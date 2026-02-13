@@ -243,42 +243,46 @@ final class DemoDataProvider {
       createdAt: demoDayKeyUtc,
       updatedAt: demoDayKeyUtc,
       name: 'Gym session',
-      valueId: '66666666-6666-6666-6666-666666666666',
-      routineType: RoutineType.weeklyFixed,
+      projectId: demoProjectGymId,
+      periodType: RoutinePeriodType.week,
+      scheduleMode: RoutineScheduleMode.scheduled,
       targetCount: 2,
       scheduleDays: const [DateTime.tuesday, DateTime.thursday],
-      value: _valuesById['66666666-6666-6666-6666-666666666666'],
+      value: _projectsById[demoProjectGymId]?.primaryValue,
     ),
     Routine(
       id: demoRoutinePhotoShareId,
       createdAt: demoDayKeyUtc,
       updatedAt: demoDayKeyUtc,
       name: 'Weekly photo share',
-      valueId: '77777777-7777-7777-7777-777777777777',
-      routineType: RoutineType.weeklyFixed,
+      projectId: demoProjectDinnerId,
+      periodType: RoutinePeriodType.week,
+      scheduleMode: RoutineScheduleMode.scheduled,
       targetCount: 1,
       scheduleDays: const [DateTime.saturday],
-      value: _valuesById['77777777-7777-7777-7777-777777777777'],
+      value: _projectsById[demoProjectDinnerId]?.primaryValue,
     ),
     Routine(
       id: demoRoutineVocabId,
       createdAt: demoDayKeyUtc,
       updatedAt: demoDayKeyUtc,
       name: '15-min vocab drill',
-      valueId: '55555555-5555-5555-5555-555555555555',
-      routineType: RoutineType.weeklyFlexible,
+      projectId: demoProjectJapaneseId,
+      periodType: RoutinePeriodType.week,
+      scheduleMode: RoutineScheduleMode.flexible,
       targetCount: 3,
-      value: _valuesById['55555555-5555-5555-5555-555555555555'],
+      value: _projectsById[demoProjectJapaneseId]?.primaryValue,
     ),
     Routine(
       id: demoRoutineGuitarId,
       createdAt: demoDayKeyUtc,
       updatedAt: demoDayKeyUtc,
       name: '20-min guitar practice',
-      valueId: '55555555-5555-5555-5555-555555555555',
-      routineType: RoutineType.weeklyFlexible,
+      projectId: demoProjectJapaneseId,
+      periodType: RoutinePeriodType.week,
+      scheduleMode: RoutineScheduleMode.flexible,
       targetCount: 3,
-      value: _valuesById['55555555-5555-5555-5555-555555555555'],
+      value: _projectsById[demoProjectJapaneseId]?.primaryValue,
     ),
   ];
 
@@ -287,6 +291,10 @@ final class DemoDataProvider {
       id: '18181818-1818-1818-1818-181818181818',
       routineId: demoRoutineVocabId,
       completedAtUtc: demoDayKeyUtc.subtract(const Duration(days: 2)),
+      completedDayLocal: dateOnly(
+        demoDayKeyUtc.subtract(const Duration(days: 2)),
+      ),
+      completedTimeLocalMinutes: 8 * 60 + 15,
       createdAtUtc: demoDayKeyUtc.subtract(const Duration(days: 2)),
     ),
   ];
@@ -306,6 +314,38 @@ final class DemoDataProvider {
 
   int get inboxTaskCount =>
       _tasks.where((task) => task.projectId == null).length;
+
+  List<ValueWeeklyRating> buildValueRatingsHistory({int weeks = 8}) {
+    final nowWeekStart = dateOnly(demoDayKeyUtc);
+    final ratings = <ValueWeeklyRating>[];
+
+    for (var valueIndex = 0; valueIndex < _values.length; valueIndex += 1) {
+      final value = _values[valueIndex];
+      final summary = _demoRatingSummary(value);
+      final average = summary.averageRating;
+      if (average == null) continue;
+      final trend = summary.trendDelta ?? 0;
+      final recentValue = average.round().clamp(1, 10);
+      final priorValue = (average - trend).round().clamp(1, 10);
+
+      for (var i = 0; i < weeks; i += 1) {
+        final weekStart = nowWeekStart.subtract(Duration(days: i * 7));
+        final rating = i < 4 ? recentValue : priorValue;
+        ratings.add(
+          ValueWeeklyRating(
+            id: 'demo-rating-${value.id}-$i',
+            valueId: value.id,
+            weekStartUtc: weekStart,
+            rating: rating,
+            createdAtUtc: weekStart,
+            updatedAtUtc: weekStart,
+          ),
+        );
+      }
+    }
+
+    return ratings;
+  }
 
   Project? projectById(String id) => _projectsById[id];
 
@@ -463,11 +503,11 @@ final class DemoDataProvider {
     ];
 
     final scheduledRoutines = _routines
-        .where((r) => r.routineType == RoutineType.weeklyFixed)
+        .where((r) => r.scheduleMode == RoutineScheduleMode.scheduled)
         .map((routine) => _buildRoutineItem(routine, dayKeyUtc))
         .toList(growable: false);
     final flexibleRoutines = _routines
-        .where((r) => r.routineType == RoutineType.weeklyFlexible)
+        .where((r) => r.scheduleMode == RoutineScheduleMode.flexible)
         .map((routine) => _buildRoutineItem(routine, dayKeyUtc))
         .toList(growable: false);
 
@@ -591,7 +631,7 @@ final class DemoDataProvider {
       completions: _routineCompletions,
       skips: routineSkips,
     );
-    final isScheduled = routine.routineType == RoutineType.weeklyFixed;
+    final isScheduled = routine.scheduleMode == RoutineScheduleMode.scheduled;
     return PlanMyDayRoutineItem(
       routine: routine,
       snapshot: snapshot,
@@ -618,7 +658,9 @@ final class DemoDataProvider {
     return _routineCompletions
         .where((completion) => completion.routineId == routine.id)
         .where((completion) {
-          final day = dateOnly(completion.completedAtUtc);
+          final day = dateOnly(
+            completion.completedDayLocal ?? completion.completedAtUtc,
+          );
           return !day.isBefore(periodStart) && !day.isAfter(periodEnd);
         })
         .toList(growable: false);
@@ -628,7 +670,9 @@ final class DemoDataProvider {
     final counts = <String, int>{};
     for (final routine in _routines) {
       if (!routineIds.contains(routine.id)) continue;
-      counts[routine.valueId] = (counts[routine.valueId] ?? 0) + 1;
+      final valueId = routine.value?.id;
+      if (valueId == null || valueId.isEmpty) continue;
+      counts[valueId] = (counts[valueId] ?? 0) + 1;
     }
     return counts;
   }

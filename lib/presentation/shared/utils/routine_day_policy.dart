@@ -40,11 +40,14 @@ RoutineDayPolicyResult evaluateRoutineDayPolicy({
     );
   }
 
-  final scheduleDays = routine.routineType == RoutineType.weeklyFixed
+  final isScheduled = routine.scheduleMode == RoutineScheduleMode.scheduled;
+  final scheduleDays =
+      routine.periodType == RoutinePeriodType.week && isScheduled
       ? routine.scheduleDays
       : const <int>[];
 
-  if (routine.routineType == RoutineType.weeklyFixed &&
+  if (routine.periodType == RoutinePeriodType.week &&
+      isScheduled &&
       scheduleDays.isNotEmpty) {
     final lastScheduledDay = _lastScheduledDay(
       today,
@@ -77,10 +80,24 @@ RoutineDayPolicyResult evaluateRoutineDayPolicy({
     );
   }
 
-  final isMonthly =
-      routine.routineType == RoutineType.monthlyFlexible ||
-      routine.routineType == RoutineType.monthlyFixed;
-  if (isMonthly) {
+  if (routine.periodType == RoutinePeriodType.month) {
+    if (isScheduled) {
+      final scheduleDates = routine.scheduleMonthDays;
+      final isScheduledToday = scheduleDates.contains(today.day);
+      return RoutineDayPolicyResult(
+        isEligibleToday: isScheduledToday,
+        isCatchUpDay: false,
+        cadenceKind: RoutineCadenceKind.scheduled,
+      );
+    }
+    return RoutineDayPolicyResult(
+      isEligibleToday: true,
+      isCatchUpDay: !isCreatedToday && remaining > snapshot.daysLeft,
+      cadenceKind: RoutineCadenceKind.flexible,
+    );
+  }
+
+  if (routine.periodType == RoutinePeriodType.day) {
     return RoutineDayPolicyResult(
       isEligibleToday: true,
       isCatchUpDay: !isCreatedToday && remaining > snapshot.daysLeft,
@@ -119,7 +136,7 @@ RoutineDayPolicyResult evaluateRoutineDayPolicy({
 }
 
 RoutineCadenceKind _cadenceKindFor(Routine routine) {
-  return routine.routineType == RoutineType.weeklyFixed
+  return routine.scheduleMode == RoutineScheduleMode.scheduled
       ? RoutineCadenceKind.scheduled
       : RoutineCadenceKind.flexible;
 }

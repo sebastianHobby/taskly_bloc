@@ -4,6 +4,7 @@ library;
 import '../../helpers/test_imports.dart';
 import '../../helpers/test_db.dart';
 
+import 'package:drift/drift.dart' as drift;
 import 'package:taskly_data/db.dart';
 import 'package:taskly_data/id.dart';
 import 'package:taskly_data/src/repositories/routine_repository.dart';
@@ -16,7 +17,7 @@ void main() {
   group('RoutineRepository', () {
     testSafe('create inserts routine row', () async {
       final db = createAutoClosingDb();
-      await _seedValue(db);
+      await _seedProject(db);
 
       final repo = RoutineRepository(
         driftDb: db,
@@ -25,8 +26,9 @@ void main() {
 
       await repo.create(
         name: 'Hydrate',
-        valueId: 'value-1',
-        routineType: RoutineType.weeklyFlexible,
+        projectId: 'project-1',
+        periodType: RoutinePeriodType.week,
+        scheduleMode: RoutineScheduleMode.flexible,
         targetCount: 3,
         scheduleDays: const [1, 3, 5],
       );
@@ -38,7 +40,7 @@ void main() {
 
     testSafe('recordCompletion and removeLatestCompletionForDay', () async {
       final db = createAutoClosingDb();
-      await _seedValue(db);
+      await _seedProject(db);
 
       final repo = RoutineRepository(
         driftDb: db,
@@ -47,8 +49,9 @@ void main() {
 
       await repo.create(
         name: 'Stretch',
-        valueId: 'value-1',
-        routineType: RoutineType.weeklyFlexible,
+        projectId: 'project-1',
+        periodType: RoutinePeriodType.week,
+        scheduleMode: RoutineScheduleMode.flexible,
         targetCount: 2,
       );
       final routineId = (await db.select(db.routinesTable).getSingle()).id;
@@ -69,14 +72,14 @@ void main() {
   });
 }
 
-Future<void> _seedValue(AppDatabase db) async {
+Future<void> _seedProject(AppDatabase db) async {
   await db
-      .into(db.valueTable)
+      .into(db.projectTable)
       .insert(
-        ValueTableCompanion.insert(
-          id: 'value-1',
+        ProjectTableCompanion.insert(
+          id: drift.Value('project-1'),
           name: 'Health',
-          color: '#00AA00',
+          completed: false,
         ),
       );
 }

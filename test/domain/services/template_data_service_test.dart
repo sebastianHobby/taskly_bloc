@@ -133,16 +133,17 @@ void main() {
       when(
         () => routineRepo.create(
           name: any(named: 'name'),
-          valueId: any(named: 'valueId'),
-          routineType: any(named: 'routineType'),
+          projectId: any(named: 'projectId'),
+          periodType: any(named: 'periodType'),
+          scheduleMode: any(named: 'scheduleMode'),
           targetCount: any(named: 'targetCount'),
           scheduleDays: any(named: 'scheduleDays'),
+          scheduleMonthDays: any(named: 'scheduleMonthDays'),
+          scheduleTimeMinutes: any(named: 'scheduleTimeMinutes'),
           minSpacingDays: any(named: 'minSpacingDays'),
           restDayBuffer: any(named: 'restDayBuffer'),
-          preferredWeeks: any(named: 'preferredWeeks'),
-          fixedDayOfMonth: any(named: 'fixedDayOfMonth'),
-          fixedWeekday: any(named: 'fixedWeekday'),
-          fixedWeekOfMonth: any(named: 'fixedWeekOfMonth'),
+          isActive: any(named: 'isActive'),
+          pausedUntilUtc: any(named: 'pausedUntilUtc'),
           context: any(named: 'context'),
         ),
       ).thenAnswer((_) async {});

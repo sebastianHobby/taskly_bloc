@@ -851,9 +851,9 @@ class _RatingsStep extends StatelessWidget {
       useWizardFooter: true,
       introTitle: l10n.onboardingRatingsTitle,
       introBody: l10n.onboardingRatingsBody,
-      promptTitleBuilder: (String valueName, int _) =>
+      promptTitleBuilder: (valueName, _) =>
           l10n.onboardingRatingsPrompt(valueName),
-      promptSubtitleBuilder: (String _, int __) => '',
+      promptSubtitleBuilder: (_, __) => '',
       scaleHint: l10n.onboardingRatingsScaleHint,
       nextActionLabel: l10n.onboardingRatingsSaveAction,
       completeActionLabel: l10n.onboardingRatingsSaveAction,

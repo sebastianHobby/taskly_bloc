@@ -16,7 +16,7 @@ class FormBuilderPriorityPicker extends FormBuilderFieldDecoration<int?> {
       contentPadding: EdgeInsets.zero,
     ),
   }) : super(
-         builder: (FormFieldState<int?> field) {
+         builder: (field) {
            final scheme = Theme.of(field.context).colorScheme;
            final tokens = TasklyTokens.of(field.context);
            final l10n = field.context.l10n;

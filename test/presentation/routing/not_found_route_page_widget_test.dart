@@ -15,7 +15,10 @@ void main() {
 
   testWidgetsSafe('shows default message when none provided', (tester) async {
     await tester.pumpApp(const NotFoundRoutePage());
-    await tester.pumpForStream(3);
+    final foundPage = await tester.pumpUntilFound(
+      find.byType(NotFoundRoutePage),
+    );
+    expect(foundPage, isTrue);
 
     final l10n = tester.element(find.byType(NotFoundRoutePage)).l10n;
     expect(find.text(l10n.notFoundTitle), findsOneWidget);
@@ -42,12 +45,12 @@ void main() {
     );
 
     await pumpLocalizedRouterApp(tester, router: router);
-    await tester.pumpForStream(5);
+    final foundMissing = await tester.pumpUntilFound(find.text('Missing'));
+    expect(foundMissing, isTrue);
 
     final l10n = tester.element(find.byType(NotFoundRoutePage)).l10n;
     expect(find.text('Missing'), findsOneWidget);
     await tester.tap(find.text(l10n.notFoundActionLabel));
-    await tester.pumpForStream(5);
 
     final foundHome = await tester.pumpUntilFound(
       find.text('My Day Home'),

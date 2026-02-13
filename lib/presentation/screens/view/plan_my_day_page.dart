@@ -278,7 +278,7 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
             context,
             tasks: data.dueTodayTasks,
             selectedTaskIds: data.selectedTaskIds,
-            style: ({required bool selected}) =>
+            style: ({required selected}) =>
                 TasklyTaskRowStyle.planPick(selected: selected),
             allowSelection: false,
             onActionPressed: (task) async {
@@ -360,7 +360,7 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
             context,
             tasks: data.plannedTasks,
             selectedTaskIds: data.selectedTaskIds,
-            style: ({required bool selected}) =>
+            style: ({required selected}) =>
                 TasklyTaskRowStyle.planPick(selected: selected),
             allowSelection: false,
             onActionPressed: (task) async {
@@ -1261,8 +1261,9 @@ TasklyRowSpec _buildRoutineRow(
     snapshot: item.snapshot,
     selected: item.selected,
     completed: item.completedToday,
-    showProgress: true,
-    showScheduleRow: routine.routineType == RoutineType.weeklyFixed,
+    showScheduleRow:
+        routine.periodType == RoutinePeriodType.week &&
+        routine.scheduleMode == RoutineScheduleMode.scheduled,
     dayKeyUtc: data.dayKeyUtc,
     completionsInPeriod: item.completionsInPeriod,
     labels: labels,

@@ -8,6 +8,7 @@ import 'package:rxdart/rxdart.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/fake_repositories.dart';
+import '../../../mocks/feature_mocks.dart';
 import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/projects/services/projects_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/projects_page.dart';
@@ -58,6 +59,7 @@ void main() {
   late MockProjectRepositoryContract projectRepository;
   late MockTaskRepositoryContract taskRepository;
   late MockValueRepositoryContract valueRepository;
+  late MockValueRatingsRepositoryContract valueRatingsRepository;
   late FakeAppLifecycleEvents lifecycleEvents;
   late SessionStreamCacheManager cacheManager;
   late DemoModeService demoModeService;
@@ -68,12 +70,14 @@ void main() {
   late BehaviorSubject<List<Project>> projectsSubject;
   late BehaviorSubject<int> inboxCountSubject;
   late BehaviorSubject<List<Value>> valuesSubject;
+  late BehaviorSubject<List<ValueWeeklyRating>> ratingsSubject;
   const speedDialInitDelay = Duration(milliseconds: 1);
 
   setUp(() {
     projectRepository = MockProjectRepositoryContract();
     taskRepository = MockTaskRepositoryContract();
     valueRepository = MockValueRepositoryContract();
+    valueRatingsRepository = MockValueRatingsRepositoryContract();
     lifecycleEvents = FakeAppLifecycleEvents();
     cacheManager = SessionStreamCacheManager(
       appLifecycleService: lifecycleEvents,
@@ -90,6 +94,7 @@ void main() {
     );
     queryService = ProjectsSessionQueryService(
       projectRepository: projectRepository,
+      valueRatingsRepository: valueRatingsRepository,
       cacheManager: cacheManager,
       sharedDataService: sharedDataService,
       demoModeService: demoModeService,
@@ -101,6 +106,9 @@ void main() {
     );
     inboxCountSubject = BehaviorSubject<int>.seeded(0);
     valuesSubject = BehaviorSubject<List<Value>>.seeded(const <Value>[]);
+    ratingsSubject = BehaviorSubject<List<ValueWeeklyRating>>.seeded(
+      const <ValueWeeklyRating>[],
+    );
 
     when(() => projectRepository.watchAll()).thenAnswer(
       (_) => projectsSubject,
@@ -124,12 +132,16 @@ void main() {
     when(() => valueRepository.getAll()).thenAnswer(
       (_) async => const <Value>[],
     );
+    when(
+      () => valueRatingsRepository.watchAll(weeks: any(named: 'weeks')),
+    ).thenAnswer((_) => ratingsSubject);
   });
 
   tearDown(() async {
     await projectsSubject.close();
     await inboxCountSubject.close();
     await valuesSubject.close();
+    await ratingsSubject.close();
     await cacheManager.dispose();
     await demoModeService.dispose();
     await lifecycleEvents.dispose();
@@ -164,14 +176,17 @@ void main() {
     await tester.pump(speedDialInitDelay);
   }
 
-  testWidgetsSafe('shows empty state when no projects are available', (
+  testWidgetsSafe('shows inbox row when no projects are available', (
     tester,
   ) async {
     await pumpPage(tester);
+    projectsSubject.add(const <Project>[]);
+    inboxCountSubject.add(0);
+    valuesSubject.add(const <Value>[]);
+    final foundInbox = await tester.pumpUntilFound(find.text('Inbox'));
+    expect(foundInbox, isTrue);
 
-    expect(find.text('No active projects yet.'), findsOneWidget);
-    expect(find.text('Add project'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('Inbox'), findsOneWidget);
   });
 
   testWidgetsSafe('shows error state when feed stream errors', (tester) async {
@@ -183,37 +198,45 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.textContaining('boom'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgetsSafe('renders project content when loaded', (tester) async {
     await pumpPage(tester);
 
-    final project = TestData.project(name: 'Project Alpha');
+    final value = TestData.value(id: 'value-1', name: 'Health');
+    final project = TestData.project(name: 'Project Alpha').copyWith(
+      values: [value],
+      primaryValueId: value.id,
+    );
     projectsSubject.add([project]);
     inboxCountSubject.add(0);
-    valuesSubject.add(const <Value>[]);
+    valuesSubject.add([value]);
     await tester.pumpForStream();
 
     expect(find.text('Project Alpha'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgetsSafe('updates list when feed emits new data', (tester) async {
     await pumpPage(tester);
 
-    final projectA = TestData.project(name: 'Project A');
+    final value = TestData.value(id: 'value-1', name: 'Health');
+    final projectA = TestData.project(name: 'Project A').copyWith(
+      values: [value],
+      primaryValueId: value.id,
+    );
     projectsSubject.add([projectA]);
     inboxCountSubject.add(0);
-    valuesSubject.add(const <Value>[]);
+    valuesSubject.add([value]);
     await tester.pumpForStream();
     expect(find.text('Project A'), findsOneWidget);
 
-    final projectB = TestData.project(name: 'Project B');
+    final projectB = TestData.project(name: 'Project B').copyWith(
+      values: [value],
+      primaryValueId: value.id,
+    );
     projectsSubject.add([projectA, projectB]);
     await tester.pumpForStream();
 
     expect(find.text('Project B'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 1));
   });
 }

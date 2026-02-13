@@ -56,7 +56,7 @@ class ProjectEntityTile extends StatelessWidget {
         actions.onLongPress == null &&
         actions.onToggleSelected == null;
 
-    final padding = _isCompact
+    final padding = (_isCompact || _isInbox)
         ? tokens.projectPadding.copyWith(
             top: tokens.spaceSm2,
             bottom: tokens.spaceSm2,
@@ -67,8 +67,8 @@ class ProjectEntityTile extends StatelessWidget {
     final Widget? titlePrefix = pinnedPrefix;
 
     final valueChip = model.leadingChip;
-    final showValueIcon = valueChip != null;
     final statusBadge = model.statusBadge;
+    final accentColor = _isInbox ? null : model.accentColor;
 
     final startLabel = model.meta.startDateLabel?.trim() ?? '';
     final deadlineLabel = model.meta.deadlineDateLabel?.trim() ?? '';
@@ -98,21 +98,36 @@ class ProjectEntityTile extends StatelessWidget {
     final titleStyle =
         (isReadOnlyHeader
             ? theme.textTheme.headlineSmall
-            : (_isCompact
+            : (_isCompact || _isInbox
                   ? theme.textTheme.titleMedium
                   : theme.textTheme.headlineSmall)) ??
         const TextStyle();
-    final weightedTitleStyle = titleStyle.copyWith(fontWeight: FontWeight.w700);
+    final weightedTitleStyle = titleStyle.copyWith(
+      fontWeight: _isInbox ? FontWeight.w600 : FontWeight.w700,
+    );
     final selectionGap = _isCompact ? tokens.spaceSm : tokens.spaceMd;
+
+    const accentBarWidth = 4.0;
+    const accentBarBlend = 0.6;
+    const accentBarAlpha = 0.6;
+    final outlineColor = scheme.outlineVariant.withValues(alpha: 0.7);
+    final accentBarColor = accentColor == null
+        ? null
+        : Color.lerp(accentColor, scheme.surface, accentBarBlend)!.withValues(
+            alpha: accentBarAlpha,
+          );
+
+    final cardColor = _isInbox ? scheme.surfaceContainerLow : scheme.surface;
+    final shadowAlpha = _isInbox ? 0.02 : 0.05;
 
     final card = DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surface,
+        color: cardColor,
         borderRadius: BorderRadius.circular(tokens.projectRadius),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
+        border: Border.all(color: outlineColor),
         boxShadow: [
           BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.05),
+            color: scheme.shadow.withValues(alpha: shadowAlpha),
             blurRadius: tokens.cardShadowBlur,
             offset: tokens.cardShadowOffset,
           ),
@@ -120,131 +135,141 @@ class ProjectEntityTile extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(tokens.projectRadius),
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: onTap,
-            onLongPress: actions.onLongPress,
-            child: Padding(
-              padding: padding.copyWith(
-                left: padding.left,
+        child: Stack(
+          children: [
+            if (accentBarColor != null)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                child: Container(
+                  width: accentBarWidth,
+                  color: accentBarColor,
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: onTap,
+                onLongPress: actions.onLongPress,
+                child: Padding(
+                  padding: padding.copyWith(
+                    left: padding.left,
+                  ),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (_selected != null) ...[
-                        _SelectionRailButton(
-                          selected: _selected ?? false,
-                          compact: _isCompact,
-                          onPressed: actions.onToggleSelected ?? actions.onTap,
-                        ),
-                        SizedBox(width: selectionGap),
-                      ],
-                      if (_isInbox) ...[
-                        _InboxGlyph(tokens: tokens),
-                        SizedBox(width: tokens.spaceMd),
-                      ] else ...[
-                        _ProjectGlyph(
-                          tokens: tokens,
-                          progress: _progress ?? 0,
-                          isCompact: _isCompact,
-                        ),
-                        SizedBox(width: tokens.spaceMd),
-                      ],
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_selected != null) ...[
+                            _SelectionRailButton(
+                              selected: _selected ?? false,
+                              compact: _isCompact,
+                              onPressed:
+                                  actions.onToggleSelected ?? actions.onTap,
+                            ),
+                            SizedBox(width: selectionGap),
+                          ],
+                          if (_isInbox) ...[
+                            _InboxGlyph(tokens: tokens),
+                            SizedBox(width: tokens.spaceMd),
+                          ] else ...[
+                            _ProjectGlyph(
+                              tokens: tokens,
+                              progress: _progress ?? 0,
+                              isCompact: _isCompact,
+                              icon: valueChip?.icon,
+                              iconColor: valueChip?.color,
+                            ),
+                            SizedBox(width: tokens.spaceMd),
+                          ],
+                          Expanded(
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (titlePrefix != null) ...[
-                                  Padding(
-                                    padding: EdgeInsets.only(
-                                      top: tokens.spaceXxs,
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (titlePrefix != null) ...[
+                                      Padding(
+                                        padding: EdgeInsets.only(
+                                          top: tokens.spaceXxs,
+                                        ),
+                                        child: titlePrefix,
+                                      ),
+                                      SizedBox(width: tokens.spaceXs2),
+                                    ],
+                                    Expanded(
+                                      child: Text(
+                                        model.title,
+                                        maxLines: _isCompact ? 1 : 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: weightedTitleStyle.copyWith(
+                                          color: scheme.onSurface,
+                                          decoration: model.completed
+                                              ? TextDecoration.lineThrough
+                                              : null,
+                                          decorationColor: scheme.onSurface
+                                              .withValues(alpha: 0.55),
+                                        ),
+                                      ),
                                     ),
-                                    child: titlePrefix,
-                                  ),
-                                  SizedBox(width: tokens.spaceXs2),
-                                ],
-                                Expanded(
-                                  child: Text(
-                                    model.title,
-                                    maxLines: _isCompact ? 1 : 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: weightedTitleStyle.copyWith(
-                                      color: scheme.onSurface,
-                                      decoration: model.completed
-                                          ? TextDecoration.lineThrough
-                                          : null,
-                                      decorationColor: scheme.onSurface
-                                          .withValues(alpha: 0.55),
-                                    ),
-                                  ),
+                                    if (_isCompact &&
+                                        compactLabel.isNotEmpty &&
+                                        compactIcon != null) ...[
+                                      SizedBox(width: tokens.spaceSm),
+                                      Icon(
+                                        compactIcon,
+                                        size: tokens.spaceMd2,
+                                        color: compactLabelColor,
+                                      ),
+                                      SizedBox(width: tokens.spaceXxs2),
+                                      Text(
+                                        compactLabel,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: compactLabelColor,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                    ],
+                                    if (statusBadge != null) ...[
+                                      SizedBox(width: tokens.spaceSm),
+                                      TasklyBadge(
+                                        label: statusBadge.label,
+                                        icon: statusBadge.icon,
+                                        color: statusBadge.color,
+                                        style: _badgeStyle(statusBadge.tone),
+                                      ),
+                                    ],
+                                  ],
                                 ),
-                                if (_isCompact &&
-                                    compactLabel.isNotEmpty &&
-                                    compactIcon != null) ...[
-                                  SizedBox(width: tokens.spaceSm),
-                                  Icon(
-                                    compactIcon,
-                                    size: tokens.spaceMd2,
-                                    color: compactLabelColor,
-                                  ),
-                                  SizedBox(width: tokens.spaceXxs2),
-                                  Text(
-                                    compactLabel,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: compactLabelColor,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                                if (showValueIcon) ...[
-                                  SizedBox(width: tokens.spaceSm),
-                                  Icon(
-                                    valueChip.icon,
-                                    size: tokens.spaceMd2,
-                                    color: valueChip.color,
-                                  ),
-                                ],
-                                if (statusBadge != null) ...[
-                                  SizedBox(width: tokens.spaceSm),
-                                  TasklyBadge(
-                                    label: statusBadge.label,
-                                    icon: statusBadge.icon,
-                                    color: statusBadge.color,
-                                    style: _badgeStyle(statusBadge.tone),
+                                if (!_isCompact && _hasMetaRow(model)) ...[
+                                  SizedBox(height: tokens.spaceXs2),
+                                  _ProjectMetaRow(
+                                    startLabel: model.meta.startDateLabel,
+                                    deadlineLabel: model.meta.deadlineDateLabel,
+                                    showOnlyDeadline:
+                                        model.meta.showOnlyDeadlineDate,
+                                    isOverdue: model.meta.isOverdue,
+                                    isDueToday: model.meta.isDueToday,
+                                    priority: model.meta.priority,
                                   ),
                                 ],
                               ],
                             ),
-                            if (!_isCompact && _hasMetaRow(model)) ...[
-                              SizedBox(height: tokens.spaceXs2),
-                              _ProjectMetaRow(
-                                startLabel: model.meta.startDateLabel,
-                                deadlineLabel: model.meta.deadlineDateLabel,
-                                showOnlyDeadline:
-                                    model.meta.showOnlyDeadlineDate,
-                                isOverdue: model.meta.isOverdue,
-                                isDueToday: model.meta.isDueToday,
-                                priority: model.meta.priority,
-                              ),
-                            ],
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -355,11 +380,15 @@ class _ProjectGlyph extends StatelessWidget {
     required this.tokens,
     required this.progress,
     required this.isCompact,
+    required this.icon,
+    required this.iconColor,
   });
 
   final TasklyTokens tokens;
   final double progress;
   final bool isCompact;
+  final IconData? icon;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -394,9 +423,9 @@ class _ProjectGlyph extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              Icons.folder_rounded,
+              icon ?? Icons.folder_rounded,
               size: isCompact ? 16 : 18,
-              color: scheme.onSurfaceVariant,
+              color: iconColor ?? scheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -415,8 +444,8 @@ class _InboxGlyph extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      width: tokens.progressRingSize,
-      height: tokens.progressRingSize,
+      width: tokens.progressRingSizeSmall,
+      height: tokens.progressRingSizeSmall,
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
         shape: BoxShape.circle,
@@ -426,7 +455,7 @@ class _InboxGlyph extends StatelessWidget {
       ),
       child: Icon(
         Icons.inbox_outlined,
-        size: 20,
+        size: 18,
         color: scheme.onSurfaceVariant,
       ),
     );

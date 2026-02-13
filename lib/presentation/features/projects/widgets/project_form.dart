@@ -11,7 +11,7 @@ import 'package:taskly_bloc/presentation/shared/utils/rrule_label_utils.dart';
 import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
 import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
-import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/time.dart';
@@ -368,7 +368,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       ProjectFieldKeys.priority.id: widget.initialData?.priority,
       ProjectFieldKeys.valueIds.id:
           (widget.initialData?.values ?? <Value>[]) // Use values property
-              .map((Value e) => e.id)
+              .map((e) => e.id)
               .take(1)
               .toList(growable: false),
       ProjectFieldKeys.repeatIcalRrule.id:
@@ -527,101 +527,55 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                 children: [
                   TasklyFormSectionLabel(text: l10n.projectValueTitle),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  Text(
-                    l10n.projectValueHelper,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                  FormBuilderField<List<String>>(
+                    name: ProjectFieldKeys.valueIds.id,
+                    validator: toFormBuilderValidator<List<String>>(
+                      ProjectValidators.valueIds,
+                      context,
                     ),
-                  ),
-                  SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  TasklyFormRowGroup(
-                    children: [
-                      FormBuilderField<List<String>>(
-                        name: ProjectFieldKeys.valueIds.id,
-                        validator: toFormBuilderValidator<List<String>>(
-                          ProjectValidators.valueIds,
-                          context,
-                        ),
-                        builder: (field) {
-                          final valueIds = List<String>.of(
-                            field.value ?? const <String>[],
-                          ).take(1).toList(growable: false);
-                          final primary = valueIds.isEmpty
-                              ? null
-                              : availableValuesById[valueIds.first];
+                    builder: (field) {
+                      final valueIds = List<String>.of(
+                        field.value ?? const <String>[],
+                      ).take(1).toList(growable: false);
+                      final primary = valueIds.isEmpty
+                          ? null
+                          : availableValuesById[valueIds.first];
+                      final chip = primary?.toChipData(context);
+                      final iconName = primary?.iconName;
+                      final iconData = iconName == null
+                          ? Icons.favorite_rounded
+                          : (getIconDataFromName(iconName) ??
+                                Icons.favorite_rounded);
+                      final iconColor = chip?.color ?? colorScheme.primary;
+                      final title =
+                          primary?.name ?? l10n.projectValuePlaceholder;
 
-                          return Builder(
-                            builder: (chipContext) {
-                              Future<void> open(
-                                ValuesAlignmentTarget target,
-                              ) async {
-                                final result = await _showValuesAlignmentPicker(
-                                  anchorContext: chipContext,
-                                  valueIds: valueIds,
-                                  target: target,
-                                );
-                                if (!mounted || result == null) return;
-                                field.didChange(
-                                  result.take(1).toList(growable: false),
-                                );
-                                markDirty();
-                                setState(() {});
-                              }
-
-                              TasklyFormValueChipModel toModel(Value value) {
-                                final iconData =
-                                    getIconDataFromName(value.iconName) ??
-                                    Icons.star;
-                                final color = ColorUtils.valueColorForTheme(
-                                  context,
-                                  value.color,
-                                );
-                                return TasklyFormValueChipModel(
-                                  label: value.name,
-                                  color: color,
-                                  icon: iconData,
-                                  semanticLabel: value.name,
-                                );
-                              }
-
-                              final theme = Theme.of(context);
-                              return KeyedSubtree(
-                                key: _valuesKey,
-                                child: TasklyFormRowGroup(
-                                  spacing: 12,
-                                  runSpacing: 8,
-                                  children: [
-                                    TasklyFormValueChip(
-                                      model: primary != null
-                                          ? toModel(primary)
-                                          : TasklyFormValueChipModel(
-                                              label: context
-                                                  .l10n
-                                                  .valuesPrimaryLabel,
-                                              color: theme
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
-                                              icon: Icons.star_border,
-                                              semanticLabel: context
-                                                  .l10n
-                                                  .valuesPrimaryLabel,
-                                            ),
-                                      onTap: () =>
-                                          open(ValuesAlignmentTarget.primary),
-                                      isSelected: primary != null,
-                                      isPrimary: true,
-                                      preset: TasklyFormChipPreset.standard(
-                                        TasklyTokens.of(context),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                      return KeyedSubtree(
+                        key: _valuesKey,
+                        child: Builder(
+                          builder: (chipContext) => TasklyFormValueCard(
+                            title: title,
+                            helperText: l10n.projectValueHelper,
+                            icon: iconData,
+                            iconColor: iconColor,
+                            hasValue: primary != null,
+                            onTap: () async {
+                              final result = await _showValuesAlignmentPicker(
+                                anchorContext: chipContext,
+                                valueIds: valueIds,
+                                target: ValuesAlignmentTarget.primary,
                               );
+                              if (!mounted || result == null) return;
+                              field.didChange(
+                                result.take(1).toList(growable: false),
+                              );
+                              markDirty();
+                              setState(() {});
                             },
-                          );
-                        },
-                      ),
-                    ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   Builder(
                     builder: (context) {

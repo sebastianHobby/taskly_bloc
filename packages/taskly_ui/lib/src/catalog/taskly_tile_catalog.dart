@@ -46,7 +46,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-standard',
-        title: 'Task · Standard',
+        title: 'Task Â· Standard',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-standard-1',
@@ -67,7 +67,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-compact',
-        title: 'Task · Compact',
+        title: 'Task Â· Compact',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-compact',
@@ -85,7 +85,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-primary-icon-only',
-        title: 'Task · Primary icon-only',
+        title: 'Task Â· Primary icon-only',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-primary-icon-only',
@@ -119,7 +119,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-bulk',
-        title: 'Task · Bulk selection',
+        title: 'Task Â· Bulk selection',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-bulk-selected',
@@ -145,7 +145,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-tasks-bulk-compact',
-        title: 'Task Â· Bulk selection (compact)',
+        title: 'Task Ã‚Â· Bulk selection (compact)',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-bulk-compact-selected',
@@ -172,7 +172,7 @@ class TasklyTileCatalog extends StatelessWidget {
 
       TasklyRowSpec.header(
         key: 'catalog-tasks-plan-pick',
-        title: 'Task · Plan pick',
+        title: 'Task Â· Plan pick',
       ),
       TasklyRowSpec.task(
         key: 'catalog-task-plan-pick-selected',
@@ -211,45 +211,41 @@ class TasklyTileCatalog extends StatelessWidget {
         title: 'Routines',
         trailingLabel: 'Rows',
       ),
-      TasklyRowSpec.header(
-        key: 'catalog-routines-compact',
-        title: 'Routine \u00b7 Compact',
-      ),
       TasklyRowSpec.routine(
-        key: 'catalog-routine-compact-flex',
+        key: 'catalog-routine-standard-flex',
         data: TasklyRoutineRowData(
-          id: 'r-compact-1',
+          id: 'r-standard-flex',
           title: 'Mobility flow',
-          targetLabel: '3x/week',
-          remainingLabel: '2 left',
-          windowLabel: '4 days left',
-          valueChip: valueHealth,
-          progress: const TasklyRoutineProgressData(
-            completedCount: 1,
-            targetCount: 3,
-            windowLabel: '4 days left',
-          ),
+          actionLineText: '1/3 done - 4 days left',
+          leadingIcon: valueHealth,
           labels: const TasklyRoutineRowLabels(
-            primaryActionLabel: 'Log today',
+            primaryActionLabel: 'Log',
           ),
         ),
-        style: const TasklyRoutineRowStyle.compact(),
         actions: _routineActions,
       ),
       TasklyRowSpec.routine(
-        key: 'catalog-routine-compact-scheduled',
+        key: 'catalog-routine-standard-daily',
         data: TasklyRoutineRowData(
-          id: 'r-compact-2',
-          title: 'Morning routine',
-          targetLabel: 'Scheduled',
-          remainingLabel: '2 left',
-          windowLabel: 'Mon-Sun',
-          valueChip: valueKnowledge,
-          progress: const TasklyRoutineProgressData(
-            completedCount: 2,
-            targetCount: 4,
-            windowLabel: 'Mon-Sun',
+          id: 'r-standard-daily',
+          title: 'Hydration',
+          dotRow: const TasklyRoutineDotRowData(
+            completedCount: 1,
+            targetCount: 3,
+            label: 'Daily goal: 3x',
           ),
+          leadingIcon: valueHealth,
+          labels: const TasklyRoutineRowLabels(
+            primaryActionLabel: 'Log',
+          ),
+        ),
+        actions: _routineActions,
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-standard-scheduled',
+        data: TasklyRoutineRowData(
+          id: 'r-standard-scheduled',
+          title: 'Morning routine',
           scheduleRow: const TasklyRoutineScheduleRowData(
             days: [
               TasklyRoutineScheduleDay(
@@ -258,19 +254,9 @@ class TasklyTileCatalog extends StatelessWidget {
                 state: TasklyRoutineScheduleDayState.missedScheduled,
               ),
               TasklyRoutineScheduleDay(
-                label: 'T',
-                isToday: false,
-                state: TasklyRoutineScheduleDayState.none,
-              ),
-              TasklyRoutineScheduleDay(
                 label: 'W',
                 isToday: true,
                 state: TasklyRoutineScheduleDayState.loggedScheduled,
-              ),
-              TasklyRoutineScheduleDay(
-                label: 'T',
-                isToday: false,
-                state: TasklyRoutineScheduleDayState.loggedUnscheduled,
               ),
               TasklyRoutineScheduleDay(
                 label: 'F',
@@ -278,109 +264,28 @@ class TasklyTileCatalog extends StatelessWidget {
                 state: TasklyRoutineScheduleDayState.scheduled,
               ),
               TasklyRoutineScheduleDay(
-                label: 'S',
-                isToday: false,
-                state: TasklyRoutineScheduleDayState.none,
-              ),
-              TasklyRoutineScheduleDay(
-                label: 'S',
-                isToday: false,
-                state: TasklyRoutineScheduleDayState.scheduled,
-              ),
-            ],
-          ),
-          labels: const TasklyRoutineRowLabels(
-            primaryActionLabel: 'Log today',
-          ),
-        ),
-        style: const TasklyRoutineRowStyle.compact(),
-        actions: _routineActions,
-      ),
-      TasklyRowSpec.routine(
-        key: 'catalog-routine-standard',
-        data: TasklyRoutineRowData(
-          id: 'r-standard-1',
-          title: 'Gym session',
-          targetLabel: '3×/week',
-          remainingLabel: '2 left',
-          windowLabel: '4 days left (Mon–Sun)',
-          valueChip: valueHealth,
-          labels: const TasklyRoutineRowLabels(
-            primaryActionLabel: 'Log today',
-          ),
-        ),
-        actions: _routineActions,
-      ),
-      TasklyRowSpec.routine(
-        key: 'catalog-routine-flexible',
-        data: TasklyRoutineRowData(
-          id: 'r-flex-1',
-          title: 'Read non-fiction',
-          targetLabel: '3x/week',
-          remainingLabel: '2 left',
-          windowLabel: '4 days left',
-          valueChip: valueKnowledge,
-          progress: const TasklyRoutineProgressData(
-            completedCount: 1,
-            targetCount: 3,
-            windowLabel: '4 days left',
-          ),
-          labels: const TasklyRoutineRowLabels(
-            primaryActionLabel: 'Log today',
-          ),
-        ),
-        actions: _routineActions,
-      ),
-      TasklyRowSpec.routine(
-        key: 'catalog-routine-scheduled',
-        data: TasklyRoutineRowData(
-          id: 'r-scheduled-1',
-          title: 'Morning routine',
-          targetLabel: 'Scheduled',
-          remainingLabel: '2 left',
-          windowLabel: 'Mon-Sun',
-          valueChip: valueHealth,
-          scheduleRow: const TasklyRoutineScheduleRowData(
-            days: [
-              TasklyRoutineScheduleDay(
-                label: 'M',
-                isToday: false,
-                state: TasklyRoutineScheduleDayState.missedScheduled,
-              ),
-              TasklyRoutineScheduleDay(
-                label: 'T',
-                isToday: false,
-                state: TasklyRoutineScheduleDayState.none,
-              ),
-              TasklyRoutineScheduleDay(
-                label: 'W',
-                isToday: true,
-                state: TasklyRoutineScheduleDayState.loggedScheduled,
-              ),
-              TasklyRoutineScheduleDay(
-                label: 'T',
+                label: 'T*',
                 isToday: false,
                 state: TasklyRoutineScheduleDayState.loggedUnscheduled,
               ),
-              TasklyRoutineScheduleDay(
-                label: 'F',
-                isToday: false,
-                state: TasklyRoutineScheduleDayState.scheduled,
-              ),
-              TasklyRoutineScheduleDay(
-                label: 'S',
-                isToday: false,
-                state: TasklyRoutineScheduleDayState.none,
-              ),
-              TasklyRoutineScheduleDay(
-                label: 'S',
-                isToday: false,
-                state: TasklyRoutineScheduleDayState.scheduled,
-              ),
             ],
           ),
+          leadingIcon: valueKnowledge,
           labels: const TasklyRoutineRowLabels(
-            primaryActionLabel: 'Log today',
+            primaryActionLabel: 'Log',
+          ),
+        ),
+        actions: _routineActions,
+      ),
+      TasklyRowSpec.routine(
+        key: 'catalog-routine-standard-monthly',
+        data: TasklyRoutineRowData(
+          id: 'r-standard-monthly',
+          title: 'Budget review',
+          actionLineText: '2/4 this month - Next: 15th',
+          leadingIcon: valueFinance,
+          labels: const TasklyRoutineRowLabels(
+            primaryActionLabel: 'Log',
           ),
         ),
         actions: _routineActions,
@@ -394,15 +299,8 @@ class TasklyTileCatalog extends StatelessWidget {
         data: TasklyRoutineRowData(
           id: 'r-plan-pick-1',
           title: 'Stretch session',
-          targetLabel: '3x/week',
-          remainingLabel: '2 left',
-          windowLabel: '4 days left',
-          valueChip: valueHealth,
-          progress: const TasklyRoutineProgressData(
-            completedCount: 1,
-            targetCount: 3,
-            windowLabel: '4 days left',
-          ),
+          actionLineText: '1/3 done - 4 days left',
+          leadingIcon: valueHealth,
           selected: true,
           labels: const TasklyRoutineRowLabels(
             selectionTooltipLabel: 'Add',
@@ -417,15 +315,8 @@ class TasklyTileCatalog extends StatelessWidget {
         data: TasklyRoutineRowData(
           id: 'r-plan-pick-2',
           title: 'Reflect on the week',
-          targetLabel: '1x/week',
-          remainingLabel: '1 left',
-          windowLabel: '2 days left',
-          valueChip: valueKnowledge,
-          progress: const TasklyRoutineProgressData(
-            completedCount: 0,
-            targetCount: 1,
-            windowLabel: '2 days left',
-          ),
+          actionLineText: '0/1 done - 2 days left',
+          leadingIcon: valueKnowledge,
           selected: false,
           labels: const TasklyRoutineRowLabels(
             selectionTooltipLabel: 'Add',
@@ -437,22 +328,15 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-routines-bulk',
-        title: 'Routine Â· Bulk selection',
+        title: 'Routine · Bulk selection',
       ),
       TasklyRowSpec.routine(
         key: 'catalog-routine-bulk-selected',
         data: TasklyRoutineRowData(
           id: 'r-bulk-1',
           title: 'Breathwork session',
-          targetLabel: '3x/week',
-          remainingLabel: '2 left',
-          windowLabel: '4 days left',
-          valueChip: valueHealth,
-          progress: const TasklyRoutineProgressData(
-            completedCount: 1,
-            targetCount: 3,
-            windowLabel: '4 days left',
-          ),
+          actionLineText: '1/3 done - 4 days left',
+          leadingIcon: valueHealth,
           selected: true,
         ),
         style: const TasklyRoutineRowStyle.bulkSelection(),
@@ -463,60 +347,11 @@ class TasklyTileCatalog extends StatelessWidget {
         data: TasklyRoutineRowData(
           id: 'r-bulk-2',
           title: 'Book review',
-          targetLabel: '1x/week',
-          remainingLabel: '1 left',
-          windowLabel: '6 days left',
-          valueChip: valueKnowledge,
-          progress: const TasklyRoutineProgressData(
-            completedCount: 0,
-            targetCount: 1,
-            windowLabel: '6 days left',
-          ),
+          actionLineText: '0/1 done - 6 days left',
+          leadingIcon: valueKnowledge,
           selected: false,
         ),
         style: const TasklyRoutineRowStyle.bulkSelection(),
-        actions: routineSelectionActions,
-      ),
-      TasklyRowSpec.header(
-        key: 'catalog-routines-bulk-compact',
-        title: 'Routine Â· Bulk selection (compact)',
-      ),
-      TasklyRowSpec.routine(
-        key: 'catalog-routine-bulk-compact-selected',
-        data: TasklyRoutineRowData(
-          id: 'r-bulk-c-1',
-          title: 'Evening walk',
-          targetLabel: '3x/week',
-          remainingLabel: '2 left',
-          windowLabel: '4 days left',
-          valueChip: valueHealth,
-          progress: const TasklyRoutineProgressData(
-            completedCount: 1,
-            targetCount: 3,
-            windowLabel: '4 days left',
-          ),
-          selected: true,
-        ),
-        style: const TasklyRoutineRowStyle.bulkSelectionCompact(),
-        actions: routineSelectionActions,
-      ),
-      TasklyRowSpec.routine(
-        key: 'catalog-routine-bulk-compact-unselected',
-        data: TasklyRoutineRowData(
-          id: 'r-bulk-c-2',
-          title: 'Language practice',
-          targetLabel: '5x/week',
-          remainingLabel: '3 left',
-          windowLabel: '2 days left',
-          valueChip: valueKnowledge,
-          progress: const TasklyRoutineProgressData(
-            completedCount: 2,
-            targetCount: 5,
-            windowLabel: '2 days left',
-          ),
-          selected: false,
-        ),
-        style: const TasklyRoutineRowStyle.bulkSelectionCompact(),
         actions: routineSelectionActions,
       ),
       TasklyRowSpec.header(
@@ -526,7 +361,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-projects-standard',
-        title: 'Project · Standard',
+        title: 'Project Â· Standard',
       ),
       TasklyRowSpec.project(
         key: 'catalog-project-standard-1',
@@ -603,7 +438,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-projects-bulk',
-        title: 'Project · Bulk selection',
+        title: 'Project Â· Bulk selection',
       ),
       TasklyRowSpec.project(
         key: 'catalog-project-bulk-selected',
@@ -629,7 +464,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-projects-bulk-compact',
-        title: 'Project Â· Bulk selection (compact)',
+        title: 'Project Ã‚Â· Bulk selection (compact)',
       ),
       TasklyRowSpec.project(
         key: 'catalog-project-bulk-compact-selected',
@@ -668,7 +503,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-values-standard',
-        title: 'Value · Standard',
+        title: 'Value Â· Standard',
       ),
       TasklyRowSpec.value(
         key: 'catalog-value-standard',
@@ -683,7 +518,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-values-hero',
-        title: 'Value · Hero',
+        title: 'Value Â· Hero',
       ),
       TasklyRowSpec.value(
         key: 'catalog-value-hero',
@@ -725,7 +560,7 @@ class TasklyTileCatalog extends StatelessWidget {
       ),
       TasklyRowSpec.header(
         key: 'catalog-values-bulk',
-        title: 'Value · Bulk selection',
+        title: 'Value Â· Bulk selection',
       ),
       TasklyRowSpec.value(
         key: 'catalog-value-bulk-selected',

@@ -9,7 +9,8 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/src/queries/project_query.dart';
 import 'package:taskly_domain/src/queries/task_query.dart';
-import 'package:taskly_domain/src/routines/model/routine_type.dart';
+import 'package:taskly_domain/src/routines/model/routine_period_type.dart';
+import 'package:taskly_domain/src/routines/model/routine_schedule_mode.dart';
 import 'package:taskly_domain/src/time/clock.dart';
 import 'package:taskly_domain/src/time/date_only.dart';
 import 'package:taskly_domain/services.dart';
@@ -405,19 +406,19 @@ class TemplateDataService {
         'projectCount': projectIdByName.length,
       }),
     );
-    final projectPrimaryValueIdById = await _loadProjectPrimaryValueIdById();
-
     for (final seed in _templateRoutineSeeds) {
-      final valueId = valueIdByName[seed.valueName];
-      if (valueId == null) continue;
+      final projectId = projectIdByName[seed.projectName];
+      if (projectId == null) continue;
 
       try {
         await _routineRepository.create(
           name: seed.name,
-          valueId: valueId,
-          routineType: seed.routineType,
+          projectId: projectId,
+          periodType: seed.periodType,
+          scheduleMode: seed.scheduleMode,
           targetCount: seed.targetCount,
           scheduleDays: seed.scheduleDays,
+          scheduleMonthDays: seed.scheduleMonthDays,
           minSpacingDays: seed.minSpacingDays,
           context: context,
         );
@@ -430,13 +431,16 @@ class TemplateDataService {
           _logFields(context, {
             'step': 'routine_create_failed',
             'routineName': seed.name,
-            'valueName': seed.valueName,
-            'routineType': seed.routineType.name,
+            'projectName': seed.projectName,
+            'periodType': seed.periodType.name,
+            'scheduleMode': seed.scheduleMode.name,
           }),
         );
         rethrow;
       }
     }
+
+    final projectPrimaryValueIdById = await _loadProjectPrimaryValueIdById();
 
     final completedTaskNames = <String>[];
 
@@ -741,17 +745,27 @@ class TemplateDataService {
 const _templateRoutineSeeds = <_TemplateRoutineSeed>[
   _TemplateRoutineSeed(
     name: 'Text a friend',
-    valueName: 'Social',
-    routineType: RoutineType.weeklyFlexible,
+    projectName: 'People',
+    periodType: RoutinePeriodType.week,
+    scheduleMode: RoutineScheduleMode.flexible,
     targetCount: 3,
     minSpacingDays: 0,
   ),
   _TemplateRoutineSeed(
     name: 'Study session',
-    valueName: 'Learning',
-    routineType: RoutineType.weeklyFixed,
+    projectName: 'Learning',
+    periodType: RoutinePeriodType.week,
+    scheduleMode: RoutineScheduleMode.scheduled,
     targetCount: 1,
     scheduleDays: [6],
+  ),
+  _TemplateRoutineSeed(
+    name: 'Budget review',
+    projectName: 'Work',
+    periodType: RoutinePeriodType.month,
+    scheduleMode: RoutineScheduleMode.scheduled,
+    targetCount: 2,
+    scheduleMonthDays: [1, 15],
   ),
 ];
 
@@ -859,18 +873,22 @@ const _templateTaskSeeds = <_TemplateTaskSeed>[
 final class _TemplateRoutineSeed {
   const _TemplateRoutineSeed({
     required this.name,
-    required this.valueName,
-    required this.routineType,
+    required this.projectName,
+    required this.periodType,
+    required this.scheduleMode,
     required this.targetCount,
     this.scheduleDays = const <int>[],
+    this.scheduleMonthDays = const <int>[],
     this.minSpacingDays,
   });
 
   final String name;
-  final String valueName;
-  final RoutineType routineType;
+  final String projectName;
+  final RoutinePeriodType periodType;
+  final RoutineScheduleMode scheduleMode;
   final int targetCount;
   final List<int> scheduleDays;
+  final List<int> scheduleMonthDays;
   final int? minSpacingDays;
 }
 

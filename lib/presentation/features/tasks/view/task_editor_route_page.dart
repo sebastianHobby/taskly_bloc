@@ -24,13 +24,11 @@ class TaskEditorRoutePage extends StatelessWidget {
   const TaskEditorRoutePage({
     required this.taskId,
     this.defaultProjectId,
-    this.defaultValueIds,
     super.key,
   });
 
   final String? taskId;
   final String? defaultProjectId;
-  final List<String>? defaultValueIds;
 
   @override
   Widget build(BuildContext context) {
@@ -39,13 +37,11 @@ class TaskEditorRoutePage extends StatelessWidget {
         context,
         taskId: taskId,
         defaultProjectId: defaultProjectId,
-        defaultValueIds: defaultValueIds,
         showDragHandle: true,
       ),
       fullPageBuilder: (_) => _TaskEditorFullPage(
         taskId: taskId,
         defaultProjectId: defaultProjectId,
-        defaultValueIds: defaultValueIds,
       ),
     );
   }
@@ -55,12 +51,10 @@ class _TaskEditorFullPage extends StatelessWidget {
   const _TaskEditorFullPage({
     required this.taskId,
     required this.defaultProjectId,
-    required this.defaultValueIds,
   });
 
   final String? taskId;
   final String? defaultProjectId;
-  final List<String>? defaultValueIds;
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +82,6 @@ class _TaskEditorFullPage extends StatelessWidget {
           ),
           child: TaskDetailSheet(
             defaultProjectId: defaultProjectId,
-            defaultValueIds: defaultValueIds,
           ),
         ),
       ),

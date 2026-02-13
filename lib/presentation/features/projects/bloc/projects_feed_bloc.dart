@@ -53,11 +53,13 @@ final class ProjectsFeedLoaded extends ProjectsFeedState {
     required this.rows,
     required this.inboxTaskCount,
     required this.values,
+    required this.ratings,
   });
 
   final List<ListRowUiModel> rows;
   final int inboxTaskCount;
   final List<Value> values;
+  final List<ValueWeeklyRating> ratings;
 }
 
 final class ProjectsFeedError extends ProjectsFeedState {
@@ -91,6 +93,7 @@ class ProjectsFeedBloc extends Bloc<ProjectsFeedEvent, ProjectsFeedState> {
   List<Project> _latestProjects = const <Project>[];
   int? _inboxTaskCount;
   List<Value> _latestValues = const <Value>[];
+  List<ValueWeeklyRating> _latestRatings = const <ValueWeeklyRating>[];
   String _searchQuery = '';
   ProjectsSortOrder _sortOrder = ProjectsSortOrder.recentlyUpdated;
 
@@ -140,6 +143,7 @@ class ProjectsFeedBloc extends Bloc<ProjectsFeedEvent, ProjectsFeedState> {
         _latestProjects = snapshot.projects;
         _inboxTaskCount = snapshot.inboxTaskCount;
         _latestValues = snapshot.values;
+        _latestRatings = snapshot.ratings;
         _emitRows(emit);
       },
       onError: (error, stackTrace) {
@@ -158,6 +162,7 @@ class ProjectsFeedBloc extends Bloc<ProjectsFeedEvent, ProjectsFeedState> {
           rows: rows,
           inboxTaskCount: _inboxTaskCount ?? 0,
           values: _latestValues,
+          ratings: _latestRatings,
         ),
       );
     } catch (e) {

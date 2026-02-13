@@ -172,9 +172,13 @@ GoRouter createRouter({
           final candidate = segments.isNotEmpty
               ? Routing.parseScreenKey(segments.first)
               : null;
+          final normalizedCandidate = candidate == 'inbox'
+              ? 'projects'
+              : candidate;
           final activeScreenId =
-              (candidate != null && Routing.isSystemScreenKey(candidate))
-              ? candidate
+              (normalizedCandidate != null &&
+                  Routing.isSystemScreenKey(normalizedCandidate))
+              ? normalizedCandidate
               : null;
 
           // Scoped Projects routes should still highlight the Projects destination.
@@ -347,10 +351,6 @@ GoRouter createRouter({
             builder: (_, state) => TaskEditorRoutePage(
               taskId: null,
               defaultProjectId: state.uri.queryParameters['projectId'],
-              defaultValueIds: switch (state.uri.queryParameters['valueId']) {
-                final v? when v.trim().isNotEmpty => [v],
-                _ => null,
-              },
             ),
           ),
           GoRoute(
@@ -405,7 +405,20 @@ GoRouter createRouter({
           // Routine (editor routes)
           GoRoute(
             path: '/routine/new',
-            builder: (_, __) => const RoutineEditorRoutePage(routineId: null),
+            builder: (_, state) {
+              final projectId = state.uri.queryParameters['projectId'];
+              final openPicker =
+                  (state.uri.queryParameters['openProjectPicker'] ?? '')
+                      .toLowerCase() ==
+                  'true';
+              final shouldOpenPicker =
+                  openPicker || projectId == null || projectId.trim().isEmpty;
+              return RoutineEditorRoutePage(
+                routineId: null,
+                defaultProjectId: projectId,
+                openToProjectPicker: shouldOpenPicker,
+              );
+            },
           ),
           GoRoute(
             path: '/routine/:id/edit',

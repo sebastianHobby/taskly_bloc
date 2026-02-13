@@ -170,8 +170,8 @@ class ProjectRepository implements ProjectRepositoryContract {
     });
 
     return Rx.combineLatest2(totalStream, completedStream, (
-      Map<String, int> totalById,
-      Map<String, int> completedById,
+      totalById,
+      completedById,
     ) {
       final result = <String, _ProjectTaskCounts>{};
       for (final id in ids) {

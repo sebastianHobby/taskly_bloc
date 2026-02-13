@@ -330,7 +330,7 @@ class JournalManageLibraryBloc
               status: prevStatus,
             );
           },
-          onError: (Object e, StackTrace st) {
+          onError: (e, st) {
             final context = _newContext(
               intent: 'stream_error',
               operation: 'journal.watchTrackerGroups+definitions',

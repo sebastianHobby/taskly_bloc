@@ -189,9 +189,16 @@ sealed class TasklyRowSpec {
     required String key,
     required String title,
     IconData? leadingIcon,
+    Color? leadingIconColor,
+    String? subtitle,
     String? trailingLabel,
     IconData? trailingIcon,
+    IconData? trailingActionIcon,
+    String? trailingActionTooltip,
     VoidCallback? onTap,
+    VoidCallback? onLongPress,
+    VoidCallback? onTrailingAction,
+    double? dividerOpacity,
     Key? anchorKey,
     int depth,
   }) = TasklyHeaderRowSpec;
@@ -258,9 +265,16 @@ final class TasklyHeaderRowSpec extends TasklyRowSpec {
     required this.key,
     required this.title,
     this.leadingIcon,
+    this.leadingIconColor,
+    this.subtitle,
     this.trailingLabel,
     this.trailingIcon,
+    this.trailingActionIcon,
+    this.trailingActionTooltip,
     this.onTap,
+    this.onLongPress,
+    this.onTrailingAction,
+    this.dividerOpacity,
     this.anchorKey,
     this.depth = 0,
   });
@@ -268,9 +282,16 @@ final class TasklyHeaderRowSpec extends TasklyRowSpec {
   final String key;
   final String title;
   final IconData? leadingIcon;
+  final Color? leadingIconColor;
+  final String? subtitle;
   final String? trailingLabel;
   final IconData? trailingIcon;
+  final IconData? trailingActionIcon;
+  final String? trailingActionTooltip;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+  final VoidCallback? onTrailingAction;
+  final double? dividerOpacity;
   final Key? anchorKey;
   final int depth;
 }
@@ -437,12 +458,9 @@ sealed class TasklyRoutineRowStyle {
 
   const factory TasklyRoutineRowStyle.standard() =
       TasklyRoutineRowStyleStandard;
-  const factory TasklyRoutineRowStyle.compact() = TasklyRoutineRowStyleCompact;
 
   const factory TasklyRoutineRowStyle.bulkSelection() =
       TasklyRoutineRowStyleBulkSelection;
-  const factory TasklyRoutineRowStyle.bulkSelectionCompact() =
-      TasklyRoutineRowStyleBulkSelectionCompact;
 
   const factory TasklyRoutineRowStyle.planPick() =
       TasklyRoutineRowStylePlanPick;
@@ -452,17 +470,8 @@ final class TasklyRoutineRowStyleStandard extends TasklyRoutineRowStyle {
   const TasklyRoutineRowStyleStandard();
 }
 
-final class TasklyRoutineRowStyleCompact extends TasklyRoutineRowStyle {
-  const TasklyRoutineRowStyleCompact();
-}
-
 final class TasklyRoutineRowStyleBulkSelection extends TasklyRoutineRowStyle {
   const TasklyRoutineRowStyleBulkSelection();
-}
-
-final class TasklyRoutineRowStyleBulkSelectionCompact
-    extends TasklyRoutineRowStyle {
-  const TasklyRoutineRowStyleBulkSelectionCompact();
 }
 
 final class TasklyRoutineRowStylePlanPick extends TasklyRoutineRowStyle {
@@ -676,6 +685,7 @@ final class TasklyProjectRowData {
     this.completedTaskCount,
     this.dueSoonCount,
     this.leadingChip,
+    this.accentColor,
     this.subtitle,
     this.deemphasized = false,
   });
@@ -690,6 +700,7 @@ final class TasklyProjectRowData {
   final int? completedTaskCount;
   final int? dueSoonCount;
   final ValueChipData? leadingChip;
+  final Color? accentColor;
   final String? subtitle;
   final bool deemphasized;
 }
@@ -699,27 +710,23 @@ final class TasklyRoutineRowData {
   const TasklyRoutineRowData({
     required this.id,
     required this.title,
-    required this.targetLabel,
-    required this.remainingLabel,
-    required this.windowLabel,
-    this.progress,
+    this.actionLineText,
+    this.dotRow,
     this.scheduleRow,
-    this.valueChip,
+    this.leadingIcon,
     this.selected = false,
     this.completed = false,
-    this.highlightCompleted = true,
+    this.highlightCompleted = false,
     this.badges = const <TasklyBadgeData>[],
     this.labels,
   });
 
   final String id;
   final String title;
-  final String targetLabel;
-  final String remainingLabel;
-  final String windowLabel;
-  final TasklyRoutineProgressData? progress;
+  final String? actionLineText;
+  final TasklyRoutineDotRowData? dotRow;
   final TasklyRoutineScheduleRowData? scheduleRow;
-  final ValueChipData? valueChip;
+  final ValueChipData? leadingIcon;
   final bool selected;
   final bool completed;
   final bool highlightCompleted;
@@ -736,23 +743,16 @@ enum TasklyRoutineScheduleDayState {
 }
 
 @immutable
-final class TasklyRoutineProgressData {
-  const TasklyRoutineProgressData({
+final class TasklyRoutineDotRowData {
+  const TasklyRoutineDotRowData({
     required this.completedCount,
     required this.targetCount,
-    required this.windowLabel,
-    this.caption,
+    required this.label,
   });
 
   final int completedCount;
   final int targetCount;
-  final String windowLabel;
-  final String? caption;
-
-  double get progressRatio {
-    if (targetCount <= 0) return 0;
-    return completedCount.clamp(0, targetCount) / targetCount;
-  }
+  final String label;
 }
 
 @immutable

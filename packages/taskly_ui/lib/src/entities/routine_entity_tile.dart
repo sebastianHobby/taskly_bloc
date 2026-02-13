@@ -4,7 +4,6 @@ import 'package:taskly_ui/src/feed/taskly_feed_spec.dart';
 import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 import 'package:taskly_ui/src/models/value_chip_data.dart';
 import 'package:taskly_ui/src/primitives/taskly_badge.dart';
-import 'package:taskly_ui/src/primitives/value_tag.dart';
 
 class RoutineEntityTile extends StatelessWidget {
   const RoutineEntityTile({
@@ -38,14 +37,7 @@ class RoutineEntityTile extends StatelessWidget {
         ? selectionAddedLabelRaw
         : 'Added';
     final isPlanPickStyle = style is TasklyRoutineRowStylePlanPick;
-    final isCompactStyle = style is TasklyRoutineRowStyleCompact;
-    final isBulkSelectionStyle =
-        style is TasklyRoutineRowStyleBulkSelection ||
-        style is TasklyRoutineRowStyleBulkSelectionCompact;
-    final isBulkSelectionCompact =
-        style is TasklyRoutineRowStyleBulkSelectionCompact;
-    final useCompactLayout =
-        isPlanPickStyle || isCompactStyle || isBulkSelectionCompact;
+    final isBulkSelectionStyle = style is TasklyRoutineRowStyleBulkSelection;
     final showSelectionRail = isBulkSelectionStyle;
     final showSelectionToggle =
         !isPlanPickStyle &&
@@ -60,27 +52,12 @@ class RoutineEntityTile extends StatelessWidget {
     final showPicker = isPlanPickStyle && actions.onToggleSelected != null;
     final badges = model.badges;
 
-    final showProgress = model.progress != null;
     final showScheduleRow = model.scheduleRow != null;
-    final isScheduledRow = showScheduleRow;
+    final hasDotRow = model.dotRow != null;
+    final actionLineText = model.actionLineText?.trim() ?? '';
 
-    final valueChip = model.valueChip;
-    final metaLabel =
-        [
-              if (!showProgress) model.remainingLabel,
-              model.windowLabel,
-              model.targetLabel,
-            ]
-            .map((text) => text.trim())
-            .where((text) => text.isNotEmpty)
-            .join(' \u00b7 ');
-    final showMeta = !isScheduledRow && metaLabel.isNotEmpty;
-
-    final progress = isScheduledRow ? null : model.progress;
-    final compactMetaLabel = metaLabel;
-
-    final hasBadges = !isScheduledRow && badges.isNotEmpty;
-    final ValueChipData? leadingValueChip = isScheduledRow ? valueChip : null;
+    final hasBadges = badges.isNotEmpty;
+    final ValueChipData? leadingValueChip = model.leadingIcon;
 
     final isSelected =
         model.selected || (model.completed && model.highlightCompleted);
@@ -100,207 +77,13 @@ class RoutineEntityTile extends StatelessWidget {
         ? actions.onTap ?? actions.onToggleSelected
         : actions.onTap;
 
-    final tile = useCompactLayout
-        ? _CompactRoutineTile(
-            model: model,
-            actions: actions,
-            titleStyle: titleStyle,
-            tileSurface: tileSurface,
-            showScheduleRow: showScheduleRow,
-            metaLabel: compactMetaLabel,
-            progress: progress,
-            showPrimary: showPrimary,
-            primaryLabelText: primaryLabelText,
-            showPicker: showPicker,
-            showSelection: showSelectionToggle,
-            showSelectionRail: showSelectionRail,
-            selectionCompact: isBulkSelectionCompact,
-            selectionEnabled: actions.onToggleSelected != null,
-            selectionAddLabel: selectionAddLabel,
-            selectionAddedLabel: selectionAddedLabel,
-            leadingValueChip: leadingValueChip,
-          )
-        : DecoratedBox(
-            decoration: BoxDecoration(
-              color: tileSurface,
-              borderRadius: BorderRadius.circular(tokens.taskRadius),
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.7),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: scheme.shadow.withValues(alpha: 0.05),
-                  blurRadius: tokens.cardShadowBlur,
-                  offset: tokens.cardShadowOffset,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(tokens.taskRadius),
-              child: Material(
-                type: MaterialType.transparency,
-                child: InkWell(
-                  onTap: onTap,
-                  onLongPress: actions.onLongPress,
-                  child: Padding(
-                    padding: tokens.taskPadding,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (showSelectionRail) ...[
-                          _SelectionRailButton(
-                            selected: model.selected,
-                            compact: isBulkSelectionCompact,
-                            onPressed: actions.onToggleSelected,
-                          ),
-                          SizedBox(width: tokens.spaceSm),
-                        ],
-                        if (leadingValueChip != null) ...[
-                          Icon(
-                            leadingValueChip.icon,
-                            size: tokens.spaceLg2,
-                            color: leadingValueChip.color,
-                          ),
-                          SizedBox(width: tokens.spaceSm),
-                        ],
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                model.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: titleStyle,
-                              ),
-                              if (!isScheduledRow &&
-                                  (valueChip != null || showMeta)) ...[
-                                SizedBox(height: tokens.spaceXs2),
-                                _RoutineMetaRow(
-                                  valueChip: valueChip,
-                                  metaLabel: metaLabel,
-                                  showMeta: showMeta,
-                                  progress: progress,
-                                ),
-                              ],
-                              if (showScheduleRow &&
-                                  model.scheduleRow != null) ...[
-                                SizedBox(height: tokens.spaceSm2),
-                                _RoutineScheduleRow(data: model.scheduleRow!),
-                              ],
-                              if (hasBadges) ...[
-                                SizedBox(height: tokens.spaceXs2),
-                                Wrap(
-                                  spacing: tokens.spaceXs2,
-                                  runSpacing: tokens.spaceXs2,
-                                  children: [
-                                    for (final badge in badges)
-                                      TasklyBadge(
-                                        label: badge.label,
-                                        icon: badge.icon,
-                                        color: badge.color,
-                                        style: _badgeStyle(badge.tone),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        if (showPrimary) ...[
-                          SizedBox(width: tokens.spaceSm),
-                          _PrimaryActionButton(
-                            label: primaryLabelText,
-                            completed: model.completed,
-                            onPressed: actions.onPrimaryAction,
-                          ),
-                        ],
-                        if (showPicker) ...[
-                          SizedBox(width: tokens.spaceSm),
-                          _PickerActionButton(
-                            selected: model.selected,
-                            onPressed: actions.onToggleSelected,
-                            tooltip: model.selected
-                                ? selectionAddedLabel
-                                : selectionAddLabel,
-                          ),
-                        ] else if (showSelectionToggle) ...[
-                          SizedBox(width: tokens.spaceSm),
-                          _SelectionToggleButton(
-                            selected: model.selected,
-                            onPressed: actions.onToggleSelected,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-
-    return tile;
-  }
-}
-
-class _CompactRoutineTile extends StatelessWidget {
-  const _CompactRoutineTile({
-    required this.model,
-    required this.actions,
-    required this.titleStyle,
-    required this.tileSurface,
-    required this.showScheduleRow,
-    required this.metaLabel,
-    required this.progress,
-    required this.showPrimary,
-    required this.primaryLabelText,
-    required this.showPicker,
-    required this.showSelection,
-    required this.showSelectionRail,
-    required this.selectionCompact,
-    required this.selectionEnabled,
-    required this.selectionAddLabel,
-    required this.selectionAddedLabel,
-    required this.leadingValueChip,
-  });
-
-  final TasklyRoutineRowData model;
-  final TasklyRoutineRowActions actions;
-  final TextStyle? titleStyle;
-  final Color tileSurface;
-  final bool showScheduleRow;
-  final String metaLabel;
-  final TasklyRoutineProgressData? progress;
-  final bool showPrimary;
-  final String primaryLabelText;
-  final bool showPicker;
-  final bool showSelection;
-  final bool showSelectionRail;
-  final bool selectionCompact;
-  final bool selectionEnabled;
-  final String selectionAddLabel;
-  final String selectionAddedLabel;
-  final ValueChipData? leadingValueChip;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final tokens = TasklyTokens.of(context);
-    final valueChip = model.valueChip;
-    final leadingValueChip = this.leadingValueChip;
-    final trimmedMetaLabel = metaLabel.trim();
-    final hasMetaLabel = trimmedMetaLabel.isNotEmpty;
-    final hasProgress = progress != null;
-    final isScheduledRow = showScheduleRow && model.scheduleRow != null;
-
-    final VoidCallback? onTap = actions.onTap ?? actions.onToggleSelected;
-
     final tile = DecoratedBox(
       decoration: BoxDecoration(
         color: tileSurface,
         borderRadius: BorderRadius.circular(tokens.taskRadius),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.7),
+        ),
         boxShadow: [
           BoxShadow(
             color: scheme.shadow.withValues(alpha: 0.05),
@@ -319,71 +102,64 @@ class _CompactRoutineTile extends StatelessWidget {
             child: Padding(
               padding: tokens.taskPadding,
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (showSelectionRail) ...[
                     _SelectionRailButton(
                       selected: model.selected,
-                      compact: selectionCompact,
-                      onPressed: selectionEnabled
-                          ? actions.onToggleSelected
-                          : null,
+                      onPressed: actions.onToggleSelected,
                     ),
                     SizedBox(width: tokens.spaceSm),
                   ],
-                  if (leadingValueChip != null)
-                    Icon(
-                      leadingValueChip.icon,
-                      size: tokens.spaceLg2,
-                      color: leadingValueChip.color,
-                    )
-                  else
-                    Icon(
-                      Icons.repeat_outlined,
-                      size: tokens.spaceLg2,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  SizedBox(width: tokens.spaceSm),
+                  if (leadingValueChip != null) ...[
+                    _LeadingIcon(data: leadingValueChip),
+                    SizedBox(width: tokens.spaceSm),
+                  ],
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                model.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: titleStyle,
-                              ),
-                            ),
-                            if (!isScheduledRow && valueChip != null) ...[
-                              SizedBox(width: tokens.spaceXs2),
-                              _ValueIconOnly(data: valueChip),
-                            ],
-                            if (!isScheduledRow && hasProgress) ...[
-                              SizedBox(width: tokens.spaceXs2),
-                              _ProgressChip(data: progress!),
-                            ],
-                            if (!isScheduledRow && hasMetaLabel) ...[
-                              SizedBox(width: tokens.spaceSm2),
-                              Text(
-                                trimmedMetaLabel,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: scheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ],
+                        Text(
+                          model.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: titleStyle,
                         ),
                         if (showScheduleRow && model.scheduleRow != null) ...[
+                          SizedBox(height: tokens.spaceSm2),
+                          _RoutineScheduleRow(
+                            data: model.scheduleRow!,
+                          ),
+                        ] else if (hasDotRow && model.dotRow != null) ...[
+                          SizedBox(height: tokens.spaceSm2),
+                          _RoutineDotRow(data: model.dotRow!),
+                        ] else if (actionLineText.isNotEmpty) ...[
+                          SizedBox(height: tokens.spaceSm2),
+                          Text(
+                            actionLineText,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                        if (hasBadges) ...[
                           SizedBox(height: tokens.spaceXs2),
-                          _RoutineScheduleRow(data: model.scheduleRow!),
+                          Wrap(
+                            spacing: tokens.spaceXs2,
+                            runSpacing: tokens.spaceXs2,
+                            children: [
+                              for (final badge in badges)
+                                TasklyBadge(
+                                  label: badge.label,
+                                  icon: badge.icon,
+                                  color: badge.color,
+                                  style: _badgeStyle(badge.tone),
+                                ),
+                            ],
+                          ),
                         ],
                       ],
                     ),
@@ -405,7 +181,7 @@ class _CompactRoutineTile extends StatelessWidget {
                           ? selectionAddedLabel
                           : selectionAddLabel,
                     ),
-                  ] else if (showSelection) ...[
+                  ] else if (showSelectionToggle) ...[
                     SizedBox(width: tokens.spaceSm),
                     _SelectionToggleButton(
                       selected: model.selected,
@@ -428,35 +204,21 @@ class _CompactRoutineTile extends StatelessWidget {
   }
 }
 
-class _ValueIconOnly extends StatelessWidget {
-  const _ValueIconOnly({required this.data});
-
-  final ValueChipData data;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    return Icon(data.icon, size: tokens.spaceMd2, color: data.color);
-  }
-}
-
 class _SelectionRailButton extends StatelessWidget {
   const _SelectionRailButton({
     required this.selected,
-    required this.compact,
     required this.onPressed,
   });
 
   final bool selected;
-  final bool compact;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final tokens = TasklyTokens.of(context);
-    final iconSize = compact ? tokens.spaceMd2 : tokens.spaceLg2;
-    final padding = compact ? tokens.spaceXs2 : tokens.spaceSm2;
+    final iconSize = tokens.spaceLg2;
+    final padding = tokens.spaceSm2;
 
     return IconButton(
       tooltip: selected ? 'Deselect' : 'Select',
@@ -522,14 +284,14 @@ class _PrimaryActionButton extends StatelessWidget {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
     final isDone = completed;
-    final bg = isDone ? scheme.primaryContainer : Colors.transparent;
-    final fg = isDone ? scheme.primary : scheme.onSurfaceVariant;
+    final bg = isDone ? scheme.surfaceContainerHighest : Colors.transparent;
+    final fg = isDone ? scheme.onSurfaceVariant : scheme.onSurfaceVariant;
     final borderColor = isDone
-        ? scheme.primaryContainer
+        ? scheme.outlineVariant.withValues(alpha: 0.6)
         : scheme.outlineVariant.withValues(alpha: 0.8);
 
     return TextButton(
-      onPressed: onPressed,
+      onPressed: isDone ? null : onPressed,
       style: TextButton.styleFrom(
         backgroundColor: bg,
         foregroundColor: fg,
@@ -594,148 +356,31 @@ TasklyBadgeStyle _badgeStyle(TasklyBadgeTone tone) {
   };
 }
 
-class _ValueInlineLabel extends StatelessWidget {
-  const _ValueInlineLabel({
+class _LeadingIcon extends StatelessWidget {
+  const _LeadingIcon({
     required this.data,
-    required this.textColor,
   });
 
   final ValueChipData data;
-  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
-    const maxLabelChars = 20;
-    final label = ValueTagLayout.formatLabel(
-      data.label,
-      maxChars: maxLabelChars,
-    );
-    if (label == null || label.isEmpty) return const SizedBox.shrink();
+    final size = tokens.minTapTargetSize;
+    final bg = data.color.withValues(alpha: 0.16);
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(data.icon, size: tokens.spaceMd2, color: data.color),
-        SizedBox(width: tokens.spaceXxs2),
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: (Theme.of(context).textTheme.labelSmall ?? const TextStyle())
-              .copyWith(color: textColor, fontWeight: FontWeight.w500),
-        ),
-      ],
-    );
-  }
-}
-
-class _ValueMetaDot extends StatelessWidget {
-  const _ValueMetaDot({required this.tokens});
-
-  final TasklyTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Container(
-      width: tokens.spaceXxs2,
-      height: tokens.spaceXxs2,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+        color: bg,
         shape: BoxShape.circle,
       ),
-    );
-  }
-}
-
-class _RoutineMetaRow extends StatelessWidget {
-  const _RoutineMetaRow({
-    required this.valueChip,
-    required this.metaLabel,
-    required this.showMeta,
-    required this.progress,
-  });
-
-  final ValueChipData? valueChip;
-  final String metaLabel;
-  final bool showMeta;
-  final TasklyRoutineProgressData? progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final children = <Widget>[];
-
-    if (valueChip != null) {
-      children.add(
-        _ValueInlineLabel(
-          data: valueChip!,
-          textColor: scheme.onSurfaceVariant,
-        ),
-      );
-    }
-    if (progress != null) {
-      if (children.isNotEmpty) {
-        children.add(_ValueMetaDot(tokens: tokens));
-      }
-      children.add(_ProgressChip(data: progress!));
-    }
-    if (showMeta) {
-      if (children.isNotEmpty) {
-        children.add(_ValueMetaDot(tokens: tokens));
-      }
-      children.add(
-        Text(
-          metaLabel,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: scheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      );
-    }
-
-    return Wrap(
-      spacing: tokens.spaceXs2,
-      runSpacing: tokens.spaceXs2,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: children,
-    );
-  }
-}
-
-class _ProgressChip extends StatelessWidget {
-  const _ProgressChip({required this.data});
-
-  final TasklyRoutineProgressData data;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final label = '${data.completedCount}/${data.targetCount}';
-    final background = scheme.primaryContainer.withValues(alpha: 0.7);
-    final foreground = scheme.primary;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spaceXs2,
-        vertical: tokens.spaceXxs2,
-      ),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(tokens.radiusPill),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: foreground,
-          fontWeight: FontWeight.w700,
-        ),
+      alignment: Alignment.center,
+      child: Icon(
+        data.icon,
+        size: tokens.spaceXl,
+        color: data.color,
       ),
     );
   }
@@ -776,6 +421,59 @@ class _RoutineScheduleRow extends StatelessWidget {
   }
 }
 
+class _RoutineDotRow extends StatelessWidget {
+  const _RoutineDotRow({required this.data});
+
+  final TasklyRoutineDotRowData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final dots = <Widget>[];
+    final count = data.targetCount.clamp(0, 12);
+    final completed = data.completedCount.clamp(0, count);
+
+    for (var i = 0; i < count; i++) {
+      final isFilled = i < completed;
+      dots.add(
+        Container(
+          width: tokens.spaceXs2,
+          height: tokens.spaceXs2,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isFilled
+                ? scheme.primary
+                : scheme.outlineVariant.withValues(alpha: 0.7),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        Wrap(
+          spacing: tokens.spaceXxs2,
+          runSpacing: tokens.spaceXxs2,
+          children: dots,
+        ),
+        SizedBox(width: tokens.spaceSm2),
+        Expanded(
+          child: Text(
+            data.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ScheduleDayPill extends StatelessWidget {
   const _ScheduleDayPill({
     required this.day,
@@ -807,13 +505,10 @@ class _ScheduleDayPill extends StatelessWidget {
         state == TasklyRoutineScheduleDayState.loggedScheduled ||
         state == TasklyRoutineScheduleDayState.missedScheduled;
 
-    final showIcon =
-        state == TasklyRoutineScheduleDayState.loggedScheduled ||
-        state == TasklyRoutineScheduleDayState.loggedUnscheduled ||
-        state == TasklyRoutineScheduleDayState.missedScheduled;
+    final showIcon = state == TasklyRoutineScheduleDayState.missedScheduled;
 
     final baseBackground = isToday
-        ? accent.withValues(alpha: 0.12)
+        ? accent.withValues(alpha: 0.08)
         : Colors.transparent;
 
     var background = baseBackground;
@@ -830,15 +525,14 @@ class _ScheduleDayPill extends StatelessWidget {
         borderColor = accent.withValues(alpha: 0.7);
         background = accent.withValues(alpha: 0.16);
         foreground = accent;
-        icon = Icons.check_rounded;
       case TasklyRoutineScheduleDayState.loggedUnscheduled:
-        borderColor = accent.withValues(alpha: 0.8);
+        borderColor = accent.withValues(alpha: 0.6);
+        background = accent.withValues(alpha: 0.1);
         foreground = accent;
-        icon = Icons.check_rounded;
       case TasklyRoutineScheduleDayState.missedScheduled:
-        borderColor = error.withValues(alpha: 0.7);
-        background = errorContainer.withValues(alpha: 0.35);
-        foreground = error;
+        borderColor = error.withValues(alpha: 0.4);
+        background = errorContainer.withValues(alpha: 0.2);
+        foreground = error.withValues(alpha: 0.8);
         icon = Icons.remove_rounded;
       case TasklyRoutineScheduleDayState.scheduled:
       case TasklyRoutineScheduleDayState.none:

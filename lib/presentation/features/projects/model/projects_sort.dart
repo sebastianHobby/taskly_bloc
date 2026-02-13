@@ -8,6 +8,12 @@ enum ProjectsSortOrder {
   valueName,
 }
 
+enum ProjectsValueSortOrder {
+  lowestAverageRating,
+  ratingTrendingDown,
+  alphabetical,
+}
+
 extension ProjectsSortOrderLabels on ProjectsSortOrder {
   String label(AppLocalizations l10n) {
     return switch (this) {
@@ -16,6 +22,19 @@ extension ProjectsSortOrderLabels on ProjectsSortOrder {
       ProjectsSortOrder.priority => l10n.sortPriority,
       ProjectsSortOrder.dueDate => l10n.sortDueDate,
       ProjectsSortOrder.valueName => l10n.sortValueName,
+    };
+  }
+}
+
+extension ProjectsValueSortOrderLabels on ProjectsValueSortOrder {
+  String label(AppLocalizations l10n) {
+    return switch (this) {
+      ProjectsValueSortOrder.lowestAverageRating =>
+        l10n.projectsSortValuesLowestAverageRating,
+      ProjectsValueSortOrder.ratingTrendingDown =>
+        l10n.projectsSortValuesTrendingDown,
+      ProjectsValueSortOrder.alphabetical =>
+        l10n.projectsSortValuesAlphabetical,
     };
   }
 }

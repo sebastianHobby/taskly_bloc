@@ -77,14 +77,6 @@ class _MyDayPageState extends State<MyDayPage> {
     );
   }
 
-  Future<void> _openNewProjectEditor(BuildContext context) {
-    return context.read<EditorLauncher>().openProjectEditor(
-      context,
-      projectId: null,
-      showDragHandle: true,
-    );
-  }
-
   void _enterPlanMode(BuildContext context) {
     context.read<PlanMyDayBloc>().add(const PlanMyDayStarted());
 
@@ -287,14 +279,12 @@ class _MyDayPageState extends State<MyDayPage> {
                         ),
                   floatingActionButton: selectionState.isSelectionMode
                       ? null
-                      : EntityAddSpeedDial(
+                      : EntityAddFab(
                           heroTag: 'add_speed_dial_my_day',
-                          onCreateTask: () => _openNewTaskEditor(
+                          tooltip: context.l10n.addTaskAction,
+                          onPressed: () => _openNewTaskEditor(
                             context,
                             defaultDay: today,
-                          ),
-                          onCreateProject: () => _openNewProjectEditor(
-                            context,
                           ),
                         ),
                   body: gateBody,
@@ -325,8 +315,8 @@ class _MyDayLoadedBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final density = context.select(
-      (DisplayDensityBloc bloc) => bloc.state.density,
+    final density = context.select<DisplayDensityBloc, DisplayDensity>(
+      (bloc) => bloc.state.density,
     );
     final settings = context.watch<GlobalSettingsBloc>().state.settings;
     final nowLocal = context.read<NowService>().nowLocal();
@@ -636,14 +626,12 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
       context,
       activeRoutineEntries,
       dayKeyUtc: widget.dayKeyUtc,
-      density: widget.density,
     );
     final completedRoutineRows = widget.showCompleted
         ? _buildRoutineRows(
             context,
             completedRoutineEntries,
             dayKeyUtc: widget.dayKeyUtc,
-            density: widget.density,
           )
         : const <TasklyRowSpec>[];
     final routineRows = [...activeRoutineRows, ...completedRoutineRows];
@@ -736,7 +724,6 @@ List<TasklyRowSpec> _buildRoutineRows(
   BuildContext context,
   List<_MyDayListEntry> entries, {
   required DateTime dayKeyUtc,
-  required DisplayDensity density,
 }) {
   final routineEntries = entries
       .where((entry) => entry.item.type == MyDayPlannedItemType.routine)
@@ -744,8 +731,12 @@ List<TasklyRowSpec> _buildRoutineRows(
   routineEntries.sort((a, b) {
     final routineA = a.item.routine;
     final routineB = b.item.routine;
-    final scheduledA = routineA?.routineType == RoutineType.weeklyFixed;
-    final scheduledB = routineB?.routineType == RoutineType.weeklyFixed;
+    final scheduledA =
+        routineA?.periodType == RoutinePeriodType.week &&
+        routineA?.scheduleMode == RoutineScheduleMode.scheduled;
+    final scheduledB =
+        routineB?.periodType == RoutinePeriodType.week &&
+        routineB?.scheduleMode == RoutineScheduleMode.scheduled;
     if (scheduledA != scheduledB) return scheduledA ? -1 : 1;
     final bySortIndex = a.item.sortIndex.compareTo(b.item.sortIndex);
     if (bySortIndex != 0) return bySortIndex;
@@ -768,9 +759,7 @@ List<TasklyRowSpec> _buildRoutineRows(
         completed: item.completed,
         dayKeyUtc: dayKeyUtc,
         completionsInPeriod: item.completionsInPeriod,
-        style: density == DisplayDensity.compact
-            ? const TasklyRoutineRowStyle.compact()
-            : const TasklyRoutineRowStyle.standard(),
+        style: const TasklyRoutineRowStyle.standard(),
         depthOffset: 0,
       ),
     );
@@ -972,8 +961,9 @@ TasklyRowSpec _buildRoutineRow(
     snapshot: snapshot,
     completed: completed,
     highlightCompleted: false,
-    showProgress: true,
-    showScheduleRow: routine.routineType == RoutineType.weeklyFixed,
+    showScheduleRow:
+        routine.periodType == RoutinePeriodType.week &&
+        routine.scheduleMode == RoutineScheduleMode.scheduled,
     dayKeyUtc: dayKeyUtc,
     completionsInPeriod: completionsInPeriod,
     labels: buildRoutineExecutionLabels(

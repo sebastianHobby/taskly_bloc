@@ -15,6 +15,7 @@ import 'package:taskly_bloc/presentation/shared/session/session_shared_data_serv
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
+import '../../../../mocks/feature_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 
 class FakeAppLifecycleEvents implements AppLifecycleEvents {
@@ -35,6 +36,7 @@ void main() {
   late MockProjectRepositoryContract projectRepository;
   late MockTaskRepositoryContract taskRepository;
   late MockValueRepositoryContract valueRepository;
+  late MockValueRatingsRepositoryContract valueRatingsRepository;
   late FakeAppLifecycleEvents lifecycleEvents;
   late SessionStreamCacheManager cacheManager;
   late SessionSharedDataService sharedDataService;
@@ -44,11 +46,13 @@ void main() {
   late PublishSubject<List<Project>> projects;
   late PublishSubject<int> inboxCounts;
   late PublishSubject<List<Value>> values;
+  late PublishSubject<List<ValueWeeklyRating>> ratings;
 
   setUp(() {
     projectRepository = MockProjectRepositoryContract();
     taskRepository = MockTaskRepositoryContract();
     valueRepository = MockValueRepositoryContract();
+    valueRatingsRepository = MockValueRatingsRepositoryContract();
     lifecycleEvents = FakeAppLifecycleEvents();
     cacheManager = SessionStreamCacheManager(
       appLifecycleService: lifecycleEvents,
@@ -65,6 +69,7 @@ void main() {
     );
     queryService = ProjectsSessionQueryService(
       projectRepository: projectRepository,
+      valueRatingsRepository: valueRatingsRepository,
       cacheManager: cacheManager,
       sharedDataService: sharedDataService,
       demoModeService: demoModeService,
@@ -74,6 +79,7 @@ void main() {
     projects = PublishSubject<List<Project>>();
     inboxCounts = PublishSubject<int>();
     values = PublishSubject<List<Value>>();
+    ratings = PublishSubject<List<ValueWeeklyRating>>();
 
     when(() => projectRepository.watchAll()).thenAnswer((_) => projects);
     when(() => projectRepository.watchAll(any())).thenAnswer((_) => projects);
@@ -91,12 +97,16 @@ void main() {
     when(() => valueRepository.getAll()).thenAnswer(
       (_) async => const <Value>[],
     );
+    when(
+      () => valueRatingsRepository.watchAll(weeks: any(named: 'weeks')),
+    ).thenAnswer((_) => ratings);
   });
 
   tearDown(() async {
     await projects.close();
     await inboxCounts.close();
     await values.close();
+    await ratings.close();
     await cacheManager.dispose();
     await demoModeService.dispose();
     await lifecycleEvents.dispose();
@@ -109,6 +119,7 @@ void main() {
       projects.add([TestData.project(name: 'Inbox')]);
       inboxCounts.add(3);
       values.add(const <Value>[]);
+      ratings.add(const <ValueWeeklyRating>[]);
     },
     skip: 1,
     expect: () => [
@@ -134,6 +145,7 @@ void main() {
       ]);
       inboxCounts.add(0);
       values.add(const <Value>[]);
+      ratings.add(const <ValueWeeklyRating>[]);
       await Future<void>.delayed(TestConstants.defaultWait);
       bloc.add(const ProjectsFeedSearchQueryChanged(query: 'beta'));
     },
@@ -152,6 +164,7 @@ void main() {
     act: (_) {
       inboxCounts.add(0);
       values.add(const <Value>[]);
+      ratings.add(const <ValueWeeklyRating>[]);
       projects.addError(StateError('boom'));
     },
     skip: 1,
@@ -183,6 +196,7 @@ void main() {
 
       projects.add([project]);
       values.add([value]);
+      ratings.add(const <ValueWeeklyRating>[]);
     },
     skip: 1,
     expect: () => [
@@ -211,6 +225,7 @@ void main() {
 
       projects.add([project]);
       values.add([value]);
+      ratings.add(const <ValueWeeklyRating>[]);
     },
     skip: 1,
     expect: () => [
@@ -234,6 +249,7 @@ void main() {
       );
 
       values.add([value]);
+      ratings.add(const <ValueWeeklyRating>[]);
       await Future<void>.delayed(TestConstants.defaultWait);
       inboxCounts.add(1);
       projects.add([project]);

@@ -106,7 +106,7 @@ class TrackerChoiceInput extends StatelessWidget {
                       ),
                       onChanged: (_) {
                         debouncer.schedule(() {
-                          if (!isOpen) return;
+                          if (!isOpen || !context.mounted) return;
                           setState(() {});
                         });
                       },
@@ -117,6 +117,8 @@ class TrackerChoiceInput extends StatelessWidget {
                         leading: const Icon(Icons.clear),
                         title: Text(context.l10n.journalClearSelectionLabel),
                         onTap: () {
+                          isOpen = false;
+                          debouncer.cancel();
                           next = null;
                           Navigator.of(context).pop();
                         },
@@ -132,6 +134,8 @@ class TrackerChoiceInput extends StatelessWidget {
                             title: Text(choice.label),
                             trailing: selected ? const Icon(Icons.check) : null,
                             onTap: () {
+                              isOpen = false;
+                              debouncer.cancel();
                               next = choice.choiceKey;
                               Navigator.of(context).pop();
                             },

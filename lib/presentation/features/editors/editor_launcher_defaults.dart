@@ -30,11 +30,9 @@ Widget buildDefaultTaskEditor(
     ),
     child: TaskDetailSheet(
       defaultProjectId: args.defaultProjectId,
-      defaultValueIds: args.defaultValueIds,
       defaultStartDate: args.defaultStartDate,
       defaultDeadlineDate: args.defaultDeadlineDate,
       includeInMyDayDefault: args.includeInMyDayDefault,
-      openToValues: args.openToValues,
       openToProjectPicker: args.openToProjectPicker,
     ),
   );
@@ -74,8 +72,10 @@ Widget buildDefaultRoutineEditor(
   return RoutineDetailSheetPage(
     routineId: args.routineId,
     routineRepository: args.routineRepository,
-    valueRepository: args.valueRepository,
+    projectRepository: args.projectRepository,
     routineWriteService: args.routineWriteService,
+    defaultProjectId: args.defaultProjectId,
+    openToProjectPicker: args.openToProjectPicker,
   );
 }
 

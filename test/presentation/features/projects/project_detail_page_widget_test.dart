@@ -16,6 +16,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_se
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 
@@ -24,6 +25,8 @@ class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 class MockEditorLauncher extends Mock implements EditorLauncher {}
 
 class MockTaskRepository extends Mock implements TaskRepositoryContract {}
+
+class MockRoutineRepository extends Mock implements RoutineRepositoryContract {}
 
 class MockGlobalSettingsBloc
     extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
@@ -50,6 +53,7 @@ void main() {
 
   late MockProjectRepository projectRepository;
   late MockTaskRepository taskRepository;
+  late MockRoutineRepository routineRepository;
   late FakeSettingsRepository settingsRepository;
   late OccurrenceReadService occurrenceReadService;
   late SessionDayKeyService sessionDayKeyService;
@@ -63,11 +67,15 @@ void main() {
   late BehaviorSubject<List<Task>> tasksSubject;
   late BehaviorSubject<List<CompletionHistoryData>> completionsSubject;
   late BehaviorSubject<List<RecurrenceExceptionData>> exceptionsSubject;
+  late BehaviorSubject<List<Routine>> routinesSubject;
+  late BehaviorSubject<List<RoutineCompletion>> routineCompletionsSubject;
+  late BehaviorSubject<List<RoutineSkip>> routineSkipsSubject;
   const speedDialInitDelay = Duration(milliseconds: 1);
 
   setUp(() {
     projectRepository = MockProjectRepository();
     taskRepository = MockTaskRepository();
+    routineRepository = MockRoutineRepository();
     settingsRepository = FakeSettingsRepository();
     occurrenceReadService = OccurrenceReadService(
       taskRepository: taskRepository,
@@ -96,6 +104,11 @@ void main() {
     exceptionsSubject = BehaviorSubject.seeded(
       const <RecurrenceExceptionData>[],
     );
+    routinesSubject = BehaviorSubject.seeded(const <Routine>[]);
+    routineCompletionsSubject = BehaviorSubject.seeded(
+      const <RoutineCompletion>[],
+    );
+    routineSkipsSubject = BehaviorSubject.seeded(const <RoutineSkip>[]);
 
     when(() => globalSettingsBloc.state).thenReturn(
       const GlobalSettingsState(isLoading: false),
@@ -120,6 +133,15 @@ void main() {
     when(
       () => taskRepository.watchRecurrenceExceptions(),
     ).thenAnswer((_) => exceptionsSubject.stream);
+    when(
+      () => routineRepository.watchAll(includeInactive: true),
+    ).thenAnswer((_) => routinesSubject.stream);
+    when(
+      () => routineRepository.watchCompletions(),
+    ).thenAnswer((_) => routineCompletionsSubject.stream);
+    when(
+      () => routineRepository.watchSkips(),
+    ).thenAnswer((_) => routineSkipsSubject.stream);
   });
 
   tearDown(() async {
@@ -129,6 +151,9 @@ void main() {
     await tasksSubject.close();
     await completionsSubject.close();
     await exceptionsSubject.close();
+    await routinesSubject.close();
+    await routineCompletionsSubject.close();
+    await routineSkipsSubject.close();
   });
 
   Future<void> pumpPage(
@@ -146,6 +171,9 @@ void main() {
           ),
           RepositoryProvider<SessionDayKeyService>.value(
             value: sessionDayKeyService,
+          ),
+          RepositoryProvider<RoutineRepositoryContract>.value(
+            value: routineRepository,
           ),
           RepositoryProvider<EditorLauncher>.value(value: editorLauncher),
           RepositoryProvider<NowService>.value(
@@ -224,8 +252,8 @@ void main() {
     tasksSubject.add(const <Task>[]);
     await tester.pumpForStream();
 
-    expect(find.text('Inbox is for capture'), findsOneWidget);
-    expect(find.text('Add to Inbox'), findsOneWidget);
+    expect(find.text('Capture first, organize later'), findsOneWidget);
+    expect(find.text('Quick add'), findsOneWidget);
   });
 }
 

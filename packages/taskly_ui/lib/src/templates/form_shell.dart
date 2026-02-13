@@ -50,6 +50,10 @@ class FormShell extends StatelessWidget {
     this.handleBarWidth = 40.0,
     this.borderRadius = 20.0,
     this.showHandleBar,
+    this.headerPadding,
+    this.footer,
+    this.floatingAction,
+    this.floatingActionPadding,
     super.key,
   });
 
@@ -133,6 +137,20 @@ class FormShell extends StatelessWidget {
   /// handle.
   final bool? showHandleBar;
 
+  /// Optional padding override for the header row container.
+  final EdgeInsets? headerPadding;
+
+  /// Optional footer override (replaces the default submit footer).
+  ///
+  /// When provided, [showFooterSubmit] is ignored.
+  final Widget? footer;
+
+  /// Optional floating action rendered over the form content.
+  final Widget? floatingAction;
+
+  /// Padding for the floating action (relative to bottom-right alignment).
+  final EdgeInsets? floatingActionPadding;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -208,72 +226,97 @@ class FormShell extends StatelessWidget {
             ],
           );
 
+    final resolvedFloatingPadding =
+        floatingActionPadding ??
+        EdgeInsets.only(
+          right: tokens.spaceLg3,
+          bottom: tokens.spaceLg3,
+        );
+
     return Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(borderRadius)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
         children: [
-          if (resolvedShowHandleBar)
-            Container(
-              width: handleBarWidth,
-              height: tokens.spaceXs,
-              margin: EdgeInsets.only(top: tokens.spaceMd),
-              decoration: BoxDecoration(
-                color: colorScheme.outline.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(tokens.radiusXxs),
-              ),
-            ),
-
-          // Action buttons row
-          Container(
-            padding: EdgeInsets.fromLTRB(
-              tokens.spaceSm,
-              tokens.spaceXs,
-              tokens.spaceSm,
-              0,
-            ),
-            child: headerContent,
-          ),
-
-          // Scrollable content
-          Flexible(
-            child: SingleChildScrollView(
-              controller: scrollController,
-              padding: EdgeInsets.symmetric(horizontal: tokens.spaceLg3),
-              child: child,
-            ),
-          ),
-
-          if (showFooterSubmit)
-            Container(
-              padding: EdgeInsets.fromLTRB(
-                tokens.spaceLg3,
-                tokens.spaceMd,
-                tokens.spaceLg3,
-                tokens.spaceLg3,
-              ),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: colorScheme.shadow.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, -2),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (resolvedShowHandleBar)
+                Container(
+                  width: handleBarWidth,
+                  height: tokens.spaceXs,
+                  margin: EdgeInsets.only(top: tokens.spaceMd),
+                  decoration: BoxDecoration(
+                    color: colorScheme.outline.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(tokens.radiusXxs),
                   ),
-                ],
+                ),
+
+              // Action buttons row
+              Container(
+                padding:
+                    headerPadding ??
+                    EdgeInsets.fromLTRB(
+                      tokens.spaceSm,
+                      tokens.spaceXs,
+                      tokens.spaceSm,
+                      0,
+                    ),
+                child: headerContent,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  FilledButton.icon(
-                    onPressed: submitEnabled ? onSubmit : null,
-                    icon: Icon(submitIcon),
-                    label: Text(submitTooltip),
+
+              // Scrollable content
+              Flexible(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: EdgeInsets.symmetric(horizontal: tokens.spaceLg3),
+                  child: child,
+                ),
+              ),
+
+              if (footer != null)
+                footer!
+              else if (showFooterSubmit)
+                Container(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.spaceLg3,
+                    tokens.spaceMd,
+                    tokens.spaceLg3,
+                    tokens.spaceLg3,
                   ),
-                ],
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.shadow.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: submitEnabled ? onSubmit : null,
+                        icon: Icon(submitIcon),
+                        label: Text(submitTooltip),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          if (floatingAction != null)
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.bottomRight,
+                child: Padding(
+                  padding: resolvedFloatingPadding,
+                  child: floatingAction,
+                ),
               ),
             ),
         ],

@@ -404,7 +404,7 @@ class JournalEntryEditorBloc
           dailySummaryItems: dailySummaryItems,
         );
       },
-      onError: (Object e, StackTrace st) {
+      onError: (e, st) {
         final context = _newContext(
           intent: 'trackers_stream_error',
           operation: 'journal.watchTrackerDefinitions+groups+stateDay',

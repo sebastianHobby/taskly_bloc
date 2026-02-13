@@ -20,7 +20,7 @@ class FormBuilderMoodField extends FormBuilderFieldDecoration<MoodRating> {
     super.decoration = const InputDecoration(border: InputBorder.none),
     this.compact = false,
   }) : super(
-         builder: (FormFieldState<MoodRating> field) {
+         builder: (field) {
            final state =
                field
                    as FormBuilderFieldDecorationState<

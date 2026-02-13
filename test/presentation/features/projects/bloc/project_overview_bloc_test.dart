@@ -13,6 +13,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_se
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_domain/time.dart';
@@ -26,6 +27,7 @@ void main() {
 
   late MockProjectRepositoryContract projectRepository;
   late MockTaskRepositoryContract taskRepository;
+  late MockRoutineRepositoryContract routineRepository;
   late MockSettingsRepositoryContract settingsRepository;
   late OccurrenceReadService occurrenceReadService;
   late SessionDayKeyService sessionDayKeyService;
@@ -37,6 +39,9 @@ void main() {
   late BehaviorSubject<List<Task>> tasksSubject;
   late BehaviorSubject<List<CompletionHistoryData>> completionsSubject;
   late BehaviorSubject<List<RecurrenceExceptionData>> exceptionsSubject;
+  late BehaviorSubject<List<Routine>> routinesSubject;
+  late BehaviorSubject<List<RoutineCompletion>> routineCompletionsSubject;
+  late BehaviorSubject<List<RoutineSkip>> routineSkipsSubject;
 
   ProjectOverviewBloc buildBloc(String projectId) {
     return ProjectOverviewBloc(
@@ -44,12 +49,14 @@ void main() {
       projectRepository: projectRepository,
       occurrenceReadService: occurrenceReadService,
       sessionDayKeyService: sessionDayKeyService,
+      routineRepository: routineRepository,
     );
   }
 
   setUp(() {
     projectRepository = MockProjectRepositoryContract();
     taskRepository = MockTaskRepositoryContract();
+    routineRepository = MockRoutineRepositoryContract();
     settingsRepository = MockSettingsRepositoryContract();
     occurrenceReadService = OccurrenceReadService(
       taskRepository: taskRepository,
@@ -77,6 +84,11 @@ void main() {
     exceptionsSubject = BehaviorSubject.seeded(
       const <RecurrenceExceptionData>[],
     );
+    routinesSubject = BehaviorSubject.seeded(<Routine>[]);
+    routineCompletionsSubject = BehaviorSubject.seeded(
+      const <RoutineCompletion>[],
+    );
+    routineSkipsSubject = BehaviorSubject.seeded(const <RoutineSkip>[]);
 
     when(() => taskRepository.watchAll(any())).thenAnswer(
       (_) => tasksSubject.stream,
@@ -86,6 +98,15 @@ void main() {
     );
     when(() => taskRepository.watchRecurrenceExceptions()).thenAnswer(
       (_) => exceptionsSubject.stream,
+    );
+    when(() => routineRepository.watchAll(includeInactive: true)).thenAnswer(
+      (_) => routinesSubject.stream,
+    );
+    when(() => routineRepository.watchCompletions()).thenAnswer(
+      (_) => routineCompletionsSubject.stream,
+    );
+    when(() => routineRepository.watchSkips()).thenAnswer(
+      (_) => routineSkipsSubject.stream,
     );
     when(() => temporalTriggerService.events).thenAnswer(
       (_) => temporalController.stream,
@@ -104,6 +125,9 @@ void main() {
     addTearDown(tasksSubject.close);
     addTearDown(completionsSubject.close);
     addTearDown(exceptionsSubject.close);
+    addTearDown(routinesSubject.close);
+    addTearDown(routineCompletionsSubject.close);
+    addTearDown(routineSkipsSubject.close);
   });
 
   blocTestSafe<ProjectOverviewBloc, ProjectOverviewState>(

@@ -11,7 +11,7 @@ String _captureDebugPrintOutput(void Function() action) {
   final buffer = StringBuffer();
   final previousDebugPrint = debugPrint;
 
-  debugPrint = (String? message, {int? wrapWidth}) {
+  debugPrint = (message, {wrapWidth}) {
     if (message == null) return;
     buffer.writeln(message);
     previousDebugPrint(message, wrapWidth: wrapWidth);

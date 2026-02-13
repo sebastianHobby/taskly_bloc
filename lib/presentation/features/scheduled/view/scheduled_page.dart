@@ -151,14 +151,12 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
     return DateTime(base.year, base.month, base.day);
   }
 
-  Widget _buildAddSpeedDial(DateTime today) {
-    return EntityAddSpeedDial(
+  Widget _buildAddFab(DateTime today) {
+    return EntityAddFab(
       heroTag: 'add_speed_dial_scheduled_timeline',
-      onCreateTask: () => context.read<ScheduledScreenBloc>().add(
+      tooltip: context.l10n.addTaskAction,
+      onPressed: () => context.read<ScheduledScreenBloc>().add(
         ScheduledCreateTaskForDayRequested(day: today),
-      ),
-      onCreateProject: () => context.read<ScheduledScreenBloc>().add(
-        const ScheduledCreateProjectRequested(),
       ),
     );
   }
@@ -202,8 +200,8 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
   Widget build(BuildContext context) {
     final scope = widget.scope;
     final showScopeHeader = scope is! GlobalScheduledScope;
-    final density = context.select(
-      (DisplayDensityBloc bloc) => bloc.state.density,
+    final density = context.select<DisplayDensityBloc, DisplayDensity>(
+      (bloc) => bloc.state.density,
     );
 
     return MultiBlocListener(
@@ -369,7 +367,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   ),
                 ],
               ),
-              floatingActionButton: _buildAddSpeedDial(_fallbackTodayLocal()),
+              floatingActionButton: _buildAddFab(_fallbackTodayLocal()),
               body: Column(
                 children: const [
                   _ScheduledTitleHeader(),
@@ -437,7 +435,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   ),
                 ],
               ),
-              floatingActionButton: _buildAddSpeedDial(_fallbackTodayLocal()),
+              floatingActionButton: _buildAddFab(_fallbackTodayLocal()),
               body: Column(
                 children: [
                   const _ScheduledTitleHeader(),
@@ -480,8 +478,8 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
       state.today.month,
       state.today.day,
     );
-    final density = context.select(
-      (DisplayDensityBloc bloc) => bloc.state.density,
+    final density = context.select<DisplayDensityBloc, DisplayDensity>(
+      (bloc) => bloc.state.density,
     );
 
     final overdueOffset = state.overdue.isEmpty ? 0 : 1;
@@ -665,7 +663,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                 ),
           floatingActionButton: selectionState.isSelectionMode
               ? null
-              : _buildAddSpeedDial(today),
+              : _buildAddFab(today),
           body: Column(
             children: [
               const _ScheduledTitleHeader(),

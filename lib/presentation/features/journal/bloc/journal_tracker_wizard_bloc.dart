@@ -327,7 +327,7 @@ class JournalTrackerWizardBloc
           groups: active,
         );
       },
-      onError: (Object e, StackTrace st) {
+      onError: (e, st) {
         final context = _newContext(
           intent: 'stream_error',
           operation: 'journal.watchTrackerGroups',

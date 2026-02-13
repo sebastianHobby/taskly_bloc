@@ -246,16 +246,15 @@ class _InMemoryRoutineRepo extends Fake implements RoutineRepositoryContract {
   @override
   Future<void> create({
     required String name,
-    required String valueId,
-    required RoutineType routineType,
+    required String projectId,
+    required RoutinePeriodType periodType,
+    required RoutineScheduleMode scheduleMode,
     required int targetCount,
     List<int> scheduleDays = const <int>[],
+    List<int> scheduleMonthDays = const <int>[],
+    int? scheduleTimeMinutes,
     int? minSpacingDays,
     int? restDayBuffer,
-    List<int> preferredWeeks = const <int>[],
-    int? fixedDayOfMonth,
-    int? fixedWeekday,
-    int? fixedWeekOfMonth,
     bool isActive = true,
     DateTime? pausedUntilUtc,
     OperationContext? context,
@@ -267,16 +266,15 @@ class _InMemoryRoutineRepo extends Fake implements RoutineRepositoryContract {
         createdAt: DateTime.utc(2026, 1, 1),
         updatedAt: DateTime.utc(2026, 1, 1),
         name: name,
-        valueId: valueId,
-        routineType: routineType,
+        projectId: projectId,
+        periodType: periodType,
+        scheduleMode: scheduleMode,
         targetCount: targetCount,
         scheduleDays: scheduleDays,
+        scheduleMonthDays: scheduleMonthDays,
+        scheduleTimeMinutes: scheduleTimeMinutes,
         minSpacingDays: minSpacingDays,
         restDayBuffer: restDayBuffer,
-        preferredWeeks: preferredWeeks,
-        fixedDayOfMonth: fixedDayOfMonth,
-        fixedWeekday: fixedWeekday,
-        fixedWeekOfMonth: fixedWeekOfMonth,
         isActive: isActive,
         pausedUntil: pausedUntilUtc,
       ),
@@ -287,17 +285,15 @@ class _InMemoryRoutineRepo extends Fake implements RoutineRepositoryContract {
   Future<void> update({
     required String id,
     required String name,
-    required String valueId,
-    required RoutineType routineType,
+    required String projectId,
+    required RoutinePeriodType periodType,
+    required RoutineScheduleMode scheduleMode,
     required int targetCount,
-    String? projectId,
     List<int>? scheduleDays,
+    List<int>? scheduleMonthDays,
+    int? scheduleTimeMinutes,
     int? minSpacingDays,
     int? restDayBuffer,
-    List<int>? preferredWeeks,
-    int? fixedDayOfMonth,
-    int? fixedWeekday,
-    int? fixedWeekOfMonth,
     bool? isActive,
     DateTime? pausedUntilUtc,
     OperationContext? context,
@@ -329,6 +325,8 @@ class _InMemoryRoutineRepo extends Fake implements RoutineRepositoryContract {
   Future<void> recordCompletion({
     required String routineId,
     DateTime? completedAtUtc,
+    DateTime? completedDayLocal,
+    int? completedTimeLocalMinutes,
     OperationContext? context,
   }) {
     throw UnimplementedError();
@@ -532,7 +530,7 @@ void main() {
       );
       expect(projects, hasLength(4));
       expect(tasks, hasLength(12));
-      expect(routines, hasLength(2));
+      expect(routines, hasLength(3));
       expect(wipeService.wipeCalls, 1);
       expect(ratingsRepo.getAll(), completion(isNotEmpty));
       expect(settingsRepo.settings.weeklyReviewLastCompletedAt, isNull);

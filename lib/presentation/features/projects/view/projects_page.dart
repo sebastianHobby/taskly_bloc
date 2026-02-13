@@ -10,11 +10,13 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
 import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
+import 'package:taskly_bloc/presentation/feeds/rows/row_key.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.dart';
@@ -24,6 +26,7 @@ import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -80,7 +83,11 @@ class _ProjectsViewState extends State<_ProjectsView> {
   bool _isSearching = false;
   bool _showCompleted = false;
   ProjectsSortOrder _sortOrder = ProjectsSortOrder.recentlyUpdated;
+  ProjectsValueSortOrder _valueSortOrder =
+      ProjectsValueSortOrder.lowestAverageRating;
   final Set<String> _selectedValueIds = <String>{};
+  final Set<String> _collapsedValueIds = <String>{};
+  Set<String> _lastVisibleValueIds = const <String>{};
 
   ProjectsScope? get scope => widget.scope;
 
@@ -120,6 +127,11 @@ class _ProjectsViewState extends State<_ProjectsView> {
     );
   }
 
+  void _updateValueSortOrder(ProjectsValueSortOrder order) {
+    if (_valueSortOrder == order) return;
+    setState(() => _valueSortOrder = order);
+  }
+
   void _toggleShowCompleted([bool? value]) {
     setState(() => _showCompleted = value ?? !_showCompleted);
   }
@@ -139,6 +151,26 @@ class _ProjectsViewState extends State<_ProjectsView> {
     setState(_selectedValueIds.clear);
   }
 
+  void _toggleValueCollapsed(String valueId) {
+    setState(() {
+      if (_collapsedValueIds.contains(valueId)) {
+        _collapsedValueIds.remove(valueId);
+      } else {
+        _collapsedValueIds.add(valueId);
+      }
+    });
+  }
+
+  void _collapseAllValues() {
+    if (_lastVisibleValueIds.isEmpty) return;
+    setState(() => _collapsedValueIds.addAll(_lastVisibleValueIds));
+  }
+
+  void _expandAllValues() {
+    if (_collapsedValueIds.isEmpty) return;
+    setState(_collapsedValueIds.clear);
+  }
+
   Future<void> _openNewTaskEditor(
     BuildContext context, {
     String? defaultProjectId,
@@ -148,7 +180,6 @@ class _ProjectsViewState extends State<_ProjectsView> {
       context,
       taskId: null,
       defaultProjectId: defaultProjectId,
-      defaultValueIds: defaultValueId == null ? null : [defaultValueId],
       showDragHandle: true,
     );
   }
@@ -182,7 +213,7 @@ class _ProjectsViewState extends State<_ProjectsView> {
       context: context,
       sortGroups: [
         FilterSortRadioGroup(
-          title: l10n.sortLabel,
+          title: l10n.projectsSortProjectsOrderTitle,
           options: [
             for (final order in ProjectsSortOrder.values)
               FilterSortRadioOption(
@@ -194,6 +225,21 @@ class _ProjectsViewState extends State<_ProjectsView> {
           onSelected: (value) {
             if (value is! ProjectsSortOrder) return;
             _updateSortOrder(value);
+          },
+        ),
+        FilterSortRadioGroup(
+          title: l10n.projectsSortValuesOrderTitle,
+          options: [
+            for (final order in ProjectsValueSortOrder.values)
+              FilterSortRadioOption(
+                value: order,
+                label: order.label(l10n),
+              ),
+          ],
+          selectedValue: _valueSortOrder,
+          onSelected: (value) {
+            if (value is! ProjectsValueSortOrder) return;
+            _updateValueSortOrder(value);
           },
         ),
       ],
@@ -252,7 +298,7 @@ class _ProjectsViewState extends State<_ProjectsView> {
     await showDisplayDensitySheet(
       context: context,
       density: density,
-      onChanged: (DisplayDensity next) {
+      onChanged: (next) {
         context.read<DisplayDensityBloc>().add(DisplayDensitySet(next));
       },
     );
@@ -263,8 +309,8 @@ class _ProjectsViewState extends State<_ProjectsView> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final chrome = TasklyTokens.of(context);
-    final density = context.select(
-      (DisplayDensityBloc bloc) => bloc.state.density,
+    final density = context.select<DisplayDensityBloc, DisplayDensity>(
+      (bloc) => bloc.state.density,
     );
     final iconButtonStyle = IconButton.styleFrom(
       backgroundColor: scheme.surfaceContainerHighest.withValues(
@@ -394,6 +440,18 @@ class _ProjectsViewState extends State<_ProjectsView> {
                             ),
                           ),
                           PopupMenuItem(
+                            value: _ProjectsMenuAction.expandAll,
+                            child: TasklyMenuItemLabel(
+                              context.l10n.projectsExpandAllLabel,
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: _ProjectsMenuAction.collapseAll,
+                            child: TasklyMenuItemLabel(
+                              context.l10n.projectsCollapseAllLabel,
+                            ),
+                          ),
+                          PopupMenuItem(
                             value: _ProjectsMenuAction.selectMultiple,
                             child: TasklyMenuItemLabel(
                               context.l10n.selectMultipleLabel,
@@ -404,6 +462,10 @@ class _ProjectsViewState extends State<_ProjectsView> {
                           switch (action) {
                             case _ProjectsMenuAction.density:
                               _showDensitySheet(density);
+                            case _ProjectsMenuAction.expandAll:
+                              _expandAllValues();
+                            case _ProjectsMenuAction.collapseAll:
+                              _collapseAllValues();
                             case _ProjectsMenuAction.selectMultiple:
                               context
                                   .read<SelectionBloc>()
@@ -417,16 +479,12 @@ class _ProjectsViewState extends State<_ProjectsView> {
                 ? null
                 : SizedBox(
                     key: GuidedTourAnchors.projectsCreateProject,
-                    child: EntityAddSpeedDial(
+                    child: EntityAddFab(
                       heroTag: 'add_speed_dial_projects',
-                      onCreateTask: () =>
-                          context.read<ProjectsScreenBloc>().add(
-                            const ProjectsCreateTaskRequested(),
-                          ),
-                      onCreateProject: () =>
-                          context.read<ProjectsScreenBloc>().add(
-                            const ProjectsCreateProjectRequested(),
-                          ),
+                      tooltip: context.l10n.addProjectAction,
+                      onPressed: () => context.read<ProjectsScreenBloc>().add(
+                        const ProjectsCreateProjectRequested(),
+                      ),
                     ),
                   ),
             body: Column(
@@ -438,6 +496,9 @@ class _ProjectsViewState extends State<_ProjectsView> {
                     builder: (context, screenState) {
                       return BlocBuilder<ProjectsFeedBloc, ProjectsFeedState>(
                         builder: (context, state) {
+                          final shouldShowInboxTile =
+                              scope == null &&
+                              screenState.searchQuery.trim().isEmpty;
                           final spec = switch (state) {
                             ProjectsFeedLoading() =>
                               const TasklyFeedSpec.loading(),
@@ -450,7 +511,10 @@ class _ProjectsViewState extends State<_ProjectsView> {
                                       const ProjectsFeedRetryRequested(),
                                     ),
                               ),
-                            ProjectsFeedLoaded(:final rows) when rows.isEmpty =>
+                            ProjectsFeedLoaded(
+                              :final rows,
+                            )
+                                when rows.isEmpty && !shouldShowInboxTile =>
                               TasklyFeedSpec.empty(
                                 empty: _buildEmptySpec(
                                   context,
@@ -469,7 +533,10 @@ class _ProjectsViewState extends State<_ProjectsView> {
                                 showCompleted: _showCompleted,
                                 scope: scope,
                               );
-                              if (visibleRows.isEmpty) {
+                              _lastVisibleValueIds = _extractVisibleValueIds(
+                                visibleRows,
+                              );
+                              if (visibleRows.isEmpty && !shouldShowInboxTile) {
                                 return TasklyFeedSpec.empty(
                                   empty: _buildEmptySpec(
                                     context,
@@ -485,11 +552,19 @@ class _ProjectsViewState extends State<_ProjectsView> {
                               sections.add(
                                 TasklySectionSpec.standardList(
                                   id: 'projects',
-                                  rows: _buildStandardRows(
+                                  rows: _buildGroupedRows(
                                     context,
                                     visibleRows,
+                                    values: state.values,
+                                    ratings: state.ratings,
                                     density: density,
                                     selectionState: selectionState,
+                                    includeInboxTile: shouldShowInboxTile,
+                                    inboxTaskCount: state.inboxTaskCount,
+                                    valueSortOrder: _valueSortOrder,
+                                    showCompleted: _showCompleted,
+                                    collapsedValueIds: _collapsedValueIds,
+                                    onToggleCollapsed: _toggleValueCollapsed,
                                   ),
                                 ),
                               );
@@ -521,6 +596,8 @@ void _noop() {}
 
 enum _ProjectsMenuAction {
   density,
+  expandAll,
+  collapseAll,
   selectMultiple,
 }
 
@@ -624,11 +701,19 @@ class _ProjectCompletionCounts {
   int get active => total - completed;
 }
 
-List<TasklyRowSpec> _buildStandardRows(
+List<TasklyRowSpec> _buildGroupedRows(
   BuildContext context,
   List<ListRowUiModel> rows, {
+  required List<Value> values,
+  required List<ValueWeeklyRating> ratings,
   required DisplayDensity density,
   required SelectionState selectionState,
+  required bool includeInboxTile,
+  required int inboxTaskCount,
+  required ProjectsValueSortOrder valueSortOrder,
+  required bool showCompleted,
+  required Set<String> collapsedValueIds,
+  required void Function(String valueId) onToggleCollapsed,
 }) {
   final selection = context.read<SelectionBloc>();
   final selectionMode = selectionState.isSelectionMode;
@@ -653,22 +738,140 @@ List<TasklyRowSpec> _buildStandardRows(
   );
 
   final specs = <TasklyRowSpec>[];
+  if (includeInboxTile) {
+    specs.add(
+      TasklyRowSpec.project(
+        key: RowKey.v1(
+          screen: 'projects',
+          rowType: 'inbox',
+        ),
+        depth: 0,
+        data: buildInboxProjectRowData(
+          context,
+          taskCount: inboxTaskCount,
+        ),
+        preset: const TasklyProjectRowPreset.inbox(),
+        actions: TasklyProjectRowActions(
+          onTap: selectionMode
+              ? null
+              : () => Routing.toScreenKey(context, 'inbox'),
+        ),
+      ),
+    );
+  }
 
-  for (final row in rows) {
-    if (row is! ProjectRowUiModel) continue;
-    if (row.project == null) continue;
+  final nowUtc = context.read<NowService>().nowUtc();
+  final summaries = _buildValueRatingSummaries(
+    values: values,
+    ratings: ratings,
+    nowUtc: nowUtc,
+  );
 
+  final grouped = _groupProjectRowsByValue(
+    rows: projectRowCache,
+    values: values,
+    summaries: summaries,
+    sortOrder: valueSortOrder,
+    collapsedValueIds: collapsedValueIds,
+    onToggleCollapsed: onToggleCollapsed,
+  );
+
+  for (var index = 0; index < grouped.length; index += 1) {
+    final group = grouped[index];
+    final summary = summaries[group.value.id];
+    final expanded = !group.collapsed;
+    final visibleCount = showCompleted
+        ? group.projectRows.length
+        : group.projectRows
+              .where((row) => !(row.project?.completed ?? false))
+              .length;
+    specs.add(
+      TasklyRowSpec.header(
+        key: 'value-header-${group.value.id}',
+        title: group.value.name,
+        leadingIcon: group.value.toChipData(context).icon,
+        leadingIconColor: group.value.toChipData(context).color,
+        subtitle: expanded
+            ? _buildValueHeaderSubtitle(
+                context,
+                summary: summary,
+                nowUtc: nowUtc,
+              )
+            : null,
+        trailingLabel: _buildValueHeaderTrailingLabel(
+          context,
+          summary: summary,
+          projectCount: visibleCount,
+          expanded: expanded,
+        ),
+        trailingIcon: expanded
+            ? Icons.expand_less_rounded
+            : Icons.expand_more_rounded,
+        onTap: group.onToggleCollapsed,
+        dividerOpacity: expanded ? null : 0.25,
+      ),
+    );
+
+    if (expanded) {
+      specs.addAll(
+        _buildProjectRowSpecs(
+          context,
+          group.projectRows,
+          density: density,
+          selectionState: selectionState,
+          selectionMode: selectionMode,
+          selection: selection,
+          showCompleted: showCompleted,
+        ),
+      );
+    }
+
+    final isLast = index == grouped.length - 1;
+    if (!isLast && expanded) {
+      specs.add(
+        TasklyRowSpec.divider(
+          key: 'value-divider-${group.value.id}',
+        ),
+      );
+    }
+  }
+
+  return specs;
+}
+
+List<TasklyRowSpec> _buildProjectRowSpecs(
+  BuildContext context,
+  List<ProjectRowUiModel> rows, {
+  required DisplayDensity density,
+  required SelectionState selectionState,
+  required bool selectionMode,
+  required SelectionBloc selection,
+  required bool showCompleted,
+}) {
+  final visible = showCompleted
+      ? _orderProjectsByCompletion(rows)
+      : rows.where((row) => !(row.project?.completed ?? false)).toList();
+
+  final specs = <TasklyRowSpec>[];
+  for (final row in visible) {
+    final project = row.project;
+    if (project == null) continue;
+
+    final valueChip = project.primaryValue?.toChipData(context);
     final data = buildProjectRowData(
       context,
-      project: row.project!,
+      project: project,
       taskCount: row.taskCount,
       completedTaskCount: row.completedTaskCount,
       dueSoonCount: row.dueSoonCount,
+      valueChipOverride: valueChip,
+      includeValueIcon: false,
+      accentColor: valueChip?.color,
     );
 
     final key = SelectionKey(
       entityType: EntityType.project,
-      entityId: row.project!.id,
+      entityId: project.id,
     );
     final isSelected = selectionState.selected.contains(key);
 
@@ -681,6 +884,8 @@ List<TasklyRowSpec> _buildStandardRows(
         : (density == DisplayDensity.compact
               ? const TasklyProjectRowPreset.compact()
               : const TasklyProjectRowPreset.standard());
+    void handleLongPress() =>
+        selection.enterSelectionMode(initialSelection: key);
 
     final actions = TasklyProjectRowActions(
       onTap: () {
@@ -688,9 +893,9 @@ List<TasklyRowSpec> _buildStandardRows(
           selection.handleEntityTap(key);
           return;
         }
-        Routing.toProject(context, row.project!);
+        Routing.toProject(context, project);
       },
-      onLongPress: () => selection.enterSelectionMode(initialSelection: key),
+      onLongPress: handleLongPress,
       onToggleSelected: selectionMode
           ? () => selection.toggleSelection(key, extendRange: false)
           : null,
@@ -709,6 +914,271 @@ List<TasklyRowSpec> _buildStandardRows(
 
   return specs;
 }
+
+List<ProjectRowUiModel> _orderProjectsByCompletion(
+  List<ProjectRowUiModel> rows,
+) {
+  final incomplete = <ProjectRowUiModel>[];
+  final completed = <ProjectRowUiModel>[];
+  for (final row in rows) {
+    final isCompleted = row.project?.completed ?? false;
+    if (isCompleted) {
+      completed.add(row);
+    } else {
+      incomplete.add(row);
+    }
+  }
+  return [...incomplete, ...completed];
+}
+
+Set<String> _extractVisibleValueIds(List<ListRowUiModel> rows) {
+  final ids = <String>{};
+  for (final row in rows) {
+    if (row is! ProjectRowUiModel) continue;
+    final valueId = row.project?.primaryValueId;
+    if (valueId != null) {
+      ids.add(valueId);
+    }
+  }
+  return ids;
+}
+
+final class _ProjectsValueRatingSummary {
+  const _ProjectsValueRatingSummary({
+    required this.valueId,
+    required this.averageRating,
+    required this.trendDelta,
+    required this.lastRatingWeekStartUtc,
+    required this.lastRatingValue,
+  });
+
+  final String valueId;
+  final double? averageRating;
+  final double? trendDelta;
+  final DateTime? lastRatingWeekStartUtc;
+  final int? lastRatingValue;
+}
+
+final class _ProjectsValueGroup {
+  const _ProjectsValueGroup({
+    required this.value,
+    required this.projectRows,
+    required this.collapsed,
+    required this.onToggleCollapsed,
+  });
+
+  final Value value;
+  final List<ProjectRowUiModel> projectRows;
+  final bool collapsed;
+  final VoidCallback onToggleCollapsed;
+}
+
+Map<String, _ProjectsValueRatingSummary> _buildValueRatingSummaries({
+  required List<Value> values,
+  required List<ValueWeeklyRating> ratings,
+  required DateTime nowUtc,
+}) {
+  if (values.isEmpty) return const {};
+
+  final ratingsByValue = <String, Map<DateTime, int>>{};
+  final lastRatingByValue = <String, DateTime>{};
+  for (final rating in ratings) {
+    final weekStart = _weekStartFor(rating.weekStartUtc);
+    (ratingsByValue[rating.valueId] ??= {})[weekStart] = rating.rating.clamp(
+      1,
+      10,
+    );
+    final last = lastRatingByValue[rating.valueId];
+    if (last == null || weekStart.isAfter(last)) {
+      lastRatingByValue[rating.valueId] = weekStart;
+    }
+  }
+
+  final nowWeekStart = _weekStartFor(nowUtc);
+  final recentWeeks = <DateTime>[
+    for (var i = _ratingsWindowWeeks - 1; i >= 0; i -= 1)
+      nowWeekStart.subtract(Duration(days: i * 7)),
+  ];
+  final priorWeeks = <DateTime>[
+    for (
+      var i = (_ratingsWindowWeeks * 2) - 1;
+      i >= _ratingsWindowWeeks;
+      i -= 1
+    )
+      nowWeekStart.subtract(Duration(days: i * 7)),
+  ];
+
+  final summaries = <String, _ProjectsValueRatingSummary>{};
+  for (final value in values) {
+    final valueId = value.id;
+    final perWeek = ratingsByValue[valueId] ?? const {};
+    final recentRatings = <int>[
+      for (final week in recentWeeks)
+        if (perWeek[week] != null) perWeek[week]!,
+    ];
+    final priorRatings = <int>[
+      for (final week in priorWeeks)
+        if (perWeek[week] != null) perWeek[week]!,
+    ];
+
+    final averageRating = recentRatings.isEmpty
+        ? null
+        : recentRatings.fold<int>(0, (sum, v) => sum + v) /
+              recentRatings.length;
+    final priorAverage = priorRatings.isEmpty
+        ? null
+        : priorRatings.fold<int>(0, (sum, v) => sum + v) / priorRatings.length;
+    final trendDelta = (averageRating != null && priorAverage != null)
+        ? averageRating - priorAverage
+        : null;
+
+    final lastWeekStart = lastRatingByValue[valueId];
+    final lastRatingValue = lastWeekStart == null
+        ? null
+        : perWeek[lastWeekStart];
+
+    summaries[valueId] = _ProjectsValueRatingSummary(
+      valueId: valueId,
+      averageRating: averageRating,
+      trendDelta: trendDelta,
+      lastRatingWeekStartUtc: lastWeekStart,
+      lastRatingValue: lastRatingValue,
+    );
+  }
+
+  return summaries;
+}
+
+List<_ProjectsValueGroup> _groupProjectRowsByValue({
+  required List<ProjectRowUiModel> rows,
+  required List<Value> values,
+  required Map<String, _ProjectsValueRatingSummary> summaries,
+  required ProjectsValueSortOrder sortOrder,
+  required Set<String> collapsedValueIds,
+  required void Function(String valueId) onToggleCollapsed,
+}) {
+  final rowsByValueId = <String, List<ProjectRowUiModel>>{};
+  for (final row in rows) {
+    final valueId = row.project?.primaryValueId;
+    if (valueId == null) continue;
+    (rowsByValueId[valueId] ??= <ProjectRowUiModel>[]).add(row);
+  }
+
+  final valueMap = {for (final value in values) value.id: value};
+  final valueList = <Value>[
+    for (final entry in rowsByValueId.entries)
+      if (valueMap.containsKey(entry.key)) valueMap[entry.key]!,
+  ];
+
+  valueList.sort(
+    (a, b) => _compareValues(
+      a,
+      b,
+      summaries: summaries,
+      sortOrder: sortOrder,
+    ),
+  );
+
+  return [
+    for (final value in valueList)
+      _ProjectsValueGroup(
+        value: value,
+        projectRows: rowsByValueId[value.id] ?? const <ProjectRowUiModel>[],
+        collapsed: collapsedValueIds.contains(value.id),
+        onToggleCollapsed: () => onToggleCollapsed(value.id),
+      ),
+  ];
+}
+
+int _compareValues(
+  Value a,
+  Value b, {
+  required Map<String, _ProjectsValueRatingSummary> summaries,
+  required ProjectsValueSortOrder sortOrder,
+}) {
+  final nameCompare = a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  if (sortOrder == ProjectsValueSortOrder.alphabetical) return nameCompare;
+
+  final summaryA = summaries[a.id];
+  final summaryB = summaries[b.id];
+  final avgA = summaryA?.averageRating;
+  final avgB = summaryB?.averageRating;
+  final trendA = summaryA?.trendDelta;
+  final trendB = summaryB?.trendDelta;
+
+  if (avgA == null || avgB == null) {
+    return nameCompare;
+  }
+
+  switch (sortOrder) {
+    case ProjectsValueSortOrder.lowestAverageRating:
+      final byAvg = avgA.compareTo(avgB);
+      if (byAvg != 0) return byAvg;
+      final byTrend = (trendA ?? double.infinity).compareTo(
+        trendB ?? double.infinity,
+      );
+      if (byTrend != 0) return byTrend;
+      return nameCompare;
+    case ProjectsValueSortOrder.ratingTrendingDown:
+      final byTrend = (trendA ?? double.infinity).compareTo(
+        trendB ?? double.infinity,
+      );
+      if (byTrend != 0) return byTrend;
+      final byAvg = avgA.compareTo(avgB);
+      if (byAvg != 0) return byAvg;
+      return nameCompare;
+    case ProjectsValueSortOrder.alphabetical:
+      return nameCompare;
+  }
+}
+
+String _buildValueHeaderTrailingLabel(
+  BuildContext context, {
+  required _ProjectsValueRatingSummary? summary,
+  required int projectCount,
+  required bool expanded,
+}) {
+  final l10n = context.l10n;
+  return l10n.projectsValueProjectCountLabel(projectCount);
+}
+
+String? _buildValueHeaderSubtitle(
+  BuildContext context, {
+  required _ProjectsValueRatingSummary? summary,
+  required DateTime nowUtc,
+}) {
+  final l10n = context.l10n;
+  final lastRatingDate = summary?.lastRatingWeekStartUtc;
+  if (lastRatingDate == null) {
+    return null;
+  }
+  final averageValue = summary?.averageRating?.toStringAsFixed(1);
+  final averageLabel = averageValue == null
+      ? null
+      : l10n.projectsAverageRatingLabel(averageValue);
+  final lastRatingValue = summary?.lastRatingValue;
+  final ratingLabel = lastRatingValue == null
+      ? null
+      : l10n.projectsRatingLabel(lastRatingValue.toDouble().toStringAsFixed(1));
+  final lastRatedLabel = l10n.projectsAverageRatingLastRatedLabel(
+    l10n.dateDaysAgo(
+      dateOnly(
+        nowUtc,
+      ).difference(dateOnly(lastRatingDate)).inDays.clamp(0, 9999),
+    ),
+  );
+  final primaryLabel = averageLabel ?? ratingLabel;
+  return primaryLabel == null
+      ? lastRatedLabel
+      : [primaryLabel, lastRatedLabel].join(l10n.projectsValueHeaderSeparator);
+}
+
+DateTime _weekStartFor(DateTime dateUtc) {
+  final date = dateOnly(dateUtc.toUtc());
+  return DateTime.utc(date.year, date.month, date.day);
+}
+
+const int _ratingsWindowWeeks = 4;
 
 class _ValueFilterRow extends StatelessWidget {
   const _ValueFilterRow({
@@ -801,23 +1271,7 @@ List<ListRowUiModel> _filterProjectsRows({
       filtered.add(row);
     }
   }
-
-  final incomplete = <ProjectRowUiModel>[];
-  final completed = <ProjectRowUiModel>[];
-  for (final row in filtered) {
-    if (row is! ProjectRowUiModel) continue;
-    final isCompleted = row.project?.completed ?? false;
-    if (isCompleted) {
-      completed.add(row);
-    } else {
-      incomplete.add(row);
-    }
-  }
-
-  return [
-    ...incomplete,
-    if (showCompleted) ...completed,
-  ];
+  return filtered;
 }
 
 _ValueProjectCounts _countProjectsByValue(List<ListRowUiModel> rows) {

@@ -45,7 +45,6 @@ abstract final class Routing {
   /// should count as an active navigation destination.
   static const Set<String> _navigationScreenKeys = {
     'my_day',
-    'inbox',
     'scheduled',
     'projects',
     'routines',
@@ -209,8 +208,25 @@ abstract final class Routing {
 
   // === ROUTINE EDITOR ROUTES ===
 
-  static void toRoutineNew(BuildContext context) =>
-      GoRouter.of(context).push('/routine/new');
+  static void toRoutineNew(
+    BuildContext context, {
+    String? defaultProjectId,
+    bool openToProjectPicker = false,
+  }) {
+    final queryParameters = <String, String>{};
+    if (defaultProjectId != null && defaultProjectId.trim().isNotEmpty) {
+      queryParameters['projectId'] = defaultProjectId;
+    }
+    if (openToProjectPicker) {
+      queryParameters['openProjectPicker'] = 'true';
+    }
+
+    final uri = Uri(
+      path: '/routine/new',
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    );
+    GoRouter.of(context).push(uri.toString());
+  }
 
   static void toRoutineEdit(BuildContext context, String routineId) =>
       GoRouter.of(context).push('/routine/$routineId/edit');

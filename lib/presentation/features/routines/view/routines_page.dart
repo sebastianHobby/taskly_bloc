@@ -19,12 +19,9 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
-import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.dart';
-import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -40,7 +37,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
   bool _showInactive = false;
 
   void _createRoutine(BuildContext context) {
-    Routing.toRoutineNew(context);
+    Routing.toRoutineNew(context, openToProjectPicker: true);
   }
 
   void _editRoutine(BuildContext context, String routineId) {
@@ -141,19 +138,6 @@ class _RoutinesPageState extends State<RoutinesPage> {
     );
   }
 
-  Future<void> _showDensitySheet(
-    BuildContext context, {
-    required DisplayDensity density,
-  }) async {
-    await showDisplayDensitySheet(
-      context: context,
-      density: density,
-      onChanged: (next) {
-        context.read<DisplayDensityBloc>().add(DisplayDensitySet(next));
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
@@ -168,22 +152,12 @@ class _RoutinesPageState extends State<RoutinesPage> {
             nowService: context.read<NowService>(),
           )..add(const RoutineListEvent.subscriptionRequested()),
         ),
-        BlocProvider(
-          create: (context) => DisplayDensityBloc(
-            settingsRepository: context.read<SettingsRepositoryContract>(),
-            pageKey: PageKey.routines,
-            defaultDensity: DisplayDensity.compact,
-          )..add(const DisplayDensityStarted()),
-        ),
         BlocProvider(create: (_) => RoutineSelectionBloc()),
       ],
       child: Builder(
         builder: (context) {
           return BlocBuilder<RoutineSelectionBloc, RoutineSelectionState>(
             builder: (context, selectionState) {
-              final density = context.select(
-                (DisplayDensityBloc bloc) => bloc.state.density,
-              );
               return Scaffold(
                 appBar: selectionState.isSelectionMode
                     ? RoutineSelectionAppBar(
@@ -213,12 +187,6 @@ class _RoutinesPageState extends State<RoutinesPage> {
                             ).moreButtonTooltip,
                             itemsBuilder: (context) => [
                               PopupMenuItem(
-                                value: _RoutinesMenuAction.density,
-                                child: TasklyMenuItemLabel(
-                                  context.l10n.displayDensityTitle,
-                                ),
-                              ),
-                              PopupMenuItem(
                                 value: _RoutinesMenuAction.selectMultiple,
                                 child: TasklyMenuItemLabel(
                                   context.l10n.selectMultipleLabel,
@@ -227,11 +195,6 @@ class _RoutinesPageState extends State<RoutinesPage> {
                             ],
                             onSelected: (action) {
                               switch (action) {
-                                case _RoutinesMenuAction.density:
-                                  _showDensitySheet(
-                                    context,
-                                    density: density,
-                                  );
                                 case _RoutinesMenuAction.selectMultiple:
                                   context
                                       .read<RoutineSelectionBloc>()
@@ -292,7 +255,6 @@ class _RoutinesPageState extends State<RoutinesPage> {
                                 selectedValueId: selectedValueId,
                                 showInactive: _showInactive,
                                 sortOrder: _sortOrder,
-                                density: density,
                                 onEditRoutine: (id) =>
                                     _editRoutine(context, id),
                                 onLogRoutine: (id) =>
@@ -317,7 +279,7 @@ class _RoutinesPageState extends State<RoutinesPage> {
   }
 }
 
-enum _RoutinesMenuAction { density, selectMultiple }
+enum _RoutinesMenuAction { selectMultiple }
 
 class _RoutinesFilterLayout extends StatelessWidget {
   const _RoutinesFilterLayout({
@@ -325,7 +287,6 @@ class _RoutinesFilterLayout extends StatelessWidget {
     required this.selectedValueId,
     required this.showInactive,
     required this.sortOrder,
-    required this.density,
     required this.onEditRoutine,
     required this.onLogRoutine,
   });
@@ -334,7 +295,6 @@ class _RoutinesFilterLayout extends StatelessWidget {
   final String? selectedValueId;
   final bool showInactive;
   final RoutineSortOrder sortOrder;
-  final DisplayDensity density;
   final ValueChanged<String> onEditRoutine;
   final ValueChanged<String> onLogRoutine;
 
@@ -350,7 +310,6 @@ class _RoutinesFilterLayout extends StatelessWidget {
     return RoutinesListView(
       items: filtered,
       sortOrder: sortOrder,
-      density: density,
       onEditRoutine: onEditRoutine,
       onLogRoutine: onLogRoutine,
     );
@@ -420,7 +379,7 @@ _RoutineValueCounts _countRoutinesByValue(List<RoutineListItem> routines) {
   final total = routines.length;
   final byValueId = <String, int>{};
   for (final item in routines) {
-    final valueId = item.routine.valueId.trim();
+    final valueId = (item.routine.value?.id ?? '').trim();
     if (valueId.isEmpty) continue;
     byValueId[valueId] = (byValueId[valueId] ?? 0) + 1;
   }
@@ -434,7 +393,7 @@ List<RoutineListItem> _filterRoutinesByValue(
   final id = selectedValueId?.trim();
   if (id == null || id.isEmpty) return routines;
   return routines
-      .where((item) => item.routine.valueId == id)
+      .where((item) => item.routine.value?.id == id)
       .toList(growable: false);
 }
 

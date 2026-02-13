@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:taskly_domain/src/core/model/value.dart';
-import 'package:taskly_domain/src/routines/model/routine_type.dart';
+import 'package:taskly_domain/src/routines/model/routine_period_type.dart';
+import 'package:taskly_domain/src/routines/model/routine_schedule_mode.dart';
 
 @immutable
 class Routine {
@@ -9,16 +10,15 @@ class Routine {
     required this.createdAt,
     required this.updatedAt,
     required this.name,
-    required this.valueId,
-    required this.routineType,
+    required this.projectId,
+    required this.periodType,
+    required this.scheduleMode,
     required this.targetCount,
     this.scheduleDays = const <int>[],
+    this.scheduleMonthDays = const <int>[],
+    this.scheduleTimeMinutes,
     this.minSpacingDays,
     this.restDayBuffer,
-    this.preferredWeeks = const <int>[],
-    this.fixedDayOfMonth,
-    this.fixedWeekday,
-    this.fixedWeekOfMonth,
     this.isActive = true,
     this.pausedUntil,
     this.value,
@@ -28,30 +28,25 @@ class Routine {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String name;
-  final String valueId;
-  final RoutineType routineType;
+  final String projectId;
+  final RoutinePeriodType periodType;
+  final RoutineScheduleMode scheduleMode;
   final int targetCount;
 
-  /// Days of week for weekly_fixed routines (1=Mon, 7=Sun).
+  /// Days of week for weekly scheduled routines (1=Mon, 7=Sun).
   final List<int> scheduleDays;
+
+  /// Days of month for monthly scheduled routines (1-31).
+  final List<int> scheduleMonthDays;
+
+  /// Preferred time of day in minutes since midnight.
+  final int? scheduleTimeMinutes;
 
   /// Minimum spacing between completions (hard spacing).
   final int? minSpacingDays;
 
   /// Optional rest day buffer (soft spacing).
   final int? restDayBuffer;
-
-  /// Preferred weeks for monthly_flexible routines (1-4 or 5=last week).
-  final List<int> preferredWeeks;
-
-  /// Fixed day of month for monthly_fixed routines (1-31).
-  final int? fixedDayOfMonth;
-
-  /// Fixed weekday for monthly_fixed routines (1=Mon, 7=Sun).
-  final int? fixedWeekday;
-
-  /// Fixed week of month for monthly_fixed routines (1-5).
-  final int? fixedWeekOfMonth;
 
   final bool isActive;
   final DateTime? pausedUntil;
@@ -69,16 +64,15 @@ class Routine {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? name,
-    String? valueId,
-    RoutineType? routineType,
+    String? projectId,
+    RoutinePeriodType? periodType,
+    RoutineScheduleMode? scheduleMode,
     int? targetCount,
     List<int>? scheduleDays,
+    List<int>? scheduleMonthDays,
+    int? scheduleTimeMinutes,
     int? minSpacingDays,
     int? restDayBuffer,
-    List<int>? preferredWeeks,
-    int? fixedDayOfMonth,
-    int? fixedWeekday,
-    int? fixedWeekOfMonth,
     bool? isActive,
     DateTime? pausedUntil,
     Value? value,
@@ -88,16 +82,15 @@ class Routine {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       name: name ?? this.name,
-      valueId: valueId ?? this.valueId,
-      routineType: routineType ?? this.routineType,
+      projectId: projectId ?? this.projectId,
+      periodType: periodType ?? this.periodType,
+      scheduleMode: scheduleMode ?? this.scheduleMode,
       targetCount: targetCount ?? this.targetCount,
       scheduleDays: scheduleDays ?? this.scheduleDays,
+      scheduleMonthDays: scheduleMonthDays ?? this.scheduleMonthDays,
+      scheduleTimeMinutes: scheduleTimeMinutes ?? this.scheduleTimeMinutes,
       minSpacingDays: minSpacingDays ?? this.minSpacingDays,
       restDayBuffer: restDayBuffer ?? this.restDayBuffer,
-      preferredWeeks: preferredWeeks ?? this.preferredWeeks,
-      fixedDayOfMonth: fixedDayOfMonth ?? this.fixedDayOfMonth,
-      fixedWeekday: fixedWeekday ?? this.fixedWeekday,
-      fixedWeekOfMonth: fixedWeekOfMonth ?? this.fixedWeekOfMonth,
       isActive: isActive ?? this.isActive,
       pausedUntil: pausedUntil ?? this.pausedUntil,
       value: value ?? this.value,

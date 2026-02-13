@@ -7,6 +7,7 @@ import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 
 import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
+import 'package:taskly_bloc/presentation/shared/utils/routine_completion_utils.dart';
 
 final class MyDayViewModelBuilder {
   const MyDayViewModelBuilder();
@@ -67,12 +68,11 @@ final class MyDayViewModelBuilder {
           snapshot: snapshot,
           completions: routineCompletions,
         );
-        final completedToday = routineCompletions.any(
-          (completion) =>
-              completion.routineId == routineId &&
-              dateOnly(
-                completion.completedAtUtc,
-              ).isAtSameMomentAs(dateOnly(dayPicks.dayKeyUtc)),
+        final completedToday = isRoutineCompleteForDay(
+          routine: routine,
+          snapshot: snapshot,
+          dayKeyUtc: dayPicks.dayKeyUtc,
+          completionsInPeriod: completionsInPeriod,
         );
         plannedItems.add(
           MyDayPlannedItem.routine(
@@ -81,7 +81,7 @@ final class MyDayViewModelBuilder {
             completionsInPeriod: completionsInPeriod,
             bucket: pick.bucket,
             sortIndex: pick.sortIndex,
-            qualifyingValueId: pick.qualifyingValueId ?? routine.valueId,
+            qualifyingValueId: pick.qualifyingValueId ?? routine.value?.id,
             completed: completedToday,
           ),
         );

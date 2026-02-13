@@ -15,6 +15,7 @@ dependencies:
   rrule: ^0.2.15
 
 dev_dependencies:
+  build_runner: ^2.4.12
   flutter_test:
     sdk: flutter
   meta: ^1.17.0

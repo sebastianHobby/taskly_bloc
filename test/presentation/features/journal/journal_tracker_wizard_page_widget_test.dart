@@ -170,7 +170,8 @@ void main() {
 
     _wizardBloc(tester).add(const JournalTrackerWizardSaveRequested());
     await tester.pumpForStream();
-    await tester.pump(const Duration(milliseconds: 300));
+    final foundSnack = await tester.pumpUntilFound(find.byType(SnackBar));
+    expect(foundSnack, isTrue);
     expect(find.byType(SnackBar), findsOneWidget);
   });
 
@@ -185,7 +186,8 @@ void main() {
 
     _wizardBloc(tester).add(const JournalTrackerWizardSaveRequested());
     await tester.pumpForStream();
-    await tester.pump(const Duration(milliseconds: 300));
+    final foundSnack = await tester.pumpUntilFound(find.byType(SnackBar));
+    expect(foundSnack, isTrue);
     expect(find.byType(SnackBar), findsOneWidget);
   });
 
@@ -217,7 +219,9 @@ void main() {
 
     final removeFinder = find.byIcon(Icons.close);
     await tester.ensureVisible(removeFinder);
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpUntilCondition(
+      () => removeFinder.hitTestable().evaluate().isNotEmpty,
+    );
     await tester.tap(removeFinder.hitTestable());
     await tester.pumpForStream();
 
@@ -233,7 +237,9 @@ void main() {
 
     final bloc = _wizardBloc(tester);
     bloc.add(const JournalTrackerWizardSaveRequested());
-    await tester.pumpForStream(20);
+    await tester.pumpUntilCondition(
+      () => bloc.state.status is JournalTrackerWizardSaved,
+    );
     expect(bloc.state.status, isA<JournalTrackerWizardSaved>());
     verify(
       () => repository.saveTrackerDefinition(
@@ -259,7 +265,9 @@ void main() {
 
     final bloc = _wizardBloc(tester);
     bloc.add(const JournalTrackerWizardSaveRequested());
-    await tester.pumpForStream(20);
+    await tester.pumpUntilCondition(
+      () => bloc.state.status is JournalTrackerWizardError,
+    );
     expect(bloc.state.status, isA<JournalTrackerWizardError>());
   });
 
@@ -314,13 +322,15 @@ Future<void> _tapNext(WidgetTester tester) async {
   final button = tester.widget<FilledButton>(nextFinder);
   expect(button.onPressed, isNotNull);
   await tester.ensureVisible(nextFinder);
-  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pumpUntilCondition(
+    () => nextFinder.hitTestable().evaluate().isNotEmpty,
+  );
   final hitTestable = nextFinder.hitTestable();
   await tester.tap(
     hitTestable.evaluate().isNotEmpty ? hitTestable : nextFinder,
     warnIfMissed: false,
   );
-  await tester.pumpForStream(20);
+  await tester.pumpForStream();
   if (currentStep < 2) {
     await tester.pumpUntilFound(
       find.byKey(
@@ -354,7 +364,9 @@ Future<void> _tapTextOption(WidgetTester tester, String text) async {
       ? hitTestable.first
       : optionFinder.first;
   await tester.ensureVisible(optionFinder);
-  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pumpUntilCondition(
+    () => optionFinder.hitTestable().evaluate().isNotEmpty,
+  );
   await tester.tap(optionFinder.hitTestable());
   await tester.pumpForStream();
 }
@@ -362,17 +374,27 @@ Future<void> _tapTextOption(WidgetTester tester, String text) async {
 Future<void> _tapButton(WidgetTester tester, String text) async {
   if (text == 'Create' || text == 'Next') {
     final stepperFinder = _stepperPrimaryButtonFinder(tester);
+    final stepper = tester.widget<Stepper>(find.byType(Stepper));
+    final currentStep = stepper.currentStep;
     final button = tester.widget<FilledButton>(stepperFinder);
     expect(button.onPressed, isNotNull);
     await tester.ensureVisible(stepperFinder);
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpUntilCondition(
+      () => stepperFinder.hitTestable().evaluate().isNotEmpty,
+    );
     final hitTestable = stepperFinder.hitTestable();
     await tester.tap(
       hitTestable.evaluate().isNotEmpty ? hitTestable : stepperFinder,
       warnIfMissed: false,
     );
-    await tester.pumpForStream(20);
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpForStream();
+    if (text == 'Next' && currentStep < 2) {
+      await tester.pumpUntilFound(
+        find.byKey(
+          ValueKey('journal_tracker_wizard_next_step_${currentStep + 1}'),
+        ),
+      );
+    }
     return;
   }
   final buttonFinder = find.widgetWithText(TextButton, text);
@@ -381,7 +403,9 @@ Future<void> _tapButton(WidgetTester tester, String text) async {
       ? filledFinder
       : buttonFinder;
   await tester.ensureVisible(finder.first);
-  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pumpUntilCondition(
+    () => finder.first.hitTestable().evaluate().isNotEmpty,
+  );
   await tester.tap(finder.first.hitTestable());
   await tester.pumpForStream();
 }

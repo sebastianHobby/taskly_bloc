@@ -6,6 +6,7 @@ import 'package:test/test.dart';
 
 import '../../../../helpers/test_helpers.dart';
 
+@Tags(['unit'])
 class _FakeAppLifecycleEvents implements AppLifecycleEvents {
   _FakeAppLifecycleEvents(this._controller);
 

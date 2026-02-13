@@ -373,7 +373,7 @@ void main() {
         find.byKey(const Key('guided-tour-coachmark-plan_my_day_triage')),
         findsOneWidget,
       );
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpForStream();
       expect(
         find.byKey(const Key('guided-tour-coachmark-plan_my_day_triage')),
         findsOneWidget,
@@ -515,7 +515,12 @@ void main() {
       planStates.emit(const PlanMyDayLoading());
       await tester.pump();
       planStates.emit(readyState);
-      await tester.pump(const Duration(milliseconds: 240));
+      await tester.pumpUntilCondition(
+        () => find
+            .byKey(const Key('guided-tour-coachmark-plan_my_day_triage'))
+            .evaluate()
+            .isNotEmpty,
+      );
 
       expect(
         find.byKey(const Key('guided-tour-coachmark-plan_my_day_triage')),
@@ -617,7 +622,9 @@ void main() {
         tester,
         find.byKey(const Key('guided-tour-coachmark-plan_my_day_routines')),
       );
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpUntilCondition(
+        () => tester.getRect(anchorFinder).top < initialRect.top,
+      );
 
       final updatedRect = tester.getRect(anchorFinder);
       expect(updatedRect.top, lessThan(initialRect.top));

@@ -1,5 +1,6 @@
 import 'package:taskly_domain/src/core/editing/validation_error.dart';
-import 'package:taskly_domain/src/routines/model/routine_type.dart';
+import 'package:taskly_domain/src/routines/model/routine_period_type.dart';
+import 'package:taskly_domain/src/routines/model/routine_schedule_mode.dart';
 
 final class RoutineValidators {
   RoutineValidators._();
@@ -25,8 +26,8 @@ final class RoutineValidators {
     return const [];
   }
 
-  static List<ValidationError> valueId(String? valueId) {
-    if (valueId == null || valueId.trim().isEmpty) {
+  static List<ValidationError> projectId(String? projectId) {
+    if (projectId == null || projectId.trim().isEmpty) {
       return const [
         ValidationError(code: 'required', messageKey: 'validationRequired'),
       ];
@@ -36,8 +37,13 @@ final class RoutineValidators {
 
   static List<ValidationError> targetCount(
     int? count, {
-    required RoutineType routineType,
+    required RoutinePeriodType periodType,
+    required RoutineScheduleMode scheduleMode,
   }) {
+    if (scheduleMode == RoutineScheduleMode.scheduled &&
+        periodType != RoutinePeriodType.day) {
+      return const [];
+    }
     if (count == null) {
       return const [
         ValidationError(code: 'required', messageKey: 'validationRequired'),
@@ -52,38 +58,22 @@ final class RoutineValidators {
       ];
     }
 
-    final max = switch (routineType) {
-      RoutineType.weeklyFixed => 7,
-      RoutineType.weeklyFlexible => 7,
-      RoutineType.monthlyFixed => 1,
-      RoutineType.monthlyFlexible => 4,
-    };
-    if (count > max) {
-      return [
-        ValidationError(
-          code: 'max_value',
-          messageKey: 'validationMaxValue',
-          args: {'max': max},
-        ),
-      ];
-    }
     return const [];
   }
 
   static List<ValidationError> scheduleDays(
     List<int> days, {
-    required RoutineType routineType,
+    required RoutinePeriodType periodType,
+    required RoutineScheduleMode scheduleMode,
   }) {
-    if (routineType != RoutineType.weeklyFixed) {
+    if (periodType != RoutinePeriodType.week ||
+        scheduleMode != RoutineScheduleMode.scheduled) {
       return const [];
     }
     if (days.isEmpty) {
-      if (routineType == RoutineType.weeklyFixed) {
-        return const [
-          ValidationError(code: 'required', messageKey: 'validationRequired'),
-        ];
-      }
-      return const [];
+      return const [
+        ValidationError(code: 'required', messageKey: 'validationRequired'),
+      ];
     }
     final hasInvalid = days.any((d) => d < 1 || d > 7);
     if (hasInvalid) {
@@ -100,67 +90,32 @@ final class RoutineValidators {
     return const [];
   }
 
-  static List<ValidationError> preferredWeeks(
-    List<int> weeks, {
-    required RoutineType routineType,
+  static List<ValidationError> scheduleMonthDays(
+    List<int> days, {
+    required RoutinePeriodType periodType,
+    required RoutineScheduleMode scheduleMode,
   }) {
-    if (routineType != RoutineType.monthlyFlexible) return const [];
-    if (weeks.isEmpty) {
+    if (periodType != RoutinePeriodType.month ||
+        scheduleMode != RoutineScheduleMode.scheduled) {
+      return const [];
+    }
+    if (days.isEmpty) {
       return const [
         ValidationError(code: 'required', messageKey: 'validationRequired'),
       ];
     }
-    final hasInvalid = weeks.any((w) => w < 1 || w > 5);
+    final hasInvalid = days.any((d) => d < 1 || d > 31);
     if (hasInvalid) {
       return const [
         ValidationError(code: 'invalid', messageKey: 'validationInvalid'),
       ];
     }
-    final unique = weeks.toSet();
-    if (unique.length != weeks.length) {
+    final unique = days.toSet();
+    if (unique.length != days.length) {
       return const [
         ValidationError(code: 'invalid', messageKey: 'validationInvalid'),
       ];
     }
-    return const [];
-  }
-
-  static List<ValidationError> fixedMonthlyFields({
-    required int? fixedDayOfMonth,
-    required int? fixedWeekday,
-    required int? fixedWeekOfMonth,
-    required RoutineType routineType,
-  }) {
-    if (routineType != RoutineType.monthlyFixed) return const [];
-
-    final hasDayOfMonth = fixedDayOfMonth != null;
-    final hasWeekday = fixedWeekday != null;
-    final hasWeekOfMonth = fixedWeekOfMonth != null;
-
-    if (!hasDayOfMonth && !(hasWeekday && hasWeekOfMonth)) {
-      return const [
-        ValidationError(code: 'required', messageKey: 'validationRequired'),
-      ];
-    }
-
-    if (fixedDayOfMonth != null &&
-        (fixedDayOfMonth < 1 || fixedDayOfMonth > 31)) {
-      return const [
-        ValidationError(code: 'invalid', messageKey: 'validationInvalid'),
-      ];
-    }
-    if (fixedWeekday != null && (fixedWeekday < 1 || fixedWeekday > 7)) {
-      return const [
-        ValidationError(code: 'invalid', messageKey: 'validationInvalid'),
-      ];
-    }
-    if (fixedWeekOfMonth != null &&
-        (fixedWeekOfMonth < 1 || fixedWeekOfMonth > 5)) {
-      return const [
-        ValidationError(code: 'invalid', messageKey: 'validationInvalid'),
-      ];
-    }
-
     return const [];
   }
 }

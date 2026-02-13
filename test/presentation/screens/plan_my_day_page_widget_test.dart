@@ -405,7 +405,8 @@ void main() {
       expect(find.text(l10n.myDayPlanShowMore(1, 5)), findsOneWidget);
 
       await tester.tap(find.text(l10n.myDayPlanShowMore(1, 5)));
-      await tester.pump(const Duration(milliseconds: 300));
+      final foundTask5 = await tester.pumpUntilFound(find.text('Task 5'));
+      expect(foundTask5, isTrue);
 
       expect(find.text('Task 5'), findsOneWidget);
     },
@@ -447,14 +448,17 @@ void main() {
 
       final l10n = l10nFor(tester);
       await tester.tap(find.text(l10n.planMyDayRescheduleAllDueAction));
-      await tester.pump(const Duration(milliseconds: 300));
+      final foundTomorrow = await tester.pumpUntilFound(
+        find.widgetWithText(ListTile, l10n.dateTomorrow),
+      );
+      expect(foundTomorrow, isTrue);
 
       final tomorrowTile = tester.widget<ListTile>(
         find.widgetWithText(ListTile, l10n.dateTomorrow),
       );
       expect(tomorrowTile.onTap, isNotNull);
       tomorrowTile.onTap!();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpForStream();
 
       final captured = verify(() => planBloc.add(captureAny())).captured;
       final event = captured.single as PlanMyDayBulkRescheduleDueRequested;
@@ -499,14 +503,17 @@ void main() {
 
       final l10n = l10nFor(tester);
       await tester.tap(find.text(l10n.planMyDayRescheduleAllAction));
-      await tester.pump(const Duration(milliseconds: 300));
+      final foundTomorrow = await tester.pumpUntilFound(
+        find.widgetWithText(ListTile, l10n.dateTomorrow),
+      );
+      expect(foundTomorrow, isTrue);
 
       final tomorrowTile = tester.widget<ListTile>(
         find.widgetWithText(ListTile, l10n.dateTomorrow),
       );
       expect(tomorrowTile.onTap, isNotNull);
       tomorrowTile.onTap!();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpForStream();
 
       final captured = verify(() => planBloc.add(captureAny())).captured;
       final event = captured.single as PlanMyDayBulkReschedulePlannedRequested;

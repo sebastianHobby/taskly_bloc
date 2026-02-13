@@ -11,29 +11,6 @@ enum ValuesAlignmentTarget {
   secondary,
 }
 
-Future<List<String>?> showValuesAlignmentSheetForTask(
-  BuildContext context, {
-  required List<Value> availableValues,
-  required List<String> explicitValueIds,
-  required ValuesAlignmentTarget target,
-  String? inheritedValueLabel,
-  String? inheritedValueId,
-}) {
-  return showModalBottomSheet<List<String>>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
-    builder: (context) => ValuesAlignmentSheet.task(
-      availableValues: availableValues,
-      explicitValueIds: explicitValueIds,
-      target: target,
-      inheritedValueLabel: inheritedValueLabel,
-      inheritedValueId: inheritedValueId,
-    ),
-  );
-}
-
 Future<List<String>?> showValuesAlignmentSheetForProject(
   BuildContext context, {
   required List<Value> availableValues,
@@ -65,36 +42,8 @@ class ValuesAlignmentSheet extends StatefulWidget {
     required this.secondaryLabel,
     required this.primaryShortLabel,
     required this.secondaryShortLabel,
-    required this.inheritedValueLabel,
-    required this.inheritedValueId,
-    required this.isTaskTags,
     super.key,
   });
-
-  factory ValuesAlignmentSheet.task({
-    required List<Value> availableValues,
-    required List<String> explicitValueIds,
-    required ValuesAlignmentTarget target,
-    String? inheritedValueLabel,
-    String? inheritedValueId,
-  }) {
-    return ValuesAlignmentSheet._(
-      key: const ValueKey('values_alignment_sheet_task'),
-      availableValues: availableValues,
-      requireSelection: true,
-      initialValueIds: explicitValueIds,
-      target: target,
-      title: null,
-      helperText: null,
-      primaryLabel: null,
-      secondaryLabel: null,
-      primaryShortLabel: null,
-      secondaryShortLabel: null,
-      inheritedValueLabel: inheritedValueLabel,
-      inheritedValueId: inheritedValueId,
-      isTaskTags: true,
-    );
-  }
 
   factory ValuesAlignmentSheet.project({
     required List<Value> availableValues,
@@ -115,9 +64,6 @@ class ValuesAlignmentSheet extends StatefulWidget {
       secondaryLabel: null,
       primaryShortLabel: null,
       secondaryShortLabel: null,
-      inheritedValueLabel: null,
-      inheritedValueId: null,
-      isTaskTags: false,
     );
   }
 
@@ -139,9 +85,6 @@ class ValuesAlignmentSheet extends StatefulWidget {
       secondaryLabel: null,
       primaryShortLabel: null,
       secondaryShortLabel: null,
-      inheritedValueLabel: null,
-      inheritedValueId: null,
-      isTaskTags: false,
     );
   }
 
@@ -157,9 +100,6 @@ class ValuesAlignmentSheet extends StatefulWidget {
   final String? secondaryLabel;
   final String? primaryShortLabel;
   final String? secondaryShortLabel;
-  final String? inheritedValueLabel;
-  final String? inheritedValueId;
-  final bool isTaskTags;
 
   @override
   State<ValuesAlignmentSheet> createState() => _ValuesAlignmentSheetState();
@@ -234,23 +174,13 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
     final title =
         widget.title ??
         (widget.target == ValuesAlignmentTarget.primary
-            ? (widget.primaryLabel ??
-                  (widget.isTaskTags
-                      ? l10n.taskAdditionalValueSelectPrimaryTitle
-                      : l10n.valuesSelectPrimaryTitle))
-            : (widget.secondaryLabel ??
-                  (widget.isTaskTags
-                      ? l10n.taskAdditionalValueSelectSecondaryTitle
-                      : l10n.valuesSelectSecondaryTitle)));
+            ? (widget.primaryLabel ?? l10n.valuesSelectPrimaryTitle)
+            : (widget.secondaryLabel ?? l10n.valuesSelectSecondaryTitle));
 
     final canSave = !widget.requireSelection || _selectedValueIds.isNotEmpty;
 
     final hasSecondary = _secondaryId != null;
-    final helperText =
-        widget.helperText ??
-        (widget.isTaskTags
-            ? l10n.taskAdditionalValuesHelper
-            : l10n.projectFormSingleValueOnly);
+    final helperText = widget.helperText ?? l10n.projectFormSingleValueOnly;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -264,13 +194,6 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
         headerContent: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (widget.inheritedValueLabel != null) ...[
-              Text(
-                l10n.taskProjectValueRow(widget.inheritedValueLabel!.trim()),
-                style: theme.textTheme.bodySmall,
-              ),
-              SizedBox(height: tokens.spaceXs),
-            ],
             Text(helperText, style: theme.textTheme.bodySmall),
             if (widget.target == ValuesAlignmentTarget.secondary &&
                 hasSecondary)
@@ -316,20 +239,14 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
                   target: widget.target,
                   selectedPrimaryId: _primaryId,
                   selectedSecondaryId: _secondaryId,
-                  inheritedValueId: widget.inheritedValueId,
                   onSelectPrimary: _setPrimary,
                   onSelectSecondary: _setSecondary,
                   onClearSecondary: _clearSecondary,
                   primaryShortLabel:
-                      widget.primaryShortLabel ??
-                      (widget.isTaskTags
-                          ? l10n.taskAdditionalValuePrimaryLabel
-                          : l10n.valuesPrimaryShortLabel),
+                      widget.primaryShortLabel ?? l10n.valuesPrimaryShortLabel,
                   secondaryShortLabel:
                       widget.secondaryShortLabel ??
-                      (widget.isTaskTags
-                          ? l10n.taskAdditionalValueSecondaryLabel
-                          : l10n.valuesSecondaryShortLabel),
+                      l10n.valuesSecondaryShortLabel,
                 ),
           ],
         ),
@@ -344,7 +261,6 @@ class _SelectableValueTile extends StatelessWidget {
     required this.target,
     required this.selectedPrimaryId,
     required this.selectedSecondaryId,
-    required this.inheritedValueId,
     required this.onSelectPrimary,
     required this.onSelectSecondary,
     required this.onClearSecondary,
@@ -356,7 +272,6 @@ class _SelectableValueTile extends StatelessWidget {
   final ValuesAlignmentTarget target;
   final String? selectedPrimaryId;
   final String? selectedSecondaryId;
-  final String? inheritedValueId;
   final ValueChanged<String> onSelectPrimary;
   final ValueChanged<String> onSelectSecondary;
   final VoidCallback onClearSecondary;
@@ -368,11 +283,7 @@ class _SelectableValueTile extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final isPrimary = value.id == selectedPrimaryId;
     final isSecondary = value.id == selectedSecondaryId;
-    final isInheritedPrimary =
-        inheritedValueId != null && value.id == inheritedValueId;
-    final isDisabled =
-        isInheritedPrimary ||
-        (target == ValuesAlignmentTarget.secondary && isPrimary);
+    final isDisabled = target == ValuesAlignmentTarget.secondary && isPrimary;
     final iconData = getIconDataFromName(value.iconName) ?? Icons.star;
     final color = ColorUtils.valueColorForTheme(context, value.color);
     final selectionLabel = isPrimary
@@ -416,9 +327,7 @@ class _SelectableValueTile extends StatelessWidget {
             ),
       subtitle: isDisabled
           ? Text(
-              isInheritedPrimary
-                  ? context.l10n.taskProjectValueLockedLabel
-                  : primaryShortLabel,
+              primaryShortLabel,
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),

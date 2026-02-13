@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/utils/routine_completion_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/routine_day_policy.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -815,7 +816,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
           bucket: my_day.MyDayPickBucket.routine,
           sortIndex: sortIndex,
           pickedAtUtc: nowUtc,
-          qualifyingValueId: routine.valueId,
+          qualifyingValueId: routine.value?.id,
         ),
       );
       sortIndex += 1;
@@ -836,9 +837,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         my_day.MyDayPickBucket.valueSuggestions =>
           suggestedInfo == null
               ? const <String>[]
-              : suggestedInfo.reasonCodes
-                    .map((AllocationReasonCode c) => c.name)
-                    .toList(),
+              : suggestedInfo.reasonCodes.map((c) => c.name).toList(),
         _ => const <String>[],
       };
 
@@ -1408,13 +1407,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
   _RoutineItemBuildResult _buildRoutineItems() {
     final todayKey = dateOnly(_dayKeyUtc);
-    final completedToday = _routineCompletions
-        .where(
-          (completion) =>
-              dateOnly(completion.completedAtUtc).isAtSameMomentAs(todayKey),
-        )
-        .map((completion) => completion.routineId)
-        .toSet();
     final scheduledEligible = <PlanMyDayRoutineItem>[];
     final flexibleEligible = <PlanMyDayRoutineItem>[];
     final allItems = <PlanMyDayRoutineItem>[];
@@ -1436,8 +1428,13 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         dayKeyUtc: _dayKeyUtc,
         completions: _routineCompletions,
       );
-      final isCompletedToday = completedToday.contains(routine.id);
       final completionsInPeriod = _completionsForPeriod(routine, snapshot);
+      final isCompletedToday = isRoutineCompleteForDay(
+        routine: routine,
+        snapshot: snapshot,
+        dayKeyUtc: _dayKeyUtc,
+        completionsInPeriod: completionsInPeriod,
+      );
       final item = PlanMyDayRoutineItem(
         routine: routine,
         snapshot: snapshot,
@@ -1523,7 +1520,9 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     for (final routineId in _selectedRoutineIds) {
       final routine = routinesById[routineId];
       if (routine == null) continue;
-      counts[routine.valueId] = (counts[routine.valueId] ?? 0) + 1;
+      final valueId = routine.value?.id;
+      if (valueId == null || valueId.isEmpty) continue;
+      counts[valueId] = (counts[valueId] ?? 0) + 1;
     }
     return counts;
   }

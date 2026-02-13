@@ -325,6 +325,17 @@ class _HeaderRow extends StatelessWidget {
       fontWeight: FontWeight.w600,
     );
 
+    final subtitleStyle = theme.textTheme.labelSmall?.copyWith(
+      color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+      fontWeight: FontWeight.w600,
+    );
+
+    final trailingActionStyle = IconButton.styleFrom(
+      minimumSize: Size.square(tokens.minTapTargetSize),
+      padding: EdgeInsets.all(tokens.spaceXs2),
+      tapTargetSize: MaterialTapTargetSize.padded,
+    );
+
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -334,7 +345,7 @@ class _HeaderRow extends StatelessWidget {
               Icon(
                 row.leadingIcon,
                 size: tokens.spaceLg2,
-                color: scheme.onSurfaceVariant,
+                color: row.leadingIconColor ?? scheme.onSurfaceVariant,
               ),
               SizedBox(width: tokens.spaceSm),
             ],
@@ -350,6 +361,19 @@ class _HeaderRow extends StatelessWidget {
               Text(row.trailingLabel!, style: trailingStyle),
               SizedBox(width: tokens.spaceSm),
             ],
+            if (row.trailingActionIcon != null) ...[
+              IconButton(
+                tooltip: row.trailingActionTooltip,
+                onPressed: row.onTrailingAction,
+                style: trailingActionStyle,
+                icon: Icon(
+                  row.trailingActionIcon,
+                  size: tokens.spaceLg2,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(width: tokens.spaceXs2),
+            ],
             if (row.trailingIcon != null)
               Icon(
                 row.trailingIcon,
@@ -358,14 +382,26 @@ class _HeaderRow extends StatelessWidget {
               ),
           ],
         ),
+        if (row.subtitle != null) ...[
+          SizedBox(height: tokens.spaceXs2),
+          Text(
+            row.subtitle!,
+            style: subtitleStyle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
         SizedBox(height: tokens.spaceSm),
         Container(
           height: 1,
-          color: scheme.outlineVariant.withValues(alpha: 0.55),
+          color: scheme.outlineVariant.withValues(
+            alpha: row.dividerOpacity ?? 0.55,
+          ),
         ),
       ],
     );
 
+    final shouldHandleTap = row.onTap != null || row.onLongPress != null;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         tokens.sectionPaddingH,
@@ -373,13 +409,14 @@ class _HeaderRow extends StatelessWidget {
         tokens.sectionPaddingH,
         tokens.spaceXs2,
       ),
-      child: row.onTap == null
-          ? content
-          : InkWell(
+      child: shouldHandleTap
+          ? InkWell(
               borderRadius: BorderRadius.circular(tokens.radiusSm),
               onTap: row.onTap,
+              onLongPress: row.onLongPress,
               child: content,
-            ),
+            )
+          : content,
     );
   }
 }

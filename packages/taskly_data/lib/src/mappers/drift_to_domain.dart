@@ -88,16 +88,21 @@ Routine routineFromTable(drift.RoutinesTableData t, {Value? value}) {
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
     name: t.name,
-    valueId: t.valueId,
-    routineType: RoutineTypeStorageKey.fromStorageKey(t.routineType),
+    projectId: t.projectId,
+    periodType: RoutinePeriodType.values.firstWhere(
+      (value) => value.name == t.periodType,
+      orElse: () => RoutinePeriodType.week,
+    ),
+    scheduleMode: RoutineScheduleMode.values.firstWhere(
+      (value) => value.name == t.scheduleMode,
+      orElse: () => RoutineScheduleMode.flexible,
+    ),
     targetCount: t.targetCount,
     scheduleDays: t.scheduleDays ?? const <int>[],
+    scheduleMonthDays: t.scheduleMonthDays ?? const <int>[],
+    scheduleTimeMinutes: t.scheduleTimeMinutes,
     minSpacingDays: t.minSpacingDays,
     restDayBuffer: t.restDayBuffer,
-    preferredWeeks: t.preferredWeeks ?? const <int>[],
-    fixedDayOfMonth: t.fixedDayOfMonth,
-    fixedWeekday: t.fixedWeekday,
-    fixedWeekOfMonth: t.fixedWeekOfMonth,
     isActive: t.isActive,
     pausedUntil: t.pausedUntil,
     value: value,
@@ -112,6 +117,8 @@ RoutineCompletion routineCompletionFromTable(
     routineId: t.routineId,
     completedAtUtc: t.completedAt,
     createdAtUtc: t.createdAt,
+    completedDayLocal: t.completedDayLocal,
+    completedTimeLocalMinutes: t.completedTimeLocalMinutes,
   );
 }
 

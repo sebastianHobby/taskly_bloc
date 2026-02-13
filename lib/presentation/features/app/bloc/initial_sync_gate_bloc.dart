@@ -66,7 +66,7 @@ final class InitialSyncGateBloc
     await emit.forEach<InitialSyncGateState>(
       _gateStateStream(),
       onData: (state) => state,
-      onError: (Object error, StackTrace stackTrace) {
+      onError: (error, stackTrace) {
         return InitialSyncGateFailure(
           message: 'Failed to sync data: $error',
           progress: null,

@@ -158,16 +158,22 @@ void main() {
     await tester.pumpForStream();
 
     final l10n = _l10n(tester);
+    final foundTitle = await tester.pumpUntilFound(
+      find.text(l10n.scheduledTitle),
+    );
+    expect(foundTitle, isTrue);
     expect(find.text(l10n.scheduledTitle), findsOneWidget);
-    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgetsSafe('renders demo scheduled items', (tester) async {
     await pumpPage(tester);
     await tester.pumpForStream();
 
+    final foundItem = await tester.pumpUntilFound(
+      find.text('Complete Lesson 3'),
+    );
+    expect(foundItem, isTrue);
     expect(find.text('Complete Lesson 3'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 1));
   });
 }
 

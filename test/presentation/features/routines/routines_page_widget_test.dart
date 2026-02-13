@@ -27,7 +27,6 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/settings.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_domain/preferences.dart';
 
 class MockRoutineRepository extends Mock implements RoutineRepositoryContract {}
 
@@ -174,8 +173,9 @@ void main() {
       createdAt: DateTime(2025, 1, 1),
       updatedAt: DateTime(2025, 1, 1),
       name: name,
-      valueId: value.id,
-      routineType: RoutineType.weeklyFixed,
+      projectId: 'project-${value.id}',
+      periodType: RoutinePeriodType.week,
+      scheduleMode: RoutineScheduleMode.scheduled,
       targetCount: 1,
       scheduleDays: const [1],
       value: value,
@@ -245,7 +245,9 @@ void main() {
     expect(find.byKey(const ValueKey('feed-loading')), findsOneWidget);
 
     completer.complete(const <Routine>[]);
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpUntilCondition(
+      () => find.byKey(const ValueKey('feed-loading')).evaluate().isEmpty,
+    );
   });
 
   testWidgetsSafe('shows error state when repository throws', (tester) async {
@@ -266,7 +268,6 @@ void main() {
       find.text('Something went wrong. Please try again.'),
       findsOneWidget,
     );
-    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgetsSafe('renders routine list content when loaded', (tester) async {
@@ -292,8 +293,11 @@ void main() {
     valuesSubject.add([value]);
     await tester.pumpForStream();
 
+    final foundRoutine = await tester.pumpUntilFound(
+      find.text('Morning Walk'),
+    );
+    expect(foundRoutine, isTrue);
     expect(find.text('Morning Walk'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgetsSafe(
@@ -321,14 +325,14 @@ void main() {
       valuesSubject.add([value]);
       await tester.pumpForStream();
 
-      expect(find.text('Log today'), findsOneWidget);
+      expect(find.text('Log'), findsOneWidget);
       expect(find.byTooltip('Select'), findsNothing);
       expect(find.byTooltip('Deselect'), findsNothing);
 
       await tester.longPress(find.text('Morning Walk'));
       await tester.pump();
 
-      expect(find.text('Log today'), findsNothing);
+      expect(find.text('Log'), findsNothing);
       expect(find.byTooltip('Deselect'), findsOneWidget);
     },
   );
@@ -362,7 +366,8 @@ void main() {
     routinesSubject.add([routineA, routineB]);
     await tester.pumpForStream();
 
+    final foundRead = await tester.pumpUntilFound(find.text('Read'));
+    expect(foundRead, isTrue);
     expect(find.text('Read'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 1));
   });
 }

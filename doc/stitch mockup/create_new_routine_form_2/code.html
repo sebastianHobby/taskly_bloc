@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Create New Routine Form</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#13ec5b",
+              "background-light": "#f6f8f6",
+              "background-dark": "#102216",
+              "primary-dark": "#0eb545",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+            boxShadow: {
+                'soft': '0 4px 20px -2px rgba(19, 236, 91, 0.15)',
+            }
+          },
+        },
+      }
+    </script>
+<style>.no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }.toggle-checkbox:checked {
+            right: 0;
+            border-color: #13ec5b;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #13ec5b;
+        }input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #13ec5b;
+            box-shadow: 0 0 0 2px rgba(19, 236, 91, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-gray-900 dark:text-gray-100 min-h-screen flex items-center justify-center p-4 sm:p-0">
+<div class="w-full max-w-md bg-white dark:bg-gray-900 h-[850px] sm:h-auto sm:min-h-[800px] rounded-xl shadow-2xl overflow-hidden relative flex flex-col">
+<header class="px-6 pt-12 pb-4 flex items-center justify-between bg-white dark:bg-gray-900 z-10 sticky top-0 border-b border-gray-100 dark:border-gray-800">
+<button class="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">
+                Cancel
+            </button>
+<h1 class="text-lg font-bold tracking-tight">New Routine</h1>
+<button class="text-primary-dark dark:text-primary font-semibold opacity-0 pointer-events-none">
+                Save
+            </button> 
+</header>
+<main class="flex-1 overflow-y-auto no-scrollbar px-6 py-6 space-y-8">
+<section class="space-y-6">
+<div class="group">
+<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 ml-1" for="routine-name">
+                        What do you want to do?
+                    </label>
+<div class="relative">
+<input class="w-full bg-gray-50 dark:bg-gray-800 border-0 rounded-lg px-4 py-4 text-lg placeholder-gray-400 focus:ring-2 focus:ring-primary/50 transition-all shadow-sm" id="routine-name" placeholder="e.g. Morning Meditation" type="text"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+<span class="material-icons text-xl">edit</span>
+</span>
+</div>
+</div>
+<div>
+<label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 ml-1">
+                        Why is this important?
+                    </label>
+<button class="w-full bg-primary/10 hover:bg-primary/20 dark:bg-primary/5 dark:hover:bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-center justify-between transition-all group">
+<div class="flex items-center space-x-3">
+<div class="w-10 h-10 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform">
+<span class="material-icons">favorite</span>
+</div>
+<div class="text-left">
+<span class="block text-gray-900 dark:text-white font-medium">Connect to Purpose</span>
+<span class="block text-xs text-gray-500 dark:text-gray-400">Select a core value...</span>
+</div>
+</div>
+<span class="material-icons text-gray-400 group-hover:text-primary transition-colors">chevron_right</span>
+</button>
+</div>
+</section>
+<section class="space-y-6 pt-2">
+<div class="flex items-center justify-between mb-2 ml-1">
+<h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Frequency</h2>
+</div>
+<div class="bg-gray-100 dark:bg-gray-800 p-1 rounded-lg flex relative">
+<div class="w-1/2 h-full absolute right-1 top-1 bg-white dark:bg-gray-700 rounded shadow-sm transition-all duration-300 ease-out" style="width: calc(50% - 0.5rem); height: calc(100% - 0.5rem);"></div>
+<button class="relative z-10 flex-1 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 text-center rounded-md transition-colors">
+                        Flexible
+                    </button>
+<button class="relative z-10 flex-1 py-2 text-sm font-medium text-gray-900 dark:text-white text-center rounded-md transition-colors">
+                        Scheduled
+                    </button>
+</div>
+<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm space-y-6">
+<div class="flex items-center justify-between">
+<span class="text-gray-600 dark:text-gray-400 font-medium">Repeat</span>
+<div class="relative">
+<select class="appearance-none bg-gray-50 dark:bg-gray-800 border-none text-gray-900 dark:text-white font-semibold py-2 pl-4 pr-10 rounded-lg focus:ring-0 cursor-pointer">
+<option selected="">Weekly</option>
+<option>Daily</option>
+<option>Monthly</option>
+</select>
+<span class="material-icons absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-sm">expand_more</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
+<div class="flex justify-between gap-1.5 w-full pt-4">
+<button class="w-10 h-10 rounded-full bg-primary text-black font-semibold shadow-soft flex items-center justify-center text-sm hover:brightness-95 transition-all">M</button>
+<button class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium flex items-center justify-center text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">T</button>
+<button class="w-10 h-10 rounded-full bg-primary text-black font-semibold shadow-soft flex items-center justify-center text-sm hover:brightness-95 transition-all">W</button>
+<button class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium flex items-center justify-center text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">T</button>
+<button class="w-10 h-10 rounded-full bg-primary text-black font-semibold shadow-soft flex items-center justify-center text-sm hover:brightness-95 transition-all">F</button>
+<button class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium flex items-center justify-center text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">S</button>
+<button class="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium flex items-center justify-center text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">S</button>
+</div>
+</div>
+</div>
+</section>
+<section class="pt-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center space-x-3">
+<div class="p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-500">
+<span class="material-icons text-xl">notifications_none</span>
+</div>
+<div class="flex flex-col">
+<span class="font-medium text-gray-900 dark:text-white">Reminders</span>
+<span class="text-xs text-gray-500 dark:text-gray-400">Get notified to complete this</span>
+</div>
+</div>
+<label class="flex items-center cursor-pointer relative">
+<input class="sr-only peer" id="reminder-toggle" type="checkbox"/>
+<div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 rounded-full peer peer-focus:ring-2 peer-focus:ring-primary/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</section>
+<div class="h-20"></div> 
+</main>
+<div class="p-6 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 absolute bottom-0 w-full z-20">
+<button class="w-full bg-primary hover:bg-primary-dark text-gray-900 font-bold py-4 px-6 rounded-xl shadow-soft transform transition hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary flex items-center justify-center space-x-2">
+<span>Create Routine</span>
+<span class="material-icons text-lg">arrow_forward</span>
+</button>
+</div>
+</div>
+
+</body></html>

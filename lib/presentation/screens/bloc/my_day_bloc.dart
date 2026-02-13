@@ -4,6 +4,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/my_day.dart' show MyDayRitualStatus;
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_domain/time.dart' show dateOnly;
 
 import 'package:taskly_bloc/presentation/screens/models/my_day_models.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
@@ -161,9 +162,12 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
       entityId: event.routineId,
     );
 
+    final nowLocal = _nowService.nowLocal();
     await _routineWriteService.recordCompletion(
       routineId: event.routineId,
       completedAtUtc: _nowService.nowUtc(),
+      completedDayLocal: dateOnly(nowLocal),
+      completedTimeLocalMinutes: nowLocal.hour * 60 + nowLocal.minute,
       context: context,
     );
   }

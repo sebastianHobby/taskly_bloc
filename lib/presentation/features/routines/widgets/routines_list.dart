@@ -7,12 +7,11 @@ import 'package:taskly_bloc/presentation/features/routines/model/routine_list_it
 import 'package:taskly_bloc/presentation/features/routines/model/routine_sort_order.dart';
 import 'package:taskly_bloc/presentation/features/routines/selection/routine_selection_bloc.dart';
 import 'package:taskly_bloc/presentation/features/routines/selection/routine_selection_models.dart';
+import 'package:taskly_bloc/presentation/shared/utils/routine_completion_utils.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/routines.dart';
-import 'package:taskly_domain/preferences.dart';
-import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -20,7 +19,6 @@ class RoutinesListView extends StatelessWidget {
   const RoutinesListView({
     required this.items,
     required this.sortOrder,
-    required this.density,
     required this.onEditRoutine,
     required this.onLogRoutine,
     super.key,
@@ -28,7 +26,6 @@ class RoutinesListView extends StatelessWidget {
 
   final List<RoutineListItem> items;
   final RoutineSortOrder sortOrder;
-  final DisplayDensity density;
   final ValueChanged<String> onEditRoutine;
   final ValueChanged<String> onLogRoutine;
 
@@ -36,8 +33,8 @@ class RoutinesListView extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final selection = context.read<RoutineSelectionBloc>();
-    final tourActive = context.select(
-      (GuidedTourBloc bloc) => bloc.state.active,
+    final tourActive = context.select<GuidedTourBloc, bool>(
+      (bloc) => bloc.state.active,
     );
     final demoEnabled = context.read<DemoModeService>().isEnabled;
     final showTourAnchors = tourActive && demoEnabled;
@@ -56,7 +53,6 @@ class RoutinesListView extends StatelessWidget {
         onLogRoutine: onLogRoutine,
         selection: selection,
         showTourAnchors: showTourAnchors,
-        density: density,
       );
     } else {
       final sorted = _sortItems(items, sortOrder);
@@ -68,7 +64,6 @@ class RoutinesListView extends StatelessWidget {
         onLogRoutine: onLogRoutine,
         selection: selection,
         showTourAnchors: showTourAnchors,
-        density: density,
       );
     }
 
@@ -78,7 +73,7 @@ class RoutinesListView extends StatelessWidget {
             (item) => RoutineSelectionMeta(
               key: RoutineSelectionKey(item.routine.id),
               displayName: item.routine.name,
-              completedToday: _completedToday(item),
+              completedToday: _isRoutineComplete(item),
               isActive: item.routine.isActive,
             ),
           )
@@ -102,7 +97,7 @@ _splitScheduled(List<RoutineListItem> items) {
   final flexible = <RoutineListItem>[];
 
   for (final item in items) {
-    if (item.routine.routineType == RoutineType.weeklyFixed) {
+    if (item.routine.scheduleMode == RoutineScheduleMode.scheduled) {
       scheduled.add(item);
     } else {
       flexible.add(item);
@@ -126,7 +121,6 @@ List<TasklySectionSpec> _buildScheduledSections(
   required ValueChanged<String> onLogRoutine,
   required RoutineSelectionBloc selection,
   required bool showTourAnchors,
-  required DisplayDensity density,
 }) {
   return <TasklySectionSpec>[
     if (scheduled.isNotEmpty)
@@ -146,7 +140,6 @@ List<TasklySectionSpec> _buildScheduledSections(
               onLogRoutine: onLogRoutine,
               selection: selection,
               showTourAnchors: showTourAnchors,
-              density: density,
             ),
         ],
       ),
@@ -167,7 +160,6 @@ List<TasklySectionSpec> _buildScheduledSections(
               onLogRoutine: onLogRoutine,
               selection: selection,
               showTourAnchors: showTourAnchors,
-              density: density,
             ),
         ],
       ),
@@ -181,7 +173,6 @@ List<TasklySectionSpec> _buildFlatSection(
   required ValueChanged<String> onLogRoutine,
   required RoutineSelectionBloc selection,
   required bool showTourAnchors,
-  required DisplayDensity density,
 }) {
   if (items.isEmpty) return const <TasklySectionSpec>[];
   return [
@@ -201,7 +192,6 @@ List<TasklySectionSpec> _buildFlatSection(
             onLogRoutine: onLogRoutine,
             selection: selection,
             showTourAnchors: showTourAnchors,
-            density: density,
           ),
       ],
     ),
@@ -215,7 +205,6 @@ TasklyRowSpec _buildRow(
   required ValueChanged<String> onLogRoutine,
   required RoutineSelectionBloc selection,
   required bool showTourAnchors,
-  required DisplayDensity density,
 }) {
   final key = RoutineSelectionKey(item.routine.id);
   final selectionMode = selection.isSelectionMode;
@@ -240,9 +229,10 @@ TasklyRowSpec _buildRow(
       routine: item.routine,
       snapshot: item.snapshot,
       selected: isSelected,
-      completed: _completedToday(item),
-      showScheduleRow: item.routine.routineType == RoutineType.weeklyFixed,
-      showProgress: true,
+      completed: _isRoutineComplete(item),
+      showScheduleRow:
+          item.routine.periodType == RoutinePeriodType.week &&
+          item.routine.scheduleMode == RoutineScheduleMode.scheduled,
       highlightCompleted: false,
       dayKeyUtc: item.dayKeyUtc,
       completionsInPeriod: item.completionsInPeriod,
@@ -250,16 +240,12 @@ TasklyRowSpec _buildRow(
           ? null
           : buildRoutineExecutionLabels(
               context,
-              completed: _completedToday(item),
+              completed: _isRoutineComplete(item),
             ),
     ),
     style: selectionMode
-        ? (density == DisplayDensity.compact
-              ? const TasklyRoutineRowStyle.bulkSelectionCompact()
-              : const TasklyRoutineRowStyle.bulkSelection())
-        : (density == DisplayDensity.compact
-              ? const TasklyRoutineRowStyle.compact()
-              : const TasklyRoutineRowStyle.standard()),
+        ? const TasklyRoutineRowStyle.bulkSelection()
+        : const TasklyRoutineRowStyle.standard(),
     actions: TasklyRoutineRowActions(
       onTap: handleTap,
       onPrimaryAction: selectionMode
@@ -342,11 +328,11 @@ List<RoutineListItem> _sortItems(
   return sorted;
 }
 
-bool _completedToday(RoutineListItem item) {
-  final today = dateOnly(item.dayKeyUtc);
-  return item.completionsInPeriod.any(
-    (completion) =>
-        completion.routineId == item.routine.id &&
-        dateOnly(completion.completedAtUtc).isAtSameMomentAs(today),
+bool _isRoutineComplete(RoutineListItem item) {
+  return isRoutineCompleteForDay(
+    routine: item.routine,
+    snapshot: item.snapshot,
+    dayKeyUtc: item.dayKeyUtc,
+    completionsInPeriod: item.completionsInPeriod,
   );
 }

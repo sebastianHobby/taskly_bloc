@@ -22,10 +22,8 @@ class TaskEditorLaunchArgs {
     required this.demoDataProvider,
     this.taskId,
     this.defaultProjectId,
-    this.defaultValueIds,
     this.defaultStartDate,
     this.defaultDeadlineDate,
-    this.openToValues = false,
     this.openToProjectPicker = false,
     this.includeInMyDayDefault = false,
   });
@@ -40,10 +38,8 @@ class TaskEditorLaunchArgs {
   final DemoDataProvider demoDataProvider;
   final String? taskId;
   final String? defaultProjectId;
-  final List<String>? defaultValueIds;
   final DateTime? defaultStartDate;
   final DateTime? defaultDeadlineDate;
-  final bool openToValues;
   final bool openToProjectPicker;
   final bool includeInMyDayDefault;
 }
@@ -97,14 +93,18 @@ typedef ValueEditorBuilder =
 class RoutineEditorLaunchArgs {
   const RoutineEditorLaunchArgs({
     required this.routineRepository,
-    required this.valueRepository,
+    required this.projectRepository,
     required this.routineWriteService,
+    this.defaultProjectId,
+    this.openToProjectPicker = false,
     this.routineId,
   });
 
   final RoutineRepositoryContract routineRepository;
-  final ValueRepositoryContract valueRepository;
+  final ProjectRepositoryContract projectRepository;
   final RoutineWriteService routineWriteService;
+  final String? defaultProjectId;
+  final bool openToProjectPicker;
   final String? routineId;
 }
 
@@ -176,10 +176,8 @@ class EditorLauncher {
     BuildContext context, {
     String? taskId,
     String? defaultProjectId,
-    List<String>? defaultValueIds,
     DateTime? defaultStartDate,
     DateTime? defaultDeadlineDate,
-    bool openToValues = false,
     bool openToProjectPicker = false,
     bool includeInMyDayDefault = false,
     bool? showDragHandle,
@@ -204,9 +202,7 @@ class EditorLauncher {
       );
     }
 
-    final windowSizeClass = WindowSizeClass.of(context);
-    final effectiveShowDragHandle =
-        windowSizeClass.isCompact && (showDragHandle ?? true);
+    const effectiveShowDragHandle = false;
 
     return showDetailModal<void>(
       context: context,
@@ -225,10 +221,8 @@ class EditorLauncher {
             demoDataProvider: _demoDataProvider,
             taskId: taskId,
             defaultProjectId: defaultProjectId,
-            defaultValueIds: defaultValueIds,
             defaultStartDate: defaultStartDate,
             defaultDeadlineDate: defaultDeadlineDate,
-            openToValues: openToValues,
             openToProjectPicker: openToProjectPicker,
             includeInMyDayDefault: includeInMyDayDefault,
           ),
@@ -325,6 +319,8 @@ class EditorLauncher {
   Future<void> openRoutineEditor(
     BuildContext context, {
     String? routineId,
+    String? defaultProjectId,
+    bool openToProjectPicker = false,
     bool? showDragHandle,
   }) {
     final routineRepository = _routineRepository;
@@ -353,8 +349,10 @@ class EditorLauncher {
           modalContext,
           RoutineEditorLaunchArgs(
             routineRepository: routineRepository,
-            valueRepository: _valueRepository,
+            projectRepository: _projectRepository,
             routineWriteService: routineWriteService,
+            defaultProjectId: defaultProjectId,
+            openToProjectPicker: openToProjectPicker,
             routineId: routineId,
           ),
         );

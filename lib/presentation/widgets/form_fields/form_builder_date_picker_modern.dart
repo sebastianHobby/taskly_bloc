@@ -51,7 +51,7 @@ class FormBuilderDatePickerModern extends StatelessWidget {
         name: name,
         initialValue: initialValue,
         validator: validator,
-        valueTransformer: (DateTime? value) {
+        valueTransformer: (value) {
           return value != null ? dateOnly(value) : null;
         },
         enabled: enabled,

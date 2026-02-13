@@ -589,8 +589,9 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       if (routine == null) continue;
       final day = dateOnly(completion.completedAtUtc);
       if (day.isBefore(startDay) || day.isAfter(endDay)) continue;
-      routineCounts[routine.valueId] =
-          (routineCounts[routine.valueId] ?? 0) + 1;
+      final valueId = routine.value?.id;
+      if (valueId == null || valueId.isEmpty) continue;
+      routineCounts[valueId] = (routineCounts[valueId] ?? 0) + 1;
     }
 
     final entries = <WeeklyReviewRatingEntry>[];
@@ -782,7 +783,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       if (day.isBefore(startDay) || day.isAfter(endDay)) continue;
       final routine = routineById[completion.routineId];
       if (routine == null) continue;
-      if (routine.valueId != valueId) continue;
+      if (routine.value?.id != valueId) continue;
       final current = routineCounts[completion.routineId] ?? 0;
       routineCounts[completion.routineId] = current + 1;
       final latest = routineLatestCompletion[completion.routineId];
@@ -899,7 +900,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       if (index < 0 || index >= safeWeeks) continue;
       final routine = routineById[completion.routineId];
       if (routine == null) continue;
-      final series = trends[routine.valueId];
+      final series = trends[routine.value?.id];
       if (series == null) continue;
       series[index] = series[index] + 1;
     }

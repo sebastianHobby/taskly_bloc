@@ -29,18 +29,20 @@ final class RoutineRepository implements RoutineRepositoryContract {
     final routines$ = (_db.select(
       _db.routinesTable,
     )..orderBy([(t) => OrderingTerm(expression: t.name)])).watch();
+    final projects$ = _db.select(_db.projectTable).watch();
     final values$ = _db.select(_db.valueTable).watch();
 
-    return Rx.combineLatest2(routines$, values$, (
-      List<RoutinesTableData> routineRows,
-      List<ValueTableData> valueRows,
-    ) {
-      return _mapRoutines(
+    return Rx.combineLatest3(
+      routines$,
+      projects$,
+      values$,
+      (routineRows, projectRows, valueRows) => _mapRoutines(
         routineRows,
+        projectRows,
         valueRows,
         includeInactive: includeInactive,
-      );
-    });
+      ),
+    );
   }
 
   @override
@@ -48,10 +50,12 @@ final class RoutineRepository implements RoutineRepositoryContract {
     final routineRows = await (_db.select(
       _db.routinesTable,
     )..orderBy([(t) => OrderingTerm(expression: t.name)])).get();
+    final projectRows = await _db.select(_db.projectTable).get();
     final valueRows = await _db.select(_db.valueTable).get();
 
     return _mapRoutines(
       routineRows,
+      projectRows,
       valueRows,
       includeInactive: includeInactive,
     );
@@ -79,16 +83,15 @@ final class RoutineRepository implements RoutineRepositoryContract {
   @override
   Future<void> create({
     required String name,
-    required String valueId,
-    required RoutineType routineType,
+    required String projectId,
+    required RoutinePeriodType periodType,
+    required RoutineScheduleMode scheduleMode,
     required int targetCount,
     List<int> scheduleDays = const <int>[],
+    List<int> scheduleMonthDays = const <int>[],
+    int? scheduleTimeMinutes,
     int? minSpacingDays,
     int? restDayBuffer,
-    List<int> preferredWeeks = const <int>[],
-    int? fixedDayOfMonth,
-    int? fixedWeekday,
-    int? fixedWeekOfMonth,
     bool isActive = true,
     DateTime? pausedUntilUtc,
     OperationContext? context,
@@ -104,18 +107,17 @@ final class RoutineRepository implements RoutineRepositoryContract {
               RoutinesTableCompanion.insert(
                 id: _ids.routineId(),
                 name: name,
-                valueId: valueId,
-                routineType: routineType.storageKey,
+                projectId: projectId,
+                periodType: periodType.name,
+                scheduleMode: scheduleMode.name,
                 targetCount: targetCount,
                 scheduleDays: Value(scheduleDays.isEmpty ? null : scheduleDays),
+                scheduleMonthDays: Value(
+                  scheduleMonthDays.isEmpty ? null : scheduleMonthDays,
+                ),
+                scheduleTimeMinutes: Value(scheduleTimeMinutes),
                 minSpacingDays: Value(minSpacingDays),
                 restDayBuffer: Value(restDayBuffer),
-                preferredWeeks: Value(
-                  preferredWeeks.isEmpty ? null : preferredWeeks,
-                ),
-                fixedDayOfMonth: Value(fixedDayOfMonth),
-                fixedWeekday: Value(fixedWeekday),
-                fixedWeekOfMonth: Value(fixedWeekOfMonth),
                 isActive: Value(isActive),
                 pausedUntil: Value(dateOnlyOrNull(pausedUntilUtc)),
                 createdAt: Value(now),
@@ -135,16 +137,15 @@ final class RoutineRepository implements RoutineRepositoryContract {
   Future<void> update({
     required String id,
     required String name,
-    required String valueId,
-    required RoutineType routineType,
+    required String projectId,
+    required RoutinePeriodType periodType,
+    required RoutineScheduleMode scheduleMode,
     required int targetCount,
     List<int>? scheduleDays,
+    List<int>? scheduleMonthDays,
+    int? scheduleTimeMinutes,
     int? minSpacingDays,
     int? restDayBuffer,
-    List<int>? preferredWeeks,
-    int? fixedDayOfMonth,
-    int? fixedWeekday,
-    int? fixedWeekOfMonth,
     bool? isActive,
     DateTime? pausedUntilUtc,
     OperationContext? context,
@@ -159,20 +160,21 @@ final class RoutineRepository implements RoutineRepositoryContract {
         )..where((t) => t.id.equals(id))).write(
           RoutinesTableCompanion(
             name: Value(name),
-            valueId: Value(valueId),
-            routineType: Value(routineType.storageKey),
+            projectId: Value(projectId),
+            periodType: Value(periodType.name),
+            scheduleMode: Value(scheduleMode.name),
             targetCount: Value(targetCount),
             scheduleDays: scheduleDays == null
                 ? const Value.absent()
                 : Value(scheduleDays),
+            scheduleMonthDays: scheduleMonthDays == null
+                ? const Value.absent()
+                : Value(scheduleMonthDays),
+            scheduleTimeMinutes: scheduleTimeMinutes == null
+                ? const Value.absent()
+                : Value(scheduleTimeMinutes),
             minSpacingDays: Value(minSpacingDays),
             restDayBuffer: Value(restDayBuffer),
-            preferredWeeks: preferredWeeks == null
-                ? const Value.absent()
-                : Value(preferredWeeks),
-            fixedDayOfMonth: Value(fixedDayOfMonth),
-            fixedWeekday: Value(fixedWeekday),
-            fixedWeekOfMonth: Value(fixedWeekOfMonth),
             isActive: isActive == null ? const Value.absent() : Value(isActive),
             pausedUntil: Value(dateOnlyOrNull(pausedUntilUtc)),
             updatedAt: Value(now),
@@ -240,6 +242,8 @@ final class RoutineRepository implements RoutineRepositoryContract {
   Future<void> recordCompletion({
     required String routineId,
     DateTime? completedAtUtc,
+    DateTime? completedDayLocal,
+    int? completedTimeLocalMinutes,
     OperationContext? context,
   }) async {
     return FailureGuard.run(
@@ -254,6 +258,8 @@ final class RoutineRepository implements RoutineRepositoryContract {
                 id: _ids.routineCompletionId(),
                 routineId: routineId,
                 completedAt: completedAtUtc ?? now,
+                completedDayLocal: Value(dateOnlyOrNull(completedDayLocal)),
+                completedTimeLocalMinutes: Value(completedTimeLocalMinutes),
                 createdAt: Value(now),
                 psMetadata: Value(psMetadata),
               ),
@@ -350,17 +356,28 @@ final class RoutineRepository implements RoutineRepositoryContract {
 
   List<Routine> _mapRoutines(
     List<RoutinesTableData> routineRows,
+    List<ProjectTableData> projectRows,
     List<ValueTableData> valueRows, {
     required bool includeInactive,
   }) {
     final valuesById = {
       for (final value in valueRows) value.id: valueFromTable(value),
     };
+    final projectsById = {
+      for (final project in projectRows) project.id: project,
+    };
 
     final routines = <Routine>[];
     for (final row in routineRows) {
       if (!includeInactive && !row.isActive) continue;
-      routines.add(routineFromTable(row, value: valuesById[row.valueId]));
+      final project = projectsById[row.projectId];
+      final primaryValueId = project?.primaryValueId;
+      routines.add(
+        routineFromTable(
+          row,
+          value: primaryValueId == null ? null : valuesById[primaryValueId],
+        ),
+      );
     }
 
     return routines;

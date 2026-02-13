@@ -1,8 +1,6 @@
+import 'package:taskly_domain/src/routines/model/routine_period_type.dart';
+
 enum RoutineStatus { onPace, tightWeek, catchUp, restWeek }
-
-enum RoutineWindowPhase { thisWeek, nextWeek, laterThisMonth }
-
-enum RoutinePeriodType { week, month }
 
 class RoutineCadenceSnapshot {
   const RoutineCadenceSnapshot({
@@ -15,7 +13,6 @@ class RoutineCadenceSnapshot {
     required this.remainingCount,
     required this.daysLeft,
     required this.status,
-    this.windowPhase,
     this.nextRecommendedDayUtc,
   });
 
@@ -28,6 +25,5 @@ class RoutineCadenceSnapshot {
   final int remainingCount;
   final int daysLeft;
   final RoutineStatus status;
-  final RoutineWindowPhase? windowPhase;
   final DateTime? nextRecommendedDayUtc;
 }

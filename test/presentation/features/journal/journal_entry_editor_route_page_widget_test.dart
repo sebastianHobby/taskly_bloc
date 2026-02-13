@@ -293,7 +293,8 @@ void main() {
     });
 
     await pumpPage(tester, entryId: 'entry-1');
-    await tester.pumpForStream(20);
+    final foundSave = await tester.pumpUntilFound(find.text('Save log'));
+    expect(foundSave, isTrue);
 
     var saveButton = _saveLogButton(tester);
     expect(saveButton.onPressed, isNull);
@@ -439,7 +440,7 @@ void main() {
     expect(find.text('10'), findsOneWidget);
   });
 
-  testWidgetsSafe('choice bottom sheet search selects option', (tester) async {
+  testWidgetsSafe('choice bottom sheet selects option', (tester) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
     final choiceDef = _trackerDef(
       'choice-1',
@@ -484,16 +485,10 @@ void main() {
     await _tapTextButton(tester, l10n.journalChooseOptionLabel);
     await tester.pumpForStream();
 
-    await tester.enterText(
-      find.widgetWithText(TextField, l10n.journalSearchOptionsLabel),
-      'Work',
-    );
-    await tester.pumpForStream();
-
     final workTile = find.widgetWithText(ListTile, 'Work');
     await tester.ensureVisible(workTile);
     await tester.tap(workTile, warnIfMissed: false);
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpForStream();
     await tester.pumpForStream();
 
     expect(find.widgetWithText(ListTile, 'Work'), findsOneWidget);
@@ -522,7 +517,9 @@ Finder _saveLogButtonFinder(WidgetTester tester) {
 Future<void> _tapSaveLog(WidgetTester tester) async {
   final buttonFinder = _saveLogButtonFinder(tester);
   await tester.ensureVisible(buttonFinder);
-  await tester.pump(const Duration(milliseconds: 200));
+  await tester.pumpUntilCondition(
+    () => buttonFinder.hitTestable().evaluate().isNotEmpty,
+  );
   await tester.tap(buttonFinder, warnIfMissed: false);
 }
 
@@ -534,14 +531,18 @@ Future<void> _tapMood(WidgetTester tester, String label) async {
         widget.properties.label == l10n.journalMoodSemanticsLabel(label),
   );
   await tester.ensureVisible(moodFinder.first);
-  await tester.pump(const Duration(milliseconds: 200));
+  await tester.pumpUntilCondition(
+    () => moodFinder.first.hitTestable().evaluate().isNotEmpty,
+  );
   await tester.tap(moodFinder.first);
 }
 
 Future<void> _tapTextButton(WidgetTester tester, String text) async {
   final finder = find.text(text);
   await tester.ensureVisible(finder.first);
-  await tester.pump(const Duration(milliseconds: 200));
+  await tester.pumpUntilCondition(
+    () => finder.first.hitTestable().evaluate().isNotEmpty,
+  );
   await tester.tap(finder.first, warnIfMissed: false);
 }
 

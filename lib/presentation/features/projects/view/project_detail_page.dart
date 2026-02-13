@@ -12,6 +12,8 @@ import 'package:taskly_bloc/presentation/features/navigation/services/navigation
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
+import 'package:taskly_bloc/presentation/shared/utils/routine_completion_utils.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
@@ -24,6 +26,7 @@ import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.da
 import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_domain/preferences.dart';
@@ -50,6 +53,7 @@ class ProjectDetailPage extends StatelessWidget {
             projectRepository: context.read<ProjectRepositoryContract>(),
             occurrenceReadService: context.read<OccurrenceReadService>(),
             sessionDayKeyService: context.read<SessionDayKeyService>(),
+            routineRepository: context.read<RoutineRepositoryContract>(),
           ),
         ),
         BlocProvider(
@@ -86,6 +90,8 @@ class _ProjectDetailView extends StatefulWidget {
 class _ProjectDetailViewState extends State<_ProjectDetailView> {
   _ProjectTaskSortOrder _sortOrder = _ProjectTaskSortOrder.listOrder;
   bool _showCompleted = false;
+  bool _tasksCollapsed = false;
+  bool _routinesCollapsed = false;
 
   Future<void> _openNewTaskEditor(BuildContext context) {
     final inboxId = ProjectGroupingRef.inbox().stableKey;
@@ -101,10 +107,12 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
     );
   }
 
-  Future<void> _openNewProjectEditor(BuildContext context) {
-    return context.read<EditorLauncher>().openProjectEditor(
+  Future<void> _openNewRoutineEditor(BuildContext context) {
+    return context.read<EditorLauncher>().openRoutineEditor(
       context,
-      projectId: null,
+      routineId: null,
+      defaultProjectId: widget.projectId,
+      openToProjectPicker: false,
       showDragHandle: true,
     );
   }
@@ -117,6 +125,14 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
   void _toggleShowCompleted(bool value) {
     if (_showCompleted == value) return;
     setState(() => _showCompleted = value);
+  }
+
+  void _toggleTasksCollapsed() {
+    setState(() => _tasksCollapsed = !_tasksCollapsed);
+  }
+
+  void _toggleRoutinesCollapsed() {
+    setState(() => _routinesCollapsed = !_routinesCollapsed);
   }
 
   Future<bool> _confirmCompleteProject() async {
@@ -248,8 +264,8 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
         : context.l10n.projectDetailsTitle;
     final chrome = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
-    final density = context.select(
-      (DisplayDensityBloc bloc) => bloc.state.density,
+    final density = context.select<DisplayDensityBloc, DisplayDensity>(
+      (bloc) => bloc.state.density,
     );
     final iconButtonStyle = IconButton.styleFrom(
       backgroundColor: scheme.surfaceContainerHighest.withValues(
@@ -345,10 +361,16 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
                 ),
           floatingActionButton: selectionState.isSelectionMode
               ? null
-              : EntityAddSpeedDial(
+              : isInbox
+              ? EntityAddFab(
+                  heroTag: 'add_speed_dial_project_detail',
+                  tooltip: context.l10n.addTaskAction,
+                  onPressed: () => _openNewTaskEditor(context),
+                )
+              : TaskRoutineAddSpeedDial(
                   heroTag: 'add_speed_dial_project_detail',
                   onCreateTask: () => _openNewTaskEditor(context),
-                  onCreateProject: () => _openNewProjectEditor(context),
+                  onCreateRoutine: () => _openNewRoutineEditor(context),
                 ),
           body: BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
             builder: (context, state) {
@@ -362,15 +384,21 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
                 ProjectOverviewLoaded(
                   :final project,
                   :final tasks,
+                  :final routines,
                   :final todayDayKeyUtc,
                 ) =>
                   _ProjectDetailBody(
                     project: project,
                     tasks: tasks,
+                    routines: routines,
                     todayDayKeyUtc: todayDayKeyUtc,
                     selectionState: selectionState,
                     sortOrder: _sortOrder,
                     showCompleted: _showCompleted,
+                    tasksCollapsed: _tasksCollapsed,
+                    routinesCollapsed: _routinesCollapsed,
+                    onToggleTasksCollapsed: _toggleTasksCollapsed,
+                    onToggleRoutinesCollapsed: _toggleRoutinesCollapsed,
                     density: density,
                   ),
               };
@@ -386,19 +414,29 @@ class _ProjectDetailBody extends StatelessWidget {
   const _ProjectDetailBody({
     required this.project,
     required this.tasks,
+    required this.routines,
     required this.todayDayKeyUtc,
     required this.selectionState,
     required this.sortOrder,
     required this.showCompleted,
+    required this.tasksCollapsed,
+    required this.routinesCollapsed,
+    required this.onToggleTasksCollapsed,
+    required this.onToggleRoutinesCollapsed,
     required this.density,
   });
 
   final Project project;
   final List<Task> tasks;
+  final List<ProjectRoutineItem> routines;
   final DateTime todayDayKeyUtc;
   final SelectionState selectionState;
   final _ProjectTaskSortOrder sortOrder;
   final bool showCompleted;
+  final bool tasksCollapsed;
+  final bool routinesCollapsed;
+  final VoidCallback onToggleTasksCollapsed;
+  final VoidCallback onToggleRoutinesCollapsed;
   final DisplayDensity density;
 
   @override
@@ -480,26 +518,19 @@ class _ProjectDetailBody extends StatelessWidget {
       );
     }
 
-    final rows = <TasklyRowSpec>[
+    final taskRows = <TasklyRowSpec>[
       TasklyRowSpec.header(
-        key: 'project-detail-open-header',
+        key: 'project-detail-tasks-header',
         title: context.l10n.tasksTitle,
         trailingLabel: context.l10n.remainingCountLabel(orderedOpen.length),
+        trailingIcon: tasksCollapsed
+            ? Icons.expand_more_rounded
+            : Icons.expand_less_rounded,
+        onTap: onToggleTasksCollapsed,
+        dividerOpacity: tasksCollapsed ? 0.25 : null,
       ),
-      ...orderedOpen.map(
-        (task) => _buildProjectTaskRow(
-          context,
-          task,
-          selectionState,
-          density: density,
-        ),
-      ),
-      if (orderedCompleted.isNotEmpty) ...[
-        TasklyRowSpec.header(
-          key: 'project-detail-completed-header',
-          title: context.l10n.completedLabel,
-        ),
-        ...orderedCompleted.map(
+      if (!tasksCollapsed) ...[
+        ...orderedOpen.map(
           (task) => _buildProjectTaskRow(
             context,
             task,
@@ -507,8 +538,45 @@ class _ProjectDetailBody extends StatelessWidget {
             density: density,
           ),
         ),
+        if (orderedCompleted.isNotEmpty) ...[
+          TasklyRowSpec.header(
+            key: 'project-detail-completed-header',
+            title: context.l10n.completedLabel,
+          ),
+          ...orderedCompleted.map(
+            (task) => _buildProjectTaskRow(
+              context,
+              task,
+              selectionState,
+              density: density,
+            ),
+          ),
+        ],
       ],
     ];
+
+    final routineRows = isInbox
+        ? const <TasklyRowSpec>[]
+        : <TasklyRowSpec>[
+            TasklyRowSpec.header(
+              key: 'project-detail-routines-header',
+              title: context.l10n.routinesTitle,
+              trailingLabel: '${routines.length}',
+              trailingIcon: routinesCollapsed
+                  ? Icons.expand_more_rounded
+                  : Icons.expand_less_rounded,
+              onTap: onToggleRoutinesCollapsed,
+              dividerOpacity: routinesCollapsed ? 0.25 : null,
+            ),
+            if (!routinesCollapsed)
+              ...routines.map(
+                (item) => _buildProjectRoutineRow(
+                  context,
+                  item,
+                  selectionState,
+                ),
+              ),
+          ];
 
     if (isInbox && tasks.isEmpty) {
       return ListView(
@@ -571,8 +639,20 @@ class _ProjectDetailBody extends StatelessWidget {
               SizedBox(height: tokens.spaceSm),
             ],
             TasklyFeedRenderer.buildSection(
-              TasklySectionSpec.standardList(id: 'project-detail', rows: rows),
+              TasklySectionSpec.standardList(
+                id: 'project-detail-tasks',
+                rows: taskRows,
+              ),
             ),
+            if (routineRows.isNotEmpty) ...[
+              SizedBox(height: tokens.spaceSm),
+              TasklyFeedRenderer.buildSection(
+                TasklySectionSpec.standardList(
+                  id: 'project-detail-routines',
+                  rows: routineRows,
+                ),
+              ),
+            ],
           ],
         ),
       ],
@@ -615,6 +695,11 @@ class _ProjectDetailHeader extends StatelessWidget {
     final totalCount = data.taskCount;
     final completedCount = data.completedTaskCount ?? 0;
     final hasCompletedCount = data.completedTaskCount != null;
+    final showInboxHint = isInbox && (totalCount ?? 0) > 0;
+    final inboxHintStyle = theme.textTheme.bodySmall?.copyWith(
+      color: scheme.onSurfaceVariant,
+      fontWeight: FontWeight.w500,
+    );
 
     final metaChildren = <Widget>[];
 
@@ -741,6 +826,14 @@ class _ProjectDetailHeader extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(bottom: tokens.spaceXs2),
             child: titleRow,
+          ),
+        if (showInboxHint)
+          Padding(
+            padding: EdgeInsets.only(bottom: tokens.spaceXs2),
+            child: Text(
+              l10n.inboxNonEmptyHint,
+              style: inboxHintStyle,
+            ),
           ),
         if (metaChildren.isNotEmpty)
           Wrap(
@@ -1047,6 +1140,51 @@ TasklyRowSpec _buildProjectTaskRow(
         task: task,
         tileCapabilities: tileCapabilities,
       ),
+    ),
+  );
+}
+
+TasklyRowSpec _buildProjectRoutineRow(
+  BuildContext context,
+  ProjectRoutineItem item,
+  SelectionState selectionState,
+) {
+  final routine = item.routine;
+  final completed = isRoutineCompleteForDay(
+    routine: routine,
+    snapshot: item.snapshot,
+    dayKeyUtc: item.dayKeyUtc,
+    completionsInPeriod: item.completionsInPeriod,
+  );
+
+  final data = buildRoutineRowData(
+    context,
+    routine: routine,
+    snapshot: item.snapshot,
+    completed: completed,
+    highlightCompleted: false,
+    showScheduleRow:
+        routine.periodType == RoutinePeriodType.week &&
+        routine.scheduleMode == RoutineScheduleMode.scheduled,
+    dayKeyUtc: item.dayKeyUtc,
+    completionsInPeriod: item.completionsInPeriod,
+  );
+
+  final isSelectionMode = selectionState.isSelectionMode;
+
+  return TasklyRowSpec.routine(
+    key: 'project-detail-routine-${routine.id}',
+    data: data,
+    style: const TasklyRoutineRowStyle.standard(),
+    actions: TasklyRoutineRowActions(
+      onTap: isSelectionMode
+          ? null
+          : () => context.read<EditorLauncher>().openRoutineEditor(
+              context,
+              routineId: routine.id,
+              openToProjectPicker: false,
+              showDragHandle: true,
+            ),
     ),
   );
 }

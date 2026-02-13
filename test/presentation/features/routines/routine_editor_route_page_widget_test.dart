@@ -12,13 +12,14 @@ import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routine_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/routines/widgets/routine_form.dart';
 import 'package:taskly_domain/contracts.dart';
-import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/core.dart' as domain;
+import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 
 class MockRoutineRepository extends Mock implements RoutineRepositoryContract {}
 
-class MockValueRepository extends Mock implements ValueRepositoryContract {}
+class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
 void main() {
   setUpAll(() {
@@ -28,13 +29,13 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockRoutineRepository routineRepository;
-  late MockValueRepository valueRepository;
+  late MockProjectRepository projectRepository;
   late RoutineWriteService routineWriteService;
   late AppErrorReporter errorReporter;
 
   setUp(() {
     routineRepository = MockRoutineRepository();
-    valueRepository = MockValueRepository();
+    projectRepository = MockProjectRepository();
     routineWriteService = RoutineWriteService(
       routineRepository: routineRepository,
     );
@@ -42,7 +43,9 @@ void main() {
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
     );
 
-    when(() => valueRepository.getAll()).thenAnswer((_) async => <Value>[]);
+    when(
+      () => projectRepository.getAll(ProjectQuery.all()),
+    ).thenAnswer((_) async => <domain.Project>[]);
   });
 
   Future<void> pumpRoute(WidgetTester tester) async {
@@ -64,8 +67,8 @@ void main() {
           RepositoryProvider<RoutineRepositoryContract>.value(
             value: routineRepository,
           ),
-          RepositoryProvider<ValueRepositoryContract>.value(
-            value: valueRepository,
+          RepositoryProvider<ProjectRepositoryContract>.value(
+            value: projectRepository,
           ),
           RepositoryProvider<RoutineWriteService>.value(
             value: routineWriteService,

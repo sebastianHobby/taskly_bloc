@@ -1,0 +1,1 @@
+enum RoutineScheduleMode { flexible, scheduled }

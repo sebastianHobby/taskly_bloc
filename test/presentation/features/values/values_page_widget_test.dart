@@ -202,7 +202,8 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.byTooltip('More'));
-    await tester.pump(const Duration(milliseconds: 300));
+    final foundRange = await tester.pumpUntilFound(find.text('Range'));
+    expect(foundRange, isTrue);
     final rangeItem = find.text('Range');
     expect(rangeItem, findsOneWidget);
   });

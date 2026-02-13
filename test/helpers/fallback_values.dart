@@ -54,7 +54,8 @@ void registerAllFallbackValues() {
   registerFallbackValue(domain_queries.TaskQuery.all());
   registerFallbackValue(domain_queries.JournalQuery());
   registerFallbackValue(const domain_attention.AttentionQuery());
-  registerFallbackValue(domain_routines.RoutineType.weeklyFixed);
+  registerFallbackValue(domain_routines.RoutinePeriodType.week);
+  registerFallbackValue(domain_routines.RoutineScheduleMode.flexible);
   registerFallbackValue(PageKey.taskOverview);
   registerFallbackValue(DateTime(2025, 1, 1));
   registerFallbackValue(const domain_services.GlobalScheduledScope());

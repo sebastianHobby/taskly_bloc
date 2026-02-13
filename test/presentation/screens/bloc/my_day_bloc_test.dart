@@ -157,6 +157,8 @@ void main() {
         () => routineRepository.recordCompletion(
           routineId: any(named: 'routineId'),
           completedAtUtc: any(named: 'completedAtUtc'),
+          completedDayLocal: any(named: 'completedDayLocal'),
+          completedTimeLocalMinutes: any(named: 'completedTimeLocalMinutes'),
           context: any(named: 'context'),
         ),
       ).thenAnswer((_) async {});
@@ -179,6 +181,8 @@ void main() {
         () => routineRepository.recordCompletion(
           routineId: 'routine-1',
           completedAtUtc: DateTime.utc(2025, 1, 15, 12),
+          completedDayLocal: DateTime.utc(2025, 1, 15),
+          completedTimeLocalMinutes: 720,
           context: any(named: 'context'),
         ),
       ).called(1);
