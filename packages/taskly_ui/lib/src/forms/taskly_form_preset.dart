@@ -1,20 +1,24 @@
 import 'package:flutter/widgets.dart';
 
 import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+import 'package:taskly_ui/src/forms/taskly_form_ux_preset.dart';
 
 @immutable
 class TasklyFormPreset {
   const TasklyFormPreset({
     required this.chip,
+    required this.ux,
   });
 
   factory TasklyFormPreset.standard(TasklyTokens tokens) {
     return TasklyFormPreset(
       chip: TasklyFormChipPreset.standard(tokens),
+      ux: TasklyFormUxPreset.standard(tokens),
     );
   }
 
   final TasklyFormChipPreset chip;
+  final TasklyFormUxPreset ux;
 }
 
 @immutable

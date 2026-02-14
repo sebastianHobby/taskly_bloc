@@ -8,10 +8,15 @@ import 'package:taskly_domain/src/attention/model/attention_rule.dart';
 import 'package:taskly_domain/src/attention/model/attention_rule_runtime_state.dart';
 import 'package:taskly_domain/src/attention/query/attention_query.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
+import 'package:taskly_domain/src/interfaces/routine_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
 import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/core/model/project.dart';
+import 'package:taskly_domain/src/routines/model/routine.dart';
+import 'package:taskly_domain/src/routines/model/routine_completion.dart';
+import 'package:taskly_domain/src/routines/model/routine_period_type.dart';
 import 'package:taskly_domain/src/time/clock.dart';
+import 'package:taskly_domain/src/time/date_only.dart';
 import 'package:uuid/uuid.dart';
 
 /// Reactive attention evaluation engine.
@@ -24,17 +29,20 @@ class AttentionEngine implements AttentionEngineContract {
     required v2.AttentionRepositoryContract attentionRepository,
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
+    required RoutineRepositoryContract routineRepository,
     required Stream<void> invalidations,
     Clock clock = systemClock,
   }) : _attentionRepository = attentionRepository,
        _taskRepository = taskRepository,
        _projectRepository = projectRepository,
+       _routineRepository = routineRepository,
        _clock = clock,
        _invalidations = invalidations;
 
   final v2.AttentionRepositoryContract _attentionRepository;
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
+  final RoutineRepositoryContract _routineRepository;
   final Clock _clock;
   final Stream<void> _invalidations;
 
@@ -49,6 +57,10 @@ class AttentionEngine implements AttentionEngineContract {
       entityTypes: {AttentionEntityType.project},
       evaluate: _evaluateProjectPredicateV1,
     ),
+    'routine_support_v1': _EvaluatorSpec(
+      entityTypes: {AttentionEntityType.routine},
+      evaluate: _evaluateRoutineSupportV1,
+    ),
   };
 
   @override
@@ -62,25 +74,36 @@ class AttentionEngine implements AttentionEngineContract {
       (rules) => rules.where(query.matchesRule).toList(growable: false),
     );
 
-    return Rx.combineLatest4<
+    final routineCompletions$ = _routineRepository.watchCompletions();
+    final routines$ = _routineRepository.watchAll(includeInactive: true);
+
+    return Rx.combineLatest6<
           List<AttentionRule>,
           List<Task>,
           List<Project>,
+          List<Routine>,
+          List<RoutineCompletion>,
           int,
           ({
             List<AttentionRule> rules,
             List<Task> tasks,
             List<Project> projects,
+            List<Routine> routines,
+            List<RoutineCompletion> routineCompletions,
           })
         >(
           rules$,
           _taskRepository.watchAll(),
           _projectRepository.watchAll(),
+          routines$,
+          routineCompletions$,
           pulse$,
-          (rules, tasks, projects, _) => (
+          (rules, tasks, projects, routines, routineCompletions, _) => (
             rules: rules,
             tasks: tasks,
             projects: projects,
+            routines: routines,
+            routineCompletions: routineCompletions,
           ),
         )
         .asyncMap((inputs) => _evaluate(query, inputs));
@@ -92,6 +115,8 @@ class AttentionEngine implements AttentionEngineContract {
       List<AttentionRule> rules,
       List<Task> tasks,
       List<Project> projects,
+      List<Routine> routines,
+      List<RoutineCompletion> routineCompletions,
     })
     inputs,
   ) async {
@@ -118,6 +143,8 @@ class AttentionEngine implements AttentionEngineContract {
         (
           tasks: inputs.tasks,
           projects: inputs.projects,
+          routines: inputs.routines,
+          routineCompletions: inputs.routineCompletions,
           now: now,
         ),
       );
@@ -298,6 +325,142 @@ class AttentionEngine implements AttentionEngineContract {
     }
 
     return items;
+  }
+
+  Future<List<_EvaluatedItem>> _evaluateRoutineSupportV1(
+    AttentionRule rule,
+    _EvalInputs inputs,
+  ) async {
+    final now = dateOnly(inputs.now);
+    final params = rule.evaluatorParams;
+    final buildingMinAgeDays = _readInt(params, 'buildingMinAgeDays') ?? 7;
+    final buildingMaxAgeDays = _readInt(params, 'buildingMaxAgeDays') ?? 28;
+    final needsHelpDropPp = _readInt(params, 'needsHelpDropPp') ?? 15;
+    final needsHelpRecentAdherenceMax =
+        _readInt(params, 'needsHelpRecentAdherenceMax') ?? 60;
+    final maxCards = _readInt(params, 'maxCards') ?? 2;
+
+    final completionsByRoutine = <String, List<RoutineCompletion>>{};
+    for (final completion in inputs.routineCompletions) {
+      (completionsByRoutine[completion.routineId] ??= <RoutineCompletion>[])
+          .add(completion);
+    }
+
+    final candidates = <_RoutineSupportCandidate>[];
+    for (final routine in inputs.routines) {
+      if (!routine.isActive) continue;
+      if (routine.isPausedOn(now)) continue;
+
+      final ageDays = now.difference(dateOnly(routine.createdAt)).inDays;
+      if (ageDays < buildingMinAgeDays) continue;
+
+      final completions = completionsByRoutine[routine.id] ?? const [];
+      final weeklyAdherence = _weeklyAdherence(
+        routine: routine,
+        completions: completions,
+        nowDay: now,
+        weeks: 8,
+      );
+      if (weeklyAdherence.length < 2) continue;
+
+      final last14Adherence = _windowAdherence(
+        routine: routine,
+        completions: completions,
+        endDay: now,
+        days: 14,
+      );
+      final baseline = weeklyAdherence.isEmpty
+          ? 0
+          : weeklyAdherence.reduce((a, b) => a + b) / weeklyAdherence.length;
+      final dropPp = baseline - last14Adherence;
+
+      final trendDownTwoWeeks = _isTrendDownTwoWeeks(weeklyAdherence);
+      final hasEnoughHistory = weeklyAdherence.length >= 4;
+
+      final needsHelp =
+          hasEnoughHistory &&
+          trendDownTwoWeeks &&
+          dropPp >= needsHelpDropPp &&
+          last14Adherence < needsHelpRecentAdherenceMax;
+
+      final recentCompletions = _completionCountInWindow(
+        completions: completions,
+        endDay: now,
+        days: 14,
+      );
+      final building =
+          !needsHelp &&
+          ageDays <= buildingMaxAgeDays &&
+          recentCompletions >= 1 &&
+          last14Adherence >= 20 &&
+          last14Adherence <= 70;
+
+      if (!needsHelp && !building) continue;
+
+      final suggestion = _bestWeekdaySuggestion(
+        routine: routine,
+        completions: completions,
+        nowDay: now,
+      );
+      final state = needsHelp ? 'needs_help' : 'building';
+      final severity = needsHelp && dropPp >= 15
+          ? AttentionSeverity.warning
+          : AttentionSeverity.info;
+      final stateHash = _stableFingerprint([
+        'routine=${routine.id}',
+        'state=$state',
+        'a14=${last14Adherence.toStringAsFixed(1)}',
+        'drop=${dropPp.toStringAsFixed(1)}',
+        'trend=${weeklyAdherence.take(3).join(",")}',
+      ]);
+
+      final sortWeight = needsHelp ? 0 : 1;
+      final item = AttentionItem(
+        id: _uuid.v4(),
+        ruleId: rule.id,
+        ruleKey: rule.ruleKey,
+        bucket: rule.bucket,
+        entityId: routine.id,
+        entityType: AttentionEntityType.routine,
+        severity: severity,
+        title: routine.name,
+        description:
+            'Small changes restore momentum. Tune this routine for this week.',
+        availableActions: _parseResolutionActions(rule.resolutionActions),
+        detectedAt: inputs.now,
+        sortKey:
+            '${sortWeight.toString().padLeft(2, '0')}|${(100 - last14Adherence).toStringAsFixed(1)}|${routine.id}',
+        metadata: <String, dynamic>{
+          'entity_display_name': routine.name,
+          'routine_name': routine.name,
+          'support_state': state,
+          'adherence_last_14': last14Adherence,
+          'baseline_8w': baseline,
+          'drop_pp': dropPp,
+          'weekly_adherence': weeklyAdherence,
+          if (suggestion != null) ...suggestion,
+        },
+      );
+
+      candidates.add(
+        _RoutineSupportCandidate(
+          item: item,
+          score: needsHelp ? (100 + dropPp) : (50 - last14Adherence),
+          stateHash: stateHash,
+        ),
+      );
+    }
+
+    candidates.sort((a, b) => b.score.compareTo(a.score));
+    return candidates
+        .take(maxCards < 1 ? 1 : maxCards)
+        .map(
+          (candidate) => _EvaluatedItem(
+            item: candidate.item,
+            stateHash: candidate.stateHash,
+          ),
+        )
+        .toList(growable: false);
   }
 
   // ==========================================================================
@@ -498,6 +661,137 @@ class AttentionEngine implements AttentionEngineContract {
   bool _isProjectIdle(Project project, {required int thresholdDays}) {
     final threshold = _clock.nowUtc().subtract(Duration(days: thresholdDays));
     return project.updatedAt.isBefore(threshold);
+  }
+
+  bool _isTrendDownTwoWeeks(List<double> series) {
+    if (series.length < 3) return false;
+    final a = series[series.length - 3];
+    final b = series[series.length - 2];
+    final c = series[series.length - 1];
+    return c < b && b < a;
+  }
+
+  int _completionCountInWindow({
+    required List<RoutineCompletion> completions,
+    required DateTime endDay,
+    required int days,
+  }) {
+    final start = endDay.subtract(Duration(days: days - 1));
+    return completions.where((completion) {
+      final day = dateOnly(
+        completion.completedDayLocal ?? completion.completedAtUtc,
+      );
+      return !(day.isBefore(start) || day.isAfter(endDay));
+    }).length;
+  }
+
+  double _windowAdherence({
+    required Routine routine,
+    required List<RoutineCompletion> completions,
+    required DateTime endDay,
+    required int days,
+  }) {
+    final expected = _expectedForDays(routine: routine, days: days);
+    if (expected <= 0) return 0;
+    final actual = _completionCountInWindow(
+      completions: completions,
+      endDay: endDay,
+      days: days,
+    );
+    return (actual / expected * 100).clamp(0, 200).toDouble();
+  }
+
+  int _expectedForDays({required Routine routine, required int days}) {
+    if (days <= 0) return 0;
+    return switch (routine.periodType) {
+      RoutinePeriodType.day => routine.targetCount * days,
+      RoutinePeriodType.week => ((routine.targetCount / 7) * days).round(),
+      RoutinePeriodType.month => ((routine.targetCount / 30) * days).round(),
+    };
+  }
+
+  List<double> _weeklyAdherence({
+    required Routine routine,
+    required List<RoutineCompletion> completions,
+    required DateTime nowDay,
+    required int weeks,
+  }) {
+    final safeWeeks = weeks < 1 ? 1 : weeks;
+    final series = <double>[];
+    final weekStart = _weekStart(nowDay);
+    for (var i = safeWeeks - 1; i >= 0; i--) {
+      final start = weekStart.subtract(Duration(days: i * 7));
+      final end = start.add(const Duration(days: 6));
+      final actual = completions.where((completion) {
+        final day = dateOnly(
+          completion.completedDayLocal ?? completion.completedAtUtc,
+        );
+        return !(day.isBefore(start) || day.isAfter(end));
+      }).length;
+      final expected = _expectedForDays(routine: routine, days: 7);
+      if (expected <= 0) {
+        series.add(0);
+      } else {
+        series.add((actual / expected * 100).clamp(0, 200).toDouble());
+      }
+    }
+    return series;
+  }
+
+  Map<String, dynamic>? _bestWeekdaySuggestion({
+    required Routine routine,
+    required List<RoutineCompletion> completions,
+    required DateTime nowDay,
+  }) {
+    if (routine.scheduleDays.isEmpty) return null;
+    final start = nowDay.subtract(const Duration(days: 41));
+    final completionByWeekday = <int, int>{for (var i = 1; i <= 7; i++) i: 0};
+    final missedByWeekday = <int, int>{for (var i = 1; i <= 7; i++) i: 0};
+
+    final completionDays = <DateTime>{};
+    for (final completion in completions) {
+      final day = dateOnly(
+        completion.completedDayLocal ?? completion.completedAtUtc,
+      );
+      if (day.isBefore(start) || day.isAfter(nowDay)) continue;
+      completionDays.add(day);
+      completionByWeekday[day.weekday] =
+          (completionByWeekday[day.weekday] ?? 0) + 1;
+    }
+
+    for (
+      var cursor = start;
+      !cursor.isAfter(nowDay);
+      cursor = cursor.add(const Duration(days: 1))
+    ) {
+      if (!routine.scheduleDays.contains(cursor.weekday)) continue;
+      if (!completionDays.contains(cursor)) {
+        missedByWeekday[cursor.weekday] =
+            (missedByWeekday[cursor.weekday] ?? 0) + 1;
+      }
+    }
+
+    final missEntry = missedByWeekday.entries.reduce(
+      (a, b) => b.value > a.value ? b : a,
+    );
+    final successEntry = completionByWeekday.entries.reduce(
+      (a, b) => b.value > a.value ? b : a,
+    );
+    if (missEntry.value <= 0 || successEntry.value <= 0) return null;
+    if (missEntry.key == successEntry.key) return null;
+
+    return <String, dynamic>{
+      'suggestion_type': 'reschedule_day',
+      'most_missed_weekday': missEntry.key,
+      'most_success_weekday': successEntry.key,
+    };
+  }
+
+  DateTime _weekStart(DateTime day) {
+    final normalized = dateOnly(day);
+    return normalized.subtract(
+      Duration(days: normalized.weekday - DateTime.monday),
+    );
   }
 
   ({
@@ -709,6 +1003,8 @@ class AttentionEngine implements AttentionEngineContract {
 typedef _EvalInputs = ({
   List<Task> tasks,
   List<Project> projects,
+  List<Routine> routines,
+  List<RoutineCompletion> routineCompletions,
   DateTime now,
 });
 
@@ -731,4 +1027,16 @@ class _EvaluatedItem {
 
   final AttentionItem item;
   final String? stateHash;
+}
+
+class _RoutineSupportCandidate {
+  const _RoutineSupportCandidate({
+    required this.item,
+    required this.score,
+    required this.stateHash,
+  });
+
+  final AttentionItem item;
+  final double score;
+  final String stateHash;
 }

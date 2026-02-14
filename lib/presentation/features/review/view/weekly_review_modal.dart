@@ -221,6 +221,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
             _MaintenancePage(
               key: const ValueKey('weekly_review_maintenance'),
               sections: state.maintenanceSections,
+              routineSteadyCount: state.routineSteadyCount,
             ),
           const _CompletionPage(
             key: ValueKey('weekly_review_completion'),
@@ -361,10 +362,12 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
 class _MaintenancePage extends StatelessWidget {
   const _MaintenancePage({
     required this.sections,
+    required this.routineSteadyCount,
     super.key,
   });
 
   final List<WeeklyReviewMaintenanceSection> sections;
+  final int routineSteadyCount;
 
   @override
   Widget build(BuildContext context) {
@@ -396,6 +399,16 @@ class _MaintenancePage extends StatelessWidget {
             color: scheme.onSurfaceVariant,
           ),
         ),
+        if (routineSteadyCount > 0) ...[
+          SizedBox(height: tokens.spaceSm),
+          Text(
+            '$routineSteadyCount ${l10n.routinesTitle.toLowerCase()} are steady this week.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
         SizedBox(height: tokens.spaceSm),
         if (!hasAnyItems)
           _MaintenanceAllClearCard(
@@ -445,6 +458,7 @@ class _MaintenancePage extends StatelessWidget {
         l10n.weeklyReviewStaleTitle,
       WeeklyReviewMaintenanceSectionType.frequentlySnoozed =>
         l10n.weeklyReviewFrequentSnoozedTitle,
+      WeeklyReviewMaintenanceSectionType.routineSupport => l10n.routinesTitle,
     };
   }
 
@@ -455,6 +469,7 @@ class _MaintenancePage extends StatelessWidget {
       WeeklyReviewDeadlineRiskItem() => l10n.projectLabel,
       WeeklyReviewStaleItem() => l10n.itemLabel,
       WeeklyReviewFrequentSnoozedItem() => l10n.taskLabel,
+      WeeklyReviewRoutineSupportItem() => l10n.myDayBadgeRoutine,
     };
   }
 
@@ -481,6 +496,14 @@ class _MaintenancePage extends StatelessWidget {
           snoozeCount,
           totalSnoozeDays,
         ),
+      WeeklyReviewRoutineSupportItem(
+        :final suggestedFromWeekday,
+        :final suggestedToWeekday,
+      ) =>
+        suggestedFromWeekday != null && suggestedToWeekday != null
+            ? 'Small changes restore momentum. Tune this routine for this week.\n'
+                  'Suggestion: move one session from weekday $suggestedFromWeekday to $suggestedToWeekday.'
+            : 'Small changes restore momentum. Tune this routine for this week.',
     };
   }
 
@@ -492,6 +515,8 @@ class _MaintenancePage extends StatelessWidget {
         Icons.hourglass_bottom_rounded,
       WeeklyReviewMaintenanceSectionType.frequentlySnoozed =>
         Icons.snooze_rounded,
+      WeeklyReviewMaintenanceSectionType.routineSupport =>
+        Icons.self_improvement_rounded,
     };
   }
 
@@ -504,6 +529,7 @@ class _MaintenancePage extends StatelessWidget {
       WeeklyReviewMaintenanceSectionType.deadlineRisk => scheme.error,
       WeeklyReviewMaintenanceSectionType.staleItems => scheme.tertiary,
       WeeklyReviewMaintenanceSectionType.frequentlySnoozed => scheme.secondary,
+      WeeklyReviewMaintenanceSectionType.routineSupport => scheme.primary,
     };
   }
 
@@ -520,6 +546,8 @@ class _MaintenancePage extends StatelessWidget {
         thresholdDays,
       ),
       WeeklyReviewFrequentSnoozedItem(:final snoozeCount) => '${snoozeCount}x',
+      WeeklyReviewRoutineSupportItem(:final dropPp) =>
+        dropPp == null ? null : '${dropPp.toStringAsFixed(0)}%',
     };
   }
 
@@ -529,6 +557,13 @@ class _MaintenancePage extends StatelessWidget {
   ) {
     final entityId = item.entityId;
     final attentionType = item.entityType;
+    if (entityId != null && attentionType == AttentionEntityType.routine) {
+      return () => Routing.toRoutineDetail(
+        context,
+        entityId,
+        openIfThenComposer: true,
+      );
+    }
     final routeType = _routeEntityType(attentionType);
     if (entityId == null || routeType == null) return null;
     return () => Routing.toEntity(context, routeType, entityId);
@@ -539,6 +574,7 @@ class _MaintenancePage extends StatelessWidget {
       AttentionEntityType.task => EntityType.task,
       AttentionEntityType.project => EntityType.project,
       AttentionEntityType.value => EntityType.value,
+      AttentionEntityType.routine => null,
       _ => null,
     };
   }

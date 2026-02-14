@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/features/routines/bloc/routine_list_bloc.dart';
 import 'package:taskly_bloc/presentation/features/routines/selection/routine_selection_bloc.dart';
 import 'package:taskly_bloc/presentation/features/routines/selection/routine_selection_models.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
@@ -10,12 +9,20 @@ class RoutineSelectionAppBar extends StatelessWidget
     implements PreferredSizeWidget {
   const RoutineSelectionAppBar({
     required this.baseTitle,
-    required this.onExit,
+    required this.onLogSelected,
+    required this.onUnlogSelected,
+    required this.onActivateSelected,
+    required this.onDeactivateSelected,
+    required this.onDeleteSelected,
     super.key,
   });
 
   final String baseTitle;
-  final VoidCallback onExit;
+  final Future<void> Function(List<String> routineIds) onLogSelected;
+  final Future<void> Function(List<String> routineIds) onUnlogSelected;
+  final Future<void> Function(List<String> routineIds) onActivateSelected;
+  final Future<void> Function(List<String> routineIds) onDeactivateSelected;
+  final Future<void> Function(List<String> routineIds) onDeleteSelected;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -39,10 +46,7 @@ class RoutineSelectionAppBar extends StatelessWidget
         return AppBar(
           leading: IconButton(
             tooltip: context.l10n.closeLabel,
-            onPressed: () {
-              selection.exitSelectionMode();
-              onExit();
-            },
+            onPressed: selection.exitSelectionMode,
             icon: const Icon(Icons.close),
           ),
           title: Text(context.l10n.selectedCountLabel(state.selectedCount)),
@@ -97,9 +101,8 @@ class RoutineSelectionAppBar extends StatelessWidget
         .toList(growable: false);
     if (ids.isEmpty) return;
 
-    await context.read<RoutineListBloc>().logRoutines(ids);
+    await onLogSelected(ids);
     selection.exitSelectionMode();
-    onExit();
   }
 
   Future<void> _unlogSelected(BuildContext context) async {
@@ -111,9 +114,8 @@ class RoutineSelectionAppBar extends StatelessWidget
         .toList(growable: false);
     if (ids.isEmpty) return;
 
-    await context.read<RoutineListBloc>().unlogRoutines(ids);
+    await onUnlogSelected(ids);
     selection.exitSelectionMode();
-    onExit();
   }
 
   Future<void> _handleMenuAction(
@@ -139,9 +141,8 @@ class RoutineSelectionAppBar extends StatelessWidget
         .toList(growable: false);
     if (ids.isEmpty) return;
 
-    await context.read<RoutineListBloc>().activateRoutines(ids);
+    await onActivateSelected(ids);
     selection.exitSelectionMode();
-    onExit();
   }
 
   Future<void> _deactivateSelected(BuildContext context) async {
@@ -153,9 +154,8 @@ class RoutineSelectionAppBar extends StatelessWidget
         .toList(growable: false);
     if (ids.isEmpty) return;
 
-    await context.read<RoutineListBloc>().deactivateRoutines(ids);
+    await onDeactivateSelected(ids);
     selection.exitSelectionMode();
-    onExit();
   }
 
   Future<void> _deleteSelected(BuildContext context) async {
@@ -180,10 +180,9 @@ class RoutineSelectionAppBar extends StatelessWidget
     if (!context.mounted || !confirmed) return;
 
     final ids = metas.map((m) => m.key.routineId).toList(growable: false);
-    await context.read<RoutineListBloc>().deleteRoutines(ids);
+    await onDeleteSelected(ids);
 
     selection.exitSelectionMode();
-    onExit();
   }
 }
 

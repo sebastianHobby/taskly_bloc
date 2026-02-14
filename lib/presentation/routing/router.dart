@@ -24,7 +24,6 @@ import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.
 import 'package:taskly_bloc/presentation/features/journal/view/journal_trackers_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routine_editor_route_page.dart';
-import 'package:taskly_bloc/presentation/features/routines/view/routines_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/values_page.dart';
@@ -273,10 +272,6 @@ GoRouter createRouter({
             path: Routing.screenPath('scheduled'),
             builder: (_, __) => const ScheduledPage(),
           ),
-          GoRoute(
-            path: Routing.screenPath('routines'),
-            builder: (_, __) => const RoutinesPage(),
-          ),
 
           // Scoped Scheduled feeds.
           GoRoute(
@@ -427,6 +422,18 @@ GoRouter createRouter({
               paramName: 'id',
               entityType: 'routine',
               operation: 'route_param_decode_routine_edit',
+            ),
+            builder: (_, state) => RoutineEditorRoutePage(
+              routineId: state.pathParameters['id'],
+            ),
+          ),
+          GoRoute(
+            path: '/routine/:id',
+            redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
+              state,
+              paramName: 'id',
+              entityType: 'routine',
+              operation: 'route_param_decode_routine_detail',
             ),
             builder: (_, state) => RoutineEditorRoutePage(
               routineId: state.pathParameters['id'],

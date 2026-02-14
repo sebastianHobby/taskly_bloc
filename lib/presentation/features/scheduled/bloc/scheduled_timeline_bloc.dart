@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
@@ -91,17 +92,15 @@ final class ScheduledTimelineError extends ScheduledTimelineState {
 final class ScheduledTimelineBloc
     extends Bloc<ScheduledTimelineEvent, ScheduledTimelineState> {
   ScheduledTimelineBloc({
-    required ScheduledOccurrencesService occurrencesService,
+    required ScheduledSessionQueryService queryService,
     required SessionDayKeyService sessionDayKeyService,
     required NowService nowService,
     required DemoModeService demoModeService,
-    required DemoDataProvider demoDataProvider,
     this.scope = const GlobalScheduledScope(),
-  }) : _occurrencesService = occurrencesService,
+  }) : _queryService = queryService,
        _sessionDayKeyService = sessionDayKeyService,
        _nowService = nowService,
        _demoModeService = demoModeService,
-       _demoDataProvider = demoDataProvider,
        super(const ScheduledTimelineLoading()) {
     on<ScheduledTimelineStarted>(_onStarted, transformer: restartable());
     on<ScheduledTimelineVisibleDayChanged>(_onVisibleDayChanged);
@@ -111,11 +110,10 @@ final class ScheduledTimelineBloc
     add(const ScheduledTimelineStarted());
   }
 
-  final ScheduledOccurrencesService _occurrencesService;
+  final ScheduledSessionQueryService _queryService;
   final SessionDayKeyService _sessionDayKeyService;
   final NowService _nowService;
   final DemoModeService _demoModeService;
-  final DemoDataProvider _demoDataProvider;
   final ScheduledScope scope;
 
   final BehaviorSubject<_RangeWindow> _rangeWindow =
@@ -169,44 +167,21 @@ final class ScheduledTimelineBloc
 
       _rangeWindow.add(_initialWindowForToday(_latestTodayLocal!));
 
-      final params$ = _demoModeService.enabled.distinct().switchMap((enabled) {
-        if (enabled) {
-          return _rangeWindow.distinct().map(
-            (window) => _QueryParams(
-              todayUtc: DemoDataProvider.demoDayKeyUtc,
-              startUtc: _toUtcDay(window.startDay),
-              endUtc: _toUtcDay(window.endDay),
-              isDemoMode: true,
-            ),
-          );
-        }
-
-        return Rx.combineLatest2<DateTime, _RangeWindow, _QueryParams>(
-          _sessionDayKeyService.todayDayKeyUtc,
-          _rangeWindow.distinct(),
-          (todayDayKeyUtc, window) => _QueryParams(
-            todayUtc: todayDayKeyUtc,
-            startUtc: _toUtcDay(window.startDay),
-            endUtc: _toUtcDay(window.endDay),
-            isDemoMode: false,
-          ),
-        );
-      });
+      final params$ = Rx.combineLatest2<DateTime, _RangeWindow, _QueryParams>(
+        _sessionDayKeyService.todayDayKeyUtc,
+        _rangeWindow.distinct(),
+        (_, window) => _QueryParams(
+          startUtc: _toUtcDay(window.startDay),
+          endUtc: _toUtcDay(window.endDay),
+        ),
+      );
 
       final occurrences$ = params$.switchMap(
-        (p) => p.isDemoMode
-            ? Stream<ScheduledOccurrencesResult>.value(
-                _demoDataProvider.buildScheduledOccurrences(
-                  rangeStartDay: p.startUtc,
-                  rangeEndDay: p.endUtc,
-                ),
-              )
-            : _occurrencesService.watchScheduledOccurrences(
-                rangeStartDay: p.startUtc,
-                rangeEndDay: p.endUtc,
-                todayDayKeyUtc: p.todayUtc,
-                scope: scope,
-              ),
+        (p) => _queryService.watchScheduledOccurrences(
+          scope: scope,
+          rangeStartDay: p.startUtc,
+          rangeEndDay: p.endUtc,
+        ),
       );
 
       await emit.forEach<ScheduledOccurrencesResult>(
@@ -366,14 +341,10 @@ final class _RangeWindow {
 @immutable
 final class _QueryParams {
   const _QueryParams({
-    required this.todayUtc,
     required this.startUtc,
     required this.endUtc,
-    required this.isDemoMode,
   });
 
-  final DateTime todayUtc;
   final DateTime startUtc;
   final DateTime endUtc;
-  final bool isDemoMode;
 }

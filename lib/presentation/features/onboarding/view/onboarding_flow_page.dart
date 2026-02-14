@@ -262,6 +262,7 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
       deadlineRiskMinUnscheduledCount:
           GlobalSettings.defaultMaintenanceDeadlineRiskMinUnscheduledCount,
       showFrequentSnoozed: false,
+      showRoutineSupport: false,
     );
   }
 }

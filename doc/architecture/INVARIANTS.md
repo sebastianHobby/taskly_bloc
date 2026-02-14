@@ -399,6 +399,25 @@ Forbidden:
 - When missing or stale localizations are discovered, they must be updated as
   part of the same change.
 
+### 2.1.7 Form/modal overflow safety (strict)
+
+- Form and picker UIs must remain usable on compact heights and large text
+  scaling without RenderFlex overflow.
+- Any sheet/dialog/form surface that can contain variable-height content
+  (calendar pickers, segmented controls, long lists, dynamic helper text) must
+  provide an internal scrollable region.
+- Do not stack bottom sheets for simple metadata edits launched from chips
+  (for example date/priority inside an editor sheet). Prefer inline expansion
+  or anchored menu/popover patterns.
+- Chip rows in compact layouts must wrap (or otherwise keep all options
+  reachable) instead of relying on horizontal clipping-only layouts.
+
+Rationale:
+
+- Prevents common overflow crashes/regressions on small devices and accessibility
+  text sizes.
+- Keeps metadata edits contextual and predictable in modal-based editors.
+
 ### 2.2 `taskly_ui` shared surface governance (strict)
 
 Changes to `packages/taskly_ui` are governed by shared-surface rules.

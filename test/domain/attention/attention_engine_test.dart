@@ -4,9 +4,12 @@ library;
 import '../../helpers/test_imports.dart';
 import '../../mocks/fake_repositories.dart';
 import 'dart:async';
+import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/attention.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_domain/time.dart';
@@ -172,6 +175,20 @@ class FakeClock implements Clock {
   DateTime nowUtc() => now.toUtc();
 }
 
+class FakeRoutineRepository extends Fake implements RoutineRepositoryContract {
+  @override
+  Stream<List<Routine>> watchAll({bool includeInactive = true}) =>
+      Stream<List<Routine>>.value(const <Routine>[]);
+
+  @override
+  Stream<List<RoutineCompletion>> watchCompletions() =>
+      Stream<List<RoutineCompletion>>.value(const <RoutineCompletion>[]);
+
+  @override
+  Stream<List<RoutineSkip>> watchSkips() =>
+      Stream<List<RoutineSkip>>.value(const <RoutineSkip>[]);
+}
+
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);
@@ -200,6 +217,7 @@ void main() {
       final attentionRepo = FakeAttentionRepository(rules: [rule]);
       final taskRepo = FakeTaskRepository();
       final projectRepo = FakeProjectRepository();
+      final routineRepo = FakeRoutineRepository();
       final invalidations = TestStreamController<void>();
       addTearDown(invalidations.close);
 
@@ -215,6 +233,7 @@ void main() {
         attentionRepository: attentionRepo,
         taskRepository: taskRepo,
         projectRepository: projectRepo,
+        routineRepository: routineRepo,
         invalidations: invalidations.stream,
         clock: FakeClock(now),
       );
@@ -262,6 +281,7 @@ void main() {
 
       final taskRepo = FakeTaskRepository();
       final projectRepo = FakeProjectRepository();
+      final routineRepo = FakeRoutineRepository();
       final invalidations = TestStreamController<void>();
       addTearDown(invalidations.close);
 
@@ -277,6 +297,7 @@ void main() {
         attentionRepository: attentionRepo,
         taskRepository: taskRepo,
         projectRepository: projectRepo,
+        routineRepository: routineRepo,
         invalidations: invalidations.stream,
         clock: FakeClock(now),
       );

@@ -37,7 +37,9 @@ import 'package:taskly_bloc/presentation/shared/session/session_shared_data_serv
 import 'package:taskly_bloc/presentation/shared/sync/sync_anomaly_bloc.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_bloc/presentation/features/projects/services/projects_session_query_service.dart';
+import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
@@ -102,8 +104,8 @@ class App extends StatelessWidget {
           Provider<ProjectsSessionQueryService>(
             create: (_) => getIt<ProjectsSessionQueryService>(),
           ),
-          Provider<ScheduledOccurrencesService>(
-            create: (_) => getIt<ScheduledOccurrencesService>(),
+          Provider<ScheduledSessionQueryService>(
+            create: (_) => getIt<ScheduledSessionQueryService>(),
           ),
           Provider<OccurrenceReadService>(
             create: (_) => getIt<OccurrenceReadService>(),
@@ -111,6 +113,9 @@ class App extends StatelessWidget {
           Provider<AnalyticsService>(create: (_) => getIt<AnalyticsService>()),
           Provider<AttentionEngineContract>(
             create: (_) => getIt<AttentionEngineContract>(),
+          ),
+          Provider<AttentionResolutionService>(
+            create: (_) => getIt<AttentionResolutionService>(),
           ),
           Provider<TemplateDataService>(
             create: (_) => getIt<TemplateDataService>(),

@@ -11,6 +11,9 @@ enum AttentionEntityType {
   @JsonValue('project')
   project,
 
+  @JsonValue('routine')
+  routine,
+
   @JsonValue('journal')
   journal,
 

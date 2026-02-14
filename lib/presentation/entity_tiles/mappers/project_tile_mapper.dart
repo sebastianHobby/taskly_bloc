@@ -15,7 +15,6 @@ TasklyProjectRowData buildProjectRowData(
   int? completedTaskCount,
   int? dueSoonCount,
   bool showOnlyDeadlineDate = false,
-  String? overrideStartDateLabel,
   String? overrideDeadlineDateLabel,
   bool? overrideIsOverdue,
   bool? overrideIsDueToday,
@@ -27,20 +26,10 @@ TasklyProjectRowData buildProjectRowData(
   final now = context.read<NowService>().nowLocal();
   final today = DateTime(now.year, now.month, now.day);
 
-  final start = project.startDate;
-  final startDateLabel = switch (start) {
-    null => null,
-    final startDate =>
-      !DateTime(startDate.year, startDate.month, startDate.day).isBefore(today)
-          ? _formatMonthDay(context, startDate)
-          : null,
-  };
-
   final deadlineDateLabel = project.deadlineDate == null
       ? null
       : _formatMonthDay(context, project.deadlineDate!);
 
-  final resolvedStartDateLabel = overrideStartDateLabel ?? startDateLabel;
   final resolvedDeadlineDateLabel =
       overrideDeadlineDateLabel ?? deadlineDateLabel;
 
@@ -65,7 +54,7 @@ TasklyProjectRowData buildProjectRowData(
 
   final meta = TasklyEntityMetaData(
     showOnlyDeadlineDate: showOnlyDeadlineDate,
-    startDateLabel: resolvedStartDateLabel,
+    startDateLabel: null,
     deadlineDateLabel: resolvedDeadlineDateLabel,
     isOverdue:
         overrideIsOverdue ??

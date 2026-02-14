@@ -12,7 +12,6 @@ void main() {
     expect(PageKey.fromKey('project_detail'), PageKey.projectDetail);
     expect(PageKey.fromKey('my_day'), PageKey.myDay);
     expect(PageKey.fromKey('scheduled'), PageKey.scheduled);
-    expect(PageKey.fromKey('routines'), PageKey.routines);
   });
 
   testSafe('PageKey.fromKey throws on unknown key', () async {

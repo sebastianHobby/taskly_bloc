@@ -21,22 +21,36 @@ class TasklyFormSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = TasklyTokens.of(context);
-    return Padding(
-      padding: padding ?? EdgeInsets.all(tokens.spaceXl),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (title != null) ...[
-            Text(
-              title!,
-              style: theme.textTheme.headlineSmall,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxHeight = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : MediaQuery.sizeOf(context).height * 0.8;
+        return Padding(
+          padding: padding ?? EdgeInsets.all(tokens.spaceXl),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxHeight),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (title != null) ...[
+                  Text(
+                    title!,
+                    style: theme.textTheme.headlineSmall,
+                  ),
+                  SizedBox(height: tokens.spaceXl),
+                ],
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: child,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: tokens.spaceXl),
-          ],
-          child,
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
 }

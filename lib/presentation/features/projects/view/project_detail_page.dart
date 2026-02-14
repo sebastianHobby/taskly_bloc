@@ -11,7 +11,6 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_overview_bloc.dart';
-import 'package:taskly_bloc/presentation/features/routines/bloc/routine_list_bloc.dart';
 import 'package:taskly_bloc/presentation/features/routines/model/routine_list_item.dart';
 import 'package:taskly_bloc/presentation/features/routines/model/routine_sort_order.dart';
 import 'package:taskly_bloc/presentation/features/routines/selection/routine_selection_app_bar.dart';
@@ -26,7 +25,7 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
-import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rich_text_utils.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
@@ -37,6 +36,7 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
@@ -72,16 +72,6 @@ class ProjectDetailPage extends StatelessWidget {
           ),
         ),
         BlocProvider(
-          create: (context) => RoutineListBloc(
-            routineRepository: context.read<RoutineRepositoryContract>(),
-            sessionDayKeyService: context.read<SessionDayKeyService>(),
-            errorReporter: context.read<AppErrorReporter>(),
-            sharedDataService: context.read<SessionSharedDataService>(),
-            routineWriteService: context.read<RoutineWriteService>(),
-            nowService: context.read<NowService>(),
-          )..add(const RoutineListEvent.subscriptionRequested()),
-        ),
-        BlocProvider(
           create: (context) => DisplayDensityBloc(
             settingsRepository: context.read<SettingsRepositoryContract>(),
             pageKey: PageKey.projectDetail,
@@ -110,6 +100,165 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
   bool _showCompleted = false;
   bool _tasksCollapsed = false;
   bool _routinesCollapsed = false;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
+
+  Map<String, ProjectRoutineItem> _routineItemsById() {
+    final state = context.read<ProjectOverviewBloc>().state;
+    if (state is! ProjectOverviewLoaded) {
+      return const <String, ProjectRoutineItem>{};
+    }
+    return <String, ProjectRoutineItem>{
+      for (final item in state.routines) item.routine.id: item,
+    };
+  }
+
+  void _showRoutineActionFailure() {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.snackCompletionFailed)));
+  }
+
+  Future<void> _logRoutines(List<String> routineIds) async {
+    if (routineIds.isEmpty) return;
+    final routineWriteService = context.read<RoutineWriteService>();
+    final nowService = context.read<NowService>();
+    final routineMap = _routineItemsById();
+    final nowLocal = nowService.nowLocal();
+    final completedDayLocal = dateOnly(nowLocal);
+    final completedAtUtc = nowService.nowUtc();
+    final completedTimeLocalMinutes = nowLocal.hour * 60 + nowLocal.minute;
+    try {
+      for (final routineId in routineIds.toSet()) {
+        final item = routineMap[routineId];
+        if (item == null) continue;
+        final contextData = _contextFactory.create(
+          feature: 'projects',
+          screen: 'project_detail',
+          intent: 'routine_log_selected',
+          operation: 'routines.complete',
+          entityType: 'routine',
+          entityId: routineId,
+        );
+        await routineWriteService.recordCompletion(
+          routineId: routineId,
+          completedAtUtc: completedAtUtc,
+          completedDayLocal: completedDayLocal,
+          completedTimeLocalMinutes: completedTimeLocalMinutes,
+          context: contextData,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _showRoutineActionFailure();
+    }
+  }
+
+  Future<void> _unlogRoutines(List<String> routineIds) async {
+    if (routineIds.isEmpty) return;
+    final routineWriteService = context.read<RoutineWriteService>();
+    final nowService = context.read<NowService>();
+    final routineMap = _routineItemsById();
+    try {
+      for (final routineId in routineIds.toSet()) {
+        final item = routineMap[routineId];
+        final dayKeyUtc = item?.dayKeyUtc ?? dateOnly(nowService.nowUtc());
+        final contextData = _contextFactory.create(
+          feature: 'projects',
+          screen: 'project_detail',
+          intent: 'routine_unlog_selected',
+          operation: 'routines.unlog',
+          entityType: 'routine',
+          entityId: routineId,
+        );
+        await routineWriteService.removeLatestCompletionForDay(
+          routineId: routineId,
+          dayKeyUtc: dayKeyUtc,
+          context: contextData,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _showRoutineActionFailure();
+    }
+  }
+
+  Future<void> _setRoutineActiveState(
+    List<String> routineIds, {
+    required bool isActive,
+  }) async {
+    if (routineIds.isEmpty) return;
+    final routineWriteService = context.read<RoutineWriteService>();
+    final routineMap = _routineItemsById();
+    try {
+      for (final routineId in routineIds.toSet()) {
+        final routine = routineMap[routineId]?.routine;
+        if (routine == null || routine.isActive == isActive) continue;
+        final contextData = _contextFactory.create(
+          feature: 'projects',
+          screen: 'project_detail',
+          intent: isActive
+              ? 'routine_activate_selected'
+              : 'routine_deactivate_selected',
+          operation: isActive ? 'routines.activate' : 'routines.deactivate',
+          entityType: 'routine',
+          entityId: routineId,
+        );
+        await routineWriteService.update(
+          UpdateRoutineCommand(
+            id: routine.id,
+            name: routine.name,
+            projectId: routine.projectId,
+            periodType: routine.periodType,
+            scheduleMode: routine.scheduleMode,
+            targetCount: routine.targetCount,
+            scheduleDays: routine.scheduleDays,
+            scheduleMonthDays: routine.scheduleMonthDays,
+            scheduleTimeMinutes: routine.scheduleTimeMinutes,
+            minSpacingDays: routine.minSpacingDays,
+            restDayBuffer: routine.restDayBuffer,
+            isActive: isActive,
+            pausedUntilUtc: routine.pausedUntil,
+          ),
+          context: contextData,
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      _showRoutineActionFailure();
+    }
+  }
+
+  Future<void> _activateRoutines(List<String> routineIds) async {
+    await _setRoutineActiveState(routineIds, isActive: true);
+  }
+
+  Future<void> _deactivateRoutines(List<String> routineIds) async {
+    await _setRoutineActiveState(routineIds, isActive: false);
+  }
+
+  Future<void> _deleteRoutines(List<String> routineIds) async {
+    if (routineIds.isEmpty) return;
+    final routineWriteService = context.read<RoutineWriteService>();
+    try {
+      for (final routineId in routineIds.toSet()) {
+        final contextData = _contextFactory.create(
+          feature: 'projects',
+          screen: 'project_detail',
+          intent: 'routine_delete_selected',
+          operation: 'routines.delete',
+          entityType: 'routine',
+          entityId: routineId,
+        );
+        await routineWriteService.delete(routineId, context: contextData);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.snackDeleteFailed)));
+    }
+  }
 
   Future<void> _openNewTaskEditor(BuildContext context) {
     final inboxId = ProjectGroupingRef.inbox().stableKey;
@@ -125,8 +274,8 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
     );
   }
 
-  Future<void> _openNewRoutineEditor(BuildContext context) {
-    return context.read<EditorLauncher>().openRoutineEditor(
+  Future<void> _openNewRoutineEditor(BuildContext context) async {
+    await context.read<EditorLauncher>().openRoutineEditor(
       context,
       routineId: null,
       defaultProjectId: widget.projectId,
@@ -326,7 +475,11 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
                 appBar: hasRoutineSelection
                     ? RoutineSelectionAppBar(
                         baseTitle: appBarTitle,
-                        onExit: () {},
+                        onLogSelected: _logRoutines,
+                        onUnlogSelected: _unlogRoutines,
+                        onActivateSelected: _activateRoutines,
+                        onDeactivateSelected: _deactivateRoutines,
+                        onDeleteSelected: _deleteRoutines,
                       )
                     : hasTaskSelection
                     ? SelectionAppBar(
@@ -459,7 +612,7 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
                           routinesCollapsed: _routinesCollapsed,
                           onToggleTasksCollapsed: _toggleTasksCollapsed,
                           onToggleRoutinesCollapsed: _toggleRoutinesCollapsed,
-                          onCreateRoutine: () => _openNewRoutineEditor(context),
+                          onRoutineLogRequested: _logRoutines,
                           density: density,
                         ),
                     };
@@ -487,7 +640,7 @@ class _ProjectDetailBody extends StatelessWidget {
     required this.routinesCollapsed,
     required this.onToggleTasksCollapsed,
     required this.onToggleRoutinesCollapsed,
-    required this.onCreateRoutine,
+    required this.onRoutineLogRequested,
     required this.density,
   });
 
@@ -502,7 +655,7 @@ class _ProjectDetailBody extends StatelessWidget {
   final bool routinesCollapsed;
   final VoidCallback onToggleTasksCollapsed;
   final VoidCallback onToggleRoutinesCollapsed;
-  final VoidCallback onCreateRoutine;
+  final Future<void> Function(List<String> routineIds) onRoutineLogRequested;
   final DisplayDensity density;
 
   @override
@@ -511,11 +664,11 @@ class _ProjectDetailBody extends StatelessWidget {
     final dueSoonCount = _countDueSoon(tasks, todayDayKeyUtc);
     final tokens = TasklyTokens.of(context);
 
-    void openInboxTaskEditor() {
+    void openTaskEditor() {
       context.read<EditorLauncher>().openTaskEditor(
         context,
         taskId: null,
-        defaultProjectId: null,
+        defaultProjectId: isInbox ? null : project.id,
         showDragHandle: true,
       );
     }
@@ -532,6 +685,8 @@ class _ProjectDetailBody extends StatelessWidget {
     final orderedCompleted = showCompleted
         ? _sortTasks(completed, sortOrder)
         : const <Task>[];
+    final hasVisibleTasks =
+        orderedOpen.isNotEmpty || orderedCompleted.isNotEmpty;
 
     final headerData = buildProjectRowData(
       context,
@@ -584,42 +739,46 @@ class _ProjectDetailBody extends StatelessWidget {
       );
     }
 
-    final taskRows = <TasklyRowSpec>[
-      TasklyRowSpec.header(
-        key: 'project-detail-tasks-header',
-        title: context.l10n.tasksTitle,
-        trailingLabel: context.l10n.remainingCountLabel(orderedOpen.length),
-        trailingIcon: tasksCollapsed
-            ? Icons.expand_more_rounded
-            : Icons.expand_less_rounded,
-        onTap: onToggleTasksCollapsed,
-        dividerOpacity: tasksCollapsed ? 0.25 : null,
-      ),
-      if (!tasksCollapsed) ...[
-        ...orderedOpen.map(
-          (task) => _buildProjectTaskRow(
-            context,
-            task,
-            selectionState,
-            density: density,
-          ),
-        ),
-        if (orderedCompleted.isNotEmpty) ...[
-          TasklyRowSpec.header(
-            key: 'project-detail-completed-header',
-            title: context.l10n.completedLabel,
-          ),
-          ...orderedCompleted.map(
-            (task) => _buildProjectTaskRow(
-              context,
-              task,
-              selectionState,
-              density: density,
+    final taskRows = hasVisibleTasks
+        ? <TasklyRowSpec>[
+            TasklyRowSpec.header(
+              key: 'project-detail-tasks-header',
+              title: context.l10n.tasksTitle,
+              trailingLabel: context.l10n.remainingCountLabel(
+                orderedOpen.length,
+              ),
+              trailingIcon: tasksCollapsed
+                  ? Icons.expand_more_rounded
+                  : Icons.expand_less_rounded,
+              onTap: onToggleTasksCollapsed,
+              dividerOpacity: tasksCollapsed ? 0.25 : null,
             ),
-          ),
-        ],
-      ],
-    ];
+            if (!tasksCollapsed) ...[
+              ...orderedOpen.map(
+                (task) => _buildProjectTaskRow(
+                  context,
+                  task,
+                  selectionState,
+                  density: density,
+                ),
+              ),
+              if (orderedCompleted.isNotEmpty) ...[
+                TasklyRowSpec.header(
+                  key: 'project-detail-completed-header',
+                  title: context.l10n.completedLabel,
+                ),
+                ...orderedCompleted.map(
+                  (task) => _buildProjectTaskRow(
+                    context,
+                    task,
+                    selectionState,
+                    density: density,
+                  ),
+                ),
+              ],
+            ],
+          ]
+        : const <TasklyRowSpec>[];
 
     final routineItems = routines
         .map(
@@ -632,7 +791,8 @@ class _ProjectDetailBody extends StatelessWidget {
         )
         .toList(growable: false);
 
-    final routineHeaderRows = isInbox
+    final hasRoutines = routineItems.isNotEmpty;
+    final routineHeaderRows = (isInbox || !hasRoutines)
         ? const <TasklyRowSpec>[]
         : <TasklyRowSpec>[
             TasklyRowSpec.header(
@@ -646,6 +806,7 @@ class _ProjectDetailBody extends StatelessWidget {
               dividerOpacity: routinesCollapsed ? 0.25 : null,
             ),
           ];
+    final showCombinedEmptyState = !isInbox && !hasVisibleTasks && !hasRoutines;
 
     if (isInbox && tasks.isEmpty) {
       return ListView(
@@ -672,7 +833,48 @@ class _ProjectDetailBody extends StatelessWidget {
                     title: context.l10n.inboxEmptyTitle,
                     description: context.l10n.inboxEmptyDescription,
                     actionLabel: context.l10n.inboxEmptyAction,
-                    onAction: openInboxTaskEditor,
+                    onAction: openTaskEditor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    if (showCombinedEmptyState) {
+      return ListView(
+        padding: EdgeInsets.fromLTRB(
+          tokens.spaceLg,
+          tokens.spaceSm,
+          tokens.spaceLg,
+          tokens.spaceXl,
+        ),
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _ProjectDetailHeader(
+                data: headerData,
+                isInbox: isInbox,
+                onEditRequested: openEdit,
+              ),
+              SizedBox(height: tokens.spaceSm),
+              _ProjectNotesEditor(
+                rawNotes: normalizedDescription,
+                hintText: context.l10n.projectFormDescriptionHint,
+                onNotesChanged: updateDescription,
+              ),
+              SizedBox(height: tokens.spaceSm),
+              TasklyFeedRenderer(
+                spec: TasklyFeedSpec.empty(
+                  empty: TasklyEmptyStateSpec(
+                    icon: Icons.playlist_add_check_circle_outlined,
+                    title: context.l10n.projectDetailEmptyTitle,
+                    description: context.l10n.projectDetailEmptyDescription,
+                    actionLabel: context.l10n.addTaskAction,
+                    onAction: openTaskEditor,
                   ),
                 ),
               ),
@@ -707,12 +909,13 @@ class _ProjectDetailBody extends StatelessWidget {
               ),
               SizedBox(height: tokens.spaceSm),
             ],
-            TasklyFeedRenderer.buildSection(
-              TasklySectionSpec.standardList(
-                id: 'project-detail-tasks',
-                rows: taskRows,
+            if (taskRows.isNotEmpty)
+              TasklyFeedRenderer.buildSection(
+                TasklySectionSpec.standardList(
+                  id: 'project-detail-tasks',
+                  rows: taskRows,
+                ),
               ),
-            ),
             if (routineHeaderRows.isNotEmpty) ...[
               SizedBox(height: tokens.spaceSm),
               TasklyFeedRenderer.buildSection(
@@ -724,33 +927,17 @@ class _ProjectDetailBody extends StatelessWidget {
               if (!routinesCollapsed)
                 Padding(
                   padding: EdgeInsets.only(top: tokens.spaceSm),
-                  child: routineItems.isEmpty
-                      ? TasklyFeedRenderer(
-                          spec: TasklyFeedSpec.empty(
-                            empty: TasklyEmptyStateSpec(
-                              icon: Icons.auto_awesome,
-                              title: context.l10n.routineEmptyTitle,
-                              description: context.l10n.routineEmptyDescription,
-                              actionLabel: context.l10n.routineCreateCta,
-                              onAction: onCreateRoutine,
-                            ),
-                          ),
-                        )
-                      : RoutinesListView(
-                          items: routineItems,
-                          sortOrder: RoutineSortOrder.scheduledFirst,
-                          onEditRoutine: (id) =>
-                              Routing.toRoutineEdit(context, id),
-                          onLogRoutine: (id) {
-                            context.read<RoutineListBloc>().add(
-                              RoutineListEvent.logRequested(
-                                routineId: id,
-                              ),
-                            );
-                          },
-                          embedded: true,
-                          showSectionHeaders: false,
-                        ),
+                  child: RoutinesListView(
+                    items: routineItems,
+                    sortOrder: RoutineSortOrder.scheduledFirst,
+                    onEditRoutine: (id) => Routing.toRoutineEdit(context, id),
+                    onLogRoutine: (id) => unawaited(
+                      onRoutineLogRequested([id]),
+                    ),
+                    embedded: true,
+                    showSectionHeaders: false,
+                    entityRowPadding: EdgeInsets.zero,
+                  ),
                 ),
             ],
           ],
@@ -970,6 +1157,7 @@ class _ProjectNotesEditorState extends State<_ProjectNotesEditor> {
   final ScrollController _scrollController = ScrollController();
   Timer? _debounceTimer;
   bool _isEmpty = true;
+  bool _isExpanded = false;
   bool _syncing = false;
   String? _lastSerialized;
   String? _lastCommitted;
@@ -1028,6 +1216,21 @@ class _ProjectNotesEditorState extends State<_ProjectNotesEditor> {
     }
   }
 
+  void _expandEditor() {
+    if (!_isExpanded && mounted) {
+      setState(() => _isExpanded = true);
+    }
+    _focusNode.requestFocus();
+  }
+
+  void _collapseEditor() {
+    _commitPending();
+    _focusNode.unfocus();
+    if (_isExpanded && mounted) {
+      setState(() => _isExpanded = false);
+    }
+  }
+
   void _scheduleCommit() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(_debounceDuration, _commitPending);
@@ -1070,10 +1273,75 @@ class _ProjectNotesEditorState extends State<_ProjectNotesEditor> {
     final isCompact = MediaQuery.sizeOf(context).width < 600;
     final editorHeight = isCompact ? 160.0 : 200.0;
     final contentPadding = EdgeInsets.all(tokens.spaceSm);
+    final plainPreview = _controller.document
+        .toPlainText()
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    if (!_isExpanded) {
+      final previewText = plainPreview.isEmpty ? widget.hintText : plainPreview;
+      final previewStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+        color: plainPreview.isEmpty
+            ? scheme.onSurfaceVariant
+            : scheme.onSurface.withValues(alpha: 0.9),
+      );
+
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: const Key('project-notes-preview-card'),
+          borderRadius: BorderRadius.circular(tokens.radiusMd),
+          onTap: _expandEditor,
+          child: Ink(
+            padding: EdgeInsets.all(tokens.spaceSm),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(tokens.radiusMd),
+              border: Border.all(color: scheme.outlineVariant),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.notes_rounded,
+                  size: tokens.spaceMd2,
+                  color: scheme.onSurfaceVariant,
+                ),
+                SizedBox(width: tokens.spaceSm),
+                Expanded(
+                  child: Text(
+                    previewText,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: previewStyle,
+                  ),
+                ),
+                SizedBox(width: tokens.spaceXs),
+                Icon(
+                  Icons.edit_rounded,
+                  size: tokens.spaceMd2,
+                  color: scheme.primary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            key: const Key('project-notes-done-button'),
+            onPressed: _collapseEditor,
+            icon: const Icon(Icons.check_rounded),
+            label: Text(context.l10n.doneLabel),
+          ),
+        ),
+        SizedBox(height: tokens.spaceXs),
         FleatherToolbar.basic(
           controller: _controller,
           hideStrikeThrough: true,
@@ -1308,7 +1576,6 @@ enum _ProjectTaskSortOrder {
   alphabetical,
   priority,
   dueDate,
-  valueName,
 }
 
 extension _ProjectTaskSortOrderLabels on _ProjectTaskSortOrder {
@@ -1319,7 +1586,6 @@ extension _ProjectTaskSortOrderLabels on _ProjectTaskSortOrder {
       _ProjectTaskSortOrder.alphabetical => l10n.sortAlphabetical,
       _ProjectTaskSortOrder.priority => l10n.sortPriority,
       _ProjectTaskSortOrder.dueDate => l10n.sortDueDate,
-      _ProjectTaskSortOrder.valueName => l10n.sortValueName,
     };
   }
 }
@@ -1359,20 +1625,6 @@ List<Task> _sortTasks(List<Task> tasks, _ProjectTaskSortOrder order) {
     return byName(a, b);
   }
 
-  int byValueName(Task a, Task b) {
-    final byPrimary = _compareValuesByName(
-      a.effectivePrimaryValue,
-      b.effectivePrimaryValue,
-    );
-    if (byPrimary != 0) return byPrimary;
-    final bySecondary = _compareValueListsByName(
-      a.effectiveSecondaryValues,
-      b.effectiveSecondaryValues,
-    );
-    if (bySecondary != 0) return bySecondary;
-    return byName(a, b);
-  }
-
   final sorted = tasks.toList(growable: false);
   sorted.sort(
     switch (order) {
@@ -1380,34 +1632,8 @@ List<Task> _sortTasks(List<Task> tasks, _ProjectTaskSortOrder order) {
       _ProjectTaskSortOrder.alphabetical => byName,
       _ProjectTaskSortOrder.priority => byPriority,
       _ProjectTaskSortOrder.dueDate => byDueDate,
-      _ProjectTaskSortOrder.valueName => byValueName,
       _ProjectTaskSortOrder.listOrder => byName,
     },
   );
   return sorted;
-}
-
-int _compareValueListsByName(List<Value> a, List<Value> b) {
-  final maxLen = a.length > b.length ? a.length : b.length;
-  for (var i = 0; i < maxLen; i++) {
-    final aValue = i < a.length ? a[i] : null;
-    final bValue = i < b.length ? b[i] : null;
-    final compare = _compareValuesByName(aValue, bValue);
-    if (compare != 0) return compare;
-  }
-  return 0;
-}
-
-int _compareValuesByName(Value? a, Value? b) {
-  if (a == null && b == null) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
-
-  final byName = _compareValueNames(a, b);
-  if (byName != 0) return byName;
-  return b.priority.weight.compareTo(a.priority.weight);
-}
-
-int _compareValueNames(Value a, Value b) {
-  return a.name.toLowerCase().compareTo(b.name.toLowerCase());
 }

@@ -4,7 +4,6 @@ import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
@@ -251,9 +250,7 @@ class EditorLauncher {
       );
     }
 
-    final windowSizeClass = WindowSizeClass.of(context);
-    final effectiveShowDragHandle =
-        windowSizeClass.isCompact && (showDragHandle ?? true);
+    const effectiveShowDragHandle = false;
 
     return showDetailModal<void>(
       context: context,
@@ -294,9 +291,7 @@ class EditorLauncher {
       );
     }
 
-    final windowSizeClass = WindowSizeClass.of(context);
-    final effectiveShowDragHandle =
-        windowSizeClass.isCompact && (showDragHandle ?? true);
+    const effectiveShowDragHandle = false;
 
     return showDetailModal<void>(
       context: context,
@@ -337,9 +332,7 @@ class EditorLauncher {
       );
     }
 
-    final windowSizeClass = WindowSizeClass.of(context);
-    final effectiveShowDragHandle =
-        windowSizeClass.isCompact && (showDragHandle ?? true);
+    const effectiveShowDragHandle = false;
 
     return showDetailModal<void>(
       context: context,

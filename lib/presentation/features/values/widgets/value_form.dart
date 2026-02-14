@@ -121,7 +121,10 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
 
     final submitEnabled = _submitEnabled;
 
-    final sectionGap = isCompact ? 12.0 : 16.0;
+    final formPreset = TasklyFormPreset.standard(TasklyTokens.of(context));
+    final sectionGap = isCompact
+        ? formPreset.ux.sectionGapCompact
+        : formPreset.ux.sectionGapRegular;
 
     final headerActionStyle = TextButton.styleFrom(
       textStyle: theme.textTheme.bodyMedium?.copyWith(
@@ -149,6 +152,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
       onClose: null,
       closeTooltip: l10n.closeLabel,
       scrollController: _scrollController,
+      showHandleBar: false,
       headerTitle: headerTitle,
       centerHeaderTitle: true,
       leadingActions: [
@@ -208,23 +212,14 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(height: TasklyTokens.of(context).spaceSm),
-                FormBuilderTextField(
+                TasklyFormTitleField(
                   name: ValueFieldKeys.name.id,
                   textCapitalization: TextCapitalization.sentences,
-                  textInputAction: TextInputAction.next,
+                  textInputAction: TextInputAction.done,
+                  autofocus: isCreating,
+                  onSubmitted: (_) => FocusScope.of(context).unfocus(),
                   maxLength: ValueForm.maxNameLength,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  decoration:
-                      const InputDecoration(
-                        border: InputBorder.none,
-                        hintText: '',
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ).copyWith(
-                        hintText: l10n.valueFormNameHint,
-                      ),
+                  hintText: l10n.valueFormNameHint,
                   validator: toFormBuilderValidator<String>(
                     ValueValidators.name,
                     context,

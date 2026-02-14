@@ -15,6 +15,8 @@ Use this when adding a new screen, flow, or domain capability.
   or subscribe to domain/data streams directly.
 - BLoC owns subscriptions and produces widget-ready state.
 - Use query services for repeatable screen composition when it keeps BLoC thin.
+- Follow the screen data pipeline pattern:
+  [SCREEN_DATA_PIPELINE.md](SCREEN_DATA_PIPELINE.md)
 
 ## 3) Write path
 
@@ -59,3 +61,9 @@ Use this when adding a new screen, flow, or domain capability.
 - Prefer the quickcheck script for a consistent local loop:
   `powershell -File tool/Run-Quickcheck.ps1`
 - If an invariant must be violated, document an exception before coding.
+
+## 10) Migration cleanup
+
+- When consolidating BLoC events/effects or service APIs, remove deprecated
+  variants in the same change once call sites are migrated.
+- Update tests and architecture docs in the same change to match the final API.

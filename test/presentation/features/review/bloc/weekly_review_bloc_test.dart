@@ -81,6 +81,9 @@ void main() {
     when(
       () => routineRepository.getAll(includeInactive: true),
     ).thenAnswer((_) async => []);
+    when(
+      () => routineRepository.watchAll(includeInactive: false),
+    ).thenAnswer((_) => Stream.value(const <Routine>[]));
     when(() => routineRepository.getCompletions()).thenAnswer(
       (_) async => [],
     );
@@ -127,6 +130,7 @@ void main() {
           deadlineRiskDueWithinDays: 3,
           deadlineRiskMinUnscheduledCount: 2,
           showFrequentSnoozed: false,
+          showRoutineSupport: false,
         ),
       ),
     ),
@@ -165,6 +169,7 @@ void main() {
           deadlineRiskDueWithinDays: 3,
           deadlineRiskMinUnscheduledCount: 2,
           showFrequentSnoozed: false,
+          showRoutineSupport: false,
         ),
       ),
     ),
@@ -207,6 +212,7 @@ void main() {
           deadlineRiskDueWithinDays: 3,
           deadlineRiskMinUnscheduledCount: 2,
           showFrequentSnoozed: true,
+          showRoutineSupport: false,
         ),
       ),
     ),

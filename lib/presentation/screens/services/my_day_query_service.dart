@@ -81,9 +81,7 @@ final class MyDayQueryService {
 
     final dayPicks$ = Rx.concat([
       Stream.fromFuture(_myDayRepository.loadDay(dayKeyUtc)),
-      _myDayRepository
-          .watchDay(dayKeyUtc)
-          .onErrorResumeNext(Rx.never<MyDayDayPicks>()),
+      _myDayRepository.watchDay(dayKeyUtc),
     ]);
 
     return dayPicks$.switchMap((dayPicks) {

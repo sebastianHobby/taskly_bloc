@@ -79,6 +79,30 @@ abstract class SystemAttentionRules {
     sortOrder: 40,
   );
 
+  /// Detects routines that are either in an early building phase or trending
+  /// down and likely need support.
+  static const problemRoutineSupport = AttentionRuleTemplate(
+    ruleKey: 'problem_routine_support',
+    bucket: AttentionBucket.action,
+    evaluator: 'routine_support_v1',
+    evaluatorParams: {
+      'buildingMinAgeDays': 7,
+      'buildingMaxAgeDays': 28,
+      'needsHelpDropPp': 15,
+      'needsHelpRecentAdherenceMax': 60,
+      'maxCards': 2,
+    },
+    severity: AttentionSeverity.info,
+    displayConfig: {
+      'title': 'Routine Support',
+      'description':
+          'Small changes restore momentum. Tune this routine for this week.',
+      'icon': 'self_improvement',
+    },
+    resolutionActions: ['reviewed', 'snoozed', 'dismissed'],
+    sortOrder: 45,
+  );
+
   // ==========================================================================
   // HELPERS
   // ==========================================================================
@@ -89,6 +113,7 @@ abstract class SystemAttentionRules {
     problemTaskStale,
     problemProjectIdle,
     problemProjectDeadlineRisk,
+    problemRoutineSupport,
   ];
 
   /// Get template by rule key

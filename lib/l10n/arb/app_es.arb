@@ -909,16 +909,7 @@
     "@taskFormStartDateHint": {
         "description": "Texto de sugerencia para el campo de fecha de inicio de tarea"
     },
-    "taskFormDeadlineDateHint": "Fecha de entrega",
-    "dateChipAddPlannedDay": "Añadir planificado",
-    "@dateChipAddPlannedDay": {
-        "description": "Etiqueta mostrada en los chips de fecha cuando no se ha establecido el día planificado"
-    },
-    "dateChipAddDueDate": "Añadir fecha límite",
-    "@dateChipAddDueDate": {
-        "description": "Etiqueta mostrada en los chips de fecha cuando no se ha establecido la fecha de entrega"
-    },
-    "@taskFormDeadlineDateHint": {
+    "taskFormDeadlineDateHint": "Fecha de entrega",    "@taskFormDeadlineDateHint": {
         "description": "Texto de sugerencia para el campo de fecha límite de tarea"
     },
     "taskFormProjectHint": "Proyecto (opcional)",
@@ -3050,6 +3041,8 @@
     "routineEmptyTitle": "Aun no hay rutinas",
     "routineEmptyDescription": "Crea una rutina para mantener la constancia.",
     "routineCreateCta": "Crear rutina",
+    "projectDetailEmptyTitle": "Aun no hay tareas ni rutinas",
+    "projectDetailEmptyDescription": "Inicia este proyecto agregando una tarea o una rutina.",
     "routineFormNameHint": "p. ej. Meditacion matutina",
     "@routineFormNameHint": {
         "description": "Hint text for the routine name field"

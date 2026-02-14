@@ -828,14 +828,6 @@
         "description": "Hint text for the task planned day field"
     },
     "taskFormDeadlineDateHint": "Due date",
-    "dateChipAddPlannedDay": "Add planned",
-    "@dateChipAddPlannedDay": {
-        "description": "Label shown on date chips when planned day is not set"
-    },
-    "dateChipAddDueDate": "Add deadline",
-    "@dateChipAddDueDate": {
-        "description": "Label shown on date chips when due date is not set"
-    },
     "@taskFormDeadlineDateHint": {
         "description": "Hint text for the task due date field"
     },
@@ -3134,6 +3126,14 @@
     "routineCreateCta": "Create routine",
     "@routineCreateCta": {
         "description": "Call to action label for creating a routine"
+    },
+    "projectDetailEmptyTitle": "No tasks or routines yet",
+    "@projectDetailEmptyTitle": {
+        "description": "Combined empty state title on project detail when both tasks and routines are empty."
+    },
+    "projectDetailEmptyDescription": "Start this project by adding a task or a routine.",
+    "@projectDetailEmptyDescription": {
+        "description": "Combined empty state description on project detail when both tasks and routines are empty."
     },
   "routineFormNameHint": "e.g. Morning Meditation",
   "@routineFormNameHint": {

@@ -13,7 +13,9 @@ import '../../../mocks/presentation_mocks.dart';
 import '../../../mocks/fake_repositories.dart';
 import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
+import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
@@ -43,6 +45,8 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late ScheduledOccurrencesService occurrencesService;
+  late ScheduledSessionQueryService queryService;
+  late SessionStreamCacheManager cacheManager;
   late OccurrenceReadService occurrenceReadService;
   late MockOccurrenceStreamExpanderContract occurrenceExpander;
   late DemoModeService demoModeService;
@@ -90,6 +94,9 @@ void main() {
       projectRepository: projectRepository,
       occurrenceReadService: occurrenceReadService,
     );
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: const _StaticLifecycleEvents(),
+    )..start();
     sessionDayKeyService = SessionDayKeyService(
       dayKeyService: dayKeyService,
       temporalTriggerService: temporalTriggerService,
@@ -101,10 +108,18 @@ void main() {
       () => dayKeyService.todayDayKeyUtc(),
     ).thenReturn(DateTime.utc(2025, 1, 15));
     sessionDayKeyService.start();
+    queryService = ScheduledSessionQueryService(
+      scheduledOccurrencesService: occurrencesService,
+      sessionDayKeyService: sessionDayKeyService,
+      cacheManager: cacheManager,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
+    );
   });
 
   tearDown(() async {
     await temporalController.close();
+    await cacheManager.dispose();
     await sessionDayKeyService.dispose();
     await demoModeService.dispose();
   });
@@ -117,8 +132,8 @@ void main() {
           path: '/scheduled',
           builder: (_, __) => MultiRepositoryProvider(
             providers: [
-              RepositoryProvider<ScheduledOccurrencesService>.value(
-                value: occurrencesService,
+              RepositoryProvider<ScheduledSessionQueryService>.value(
+                value: queryService,
               ),
               RepositoryProvider<TaskWriteService>.value(
                 value: taskWriteService,
@@ -179,4 +194,12 @@ void main() {
 
 AppLocalizations _l10n(WidgetTester tester) {
   return tester.element(find.byType(ScheduledPage)).l10n;
+}
+
+final class _StaticLifecycleEvents implements AppLifecycleEvents {
+  const _StaticLifecycleEvents();
+
+  @override
+  Stream<AppLifecycleEvent> get events =>
+      const Stream<AppLifecycleEvent>.empty();
 }

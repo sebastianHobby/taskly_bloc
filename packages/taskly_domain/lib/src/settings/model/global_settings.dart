@@ -43,6 +43,7 @@ abstract class GlobalSettings with _$GlobalSettings {
     @Default(GlobalSettings.defaultMaintenanceProjectIdleThresholdDays)
     int maintenanceProjectIdleThresholdDays,
     @Default(true) bool maintenanceFrequentSnoozedEnabled,
+    @Default(true) bool maintenanceRoutineSupportEnabled,
     @Default(1.0) double textScaleFactor,
     @Default(false) bool onboardingCompleted,
     @Default(false) bool guidedTourCompleted,
@@ -116,6 +117,8 @@ abstract class GlobalSettings with _$GlobalSettings {
           ),
       maintenanceFrequentSnoozedEnabled:
           json['maintenanceFrequentSnoozedEnabled'] as bool? ?? true,
+      maintenanceRoutineSupportEnabled:
+          json['maintenanceRoutineSupportEnabled'] as bool? ?? true,
       textScaleFactor: (json['textScaleFactor'] as num?)?.toDouble() ?? 1.0,
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
       guidedTourCompleted: json['guidedTourCompleted'] as bool? ?? false,
@@ -227,6 +230,7 @@ extension GlobalSettingsJson on GlobalSettings {
           GlobalSettings.maintenanceStaleThresholdDaysMax,
         ),
     'maintenanceFrequentSnoozedEnabled': maintenanceFrequentSnoozedEnabled,
+    'maintenanceRoutineSupportEnabled': maintenanceRoutineSupportEnabled,
     'textScaleFactor': textScaleFactor,
     'onboardingCompleted': onboardingCompleted,
     'guidedTourCompleted': guidedTourCompleted,

@@ -105,3 +105,16 @@ stay consistent across features. Form state, validation, and domain-specific
 labeling remain in the app; `taskly_ui` widgets are render-only and take
 data-in/events-out inputs.
 
+Current shared form-kit primitives include:
+
+- title field wrappers (`TasklyFormTitleField`)
+- notes containers/fields (`TasklyFormNotesContainer`, `TasklyFormNotesField`)
+- chip and selector rows (`TasklyFormChipRow`, `TasklyFormSelectorRow`)
+- reusable selectors (`TasklyFormStepper`, `TasklyFormChoiceGrid`)
+
+Sheet and picker shells must remain overflow-safe on compact heights and text
+scaling:
+
+- `TasklyFormSheet` and `TasklyFormPickerShell` should constrain max height and
+  provide internal scrolling for tall content.
+

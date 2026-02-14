@@ -13,4 +13,6 @@
 - Project Detail concept: [PROJECT_DETAIL_CONCEPT.md](PROJECT_DETAIL_CONCEPT.md)
 - Screen meaning and contracts: [SCREEN_PURPOSE_CONCEPTS.md](SCREEN_PURPOSE_CONCEPTS.md)
 - Routines spec (Plan My Day): [SPEC_ROUTINES.md](SPEC_ROUTINES.md)
+- Routine detail + support spec:
+  [SPEC_ROUTINE_SUPPORT_AND_DETAIL_V1.md](SPEC_ROUTINE_SUPPORT_AND_DETAIL_V1.md)
 - Plan My Day auto-plan spec: [SPEC_PLAN_MY_DAY_AUTO_PLAN.md](SPEC_PLAN_MY_DAY_AUTO_PLAN.md)

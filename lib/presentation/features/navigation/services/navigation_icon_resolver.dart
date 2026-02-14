@@ -44,10 +44,6 @@ class NavigationIconResolver {
       'planned' => (icon: Icons.event_outlined, selectedIcon: Icons.event),
       'scheduled' => (icon: Icons.event_outlined, selectedIcon: Icons.event),
       'inbox' => (icon: Icons.inbox_outlined, selectedIcon: Icons.inbox),
-      'routines' => (
-        icon: Icons.repeat_outlined,
-        selectedIcon: Icons.repeat,
-      ),
       'projects' => (icon: Icons.folder_outlined, selectedIcon: Icons.folder),
       'labels' => (icon: Icons.label_outline, selectedIcon: Icons.label),
       'values' => (icon: Icons.star_outline, selectedIcon: Icons.star),

@@ -5,16 +5,16 @@ import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 class TasklyFormValueCard extends StatelessWidget {
   const TasklyFormValueCard({
     required this.title,
-    required this.helperText,
     required this.icon,
     required this.iconColor,
     required this.hasValue,
     required this.onTap,
+    this.helperText,
     super.key,
   });
 
   final String title;
-  final String helperText;
+  final String? helperText;
   final IconData icon;
   final Color iconColor;
   final bool hasValue;
@@ -25,6 +25,9 @@ class TasklyFormValueCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final tokens = TasklyTokens.of(context);
     final titleColor = hasValue ? scheme.onSurface : scheme.onSurfaceVariant;
+    final resolvedHelperText = helperText?.trim();
+    final showHelper =
+        resolvedHelperText != null && resolvedHelperText.isNotEmpty;
 
     return Material(
       color: scheme.surfaceContainerLow,
@@ -69,16 +72,18 @@ class TasklyFormValueCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(height: tokens.spaceXxs),
-                    Text(
-                      helperText,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
+                    if (showHelper) ...[
+                      SizedBox(height: tokens.spaceXxs),
+                      Text(
+                        resolvedHelperText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

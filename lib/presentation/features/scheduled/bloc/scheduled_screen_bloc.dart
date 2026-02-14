@@ -15,10 +15,6 @@ final class ScheduledOpenTaskNew extends ScheduledScreenEffect {
   final DateTime defaultDeadlineDay;
 }
 
-final class ScheduledOpenProjectNew extends ScheduledScreenEffect {
-  const ScheduledOpenProjectNew();
-}
-
 final class ScheduledBulkDeadlineRescheduled extends ScheduledScreenEffect {
   const ScheduledBulkDeadlineRescheduled({
     required this.taskCount,
@@ -48,38 +44,8 @@ final class ScheduledCreateTaskForDayRequested extends ScheduledScreenEvent {
   final DateTime day;
 }
 
-final class ScheduledCreateProjectRequested extends ScheduledScreenEvent {
-  const ScheduledCreateProjectRequested();
-}
-
 final class ScheduledEffectHandled extends ScheduledScreenEvent {
   const ScheduledEffectHandled();
-}
-
-final class ScheduledRescheduleTasksDeadlineRequested
-    extends ScheduledScreenEvent {
-  const ScheduledRescheduleTasksDeadlineRequested({
-    required this.taskIds,
-    required this.newDeadlineDay,
-  });
-
-  final List<String> taskIds;
-
-  /// Date-only semantics.
-  final DateTime newDeadlineDay;
-}
-
-final class ScheduledRescheduleProjectsDeadlineRequested
-    extends ScheduledScreenEvent {
-  const ScheduledRescheduleProjectsDeadlineRequested({
-    required this.projectIds,
-    required this.newDeadlineDay,
-  });
-
-  final List<String> projectIds;
-
-  /// Date-only semantics.
-  final DateTime newDeadlineDay;
 }
 
 final class ScheduledRescheduleEntitiesDeadlineRequested
@@ -134,20 +100,11 @@ class ScheduledScreenBloc
       );
     });
 
-    on<ScheduledCreateProjectRequested>((event, emit) {
-      if (_demoModeService.enabled.valueOrNull ?? false) return;
-      emit(const ScheduledScreenReady(effect: ScheduledOpenProjectNew()));
-    });
-
     on<ScheduledEffectHandled>((event, emit) {
       if (state.effect == null) return;
       emit(const ScheduledScreenReady());
     });
 
-    on<ScheduledRescheduleTasksDeadlineRequested>(_onRescheduleTasksDeadline);
-    on<ScheduledRescheduleProjectsDeadlineRequested>(
-      _onRescheduleProjectsDeadline,
-    );
     on<ScheduledRescheduleEntitiesDeadlineRequested>(
       _onRescheduleEntitiesDeadline,
     );
@@ -157,98 +114,6 @@ class ScheduledScreenBloc
   final ProjectWriteService _projectWriteService;
   final DemoModeService _demoModeService;
   final OperationContextFactory _contextFactory;
-
-  Future<void> _onRescheduleTasksDeadline(
-    ScheduledRescheduleTasksDeadlineRequested event,
-    Emitter<ScheduledScreenState> emit,
-  ) async {
-    if (_demoModeService.enabled.valueOrNull ?? false) return;
-    final uniqueTaskIds = event.taskIds.toSet().toList(growable: false);
-    if (uniqueTaskIds.isEmpty) return;
-
-    final newDeadlineDay = DateTime(
-      event.newDeadlineDay.year,
-      event.newDeadlineDay.month,
-      event.newDeadlineDay.day,
-    );
-
-    final baseContext = _contextFactory.create(
-      feature: 'scheduled',
-      screen: 'scheduled',
-      intent: 'bulk_reschedule',
-      operation: 'task_update_deadline',
-      extraFields: <String, Object?>{
-        'task_count': uniqueTaskIds.length,
-        'new_deadline_day': newDeadlineDay.toIso8601String(),
-      },
-    );
-
-    try {
-      final updated = await _taskWriteService.bulkRescheduleDeadlines(
-        uniqueTaskIds,
-        newDeadlineDay,
-        context: baseContext.copyWith(entityType: 'task'),
-      );
-
-      emit(
-        ScheduledScreenReady(
-          effect: ScheduledBulkDeadlineRescheduled(
-            taskCount: updated,
-            projectCount: 0,
-            newDeadlineDay: newDeadlineDay,
-          ),
-        ),
-      );
-    } catch (e) {
-      emit(ScheduledScreenReady(effect: ScheduledShowMessage(e.toString())));
-    }
-  }
-
-  Future<void> _onRescheduleProjectsDeadline(
-    ScheduledRescheduleProjectsDeadlineRequested event,
-    Emitter<ScheduledScreenState> emit,
-  ) async {
-    if (_demoModeService.enabled.valueOrNull ?? false) return;
-    final uniqueProjectIds = event.projectIds.toSet().toList(growable: false);
-    if (uniqueProjectIds.isEmpty) return;
-
-    final newDeadlineDay = DateTime(
-      event.newDeadlineDay.year,
-      event.newDeadlineDay.month,
-      event.newDeadlineDay.day,
-    );
-
-    final baseContext = _contextFactory.create(
-      feature: 'scheduled',
-      screen: 'scheduled',
-      intent: 'bulk_reschedule',
-      operation: 'project_update_deadline',
-      extraFields: <String, Object?>{
-        'project_count': uniqueProjectIds.length,
-        'new_deadline_day': newDeadlineDay.toIso8601String(),
-      },
-    );
-
-    try {
-      final updated = await _projectWriteService.bulkRescheduleDeadlines(
-        uniqueProjectIds,
-        newDeadlineDay,
-        context: baseContext.copyWith(entityType: 'project'),
-      );
-
-      emit(
-        ScheduledScreenReady(
-          effect: ScheduledBulkDeadlineRescheduled(
-            taskCount: 0,
-            projectCount: updated,
-            newDeadlineDay: newDeadlineDay,
-          ),
-        ),
-      );
-    } catch (e) {
-      emit(ScheduledScreenReady(effect: ScheduledShowMessage(e.toString())));
-    }
-  }
 
   Future<void> _onRescheduleEntitiesDeadline(
     ScheduledRescheduleEntitiesDeadlineRequested event,

@@ -96,6 +96,13 @@ For recurrence (tasks/projects with RRULEs):
   non-date feed, use a shared domain selector/helper rather than duplicating
   selection logic across BLoCs.
 
+For bulk writes:
+
+- Prefer one normalized intent event with a typed payload over multiple
+  near-duplicate events that split by entity subtype.
+- Keep per-entity branching inside the handler, not in the public event surface.
+- Remove deprecated intent variants once call sites are migrated.
+
 ### 2.3 "Gate" BLoC (routing / readiness)
 
 Use this when a screen depends on app readiness, auth state, or feature flags.

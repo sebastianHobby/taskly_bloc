@@ -112,30 +112,6 @@ List<GuidedTourStep> buildGuidedTourSteps() {
       ),
     ),
     GuidedTourStep(
-      id: 'routines_scheduled_example',
-      route: '/routines',
-      title: 'Scheduled routines',
-      body: 'Routines tied to set days to build consistency.',
-      kind: GuidedTourStepKind.coachmark,
-      coachmark: GuidedTourCoachmark(
-        targetId: 'routines_scheduled_example',
-        title: 'Scheduled routines',
-        body: 'Routines tied to set days to build consistency.',
-      ),
-    ),
-    GuidedTourStep(
-      id: 'routines_flexible_example',
-      route: '/routines',
-      title: 'Flexible routines',
-      body: 'Routines you choose when to complete, week to week.',
-      kind: GuidedTourStepKind.coachmark,
-      coachmark: GuidedTourCoachmark(
-        targetId: 'routines_flexible_example',
-        title: 'Flexible routines',
-        body: 'Routines you choose when to complete, week to week.',
-      ),
-    ),
-    GuidedTourStep(
       id: 'projects_overview',
       route: '/projects',
       title: 'Projects',

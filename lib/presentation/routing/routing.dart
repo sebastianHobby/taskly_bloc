@@ -47,7 +47,6 @@ abstract final class Routing {
     'my_day',
     'scheduled',
     'projects',
-    'routines',
     'journal',
     'values',
     'settings',
@@ -230,6 +229,20 @@ abstract final class Routing {
 
   static void toRoutineEdit(BuildContext context, String routineId) =>
       GoRouter.of(context).push('/routine/$routineId/edit');
+
+  static void toRoutineDetail(
+    BuildContext context,
+    String routineId, {
+    bool openIfThenComposer = false,
+  }) {
+    final uri = Uri(
+      path: '/routine/$routineId',
+      queryParameters: openIfThenComposer
+          ? const <String, String>{'compose': 'if_then'}
+          : null,
+    );
+    GoRouter.of(context).push(uri.toString());
+  }
 
   // === JOURNAL ENTRY EDITOR ROUTES (Journal Today-first) ===
 

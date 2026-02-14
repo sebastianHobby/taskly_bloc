@@ -535,6 +535,7 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
     return switch (value) {
       'task' => domain_resolution.AttentionEntityType.task,
       'project' => domain_resolution.AttentionEntityType.project,
+      'routine' => domain_resolution.AttentionEntityType.routine,
       'journal' => domain_resolution.AttentionEntityType.journal,
       'value' => domain_resolution.AttentionEntityType.value,
       'tracker' => domain_resolution.AttentionEntityType.tracker,
@@ -550,6 +551,7 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
     return switch (entityType) {
       domain_resolution.AttentionEntityType.task => 'task',
       domain_resolution.AttentionEntityType.project => 'project',
+      domain_resolution.AttentionEntityType.routine => 'routine',
       domain_resolution.AttentionEntityType.journal => 'journal',
       domain_resolution.AttentionEntityType.value => 'value',
       domain_resolution.AttentionEntityType.tracker => 'tracker',

@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fleather/fleather.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_imports.dart';
@@ -81,4 +82,127 @@ void main() {
     expect(find.byType(ProjectForm), findsOneWidget);
     expect(find.text('Project X'), findsOneWidget);
   });
+
+  testWidgetsSafe(
+    'shows compact notes preview and expands/collapses with done',
+    (tester) async {
+      final project = TestData.project(
+        name: 'Project X',
+        description: 'First line\nSecond line\nThird line',
+      );
+      final state = ProjectDetailState.loadSuccess(
+        availableValues: const <Value>[],
+        project: project,
+      );
+      when(() => bloc.state).thenReturn(state);
+      whenListen(bloc, Stream.value(state), initialState: state);
+
+      await pumpView(
+        tester,
+        const ProjectEditSheetView(projectId: 'project-notes-preview'),
+      );
+
+      expect(
+        find.byKey(const Key('project-notes-preview-card')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('project-notes-done-button')), findsNothing);
+      expect(find.byType(FleatherToolbar), findsNothing);
+
+      await tester.tap(find.byKey(const Key('project-notes-preview-card')));
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('project-notes-done-button')),
+        findsOneWidget,
+      );
+      expect(find.byType(FleatherToolbar), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('project-notes-done-button')));
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('project-notes-preview-card')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('project-notes-done-button')), findsNothing);
+      expect(find.byType(FleatherToolbar), findsNothing);
+    },
+  );
+
+  testWidgetsSafe(
+    'collapses expanded notes editor when back is pressed',
+    (tester) async {
+      final project = TestData.project(
+        name: 'Project X',
+        description: 'Back collapse verification',
+      );
+      final state = ProjectDetailState.loadSuccess(
+        availableValues: const <Value>[],
+        project: project,
+      );
+      when(() => bloc.state).thenReturn(state);
+      whenListen(bloc, Stream.value(state), initialState: state);
+
+      await pumpView(
+        tester,
+        const ProjectEditSheetView(projectId: 'project-notes-back'),
+      );
+
+      await tester.tap(find.byKey(const Key('project-notes-preview-card')));
+      await tester.pump();
+      expect(
+        find.byKey(const Key('project-notes-done-button')),
+        findsOneWidget,
+      );
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('project-notes-preview-card')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('project-notes-done-button')), findsNothing);
+      expect(find.byType(FleatherToolbar), findsNothing);
+    },
+  );
+
+  testWidgetsSafe(
+    'collapses expanded notes editor when focus blurs',
+    (tester) async {
+      final project = TestData.project(
+        name: 'Project X',
+        description: 'Blur collapse verification',
+      );
+      final state = ProjectDetailState.loadSuccess(
+        availableValues: const <Value>[],
+        project: project,
+      );
+      when(() => bloc.state).thenReturn(state);
+      whenListen(bloc, Stream.value(state), initialState: state);
+
+      await pumpView(
+        tester,
+        const ProjectEditSheetView(projectId: 'project-notes-blur'),
+      );
+
+      await tester.tap(find.byKey(const Key('project-notes-preview-card')));
+      await tester.pump();
+      expect(
+        find.byKey(const Key('project-notes-done-button')),
+        findsOneWidget,
+      );
+
+      WidgetsBinding.instance.focusManager.primaryFocus?.unfocus();
+      await tester.pump();
+
+      expect(
+        find.byKey(const Key('project-notes-preview-card')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('project-notes-done-button')), findsNothing);
+      expect(find.byType(FleatherToolbar), findsNothing);
+    },
+  );
 }

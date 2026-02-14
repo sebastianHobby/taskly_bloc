@@ -105,6 +105,11 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
     bool enabled,
   ) = GlobalSettingsMaintenanceFrequentSnoozedChanged;
 
+  /// User toggled routine support maintenance.
+  const factory GlobalSettingsEvent.maintenanceRoutineSupportChanged(
+    bool enabled,
+  ) = GlobalSettingsMaintenanceRoutineSupportChanged;
+
   /// User completed weekly review.
   const factory GlobalSettingsEvent.weeklyReviewCompleted(
     DateTime completedAt,
@@ -255,6 +260,10 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsMaintenanceFrequentSnoozedChanged>(
       _onMaintenanceFrequentSnoozedChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsMaintenanceRoutineSupportChanged>(
+      _onMaintenanceRoutineSupportChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsWeeklyReviewCompleted>(
@@ -828,6 +837,26 @@ class GlobalSettingsBloc
       updated,
       intent: 'settings_maintenance_frequent_snoozed_changed',
       extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+  }
+
+  Future<void> _onMaintenanceRoutineSupportChanged(
+    GlobalSettingsMaintenanceRoutineSupportChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      maintenanceRoutineSupportEnabled: event.enabled,
+    );
+    final context = _newContext(
+      intent: 'settings_maintenance_routine_support_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+    await _persistSettingsWithContext(updated, context: context);
+    await _updateAttentionRuleActive(
+      'problem_routine_support',
+      event.enabled,
+      context: context,
     );
   }
 

@@ -266,6 +266,7 @@ Future<void> setupDependencies() async {
             getIt<attention_repo_v2.AttentionRepositoryContract>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
+        routineRepository: getIt<RoutineRepositoryContract>(),
         invalidations:
             getIt<AttentionTemporalInvalidationService>().invalidations,
         clock: getIt<Clock>(),
@@ -360,6 +361,8 @@ Future<void> setupDependencies() async {
         scheduledOccurrencesService: getIt<ScheduledOccurrencesService>(),
         sessionDayKeyService: getIt<SessionDayKeyService>(),
         cacheManager: getIt<SessionStreamCacheManager>(),
+        demoModeService: getIt<DemoModeService>(),
+        demoDataProvider: getIt<DemoDataProvider>(),
       ),
     )
     ..registerLazySingleton<ProjectsSessionQueryService>(

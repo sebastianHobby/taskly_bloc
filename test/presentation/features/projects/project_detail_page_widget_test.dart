@@ -1,6 +1,8 @@
 @Tags(['widget', 'projects'])
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
@@ -21,6 +23,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
@@ -41,6 +44,8 @@ class MockGlobalSettingsBloc
     extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
     implements GlobalSettingsBloc {}
 
+class FakeBuildContext extends Fake implements BuildContext {}
+
 class FakeNowService implements NowService {
   FakeNowService(this.now);
 
@@ -57,6 +62,7 @@ void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
     registerAllFallbackValues();
+    registerFallbackValue(FakeBuildContext());
   });
   setUp(setUpTestEnvironment);
 
@@ -338,20 +344,69 @@ void main() {
     expect(find.text('Task B'), findsOneWidget);
   });
 
-  testWidgetsSafe('shows routines empty state when project has no routines', (
+  testWidgetsSafe('shows compact notes preview by default', (tester) async {
+    await pumpPage(tester);
+
+    final project = TestData.project(
+      id: 'project-1',
+      name: 'Notes Project',
+      description: 'Project notes preview text',
+    );
+    projectSubject.add(project);
+    tasksSubject.add(const <Task>[]);
+    await tester.pumpForStream();
+
+    expect(find.byKey(const Key('project-notes-preview-card')), findsOneWidget);
+    expect(find.text('Project notes preview text'), findsOneWidget);
+    expect(find.byKey(const Key('project-notes-done-button')), findsNothing);
+  });
+
+  testWidgetsSafe('expands and collapses notes editor on demand', (
     tester,
   ) async {
     await pumpPage(tester);
 
-    final project = TestData.project(id: 'project-1', name: 'Routine Project');
+    final project = TestData.project(
+      id: 'project-1',
+      name: 'Notes Project',
+      description: 'Expand me',
+    );
     projectSubject.add(project);
     tasksSubject.add(const <Task>[]);
-    routinesSubject.add(const <Routine>[]);
     await tester.pumpForStream();
 
-    expect(find.text('No routines yet'), findsOneWidget);
-    expect(find.text('Create routine'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('project-notes-preview-card')));
+    await tester.pumpForStream();
+
+    expect(find.byKey(const Key('project-notes-done-button')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('project-notes-done-button')));
+    await tester.pumpForStream();
+
+    expect(find.byKey(const Key('project-notes-preview-card')), findsOneWidget);
+    expect(find.byKey(const Key('project-notes-done-button')), findsNothing);
   });
+
+  testWidgetsSafe(
+    'shows combined empty state when project has no tasks and no routines',
+    (tester) async {
+      await pumpPage(tester);
+
+      final project = TestData.project(
+        id: 'project-1',
+        name: 'Routine Project',
+      );
+      projectSubject.add(project);
+      tasksSubject.add(const <Task>[]);
+      routinesSubject.add(const <Routine>[]);
+      await tester.pumpForStream();
+
+      expect(find.text('No tasks or routines yet'), findsOneWidget);
+      expect(find.text('Add task'), findsOneWidget);
+      expect(find.text('Tasks'), findsNothing);
+      expect(find.text('Routines'), findsNothing);
+    },
+  );
 
   testWidgetsSafe('shows routine log action for project routines', (
     tester,
@@ -370,9 +425,30 @@ void main() {
     routinesSubject.add([routine]);
     await tester.pumpForStream();
 
+    expect(find.text('Tasks'), findsNothing);
+    expect(find.text('Routines'), findsOneWidget);
     expect(find.text('Morning Flow'), findsOneWidget);
     expect(find.text('Log'), findsOneWidget);
   });
+
+  testWidgetsSafe(
+    'shows only task section when tasks exist and routines do not',
+    (
+      tester,
+    ) async {
+      await pumpPage(tester);
+
+      final project = TestData.project(id: 'project-1', name: 'Task Project');
+      projectSubject.add(project);
+      tasksSubject.add([TestData.task(name: 'Task One')]);
+      routinesSubject.add(const <Routine>[]);
+      await tester.pumpForStream();
+
+      expect(find.text('Tasks'), findsOneWidget);
+      expect(find.text('Routines'), findsNothing);
+      expect(find.text('Task One'), findsOneWidget);
+    },
+  );
 
   testWidgetsSafe('shows inbox empty state when inbox has no tasks', (
     tester,
@@ -387,6 +463,57 @@ void main() {
     expect(find.text('Capture first, organize later'), findsOneWidget);
     expect(find.text('Quick add'), findsOneWidget);
   });
+
+  testWidgetsSafe(
+    'does not force overview restart after routine editor closes',
+    (
+      tester,
+    ) async {
+      final completer = Completer<void>();
+      when(
+        () => editorLauncher.openRoutineEditor(
+          any(),
+          routineId: any(named: 'routineId'),
+          defaultProjectId: any(named: 'defaultProjectId'),
+          openToProjectPicker: any(named: 'openToProjectPicker'),
+          showDragHandle: any(named: 'showDragHandle'),
+        ),
+      ).thenAnswer((_) => completer.future);
+
+      await pumpPage(tester);
+
+      final project = TestData.project(
+        id: 'project-1',
+        name: 'Routine Project',
+      );
+      projectSubject.add(project);
+      tasksSubject.add(const <Task>[]);
+      await tester.pumpForStream();
+
+      verify(() => projectRepository.watchById('project-1')).called(1);
+      clearInteractions(projectRepository);
+
+      final speedDial = tester.widget<TaskRoutineAddSpeedDial>(
+        find.byType(TaskRoutineAddSpeedDial),
+      );
+      speedDial.onCreateRoutine();
+      await tester.pump();
+
+      completer.complete();
+      await tester.pumpForStream();
+
+      verify(
+        () => editorLauncher.openRoutineEditor(
+          any(),
+          routineId: null,
+          defaultProjectId: 'project-1',
+          openToProjectPicker: false,
+          showDragHandle: true,
+        ),
+      ).called(1);
+      verifyNever(() => projectRepository.watchById('project-1'));
+    },
+  );
 }
 
 class _FakeClock implements Clock {

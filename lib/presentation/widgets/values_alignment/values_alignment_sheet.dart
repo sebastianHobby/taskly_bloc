@@ -165,6 +165,11 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
     });
   }
 
+  void _commitAndClose() {
+    if (widget.requireSelection && _selectedValueIds.isEmpty) return;
+    Navigator.of(context).pop(List<String>.unmodifiable(_selectedValueIds));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -176,8 +181,6 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
         (widget.target == ValuesAlignmentTarget.primary
             ? (widget.primaryLabel ?? l10n.valuesSelectPrimaryTitle)
             : (widget.secondaryLabel ?? l10n.valuesSelectSecondaryTitle));
-
-    final canSave = !widget.requireSelection || _selectedValueIds.isNotEmpty;
 
     final hasSecondary = _secondaryId != null;
     final helperText = widget.helperText ?? l10n.projectFormSingleValueOnly;
@@ -200,7 +203,10 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton(
-                  onPressed: _clearSecondary,
+                  onPressed: () {
+                    _clearSecondary();
+                    _commitAndClose();
+                  },
                   child: Text(l10n.valuesSecondaryClearAction),
                 ),
               ),
@@ -212,15 +218,6 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(l10n.cancelLabel),
-            ),
-            SizedBox(width: tokens.spaceSm),
-            FilledButton(
-              onPressed: canSave
-                  ? () {
-                      Navigator.of(context).pop(_selectedValueIds);
-                    }
-                  : null,
-              child: Text(l10n.doneLabel),
             ),
           ],
         ),
@@ -239,8 +236,14 @@ class _ValuesAlignmentSheetState extends State<ValuesAlignmentSheet> {
                   target: widget.target,
                   selectedPrimaryId: _primaryId,
                   selectedSecondaryId: _secondaryId,
-                  onSelectPrimary: _setPrimary,
-                  onSelectSecondary: _setSecondary,
+                  onSelectPrimary: (valueId) {
+                    _setPrimary(valueId);
+                    _commitAndClose();
+                  },
+                  onSelectSecondary: (valueId) {
+                    _setSecondary(valueId);
+                    _commitAndClose();
+                  },
                   onClearSecondary: _clearSecondary,
                   primaryShortLabel:
                       widget.primaryShortLabel ?? l10n.valuesPrimaryShortLabel,

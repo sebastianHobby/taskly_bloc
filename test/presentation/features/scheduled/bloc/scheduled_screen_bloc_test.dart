@@ -94,11 +94,12 @@ void main() {
   );
 
   blocTestSafe<ScheduledScreenBloc, ScheduledScreenState>(
-    'reschedules tasks and emits bulk effect',
+    'reschedules entities with tasks and emits bulk effect',
     build: buildBloc,
     act: (bloc) => bloc.add(
-      ScheduledRescheduleTasksDeadlineRequested(
+      ScheduledRescheduleEntitiesDeadlineRequested(
         taskIds: ['t1', 't2'],
+        projectIds: const [],
         newDeadlineDay: DateTime(2025, 1, 20),
       ),
     ),
@@ -125,15 +126,16 @@ void main() {
       ).captured;
       final ctx = captured.single as OperationContext;
       expect(ctx.feature, 'scheduled');
-      expect(ctx.operation, 'task_update_deadline');
+      expect(ctx.operation, 'bulk_update_deadline');
     },
   );
 
   blocTestSafe<ScheduledScreenBloc, ScheduledScreenState>(
-    'reschedules projects and emits bulk effect',
+    'reschedules entities with projects and emits bulk effect',
     build: buildBloc,
     act: (bloc) => bloc.add(
-      ScheduledRescheduleProjectsDeadlineRequested(
+      ScheduledRescheduleEntitiesDeadlineRequested(
+        taskIds: const [],
         projectIds: ['p1'],
         newDeadlineDay: DateTime(2025, 2, 1),
       ),
@@ -166,8 +168,9 @@ void main() {
       return buildBloc();
     },
     act: (bloc) => bloc.add(
-      ScheduledRescheduleTasksDeadlineRequested(
+      ScheduledRescheduleEntitiesDeadlineRequested(
         taskIds: ['t1'],
+        projectIds: const [],
         newDeadlineDay: DateTime(2025, 3, 1),
       ),
     ),

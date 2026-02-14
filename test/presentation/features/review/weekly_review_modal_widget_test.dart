@@ -93,6 +93,9 @@ void main() {
       () => routineRepository.getAll(includeInactive: true),
     ).thenAnswer((_) async => <Routine>[]);
     when(
+      () => routineRepository.watchAll(includeInactive: false),
+    ).thenAnswer((_) => Stream.value(const <Routine>[]));
+    when(
       () => routineRepository.getCompletions(),
     ).thenAnswer((_) async => <RoutineCompletion>[]);
     when(

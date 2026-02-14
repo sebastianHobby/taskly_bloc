@@ -19,6 +19,7 @@ If you need to violate a guardrail, follow:
 These are descriptive playbooks. They must not introduce new "must/shall" rules.
 
 - BLoC patterns and stream safety: [guides/BLOC_GUIDELINES.md](guides/BLOC_GUIDELINES.md)
+- Screen data pipeline (reactive loading pattern): [guides/SCREEN_DATA_PIPELINE.md](guides/SCREEN_DATA_PIPELINE.md)
 - Screen composition + routing: [guides/SCREEN_ARCHITECTURE.md](guides/SCREEN_ARCHITECTURE.md)
 - Navigation + screen keys: [guides/NAVIGATION_AND_SCREEN_KEYS.md](guides/NAVIGATION_AND_SCREEN_KEYS.md)
 - Session stream cache: [guides/SESSION_STREAM_CACHE.md](guides/SESSION_STREAM_CACHE.md)

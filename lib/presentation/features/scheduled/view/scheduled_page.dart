@@ -8,6 +8,7 @@ import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.d
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_timeline_bloc.dart';
+import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -17,7 +18,6 @@ import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
-import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
@@ -51,11 +51,10 @@ class ScheduledPage extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => ScheduledTimelineBloc(
-            occurrencesService: context.read<ScheduledOccurrencesService>(),
+            queryService: context.read<ScheduledSessionQueryService>(),
             sessionDayKeyService: context.read<SessionDayKeyService>(),
             nowService: context.read<NowService>(),
             demoModeService: context.read<DemoModeService>(),
-            demoDataProvider: context.read<DemoDataProvider>(),
             scope: scope,
           ),
         ),
@@ -218,12 +217,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   context,
                   taskId: null,
                   defaultDeadlineDate: defaultDeadlineDay,
-                  showDragHandle: true,
-                );
-              case ScheduledOpenProjectNew():
-                await context.read<EditorLauncher>().openProjectEditor(
-                  context,
-                  projectId: null,
                   showDragHandle: true,
                 );
               case ScheduledBulkDeadlineRescheduled(

@@ -7,6 +7,8 @@ import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/presentation_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_timeline_bloc.dart';
+import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
@@ -22,6 +24,8 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late ScheduledOccurrencesService occurrencesService;
+  late ScheduledSessionQueryService queryService;
+  late SessionStreamCacheManager cacheManager;
   late OccurrenceReadService occurrenceReadService;
   late OccurrenceStreamExpanderContract occurrenceExpander;
   late MockTaskRepositoryContract taskRepository;
@@ -36,11 +40,10 @@ void main() {
 
   ScheduledTimelineBloc buildBloc() {
     return ScheduledTimelineBloc(
-      occurrencesService: occurrencesService,
+      queryService: queryService,
       sessionDayKeyService: sessionDayKeyService,
       nowService: nowService,
       demoModeService: demoModeService,
-      demoDataProvider: demoDataProvider,
     );
   }
 
@@ -72,11 +75,21 @@ void main() {
       projectRepository: projectRepository,
       occurrenceReadService: occurrenceReadService,
     );
+    cacheManager = SessionStreamCacheManager(
+      appLifecycleService: const _StaticLifecycleEvents(),
+    )..start();
     sessionDayKeyService = SessionDayKeyService(
       dayKeyService: dayKeyService,
       temporalTriggerService: temporalTriggerService,
     );
     sessionDayKeyService.start();
+    queryService = ScheduledSessionQueryService(
+      scheduledOccurrencesService: occurrencesService,
+      sessionDayKeyService: sessionDayKeyService,
+      cacheManager: cacheManager,
+      demoModeService: demoModeService,
+      demoDataProvider: demoDataProvider,
+    );
     when(() => nowService.nowLocal()).thenReturn(DateTime(2025, 1, 15));
     when(() => taskRepository.watchAll(any())).thenAnswer(
       (_) => Stream.value(const <Task>[]),
@@ -97,6 +110,7 @@ void main() {
       (_) => Stream.value(const <RecurrenceExceptionData>[]),
     );
     addTearDown(temporalController.close);
+    addTearDown(cacheManager.dispose);
     addTearDown(sessionDayKeyService.dispose);
     addTearDown(demoModeService.dispose);
   });
@@ -205,4 +219,12 @@ class _NoopOccurrenceExpander implements OccurrenceStreamExpanderContract {
   }) {
     return projects;
   }
+}
+
+final class _StaticLifecycleEvents implements AppLifecycleEvents {
+  const _StaticLifecycleEvents();
+
+  @override
+  Stream<AppLifecycleEvent> get events =>
+      const Stream<AppLifecycleEvent>.empty();
 }

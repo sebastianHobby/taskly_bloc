@@ -26,9 +26,6 @@ enum PageKey {
   /// Scheduled page
   scheduled('scheduled'),
 
-  /// Routines page
-  routines('routines'),
-
   /// Labels overview page
   labelOverview('label_overview');
 

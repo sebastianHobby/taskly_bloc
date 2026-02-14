@@ -71,6 +71,32 @@ final class AttentionResolutionService {
     return recordedCount;
   }
 
+  /// Records a reviewed resolution with arbitrary details.
+  ///
+  /// Used for feature-specific flows (for example routine support plans) that
+  /// need structured metadata while still using the attention resolution audit
+  /// stream.
+  Future<String> recordReviewedWithDetails({
+    required AttentionItem item,
+    required DateTime nowUtc,
+    required Map<String, dynamic> actionDetails,
+    OperationContext? context,
+  }) async {
+    final resolutionId = _newResolutionId();
+    final resolution = AttentionResolution(
+      id: resolutionId,
+      ruleId: item.ruleId,
+      entityId: item.entityId,
+      entityType: item.entityType,
+      resolvedAt: nowUtc,
+      createdAt: nowUtc,
+      resolutionAction: AttentionResolutionAction.reviewed,
+      actionDetails: actionDetails,
+    );
+    await _repository.recordResolution(resolution, context: context);
+    return resolutionId;
+  }
+
   Map<String, dynamic>? _actionDetails({
     required AttentionItem item,
     required AttentionResolutionAction action,

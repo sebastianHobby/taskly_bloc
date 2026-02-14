@@ -98,4 +98,28 @@ void main() {
 
     expect(find.byType(RoutineForm), findsOneWidget);
   });
+
+  testWidgetsSafe(
+    'create flow uses defaultProjectId when draft project is empty',
+    (tester) async {
+      final value = TestData.value(name: 'Health');
+      final project = TestData.projectWithValues(
+        id: 'project-1',
+        name: 'Project Alpha',
+        values: [value],
+      );
+      final state = RoutineDetailState.initialDataLoadSuccess(
+        availableProjects: [project],
+      );
+      when(() => bloc.state).thenReturn(state);
+      whenListen(bloc, Stream.value(state), initialState: state);
+
+      await pumpView(
+        tester,
+        const RoutineDetailSheetView(defaultProjectId: 'project-1'),
+      );
+
+      expect(find.text('Project Alpha'), findsWidgets);
+    },
+  );
 }

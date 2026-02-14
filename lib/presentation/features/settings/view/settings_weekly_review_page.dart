@@ -381,6 +381,20 @@ class _WeeklyReviewMaintenanceState extends State<_WeeklyReviewMaintenance> {
                 );
               },
             ),
+            SizedBox(height: tokens.spaceSm),
+            _RuleCard(
+              title: context.l10n.routinesTitle,
+              summary:
+                  'Small changes restore momentum. Tune this routine for this week.',
+              enabled: settings.maintenanceRoutineSupportEnabled,
+              onEnabledChanged: (value) {
+                context.read<GlobalSettingsBloc>().add(
+                  GlobalSettingsEvent.maintenanceRoutineSupportChanged(
+                    value,
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -397,6 +411,9 @@ class _WeeklyReviewMaintenanceState extends State<_WeeklyReviewMaintenance> {
     }
     if (settings.maintenanceFrequentSnoozedEnabled) {
       labels.add(context.l10n.weeklyReviewFrequentSnoozesLabel);
+    }
+    if (settings.maintenanceRoutineSupportEnabled) {
+      labels.add(context.l10n.routinesTitle);
     }
     if (labels.isEmpty) {
       return context.l10n.weeklyReviewNoChecksEnabled;

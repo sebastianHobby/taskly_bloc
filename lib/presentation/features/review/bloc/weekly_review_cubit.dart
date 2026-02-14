@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/attention.dart';
@@ -23,6 +24,7 @@ class WeeklyReviewConfig {
     required this.deadlineRiskDueWithinDays,
     required this.deadlineRiskMinUnscheduledCount,
     required this.showFrequentSnoozed,
+    required this.showRoutineSupport,
   });
 
   factory WeeklyReviewConfig.fromSettings(GlobalSettings settings) {
@@ -37,6 +39,7 @@ class WeeklyReviewConfig {
       deadlineRiskMinUnscheduledCount:
           settings.maintenanceDeadlineRiskMinUnscheduledCount,
       showFrequentSnoozed: settings.maintenanceFrequentSnoozedEnabled,
+      showRoutineSupport: settings.maintenanceRoutineSupportEnabled,
     );
   }
 
@@ -49,6 +52,7 @@ class WeeklyReviewConfig {
   final int deadlineRiskDueWithinDays;
   final int deadlineRiskMinUnscheduledCount;
   final bool showFrequentSnoozed;
+  final bool showRoutineSupport;
 
   static const int defaultCheckInWindowWeeks = 4;
 }
@@ -155,6 +159,7 @@ enum WeeklyReviewMaintenanceSectionType {
   deadlineRisk,
   staleItems,
   frequentlySnoozed,
+  routineSupport,
 }
 
 sealed class WeeklyReviewMaintenanceItem {
@@ -207,6 +212,23 @@ final class WeeklyReviewFrequentSnoozedItem
   final int totalSnoozeDays;
 }
 
+final class WeeklyReviewRoutineSupportItem extends WeeklyReviewMaintenanceItem {
+  const WeeklyReviewRoutineSupportItem({
+    required super.name,
+    required this.state,
+    this.suggestedFromWeekday,
+    this.suggestedToWeekday,
+    this.dropPp,
+    super.entityId,
+    super.entityType,
+  });
+
+  final String state;
+  final int? suggestedFromWeekday;
+  final int? suggestedToWeekday;
+  final double? dropPp;
+}
+
 class WeeklyReviewMaintenanceSection {
   const WeeklyReviewMaintenanceSection({
     required this.type,
@@ -222,6 +244,7 @@ class WeeklyReviewState {
     this.status = WeeklyReviewStatus.loading,
     this.ratingsSummary,
     this.maintenanceSections = const [],
+    this.routineSteadyCount = 0,
     this.evidence,
     this.error,
   });
@@ -229,6 +252,7 @@ class WeeklyReviewState {
   final WeeklyReviewStatus status;
   final WeeklyReviewRatingsSummary? ratingsSummary;
   final List<WeeklyReviewMaintenanceSection> maintenanceSections;
+  final int routineSteadyCount;
   final WeeklyReviewEvidenceState? evidence;
   final Object? error;
 
@@ -236,6 +260,7 @@ class WeeklyReviewState {
     WeeklyReviewStatus? status,
     WeeklyReviewRatingsSummary? ratingsSummary,
     List<WeeklyReviewMaintenanceSection>? maintenanceSections,
+    int? routineSteadyCount,
     WeeklyReviewEvidenceState? evidence,
     Object? error,
   }) {
@@ -243,6 +268,7 @@ class WeeklyReviewState {
       status: status ?? this.status,
       ratingsSummary: ratingsSummary ?? this.ratingsSummary,
       maintenanceSections: maintenanceSections ?? this.maintenanceSections,
+      routineSteadyCount: routineSteadyCount ?? this.routineSteadyCount,
       evidence: evidence ?? this.evidence,
       error: error,
     );
@@ -364,6 +390,7 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
           status: WeeklyReviewStatus.ready,
           ratingsSummary: ratingsSummary,
           maintenanceSections: initialSections,
+          routineSteadyCount: 0,
           error: null,
         ),
       );
@@ -380,11 +407,29 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
       if (!config.maintenanceEnabled) return;
 
-      final maintenance$ = _attentionEngine
-          .watch(const AttentionQuery(buckets: {AttentionBucket.action}))
-          .map((items) {
+      final attention$ = _attentionEngine.watch(
+        const AttentionQuery(buckets: {AttentionBucket.action}),
+      );
+      final activeRoutines$ = _routineRepository.watchAll(
+        includeInactive: false,
+      );
+
+      final maintenance$ =
+          Rx.combineLatest2<
+            List<AttentionItem>,
+            List<Routine>,
+            WeeklyReviewState
+          >(attention$, activeRoutines$, (items, activeRoutines) {
             final sections = _buildMaintenanceSections(items, config);
-            return state.copyWith(maintenanceSections: sections);
+            final steadyCount = _computeRoutineSteadyCount(
+              attentionItems: items,
+              activeRoutines: activeRoutines,
+              config: config,
+            );
+            return state.copyWith(
+              maintenanceSections: sections,
+              routineSteadyCount: steadyCount,
+            );
           });
 
       await emit.forEach<WeeklyReviewState>(
@@ -952,6 +997,19 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
       sections.add(_buildFrequentSnoozedSection(state.maintenanceSections));
     }
 
+    if (config.showRoutineSupport) {
+      final supportItems = items
+          .where((i) => i.ruleKey == 'problem_routine_support')
+          .map(_mapRoutineSupportItem)
+          .toList(growable: false);
+      sections.add(
+        WeeklyReviewMaintenanceSection(
+          type: WeeklyReviewMaintenanceSectionType.routineSupport,
+          items: supportItems,
+        ),
+      );
+    }
+
     return sections;
   }
 
@@ -1089,9 +1147,41 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     );
   }
 
+  WeeklyReviewRoutineSupportItem _mapRoutineSupportItem(AttentionItem item) {
+    final name =
+        item.metadata?['routine_name'] as String? ??
+        item.metadata?['entity_display_name'] as String?;
+    return WeeklyReviewRoutineSupportItem(
+      name: name,
+      entityId: item.entityId,
+      entityType: item.entityType,
+      state: item.metadata?['support_state'] as String? ?? 'needs_help',
+      suggestedFromWeekday: item.metadata?['most_missed_weekday'] as int?,
+      suggestedToWeekday: item.metadata?['most_success_weekday'] as int?,
+      dropPp: (item.metadata?['drop_pp'] as num?)?.toDouble(),
+    );
+  }
+
   List<WeeklyReviewMaintenanceSection> _emptyMaintenanceSections(
     WeeklyReviewConfig config,
   ) {
     return _buildMaintenanceSections(const [], config);
+  }
+
+  int _computeRoutineSteadyCount({
+    required List<AttentionItem> attentionItems,
+    required List<Routine> activeRoutines,
+    required WeeklyReviewConfig config,
+  }) {
+    if (!config.showRoutineSupport) return 0;
+    final supportIds = attentionItems
+        .where((item) => item.ruleKey == 'problem_routine_support')
+        .map((item) => item.entityId)
+        .toSet();
+    final activeCount = activeRoutines
+        .where((routine) => routine.isActive)
+        .length;
+    final steady = activeCount - supportIds.length;
+    return steady < 0 ? 0 : steady;
   }
 }

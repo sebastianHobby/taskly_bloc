@@ -11,6 +11,10 @@ need user attention (e.g., stale tasks, idle projects, deadline risk) and
 surfaces them as **`AttentionItem`** view-models inside the **Weekly Review**
 maintenance flow.
 
+Current production rule set also includes **routine support** signals:
+- `problem_routine_support` detects routines in meaningful support states
+  (building or declining) and surfaces them to Weekly Review.
+
 The core idea:
 
 - **`AttentionRule`** is the persisted configuration (what to detect + how to
@@ -329,6 +333,12 @@ modal review experience.
 Weekly review settings live under the general Settings screen. Users can toggle
 maintenance checks on/off without managing individual attention rules directly.
 
+Routine support follows the same pattern:
+- Global setting: `maintenanceRoutineSupportEnabled`
+- Attention rule key: `problem_routine_support`
+- The settings BLoC updates rule active state through
+  `AttentionRepositoryContract.updateRuleActive(...)`.
+
 ### 5.4 Temporal Triggers Integration (In-App Only)
 
 Current product scope: **time-based rules are only required to update when the app is running** (e.g. user opens the app and a journal review is now due).
@@ -439,6 +449,9 @@ These are observed from the current code structure:
 
 - **Resolution recording is not yet surfaced in the UI** for attention tiles
   (the repo supports `recordResolution`, but current tiles do not expose actions).
+- Routine support plan history uses `attention_resolutions.action_details`
+  payloads (for `support_plan` and `support_plan_outcome`) rather than a
+  dedicated plan table in this phase.
 - **`workflowStep` rules are not implemented yet** in the engine (they currently
   yield no items).
 - **No background scheduler**: `triggerType`/`triggerConfig` remain in-app

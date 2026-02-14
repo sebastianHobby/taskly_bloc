@@ -7,7 +7,9 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/anchored_dialog_layout_delegate.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/project_picker_content.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/form_footer_bar.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
@@ -52,10 +54,30 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
   late RoutineScheduleMode _currentScheduleMode;
   final _scrollController = ScrollController();
   final GlobalKey<State<StatefulWidget>> _projectKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _frequencyKey = GlobalKey();
   final Debouncer _draftSyncDebouncer = Debouncer(_draftSyncDebounce);
   final List<String> _recentProjectIds = <String>[];
   bool _didAutoOpen = false;
   bool _submitEnabled = false;
+
+  String _resolveInitialProjectId(RoutineDraft? draft) {
+    final fromInitialData = widget.initialData?.projectId.trim();
+    if (fromInitialData != null && fromInitialData.isNotEmpty) {
+      return fromInitialData;
+    }
+
+    final fromDraft = draft?.projectId.trim();
+    if (fromDraft != null && fromDraft.isNotEmpty) {
+      return fromDraft;
+    }
+
+    final fromDefault = widget.defaultProjectId?.trim();
+    if (fromDefault != null && fromDefault.isNotEmpty) {
+      return fromDefault;
+    }
+
+    return '';
+  }
 
   @override
   VoidCallback? get onClose => widget.onClose;
@@ -262,6 +284,16 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
   bool _isCompact(BuildContext context) =>
       MediaQuery.sizeOf(context).width < 600;
 
+  Future<void> _focusFrequencySection() async {
+    final targetContext = _frequencyKey.currentContext;
+    if (targetContext == null) return;
+    await Scrollable.ensureVisible(
+      targetContext,
+      alignment: 0.08,
+      duration: const Duration(milliseconds: 220),
+    );
+  }
+
   Rect _anchorRect(BuildContext anchorContext) {
     final box = anchorContext.findRenderObject()! as RenderBox;
     final topLeft = box.localToGlobal(Offset.zero);
@@ -293,7 +325,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
               ),
             ),
             CustomSingleChildLayout(
-              delegate: _AnchoredDialogLayoutDelegate(
+              delegate: AnchoredDialogLayoutDelegate(
                 anchor: anchor,
                 margin: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
                 maxWidth: maxWidth,
@@ -330,7 +362,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
       return showModalBottomSheet<ProjectPickerResult>(
         context: context,
         useSafeArea: true,
-        showDragHandle: true,
+        showDragHandle: false,
         isScrollControlled: true,
         builder: (sheetContext) => ProjectPickerContent(
           availableProjects: widget.availableProjects,
@@ -373,15 +405,14 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
         <int>[];
     final initialTargetCount =
         widget.initialData?.targetCount ?? draft?.targetCount;
+    final formPreset = TasklyFormPreset.standard(tokens);
+    final chipPreset = formPreset.chip;
+    final initialProjectId = _resolveInitialProjectId(draft);
 
     final initialValues = <String, dynamic>{
       RoutineFieldKeys.name.id:
           widget.initialData?.name.trim() ?? draft?.name.trim() ?? '',
-      RoutineFieldKeys.projectId.id:
-          widget.initialData?.projectId ??
-          draft?.projectId ??
-          widget.defaultProjectId ??
-          '',
+      RoutineFieldKeys.projectId.id: initialProjectId,
       RoutineFieldKeys.periodType.id: _currentPeriodType,
       RoutineFieldKeys.scheduleMode.id: _currentScheduleMode,
       RoutineFieldKeys.targetCount.id: initialTargetCount,
@@ -412,11 +443,26 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
       ),
     );
 
-    final scheduleModeOptions = _currentPeriodType == RoutinePeriodType.day
+    final currentScheduleMode =
+        (widget
+                .formKey
+                .currentState
+                ?.fields[RoutineFieldKeys.scheduleMode.id]
+                ?.value
+            as RoutineScheduleMode?) ??
+        _currentScheduleMode;
+    final currentPeriodType =
+        (widget
+                .formKey
+                .currentState
+                ?.fields[RoutineFieldKeys.periodType.id]
+                ?.value
+            as RoutinePeriodType?) ??
+        _currentPeriodType;
+    final scheduleModeOptions = currentPeriodType == RoutinePeriodType.day
         ? const <RoutineScheduleMode>[RoutineScheduleMode.flexible]
         : RoutineScheduleMode.values;
-
-    final periodOptions = _currentScheduleMode == RoutineScheduleMode.scheduled
+    final periodOptions = currentScheduleMode == RoutineScheduleMode.scheduled
         ? const <RoutinePeriodType>[
             RoutinePeriodType.week,
             RoutinePeriodType.month,
@@ -429,13 +475,14 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
       submitIcon: isCreating ? Icons.add : Icons.check,
       submitEnabled: submitEnabled,
       showHeaderSubmit: false,
-      showFooterSubmit: true,
+      showFooterSubmit: false,
       closeOnLeft: false,
       onDelete: null,
       deleteTooltip: l10n.routineDeleteTitle,
       onClose: null,
       closeTooltip: l10n.closeLabel,
       scrollController: _scrollController,
+      showHandleBar: false,
       headerTitle: headerTitle,
       centerHeaderTitle: true,
       leadingActions: [
@@ -462,6 +509,60 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
             onSelected: (_) => widget.onDelete?.call(),
           ),
       ],
+      footer: Builder(
+        builder: (context) {
+          final footerPreset = formPreset.chip;
+          return FormFooterBar(
+            submitLabel: widget.submitTooltip,
+            submitEnabled: submitEnabled,
+            onSubmit: widget.onSubmit,
+            leading: FormBuilderField<String>(
+              name: RoutineFieldKeys.projectId.id,
+              builder: (field) {
+                final selectedProject = widget.availableProjects
+                    .where((project) => project.id == field.value)
+                    .firstOrNull;
+                final projectLabel =
+                    selectedProject?.name ?? l10n.selectProjectTitle;
+                final hasProject = selectedProject != null;
+
+                return Align(
+                  alignment: Alignment.centerLeft,
+                  child: Builder(
+                    builder: (chipContext) => TasklyFormInlineChip(
+                      label: l10n.projectLabel,
+                      valueLabel: projectLabel,
+                      hasValue: hasProject,
+                      icon: Icons.folder_rounded,
+                      preset: footerPreset,
+                      onTap: () async {
+                        final result = await _showProjectPicker(
+                          anchorContext: chipContext,
+                          currentProjectId: field.value ?? '',
+                        );
+                        if (result == null) return;
+
+                        switch (result) {
+                          case ProjectPickerResultCleared():
+                            return;
+                          case ProjectPickerResultSelected(
+                            :final project,
+                          ):
+                            field.didChange(project.id);
+                            _recordRecentProjectId(project.id);
+                        }
+
+                        _markDirtySafely();
+                        setState(() {});
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
       child: Padding(
         padding: EdgeInsets.only(bottom: tokens.spaceSm),
         child: FormBuilder(
@@ -473,30 +574,49 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SizedBox(height: tokens.spaceSm),
-              FormBuilderTextField(
+              TasklyFormTitleField(
                 name: RoutineFieldKeys.name.id,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                hintText: l10n.routineFormNameHint,
                 textCapitalization: TextCapitalization.words,
-                textInputAction: TextInputAction.next,
+                textInputAction: TextInputAction.done,
+                autofocus: isCreating,
+                onSubmitted: (_) => FocusScope.of(context).unfocus(),
                 maxLength: RoutineValidators.maxNameLength,
-                decoration:
-                    const InputDecoration(
-                      border: InputBorder.none,
-                      hintText: '',
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                    ).copyWith(
-                      hintText: l10n.routineFormNameHint,
-                      suffixIcon: Icon(Icons.edit_rounded),
-                    ),
+                suffixIcon: const Icon(Icons.edit_rounded),
                 validator: toFormBuilderValidator<String>(
                   RoutineValidators.name,
                   context,
                 ),
               ),
               SizedBox(height: tokens.spaceMd),
+              TasklyFormChipRow(
+                chips: [
+                  TasklyFormInlineChip(
+                    label: l10n.routineFormTypeLabel,
+                    icon: Icons.tune_rounded,
+                    valueLabel:
+                        currentScheduleMode == RoutineScheduleMode.flexible
+                        ? l10n.routineCadenceFlexibleLabel
+                        : l10n.routineCadenceScheduledLabel,
+                    hasValue: true,
+                    showLabelWhenEmpty: false,
+                    preset: chipPreset,
+                    onTap: _focusFrequencySection,
+                  ),
+                  TasklyFormInlineChip(
+                    label: currentScheduleMode == RoutineScheduleMode.flexible
+                        ? l10n.routineFormEveryLabel
+                        : l10n.routineFormRepeatLabel,
+                    icon: Icons.calendar_month_rounded,
+                    valueLabel: _periodLabel(l10n, currentPeriodType),
+                    hasValue: true,
+                    showLabelWhenEmpty: false,
+                    preset: chipPreset,
+                    onTap: _focusFrequencySection,
+                  ),
+                ],
+              ),
+              SizedBox(height: tokens.spaceLg),
               TasklyFormSectionLabel(text: l10n.projectLabel),
               SizedBox(height: tokens.spaceSm),
               FormBuilderField<String>(
@@ -524,7 +644,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                             valueLabel: projectLabel,
                             hasValue: hasProject,
                             icon: Icons.folder_rounded,
-                            preset: TasklyFormPreset.standard(tokens).chip,
+                            preset: chipPreset,
                             onTap: () async {
                               final result = await _showProjectPicker(
                                 anchorContext: chipContext,
@@ -563,7 +683,12 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                 },
               ),
               SizedBox(height: tokens.spaceLg),
-              TasklyFormSectionLabel(text: l10n.routineFormFrequencyLabel),
+              KeyedSubtree(
+                key: _frequencyKey,
+                child: TasklyFormSectionLabel(
+                  text: l10n.routineFormFrequencyLabel,
+                ),
+              ),
               SizedBox(height: tokens.spaceSm),
               FormBuilderSegmentedField<RoutineScheduleMode>(
                 name: RoutineFieldKeys.scheduleMode.id,
@@ -580,15 +705,8 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
               ),
               SizedBox(height: tokens.spaceMd),
               if (_currentScheduleMode == RoutineScheduleMode.flexible) ...[
-                _TargetCountStepperField(
+                FormBuilderField<int>(
                   name: RoutineFieldKeys.targetCount.id,
-                  label: l10n.routineFormTargetPrompt,
-                  min: 1,
-                  max: switch (_currentPeriodType) {
-                    RoutinePeriodType.day => 10,
-                    RoutinePeriodType.week => 7,
-                    RoutinePeriodType.month => 31,
-                  },
                   validator: toFormBuilderValidator<int>(
                     (value) => RoutineValidators.targetCount(
                       value,
@@ -597,13 +715,59 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                     ),
                     context,
                   ),
+                  builder: (field) {
+                    const min = 1;
+                    final max = switch (_currentPeriodType) {
+                      RoutinePeriodType.day => 10,
+                      RoutinePeriodType.week => 7,
+                      RoutinePeriodType.month => 31,
+                    };
+                    final current = (field.value ?? min).clamp(min, max);
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TasklyFormSelectorRow(
+                          label: l10n.routineFormTargetPrompt,
+                          child: TasklyFormStepper(
+                            value: current,
+                            min: min,
+                            max: max,
+                            onChanged: (next) => field.didChange(next),
+                          ),
+                        ),
+                        if (field.errorText != null) ...[
+                          SizedBox(height: tokens.spaceSm),
+                          Text(
+                            field.errorText!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.error,
+                            ),
+                          ),
+                        ],
+                      ],
+                    );
+                  },
                 ),
                 SizedBox(height: tokens.spaceSm),
-                _RepeatDropdown(
+                FormBuilderDropdown<RoutinePeriodType>(
                   name: RoutineFieldKeys.periodType.id,
-                  label: l10n.routineFormEveryLabel,
-                  options: periodOptions,
-                  valueLabelBuilder: (value) => _periodLabel(l10n, value),
+                  items: [
+                    for (final option in periodOptions)
+                      DropdownMenuItem<RoutinePeriodType>(
+                        value: option,
+                        child: Text(_periodLabel(l10n, option)),
+                      ),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: l10n.routineFormEveryLabel,
+                    filled: formPreset.ux.selectorFill,
+                    fillColor: colorScheme.surfaceContainerLow,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(tokens.radiusMd),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                   onChanged: (value) {
                     if (value == null) return;
                     _onPeriodTypeChanged(value);
@@ -611,11 +775,24 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                 ),
               ],
               if (_currentScheduleMode == RoutineScheduleMode.scheduled) ...[
-                _RepeatDropdown(
+                FormBuilderDropdown<RoutinePeriodType>(
                   name: RoutineFieldKeys.periodType.id,
-                  label: l10n.routineFormRepeatLabel,
-                  options: periodOptions,
-                  valueLabelBuilder: (value) => _periodLabel(l10n, value),
+                  items: [
+                    for (final option in periodOptions)
+                      DropdownMenuItem<RoutinePeriodType>(
+                        value: option,
+                        child: Text(_periodLabel(l10n, option)),
+                      ),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: l10n.routineFormRepeatLabel,
+                    filled: formPreset.ux.selectorFill,
+                    fillColor: colorScheme.surfaceContainerLow,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(tokens.radiusMd),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                   onChanged: (value) {
                     if (value == null) return;
                     _onPeriodTypeChanged(value);
@@ -623,7 +800,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                 ),
                 if (_currentPeriodType == RoutinePeriodType.week) ...[
                   SizedBox(height: tokens.spaceMd),
-                  _WeekdayChipsField(
+                  FormBuilderField<List<int>>(
                     name: RoutineFieldKeys.scheduleDays.id,
                     validator: toFormBuilderValidator<List<int>>(
                       (value) => RoutineValidators.scheduleDays(
@@ -633,17 +810,50 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                       ),
                       context,
                     ),
-                    onChanged: (value) {
-                      _syncTargetCountFromSchedule();
-                      _markDirtySafely();
+                    builder: (field) {
+                      final locale = Localizations.localeOf(context).toString();
+                      final formatter = DateFormat.E(locale);
+                      final weekdays = [
+                        for (var i = 0; i < 7; i++)
+                          formatter.format(DateTime.utc(2024, 1, 1 + i)),
+                      ];
+                      final selected = (field.value ?? const <int>[]).toSet();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TasklyFormChoiceGrid(
+                            values: const [1, 2, 3, 4, 5, 6, 7],
+                            labelBuilder: (value) =>
+                                weekdays[value - 1].characters.first,
+                            isSelected: selected.contains,
+                            onTap: (day) {
+                              final updated = Set<int>.from(selected);
+                              if (!updated.add(day)) updated.remove(day);
+                              final sorted = updated.toList()..sort();
+                              field.didChange(sorted);
+                              _syncTargetCountFromSchedule();
+                              _markDirtySafely();
+                            },
+                          ),
+                          if (field.errorText != null) ...[
+                            SizedBox(height: tokens.spaceSm),
+                            Text(
+                              field.errorText!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.error,
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
                     },
                   ),
                 ],
                 if (_currentPeriodType == RoutinePeriodType.month) ...[
                   SizedBox(height: tokens.spaceMd),
-                  _MonthDayGridField(
+                  FormBuilderField<List<int>>(
                     name: RoutineFieldKeys.scheduleMonthDays.id,
-                    label: l10n.routineFormSelectDaysLabel,
                     validator: toFormBuilderValidator<List<int>>(
                       (value) => RoutineValidators.scheduleMonthDays(
                         value ?? const [],
@@ -652,9 +862,38 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                       ),
                       context,
                     ),
-                    onChanged: (value) {
-                      _syncTargetCountFromSchedule();
-                      _markDirtySafely();
+                    builder: (field) {
+                      final selected = (field.value ?? const <int>[]).toSet();
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TasklyFormSelectorRow(
+                            label: l10n.routineFormSelectDaysLabel,
+                            child: TasklyFormChoiceGrid(
+                              values: [for (var d = 1; d <= 31; d++) d],
+                              labelBuilder: (value) => value.toString(),
+                              isSelected: selected.contains,
+                              onTap: (day) {
+                                final updated = Set<int>.from(selected);
+                                if (!updated.add(day)) updated.remove(day);
+                                final sorted = updated.toList()..sort();
+                                field.didChange(sorted);
+                                _syncTargetCountFromSchedule();
+                                _markDirtySafely();
+                              },
+                            ),
+                          ),
+                          if (field.errorText != null) ...[
+                            SizedBox(height: tokens.spaceSm),
+                            Text(
+                              field.errorText!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.error,
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
                     },
                   ),
                 ],
@@ -693,425 +932,4 @@ String _periodLabel(AppLocalizations l10n, RoutinePeriodType value) {
     RoutinePeriodType.week => l10n.routineFormPeriodWeekly,
     RoutinePeriodType.month => l10n.routineFormPeriodMonthly,
   };
-}
-
-class _AnchoredDialogLayoutDelegate extends SingleChildLayoutDelegate {
-  _AnchoredDialogLayoutDelegate({
-    required this.anchor,
-    required this.margin,
-    required this.maxWidth,
-    required this.maxHeight,
-  });
-
-  final Rect anchor;
-  final EdgeInsets margin;
-  final double maxWidth;
-  final double maxHeight;
-
-  @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
-    final maxW = (constraints.maxWidth - margin.horizontal).clamp(
-      0.0,
-      maxWidth,
-    );
-    final maxH = (constraints.maxHeight - margin.vertical).clamp(
-      0.0,
-      maxHeight,
-    );
-    return BoxConstraints(
-      maxWidth: maxW,
-      maxHeight: maxH,
-    );
-  }
-
-  @override
-  Offset getPositionForChild(Size size, Size childSize) {
-    final availableBelow = size.height - anchor.bottom - margin.bottom;
-    final availableAbove = anchor.top - margin.top;
-
-    final showBelow =
-        availableBelow >= childSize.height || availableBelow >= availableAbove;
-
-    final y = showBelow
-        ? (anchor.bottom + 6).clamp(margin.top, size.height - margin.bottom)
-        : (anchor.top - childSize.height - 6).clamp(
-            margin.top,
-            size.height - margin.bottom,
-          );
-
-    final desiredX = anchor.left;
-    final x = desiredX.clamp(
-      margin.left,
-      size.width - margin.right - childSize.width,
-    );
-
-    return Offset(x, y);
-  }
-
-  @override
-  bool shouldRelayout(covariant _AnchoredDialogLayoutDelegate oldDelegate) {
-    return anchor != oldDelegate.anchor ||
-        margin != oldDelegate.margin ||
-        maxWidth != oldDelegate.maxWidth ||
-        maxHeight != oldDelegate.maxHeight;
-  }
-}
-
-class _TargetCountStepperField extends StatelessWidget {
-  const _TargetCountStepperField({
-    required this.name,
-    required this.label,
-    required this.min,
-    required this.max,
-    required this.validator,
-  });
-
-  final String name;
-  final String label;
-  final int min;
-  final int max;
-  final String? Function(int?) validator;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-
-    return FormBuilderField<int>(
-      name: name,
-      validator: validator,
-      builder: (field) {
-        final current = (field.value ?? min).clamp(min, max);
-
-        void update(int next) {
-          field.didChange(next);
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: tokens.spaceSm),
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spaceMd,
-                vertical: tokens.spaceSm,
-              ),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(tokens.radiusLg),
-                border: Border.all(color: scheme.outlineVariant),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _StepperButton(
-                    icon: Icons.remove_rounded,
-                    enabled: current > min,
-                    onPressed: () => update(current - 1),
-                  ),
-                  Text(
-                    current.toString(),
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  _StepperButton(
-                    icon: Icons.add_rounded,
-                    enabled: current < max,
-                    onPressed: () => update(current + 1),
-                  ),
-                ],
-              ),
-            ),
-            if (field.errorText != null) ...[
-              SizedBox(height: tokens.spaceSm),
-              Text(
-                field.errorText!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: scheme.error,
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _StepperButton extends StatelessWidget {
-  const _StepperButton({
-    required this.icon,
-    required this.enabled,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final bg = enabled ? scheme.surface : scheme.surfaceContainerHighest;
-
-    return IconButton(
-      onPressed: enabled ? onPressed : null,
-      icon: Icon(icon),
-      style: IconButton.styleFrom(
-        backgroundColor: bg,
-        minimumSize: Size.square(tokens.minTapTargetSize),
-        padding: EdgeInsets.all(tokens.spaceXs),
-      ),
-    );
-  }
-}
-
-class _RepeatDropdown extends StatelessWidget {
-  const _RepeatDropdown({
-    required this.name,
-    required this.label,
-    required this.options,
-    required this.valueLabelBuilder,
-    required this.onChanged,
-  });
-
-  final String name;
-  final String label;
-  final List<RoutinePeriodType> options;
-  final String Function(RoutinePeriodType) valueLabelBuilder;
-  final ValueChanged<RoutinePeriodType?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    return FormBuilderDropdown<RoutinePeriodType>(
-      name: name,
-      items: [
-        for (final option in options)
-          DropdownMenuItem<RoutinePeriodType>(
-            value: option,
-            child: Text(valueLabelBuilder(option)),
-          ),
-      ],
-      decoration: InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surfaceContainerLow,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(tokens.radiusMd),
-          borderSide: BorderSide.none,
-        ),
-      ),
-      onChanged: onChanged,
-    );
-  }
-}
-
-class _WeekdayChipsField extends StatelessWidget {
-  const _WeekdayChipsField({
-    required this.name,
-    required this.validator,
-    this.onChanged,
-  });
-
-  final String name;
-  final String? Function(List<int>?) validator;
-  final ValueChanged<List<int>>? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final locale = Localizations.localeOf(context).toString();
-    final formatter = DateFormat.E(locale);
-    final weekdays = [
-      for (var i = 0; i < 7; i++)
-        formatter.format(DateTime.utc(2024, 1, 1 + i)),
-    ];
-
-    return FormBuilderField<List<int>>(
-      name: name,
-      validator: validator,
-      builder: (field) {
-        final selected = (field.value ?? const <int>[]).toSet();
-        final tokens = TasklyTokens.of(context);
-        final scheme = Theme.of(context).colorScheme;
-        final size = tokens.minTapTargetSize;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                for (var i = 0; i < weekdays.length; i++)
-                  _CircleChip(
-                    label: weekdays[i].characters.first,
-                    size: size,
-                    selected: selected.contains(i + 1),
-                    onTap: () {
-                      final updated = Set<int>.from(selected);
-                      final day = i + 1;
-                      if (!updated.add(day)) {
-                        updated.remove(day);
-                      }
-                      final sorted = updated.toList()..sort();
-                      field.didChange(sorted);
-                      onChanged?.call(sorted);
-                    },
-                    background: scheme.surfaceContainerLow,
-                    activeBackground: scheme.primary,
-                    activeForeground: scheme.onPrimary,
-                    inactiveForeground: scheme.onSurfaceVariant,
-                  ),
-              ],
-            ),
-            if (field.errorText != null) ...[
-              SizedBox(height: tokens.spaceSm),
-              Text(
-                field.errorText!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: scheme.error,
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _MonthDayGridField extends StatelessWidget {
-  const _MonthDayGridField({
-    required this.name,
-    required this.label,
-    required this.validator,
-    this.onChanged,
-  });
-
-  final String name;
-  final String label;
-  final String? Function(List<int>?) validator;
-  final ValueChanged<List<int>>? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final size = tokens.minTapTargetSize;
-
-    return FormBuilderField<List<int>>(
-      name: name,
-      validator: validator,
-      builder: (field) {
-        final selected = (field.value ?? const <int>[]).toSet();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SizedBox(height: tokens.spaceSm),
-            Wrap(
-              spacing: tokens.spaceXs2,
-              runSpacing: tokens.spaceXs2,
-              children: [
-                for (var day = 1; day <= 31; day++)
-                  _CircleChip(
-                    label: day.toString(),
-                    size: size,
-                    selected: selected.contains(day),
-                    onTap: () {
-                      final updated = Set<int>.from(selected);
-                      if (!updated.add(day)) {
-                        updated.remove(day);
-                      }
-                      final sorted = updated.toList()..sort();
-                      field.didChange(sorted);
-                      onChanged?.call(sorted);
-                    },
-                    background: scheme.surfaceContainerLow,
-                    activeBackground: scheme.primary,
-                    activeForeground: scheme.onPrimary,
-                    inactiveForeground: scheme.onSurfaceVariant,
-                  ),
-              ],
-            ),
-            if (field.errorText != null) ...[
-              SizedBox(height: tokens.spaceSm),
-              Text(
-                field.errorText!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: scheme.error,
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _CircleChip extends StatelessWidget {
-  const _CircleChip({
-    required this.label,
-    required this.size,
-    required this.selected,
-    required this.onTap,
-    required this.background,
-    required this.activeBackground,
-    required this.activeForeground,
-    required this.inactiveForeground,
-  });
-
-  final String label;
-  final double size;
-  final bool selected;
-  final VoidCallback onTap;
-  final Color background;
-  final Color activeBackground;
-  final Color activeForeground;
-  final Color inactiveForeground;
-
-  @override
-  Widget build(BuildContext context) {
-    final fg = selected ? activeForeground : inactiveForeground;
-    final bg = selected ? activeBackground : background;
-
-    return Material(
-      color: bg,
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Center(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: fg,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                height: 1,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
