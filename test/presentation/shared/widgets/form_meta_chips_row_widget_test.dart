@@ -2,7 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/shared/widgets/form_meta_chips_row.dart';
+import 'package:taskly_ui/taskly_ui_forms.dart';
 
 import '../../../helpers/test_imports.dart';
 
@@ -23,7 +23,7 @@ void main() {
           devicePixelRatio: 1,
         ),
         child: Scaffold(
-          body: FormMetaChipsRow(chips: chips),
+          body: TasklyFormChipRow(chips: chips),
         ),
       ),
     );
