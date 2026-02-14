@@ -7,32 +7,32 @@
 
 ## My Day
 
-**Primary purpose**: My Day is today's plan -  It is the execution view for today 
-based on the users selected tasks and routines
+**Primary purpose**: My Day is everything you need to do today from the plan
+you selected.
 
 **Description line (UI copy)**
-- "Your plan for today"
+- "Everything to do today from your selected plan."
 
 **Key question it answers**
-- "What should I focus on today?"
+- "What do I need to do today?"
 
 **What it shows**
-- My Day shows the tasks and routines you've chosen for today.
+- My Day shows the tasks and routines you selected for today, so you can work
+  through the day with less context switching.
 
-## Projects (Planning Source)
+## Projects (Future Backlog)
 
-**Primary purpose**: Projects is where you build your project list - the
-source for today's plan in My Day.
+**Primary purpose**: Projects is where you keep your future work backlog.
 
 **Description line (UI copy)**
-- "Source for today's plan."
+- "Your backlog of future tasks and projects."
 
 **Key question it answers**
-- "What should My Day pull from?"
+- "What should I put on deck for future days?"
 
 **What it shows**
-- Projects shows project groups first, with their tasks beneath - everything you
-  intend to work on.
+- Projects shows grouped project work and planned tasks so users can capture,
+  organize, and keep a clear pipeline of what to do next.
 
 ## Scheduled (Date Lens)
 
@@ -40,7 +40,7 @@ source for today's plan in My Day.
 tasks and projects for planning ahead.
 
 **Description line (UI copy)**
-- "A date-based view of tasks and projects to help you plan ahead."
+- "A calendar lens for what is due and what is coming next."
 
 **Key question it answers**
 - "What's coming up and when?"

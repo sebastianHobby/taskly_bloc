@@ -14,6 +14,7 @@ final class CreateTaskCommand {
     this.repeatFromCompletion = false,
     this.seriesEnded = false,
     this.valueIds,
+    this.checklistTitles = const <String>[],
   });
 
   final String name;
@@ -29,6 +30,7 @@ final class CreateTaskCommand {
   /// When true, stops generating future occurrences.
   final bool seriesEnded;
   final List<String>? valueIds;
+  final List<String> checklistTitles;
 }
 
 @immutable
@@ -46,6 +48,7 @@ final class UpdateTaskCommand {
     this.repeatFromCompletion,
     this.seriesEnded,
     this.valueIds,
+    this.checklistTitles = const <String>[],
   });
 
   final String id;
@@ -60,4 +63,5 @@ final class UpdateTaskCommand {
   final bool? repeatFromCompletion;
   final bool? seriesEnded;
   final List<String>? valueIds;
+  final List<String> checklistTitles;
 }

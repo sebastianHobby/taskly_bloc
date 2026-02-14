@@ -5,8 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/checklists/bloc/checklist_execution_bloc.dart';
+import 'package:taskly_bloc/presentation/features/checklists/view/checklist_execution_sheet.dart';
 import 'package:taskly_bloc/presentation/features/project_picker/project_picker.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
@@ -14,6 +18,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart'
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
 import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -56,6 +61,15 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
     TileIntentSetCompletion intent,
   ) async {
     final bloc = context.read<ScreenActionsBloc>();
+    final l10n = context.l10n;
+
+    if (intent.entityType == EntityType.task &&
+        intent.completed &&
+        intent.preferChecklistSheet) {
+      final handled = await _maybeHandleTaskChecklistFirst(context, intent);
+      if (handled) return;
+      if (!context.mounted) return;
+    }
 
     if (intent.scope == CompletionScope.occurrence) {
       // Occurrence-scoped intents must carry occurrence dates.
@@ -69,7 +83,7 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
         bloc.add(
           ScreenActionsFailureEvent(
             failureKind: ScreenActionsFailureKind.invalidOccurrenceData,
-            fallbackMessage: context.l10n.snackInvalidOccurrence,
+            fallbackMessage: l10n.snackInvalidOccurrence,
             entityType: intent.entityType,
             entityId: intent.entityId,
           ),
@@ -101,6 +115,44 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
         // Not supported.
         break;
     }
+  }
+
+  Future<bool> _maybeHandleTaskChecklistFirst(
+    BuildContext context,
+    TileIntentSetCompletion intent,
+  ) async {
+    final taskChecklistRepository = context
+        .read<TaskChecklistRepositoryContract>();
+    final taskWriteService = context.read<TaskWriteService>();
+    final nowService = context.read<NowService>();
+
+    final items = await taskChecklistRepository.getItems(intent.entityId);
+    if (items.isEmpty) return false;
+
+    final states = await taskChecklistRepository.getState(
+      taskId: intent.entityId,
+      occurrenceDate: intent.occurrenceDate,
+    );
+    final checkedIds = states
+        .where((s) => s.isChecked)
+        .map((s) => s.itemId)
+        .toSet();
+    final allChecked = items.every((item) => checkedIds.contains(item.id));
+    if (allChecked) return false;
+    if (!context.mounted) return true;
+
+    final sheetBloc = ChecklistExecutionBloc.task(
+      taskId: intent.entityId,
+      taskTitle: intent.entityName,
+      occurrenceDate: intent.occurrenceDate,
+      originalOccurrenceDate: intent.originalOccurrenceDate,
+      taskChecklistRepository: taskChecklistRepository,
+      taskWriteService: taskWriteService,
+      nowService: nowService,
+    );
+    await showTaskChecklistExecutionSheet(context, bloc: sheetBloc);
+    await sheetBloc.close();
+    return true;
   }
 
   Future<void> _requestDelete(

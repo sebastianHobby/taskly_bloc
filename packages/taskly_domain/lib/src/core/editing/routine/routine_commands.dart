@@ -18,6 +18,7 @@ final class CreateRoutineCommand {
     this.restDayBuffer,
     this.isActive = true,
     this.pausedUntilUtc,
+    this.checklistTitles = const <String>[],
   });
 
   final String name;
@@ -32,6 +33,7 @@ final class CreateRoutineCommand {
   final int? restDayBuffer;
   final bool isActive;
   final DateTime? pausedUntilUtc;
+  final List<String> checklistTitles;
 }
 
 @immutable
@@ -50,6 +52,7 @@ final class UpdateRoutineCommand {
     this.restDayBuffer,
     this.isActive = true,
     this.pausedUntilUtc,
+    this.checklistTitles = const <String>[],
   });
 
   final String id;
@@ -65,4 +68,5 @@ final class UpdateRoutineCommand {
   final int? restDayBuffer;
   final bool isActive;
   final DateTime? pausedUntilUtc;
+  final List<String> checklistTitles;
 }

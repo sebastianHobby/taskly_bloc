@@ -27,6 +27,7 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockRoutineRepositoryContract routineRepository;
+  late MockRoutineChecklistRepositoryContract routineChecklistRepository;
   late MockProjectRepositoryContract projectRepository;
   late RoutineWriteService routineWriteService;
   late AppErrorReporter errorReporter;
@@ -34,6 +35,7 @@ void main() {
   RoutineDetailBloc buildBloc() {
     return RoutineDetailBloc(
       routineRepository: routineRepository,
+      routineChecklistRepository: routineChecklistRepository,
       projectRepository: projectRepository,
       routineWriteService: routineWriteService,
       errorReporter: errorReporter,
@@ -43,6 +45,7 @@ void main() {
 
   setUp(() {
     routineRepository = MockRoutineRepositoryContract();
+    routineChecklistRepository = MockRoutineChecklistRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
     routineWriteService = RoutineWriteService(
       routineRepository: routineRepository,
@@ -79,8 +82,12 @@ void main() {
       when(() => routineRepository.getById('missing')).thenAnswer(
         (_) async => null,
       );
+      when(
+        () => routineChecklistRepository.getItems('missing'),
+      ).thenAnswer((_) async => const <ChecklistItem>[]);
       return RoutineDetailBloc(
         routineRepository: routineRepository,
+        routineChecklistRepository: routineChecklistRepository,
         projectRepository: projectRepository,
         routineWriteService: routineWriteService,
         errorReporter: errorReporter,

@@ -16,3 +16,4 @@ export 'package:taskly_domain/src/preferences/model/page_key.dart';
 export 'package:taskly_domain/src/preferences/model/sort_preferences.dart';
 export 'package:taskly_domain/src/projects/query/project_task_counts.dart';
 export 'package:taskly_domain/src/settings/settings.dart';
+export 'package:taskly_domain/src/checklists/model/checklist_item.dart';

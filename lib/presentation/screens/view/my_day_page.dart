@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -18,6 +20,8 @@ import 'package:taskly_bloc/presentation/shared/utils/task_sorting.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/checklists/bloc/checklist_execution_bloc.dart';
+import 'package:taskly_bloc/presentation/features/checklists/view/checklist_execution_sheet.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
@@ -979,15 +983,110 @@ TasklyRowSpec _buildRoutineRow(
     style: style,
     actions: TasklyRoutineRowActions(
       onTap: () => Routing.toRoutineEdit(context, routine.id),
-      onPrimaryAction: () => context.read<MyDayBloc>().add(
-        MyDayRoutineCompletionToggled(
-          routineId: routine.id,
-          completedToday: completed,
-          dayKeyUtc: dayKeyUtc,
-        ),
-      ),
+      onPrimaryAction: () {
+        unawaited(
+          _handleRoutinePrimaryAction(
+            context,
+            routine: routine,
+            completed: completed,
+            dayKeyUtc: dayKeyUtc,
+          ),
+        );
+      },
     ),
   );
+}
+
+Future<void> _handleRoutinePrimaryAction(
+  BuildContext context, {
+  required Routine routine,
+  required bool completed,
+  required DateTime dayKeyUtc,
+}) async {
+  final myDayBloc = context.read<MyDayBloc>();
+  final checklistRepository = context
+      .read<RoutineChecklistRepositoryContract>();
+  final routineWriteService = context.read<RoutineWriteService>();
+  final nowService = context.read<NowService>();
+
+  if (completed) {
+    myDayBloc.add(
+      MyDayRoutineCompletionToggled(
+        routineId: routine.id,
+        completedToday: true,
+        dayKeyUtc: dayKeyUtc,
+      ),
+    );
+    return;
+  }
+
+  final items = await checklistRepository.getItems(routine.id);
+  if (items.isEmpty) {
+    myDayBloc.add(
+      MyDayRoutineCompletionToggled(
+        routineId: routine.id,
+        completedToday: false,
+        dayKeyUtc: dayKeyUtc,
+      ),
+    );
+    return;
+  }
+
+  final scope = _routineChecklistScope(routine, dayKeyUtc);
+  final states = await checklistRepository.getState(
+    routineId: routine.id,
+    periodType: scope.periodType,
+    windowKey: scope.windowKey,
+  );
+  final checkedIds = states
+      .where((s) => s.isChecked)
+      .map((s) => s.itemId)
+      .toSet();
+  final allChecked = items.every((item) => checkedIds.contains(item.id));
+  if (allChecked) {
+    myDayBloc.add(
+      MyDayRoutineCompletionToggled(
+        routineId: routine.id,
+        completedToday: false,
+        dayKeyUtc: dayKeyUtc,
+      ),
+    );
+    return;
+  }
+  if (!context.mounted) return;
+
+  final sheetBloc = ChecklistExecutionBloc.routine(
+    routine: routine,
+    dayKeyUtc: dayKeyUtc,
+    taskTitle: routine.name,
+    routineChecklistRepository: checklistRepository,
+    routineWriteService: routineWriteService,
+    nowService: nowService,
+  );
+  await showRoutineChecklistExecutionSheet(context, bloc: sheetBloc);
+  await sheetBloc.close();
+}
+
+({RoutinePeriodType periodType, DateTime windowKey}) _routineChecklistScope(
+  Routine routine,
+  DateTime dayKeyUtc,
+) {
+  final day = dateOnly(dayKeyUtc);
+  switch (routine.periodType) {
+    case RoutinePeriodType.day:
+      return (periodType: RoutinePeriodType.day, windowKey: day);
+    case RoutinePeriodType.week:
+      final delta = day.weekday - DateTime.monday;
+      return (
+        periodType: RoutinePeriodType.week,
+        windowKey: day.subtract(Duration(days: delta)),
+      );
+    case RoutinePeriodType.month:
+      return (
+        periodType: RoutinePeriodType.month,
+        windowKey: DateTime.utc(day.year, day.month, 1),
+      );
+  }
 }
 
 TasklyRowSpec _buildTaskRowSpec(
@@ -1055,6 +1154,7 @@ TasklyRowSpec _buildTaskRowSpec(
         context,
         task: task,
         tileCapabilities: tileCapabilities,
+        preferChecklistSheet: true,
       ),
     ),
   );

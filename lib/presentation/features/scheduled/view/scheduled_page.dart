@@ -924,6 +924,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
         context,
         task: task,
         tileCapabilities: tileCapabilities,
+        preferChecklistSheet: true,
       );
       final compactLabels = density == DisplayDensity.compact
           ? _compactTaskDateLabels(context, task: task, today: todayDate)

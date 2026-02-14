@@ -576,6 +576,19 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                 ),
 
               SizedBox(height: sectionGap),
+              _ProjectNotesField(
+                name: ProjectFieldKeys.description.id,
+                initialValue: initialDescription,
+                hintText: l10n.projectFormDescriptionHint,
+                isCompact: isCompact,
+                focusNode: _notesFocusNode,
+                contentPadding: formPreset.ux.notesContentPadding,
+                validator: toFormBuilderValidator<String>(
+                  ProjectValidators.description,
+                  context,
+                ),
+              ),
+              SizedBox(height: sectionGap),
 
               // Meta chips row (values-first): Values, Planned Day, Due Date,
               // Priority, Repeat
@@ -834,19 +847,6 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                     },
                   ),
                   SizedBox(height: sectionGap),
-                  _ProjectNotesField(
-                    name: ProjectFieldKeys.description.id,
-                    initialValue: initialDescription,
-                    hintText: l10n.projectFormDescriptionHint,
-                    isCompact: isCompact,
-                    focusNode: _notesFocusNode,
-                    contentPadding: formPreset.ux.notesContentPadding,
-                    validator: toFormBuilderValidator<String>(
-                      ProjectValidators.description,
-                      context,
-                    ),
-                  ),
-                  SizedBox(height: sectionGap),
                   FormBuilderField<DateTime?>(
                     name: ProjectFieldKeys.startDate.id,
                     builder: (_) => SizedBox.shrink(),
@@ -908,6 +908,7 @@ class _ProjectNotesFieldState extends State<_ProjectNotesField> {
   FormFieldState<String?>? _fieldState;
   bool _isEmpty = true;
   bool _isExpanded = false;
+  bool _hasEditorFocus = false;
   bool _syncing = false;
   String? _lastSerialized;
 
@@ -971,20 +972,32 @@ class _ProjectNotesFieldState extends State<_ProjectNotesField> {
   }
 
   void _handleFocusChanged() {
-    if (widget.focusNode.hasFocus || !_isExpanded || !mounted) return;
-    setState(() => _isExpanded = false);
+    if (!mounted) return;
+    final hasFocus = widget.focusNode.hasFocus;
+    if (hasFocus) {
+      if (!_hasEditorFocus) {
+        setState(() => _hasEditorFocus = true);
+      }
+      return;
+    }
+
+    if (!_isExpanded) {
+      if (_hasEditorFocus) {
+        setState(() => _hasEditorFocus = false);
+      }
+      return;
+    }
+
+    setState(() {
+      _hasEditorFocus = false;
+      _isExpanded = false;
+    });
   }
 
   void _expandEditor() {
     if (!_isExpanded && mounted) {
       setState(() => _isExpanded = true);
     }
-
-    final endOffset = _controller.document.length > 0
-        ? _controller.document.length - 1
-        : 0;
-    _controller.updateSelection(TextSelection.collapsed(offset: endOffset));
-    widget.focusNode.requestFocus();
   }
 
   void _collapseEditor() {
@@ -1086,18 +1099,20 @@ class _ProjectNotesFieldState extends State<_ProjectNotesField> {
                     label: Text(context.l10n.doneLabel),
                   ),
                 ),
-                SizedBox(height: tokens.spaceXs),
-                FleatherToolbar.basic(
-                  controller: _controller,
-                  hideStrikeThrough: true,
-                  hideBackgroundColor: true,
-                  hideInlineCode: true,
-                  hideIndentation: true,
-                  hideCodeBlock: true,
-                  hideHorizontalRule: true,
-                  hideDirection: true,
-                  hideAlignment: true,
-                ),
+                if (_hasEditorFocus) ...[
+                  SizedBox(height: tokens.spaceXs),
+                  FleatherToolbar.basic(
+                    controller: _controller,
+                    hideStrikeThrough: true,
+                    hideBackgroundColor: true,
+                    hideInlineCode: true,
+                    hideIndentation: true,
+                    hideCodeBlock: true,
+                    hideHorizontalRule: true,
+                    hideDirection: true,
+                    hideAlignment: true,
+                  ),
+                ],
                 SizedBox(height: tokens.spaceSm),
                 TasklyFormNotesContainer(
                   height: editorHeight,

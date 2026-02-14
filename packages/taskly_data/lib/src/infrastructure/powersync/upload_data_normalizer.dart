@@ -56,7 +56,11 @@ uploadJsonExpectationsByTable = {
   'routines': {
     // Supabase: int[] (PostgREST expects a JSON array)
     'schedule_days': UploadJsonExpectation.list,
-    'preferred_weeks': UploadJsonExpectation.list,
+    'schedule_month_days': UploadJsonExpectation.list,
+  },
+  'checklist_events': {
+    // Supabase: jsonb
+    'metrics_json': UploadJsonExpectation.map,
   },
 };
 

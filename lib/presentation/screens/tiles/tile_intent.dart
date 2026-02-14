@@ -9,15 +9,19 @@ final class TileIntentSetCompletion extends TileIntent {
   const TileIntentSetCompletion({
     required this.entityType,
     required this.entityId,
+    required this.entityName,
     required this.completed,
     required this.scope,
+    this.preferChecklistSheet = false,
     this.occurrenceDate,
     this.originalOccurrenceDate,
   });
 
   final EntityType entityType;
   final String entityId;
+  final String entityName;
   final bool completed;
+  final bool preferChecklistSheet;
 
   final CompletionScope scope;
   final DateTime? occurrenceDate;

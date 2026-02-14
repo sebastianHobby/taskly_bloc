@@ -28,6 +28,12 @@ class MockSettingsRepositoryContract extends Mock
 class MockRoutineRepositoryContract extends Mock
     implements RoutineRepositoryContract {}
 
+class MockTaskChecklistRepositoryContract extends Mock
+    implements TaskChecklistRepositoryContract {}
+
+class MockRoutineChecklistRepositoryContract extends Mock
+    implements RoutineChecklistRepositoryContract {}
+
 class MockMyDayRepositoryContract extends Mock
     implements MyDayRepositoryContract {}
 

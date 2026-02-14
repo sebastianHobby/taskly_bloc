@@ -403,6 +403,7 @@ class TaskRepository implements TaskRepositoryContract {
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) {
     return FailureGuard.run(
@@ -477,6 +478,12 @@ class TaskRepository implements TaskRepositoryContract {
                   updatedAt: drift_pkg.Value(now),
                 ),
               );
+          await _replaceTaskChecklistItems(
+            taskId: id,
+            titlesInOrder: checklistTitles,
+            now: now,
+            psMetadata: psMetadata,
+          );
         });
 
         return id;
@@ -500,6 +507,7 @@ class TaskRepository implements TaskRepositoryContract {
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) async {
     await _createInternal(
@@ -514,6 +522,7 @@ class TaskRepository implements TaskRepositoryContract {
       repeatFromCompletion: repeatFromCompletion,
       seriesEnded: seriesEnded,
       valueIds: valueIds,
+      checklistTitles: checklistTitles,
       context: context,
     );
   }
@@ -531,6 +540,7 @@ class TaskRepository implements TaskRepositoryContract {
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) {
     return _createInternal(
@@ -545,6 +555,7 @@ class TaskRepository implements TaskRepositoryContract {
       repeatFromCompletion: repeatFromCompletion,
       seriesEnded: seriesEnded,
       valueIds: valueIds,
+      checklistTitles: checklistTitles,
       context: context,
     );
   }
@@ -564,6 +575,7 @@ class TaskRepository implements TaskRepositoryContract {
     bool? seriesEnded,
     List<String>? valueIds,
     bool? isPinned,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) async {
     await FailureGuard.run(
@@ -664,12 +676,54 @@ class TaskRepository implements TaskRepositoryContract {
                   updatedAt: drift_pkg.Value(now),
                 ),
               );
+          await _replaceTaskChecklistItems(
+            taskId: id,
+            titlesInOrder: checklistTitles,
+            now: now,
+            psMetadata: psMetadata,
+          );
         });
       },
       area: 'data.task',
       opName: 'update',
       context: context,
     );
+  }
+
+  Future<void> _replaceTaskChecklistItems({
+    required String taskId,
+    required List<String> titlesInOrder,
+    required DateTime now,
+    required String? psMetadata,
+  }) async {
+    final normalized = titlesInOrder
+        .map((title) => title.trim())
+        .where((title) => title.isNotEmpty)
+        .take(20)
+        .toList(growable: false);
+
+    await (driftDb.delete(
+      driftDb.taskChecklistItemsTable,
+    )..where((t) => t.taskId.equals(taskId))).go();
+
+    for (var i = 0; i < normalized.length; i += 1) {
+      await driftDb
+          .into(driftDb.taskChecklistItemsTable)
+          .insert(
+            TaskChecklistItemsTableCompanion.insert(
+              id: idGenerator.taskChecklistItemId(),
+              taskId: taskId,
+              title: normalized[i],
+              sortIndex: i,
+              createdAt: drift_pkg.Value(now),
+              updatedAt: drift_pkg.Value(now),
+              psMetadata: psMetadata == null
+                  ? const drift_pkg.Value.absent()
+                  : drift_pkg.Value(psMetadata),
+            ),
+            mode: drift_pkg.InsertMode.insert,
+          );
+    }
   }
 
   @override

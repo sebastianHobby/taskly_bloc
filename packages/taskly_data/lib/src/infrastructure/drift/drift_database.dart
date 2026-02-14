@@ -518,6 +518,126 @@ class ProjectAnchorStateTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class TaskChecklistItemsTable extends Table {
+  @override
+  String get tableName => 'task_checklist_items';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+  TextColumn get taskId => text()
+      .named('task_id')
+      .references(TaskTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get title => text().withLength(min: 1, max: 200).named('title')();
+  IntColumn get sortIndex => integer().named('sort_index')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class TaskChecklistItemStateTable extends Table {
+  @override
+  String get tableName => 'task_checklist_item_state';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+  TextColumn get taskId => text()
+      .named('task_id')
+      .references(TaskTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get checklistItemId => text()
+      .named('checklist_item_id')
+      .references(TaskChecklistItemsTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get occurrenceDate =>
+      text().map(dateOnlyStringConverter).nullable().named('occurrence_date')();
+  BoolColumn get isChecked =>
+      boolean().clientDefault(() => false).named('is_checked')();
+  DateTimeColumn get checkedAt => dateTime().nullable().named('checked_at')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class RoutineChecklistItemsTable extends Table {
+  @override
+  String get tableName => 'routine_checklist_items';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+  TextColumn get routineId => text()
+      .named('routine_id')
+      .references(RoutinesTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get title => text().withLength(min: 1, max: 200).named('title')();
+  IntColumn get sortIndex => integer().named('sort_index')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class RoutineChecklistItemStateTable extends Table {
+  @override
+  String get tableName => 'routine_checklist_item_state';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+  TextColumn get routineId => text()
+      .named('routine_id')
+      .references(RoutinesTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get checklistItemId => text()
+      .named('checklist_item_id')
+      .references(RoutineChecklistItemsTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get periodType => text().named('period_type')();
+  TextColumn get windowKey =>
+      text().map(dateOnlyStringConverter).named('window_key')();
+  BoolColumn get isChecked =>
+      boolean().clientDefault(() => false).named('is_checked')();
+  DateTimeColumn get checkedAt => dateTime().nullable().named('checked_at')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class ChecklistEventsTable extends Table {
+  @override
+  String get tableName => 'checklist_events';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+  TextColumn get parentType => text().named('parent_type')();
+  TextColumn get parentId => text().named('parent_id')();
+  TextColumn get checklistItemId => text().nullable().named('checklist_item_id')();
+  TextColumn get scopePeriodType =>
+      text().nullable().named('scope_period_type')();
+  TextColumn get scopeDate =>
+      text().map(dateOnlyStringConverter).nullable().named('scope_date')();
+  TextColumn get eventType => text().named('event_type')();
+  TextColumn get metricsJson => text().named('metrics_json')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 class RoutinesTable extends Table {
   @override
   String get tableName => 'routines';
@@ -629,7 +749,12 @@ class RoutineSkipsTable extends Table {
     TaskRecurrenceExceptionsTable,
     ProjectRecurrenceExceptionsTable,
     ProjectAnchorStateTable,
+    TaskChecklistItemsTable,
+    TaskChecklistItemStateTable,
     RoutinesTable,
+    RoutineChecklistItemsTable,
+    RoutineChecklistItemStateTable,
+    ChecklistEventsTable,
     RoutineCompletionsTable,
     RoutineSkipsTable,
     // Analytics tables
@@ -657,7 +782,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

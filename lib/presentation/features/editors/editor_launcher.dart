@@ -12,6 +12,7 @@ import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 class TaskEditorLaunchArgs {
   const TaskEditorLaunchArgs({
     required this.taskRepository,
+    required this.taskChecklistRepository,
     required this.projectRepository,
     required this.valueRepository,
     required this.taskWriteService,
@@ -28,6 +29,7 @@ class TaskEditorLaunchArgs {
   });
 
   final TaskRepositoryContract taskRepository;
+  final TaskChecklistRepositoryContract taskChecklistRepository;
   final ProjectRepositoryContract projectRepository;
   final ValueRepositoryContract valueRepository;
   final TaskWriteService taskWriteService;
@@ -92,6 +94,7 @@ typedef ValueEditorBuilder =
 class RoutineEditorLaunchArgs {
   const RoutineEditorLaunchArgs({
     required this.routineRepository,
+    required this.routineChecklistRepository,
     required this.projectRepository,
     required this.routineWriteService,
     this.defaultProjectId,
@@ -100,6 +103,7 @@ class RoutineEditorLaunchArgs {
   });
 
   final RoutineRepositoryContract routineRepository;
+  final RoutineChecklistRepositoryContract routineChecklistRepository;
   final ProjectRepositoryContract projectRepository;
   final RoutineWriteService routineWriteService;
   final String? defaultProjectId;
@@ -127,7 +131,9 @@ class EditorLauncher {
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
     TaskRepositoryContract? taskRepository,
+    TaskChecklistRepositoryContract? taskChecklistRepository,
     RoutineRepositoryContract? routineRepository,
+    RoutineChecklistRepositoryContract? routineChecklistRepository,
     TaskWriteService? taskWriteService,
     TaskMyDayWriteService? taskMyDayWriteService,
     ProjectWriteService? projectWriteService,
@@ -141,7 +147,9 @@ class EditorLauncher {
        _demoModeService = demoModeService,
        _demoDataProvider = demoDataProvider,
        _taskRepository = taskRepository,
+       _taskChecklistRepository = taskChecklistRepository,
        _routineRepository = routineRepository,
+       _routineChecklistRepository = routineChecklistRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
        _taskWriteService = taskWriteService,
@@ -155,7 +163,9 @@ class EditorLauncher {
        _routineEditorBuilder = routineEditorBuilder;
 
   final TaskRepositoryContract? _taskRepository;
+  final TaskChecklistRepositoryContract? _taskChecklistRepository;
   final RoutineRepositoryContract? _routineRepository;
+  final RoutineChecklistRepositoryContract? _routineChecklistRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
   final TaskWriteService? _taskWriteService;
@@ -182,11 +192,14 @@ class EditorLauncher {
     bool? showDragHandle,
   }) {
     final taskRepository = _taskRepository;
+    final taskChecklistRepository = _taskChecklistRepository;
     final taskWriteService = _taskWriteService;
     final taskMyDayWriteService = _taskMyDayWriteService;
-    if (taskRepository == null || taskWriteService == null) {
+    if (taskRepository == null ||
+        taskChecklistRepository == null ||
+        taskWriteService == null) {
       throw StateError(
-        'EditorLauncher.openTaskEditor requires a TaskRepositoryContract.',
+        'EditorLauncher.openTaskEditor requires task repositories.',
       );
     }
     if (taskMyDayWriteService == null) {
@@ -211,6 +224,7 @@ class EditorLauncher {
           modalContext,
           TaskEditorLaunchArgs(
             taskRepository: taskRepository,
+            taskChecklistRepository: taskChecklistRepository,
             projectRepository: _projectRepository,
             valueRepository: _valueRepository,
             taskWriteService: taskWriteService,
@@ -319,10 +333,13 @@ class EditorLauncher {
     bool? showDragHandle,
   }) {
     final routineRepository = _routineRepository;
+    final routineChecklistRepository = _routineChecklistRepository;
     final routineWriteService = _routineWriteService;
-    if (routineRepository == null || routineWriteService == null) {
+    if (routineRepository == null ||
+        routineChecklistRepository == null ||
+        routineWriteService == null) {
       throw StateError(
-        'EditorLauncher.openRoutineEditor requires a RoutineRepositoryContract.',
+        'EditorLauncher.openRoutineEditor requires routine repositories.',
       );
     }
     final routineEditorBuilder = _routineEditorBuilder;
@@ -342,6 +359,7 @@ class EditorLauncher {
           modalContext,
           RoutineEditorLaunchArgs(
             routineRepository: routineRepository,
+            routineChecklistRepository: routineChecklistRepository,
             projectRepository: _projectRepository,
             routineWriteService: routineWriteService,
             defaultProjectId: defaultProjectId,

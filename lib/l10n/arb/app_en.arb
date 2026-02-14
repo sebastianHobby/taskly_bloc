@@ -5013,6 +5013,62 @@
     "moodExcellentLabel": "Excellent",
     "@moodExcellentLabel": {
         "description": "Label for excellent mood rating"
+    },
+    "checklistLabel": "Steps",
+    "@checklistLabel": {
+        "description": "Section title for checklist item editing"
+    },
+    "checklistAddItemLabel": "Add a step",
+    "@checklistAddItemLabel": {
+        "description": "Input label to add a checklist item in checklist sheet"
+    },
+    "checklistDeleteStepLabel": "Delete step",
+    "@checklistDeleteStepLabel": {
+        "description": "Tooltip for deleting a checklist step"
+    },
+    "checklistProgressLabel": "{done}/{total} steps",
+    "@checklistProgressLabel": {
+        "description": "Checklist progress label shown in checklist sheet",
+        "placeholders": {
+            "done": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "checklistCheckAllAndCompleteLabel": "Mark all and complete",
+    "@checklistCheckAllAndCompleteLabel": {
+        "description": "Button label to mark all checklist items complete and complete/log parent"
+    },
+    "checklistCompleteParentNowLabel": "Complete task",
+    "@checklistCompleteParentNowLabel": {
+        "description": "Button label for immediate parent completion in checklist sheet"
+    },
+    "checklistLogRoutineNowLabel": "Log routine",
+    "@checklistLogRoutineNowLabel": {
+        "description": "Button label for immediate routine log in checklist sheet"
+    },
+    "checklistAllDoneTitle": "All steps done",
+    "@checklistAllDoneTitle": {
+        "description": "Dialog title shown when last checklist item is checked"
+    },
+    "checklistAllDoneTaskBody": "Complete this task now?",
+    "@checklistAllDoneTaskBody": {
+        "description": "Dialog message shown when last checklist task step is checked"
+    },
+    "checklistAllDoneRoutineBody": "Log this routine now?",
+    "@checklistAllDoneRoutineBody": {
+        "description": "Dialog message shown when last checklist routine step is checked"
+    },
+    "checklistLogActionLabel": "Log",
+    "@checklistLogActionLabel": {
+        "description": "Primary dialog action label for routine checklist completion prompt"
+    },
+    "notNowLabel": "Not now",
+    "@notNowLabel": {
+        "description": "Action label for postponing immediate completion"
     }
 }
 

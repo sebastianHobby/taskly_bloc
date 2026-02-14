@@ -60,6 +60,8 @@ class _RoutineEditorFullPage extends StatelessWidget {
         child: RoutineDetailSheetPage(
           routineId: routineId,
           routineRepository: context.read<RoutineRepositoryContract>(),
+          routineChecklistRepository: context
+              .read<RoutineChecklistRepositoryContract>(),
           projectRepository: context.read<ProjectRepositoryContract>(),
           routineWriteService: context.read<RoutineWriteService>(),
           defaultProjectId: defaultProjectId,

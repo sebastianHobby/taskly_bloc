@@ -68,6 +68,7 @@ void main() {
     final state = RoutineDetailState.loadSuccess(
       routine: routine,
       availableProjects: [project],
+      checklistTitles: const <String>[],
     );
     when(() => bloc.state).thenReturn(state);
     whenListen(bloc, Stream.value(state), initialState: state);

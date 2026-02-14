@@ -94,6 +94,7 @@ final class RoutineRepository implements RoutineRepositoryContract {
     int? restDayBuffer,
     bool isActive = true,
     DateTime? pausedUntilUtc,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) async {
     return FailureGuard.run(
@@ -101,31 +102,42 @@ final class RoutineRepository implements RoutineRepositoryContract {
         final now = _clock.nowUtc();
         final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
-        await _db
-            .into(_db.routinesTable)
-            .insert(
-              RoutinesTableCompanion.insert(
-                id: _ids.routineId(),
-                name: name,
-                projectId: projectId,
-                periodType: periodType.name,
-                scheduleMode: scheduleMode.name,
-                targetCount: targetCount,
-                scheduleDays: Value(scheduleDays.isEmpty ? null : scheduleDays),
-                scheduleMonthDays: Value(
-                  scheduleMonthDays.isEmpty ? null : scheduleMonthDays,
+        final routineId = _ids.routineId();
+        await _db.transaction(() async {
+          await _db
+              .into(_db.routinesTable)
+              .insert(
+                RoutinesTableCompanion.insert(
+                  id: routineId,
+                  name: name,
+                  projectId: projectId,
+                  periodType: periodType.name,
+                  scheduleMode: scheduleMode.name,
+                  targetCount: targetCount,
+                  scheduleDays: Value(
+                    scheduleDays.isEmpty ? null : scheduleDays,
+                  ),
+                  scheduleMonthDays: Value(
+                    scheduleMonthDays.isEmpty ? null : scheduleMonthDays,
+                  ),
+                  scheduleTimeMinutes: Value(scheduleTimeMinutes),
+                  minSpacingDays: Value(minSpacingDays),
+                  restDayBuffer: Value(restDayBuffer),
+                  isActive: Value(isActive),
+                  pausedUntil: Value(dateOnlyOrNull(pausedUntilUtc)),
+                  createdAt: Value(now),
+                  updatedAt: Value(now),
+                  psMetadata: Value(psMetadata),
                 ),
-                scheduleTimeMinutes: Value(scheduleTimeMinutes),
-                minSpacingDays: Value(minSpacingDays),
-                restDayBuffer: Value(restDayBuffer),
-                isActive: Value(isActive),
-                pausedUntil: Value(dateOnlyOrNull(pausedUntilUtc)),
-                createdAt: Value(now),
-                updatedAt: Value(now),
-                psMetadata: Value(psMetadata),
-              ),
-              mode: InsertMode.insert,
-            );
+                mode: InsertMode.insert,
+              );
+          await _replaceRoutineChecklistItems(
+            routineId: routineId,
+            titlesInOrder: checklistTitles,
+            now: now,
+            psMetadata: psMetadata,
+          );
+        });
       },
       area: 'data.routines',
       opName: 'create',
@@ -148,6 +160,7 @@ final class RoutineRepository implements RoutineRepositoryContract {
     int? restDayBuffer,
     bool? isActive,
     DateTime? pausedUntilUtc,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) async {
     return FailureGuard.run(
@@ -155,39 +168,83 @@ final class RoutineRepository implements RoutineRepositoryContract {
         final now = _clock.nowUtc();
         final psMetadata = encodeCrudMetadata(context, clock: _clock);
 
-        await (_db.update(
-          _db.routinesTable,
-        )..where((t) => t.id.equals(id))).write(
-          RoutinesTableCompanion(
-            name: Value(name),
-            projectId: Value(projectId),
-            periodType: Value(periodType.name),
-            scheduleMode: Value(scheduleMode.name),
-            targetCount: Value(targetCount),
-            scheduleDays: scheduleDays == null
-                ? const Value.absent()
-                : Value(scheduleDays),
-            scheduleMonthDays: scheduleMonthDays == null
-                ? const Value.absent()
-                : Value(scheduleMonthDays),
-            scheduleTimeMinutes: scheduleTimeMinutes == null
-                ? const Value.absent()
-                : Value(scheduleTimeMinutes),
-            minSpacingDays: Value(minSpacingDays),
-            restDayBuffer: Value(restDayBuffer),
-            isActive: isActive == null ? const Value.absent() : Value(isActive),
-            pausedUntil: Value(dateOnlyOrNull(pausedUntilUtc)),
-            updatedAt: Value(now),
-            psMetadata: psMetadata == null
-                ? const Value.absent()
-                : Value(psMetadata),
-          ),
-        );
+        await _db.transaction(() async {
+          await (_db.update(
+            _db.routinesTable,
+          )..where((t) => t.id.equals(id))).write(
+            RoutinesTableCompanion(
+              name: Value(name),
+              projectId: Value(projectId),
+              periodType: Value(periodType.name),
+              scheduleMode: Value(scheduleMode.name),
+              targetCount: Value(targetCount),
+              scheduleDays: scheduleDays == null
+                  ? const Value.absent()
+                  : Value(scheduleDays),
+              scheduleMonthDays: scheduleMonthDays == null
+                  ? const Value.absent()
+                  : Value(scheduleMonthDays),
+              scheduleTimeMinutes: scheduleTimeMinutes == null
+                  ? const Value.absent()
+                  : Value(scheduleTimeMinutes),
+              minSpacingDays: Value(minSpacingDays),
+              restDayBuffer: Value(restDayBuffer),
+              isActive: isActive == null
+                  ? const Value.absent()
+                  : Value(isActive),
+              pausedUntil: Value(dateOnlyOrNull(pausedUntilUtc)),
+              updatedAt: Value(now),
+              psMetadata: psMetadata == null
+                  ? const Value.absent()
+                  : Value(psMetadata),
+            ),
+          );
+          await _replaceRoutineChecklistItems(
+            routineId: id,
+            titlesInOrder: checklistTitles,
+            now: now,
+            psMetadata: psMetadata,
+          );
+        });
       },
       area: 'data.routines',
       opName: 'update',
       context: context,
     );
+  }
+
+  Future<void> _replaceRoutineChecklistItems({
+    required String routineId,
+    required List<String> titlesInOrder,
+    required DateTime now,
+    required String? psMetadata,
+  }) async {
+    final normalized = titlesInOrder
+        .map((title) => title.trim())
+        .where((title) => title.isNotEmpty)
+        .take(20)
+        .toList(growable: false);
+
+    await (_db.delete(
+      _db.routineChecklistItemsTable,
+    )..where((t) => t.routineId.equals(routineId))).go();
+
+    for (var i = 0; i < normalized.length; i += 1) {
+      await _db
+          .into(_db.routineChecklistItemsTable)
+          .insert(
+            RoutineChecklistItemsTableCompanion.insert(
+              id: _ids.routineChecklistItemId(),
+              routineId: routineId,
+              title: normalized[i],
+              sortIndex: i,
+              createdAt: Value(now),
+              updatedAt: Value(now),
+              psMetadata: Value(psMetadata),
+            ),
+            mode: InsertMode.insert,
+          );
+    }
   }
 
   @override

@@ -117,6 +117,7 @@ ValueChanged<bool?>? buildTaskToggleCompletionHandler(
   BuildContext context, {
   required Task task,
   required EntityTileCapabilities tileCapabilities,
+  bool preferChecklistSheet = false,
 }) {
   if (!tileCapabilities.canToggleCompletion) return null;
 
@@ -134,8 +135,10 @@ ValueChanged<bool?>? buildTaskToggleCompletionHandler(
         TileIntentSetCompletion(
           entityType: EntityType.task,
           entityId: task.id,
+          entityName: task.name,
           completed: completed,
           scope: tileCapabilities.completionScope,
+          preferChecklistSheet: preferChecklistSheet,
           occurrenceDate: occurrenceDate,
           originalOccurrenceDate: originalOccurrenceDate,
         ),

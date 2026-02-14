@@ -97,6 +97,12 @@ Future<void> setupDependencies() async {
     ..registerSingleton<RoutineRepositoryContract>(
       getIt<TasklyDataBindings>().routineRepository,
     )
+    ..registerSingleton<TaskChecklistRepositoryContract>(
+      getIt<TasklyDataBindings>().taskChecklistRepository,
+    )
+    ..registerSingleton<RoutineChecklistRepositoryContract>(
+      getIt<TasklyDataBindings>().routineChecklistRepository,
+    )
     ..registerSingleton<SettingsRepositoryContract>(
       getIt<TasklyDataBindings>().settingsRepository,
     )

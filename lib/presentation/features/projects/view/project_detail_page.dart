@@ -1158,6 +1158,7 @@ class _ProjectNotesEditorState extends State<_ProjectNotesEditor> {
   Timer? _debounceTimer;
   bool _isEmpty = true;
   bool _isExpanded = false;
+  bool _hasEditorFocus = false;
   bool _syncing = false;
   String? _lastSerialized;
   String? _lastCommitted;
@@ -1211,8 +1212,17 @@ class _ProjectNotesEditorState extends State<_ProjectNotesEditor> {
   }
 
   void _handleFocusChanged() {
-    if (!_focusNode.hasFocus) {
-      _commitPending();
+    if (!mounted) return;
+    if (_focusNode.hasFocus) {
+      if (!_hasEditorFocus) {
+        setState(() => _hasEditorFocus = true);
+      }
+      return;
+    }
+
+    _commitPending();
+    if (_hasEditorFocus) {
+      setState(() => _hasEditorFocus = false);
     }
   }
 
@@ -1220,7 +1230,6 @@ class _ProjectNotesEditorState extends State<_ProjectNotesEditor> {
     if (!_isExpanded && mounted) {
       setState(() => _isExpanded = true);
     }
-    _focusNode.requestFocus();
   }
 
   void _collapseEditor() {
@@ -1273,6 +1282,11 @@ class _ProjectNotesEditorState extends State<_ProjectNotesEditor> {
     final isCompact = MediaQuery.sizeOf(context).width < 600;
     final editorHeight = isCompact ? 160.0 : 200.0;
     final contentPadding = EdgeInsets.all(tokens.spaceSm);
+    final previewHeight =
+        ((Theme.of(context).textTheme.bodyMedium?.fontSize ?? 14.0) *
+            (Theme.of(context).textTheme.bodyMedium?.height ?? 1.4) *
+            3) +
+        contentPadding.vertical;
     final plainPreview = _controller.document
         .toPlainText()
         .replaceAll(RegExp(r'\s+'), ' ')
@@ -1309,11 +1323,27 @@ class _ProjectNotesEditorState extends State<_ProjectNotesEditor> {
                 ),
                 SizedBox(width: tokens.spaceSm),
                 Expanded(
-                  child: Text(
-                    previewText,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: previewStyle,
+                  child: SizedBox(
+                    height: previewHeight,
+                    child: plainPreview.isEmpty
+                        ? Text(
+                            previewText,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: previewStyle,
+                          )
+                        : ClipRect(
+                            child: IgnorePointer(
+                              child: FleatherEditor(
+                                controller: _controller,
+                                scrollable: false,
+                                padding: EdgeInsets.zero,
+                                showCursor: false,
+                                readOnly: true,
+                                enableInteractiveSelection: false,
+                              ),
+                            ),
+                          ),
                   ),
                 ),
                 SizedBox(width: tokens.spaceXs),
@@ -1341,18 +1371,20 @@ class _ProjectNotesEditorState extends State<_ProjectNotesEditor> {
             label: Text(context.l10n.doneLabel),
           ),
         ),
-        SizedBox(height: tokens.spaceXs),
-        FleatherToolbar.basic(
-          controller: _controller,
-          hideStrikeThrough: true,
-          hideBackgroundColor: true,
-          hideInlineCode: true,
-          hideIndentation: true,
-          hideCodeBlock: true,
-          hideHorizontalRule: true,
-          hideDirection: true,
-          hideAlignment: true,
-        ),
+        if (_hasEditorFocus) ...[
+          SizedBox(height: tokens.spaceXs),
+          FleatherToolbar.basic(
+            controller: _controller,
+            hideStrikeThrough: true,
+            hideBackgroundColor: true,
+            hideInlineCode: true,
+            hideIndentation: true,
+            hideCodeBlock: true,
+            hideHorizontalRule: true,
+            hideDirection: true,
+            hideAlignment: true,
+          ),
+        ],
         SizedBox(height: tokens.spaceSm),
         Container(
           height: editorHeight,

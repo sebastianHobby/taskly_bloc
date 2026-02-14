@@ -8,12 +8,17 @@ import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/anchored_dialog_layout_delegate.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/checklist_editor_section.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/project_picker_content.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/form_footer_bar.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/routines.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
+
+abstract final class RoutineFormFieldKeys {
+  static const checklistTitles = 'routine.checklistTitles';
+}
 
 class RoutineForm extends StatefulWidget {
   const RoutineForm({
@@ -24,6 +29,7 @@ class RoutineForm extends StatefulWidget {
     this.defaultProjectId,
     this.openToProjectPicker = false,
     this.initialData,
+    this.initialChecklistTitles = const <String>[],
     this.initialDraft,
     this.onChanged,
     this.onDelete,
@@ -38,6 +44,7 @@ class RoutineForm extends StatefulWidget {
   final String? defaultProjectId;
   final bool openToProjectPicker;
   final Routine? initialData;
+  final List<String> initialChecklistTitles;
   final RoutineDraft? initialDraft;
   final ValueChanged<Map<String, dynamic>>? onChanged;
   final VoidCallback? onDelete;
@@ -426,6 +433,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
           widget.initialData?.restDayBuffer ?? draft?.restDayBuffer,
       RoutineFieldKeys.isActive.id:
           widget.initialData?.isActive ?? draft?.isActive ?? true,
+      RoutineFormFieldKeys.checklistTitles: widget.initialChecklistTitles,
     };
 
     final submitEnabled = _submitEnabled;
@@ -587,6 +595,25 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                   RoutineValidators.name,
                   context,
                 ),
+              ),
+              SizedBox(height: tokens.spaceMd),
+              FormBuilderField<List<String>>(
+                name: RoutineFormFieldKeys.checklistTitles,
+                builder: (field) {
+                  final titles = (field.value ?? const <String>[])
+                      .whereType<String>()
+                      .toList(growable: false);
+                  return ChecklistEditorSection(
+                    title: l10n.checklistLabel,
+                    titles: titles,
+                    maxItems: 20,
+                    onChanged: (next) {
+                      field.didChange(next);
+                      _markDirtySafely();
+                      setState(() {});
+                    },
+                  );
+                },
               ),
               SizedBox(height: tokens.spaceMd),
               TasklyFormChipRow(

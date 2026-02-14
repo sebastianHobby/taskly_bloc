@@ -116,6 +116,11 @@ void main() {
         find.byKey(const Key('project-notes-done-button')),
         findsOneWidget,
       );
+      expect(find.byType(FleatherToolbar), findsNothing);
+
+      await tester.tap(find.byType(FleatherEditor));
+      await tester.pump();
+
       expect(find.byType(FleatherToolbar), findsOneWidget);
 
       await tester.tap(find.byKey(const Key('project-notes-done-button')));
@@ -193,6 +198,10 @@ void main() {
         find.byKey(const Key('project-notes-done-button')),
         findsOneWidget,
       );
+      expect(find.byType(FleatherToolbar), findsNothing);
+      await tester.tap(find.byType(FleatherEditor));
+      await tester.pump();
+      expect(find.byType(FleatherToolbar), findsOneWidget);
 
       WidgetsBinding.instance.focusManager.primaryFocus?.unfocus();
       await tester.pump();

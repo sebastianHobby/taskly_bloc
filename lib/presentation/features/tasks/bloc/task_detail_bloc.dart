@@ -9,6 +9,7 @@ import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_domain/checklists.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_domain/my_day.dart';
 import 'package:taskly_domain/services.dart';
@@ -62,6 +63,7 @@ class TaskDetailState with _$TaskDetailState {
     required List<Project> availableProjects,
     required List<Value> availableValues,
     required Task task,
+    required List<String> checklistTitles,
   }) = TaskDetailLoadSuccess;
 }
 
@@ -69,6 +71,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     with DetailBlocMixin<TaskDetailEvent, TaskDetailState, Task> {
   TaskDetailBloc({
     required TaskRepositoryContract taskRepository,
+    required TaskChecklistRepositoryContract taskChecklistRepository,
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
     required TaskWriteService taskWriteService,
@@ -79,6 +82,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     String? taskId,
     bool autoLoad = true,
   }) : _taskRepository = taskRepository,
+       _taskChecklistRepository = taskChecklistRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
        _taskWriteService = taskWriteService,
@@ -105,6 +109,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   }
 
   final TaskRepositoryContract _taskRepository;
+  final TaskChecklistRepositoryContract _taskChecklistRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
   final TaskWriteService _taskWriteService;
@@ -233,14 +238,26 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
         return;
       }
 
-      final projects = await _projectRepository.getAll();
-      final values = await _valueRepository.getAll();
+      final results = await Future.wait<Object?>([
+        _projectRepository.getAll(),
+        _valueRepository.getAll(),
+        _taskChecklistRepository.getItems(task.id),
+      ]);
+      final projects = (results[0] as List<Project>?) ?? const <Project>[];
+      final values = (results[1] as List<Value>?) ?? const <Value>[];
+      final checklistItems =
+          (results[2] as List<ChecklistItem>?) ?? const <ChecklistItem>[];
+      final checklistTitles = checklistItems
+          .map((item) => item.title.trim())
+          .where((title) => title.isNotEmpty)
+          .toList(growable: false);
 
       emit(
         TaskDetailState.loadSuccess(
           task: task,
           availableProjects: projects,
           availableValues: values,
+          checklistTitles: checklistTitles,
         ),
       );
     } catch (error, stackTrace) {

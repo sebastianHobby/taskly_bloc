@@ -147,6 +147,12 @@ class App extends StatelessWidget {
           Provider<RoutineRepositoryContract>(
             create: (_) => getIt<RoutineRepositoryContract>(),
           ),
+          Provider<TaskChecklistRepositoryContract>(
+            create: (_) => getIt<TaskChecklistRepositoryContract>(),
+          ),
+          Provider<RoutineChecklistRepositoryContract>(
+            create: (_) => getIt<RoutineChecklistRepositoryContract>(),
+          ),
           Provider<JournalRepositoryContract>(
             create: (_) => getIt<JournalRepositoryContract>(),
           ),
@@ -187,9 +193,12 @@ class App extends StatelessWidget {
               demoModeService: getIt<DemoModeService>(),
               demoDataProvider: getIt<DemoDataProvider>(),
               taskRepository: getIt<TaskRepositoryContract>(),
+              taskChecklistRepository: getIt<TaskChecklistRepositoryContract>(),
               projectRepository: getIt<ProjectRepositoryContract>(),
               valueRepository: getIt<ValueRepositoryContract>(),
               routineRepository: getIt<RoutineRepositoryContract>(),
+              routineChecklistRepository:
+                  getIt<RoutineChecklistRepositoryContract>(),
               taskWriteService: getIt<TaskWriteService>(),
               taskMyDayWriteService: getIt<TaskMyDayWriteService>(),
               projectWriteService: getIt<ProjectWriteService>(),

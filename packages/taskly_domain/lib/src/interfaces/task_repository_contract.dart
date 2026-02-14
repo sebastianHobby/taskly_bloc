@@ -97,6 +97,7 @@ abstract class TaskRepositoryContract {
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   });
 
@@ -112,6 +113,7 @@ abstract class TaskRepositoryContract {
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   });
 
@@ -129,6 +131,7 @@ abstract class TaskRepositoryContract {
     bool? seriesEnded,
     List<String>? valueIds,
     bool? isPinned,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   });
 

@@ -53,6 +53,8 @@ class IdGenerator {
     'analytics_snapshots',
     'attention_rules',
     'project_anchor_state',
+    'task_checklist_item_state',
+    'routine_checklist_item_state',
   };
 
   /// Tables using UUID v4 (random - user content with no natural key).
@@ -72,6 +74,9 @@ class IdGenerator {
     'routines',
     'routine_completions',
     'routine_skips',
+    'task_checklist_items',
+    'routine_checklist_items',
+    'checklist_events',
     'tracker_events',
     'tracker_state_day',
     'tracker_state_entry',
@@ -130,6 +135,9 @@ class IdGenerator {
 
   /// Generate random ID for a routine skip record.
   String routineSkipId() => _uuid.v4();
+  String taskChecklistItemId() => _uuid.v4();
+  String routineChecklistItemId() => _uuid.v4();
+  String checklistEventId() => _uuid.v4();
 
   // ═══════════════════════════════════════════════════════════════════════════
   // V5 DETERMINISTIC IDs - Natural Key → Same ID
@@ -251,6 +259,28 @@ class IdGenerator {
   /// Natural key: userId + projectId
   String projectAnchorStateIdForProject({required String projectId}) {
     return _v5('project_anchor_state/$projectId');
+  }
+
+  String taskChecklistItemStateId({
+    required String taskId,
+    required String checklistItemId,
+    required DateTime? occurrenceDate,
+  }) {
+    final dateKey =
+        occurrenceDate?.toIso8601String().split('T').first ?? 'null';
+    return _v5NoUser('task_checklist_state/$taskId/$checklistItemId/$dateKey');
+  }
+
+  String routineChecklistItemStateId({
+    required String routineId,
+    required String checklistItemId,
+    required String periodType,
+    required DateTime windowKey,
+  }) {
+    final dateKey = windowKey.toIso8601String().split('T').first;
+    return _v5NoUser(
+      'routine_checklist_state/$routineId/$checklistItemId/$periodType/$dateKey',
+    );
   }
 
   /// Generate random ID for attention resolution.

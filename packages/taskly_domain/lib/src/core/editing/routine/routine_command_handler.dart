@@ -35,6 +35,7 @@ final class RoutineCommandHandler {
       restDayBuffer: command.restDayBuffer,
       isActive: command.isActive,
       pausedUntilUtc: command.pausedUntilUtc,
+      checklistTitles: command.checklistTitles,
       context: context,
     );
 
@@ -62,6 +63,7 @@ final class RoutineCommandHandler {
       restDayBuffer: command.restDayBuffer,
       isActive: command.isActive,
       pausedUntilUtc: command.pausedUntilUtc,
+      checklistTitles: command.checklistTitles,
       context: context,
     );
 

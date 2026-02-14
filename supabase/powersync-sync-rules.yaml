@@ -28,6 +28,12 @@ bucket_definitions:
       # Routines (weekly/monthly)
       - SELECT * FROM routines WHERE user_id = bucket.user_id
 
+      # Checklist definitions + live state
+      - SELECT * FROM task_checklist_items WHERE user_id = bucket.user_id
+      - SELECT * FROM task_checklist_item_state WHERE user_id = bucket.user_id
+      - SELECT * FROM routine_checklist_items WHERE user_id = bucket.user_id
+      - SELECT * FROM routine_checklist_item_state WHERE user_id = bucket.user_id
+
 
 
       # Pending Notifications
@@ -103,4 +109,7 @@ bucket_definitions:
       # Tracker state projections (optional but recommended for fast UI)
       - SELECT * FROM tracker_state_entry WHERE user_id = bucket.user_id
       - SELECT * FROM tracker_state_day WHERE user_id = bucket.user_id
+
+      # Checklist events (analytics history)
+      - SELECT * FROM checklist_events WHERE user_id = bucket.user_id
 

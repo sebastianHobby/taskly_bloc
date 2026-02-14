@@ -27,6 +27,7 @@ abstract class RoutineRepositoryContract {
     int? restDayBuffer,
     bool isActive = true,
     DateTime? pausedUntilUtc,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   });
 
@@ -44,6 +45,7 @@ abstract class RoutineRepositoryContract {
     int? restDayBuffer,
     bool? isActive,
     DateTime? pausedUntilUtc,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   });
 

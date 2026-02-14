@@ -43,6 +43,7 @@ void main() {
 
   late MockTaskRepositoryContract taskRepository;
   late MockProjectRepositoryContract projectRepository;
+  late MockTaskChecklistRepositoryContract taskChecklistRepository;
   late MockValueRepositoryContract valueRepository;
   late MockOccurrenceCommandService occurrenceCommandService;
   late TaskWriteService taskWriteService;
@@ -56,6 +57,7 @@ void main() {
   TaskDetailBloc buildBloc() {
     return TaskDetailBloc(
       taskRepository: taskRepository,
+      taskChecklistRepository: taskChecklistRepository,
       projectRepository: projectRepository,
       valueRepository: valueRepository,
       taskWriteService: taskWriteService,
@@ -70,6 +72,7 @@ void main() {
   setUp(() {
     taskRepository = MockTaskRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
+    taskChecklistRepository = MockTaskChecklistRepositoryContract();
     valueRepository = MockValueRepositoryContract();
     occurrenceCommandService = MockOccurrenceCommandService();
     taskWriteService = TaskWriteService(

@@ -100,6 +100,10 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
       formValues,
       TaskFormFieldKeys.includeInMyDay,
     );
+    final checklistTitles = extractStringListValue(
+      formValues,
+      TaskFormFieldKeys.checklistTitles,
+    );
 
     _draft = _draft.copyWith(
       name: name,
@@ -113,6 +117,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
       deadlineDate: deadlineDate,
       priority: priority,
       valueIds: valueIds,
+      checklistTitles: checklistTitles,
     );
     _includeInMyDay = includeInMyDay;
   }
@@ -203,6 +208,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                         repeatFromCompletion: _draft.repeatFromCompletion,
                         seriesEnded: _draft.seriesEnded,
                         valueIds: _draft.valueIds,
+                        checklistTitles: _draft.checklistTitles,
                       ),
                       includeInMyDay: _includeInMyDay,
                     ),
@@ -216,6 +222,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 defaultDeadlineDate: widget.defaultDeadlineDate,
                 includeInMyDayDefault: widget.includeInMyDayDefault,
                 showMyDayToggle: true,
+                initialChecklistTitles: _draft.checklistTitles,
                 openToProjectPicker: widget.openToProjectPicker,
                 onClose: () => unawaited(closeEditor(context)),
               ),
@@ -224,8 +231,10 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 availableProjects,
                 availableValues,
                 task,
+                checklistTitles,
               ) => TaskForm(
                 initialData: task,
+                initialChecklistTitles: checklistTitles,
                 formKey: _formKey,
                 onChanged: _syncDraftFromFormValues,
                 onSubmit: () {
@@ -252,6 +261,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                         repeatFromCompletion: _draft.repeatFromCompletion,
                         seriesEnded: _draft.seriesEnded,
                         valueIds: _draft.valueIds,
+                        checklistTitles: _draft.checklistTitles,
                       ),
                     ),
                   );

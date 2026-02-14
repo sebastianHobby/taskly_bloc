@@ -15,6 +15,7 @@ final class TaskDraft {
     this.repeatFromCompletion = false,
     this.seriesEnded = false,
     this.valueIds = const <String>[],
+    this.checklistTitles = const <String>[],
   });
 
   factory TaskDraft.empty() => const TaskDraft(
@@ -29,6 +30,7 @@ final class TaskDraft {
     repeatFromCompletion: false,
     seriesEnded: false,
     valueIds: <String>[],
+    checklistTitles: <String>[],
   );
 
   factory TaskDraft.fromTask(Task task) => TaskDraft(
@@ -43,6 +45,7 @@ final class TaskDraft {
     repeatFromCompletion: task.repeatFromCompletion,
     seriesEnded: task.seriesEnded,
     valueIds: task.values.map((v) => v.id).toList(),
+    checklistTitles: const <String>[],
   );
 
   final String name;
@@ -56,6 +59,7 @@ final class TaskDraft {
   final bool repeatFromCompletion;
   final bool seriesEnded;
   final List<String> valueIds;
+  final List<String> checklistTitles;
 
   TaskDraft copyWith({
     String? name,
@@ -69,6 +73,7 @@ final class TaskDraft {
     bool? repeatFromCompletion,
     bool? seriesEnded,
     List<String>? valueIds,
+    List<String>? checklistTitles,
   }) {
     return TaskDraft(
       name: name ?? this.name,
@@ -82,6 +87,7 @@ final class TaskDraft {
       repeatFromCompletion: repeatFromCompletion ?? this.repeatFromCompletion,
       seriesEnded: seriesEnded ?? this.seriesEnded,
       valueIds: valueIds ?? this.valueIds,
+      checklistTitles: checklistTitles ?? this.checklistTitles,
     );
   }
 }

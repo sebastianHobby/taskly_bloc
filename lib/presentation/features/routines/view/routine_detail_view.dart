@@ -19,6 +19,7 @@ import 'package:taskly_ui/taskly_ui_sections.dart';
 class RoutineDetailSheetPage extends StatelessWidget {
   const RoutineDetailSheetPage({
     required this.routineRepository,
+    required this.routineChecklistRepository,
     required this.projectRepository,
     required this.routineWriteService,
     this.routineId,
@@ -28,6 +29,7 @@ class RoutineDetailSheetPage extends StatelessWidget {
   });
 
   final RoutineRepositoryContract routineRepository;
+  final RoutineChecklistRepositoryContract routineChecklistRepository;
   final ProjectRepositoryContract projectRepository;
   final RoutineWriteService routineWriteService;
   final String? routineId;
@@ -39,6 +41,7 @@ class RoutineDetailSheetPage extends StatelessWidget {
     return BlocProvider(
       create: (context) => RoutineDetailBloc(
         routineRepository: routineRepository,
+        routineChecklistRepository: routineChecklistRepository,
         projectRepository: projectRepository,
         routineWriteService: routineWriteService,
         errorReporter: context.read<AppErrorReporter>(),
@@ -125,6 +128,10 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
       RoutineFieldKeys.isActive.id,
       defaultValue: true,
     );
+    final checklistTitles = extractStringListValue(
+      formValues,
+      RoutineFormFieldKeys.checklistTitles,
+    );
 
     final resolvedPeriodType = periodType;
     var resolvedScheduleMode = scheduleMode;
@@ -166,6 +173,7 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
       minSpacingDays: resolvedMinSpacing,
       restDayBuffer: resolvedRestBuffer,
       isActive: isActive,
+      checklistTitles: checklistTitles,
     );
   }
 
@@ -195,6 +203,7 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
             restDayBuffer: _draft.restDayBuffer,
             isActive: _draft.isActive,
             pausedUntilUtc: _draft.pausedUntilUtc,
+            checklistTitles: _draft.checklistTitles,
           ),
         ),
       );
@@ -215,6 +224,7 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
             restDayBuffer: _draft.restDayBuffer,
             isActive: _draft.isActive,
             pausedUntilUtc: _draft.pausedUntilUtc,
+            checklistTitles: _draft.checklistTitles,
           ),
         ),
       );
@@ -291,6 +301,7 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
               formKey: _formKey,
               availableProjects: success.availableProjects,
               initialDraft: _draft,
+              initialChecklistTitles: _draft.checklistTitles,
               onChanged: _syncDraftFromFormValues,
               onSubmit: () => _onSubmit(null),
               submitTooltip: context.l10n.routineCreateCta,
@@ -301,11 +312,14 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
           },
           loadSuccess: (success) {
             _ensureFreshFormKeyFor(success.routine.id);
-            _draft = RoutineDraft.fromRoutine(success.routine);
+            _draft = RoutineDraft.fromRoutine(
+              success.routine,
+            ).copyWith(checklistTitles: success.checklistTitles);
             return RoutineForm(
               formKey: _formKey,
               availableProjects: success.availableProjects,
               initialData: success.routine,
+              initialChecklistTitles: success.checklistTitles,
               onChanged: _syncDraftFromFormValues,
               onSubmit: () => _onSubmit(success.routine.id),
               onDelete: () => _onDelete(

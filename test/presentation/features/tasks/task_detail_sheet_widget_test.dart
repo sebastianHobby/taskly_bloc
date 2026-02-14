@@ -98,6 +98,7 @@ void main() {
       availableProjects: const <Project>[],
       availableValues: const <Value>[],
       task: task,
+      checklistTitles: const <String>[],
     );
 
     when(() => bloc.state).thenReturn(state);

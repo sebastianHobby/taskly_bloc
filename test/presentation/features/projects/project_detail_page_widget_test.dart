@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 
+import 'package:fleather/fleather.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
@@ -357,7 +358,7 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.byKey(const Key('project-notes-preview-card')), findsOneWidget);
-    expect(find.text('Project notes preview text'), findsOneWidget);
+    expect(find.byType(FleatherEditor), findsOneWidget);
     expect(find.byKey(const Key('project-notes-done-button')), findsNothing);
   });
 
@@ -379,6 +380,12 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.byKey(const Key('project-notes-done-button')), findsOneWidget);
+    expect(find.byType(FleatherToolbar), findsNothing);
+
+    await tester.tap(find.byType(FleatherEditor));
+    await tester.pumpForStream();
+
+    expect(find.byType(FleatherToolbar), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('project-notes-done-button')));
     await tester.pumpForStream();

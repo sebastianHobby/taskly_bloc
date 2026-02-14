@@ -11,6 +11,7 @@ import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/project_picker_content.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/form_footer_bar.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/anchored_dialog_layout_delegate.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/checklist_editor_section.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/inline_date_editor_panel.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_domain/core.dart';
@@ -22,6 +23,7 @@ import 'package:taskly_bloc/presentation/features/navigation/services/navigation
 
 abstract final class TaskFormFieldKeys {
   static const includeInMyDay = 'task.includeInMyDay';
+  static const checklistTitles = 'task.checklistTitles';
 }
 
 enum _TaskDateEditorTarget { planned, due }
@@ -33,6 +35,7 @@ class TaskForm extends StatefulWidget {
     required this.submitTooltip,
     this.onChanged,
     this.initialData,
+    this.initialChecklistTitles = const <String>[],
     this.availableProjects = const [],
     this.availableValues = const [],
     this.defaultProjectId,
@@ -48,6 +51,7 @@ class TaskForm extends StatefulWidget {
 
   final GlobalKey<FormBuilderState> formKey;
   final Task? initialData;
+  final List<String> initialChecklistTitles;
   final VoidCallback onSubmit;
   final String submitTooltip;
   final ValueChanged<Map<String, dynamic>>? onChanged;
@@ -502,6 +506,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       TaskFieldKeys.repeatFromCompletion.id:
           widget.initialData?.repeatFromCompletion ?? false,
       TaskFieldKeys.seriesEnded.id: widget.initialData?.seriesEnded ?? false,
+      TaskFormFieldKeys.checklistTitles: widget.initialChecklistTitles,
     };
 
     final submitEnabled = _submitEnabled;
@@ -677,6 +682,27 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                   TaskValidators.description,
                   context,
                 ),
+              ),
+
+              SizedBox(height: sectionGap),
+
+              FormBuilderField<List<String>>(
+                name: TaskFormFieldKeys.checklistTitles,
+                builder: (field) {
+                  final titles = (field.value ?? const <String>[])
+                      .whereType<String>()
+                      .toList(growable: false);
+                  return ChecklistEditorSection(
+                    title: l10n.checklistLabel,
+                    titles: titles,
+                    maxItems: 20,
+                    onChanged: (next) {
+                      field.didChange(next);
+                      markDirty();
+                      setState(() {});
+                    },
+                  );
+                },
               ),
 
               SizedBox(height: sectionGap),

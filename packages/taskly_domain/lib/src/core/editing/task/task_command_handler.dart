@@ -36,6 +36,7 @@ final class TaskCommandHandler {
       repeatFromCompletion: command.repeatFromCompletion,
       seriesEnded: command.seriesEnded,
       valueIds: command.valueIds,
+      checklistTitles: command.checklistTitles,
       context: context,
     );
 
@@ -61,6 +62,7 @@ final class TaskCommandHandler {
       repeatFromCompletion: command.repeatFromCompletion,
       seriesEnded: command.seriesEnded,
       valueIds: command.valueIds,
+      checklistTitles: command.checklistTitles,
       context: context,
     );
 
@@ -87,6 +89,7 @@ final class TaskCommandHandler {
       repeatFromCompletion: command.repeatFromCompletion,
       seriesEnded: command.seriesEnded,
       valueIds: command.valueIds,
+      checklistTitles: command.checklistTitles,
       context: context,
     );
 

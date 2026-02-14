@@ -16,6 +16,7 @@ final class RoutineDraft {
     this.restDayBuffer,
     this.isActive = true,
     this.pausedUntilUtc,
+    this.checklistTitles = const <String>[],
   });
 
   factory RoutineDraft.empty() {
@@ -25,6 +26,7 @@ final class RoutineDraft {
       periodType: RoutinePeriodType.week,
       scheduleMode: RoutineScheduleMode.flexible,
       targetCount: 3,
+      checklistTitles: <String>[],
     );
   }
 
@@ -42,6 +44,7 @@ final class RoutineDraft {
       restDayBuffer: routine.restDayBuffer,
       isActive: routine.isActive,
       pausedUntilUtc: routine.pausedUntil,
+      checklistTitles: const <String>[],
     );
   }
 
@@ -57,6 +60,7 @@ final class RoutineDraft {
   final int? restDayBuffer;
   final bool isActive;
   final DateTime? pausedUntilUtc;
+  final List<String> checklistTitles;
 
   RoutineDraft copyWith({
     String? name,
@@ -71,6 +75,7 @@ final class RoutineDraft {
     int? restDayBuffer,
     bool? isActive,
     DateTime? pausedUntilUtc,
+    List<String>? checklistTitles,
   }) {
     return RoutineDraft(
       name: name ?? this.name,
@@ -85,6 +90,7 @@ final class RoutineDraft {
       restDayBuffer: restDayBuffer ?? this.restDayBuffer,
       isActive: isActive ?? this.isActive,
       pausedUntilUtc: pausedUntilUtc ?? this.pausedUntilUtc,
+      checklistTitles: checklistTitles ?? this.checklistTitles,
     );
   }
 }

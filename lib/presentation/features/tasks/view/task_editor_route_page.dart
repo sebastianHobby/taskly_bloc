@@ -59,6 +59,8 @@ class _TaskEditorFullPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final taskRepository = context.read<TaskRepositoryContract>();
+    final taskChecklistRepository = context
+        .read<TaskChecklistRepositoryContract>();
     final projectRepository = context.read<ProjectRepositoryContract>();
     final valueRepository = context.read<ValueRepositoryContract>();
     final taskWriteService = context.read<TaskWriteService>();
@@ -72,6 +74,7 @@ class _TaskEditorFullPage extends StatelessWidget {
           create: (context) => TaskDetailBloc(
             taskId: taskId,
             taskRepository: taskRepository,
+            taskChecklistRepository: taskChecklistRepository,
             projectRepository: projectRepository,
             valueRepository: valueRepository,
             taskWriteService: taskWriteService,

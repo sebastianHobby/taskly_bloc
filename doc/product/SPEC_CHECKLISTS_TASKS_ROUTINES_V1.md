@@ -76,6 +76,24 @@ contracts for implementation.
 - On last item checked: show completion prompt, never silent auto-complete by
   default.
 
+## Create/Edit form checklist authoring (FORM-01)
+
+- Task and Routine create/edit forms include an inline `Checklist` section.
+- Section is visible in form flow (not hidden behind a chip-only entry point).
+- Collapsed preview:
+  - empty: `0 items` with `Add checklist` action
+  - non-empty: first items preview + `+N more`
+- Expanded editor:
+  - inline add input (`Add item`)
+  - editable item titles (wrapping allowed)
+  - drag reorder support
+  - delete action per item (immediate delete)
+- Item limit:
+  - maximum 20 items per parent (task or routine)
+- Form authoring mode:
+  - checklist item checkboxes are not shown as execution state controls in form
+    authoring; form edits structure/content, not day/window completion state.
+
 ## Settings
 
 Add settings fields in `user_profiles.settings_overrides`:
@@ -285,3 +303,9 @@ At parent complete/log, persist snapshot metrics to event payload:
    follows the parent occurrence/window model.
 4. `checklist_events` is append-only in production (no user update/delete
    policy).
+5. Execution UX uses `UX-01`: full-height bottom sheet from parent rows.
+6. Form authoring UX uses `FORM-01`: inline checklist section in task/routine
+   create/edit forms.
+7. Checklist item limit is 20 items per parent.
+8. Checklist item titles allow wrapping.
+9. Checklist item delete is immediate.

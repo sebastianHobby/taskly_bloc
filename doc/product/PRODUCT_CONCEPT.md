@@ -7,26 +7,26 @@
 
 ## Core promise
 
-"Taskly captures everything you need to do, ties it to your values, and turns
-your projects into today's plan -- so you hit deadlines while keeping your
-values in focus."
+"Taskly helps you stay on top of everything you need to do by balancing tasks
+with values-based suggestions, so your day is both manageable and meaningful."
 
 ## Support line
 
-"Capture everything once, then Taskly brings forward your values and due dates
--- with Projects as the source for My Day."
+"Capture upcoming work in one place, then build today with priorities, values,
+and a clear plan you selected."
 
 ## Benefits (3)
 
 1) Everything captured, nothing forgotten.
-2) Balance deadlines with values-aligned ratings.
+2) Stay on top of commitments while keeping values in view.
 3) A calmer rhythm for real life, even on busy weeks.
 
 ## Feature callouts (My Day framing)
 
-- Projects is the source for today's plan; My Day surfaces values and due dates.
-- Ratings-led suggestions that keep your values in focus.
-- Routines that support a steadier week.
+- Build today's plan from priorities and values, then execute with clarity.
+- Ratings-led suggestions keep values visible without overwhelming the day.
+- Weekly Review keeps momentum with ratings and attention-rule driven checks.
+- Routines support a steadier week with support actions and trajectory context.
 
 ## Target user
 

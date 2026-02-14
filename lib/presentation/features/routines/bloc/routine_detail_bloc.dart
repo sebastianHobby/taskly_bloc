@@ -7,6 +7,7 @@ import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+import 'package:taskly_domain/checklists.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/errors.dart';
@@ -46,6 +47,7 @@ sealed class RoutineDetailState with _$RoutineDetailState {
   const factory RoutineDetailState.loadSuccess({
     required List<Project> availableProjects,
     required Routine routine,
+    required List<String> checklistTitles,
   }) = RoutineDetailLoadSuccess;
   const factory RoutineDetailState.validationFailure({
     required ValidationFailure failure,
@@ -62,11 +64,13 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
     with DetailBlocMixin<RoutineDetailEvent, RoutineDetailState, Routine> {
   RoutineDetailBloc({
     required RoutineRepositoryContract routineRepository,
+    required RoutineChecklistRepositoryContract routineChecklistRepository,
     required ProjectRepositoryContract projectRepository,
     required RoutineWriteService routineWriteService,
     required AppErrorReporter errorReporter,
     String? routineId,
   }) : _routineRepository = routineRepository,
+       _routineChecklistRepository = routineChecklistRepository,
        _projectRepository = projectRepository,
        _routineWriteService = routineWriteService,
        _errorReporter = errorReporter,
@@ -88,6 +92,7 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
   }
 
   final RoutineRepositoryContract _routineRepository;
+  final RoutineChecklistRepositoryContract _routineChecklistRepository;
   final ProjectRepositoryContract _projectRepository;
   final RoutineWriteService _routineWriteService;
   final AppErrorReporter _errorReporter;
@@ -199,9 +204,12 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
       final results = await Future.wait([
         _projectRepository.getAll(ProjectQuery.all()),
         _routineRepository.getById(event.routineId),
+        _routineChecklistRepository.getItems(event.routineId),
       ]);
       final projects = (results[0] as List<Project>?) ?? const <Project>[];
       final routine = results[1] as Routine?;
+      final checklistItems =
+          (results[2] as List<ChecklistItem>?) ?? const <ChecklistItem>[];
       if (routine == null) {
         emit(
           RoutineDetailState.operationFailure(
@@ -213,10 +221,16 @@ class RoutineDetailBloc extends Bloc<RoutineDetailEvent, RoutineDetailState>
         return;
       }
 
+      final checklistTitles = checklistItems
+          .map((item) => item.title.trim())
+          .where((title) => title.isNotEmpty)
+          .toList(growable: false);
+
       emit(
         RoutineDetailState.loadSuccess(
           availableProjects: projects,
           routine: routine,
+          checklistTitles: checklistTitles,
         ),
       );
     } catch (error, stackTrace) {
