@@ -50,6 +50,10 @@ Future<void> main(List<String> args) async {
       name: 'Fail on expired architecture exceptions',
       script: 'tool/no_expired_arch_exceptions.dart',
     ),
+    const _Guardrail(
+      name: 'Validate IdGenerator table registration',
+      script: 'tool/validate_id_generator_table_registration.dart',
+    ),
   ];
 
   for (final guardrail in guardrails) {
