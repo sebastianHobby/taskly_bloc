@@ -251,6 +251,7 @@ class App extends StatelessWidget {
                     .read<PresentationSessionServicesCoordinator>(),
                 initialSyncService: context.read<InitialSyncService>(),
                 sharedDataService: context.read<SessionSharedDataService>(),
+                nowService: context.read<NowService>(),
               ),
             ),
             BlocProvider<MicroLearningBloc>(

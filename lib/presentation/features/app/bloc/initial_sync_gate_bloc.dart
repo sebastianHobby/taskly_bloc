@@ -4,6 +4,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
@@ -49,12 +50,14 @@ final class InitialSyncGateBloc
     required PresentationSessionCoordinator presentationSessionCoordinator,
     required InitialSyncService initialSyncService,
     required SessionSharedDataService sharedDataService,
+    required NowService nowService,
     Duration initialProgressTimeout = const Duration(seconds: 15),
     Duration localProbeTimeout = const Duration(seconds: 5),
   }) : _coordinator = coordinator,
        _presentationSessionCoordinator = presentationSessionCoordinator,
        _initialSyncService = initialSyncService,
        _sharedDataService = sharedDataService,
+       _nowService = nowService,
        _initialProgressTimeout = initialProgressTimeout,
        _localProbeTimeout = localProbeTimeout,
        super(const InitialSyncGateInProgress(progress: null)) {
@@ -66,6 +69,7 @@ final class InitialSyncGateBloc
   final PresentationSessionCoordinator _presentationSessionCoordinator;
   final InitialSyncService _initialSyncService;
   final SessionSharedDataService _sharedDataService;
+  final NowService _nowService;
   final Duration _initialProgressTimeout;
   final Duration _localProbeTimeout;
 
@@ -94,7 +98,7 @@ final class InitialSyncGateBloc
   }
 
   Stream<InitialSyncGateState> _gateStateStream() async* {
-    final startupId = DateTime.now().millisecondsSinceEpoch.toString();
+    final startupId = _nowService.nowUtc().millisecondsSinceEpoch.toString();
     try {
       AppLog.routineStructured(
         'startup.sync_gate',

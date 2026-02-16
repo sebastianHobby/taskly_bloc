@@ -12,6 +12,7 @@ import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/features/app/view/initial_sync_gate_screen.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
@@ -40,6 +41,14 @@ class FakeAppLifecycleEvents implements AppLifecycleEvents {
   }
 }
 
+class FakeNowService implements NowService {
+  @override
+  DateTime nowLocal() => DateTime(2025, 1, 15, 12);
+
+  @override
+  DateTime nowUtc() => DateTime.utc(2025, 1, 15, 12);
+}
+
 void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
@@ -59,6 +68,7 @@ void main() {
   late MockValueRepositoryContract valueRepository;
   late MockProjectRepositoryContract projectRepository;
   late MockTaskRepositoryContract taskRepository;
+  late NowService nowService;
 
   setUp(() {
     coordinator = MockAuthenticatedAppServicesCoordinator();
@@ -93,6 +103,7 @@ void main() {
     when(
       () => initialSyncService.progress,
     ).thenAnswer((_) => const Stream<InitialSyncProgress>.empty());
+    nowService = FakeNowService();
 
     addTearDown(cacheManager.dispose);
     addTearDown(demoModeService.dispose);
@@ -105,6 +116,7 @@ void main() {
       presentationSessionCoordinator: presentationSessionCoordinator,
       initialSyncService: initialSyncService,
       sharedDataService: sharedDataService,
+      nowService: nowService,
     );
     await tester.pumpWidgetWithBloc<InitialSyncGateBloc>(
       bloc: bloc,

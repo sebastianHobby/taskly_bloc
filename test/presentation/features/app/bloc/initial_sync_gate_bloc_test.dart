@@ -7,6 +7,7 @@ import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
@@ -24,6 +25,14 @@ class MockPresentationSessionServicesCoordinator extends Mock
 class MockInitialSyncService extends Mock implements InitialSyncService {}
 
 class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
+
+class FakeNowService implements NowService {
+  @override
+  DateTime nowLocal() => DateTime(2025, 1, 15, 12);
+
+  @override
+  DateTime nowUtc() => DateTime.utc(2025, 1, 15, 12);
+}
 
 InitialSyncProgress _progress({
   bool hasSynced = false,
@@ -55,6 +64,7 @@ void main() {
   late DemoModeService demoModeService;
   late DemoDataProvider demoDataProvider;
   late MockAppLifecycleEvents appLifecycleEvents;
+  late NowService nowService;
   late MockValueRepositoryContract valueRepository;
   late MockTaskRepositoryContract taskRepository;
   late MockProjectRepositoryContract projectRepository;
@@ -71,6 +81,7 @@ void main() {
       presentationSessionCoordinator: presentationSessionCoordinator,
       initialSyncService: initialSyncService,
       sharedDataService: sharedDataService,
+      nowService: nowService,
       initialProgressTimeout: initialProgressTimeout,
       localProbeTimeout: localProbeTimeout,
     );
@@ -82,6 +93,7 @@ void main() {
         MockPresentationSessionServicesCoordinator();
     initialSyncService = MockInitialSyncService();
     appLifecycleEvents = MockAppLifecycleEvents();
+    nowService = FakeNowService();
     valueRepository = MockValueRepositoryContract();
     taskRepository = MockTaskRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
