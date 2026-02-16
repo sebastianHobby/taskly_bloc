@@ -8,7 +8,6 @@ import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mappe
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/row_key.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -477,14 +476,11 @@ class _ProjectsViewState extends State<_ProjectsView> {
                   ),
             floatingActionButton: selectionState.isSelectionMode
                 ? null
-                : SizedBox(
-                    key: GuidedTourAnchors.projectsCreateProject,
-                    child: EntityAddFab(
-                      heroTag: 'add_speed_dial_projects',
-                      tooltip: context.l10n.addProjectAction,
-                      onPressed: () => context.read<ProjectsScreenBloc>().add(
-                        const ProjectsCreateProjectRequested(),
-                      ),
+                : EntityAddFab(
+                    heroTag: 'add_speed_dial_projects',
+                    tooltip: context.l10n.addProjectAction,
+                    onPressed: () => context.read<ProjectsScreenBloc>().add(
+                      const ProjectsCreateProjectRequested(),
                     ),
                   ),
             body: Column(

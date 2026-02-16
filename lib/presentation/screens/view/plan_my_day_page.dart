@@ -3,7 +3,6 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/review/bloc/weekly_review_cubit.dart';
 import 'package:taskly_bloc/presentation/features/review/widgets/weekly_value_checkin_sheet.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
@@ -238,7 +237,6 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
         _TaskShelf(
           title: l10n.planMyDayDueTodayTitle,
           actionLabel: l10n.planMyDayRescheduleAllDueAction,
-          anchorKey: GuidedTourAnchors.planMyDayTriage,
           rowKeyPrefix: 'plan-due',
           limitItems: isCompact,
           maxVisibleItems: maxVisibleItems,
@@ -310,7 +308,6 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
         _EmptyShelf(
           title: l10n.planMyDayDueTodayTitle,
           body: l10n.planMyDayDueTodayEmptyBody,
-          anchorKey: GuidedTourAnchors.planMyDayTriage,
         ),
       SizedBox(height: tokens.spaceLg),
       if (data.plannedTasks.isNotEmpty)
@@ -401,7 +398,6 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
           rowKeyPrefix: 'plan-routines',
           limitItems: isCompact,
           maxVisibleItems: maxVisibleItems,
-          anchorKey: GuidedTourAnchors.planMyDayRoutinesBlock,
         ),
       if (!data.overCapacity && data.valueSuggestionGroups.isNotEmpty) ...[
         SizedBox(height: tokens.spaceLg),
@@ -599,7 +595,6 @@ class _TaskShelf extends StatelessWidget {
     required this.rowKeyPrefix,
     required this.limitItems,
     required this.maxVisibleItems,
-    this.anchorKey,
   });
 
   final String title;
@@ -609,7 +604,6 @@ class _TaskShelf extends StatelessWidget {
   final String rowKeyPrefix;
   final bool limitItems;
   final int maxVisibleItems;
-  final Key? anchorKey;
 
   @override
   Widget build(BuildContext context) {
@@ -617,7 +611,6 @@ class _TaskShelf extends StatelessWidget {
     final l10n = context.l10n;
 
     return Column(
-      key: anchorKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
@@ -657,7 +650,6 @@ class _RoutineShelf extends StatelessWidget {
     required this.rowKeyPrefix,
     required this.limitItems,
     required this.maxVisibleItems,
-    this.anchorKey,
   });
 
   final PlanMyDayReady data;
@@ -665,7 +657,6 @@ class _RoutineShelf extends StatelessWidget {
   final String rowKeyPrefix;
   final bool limitItems;
   final int maxVisibleItems;
-  final Key? anchorKey;
 
   @override
   Widget build(BuildContext context) {
@@ -688,28 +679,25 @@ class _RoutineShelf extends StatelessWidget {
 
     final l10n = context.l10n;
 
-    return Container(
-      key: anchorKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.routinesTitle,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.routinesTitle,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
           ),
-          SizedBox(height: tokens.spaceSm),
-          ExpandableRowList(
-            rows: routineRows,
-            rowKeyPrefix: rowKeyPrefix,
-            maxVisible: maxVisibleItems,
-            enabled: limitItems,
-            showMoreLabelBuilder: l10n.myDayPlanShowMore,
-            showFewerLabel: l10n.myDayPlanShowFewer,
-          ),
-        ],
-      ),
+        ),
+        SizedBox(height: tokens.spaceSm),
+        ExpandableRowList(
+          rows: routineRows,
+          rowKeyPrefix: rowKeyPrefix,
+          maxVisible: maxVisibleItems,
+          enabled: limitItems,
+          showMoreLabelBuilder: l10n.myDayPlanShowMore,
+          showFewerLabel: l10n.myDayPlanShowFewer,
+        ),
+      ],
     );
   }
 }
@@ -735,7 +723,6 @@ class _SuggestionsShelf extends StatelessWidget {
           value: group.value,
           averageRating: group.averageRating,
           trendDelta: group.trendDelta,
-          anchorKey: i == 0 ? GuidedTourAnchors.planMyDayValuesCard : null,
         ),
       );
       suggestions.add(SizedBox(height: tokens.spaceSm2));
@@ -824,13 +811,11 @@ class _ValueSuggestionChip extends StatelessWidget {
     required this.value,
     required this.averageRating,
     required this.trendDelta,
-    this.anchorKey,
   });
 
   final Value value;
   final double? averageRating;
   final double? trendDelta;
-  final Key? anchorKey;
 
   @override
   Widget build(BuildContext context) {
@@ -840,7 +825,6 @@ class _ValueSuggestionChip extends StatelessWidget {
     final l10n = context.l10n;
 
     final chip = Container(
-      key: anchorKey,
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spaceSm2,
         vertical: tokens.spaceXs2,
@@ -1054,18 +1038,15 @@ class _EmptyShelf extends StatelessWidget {
   const _EmptyShelf({
     required this.title,
     required this.body,
-    this.anchorKey,
   });
 
   final String title;
   final String body;
-  final Key? anchorKey;
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     return Column(
-      key: anchorKey,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(

@@ -4808,13 +4808,77 @@
     "@settingsAppearanceSubtitle": {
         "description": "Subtitle for appearance settings entry"
     },
-    "settingsGuidedTourTitle": "Recorrido guiado",
-    "@settingsGuidedTourTitle": {
-        "description": "Title for guided tour settings entry"
+    "settingsMicroLearningTitle": "Micro aprendizaje",
+    "@settingsMicroLearningTitle": {
+        "description": "Title for micro-learning settings entry"
     },
-    "settingsGuidedTourSubtitle": "Recorre de nuevo las pantallas principales",
-    "@settingsGuidedTourSubtitle": {
-        "description": "Subtitle for guided tour settings entry"
+    "settingsMicroLearningSubtitle": "Tips por pantalla y repeticion",
+    "@settingsMicroLearningSubtitle": {
+        "description": "Subtitle for micro-learning settings entry"
+    },
+    "settingsMicroLearningDescription": "Vuelve a mostrar los tips de una sola vez para cada pantalla y detalle.",
+    "@settingsMicroLearningDescription": {
+        "description": "Description text on the micro-learning settings page"
+    },
+    "settingsMicroLearningReplayAction": "Repetir todos los tips",
+    "@settingsMicroLearningReplayAction": {
+        "description": "Button label to reset and replay all micro-learning tips"
+    },
+    "settingsMicroLearningReplayDone": "Tips reiniciados. Se mostraran otra vez al abrir cada pantalla.",
+    "@settingsMicroLearningReplayDone": {
+        "description": "Snack message after resetting micro-learning tips"
+    },
+    "microLearningGotItLabel": "Entendido",
+    "@microLearningGotItLabel": {
+        "description": "Dismiss label for a micro-learning tip"
+    },
+    "microLearningMyDayTitle": "Mi dia",
+    "@microLearningMyDayTitle": {
+        "description": "Title for the My Day micro-learning tip"
+    },
+    "microLearningMyDayBody": "Todo lo que toca hoy segun tu plan seleccionado.",
+    "@microLearningMyDayBody": {
+        "description": "Body copy for the My Day micro-learning tip"
+    },
+    "microLearningPlanMyDayTitle": "Planear mi dia",
+    "@microLearningPlanMyDayTitle": {
+        "description": "Title for the Plan My Day micro-learning tip"
+    },
+    "microLearningPlanMyDayBody": "Construye hoy con tus prioridades y valores, y guarda tu plan.",
+    "@microLearningPlanMyDayBody": {
+        "description": "Body copy for the Plan My Day micro-learning tip"
+    },
+    "microLearningProjectsTitle": "Proyectos",
+    "@microLearningProjectsTitle": {
+        "description": "Title for the Projects micro-learning tip"
+    },
+    "microLearningProjectsBody": "Este es tu backlog futuro: captura y ordena lo que quieres hacer despues.",
+    "@microLearningProjectsBody": {
+        "description": "Body copy for the Projects micro-learning tip"
+    },
+    "microLearningScheduledTitle": "Programado",
+    "@microLearningScheduledTitle": {
+        "description": "Title for the Scheduled micro-learning tip"
+    },
+    "microLearningScheduledBody": "Usa esta vista calendario para ver lo vencido y lo que viene.",
+    "@microLearningScheduledBody": {
+        "description": "Body copy for the Scheduled micro-learning tip"
+    },
+    "microLearningProjectDetailTitle": "Detalle del proyecto",
+    "@microLearningProjectDetailTitle": {
+        "description": "Title for the Project Detail micro-learning tip"
+    },
+    "microLearningProjectDetailBody": "Planifica tareas, rutinas y notas del proyecto en un solo lugar.",
+    "@microLearningProjectDetailBody": {
+        "description": "Body copy for the Project Detail micro-learning tip"
+    },
+    "microLearningRoutineDetailTitle": "Detalle de rutina",
+    "@microLearningRoutineDetailTitle": {
+        "description": "Title for the Routine Detail micro-learning tip"
+    },
+    "microLearningRoutineDetailBody": "Revisa soporte, resultados y estadisticas para ver que funciona.",
+    "@microLearningRoutineDetailBody": {
+        "description": "Body copy for the Routine Detail micro-learning tip"
     },
     "settingsWeeklyReviewSubtitle": "Horario y salud del proyecto",
     "@settingsWeeklyReviewSubtitle": {

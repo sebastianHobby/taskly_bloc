@@ -23,7 +23,6 @@ import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/reschedule_picker.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -796,9 +795,6 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                         : context.l10n.tasksCountLabel(count);
 
                     return Padding(
-                      key: dayIndex == 0
-                          ? GuidedTourAnchors.scheduledSectionToday
-                          : null,
                       padding: EdgeInsets.only(
                         bottom: TasklyTokens.of(
                           context,

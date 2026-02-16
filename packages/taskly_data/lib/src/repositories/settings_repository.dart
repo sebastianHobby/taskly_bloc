@@ -342,8 +342,57 @@ class SettingsRepository implements SettingsRepositoryContract {
               pageKey: subKey,
             )
             as T,
+      'microLearningSeen' =>
+        _decodeMicroLearningSeen(
+              profileId: profileId,
+              overrides: overrides,
+              tipId: subKey,
+            )
+            as T,
       _ => throw ArgumentError('Unknown keyed key: $name'),
     };
+  }
+
+  bool _decodeMicroLearningSeen({
+    required String profileId,
+    required Map<String, dynamic> overrides,
+    required String tipId,
+  }) {
+    final group = overrides['microLearningSeen'];
+    if (group == null) return false;
+    if (group is! Map<String, dynamic>) {
+      final repaired = Map<String, dynamic>.from(overrides)
+        ..remove('microLearningSeen');
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          repaired,
+          repairKey: 'microLearningSeen',
+          repairedFrom: group,
+          reason: 'microLearningSeen_not_a_map',
+        ),
+      );
+      return false;
+    }
+
+    final value = group[tipId];
+    if (value == null) return false;
+    if (value is! bool) {
+      final repairedGroup = Map<String, dynamic>.from(group)..remove(tipId);
+      final repaired = Map<String, dynamic>.from(overrides)
+        ..['microLearningSeen'] = repairedGroup;
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          repaired,
+          repairKey: 'microLearningSeen:$tipId',
+          repairedFrom: value,
+          reason: 'microLearningSeen_entry_not_bool',
+        ),
+      );
+      return false;
+    }
+    return value;
   }
 
   SortPreferences? _decodePageSort({
@@ -524,6 +573,23 @@ class SettingsRepository implements SettingsRepositoryContract {
           updated['pageDisplay'] = group;
         }
         return updated;
+      case 'microLearningSeen':
+        final group = Map<String, dynamic>.from(
+          (updated['microLearningSeen'] as Map<String, dynamic>?) ??
+              const <String, dynamic>{},
+        );
+        final seen = value as bool;
+        if (!seen) {
+          group.remove(subKey);
+        } else {
+          group[subKey] = true;
+        }
+        if (group.isEmpty) {
+          updated.remove('microLearningSeen');
+        } else {
+          updated['microLearningSeen'] = group;
+        }
+        return updated;
 
       default:
         throw ArgumentError('Unknown keyed key: $name');
@@ -541,6 +607,7 @@ class SettingsRepository implements SettingsRepositoryContract {
     return switch (name) {
       'pageSort' => null as T,
       'pageDisplay' => null as T,
+      'microLearningSeen' => false as T,
       _ => throw ArgumentError('Unknown SettingsKey default: $key'),
     };
   }

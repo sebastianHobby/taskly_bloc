@@ -15,7 +15,7 @@ import '../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
+import 'package:taskly_bloc/presentation/features/micro_learning/bloc/micro_learning_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_gate_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_query_service.dart';
@@ -49,8 +49,9 @@ class MockEditorLauncher extends Mock implements EditorLauncher {}
 
 class MockAppLifecycleEvents extends Mock implements AppLifecycleEvents {}
 
-class MockGuidedTourBloc extends MockBloc<GuidedTourEvent, GuidedTourState>
-    implements GuidedTourBloc {}
+class MockMicroLearningBloc
+    extends MockBloc<MicroLearningEvent, MicroLearningState>
+    implements MicroLearningBloc {}
 
 class MockHomeDayKeyService extends Mock implements HomeDayKeyService {}
 
@@ -108,7 +109,7 @@ void main() {
   late MockSettingsRepositoryContract settingsRepository;
   late MockEditorLauncher editorLauncher;
   late MockGlobalSettingsBloc globalSettingsBloc;
-  late MockGuidedTourBloc guidedTourBloc;
+  late MockMicroLearningBloc microLearningBloc;
   late MockAuthBloc authBloc;
 
   late BehaviorSubject<List<Value>> valuesSubject;
@@ -145,7 +146,7 @@ void main() {
     settingsRepository = MockSettingsRepositoryContract();
     editorLauncher = MockEditorLauncher();
     globalSettingsBloc = MockGlobalSettingsBloc();
-    guidedTourBloc = MockGuidedTourBloc();
+    microLearningBloc = MockMicroLearningBloc();
     authBloc = MockAuthBloc();
     demoModeService = DemoModeService();
     demoDataProvider = DemoDataProvider();
@@ -428,12 +429,12 @@ void main() {
       Stream.value(globalState),
       initialState: globalState,
     );
-    final guidedTourState = GuidedTourState.initial();
-    when(() => guidedTourBloc.state).thenReturn(guidedTourState);
+    const microLearningState = MicroLearningState(isLoaded: true);
+    when(() => microLearningBloc.state).thenReturn(microLearningState);
     whenListen(
-      guidedTourBloc,
-      Stream.value(guidedTourState),
-      initialState: guidedTourState,
+      microLearningBloc,
+      Stream.value(microLearningState),
+      initialState: microLearningState,
     );
     const authState = AppAuthState();
     when(() => authBloc.state).thenReturn(authState);
@@ -455,7 +456,7 @@ void main() {
     addTearDown(sessionStreamCacheManager.dispose);
     addTearDown(demoModeService.dispose);
     addTearDown(globalSettingsBloc.close);
-    addTearDown(guidedTourBloc.close);
+    addTearDown(microLearningBloc.close);
     addTearDown(authBloc.close);
   });
 
@@ -511,7 +512,7 @@ void main() {
       child: MultiBlocProvider(
         providers: [
           BlocProvider<GlobalSettingsBloc>.value(value: globalSettingsBloc),
-          BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
+          BlocProvider<MicroLearningBloc>.value(value: microLearningBloc),
           BlocProvider<AuthBloc>.value(value: authBloc),
         ],
         child: const MyDayPage(),

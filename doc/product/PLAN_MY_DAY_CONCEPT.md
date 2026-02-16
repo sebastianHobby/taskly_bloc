@@ -6,17 +6,17 @@
 
 ## Primary purpose
 
-"Plan My Day helps you turn your values into today's plan, selecting tasks and
-routines guided by your weekly value ratings and due dates. Suggestions are
-compact, with a swap flow to browse more options within a value."
+"Plan My Day helps you build today's plan based on your priorities and values,
+selecting tasks and routines guided by weekly ratings and due dates.
+Suggestions stay compact, with swap to browse alternatives within each value."
 
 ## Description line (UI copy)
 
-"Build today's plan around your values and due dates."
+"Build today's plan based on your priorities and values."
 
 ## Key question it answers
 
-"What should I prioritize today?"
+"How should I shape today so I can stay on top of what matters?"
 
 ## What it shows
 

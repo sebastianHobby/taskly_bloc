@@ -33,6 +33,10 @@ sealed class SettingsKey<T> {
   static SettingsKey<DisplayPreferences?> pageDisplay(PageKey page) =>
       _KeyedKey<DisplayPreferences?>('pageDisplay', page.key);
 
+  /// One-time micro-learning acknowledgement for a specific tip id.
+  static SettingsKey<bool> microLearningSeen(String tipId) =>
+      _KeyedKey<bool>('microLearningSeen', tipId);
+
   // ─────────────────────────────────────────────────────────────────────────
   // Aggregate keys
   // ─────────────────────────────────────────────────────────────────────────

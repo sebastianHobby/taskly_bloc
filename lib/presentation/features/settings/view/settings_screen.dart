@@ -1,9 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -33,12 +31,10 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => Routing.pushSettingsAppearance(context),
             ),
             _SettingsNavItem(
-              icon: Icons.flag_outlined,
-              title: l10n.settingsGuidedTourTitle,
-              subtitle: l10n.settingsGuidedTourSubtitle,
-              onTap: () => context.read<GuidedTourBloc>().add(
-                const GuidedTourStarted(force: true),
-              ),
+              icon: Icons.lightbulb_outline,
+              title: l10n.settingsMicroLearningTitle,
+              subtitle: l10n.settingsMicroLearningSubtitle,
+              onTap: () => Routing.pushSettingsMicroLearning(context),
             ),
             _SettingsNavItem(
               icon: Icons.event_repeat_outlined,

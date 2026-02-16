@@ -36,7 +36,6 @@ void main() {
         homeTimeZoneOffsetMinutes: 120,
         textScaleFactor: 1.1,
         onboardingCompleted: true,
-        guidedTourCompleted: true,
       );
 
       await repo.save(SettingsKey.global, settings);
@@ -80,6 +79,23 @@ void main() {
         SettingsKey.pageDisplay(PageKey.projectOverview),
       );
       expect(cleared, matcher.isNull);
+    });
+
+    testSafe('save and load micro-learning seen flag', () async {
+      final db = createAutoClosingDb();
+      final repo = SettingsRepository(driftDb: db);
+      const tipId = 'projects_backlog';
+
+      final initial = await repo.load(SettingsKey.microLearningSeen(tipId));
+      expect(initial, isFalse);
+
+      await repo.save(SettingsKey.microLearningSeen(tipId), true);
+      final seen = await repo.load(SettingsKey.microLearningSeen(tipId));
+      expect(seen, isTrue);
+
+      await repo.save(SettingsKey.microLearningSeen(tipId), false);
+      final cleared = await repo.load(SettingsKey.microLearningSeen(tipId));
+      expect(cleared, isFalse);
     });
 
     testSafe('invalid JSON triggers repair and defaults', () async {

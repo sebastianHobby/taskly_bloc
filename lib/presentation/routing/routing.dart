@@ -92,6 +92,9 @@ abstract final class Routing {
   static void pushSettingsDeveloper(BuildContext context) =>
       GoRouter.of(context).push(_settingsSubPath('developer'));
 
+  static void pushSettingsMicroLearning(BuildContext context) =>
+      GoRouter.of(context).push(_settingsSubPath('micro-learning'));
+
   /// Navigate to screen by key with query parameters.
   ///
   /// Use this for deep links with query parameters.

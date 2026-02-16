@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
 class ScaffoldWithNavigationBar extends StatelessWidget {
@@ -67,17 +66,9 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
 
   NavigationDestination _toNavDestination(NavigationDestinationVm dest) {
     return NavigationDestination(
-      key: _guidedTourKeyFor(dest.screenId),
       label: dest.label,
       icon: Icon(dest.icon),
       selectedIcon: Icon(dest.selectedIcon),
     );
-  }
-
-  Key? _guidedTourKeyFor(String screenId) {
-    return switch (screenId) {
-      'my_day' => GuidedTourAnchors.myDayNavItem,
-      _ => null,
-    };
   }
 }

@@ -15,7 +15,6 @@ import '../../../mocks/fake_repositories.dart';
 import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
@@ -83,7 +82,6 @@ void main() {
   late DemoModeService demoModeService;
   late DemoDataProvider demoDataProvider;
   late RoutineWriteService routineWriteService;
-  late GuidedTourBloc guidedTourBloc;
   late MockEditorLauncher editorLauncher;
   late MockGlobalSettingsBloc globalSettingsBloc;
 
@@ -122,10 +120,6 @@ void main() {
     );
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
-    );
-    guidedTourBloc = GuidedTourBloc(
-      settingsRepository: settingsRepository,
-      demoModeService: demoModeService,
     );
     occurrenceReadService = OccurrenceReadService(
       taskRepository: taskRepository,
@@ -228,7 +222,6 @@ void main() {
     await routineCompletionsSubject.close();
     await routineSkipsSubject.close();
     await cacheManager.dispose();
-    await guidedTourBloc.close();
     await demoModeService.dispose();
   });
 
@@ -270,7 +263,6 @@ void main() {
         child: MultiBlocProvider(
           providers: [
             BlocProvider<GlobalSettingsBloc>.value(value: globalSettingsBloc),
-            BlocProvider<GuidedTourBloc>.value(value: guidedTourBloc),
           ],
           child: ProjectDetailPage(projectId: projectId),
         ),

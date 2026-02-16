@@ -4864,13 +4864,77 @@
     "@settingsAppearanceSubtitle": {
         "description": "Subtitle for appearance settings entry"
     },
-    "settingsGuidedTourTitle": "Guided tour",
-    "@settingsGuidedTourTitle": {
-        "description": "Title for guided tour settings entry"
+    "settingsMicroLearningTitle": "Micro-learning",
+    "@settingsMicroLearningTitle": {
+        "description": "Title for micro-learning settings entry"
     },
-    "settingsGuidedTourSubtitle": "Walk through the core screens again",
-    "@settingsGuidedTourSubtitle": {
-        "description": "Subtitle for guided tour settings entry"
+    "settingsMicroLearningSubtitle": "Screen tips and replay controls",
+    "@settingsMicroLearningSubtitle": {
+        "description": "Subtitle for micro-learning settings entry"
+    },
+    "settingsMicroLearningDescription": "Replay one-time tips that explain each workspace and detail screen.",
+    "@settingsMicroLearningDescription": {
+        "description": "Description text on the micro-learning settings page"
+    },
+    "settingsMicroLearningReplayAction": "Replay all tips",
+    "@settingsMicroLearningReplayAction": {
+        "description": "Button label to reset and replay all micro-learning tips"
+    },
+    "settingsMicroLearningReplayDone": "Tips reset. They will show again when you open each screen.",
+    "@settingsMicroLearningReplayDone": {
+        "description": "Snack message after resetting micro-learning tips"
+    },
+    "microLearningGotItLabel": "Got it",
+    "@microLearningGotItLabel": {
+        "description": "Dismiss label for a micro-learning tip"
+    },
+    "microLearningMyDayTitle": "My Day",
+    "@microLearningMyDayTitle": {
+        "description": "Title for the My Day micro-learning tip"
+    },
+    "microLearningMyDayBody": "Everything to do today from your selected plan.",
+    "@microLearningMyDayBody": {
+        "description": "Body copy for the My Day micro-learning tip"
+    },
+    "microLearningPlanMyDayTitle": "Plan My Day",
+    "@microLearningPlanMyDayTitle": {
+        "description": "Title for the Plan My Day micro-learning tip"
+    },
+    "microLearningPlanMyDayBody": "Build today using your priorities and values, then save your plan.",
+    "@microLearningPlanMyDayBody": {
+        "description": "Body copy for the Plan My Day micro-learning tip"
+    },
+    "microLearningProjectsTitle": "Projects",
+    "@microLearningProjectsTitle": {
+        "description": "Title for the Projects micro-learning tip"
+    },
+    "microLearningProjectsBody": "This is your future backlog: capture and organize work you want to do later.",
+    "@microLearningProjectsBody": {
+        "description": "Body copy for the Projects micro-learning tip"
+    },
+    "microLearningScheduledTitle": "Scheduled",
+    "@microLearningScheduledTitle": {
+        "description": "Title for the Scheduled micro-learning tip"
+    },
+    "microLearningScheduledBody": "Use this calendar lens to see what is due and what is coming next.",
+    "@microLearningScheduledBody": {
+        "description": "Body copy for the Scheduled micro-learning tip"
+    },
+    "microLearningProjectDetailTitle": "Project Detail",
+    "@microLearningProjectDetailTitle": {
+        "description": "Title for the Project Detail micro-learning tip"
+    },
+    "microLearningProjectDetailBody": "Plan tasks, routines, and notes for this project in one place.",
+    "@microLearningProjectDetailBody": {
+        "description": "Body copy for the Project Detail micro-learning tip"
+    },
+    "microLearningRoutineDetailTitle": "Routine Detail",
+    "@microLearningRoutineDetailTitle": {
+        "description": "Title for the Routine Detail micro-learning tip"
+    },
+    "microLearningRoutineDetailBody": "Track support, outcomes, and stats to learn what helps this routine work.",
+    "@microLearningRoutineDetailBody": {
+        "description": "Body copy for the Routine Detail micro-learning tip"
     },
     "settingsWeeklyReviewSubtitle": "Schedule and project health",
     "@settingsWeeklyReviewSubtitle": {

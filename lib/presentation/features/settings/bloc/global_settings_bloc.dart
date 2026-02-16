@@ -119,10 +119,6 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
   const factory GlobalSettingsEvent.onboardingCompleted() =
       GlobalSettingsOnboardingCompleted;
 
-  /// User completed the guided tour.
-  const factory GlobalSettingsEvent.guidedTourCompleted() =
-      GlobalSettingsGuidedTourCompleted;
-
   /// Internal: Stream emitted new settings.
   const factory GlobalSettingsEvent.streamUpdated(GlobalSettings settings) =
       GlobalSettingsStreamUpdated;
@@ -272,10 +268,6 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsOnboardingCompleted>(
       _onOnboardingCompleted,
-      transformer: droppable(),
-    );
-    on<GlobalSettingsGuidedTourCompleted>(
-      _onGuidedTourCompleted,
       transformer: droppable(),
     );
     on<GlobalSettingsStreamUpdated>(
@@ -590,32 +582,6 @@ class GlobalSettingsBloc
         st,
         context: context,
         message: '[GlobalSettingsBloc] onboarding persist failed',
-      );
-    }
-  }
-
-  Future<void> _onGuidedTourCompleted(
-    GlobalSettingsGuidedTourCompleted event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final updated = state.settings.copyWith(guidedTourCompleted: true);
-    final context = _newContext(
-      intent: 'settings_guided_tour_completed',
-      operation: 'settings.save.global',
-    );
-
-    try {
-      await _settingsRepository.save(
-        SettingsKey.global,
-        updated,
-        context: context,
-      );
-    } catch (error, stackTrace) {
-      _errorReporter.reportUnexpected(
-        error,
-        stackTrace,
-        context: context,
-        message: '[GlobalSettingsBloc] guided tour persist failed',
       );
     }
   }

@@ -6,12 +6,13 @@
 
 ## Primary purpose
 
-"Project Detail is where you plan a project's work - its tasks and progress."
+"Project Detail is where you plan the work inside a project: tasks, routines,
+and notes."
 
 ## Description line (UI copy)
 
-"Plan the work inside a project - tasks now, progress when you're ready."
+"Plan what this project needs next, then track progress as it moves."
 
 ## Key question it answers
 
-"What do I need to plan inside this project?"
+"What should happen next inside this project?"

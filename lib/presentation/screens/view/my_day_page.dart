@@ -22,6 +22,7 @@ import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.da
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/checklists/bloc/checklist_execution_bloc.dart';
 import 'package:taskly_bloc/presentation/features/checklists/view/checklist_execution_sheet.dart';
+import 'package:taskly_bloc/presentation/features/micro_learning/bloc/micro_learning_bloc.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/shared/ui/routine_tile_model_mapper.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
@@ -35,8 +36,6 @@ import 'package:taskly_bloc/presentation/screens/view/my_day_values_gate.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/guided_tour_anchors.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -83,6 +82,9 @@ class _MyDayPageState extends State<MyDayPage> {
 
   void _enterPlanMode(BuildContext context) {
     context.read<PlanMyDayBloc>().add(const PlanMyDayStarted());
+    context.read<MicroLearningBloc>().add(
+      const MicroLearningRouteVisited('/my-day/plan'),
+    );
 
     setState(() {
       _mode = _MyDayMode.plan;
@@ -93,24 +95,6 @@ class _MyDayPageState extends State<MyDayPage> {
     setState(() {
       _mode = _MyDayMode.execute;
     });
-  }
-
-  void _syncTourStep(BuildContext context, GuidedTourState state) {
-    if (!state.active) return;
-    final step = state.currentStep;
-    if (step == null) return;
-
-    if (step.id.startsWith('plan_my_day_')) {
-      if (_mode != _MyDayMode.plan) {
-        _enterPlanMode(context);
-      }
-      return;
-    }
-
-    if (_mode != _MyDayMode.execute &&
-        (step.id == 'my_day_summary' || step.id == 'my_day_focus_list')) {
-      _exitPlanMode();
-    }
   }
 
   void _toggleShowCompleted() {
@@ -207,96 +191,90 @@ class _MyDayPageState extends State<MyDayPage> {
         ),
         BlocProvider(create: (_) => SelectionBloc()),
       ],
-      child: BlocListener<GuidedTourBloc, GuidedTourState>(
-        listenWhen: (previous, current) =>
-            previous.currentIndex != current.currentIndex ||
-            previous.active != current.active,
-        listener: _syncTourStep,
-        child: BlocBuilder<PlanMyDayBloc, PlanMyDayState>(
-          builder: (context, _) {
-            if (_mode == _MyDayMode.plan) {
-              return PlanMyDayPage(
-                onCloseRequested: _exitPlanMode,
-              );
-            }
-
-            return BlocBuilder<SelectionBloc, SelectionState>(
-              builder: (context, selectionState) {
-                final gateBody = BlocBuilder<MyDayGateBloc, MyDayGateState>(
-                  builder: (context, gateState) {
-                    if (gateState is MyDayGateLoaded &&
-                        gateState.needsValuesSetup) {
-                      return const MyDayValuesGate();
-                    }
-                    return _MyDayLoadedBody(
-                      today: today,
-                      dayKeyUtc: dayKeyUtc,
-                      onOpenPlan: () => _enterPlanMode(context),
-                      showCompleted: _showCompleted,
-                      sortOrder: _sortOrder,
-                    );
-                  },
-                );
-
-                return Scaffold(
-                  appBar: selectionState.isSelectionMode
-                      ? SelectionAppBar(
-                          baseTitle: context.l10n.myDayTitle,
-                          onExit: () {},
-                        )
-                      : AppBar(
-                          toolbarHeight: 56,
-                          actions: [
-                            IconButton(
-                              tooltip: context.l10n.filterSortTooltip,
-                              icon: const Icon(Icons.tune_rounded),
-                              onPressed: () => _showFilterSheet(context),
-                            ),
-                            TasklyOverflowMenuButton<_MyDayMenuAction>(
-                              tooltip: context.l10n.moreLabel,
-                              itemsBuilder: (context) => [
-                                PopupMenuItem(
-                                  value: _MyDayMenuAction.density,
-                                  child: TasklyMenuItemLabel(
-                                    context.l10n.displayDensityTitle,
-                                  ),
-                                ),
-                                PopupMenuItem(
-                                  value: _MyDayMenuAction.selectMultiple,
-                                  child: TasklyMenuItemLabel(
-                                    context.l10n.selectMultipleLabel,
-                                  ),
-                                ),
-                              ],
-                              onSelected: (action) {
-                                switch (action) {
-                                  case _MyDayMenuAction.density:
-                                    _showDensitySheet(context);
-                                  case _MyDayMenuAction.selectMultiple:
-                                    context
-                                        .read<SelectionBloc>()
-                                        .enterSelectionMode();
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                  floatingActionButton: selectionState.isSelectionMode
-                      ? null
-                      : EntityAddFab(
-                          heroTag: 'add_speed_dial_my_day',
-                          tooltip: context.l10n.addTaskAction,
-                          onPressed: () => _openNewTaskEditor(
-                            context,
-                            defaultDay: today,
-                          ),
-                        ),
-                  body: gateBody,
-                );
-              },
+      child: BlocBuilder<PlanMyDayBloc, PlanMyDayState>(
+        builder: (context, _) {
+          if (_mode == _MyDayMode.plan) {
+            return PlanMyDayPage(
+              onCloseRequested: _exitPlanMode,
             );
-          },
-        ),
+          }
+
+          return BlocBuilder<SelectionBloc, SelectionState>(
+            builder: (context, selectionState) {
+              final gateBody = BlocBuilder<MyDayGateBloc, MyDayGateState>(
+                builder: (context, gateState) {
+                  if (gateState is MyDayGateLoaded &&
+                      gateState.needsValuesSetup) {
+                    return const MyDayValuesGate();
+                  }
+                  return _MyDayLoadedBody(
+                    today: today,
+                    dayKeyUtc: dayKeyUtc,
+                    onOpenPlan: () => _enterPlanMode(context),
+                    showCompleted: _showCompleted,
+                    sortOrder: _sortOrder,
+                  );
+                },
+              );
+
+              return Scaffold(
+                appBar: selectionState.isSelectionMode
+                    ? SelectionAppBar(
+                        baseTitle: context.l10n.myDayTitle,
+                        onExit: () {},
+                      )
+                    : AppBar(
+                        toolbarHeight: 56,
+                        actions: [
+                          IconButton(
+                            tooltip: context.l10n.filterSortTooltip,
+                            icon: const Icon(Icons.tune_rounded),
+                            onPressed: () => _showFilterSheet(context),
+                          ),
+                          TasklyOverflowMenuButton<_MyDayMenuAction>(
+                            tooltip: context.l10n.moreLabel,
+                            itemsBuilder: (context) => [
+                              PopupMenuItem(
+                                value: _MyDayMenuAction.density,
+                                child: TasklyMenuItemLabel(
+                                  context.l10n.displayDensityTitle,
+                                ),
+                              ),
+                              PopupMenuItem(
+                                value: _MyDayMenuAction.selectMultiple,
+                                child: TasklyMenuItemLabel(
+                                  context.l10n.selectMultipleLabel,
+                                ),
+                              ),
+                            ],
+                            onSelected: (action) {
+                              switch (action) {
+                                case _MyDayMenuAction.density:
+                                  _showDensitySheet(context);
+                                case _MyDayMenuAction.selectMultiple:
+                                  context
+                                      .read<SelectionBloc>()
+                                      .enterSelectionMode();
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                floatingActionButton: selectionState.isSelectionMode
+                    ? null
+                    : EntityAddFab(
+                        heroTag: 'add_speed_dial_my_day',
+                        tooltip: context.l10n.addTaskAction,
+                        onPressed: () => _openNewTaskEditor(
+                          context,
+                          defaultDay: today,
+                        ),
+                      ),
+                body: gateBody,
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -482,7 +460,6 @@ class _MyDaySummaryHeader extends StatelessWidget {
               ),
               if (hasPlan && onEditPlan != null)
                 TextButton(
-                  key: GuidedTourAnchors.myDayPlanButton,
                   onPressed: onEditPlan,
                   style: TextButton.styleFrom(
                     textStyle: theme.textTheme.labelLarge?.copyWith(
@@ -1228,7 +1205,6 @@ class _MyDayEmptyState extends StatelessWidget {
             if (actionLabel != null && onAction != null) ...[
               SizedBox(height: tokens.spaceLg),
               FilledButton(
-                key: showPlanAnchor ? GuidedTourAnchors.myDayPlanButton : null,
                 onPressed: onAction,
                 child: Text(actionLabel!),
               ),

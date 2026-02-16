@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/scaffold_with_nested_navigation.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/view/guided_tour_overlay.dart';
+import 'package:taskly_bloc/presentation/features/micro_learning/view/micro_learning_overlay_host.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/presentation/routing/not_found_route_page.dart';
 import 'package:taskly_bloc/presentation/routing/route_codec.dart';
@@ -41,6 +41,7 @@ import 'package:taskly_bloc/presentation/features/settings/view/settings_weekly_
 import 'package:taskly_bloc/presentation/features/settings/view/settings_language_region_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_account_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_developer_page.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_micro_learning_page.dart';
 import 'package:taskly_bloc/presentation/features/trackers/view/trackers_page.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 import 'package:taskly_bloc/presentation/features/onboarding/view/onboarding_flow_page.dart';
@@ -196,7 +197,8 @@ GoRouter createRouter({
               ? Routing.parseScreenKey('scheduled')
               : null;
 
-          return GuidedTourOverlayHost(
+          return MicroLearningOverlayHost(
+            currentPath: state.uri.path,
             child: ScaffoldWithNestedNavigation(
               activeScreenId:
                   scopedScheduledActiveScreenId ??
@@ -472,6 +474,10 @@ GoRouter createRouter({
           GoRoute(
             path: '${Routing.screenPath('settings')}/developer',
             builder: (_, __) => const SettingsDeveloperPage(),
+          ),
+          GoRoute(
+            path: '${Routing.screenPath('settings')}/micro-learning',
+            builder: (_, __) => const SettingsMicroLearningPage(),
           ),
           GoRoute(
             path: Routing.screenPath('journal_history'),

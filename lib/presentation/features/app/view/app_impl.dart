@@ -16,9 +16,9 @@ import 'package:taskly_bloc/presentation/features/app/bloc/debug_bootstrap_bloc.
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/features/app/view/debug_bootstrap_sheet.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
-import 'package:taskly_bloc/presentation/features/guided_tour/bloc/guided_tour_bloc.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher_defaults.dart';
+import 'package:taskly_bloc/presentation/features/micro_learning/bloc/micro_learning_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
@@ -251,11 +251,11 @@ class App extends StatelessWidget {
                 sharedDataService: context.read<SessionSharedDataService>(),
               ),
             ),
-            BlocProvider<GuidedTourBloc>(
-              create: (context) => GuidedTourBloc(
+            BlocProvider<MicroLearningBloc>(
+              lazy: false,
+              create: (context) => MicroLearningBloc(
                 settingsRepository: context.read<SettingsRepositoryContract>(),
-                demoModeService: context.read<DemoModeService>(),
-              ),
+              )..add(const MicroLearningStarted()),
             ),
             BlocProvider<ScreenActionsBloc>(
               create: (context) => ScreenActionsBloc(
