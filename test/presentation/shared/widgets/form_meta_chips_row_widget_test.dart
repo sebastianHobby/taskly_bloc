@@ -44,7 +44,7 @@ void main() {
     expect(find.byType(SingleChildScrollView), findsNothing);
   });
 
-  testWidgetsSafe('uses horizontal scroll row on wider width', (tester) async {
+  testWidgetsSafe('uses wrap layout on wider width', (tester) async {
     await tester.pumpWidget(
       buildHarness(
         width: 900,
@@ -55,7 +55,7 @@ void main() {
       ),
     );
 
-    expect(find.byType(SingleChildScrollView), findsOneWidget);
-    expect(find.byType(Wrap), findsNothing);
+    expect(find.byType(Wrap), findsOneWidget);
+    expect(find.byType(SingleChildScrollView), findsNothing);
   });
 }

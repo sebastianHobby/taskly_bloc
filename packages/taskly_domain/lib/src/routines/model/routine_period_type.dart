@@ -1,1 +1,1 @@
-enum RoutinePeriodType { day, week, month }
+enum RoutinePeriodType { day, week, fortnight, month }

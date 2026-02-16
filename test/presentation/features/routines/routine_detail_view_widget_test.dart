@@ -101,7 +101,7 @@ void main() {
   });
 
   testWidgetsSafe(
-    'create flow uses defaultProjectId when draft project is empty',
+    'create flow uses defaultProjectId once when draft project is empty',
     (tester) async {
       final value = TestData.value(name: 'Health');
       final project = TestData.projectWithValues(
@@ -120,7 +120,7 @@ void main() {
         const RoutineDetailSheetView(defaultProjectId: 'project-1'),
       );
 
-      expect(find.text('Project Alpha'), findsWidgets);
+      expect(find.text('Project Alpha'), findsOneWidget);
     },
   );
 }

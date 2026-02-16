@@ -10,12 +10,16 @@ import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_blo
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 
 class MockAuthenticatedAppServicesCoordinator extends Mock
     implements AuthenticatedAppServicesCoordinator {}
+
+class MockPresentationSessionServicesCoordinator extends Mock
+    implements PresentationSessionCoordinator {}
 
 class MockInitialSyncService extends Mock implements InitialSyncService {}
 
@@ -43,6 +47,8 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockAuthenticatedAppServicesCoordinator coordinator;
+  late MockPresentationSessionServicesCoordinator
+  presentationSessionCoordinator;
   late MockInitialSyncService initialSyncService;
   late SessionSharedDataService sharedDataService;
   late SessionStreamCacheManager cacheManager;
@@ -56,16 +62,24 @@ void main() {
   late TestStreamController<int> taskCountController;
   late TestStreamController<List<Value>> valuesController;
 
-  InitialSyncGateBloc buildBloc() {
+  InitialSyncGateBloc buildBloc({
+    Duration initialProgressTimeout = const Duration(seconds: 15),
+    Duration localProbeTimeout = const Duration(seconds: 5),
+  }) {
     return InitialSyncGateBloc(
       coordinator: coordinator,
+      presentationSessionCoordinator: presentationSessionCoordinator,
       initialSyncService: initialSyncService,
       sharedDataService: sharedDataService,
+      initialProgressTimeout: initialProgressTimeout,
+      localProbeTimeout: localProbeTimeout,
     );
   }
 
   setUp(() {
     coordinator = MockAuthenticatedAppServicesCoordinator();
+    presentationSessionCoordinator =
+        MockPresentationSessionServicesCoordinator();
     initialSyncService = MockInitialSyncService();
     appLifecycleEvents = MockAppLifecycleEvents();
     valueRepository = MockValueRepositoryContract();
@@ -78,6 +92,7 @@ void main() {
     valuesController = TestStreamController.seeded(const <Value>[]);
 
     when(() => coordinator.start()).thenAnswer((_) async {});
+    when(() => presentationSessionCoordinator.start()).thenAnswer((_) async {});
     when(() => initialSyncService.progress).thenAnswer(
       (_) => progressController.stream,
     );
@@ -156,6 +171,49 @@ void main() {
     expect: () => [
       isA<InitialSyncGateInProgress>(),
       isA<InitialSyncGateFailure>(),
+      isA<InitialSyncGateInProgress>(),
+      isA<InitialSyncGateReady>(),
+    ],
+  );
+
+  blocTestSafe<InitialSyncGateBloc, InitialSyncGateState>(
+    'emits failure when initial sync progress times out and no local data',
+    build: () {
+      final neverProgressController =
+          TestStreamController<InitialSyncProgress>();
+      addTearDown(neverProgressController.close);
+      when(
+        () => initialSyncService.progress,
+      ).thenAnswer((_) => neverProgressController.stream);
+      return buildBloc(
+        initialProgressTimeout: const Duration(milliseconds: 10),
+        localProbeTimeout: const Duration(milliseconds: 20),
+      );
+    },
+    act: (bloc) => bloc.add(const InitialSyncGateStarted()),
+    expect: () => [
+      isA<InitialSyncGateInProgress>(),
+      isA<InitialSyncGateFailure>(),
+    ],
+  );
+
+  blocTestSafe<InitialSyncGateBloc, InitialSyncGateState>(
+    'emits ready when initial sync progress times out but local data exists',
+    build: () {
+      taskCountController.emit(3);
+      final neverProgressController =
+          TestStreamController<InitialSyncProgress>();
+      addTearDown(neverProgressController.close);
+      when(
+        () => initialSyncService.progress,
+      ).thenAnswer((_) => neverProgressController.stream);
+      return buildBloc(
+        initialProgressTimeout: const Duration(milliseconds: 10),
+        localProbeTimeout: const Duration(milliseconds: 20),
+      );
+    },
+    act: (bloc) => bloc.add(const InitialSyncGateStarted()),
+    expect: () => [
       isA<InitialSyncGateInProgress>(),
       isA<InitialSyncGateReady>(),
     ],

@@ -275,10 +275,15 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
   }
 
   Future<void> _openNewRoutineEditor(BuildContext context) async {
+    final inboxId = ProjectGroupingRef.inbox().stableKey;
+    final defaultProjectId = widget.projectId == inboxId
+        ? null
+        : widget.projectId;
+
     await context.read<EditorLauncher>().openRoutineEditor(
       context,
       routineId: null,
-      defaultProjectId: widget.projectId,
+      defaultProjectId: defaultProjectId,
       openToProjectPicker: false,
       showDragHandle: true,
     );

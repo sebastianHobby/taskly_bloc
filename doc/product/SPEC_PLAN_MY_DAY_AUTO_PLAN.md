@@ -97,7 +97,7 @@ Steps:
 Sections (order):
 1) Due Today (auto-included)
 2) Planned (auto-included; start <= today)
-3) Routines (auto-included when scheduled today)
+3) Routines (scheduled first, then flexible)
 4) Suggestions (value pools, only if under capacity)
 
 Note: The list is single-column and mobile-first. Section headers are allowed
@@ -229,6 +229,13 @@ Notes:
   another option from the same value (single-value swap).
 - Due/Planned are pre-selected; tapping the add/check icon opens a
   "Reschedule / not today" sheet and removes the item from today's plan.
+- Scheduled routines are pre-selected and rendered in a dedicated
+  "Scheduled Today" panel before flexible routines.
+- Tapping the selected control on a scheduled routine opens a two-step
+  action flow (UX-A):
+  - Step 1: `Skip this instance` (primary), `More options`, `Keep scheduled`.
+  - Step 2 (`More options`): `Skip this week/month` (based on cadence),
+    `Pause routine`, `Cancel`.
 - When a reschedule sheet confirms, the row animates out of its shelf, the list
   recomputes immediately, and a small "Updated" toast appears for 1-2 seconds.
 
@@ -280,9 +287,11 @@ Notes:
    - Bulk action: "Reschedule all planned"
    - List of compact task rows
 
-6) Routines shelf (auto-included)
+6) Routines shelf
    - Header: "Routines"
-   - List of compact routine rows
+   - Panel A: "Scheduled Today" (auto-included)
+   - Panel B: "Flexible Focus"
+   - List of compact routine rows in each panel
 
 7) Suggestions shelf (conditional, only if under capacity)
    - Header: "Suggestions"

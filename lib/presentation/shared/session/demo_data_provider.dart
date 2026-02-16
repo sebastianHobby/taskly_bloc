@@ -537,7 +537,6 @@ final class DemoDataProvider {
       suggested: suggestedTasks,
       scheduledRoutines: scheduledRoutines,
       flexibleRoutines: flexibleRoutines,
-      allRoutines: [...scheduledRoutines, ...flexibleRoutines],
       selectedTaskIds: selectedTaskIds,
       selectedRoutineIds: selectedRoutineIds,
       allTasks: tasks,
@@ -642,11 +641,24 @@ final class DemoDataProvider {
       isScheduled: isScheduled,
       isEligibleToday: true,
       lastScheduledDayUtc: null,
+      lastCompletedAtUtc: _lastCompletionForRoutine(routine.id),
       completionsInPeriod: _completionsForPeriod(
         routine: routine,
         snapshot: snapshot,
       ),
     );
+  }
+
+  DateTime? _lastCompletionForRoutine(String routineId) {
+    DateTime? latest;
+    for (final completion in _routineCompletions) {
+      if (completion.routineId != routineId) continue;
+      final when = completion.completedAtUtc;
+      if (latest == null || when.isAfter(latest)) {
+        latest = when;
+      }
+    }
+    return latest;
   }
 
   List<RoutineCompletion> _completionsForPeriod({

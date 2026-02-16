@@ -55,6 +55,11 @@ void main() {
     List<Task> dueTodayTasks = const <Task>[],
     List<Task> plannedTasks = const <Task>[],
     Set<String> selectedTaskIds = const <String>{},
+    List<PlanMyDayRoutineItem> scheduledRoutines =
+        const <PlanMyDayRoutineItem>[],
+    List<PlanMyDayRoutineItem> flexibleRoutines =
+        const <PlanMyDayRoutineItem>[],
+    Set<String> selectedRoutineIds = const <String>{},
     List<Value> unratedValues = const <Value>[],
     PlanMyDayValueSort valueSort = PlanMyDayValueSort.lowestAverage,
   }) {
@@ -69,11 +74,10 @@ void main() {
       suggested: const <Task>[],
       dueTodayTasks: dueTodayTasks,
       plannedTasks: plannedTasks,
-      scheduledRoutines: const <PlanMyDayRoutineItem>[],
-      flexibleRoutines: const <PlanMyDayRoutineItem>[],
-      allRoutines: const <PlanMyDayRoutineItem>[],
+      scheduledRoutines: scheduledRoutines,
+      flexibleRoutines: flexibleRoutines,
       selectedTaskIds: selectedTaskIds,
-      selectedRoutineIds: const <String>{},
+      selectedRoutineIds: selectedRoutineIds,
       allTasks: const <Task>[],
       routineSelectionsByValue: const <String, int>{},
       valueSuggestionGroups: valueGroups,
@@ -95,6 +99,54 @@ void main() {
 
   AppLocalizations l10nFor(WidgetTester tester) {
     return tester.element(find.byType(PlanMyDayPage)).l10n;
+  }
+
+  PlanMyDayRoutineItem buildRoutineItem({
+    required String id,
+    required String name,
+    required RoutinePeriodType periodType,
+    required RoutineScheduleMode scheduleMode,
+    required bool selected,
+    required bool isScheduled,
+  }) {
+    final routine = Routine(
+      id: id,
+      createdAt: DateTime.utc(2024, 12, 1),
+      updatedAt: DateTime.utc(2025, 1, 1),
+      name: name,
+      projectId: 'project-1',
+      periodType: periodType,
+      scheduleMode: scheduleMode,
+      targetCount: 3,
+      scheduleDays: scheduleMode == RoutineScheduleMode.scheduled
+          ? const <int>[1, 3, 5]
+          : const <int>[],
+    );
+    final snapshot = RoutineCadenceSnapshot(
+      routineId: id,
+      periodType: periodType,
+      periodStartUtc: DateTime.utc(2025, 1, 13),
+      periodEndUtc: DateTime.utc(2025, 1, 19),
+      targetCount: 3,
+      completedCount: 1,
+      remainingCount: 2,
+      daysLeft: 3,
+      status: RoutineStatus.onPace,
+      nextRecommendedDayUtc: DateTime.utc(2025, 1, 17),
+    );
+
+    return PlanMyDayRoutineItem(
+      routine: routine,
+      snapshot: snapshot,
+      selected: selected,
+      completedToday: false,
+      isCatchUpDay: false,
+      isScheduled: isScheduled,
+      isEligibleToday: true,
+      lastScheduledDayUtc: DateTime.utc(2025, 1, 15),
+      lastCompletedAtUtc: DateTime.utc(2025, 1, 12, 10),
+      completionsInPeriod: const <RoutineCompletion>[],
+    );
   }
 
   testWidgetsSafe('plan my day shows loading state', (tester) async {
@@ -409,6 +461,73 @@ void main() {
       expect(foundTask5, isTrue);
 
       expect(find.text('Task 5'), findsOneWidget);
+    },
+  );
+
+  testWidgetsSafe(
+    'plan my day splits routines by scheduled and flexible and supports scheduled deselect flow',
+    (tester) async {
+      setTestSurfaceSize(tester, const Size(800, 1800));
+      final scheduled = buildRoutineItem(
+        id: 'routine-scheduled',
+        name: 'Gym',
+        periodType: RoutinePeriodType.week,
+        scheduleMode: RoutineScheduleMode.scheduled,
+        selected: true,
+        isScheduled: true,
+      );
+      final flexible = buildRoutineItem(
+        id: 'routine-flex',
+        name: 'Read',
+        periodType: RoutinePeriodType.week,
+        scheduleMode: RoutineScheduleMode.flexible,
+        selected: false,
+        isScheduled: false,
+      );
+      final state = buildReady(
+        valueGroups: const [],
+        scheduledRoutines: [scheduled],
+        flexibleRoutines: [flexible],
+        selectedRoutineIds: {scheduled.routine.id},
+      );
+      const gateState = MyDayGateLoaded(needsValuesSetup: false);
+
+      when(() => planBloc.state).thenReturn(state);
+      whenListen(planBloc, Stream.value(state), initialState: state);
+      when(() => gateBloc.state).thenReturn(gateState);
+      whenListen(gateBloc, Stream.value(gateState), initialState: gateState);
+
+      await tester.pumpWidgetWithBlocs(
+        providers: [
+          BlocProvider<PlanMyDayBloc>.value(value: planBloc),
+          BlocProvider<MyDayGateBloc>.value(value: gateBloc),
+        ],
+        child: RepositoryProvider<NowService>.value(
+          value: nowService,
+          child: PlanMyDayPage(onCloseRequested: () {}),
+        ),
+      );
+      await tester.pumpForStream();
+
+      final l10n = l10nFor(tester);
+      expect(find.text(l10n.routinePanelScheduledTitle), findsOneWidget);
+      expect(find.text(l10n.routinePanelFlexibleTitle), findsOneWidget);
+
+      await tester.tap(find.byTooltip(l10n.myDayAddedLabel).first);
+      await tester.pumpForStream();
+      final foundSkipAction = await tester.pumpUntilFound(
+        find.text(l10n.planMyDayRoutineSkipInstanceAction),
+      );
+      expect(foundSkipAction, isTrue);
+      await tester.ensureVisible(
+        find.text(l10n.planMyDayRoutineSkipInstanceAction),
+      );
+      await tester.tap(find.text(l10n.planMyDayRoutineSkipInstanceAction));
+      await tester.pumpForStream();
+
+      final captured = verify(() => planBloc.add(captureAny())).captured;
+      expect(captured, isNotEmpty);
+      expect(captured.last, isA<PlanMyDaySkipRoutineInstanceRequested>());
     },
   );
 

@@ -247,6 +247,8 @@ class App extends StatelessWidget {
               create: (context) => InitialSyncGateBloc(
                 coordinator: context
                     .read<AuthenticatedAppServicesCoordinator>(),
+                presentationSessionCoordinator: context
+                    .read<PresentationSessionServicesCoordinator>(),
                 initialSyncService: context.read<InitialSyncService>(),
                 sharedDataService: context.read<SessionSharedDataService>(),
               ),
@@ -285,21 +287,30 @@ class App extends StatelessWidget {
               return becameAuthenticated || leftAuthenticated;
             },
             listener: (context, state) {
-              final coordinator = getIt<AuthenticatedAppServicesCoordinator>();
-              final sessionCoordinator =
-                  getIt<PresentationSessionServicesCoordinator>();
+              final coordinator = context
+                  .read<AuthenticatedAppServicesCoordinator>();
+              final sessionCoordinator = context
+                  .read<PresentationSessionServicesCoordinator>();
               final syncGate = context.read<InitialSyncGateBloc>();
 
               if (state.status == AuthStatus.authenticated) {
                 syncGate.add(const InitialSyncGateStarted());
-                unawaited(() async {
-                  await coordinator.start();
-                  await sessionCoordinator.start();
-                }());
               } else {
                 unawaited(() async {
-                  await sessionCoordinator.stop();
-                  await coordinator.stop();
+                  try {
+                    await sessionCoordinator.stop();
+                    await coordinator.stop();
+                  } catch (error, stackTrace) {
+                    AppLog.handleStructured(
+                      'startup.session',
+                      'failed stopping session services',
+                      error,
+                      stackTrace,
+                      <String, Object?>{
+                        'status': state.status.name,
+                      },
+                    );
+                  }
                 }());
               }
             },
@@ -372,6 +383,7 @@ class _AppRouterState extends State<_AppRouter> {
 
             return _AuthenticatedRouteShell(
               textScaleFactor: settings.textScaleFactor,
+              router: _router,
               child: child ?? const SizedBox.shrink(),
             );
           },
@@ -403,10 +415,12 @@ class _AuthenticatedRouteShell extends StatelessWidget {
   const _AuthenticatedRouteShell({
     required this.child,
     required this.textScaleFactor,
+    required this.router,
   });
 
   final Widget child;
   final double textScaleFactor;
+  final GoRouter router;
 
   @override
   Widget build(BuildContext context) {
@@ -428,6 +442,7 @@ class _AuthenticatedRouteShell extends StatelessWidget {
 
     return _DebugBootstrapper(
       enabled: debugBootstrapEnabled,
+      router: router,
       child: wrapped,
     );
   }
@@ -436,10 +451,12 @@ class _AuthenticatedRouteShell extends StatelessWidget {
 class _DebugBootstrapper extends StatefulWidget {
   const _DebugBootstrapper({
     required this.enabled,
+    required this.router,
     required this.child,
   });
 
   final bool enabled;
+  final GoRouter router;
   final Widget child;
 
   @override
@@ -541,11 +558,7 @@ class _DebugBootstrapperState extends State<_DebugBootstrapper> {
   }
 
   String? _currentPath() {
-    final navigatorContext = App.navigatorKey.currentContext;
-    final router = GoRouter.maybeOf(navigatorContext ?? context);
-    if (router == null) return null;
-
-    final path = router.routeInformationProvider.value.uri.path;
+    final path = widget.router.routeInformationProvider.value.uri.path;
     return path.isEmpty ? null : path;
   }
 

@@ -5,6 +5,7 @@ import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/shared/validation/form_builder_validator_adapter.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/form_footer_bar.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_color_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 import 'package:taskly_domain/core.dart';
@@ -81,9 +82,22 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
   }
 
   void _refreshSubmitEnabled() {
-    final next = isDirty && (widget.formKey.currentState?.isValid ?? false);
+    final isCreating = widget.initialData == null;
+    final formValid = widget.formKey.currentState?.isValid ?? false;
+    final next = isCreating && !isDirty
+        ? _hasValidCreateDefaults()
+        : (isDirty && formValid);
     if (next == _submitEnabled || !mounted) return;
     setState(() => _submitEnabled = next);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refreshSubmitEnabled();
+    });
   }
 
   @override
@@ -91,6 +105,17 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
     _draftSyncDebouncer.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  bool _hasValidCreateDefaults() {
+    if (widget.initialData != null) return false;
+    final form = widget.formKey.currentState;
+    final name = (form?.fields[ValueFieldKeys.name.id]?.value as String?) ?? '';
+    final color = form?.fields[ValueFieldKeys.colour.id]?.value as Color?;
+    return ValueValidators.name(name).isEmpty &&
+        ValueValidators.color(
+          color == null ? null : ColorUtils.toHex(color),
+        ).isEmpty;
   }
 
   @override
@@ -126,12 +151,6 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
         ? formPreset.ux.sectionGapCompact
         : formPreset.ux.sectionGapRegular;
 
-    final headerActionStyle = TextButton.styleFrom(
-      textStyle: theme.textTheme.bodyMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-      ),
-    );
-
     final headerTitle = Text(
       isCreating ? l10n.createValueOption : l10n.editValue,
       style: theme.textTheme.bodyMedium?.copyWith(
@@ -149,20 +168,12 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
       closeOnLeft: false,
       onDelete: null,
       deleteTooltip: l10n.deleteValue,
-      onClose: null,
+      onClose: widget.onClose == null ? null : handleClose,
       closeTooltip: l10n.closeLabel,
       scrollController: _scrollController,
       showHandleBar: false,
       headerTitle: headerTitle,
       centerHeaderTitle: true,
-      leadingActions: [
-        if (widget.onClose != null)
-          TextButton(
-            onPressed: handleClose,
-            style: headerActionStyle,
-            child: Text(l10n.cancelLabel),
-          ),
-      ],
       trailingActions: [
         if (widget.initialData != null && widget.onDelete != null)
           PopupMenuButton<int>(
@@ -178,21 +189,12 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
             ],
             onSelected: (_) => widget.onDelete?.call(),
           ),
-        Tooltip(
-          message: widget.submitTooltip,
-          child: TextButton(
-            onPressed: submitEnabled ? widget.onSubmit : null,
-            style: headerActionStyle.copyWith(
-              foregroundColor: WidgetStateProperty.resolveWith<Color?>(
-                (states) => states.contains(WidgetState.disabled)
-                    ? scheme.onSurfaceVariant
-                    : scheme.primary,
-              ),
-            ),
-            child: Text(l10n.saveLabel),
-          ),
-        ),
       ],
+      footer: FormFooterBar(
+        submitLabel: widget.submitTooltip,
+        submitEnabled: submitEnabled,
+        onSubmit: widget.onSubmit,
+      ),
       child: Padding(
         padding: EdgeInsets.only(
           bottom: isCompact

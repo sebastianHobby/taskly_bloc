@@ -391,7 +391,7 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
           body: l10n.planMyDayYesterdayEmptyBody,
         ),
       SizedBox(height: tokens.spaceLg),
-      if (data.allRoutines.isNotEmpty)
+      if (data.scheduledRoutines.isNotEmpty || data.flexibleRoutines.isNotEmpty)
         _RoutineShelf(
           data: data,
           dayKeyUtc: data.dayKeyUtc,
@@ -661,23 +661,33 @@ class _RoutineShelf extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
-    final routineRows = <TasklyRowSpec>[];
-
-    for (final item in data.allRoutines) {
-      final showSelection =
-          !item.isScheduled && !item.completedToday && item.isEligibleToday;
-      routineRows.add(
-        _buildRoutineRow(
-          context,
-          data: data,
-          item: item,
-          allowSelection: showSelection,
-          dayKeyUtc: dayKeyUtc,
-        ),
-      );
-    }
-
     final l10n = context.l10n;
+    final scheduledRows = data.scheduledRoutines
+        .map(
+          (item) => _buildRoutineRow(
+            context,
+            data: data,
+            item: item,
+            allowSelection:
+                item.selected && !item.completedToday && item.isEligibleToday,
+            dayKeyUtc: dayKeyUtc,
+          ),
+        )
+        .toList(growable: false);
+    final flexibleRows = data.flexibleRoutines
+        .map(
+          (item) => _buildRoutineRow(
+            context,
+            data: data,
+            item: item,
+            allowSelection:
+                !item.isScheduled &&
+                !item.completedToday &&
+                item.isEligibleToday,
+            dayKeyUtc: dayKeyUtc,
+          ),
+        )
+        .toList(growable: false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -689,14 +699,42 @@ class _RoutineShelf extends StatelessWidget {
           ),
         ),
         SizedBox(height: tokens.spaceSm),
-        ExpandableRowList(
-          rows: routineRows,
-          rowKeyPrefix: rowKeyPrefix,
-          maxVisible: maxVisibleItems,
-          enabled: limitItems,
-          showMoreLabelBuilder: l10n.myDayPlanShowMore,
-          showFewerLabel: l10n.myDayPlanShowFewer,
-        ),
+        if (scheduledRows.isNotEmpty) ...[
+          Text(
+            l10n.routinePanelScheduledTitle,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: tokens.spaceXs2),
+          ExpandableRowList(
+            rows: scheduledRows,
+            rowKeyPrefix: '$rowKeyPrefix-scheduled',
+            maxVisible: maxVisibleItems,
+            enabled: limitItems,
+            showMoreLabelBuilder: l10n.myDayPlanShowMore,
+            showFewerLabel: l10n.myDayPlanShowFewer,
+          ),
+        ],
+        if (scheduledRows.isNotEmpty && flexibleRows.isNotEmpty)
+          SizedBox(height: tokens.spaceMd),
+        if (flexibleRows.isNotEmpty) ...[
+          Text(
+            l10n.routinePanelFlexibleTitle,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: tokens.spaceXs2),
+          ExpandableRowList(
+            rows: flexibleRows,
+            rowKeyPrefix: '$rowKeyPrefix-flexible',
+            maxVisible: maxVisibleItems,
+            enabled: limitItems,
+            showMoreLabelBuilder: l10n.myDayPlanShowMore,
+            showFewerLabel: l10n.myDayPlanShowFewer,
+          ),
+        ],
       ],
     );
   }
@@ -1257,15 +1295,207 @@ TasklyRowSpec _buildRoutineRow(
     actions: TasklyRoutineRowActions(
       onTap: () => Routing.toRoutineEdit(context, routine.id),
       onToggleSelected: allowSelection
-          ? () => context.read<PlanMyDayBloc>().add(
-              PlanMyDayToggleRoutine(
-                routine.id,
-                selected: !item.selected,
-              ),
-            )
+          ? () {
+              if (item.isScheduled && item.selected) {
+                _showScheduledRoutineDeselectActionSheet(
+                  context,
+                  item: item,
+                  dayKeyUtc: dayKeyUtc,
+                );
+                return;
+              }
+              context.read<PlanMyDayBloc>().add(
+                PlanMyDayToggleRoutine(
+                  routine.id,
+                  selected: !item.selected,
+                ),
+              );
+            }
           : null,
     ),
   );
+}
+
+enum _ScheduledRoutineAction {
+  skipInstance,
+  moreOptions,
+}
+
+enum _ScheduledRoutineMoreAction {
+  skipPeriod,
+  pauseUntil,
+}
+
+Future<void> _showScheduledRoutineDeselectActionSheet(
+  BuildContext context, {
+  required PlanMyDayRoutineItem item,
+  required DateTime dayKeyUtc,
+}) async {
+  final action = await showModalBottomSheet<_ScheduledRoutineAction>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) {
+      final l10n = sheetContext.l10n;
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(l10n.planMyDayRoutineActionSheetTitle),
+              subtitle: Text(l10n.planMyDayRoutineActionSheetSubtitle),
+            ),
+            ListTile(
+              leading: const Icon(Icons.skip_next_outlined),
+              title: Text(l10n.planMyDayRoutineSkipInstanceAction),
+              onTap: () => Navigator.of(
+                sheetContext,
+              ).pop(_ScheduledRoutineAction.skipInstance),
+            ),
+            ListTile(
+              leading: const Icon(Icons.more_horiz_rounded),
+              title: Text(l10n.moreOptionsLabel),
+              onTap: () => Navigator.of(
+                sheetContext,
+              ).pop(_ScheduledRoutineAction.moreOptions),
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: Text(l10n.planMyDayRoutineKeepScheduledAction),
+              onTap: () => Navigator.of(sheetContext).pop(),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+
+  if (!context.mounted) return;
+  final bloc = context.read<PlanMyDayBloc>();
+  switch (action) {
+    case _ScheduledRoutineAction.skipInstance:
+      bloc.add(
+        PlanMyDaySkipRoutineInstanceRequested(
+          routineId: item.routine.id,
+        ),
+      );
+    case _ScheduledRoutineAction.moreOptions:
+      await _showScheduledRoutineMoreOptionsSheet(
+        context,
+        item: item,
+        dayKeyUtc: dayKeyUtc,
+      );
+    case null:
+      return;
+  }
+}
+
+Future<void> _showScheduledRoutineMoreOptionsSheet(
+  BuildContext context, {
+  required PlanMyDayRoutineItem item,
+  required DateTime dayKeyUtc,
+}) async {
+  final skipPeriodType = _skipPeriodTypeFor(item.routine.periodType);
+  final action = await showModalBottomSheet<_ScheduledRoutineMoreAction>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) {
+      final l10n = sheetContext.l10n;
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(l10n.planMyDayRoutineActionSheetTitle),
+              subtitle: Text(l10n.planMyDayRoutineActionSheetSubtitle),
+            ),
+            if (skipPeriodType != null)
+              ListTile(
+                leading: const Icon(Icons.event_busy_outlined),
+                title: Text(
+                  item.routine.periodType == RoutinePeriodType.month
+                      ? l10n.planMyDayRoutineSkipPeriodMonthAction
+                      : l10n.planMyDayRoutineSkipPeriodWeekAction,
+                ),
+                onTap: () => Navigator.of(
+                  sheetContext,
+                ).pop(_ScheduledRoutineMoreAction.skipPeriod),
+              ),
+            ListTile(
+              leading: const Icon(Icons.pause_circle_outline),
+              title: Text(l10n.routinePauseLabel),
+              onTap: () => Navigator.of(
+                sheetContext,
+              ).pop(_ScheduledRoutineMoreAction.pauseUntil),
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: Text(l10n.cancelLabel),
+              onTap: () => Navigator.of(sheetContext).pop(),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+
+  if (!context.mounted || action == null) return;
+  final bloc = context.read<PlanMyDayBloc>();
+  switch (action) {
+    case _ScheduledRoutineMoreAction.skipPeriod:
+      if (skipPeriodType == null) return;
+      bloc.add(
+        PlanMyDaySkipRoutinePeriodRequested(
+          routineId: item.routine.id,
+          periodType: skipPeriodType,
+          periodKeyUtc: item.snapshot.periodStartUtc,
+        ),
+      );
+    case _ScheduledRoutineMoreAction.pauseUntil:
+      final choice = await showRescheduleChoiceSheet(
+        context,
+        title: context.l10n.routinePauseSheetTitle,
+        subtitle: context.l10n.routinePauseSheetSubtitle,
+        dayKeyUtc: dayKeyUtc,
+      );
+      if (choice == null || !context.mounted) return;
+
+      switch (choice) {
+        case RescheduleQuickChoice(:final date):
+          bloc.add(
+            PlanMyDayPauseRoutineRequested(
+              routineId: item.routine.id,
+              pausedUntilUtc: date,
+            ),
+          );
+        case ReschedulePickDateChoice():
+          final today = dateOnly(dayKeyUtc);
+          final picked = await showRescheduleDatePicker(
+            context,
+            initialDate: today.add(const Duration(days: 1)),
+            firstDate: today.add(const Duration(days: 1)),
+            lastDate: DateTime(
+              today.year + 3,
+              today.month,
+              today.day,
+            ),
+          );
+          if (picked == null || !context.mounted) return;
+          bloc.add(
+            PlanMyDayPauseRoutineRequested(
+              routineId: item.routine.id,
+              pausedUntilUtc: picked,
+            ),
+          );
+      }
+  }
+}
+
+RoutineSkipPeriodType? _skipPeriodTypeFor(RoutinePeriodType periodType) {
+  return switch (periodType) {
+    RoutinePeriodType.week => RoutineSkipPeriodType.week,
+    RoutinePeriodType.month => RoutineSkipPeriodType.month,
+    _ => null,
+  };
 }
 
 ({String? startLabel, String? deadlineLabel}) _compactDateLabels(

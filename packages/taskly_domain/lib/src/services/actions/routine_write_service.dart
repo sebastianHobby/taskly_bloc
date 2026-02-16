@@ -1,5 +1,6 @@
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/telemetry.dart';
 
 /// Write facade for routine mutations.
@@ -57,6 +58,20 @@ final class RoutineWriteService {
     return _routineRepository.removeLatestCompletionForDay(
       routineId: routineId,
       dayKeyUtc: dayKeyUtc,
+      context: context,
+    );
+  }
+
+  Future<void> recordSkip({
+    required String routineId,
+    required RoutineSkipPeriodType periodType,
+    required DateTime periodKeyUtc,
+    OperationContext? context,
+  }) {
+    return _routineRepository.recordSkip(
+      routineId: routineId,
+      periodType: periodType,
+      periodKeyUtc: periodKeyUtc,
       context: context,
     );
   }

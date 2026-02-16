@@ -140,11 +140,6 @@ final class ScheduledTimelineBloc
     Emitter<ScheduledTimelineState> emit,
   ) async {
     try {
-      // The timeline depends on a session-hot "today" stream.
-      // If the service isn't started yet, the stream won't emit and the UI will
-      // remain in loading indefinitely.
-      _sessionDayKeyService.start();
-
       final demoEnabled = _demoModeService.enabled.valueOrNull ?? false;
       final todayUtc = _sessionDayKeyService.todayDayKeyUtc.valueOrNull;
       final fallbackNow = _nowService.nowLocal();

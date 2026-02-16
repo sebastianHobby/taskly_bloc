@@ -121,6 +121,7 @@ void main() {
     });
 
     final taskRepository = MockTaskRepositoryContract();
+    final taskChecklistRepository = MockTaskChecklistRepositoryContract();
     final projectRepository = MockProjectRepositoryContract();
     final valueRepository = MockValueRepositoryContract();
     final occurrenceCommandService = MockOccurrenceCommandService();
@@ -156,6 +157,7 @@ void main() {
       demoModeService: demoModeService,
       demoDataProvider: demoDataProvider,
       taskRepository: taskRepository,
+      taskChecklistRepository: taskChecklistRepository,
       projectRepository: projectRepository,
       valueRepository: valueRepository,
       taskWriteService: taskWriteService,
@@ -207,6 +209,7 @@ void main() {
     });
 
     final taskRepository = MockTaskRepositoryContract();
+    final taskChecklistRepository = MockTaskChecklistRepositoryContract();
     final projectRepository = MockProjectRepositoryContract();
     final valueRepository = MockValueRepositoryContract();
     final occurrenceCommandService = MockOccurrenceCommandService();
@@ -242,6 +245,7 @@ void main() {
       demoModeService: demoModeService,
       demoDataProvider: demoDataProvider,
       taskRepository: taskRepository,
+      taskChecklistRepository: taskChecklistRepository,
       projectRepository: projectRepository,
       valueRepository: valueRepository,
       taskWriteService: taskWriteService,

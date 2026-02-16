@@ -868,7 +868,7 @@
     "@taskFormNotesHint": {
         "description": "Texto de sugerencia para el campo de notas de tarea"
     },
-    "taskFormNewTitle": "Nueva tarea",
+    "taskFormNewTitle": "Crear tarea",
     "@taskFormNewTitle": {
         "description": "TÃ­tulo del formulario de tarea en modo crear"
     },
@@ -876,7 +876,7 @@
     "@taskFormEditTitle": {
         "description": "TÃ­tulo del formulario de tarea en modo ediciÃ³n"
     },
-    "projectFormNewTitle": "Nuevo proyecto",
+    "projectFormNewTitle": "Crear proyecto",
     "@projectFormNewTitle": {
         "description": "TÃ­tulo del formulario de proyecto en modo crear"
     },
@@ -3047,7 +3047,7 @@
     "@routineFormNameHint": {
         "description": "Hint text for the routine name field"
     },
-    "routineFormNewTitle": "Nueva rutina",
+    "routineFormNewTitle": "Crear rutina",
     "@routineFormNewTitle": {
         "description": "Title for the routine create form"
     },
@@ -3319,6 +3319,10 @@
   "routineFormPeriodWeekly": "Semana",
   "@routineFormPeriodWeekly": {
     "description": "Label for weekly routine period option."
+  },
+  "routineFormPeriodFortnight": "Quincena",
+  "@routineFormPeriodFortnight": {
+    "description": "Label for fortnight routine period option."
   },
   "routineFormPeriodMonthly": "Mes",
   "@routineFormPeriodMonthly": {
@@ -4035,6 +4039,30 @@
     "planMyDayBuildPlanTitle": "Arma tu plan",
     "@planMyDayBuildPlanTitle": {
         "description": "Titulo para la secciÃ³n de construir plan en Planificar mi dÃ­a"
+    },
+    "planMyDayRoutineActionSheetTitle": "Ajustar rutina programada",
+    "@planMyDayRoutineActionSheetTitle": {
+        "description": "Titulo para la hoja de deseleccionar rutina programada en Planificar mi dÃ­a"
+    },
+    "planMyDayRoutineActionSheetSubtitle": "Elige como manejar esta rutina para hoy.",
+    "@planMyDayRoutineActionSheetSubtitle": {
+        "description": "Subtitulo para la hoja de deseleccionar rutina programada en Planificar mi dÃ­a"
+    },
+    "planMyDayRoutineSkipInstanceAction": "Saltar esta instancia",
+    "@planMyDayRoutineSkipInstanceAction": {
+        "description": "Accion para saltar solo la instancia programada de hoy"
+    },
+    "planMyDayRoutineSkipPeriodWeekAction": "Saltar esta semana",
+    "@planMyDayRoutineSkipPeriodWeekAction": {
+        "description": "Accion para saltar la semana actual de una rutina programada"
+    },
+    "planMyDayRoutineSkipPeriodMonthAction": "Saltar este mes",
+    "@planMyDayRoutineSkipPeriodMonthAction": {
+        "description": "Accion para saltar el mes actual de una rutina programada"
+    },
+    "planMyDayRoutineKeepScheduledAction": "Mantener programada",
+    "@planMyDayRoutineKeepScheduledAction": {
+        "description": "Accion para cerrar la hoja y mantener la rutina programada"
     },
     "planMyDayDueTodayTitle": "Vence hoy",
     "@planMyDayDueTodayTitle": {
@@ -5029,6 +5057,10 @@
     "checklistAddItemLabel": "Agregar un paso",
     "@checklistAddItemLabel": {
         "description": "Input label to add a checklist item in checklist sheet"
+    },
+    "checklistAddStepsLabel": "Agregar pasos",
+    "@checklistAddStepsLabel": {
+        "description": "Etiqueta CTA para abrir o enfocar la edición de pasos de checklist"
     },
     "checklistDeleteStepLabel": "Eliminar paso",
     "@checklistDeleteStepLabel": {

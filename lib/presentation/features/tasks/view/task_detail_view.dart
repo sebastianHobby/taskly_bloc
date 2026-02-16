@@ -270,6 +270,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                   context,
                   taskId: task.id,
                   taskName: task.name,
+                  completed: task.completed,
                   isRepeating: task.isRepeating,
                   seriesEnded: task.seriesEnded,
                 ),
@@ -294,6 +295,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
     BuildContext context, {
     required String taskId,
     required String taskName,
+    required bool completed,
     required bool isRepeating,
     required bool seriesEnded,
   }) {
@@ -302,6 +304,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
       entityType: EntityType.task,
       entityId: taskId,
       entityName: taskName,
+      completed: completed,
       isRepeating: isRepeating,
       seriesEnded: seriesEnded,
     );

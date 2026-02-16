@@ -66,6 +66,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
   final List<String> _recentProjectIds = <String>[];
   bool _didAutoOpen = false;
   bool _submitEnabled = false;
+  bool _showChecklistEditor = false;
 
   String _resolveInitialProjectId(RoutineDraft? draft) {
     final fromInitialData = widget.initialData?.projectId.trim();
@@ -150,6 +151,10 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
       _markDirtySafely();
       setState(() {});
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refreshSubmitEnabled();
+    });
   }
 
   @override
@@ -197,7 +202,8 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
     });
 
     if (next == RoutineScheduleMode.scheduled &&
-        _currentPeriodType == RoutinePeriodType.day) {
+        (_currentPeriodType == RoutinePeriodType.day ||
+            _currentPeriodType == RoutinePeriodType.fortnight)) {
       final periodField =
           widget.formKey.currentState?.fields[RoutineFieldKeys.periodType.id];
       periodField?.didChange(RoutinePeriodType.week);
@@ -275,7 +281,11 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
   }
 
   void _refreshSubmitEnabled() {
-    final next = isDirty && (widget.formKey.currentState?.isValid ?? false);
+    final isCreating = widget.initialData == null;
+    final formValid = widget.formKey.currentState?.isValid ?? false;
+    final next = isCreating && !isDirty
+        ? _hasValidCreateDefaults()
+        : (isDirty && formValid);
     if (next == _submitEnabled || !mounted) return;
     if (SchedulerBinding.instance.schedulerPhase ==
         SchedulerPhase.persistentCallbacks) {
@@ -290,6 +300,32 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
 
   bool _isCompact(BuildContext context) =>
       MediaQuery.sizeOf(context).width < 600;
+
+  bool _hasValidCreateDefaults() {
+    if (widget.initialData != null) return false;
+    final draft = widget.initialDraft ?? RoutineDraft.empty();
+    final periodType = _currentPeriodType;
+    final scheduleMode = _currentScheduleMode;
+    final projectId = _resolveInitialProjectId(draft);
+
+    return RoutineValidators.name(draft.name).isEmpty &&
+        RoutineValidators.projectId(projectId).isEmpty &&
+        RoutineValidators.targetCount(
+          draft.targetCount,
+          periodType: periodType,
+          scheduleMode: scheduleMode,
+        ).isEmpty &&
+        RoutineValidators.scheduleDays(
+          draft.scheduleDays,
+          periodType: periodType,
+          scheduleMode: scheduleMode,
+        ).isEmpty &&
+        RoutineValidators.scheduleMonthDays(
+          draft.scheduleMonthDays,
+          periodType: periodType,
+          scheduleMode: scheduleMode,
+        ).isEmpty;
+  }
 
   Future<void> _focusFrequencySection() async {
     final targetContext = _frequencyKey.currentContext;
@@ -439,11 +475,6 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
     final submitEnabled = _submitEnabled;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final headerActionStyle = TextButton.styleFrom(
-      textStyle: theme.textTheme.bodyMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-      ),
-    );
     final headerTitle = Text(
       isCreating ? l10n.routineFormNewTitle : l10n.routineFormEditTitle,
       style: theme.textTheme.bodyMedium?.copyWith(
@@ -487,20 +518,12 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
       closeOnLeft: false,
       onDelete: null,
       deleteTooltip: l10n.routineDeleteTitle,
-      onClose: null,
+      onClose: widget.onClose == null ? null : handleClose,
       closeTooltip: l10n.closeLabel,
       scrollController: _scrollController,
       showHandleBar: false,
       headerTitle: headerTitle,
       centerHeaderTitle: true,
-      leadingActions: [
-        if (widget.onClose != null)
-          TextButton(
-            onPressed: handleClose,
-            style: headerActionStyle,
-            child: Text(l10n.cancelLabel),
-          ),
-      ],
       trailingActions: [
         if (widget.initialData != null && widget.onDelete != null)
           PopupMenuButton<int>(
@@ -519,55 +542,10 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
       ],
       footer: Builder(
         builder: (context) {
-          final footerPreset = formPreset.chip;
           return FormFooterBar(
             submitLabel: widget.submitTooltip,
             submitEnabled: submitEnabled,
             onSubmit: widget.onSubmit,
-            leading: FormBuilderField<String>(
-              name: RoutineFieldKeys.projectId.id,
-              builder: (field) {
-                final selectedProject = widget.availableProjects
-                    .where((project) => project.id == field.value)
-                    .firstOrNull;
-                final projectLabel =
-                    selectedProject?.name ?? l10n.selectProjectTitle;
-                final hasProject = selectedProject != null;
-
-                return Align(
-                  alignment: Alignment.centerLeft,
-                  child: Builder(
-                    builder: (chipContext) => TasklyFormInlineChip(
-                      label: l10n.projectLabel,
-                      valueLabel: projectLabel,
-                      hasValue: hasProject,
-                      icon: Icons.folder_rounded,
-                      preset: footerPreset,
-                      onTap: () async {
-                        final result = await _showProjectPicker(
-                          anchorContext: chipContext,
-                          currentProjectId: field.value ?? '',
-                        );
-                        if (result == null) return;
-
-                        switch (result) {
-                          case ProjectPickerResultCleared():
-                            return;
-                          case ProjectPickerResultSelected(
-                            :final project,
-                          ):
-                            field.didChange(project.id);
-                            _recordRecentProjectId(project.id);
-                        }
-
-                        _markDirtySafely();
-                        setState(() {});
-                      },
-                    ),
-                  ),
-                );
-              },
-            ),
           );
         },
       ),
@@ -597,51 +575,102 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                 ),
               ),
               SizedBox(height: tokens.spaceMd),
-              FormBuilderField<List<String>>(
-                name: RoutineFormFieldKeys.checklistTitles,
-                builder: (field) {
-                  final titles = (field.value ?? const <String>[])
-                      .whereType<String>()
-                      .toList(growable: false);
-                  return ChecklistEditorSection(
-                    title: l10n.checklistLabel,
-                    titles: titles,
-                    maxItems: 20,
-                    onChanged: (next) {
-                      field.didChange(next);
-                      _markDirtySafely();
-                      setState(() {});
-                    },
+              Builder(
+                builder: (context) {
+                  final checklistTitles =
+                      ((widget
+                                      .formKey
+                                      .currentState
+                                      ?.fields[RoutineFormFieldKeys
+                                          .checklistTitles]
+                                      ?.value
+                                  as List<dynamic>?) ??
+                              (initialValues[RoutineFormFieldKeys
+                                      .checklistTitles]
+                                  as List<dynamic>?))
+                          ?.whereType<String>()
+                          .toList(growable: false) ??
+                      const <String>[];
+                  final checklistCount = checklistTitles.length;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TasklyFormChipRow(
+                        chips: [
+                          TasklyFormInlineChip(
+                            label: l10n.routineFormTypeLabel,
+                            icon: Icons.tune_rounded,
+                            valueLabel:
+                                currentScheduleMode ==
+                                    RoutineScheduleMode.flexible
+                                ? l10n.routineCadenceFlexibleLabel
+                                : l10n.routineCadenceScheduledLabel,
+                            hasValue: true,
+                            showLabelWhenEmpty: false,
+                            preset: chipPreset,
+                            onTap: _focusFrequencySection,
+                          ),
+                          TasklyFormInlineChip(
+                            label:
+                                currentScheduleMode ==
+                                    RoutineScheduleMode.flexible
+                                ? l10n.routineFormEveryLabel
+                                : l10n.routineFormRepeatLabel,
+                            icon: Icons.calendar_month_rounded,
+                            valueLabel: _periodLabel(l10n, currentPeriodType),
+                            hasValue: true,
+                            showLabelWhenEmpty: false,
+                            preset: chipPreset,
+                            onTap: _focusFrequencySection,
+                          ),
+                          TasklyFormInlineChip(
+                            label: l10n.checklistLabel,
+                            icon: Icons.checklist_rounded,
+                            valueLabel: checklistCount == 0
+                                ? l10n.checklistAddStepsLabel
+                                : l10n.checklistProgressLabel(
+                                    checklistCount,
+                                    20,
+                                  ),
+                            hasValue: checklistCount > 0,
+                            showLabelWhenEmpty: false,
+                            preset: chipPreset,
+                            onTap: () {
+                              setState(() {
+                                _showChecklistEditor = !_showChecklistEditor;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      if (_showChecklistEditor) ...[
+                        SizedBox(height: tokens.spaceMd),
+                        FormBuilderField<List<String>>(
+                          name: RoutineFormFieldKeys.checklistTitles,
+                          builder: (field) {
+                            final titles = (field.value ?? const <String>[])
+                                .whereType<String>()
+                                .toList(growable: false);
+                            return ChecklistEditorSection(
+                              title: l10n.checklistLabel,
+                              addItemFieldLabel: l10n.checklistAddItemLabel,
+                              addItemButtonLabel: l10n.addLabel,
+                              deleteItemTooltip: l10n.checklistDeleteStepLabel,
+                              titles: titles,
+                              maxItems: 20,
+                              onChanged: (next) {
+                                field.didChange(next);
+                                _markDirtySafely();
+                                setState(() {});
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ],
                   );
                 },
-              ),
-              SizedBox(height: tokens.spaceMd),
-              TasklyFormChipRow(
-                chips: [
-                  TasklyFormInlineChip(
-                    label: l10n.routineFormTypeLabel,
-                    icon: Icons.tune_rounded,
-                    valueLabel:
-                        currentScheduleMode == RoutineScheduleMode.flexible
-                        ? l10n.routineCadenceFlexibleLabel
-                        : l10n.routineCadenceScheduledLabel,
-                    hasValue: true,
-                    showLabelWhenEmpty: false,
-                    preset: chipPreset,
-                    onTap: _focusFrequencySection,
-                  ),
-                  TasklyFormInlineChip(
-                    label: currentScheduleMode == RoutineScheduleMode.flexible
-                        ? l10n.routineFormEveryLabel
-                        : l10n.routineFormRepeatLabel,
-                    icon: Icons.calendar_month_rounded,
-                    valueLabel: _periodLabel(l10n, currentPeriodType),
-                    hasValue: true,
-                    showLabelWhenEmpty: false,
-                    preset: chipPreset,
-                    onTap: _focusFrequencySection,
-                  ),
-                ],
               ),
               SizedBox(height: tokens.spaceLg),
               TasklyFormSectionLabel(text: l10n.projectLabel),
@@ -653,12 +682,20 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                   context,
                 ),
                 builder: (field) {
+                  final projectId = (field.value ?? '').trim();
                   final selectedProject = widget.availableProjects
-                      .where((project) => project.id == field.value)
+                      .where((project) => project.id == projectId)
                       .firstOrNull;
                   final projectLabel =
                       selectedProject?.name ?? l10n.selectProjectTitle;
                   final hasProject = selectedProject != null;
+                  final isMissingProject = projectId.isEmpty;
+                  final helperText =
+                      field.errorText ??
+                      (isMissingProject ? l10n.validationRequired : null);
+                  final helperColor = field.errorText != null
+                      ? colorScheme.error
+                      : colorScheme.onSurfaceVariant;
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -695,13 +732,15 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                           ),
                         ),
                       ),
-                      if (field.errorText != null) ...[
+                      if (helperText != null) ...[
                         SizedBox(height: tokens.spaceSm),
                         Text(
-                          field.errorText!,
+                          helperText,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.error,
-                            fontWeight: FontWeight.w600,
+                            color: helperColor,
+                            fontWeight: field.errorText != null
+                                ? FontWeight.w600
+                                : FontWeight.w500,
                           ),
                         ),
                       ],
@@ -747,6 +786,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
                     final max = switch (_currentPeriodType) {
                       RoutinePeriodType.day => 10,
                       RoutinePeriodType.week => 7,
+                      RoutinePeriodType.fortnight => 14,
                       RoutinePeriodType.month => 31,
                     };
                     final current = (field.value ?? min).clamp(min, max);
@@ -957,6 +997,7 @@ String _periodLabel(AppLocalizations l10n, RoutinePeriodType value) {
   return switch (value) {
     RoutinePeriodType.day => l10n.routineFormPeriodDaily,
     RoutinePeriodType.week => l10n.routineFormPeriodWeekly,
+    RoutinePeriodType.fortnight => l10n.routineFormPeriodFortnight,
     RoutinePeriodType.month => l10n.routineFormPeriodMonthly,
   };
 }

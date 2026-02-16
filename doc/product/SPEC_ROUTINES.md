@@ -28,14 +28,23 @@ can pick routines for today, but does not mark completions.
 
 ## Cadence and schedule model
 
-- period_type: day | week | month
+- period_type: day | week | fortnight | month
 - schedule_mode: flexible | scheduled
 - Daily is always flexible (scheduled not offered).
+- Fortnight is flexible-only.
 - Weekly/monthly can be flexible or scheduled.
+
+Week window convention (canonical):
+- Weekly routine windows use local date semantics.
+- Week starts on Monday and ends on Sunday.
+- Weekly period key/window key is the Monday date for that week.
+- Fortnight windows use local date semantics and are Monday-anchored 14-day windows.
+- Fortnight period key/window key is the first Monday of that 14-day window.
 
 Target counts:
 - Daily flexible: user selected target (1-10) per day.
 - Weekly flexible: target (1-7) per week.
+- Fortnight flexible: target (1-14) per fortnight.
 - Monthly flexible: target (1-31) per month.
 - Monthly scheduled: target inferred from selected dates.
 
@@ -85,6 +94,10 @@ Validation:
 - Routines can be picked for today; pick is stored in my_day_picks.
 - Plan My Day picker keeps +/tick affordance (no Log button).
 - Daily routines are eligible for Plan My Day.
+- Plan My Day renders scheduled routines before flexible routines.
+- Deselecting a scheduled routine uses a two-step flow:
+  - Step 1: `Skip this instance`, `More options`, `Keep scheduled`.
+  - Step 2: `Skip this week/month` (cadence-based) or `Pause routine`.
 - Routine picks are planned work; completion is logged from My Day or Routines.
 
 ## Data model (Supabase + local)

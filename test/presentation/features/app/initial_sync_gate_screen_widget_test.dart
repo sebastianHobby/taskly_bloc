@@ -15,6 +15,7 @@ import 'package:taskly_bloc/presentation/features/app/view/initial_sync_gate_scr
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_bloc/presentation/shared/session/presentation_session_services_coordinator.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/app_loading_screen.dart';
 import 'package:taskly_domain/core.dart';
@@ -22,6 +23,9 @@ import 'package:taskly_domain/services.dart';
 
 class MockAuthenticatedAppServicesCoordinator extends Mock
     implements AuthenticatedAppServicesCoordinator {}
+
+class MockPresentationSessionServicesCoordinator extends Mock
+    implements PresentationSessionCoordinator {}
 
 class MockInitialSyncService extends Mock implements InitialSyncService {}
 
@@ -44,6 +48,8 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockAuthenticatedAppServicesCoordinator coordinator;
+  late MockPresentationSessionServicesCoordinator
+  presentationSessionCoordinator;
   late MockInitialSyncService initialSyncService;
   late SessionSharedDataService sharedDataService;
   late DemoModeService demoModeService;
@@ -56,6 +62,8 @@ void main() {
 
   setUp(() {
     coordinator = MockAuthenticatedAppServicesCoordinator();
+    presentationSessionCoordinator =
+        MockPresentationSessionServicesCoordinator();
     initialSyncService = MockInitialSyncService();
     valueRepository = MockValueRepositoryContract();
     projectRepository = MockProjectRepositoryContract();
@@ -80,6 +88,11 @@ void main() {
     when(() => valueRepository.watchAll()).thenAnswer(
       (_) => const Stream<List<Value>>.empty(),
     );
+    when(() => coordinator.start()).thenAnswer((_) async {});
+    when(() => presentationSessionCoordinator.start()).thenAnswer((_) async {});
+    when(
+      () => initialSyncService.progress,
+    ).thenAnswer((_) => const Stream<InitialSyncProgress>.empty());
 
     addTearDown(cacheManager.dispose);
     addTearDown(demoModeService.dispose);
@@ -89,6 +102,7 @@ void main() {
   Future<InitialSyncGateBloc> pumpScreen(WidgetTester tester) async {
     final bloc = InitialSyncGateBloc(
       coordinator: coordinator,
+      presentationSessionCoordinator: presentationSessionCoordinator,
       initialSyncService: initialSyncService,
       sharedDataService: sharedDataService,
     );

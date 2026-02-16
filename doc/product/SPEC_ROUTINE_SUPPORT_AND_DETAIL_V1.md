@@ -217,6 +217,11 @@ Use these routine-level derived stats:
 - Missed-day distribution by weekday.
 - Success distribution by weekday.
 
+Weekly window convention:
+- Weekly adherence calculations use local date semantics.
+- Week starts on Monday and ends on Sunday.
+- This convention must align with routine cadence/checklist weekly windows.
+
 ## Acceptance criteria
 
 - Users can open `/routine/:id` and view trajectory + support sections.

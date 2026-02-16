@@ -78,14 +78,17 @@ contracts for implementation.
 
 ## Create/Edit form checklist authoring (FORM-01)
 
-- Task and Routine create/edit forms include an inline `Checklist` section.
-- Section is visible in form flow (not hidden behind a chip-only entry point).
-- Collapsed preview:
-  - empty: `0 items` with `Add checklist` action
-  - non-empty: first items preview + `+N more`
-- Expanded editor:
-  - inline add input (`Add item`)
-  - editable item titles (wrapping allowed)
+- Task and Routine create/edit forms include a checklist entry in the metadata
+  chip row (`Steps` chip).
+- Chip behavior:
+  - empty checklist: chip highlights `Add steps`
+  - non-empty checklist: chip shows progress-style count (e.g., `3/20 steps`)
+  - tapping chip toggles inline checklist editor visibility in the same form
+- Expanded inline editor:
+  - checklist items rendered top-to-bottom
+  - a single add-input row appears at the bottom of existing items
+  - no secondary `Add steps` button inside the expanded editor
+  - keyboard enter flow supports moving to next item / rapid append
   - drag reorder support
   - delete action per item (immediate delete)
 - Item limit:
@@ -118,7 +121,7 @@ Already created server-side:
   - includes `routine_id`, `title`, `sort_index`
 - `routine_checklist_item_state`
   - window-aware routine checklist state
-  - includes `period_type` (`day|week|month`) and `window_key` (date)
+  - includes `period_type` (`day|week|fortnight|month`) and `window_key` (date)
 - `checklist_events`
   - append-only checklist analytics/event history
   - includes parent type/id, scope, event type, metrics json
@@ -182,10 +185,17 @@ Scope key derivation must stay outside UI:
 
 - Checklist state is scoped to routine window:
   - day: specific date
-  - week: canonical week start date
+  - week: canonical week start date (Monday, local date semantics)
+  - fortnight: canonical 14-day window start date (Monday-anchored, local date semantics)
   - month: first day of month
 - Routine checklist resets naturally across windows via scoped state.
 - Parent log allowed with partial checklist completion.
+
+Week boundary clarification:
+- Weekly routine windows run Monday-Sunday.
+- `window_key` for `period_type = week` stores the Monday date of that week.
+- Fortnight windows run 14 days, Monday to second Sunday.
+- `window_key` for `period_type = fortnight` stores the first Monday of that 14-day window.
 
 ## Analytics semantics
 

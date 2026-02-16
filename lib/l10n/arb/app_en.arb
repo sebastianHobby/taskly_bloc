@@ -787,19 +787,19 @@
     "@taskFormNotesHint": {
         "description": "Hint text for the task notes field"
     },
-    "taskFormNewTitle": "New Task",
+    "taskFormNewTitle": "Create task",
     "@taskFormNewTitle": {
         "description": "Title for the task form in create mode"
     },
-    "taskFormEditTitle": "Edit Task",
+    "taskFormEditTitle": "Edit task",
     "@taskFormEditTitle": {
         "description": "Title for the task form in edit mode"
     },
-    "projectFormNewTitle": "New Project",
+    "projectFormNewTitle": "Create project",
     "@projectFormNewTitle": {
         "description": "Title for the project form in create mode"
     },
-    "projectFormEditTitle": "Edit Project",
+    "projectFormEditTitle": "Edit project",
     "@projectFormEditTitle": {
         "description": "Title for the project form in edit mode"
     },
@@ -3139,7 +3139,7 @@
   "@routineFormNameHint": {
     "description": "Hint text for the routine name field"
   },
-  "routineFormNewTitle": "New routine",
+  "routineFormNewTitle": "Create routine",
   "@routineFormNewTitle": {
     "description": "Title for the routine create form"
   },
@@ -3428,6 +3428,10 @@
   "routineFormPeriodWeekly": "Week",
   "@routineFormPeriodWeekly": {
     "description": "Label for weekly routine period option."
+  },
+  "routineFormPeriodFortnight": "Fortnight",
+  "@routineFormPeriodFortnight": {
+    "description": "Label for fortnight routine period option."
   },
   "routineFormPeriodMonthly": "Month",
   "@routineFormPeriodMonthly": {
@@ -4091,6 +4095,30 @@
     "planMyDayBuildPlanTitle": "Build your plan",
     "@planMyDayBuildPlanTitle": {
         "description": "Title for Plan My Day build plan section"
+    },
+    "planMyDayRoutineActionSheetTitle": "Adjust scheduled routine",
+    "@planMyDayRoutineActionSheetTitle": {
+        "description": "Title for scheduled routine deselect sheet in Plan My Day"
+    },
+    "planMyDayRoutineActionSheetSubtitle": "Choose how to handle this routine for today.",
+    "@planMyDayRoutineActionSheetSubtitle": {
+        "description": "Subtitle for scheduled routine deselect sheet in Plan My Day"
+    },
+    "planMyDayRoutineSkipInstanceAction": "Skip this instance",
+    "@planMyDayRoutineSkipInstanceAction": {
+        "description": "Action to skip only today's scheduled routine instance"
+    },
+    "planMyDayRoutineSkipPeriodWeekAction": "Skip this week",
+    "@planMyDayRoutineSkipPeriodWeekAction": {
+        "description": "Action to skip the current week for a scheduled routine"
+    },
+    "planMyDayRoutineSkipPeriodMonthAction": "Skip this month",
+    "@planMyDayRoutineSkipPeriodMonthAction": {
+        "description": "Action to skip the current month for a scheduled routine"
+    },
+    "planMyDayRoutineKeepScheduledAction": "Keep scheduled",
+    "@planMyDayRoutineKeepScheduledAction": {
+        "description": "Dismiss action for scheduled routine deselect sheet in Plan My Day"
     },
     "planMyDayDueTodayTitle": "Due today",
     "@planMyDayDueTodayTitle": {
@@ -5085,6 +5113,10 @@
     "checklistAddItemLabel": "Add a step",
     "@checklistAddItemLabel": {
         "description": "Input label to add a checklist item in checklist sheet"
+    },
+    "checklistAddStepsLabel": "Add steps",
+    "@checklistAddStepsLabel": {
+        "description": "CTA label to open or focus checklist step authoring"
     },
     "checklistDeleteStepLabel": "Delete step",
     "@checklistDeleteStepLabel": {

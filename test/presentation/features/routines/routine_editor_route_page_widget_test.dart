@@ -21,6 +21,9 @@ class MockRoutineRepository extends Mock implements RoutineRepositoryContract {}
 
 class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
+class MockRoutineChecklistRepository extends Mock
+    implements RoutineChecklistRepositoryContract {}
+
 void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
@@ -29,12 +32,14 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockRoutineRepository routineRepository;
+  late MockRoutineChecklistRepository routineChecklistRepository;
   late MockProjectRepository projectRepository;
   late RoutineWriteService routineWriteService;
   late AppErrorReporter errorReporter;
 
   setUp(() {
     routineRepository = MockRoutineRepository();
+    routineChecklistRepository = MockRoutineChecklistRepository();
     projectRepository = MockProjectRepository();
     routineWriteService = RoutineWriteService(
       routineRepository: routineRepository,
@@ -66,6 +71,9 @@ void main() {
         providers: [
           RepositoryProvider<RoutineRepositoryContract>.value(
             value: routineRepository,
+          ),
+          RepositoryProvider<RoutineChecklistRepositoryContract>.value(
+            value: routineChecklistRepository,
           ),
           RepositoryProvider<ProjectRepositoryContract>.value(
             value: projectRepository,

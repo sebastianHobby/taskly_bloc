@@ -101,6 +101,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
   String? _recurrenceLabel;
   String? _lastRecurrenceRrule;
   _TaskDateEditorTarget? _activeDateEditor;
+  bool _showChecklistEditor = false;
 
   Project? _findProjectById(String? id) {
     final normalized = (id ?? '').trim();
@@ -163,7 +164,11 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
   }
 
   void _refreshSubmitEnabled() {
-    final next = isDirty && (widget.formKey.currentState?.isValid ?? false);
+    final isCreating = widget.initialData == null;
+    final formValid = widget.formKey.currentState?.isValid ?? false;
+    final next = isCreating && !isDirty
+        ? _hasValidCreateDefaults()
+        : (isDirty && formValid);
     if (next == _submitEnabled || !mounted) return;
     setState(() => _submitEnabled = next);
   }
@@ -226,6 +231,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
         setState(() {});
         return;
       }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refreshSubmitEnabled();
     });
   }
 
@@ -473,6 +482,15 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     return _PrioritySelectionResult(priority: selected == -1 ? null : selected);
   }
 
+  bool _hasValidCreateDefaults() {
+    if (widget.initialData != null) return false;
+    final name =
+        (widget.formKey.currentState?.fields[TaskFieldKeys.name.id]?.value
+            as String?) ??
+        '';
+    return TaskValidators.name(name).isEmpty;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -515,20 +533,28 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     final sectionGap = isCompact
         ? formPreset.ux.sectionGapCompact
         : formPreset.ux.sectionGapRegular;
+    final headerTitle = Text(
+      isCreating ? l10n.taskFormNewTitle : l10n.taskFormEditTitle,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        fontWeight: FontWeight.w600,
+      ),
+    );
     return FormShell(
       onSubmit: widget.onSubmit,
       submitTooltip: widget.submitTooltip,
       submitIcon: isCreating ? Icons.add_rounded : Icons.check_rounded,
       submitEnabled: submitEnabled,
       showHeaderSubmit: false,
-      showFooterSubmit: true,
+      showFooterSubmit: false,
       closeOnLeft: false,
       onDelete: null,
       deleteTooltip: l10n.deleteTaskAction,
-      onClose: handleClose,
+      onClose: widget.onClose == null ? null : handleClose,
       closeTooltip: l10n.closeLabel,
       scrollController: _scrollController,
       showHandleBar: false,
+      headerTitle: headerTitle,
+      centerHeaderTitle: true,
       headerPadding: EdgeInsets.fromLTRB(
         tokens.spaceSm,
         tokens.spaceSm,
@@ -686,27 +712,6 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
 
               SizedBox(height: sectionGap),
 
-              FormBuilderField<List<String>>(
-                name: TaskFormFieldKeys.checklistTitles,
-                builder: (field) {
-                  final titles = (field.value ?? const <String>[])
-                      .whereType<String>()
-                      .toList(growable: false);
-                  return ChecklistEditorSection(
-                    title: l10n.checklistLabel,
-                    titles: titles,
-                    maxItems: 20,
-                    onChanged: (next) {
-                      field.didChange(next);
-                      markDirty();
-                      setState(() {});
-                    },
-                  );
-                },
-              ),
-
-              SizedBox(height: sectionGap),
-
               Builder(
                 builder: (context) {
                   final chipPreset = formPreset.chip;
@@ -745,6 +750,20 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                               ?.value
                           as int?) ??
                       (initialValues[TaskFieldKeys.priority.id] as int?);
+                  final checklistTitles =
+                      ((widget
+                                      .formKey
+                                      .currentState
+                                      ?.fields[TaskFormFieldKeys
+                                          .checklistTitles]
+                                      ?.value
+                                  as List<dynamic>?) ??
+                              (initialValues[TaskFormFieldKeys.checklistTitles]
+                                  as List<dynamic>?))
+                          ?.whereType<String>()
+                          .toList(growable: false) ??
+                      const <String>[];
+                  final checklistCount = checklistTitles.length;
                   final hasRecurrence = recurrenceRrule.trim().isNotEmpty;
 
                   final plannedLabel = startDate == null
@@ -875,6 +894,24 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                         },
                       ),
                     ),
+                    TasklyFormInlineChip(
+                      label: l10n.checklistLabel,
+                      icon: Icons.checklist_rounded,
+                      valueLabel: checklistCount == 0
+                          ? l10n.checklistAddStepsLabel
+                          : l10n.checklistProgressLabel(checklistCount, 20),
+                      hasValue: checklistCount > 0,
+                      showLabelWhenEmpty: false,
+                      preset: chipPreset,
+                      onTap: () {
+                        if (_activeDateEditor != null) {
+                          setState(() => _activeDateEditor = null);
+                        }
+                        setState(() {
+                          _showChecklistEditor = !_showChecklistEditor;
+                        });
+                      },
+                    ),
                   ];
 
                   if (widget.showMyDayToggle) {
@@ -911,6 +948,30 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       TasklyFormChipRow(chips: chips),
+                      if (_showChecklistEditor) ...[
+                        SizedBox(height: sectionGap),
+                        FormBuilderField<List<String>>(
+                          name: TaskFormFieldKeys.checklistTitles,
+                          builder: (field) {
+                            final titles = (field.value ?? const <String>[])
+                                .whereType<String>()
+                                .toList(growable: false);
+                            return ChecklistEditorSection(
+                              title: l10n.checklistLabel,
+                              addItemFieldLabel: l10n.checklistAddItemLabel,
+                              addItemButtonLabel: l10n.addLabel,
+                              deleteItemTooltip: l10n.checklistDeleteStepLabel,
+                              titles: titles,
+                              maxItems: 20,
+                              onChanged: (next) {
+                                field.didChange(next);
+                                markDirty();
+                                setState(() {});
+                              },
+                            );
+                          },
+                        ),
+                      ],
                       if (_activeDateEditor != null) ...[
                         SizedBox(height: sectionGap),
                         InlineDateEditorPanel(

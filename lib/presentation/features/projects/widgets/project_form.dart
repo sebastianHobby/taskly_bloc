@@ -125,7 +125,11 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
   }
 
   void _refreshSubmitEnabled() {
-    final next = isDirty && (widget.formKey.currentState?.isValid ?? false);
+    final isCreating = widget.initialData == null;
+    final formValid = widget.formKey.currentState?.isValid ?? false;
+    final next = isCreating && !isDirty
+        ? _hasValidCreateDefaults()
+        : (isDirty && formValid);
     if (next == _submitEnabled || !mounted) return;
     setState(() => _submitEnabled = next);
   }
@@ -176,6 +180,10 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
           ?.didChange(result);
       markDirty();
       setState(() {});
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refreshSubmitEnabled();
     });
   }
 
@@ -420,6 +428,20 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
     return _PrioritySelectionResult(priority: selected == -1 ? null : selected);
   }
 
+  bool _hasValidCreateDefaults() {
+    if (widget.initialData != null) return false;
+    final form = widget.formKey.currentState;
+    final name =
+        (form?.fields[ProjectFieldKeys.name.id]?.value as String?) ?? '';
+    final valueIds =
+        (form?.fields[ProjectFieldKeys.valueIds.id]?.value as List<dynamic>?)
+            ?.whereType<String>()
+            .toList(growable: false) ??
+        const <String>[];
+    return ProjectValidators.name(name).isEmpty &&
+        ProjectValidators.valueIds(valueIds).isEmpty;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -465,11 +487,6 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
         : formPreset.ux.sectionGapRegular;
     final chipPreset = formPreset.chip;
 
-    final headerActionStyle = TextButton.styleFrom(
-      textStyle: theme.textTheme.bodyMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-      ),
-    );
     final headerTitle = Text(
       isCreating ? l10n.projectFormNewTitle : l10n.projectFormEditTitle,
       style: theme.textTheme.bodyMedium?.copyWith(
@@ -487,20 +504,12 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       closeOnLeft: false,
       onDelete: null,
       deleteTooltip: l10n.deleteProjectAction,
-      onClose: null,
+      onClose: widget.onClose == null ? null : handleClose,
       closeTooltip: l10n.closeLabel,
       scrollController: _scrollController,
       showHandleBar: false,
       headerTitle: headerTitle,
       centerHeaderTitle: true,
-      leadingActions: [
-        if (widget.onClose != null)
-          TextButton(
-            onPressed: handleClose,
-            style: headerActionStyle,
-            child: Text(l10n.cancelLabel),
-          ),
-      ],
       trailingActions: widget.trailingActions,
       footer: FormFooterBar(
         submitLabel: widget.submitTooltip,

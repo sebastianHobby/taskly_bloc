@@ -11,6 +11,7 @@ enum TileOverflowActionGroup {
 enum TileOverflowActionId {
   edit,
   moveToProject,
+  toggleCompletion,
   completeSeries,
   delete,
 }
@@ -43,11 +44,27 @@ abstract final class TileOverflowActionCatalog {
     required EntityType entityType,
     required String entityId,
     required String entityName,
+    required bool completed,
     required bool isRepeating,
     required bool seriesEnded,
+    bool canToggleCompletion = true,
   }) {
     final canCompleteSeries = isRepeating && !seriesEnded;
     return [
+      TileOverflowActionEntry(
+        id: TileOverflowActionId.toggleCompletion,
+        group: TileOverflowActionGroup.edit,
+        label: completed ? l10n.markIncompleteAction : l10n.markCompleteAction,
+        enabled: canToggleCompletion,
+        destructive: false,
+        intent: TileIntentSetCompletion(
+          entityType: entityType,
+          entityId: entityId,
+          entityName: entityName,
+          completed: !completed,
+          scope: CompletionScope.entity,
+        ),
+      ),
       TileOverflowActionEntry(
         id: TileOverflowActionId.completeSeries,
         group: TileOverflowActionGroup.destructive,

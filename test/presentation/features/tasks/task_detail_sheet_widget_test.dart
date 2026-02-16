@@ -108,6 +108,30 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.byType(TaskForm), findsOneWidget);
-    expect(find.text('Edit Task'), findsWidgets);
+    expect(find.text('Edit task'), findsWidgets);
   });
+
+  testWidgetsSafe(
+    'shows mark complete action in overflow menu for edit flow',
+    (tester) async {
+      final task = TestData.task(name: 'Edit Task', completed: false);
+      final state = TaskDetailLoadSuccess(
+        availableProjects: const <Project>[],
+        availableValues: const <Value>[],
+        task: task,
+        checklistTitles: const <String>[],
+      );
+
+      when(() => bloc.state).thenReturn(state);
+      whenListen(bloc, Stream.value(state), initialState: state);
+
+      await pumpSheet(tester);
+      await tester.pumpForStream();
+
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpForStream();
+
+      expect(find.text('Mark complete'), findsOneWidget);
+    },
+  );
 }

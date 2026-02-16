@@ -706,6 +706,8 @@ class AttentionEngine implements AttentionEngineContract {
     return switch (routine.periodType) {
       RoutinePeriodType.day => routine.targetCount * days,
       RoutinePeriodType.week => ((routine.targetCount / 7) * days).round(),
+      RoutinePeriodType.fortnight =>
+        ((routine.targetCount / 14) * days).round(),
       RoutinePeriodType.month => ((routine.targetCount / 30) * days).round(),
     };
   }

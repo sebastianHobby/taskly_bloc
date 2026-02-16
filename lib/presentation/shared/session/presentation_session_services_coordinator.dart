@@ -13,7 +13,13 @@ import 'package:taskly_bloc/presentation/shared/session/session_shared_data_serv
 ///
 /// This sits in the Presentation layer so that core startup code does not need
 /// to depend on presentation-only concerns.
-final class PresentationSessionServicesCoordinator {
+abstract interface class PresentationSessionCoordinator {
+  Future<void> start();
+  Future<void> stop();
+}
+
+final class PresentationSessionServicesCoordinator
+    implements PresentationSessionCoordinator {
   PresentationSessionServicesCoordinator({
     required SessionDayKeyService sessionDayKeyService,
     required SessionStreamCacheManager sessionStreamCacheManager,
@@ -41,6 +47,7 @@ final class PresentationSessionServicesCoordinator {
   Future<void>? _startInFlight;
   bool _started = false;
 
+  @override
   Future<void> start() {
     if (_started) return Future.value();
     return _startInFlight ??= _start();
@@ -64,6 +71,7 @@ final class PresentationSessionServicesCoordinator {
     }
   }
 
+  @override
   Future<void> stop() async {
     final inFlight = _startInFlight;
     if (inFlight != null) {

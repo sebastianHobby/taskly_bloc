@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class ChecklistEditorSection extends StatefulWidget {
   const ChecklistEditorSection({
     required this.titles,
     required this.onChanged,
-    this.title = 'Checklist',
+    required this.title,
+    required this.addItemFieldLabel,
+    required this.addItemButtonLabel,
+    required this.deleteItemTooltip,
     this.maxItems = 20,
     super.key,
   });
@@ -13,6 +17,9 @@ class ChecklistEditorSection extends StatefulWidget {
   final List<String> titles;
   final ValueChanged<List<String>> onChanged;
   final String title;
+  final String addItemFieldLabel;
+  final String addItemButtonLabel;
+  final String deleteItemTooltip;
   final int maxItems;
 
   @override
@@ -21,72 +28,131 @@ class ChecklistEditorSection extends StatefulWidget {
 
 class _ChecklistEditorSectionState extends State<ChecklistEditorSection> {
   final TextEditingController _addController = TextEditingController();
-  bool _expanded = false;
+  final FocusNode _addFocusNode = FocusNode();
+  final List<_ChecklistDraftItem> _items = <_ChecklistDraftItem>[];
+  int _nextDraftId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _setItemsFromTitles(widget.titles);
+  }
+
+  @override
+  void didUpdateWidget(covariant ChecklistEditorSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_sameTitles(_currentTitles(), widget.titles)) return;
+    _setItemsFromTitles(widget.titles);
+  }
 
   @override
   void dispose() {
+    for (final item in _items) {
+      item.dispose();
+    }
     _addController.dispose();
+    _addFocusNode.dispose();
     super.dispose();
   }
 
+  void _setItemsFromTitles(List<String> titles) {
+    for (final item in _items) {
+      item.dispose();
+    }
+    _items
+      ..clear()
+      ..addAll(
+        titles.take(widget.maxItems).map((title) {
+          final draft = _ChecklistDraftItem(
+            id: 'draft-${_nextDraftId++}',
+            initialTitle: title,
+          );
+          draft.controller.addListener(_emitFromDrafts);
+          return draft;
+        }),
+      );
+  }
+
+  List<String> _currentTitles() => _items
+      .map((item) => item.controller.text.trim())
+      .where((title) => title.isNotEmpty)
+      .take(widget.maxItems)
+      .toList(growable: false);
+
+  bool _sameTitles(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i += 1) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   void _emit(List<String> next) {
-    widget.onChanged(
-      next
-          .map((title) => title.trim())
-          .where((title) => title.isNotEmpty)
-          .take(widget.maxItems)
-          .toList(growable: false),
-    );
+    widget.onChanged(next);
+  }
+
+  void _emitFromDrafts() {
+    final next = _currentTitles();
+    if (_sameTitles(next, widget.titles)) return;
+    _emit(next);
   }
 
   void _addItem() {
     final text = _addController.text.trim();
     if (text.isEmpty) return;
-    if (widget.titles.length >= widget.maxItems) return;
+    if (_items.length >= widget.maxItems) return;
     _addController.clear();
-    _emit([...widget.titles, text]);
+    setState(() {
+      final draft = _ChecklistDraftItem(
+        id: 'draft-${_nextDraftId++}',
+        initialTitle: text,
+      );
+      draft.controller.addListener(_emitFromDrafts);
+      _items.add(draft);
+    });
+    _emitFromDrafts();
+    _addFocusNode.requestFocus();
+  }
+
+  bool _isPlainEnter(KeyEvent event) {
+    final keyboard = HardwareKeyboard.instance;
+    final isEnter =
+        event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.numpadEnter;
+    if (!isEnter) return false;
+    if (keyboard.isShiftPressed || keyboard.isControlPressed) return false;
+    if (keyboard.isAltPressed || keyboard.isMetaPressed) return false;
+    return true;
   }
 
   void _deleteAt(int index) {
-    if (index < 0 || index >= widget.titles.length) return;
-    final next = [...widget.titles]..removeAt(index);
-    _emit(next);
-  }
-
-  void _updateAt(int index, String value) {
-    if (index < 0 || index >= widget.titles.length) return;
-    final next = [...widget.titles];
-    next[index] = value;
-    _emit(next);
+    if (index < 0 || index >= _items.length) return;
+    setState(() {
+      final removed = _items.removeAt(index);
+      removed.dispose();
+    });
+    _emitFromDrafts();
   }
 
   void _reorder(int oldIndex, int newIndex) {
-    final next = [...widget.titles];
-    if (oldIndex < 0 || oldIndex >= next.length) return;
+    if (oldIndex < 0 || oldIndex >= _items.length) return;
     var adjustedNewIndex = newIndex;
     if (adjustedNewIndex > oldIndex) {
       adjustedNewIndex -= 1;
     }
-    if (adjustedNewIndex < 0 || adjustedNewIndex > next.length) return;
-    final item = next.removeAt(oldIndex);
-    next.insert(adjustedNewIndex, item);
-    _emit(next);
-  }
-
-  String _previewText() {
-    if (widget.titles.isEmpty) return '0 items';
-    if (widget.titles.length == 1) return widget.titles.first;
-    if (widget.titles.length == 2) {
-      return '${widget.titles[0]}, ${widget.titles[1]}';
-    }
-    return '${widget.titles[0]}, ${widget.titles[1]} +${widget.titles.length - 2} more';
+    if (adjustedNewIndex < 0 || adjustedNewIndex > _items.length) return;
+    setState(() {
+      final item = _items.removeAt(oldIndex);
+      _items.insert(adjustedNewIndex, item);
+    });
+    _emitFromDrafts();
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final theme = Theme.of(context);
-    final canAddMore = widget.titles.length < widget.maxItems;
+    final canAddMore = _items.length < widget.maxItems;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -98,45 +164,91 @@ class _ChecklistEditorSectionState extends State<ChecklistEditorSection> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            InkWell(
-              onTap: () => setState(() => _expanded = !_expanded),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      widget.title,
-                      style: theme.textTheme.titleSmall,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+                Text(
+                  '${_items.length}/${widget.maxItems}',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+            SizedBox(height: tokens.spaceSm),
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              itemCount: _items.length,
+              onReorder: _reorder,
+              itemBuilder: (context, index) {
+                final item = _items[index];
+                return ListTile(
+                  key: ValueKey(item.id),
+                  contentPadding: EdgeInsets.zero,
+                  leading: ReorderableDragStartListener(
+                    index: index,
+                    child: const Icon(Icons.drag_indicator),
+                  ),
+                  title: Focus(
+                    onKeyEvent: (node, event) {
+                      if (event is KeyDownEvent && _isPlainEnter(event)) {
+                        FocusScope.of(context).nextFocus();
+                        return KeyEventResult.handled;
+                      }
+                      return KeyEventResult.ignored;
+                    },
+                    child: TextFormField(
+                      controller: item.controller,
+                      focusNode: item.focusNode,
+                      minLines: 1,
+                      maxLines: null,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      onFieldSubmitted: (_) {
+                        FocusScope.of(context).nextFocus();
+                      },
+                      onTapOutside: (_) =>
+                          FocusManager.instance.primaryFocus?.unfocus(),
+                      onEditingComplete: () {},
                     ),
                   ),
-                  Text(
-                    '${widget.titles.length}/${widget.maxItems}',
-                    style: theme.textTheme.bodySmall,
+                  trailing: IconButton(
+                    tooltip: widget.deleteItemTooltip,
+                    onPressed: () => _deleteAt(index),
+                    icon: const Icon(Icons.delete_outline),
                   ),
-                  SizedBox(width: tokens.spaceXs),
-                  Icon(_expanded ? Icons.expand_less : Icons.expand_more),
-                ],
-              ),
+                );
+              },
             ),
-            if (!_expanded) ...[
-              SizedBox(height: tokens.spaceXs),
-              Text(
-                _previewText(),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium,
-              ),
-            ],
-            if (_expanded) ...[
-              SizedBox(height: tokens.spaceSm),
-              Row(
+            SizedBox(height: tokens.spaceSm),
+            Focus(
+              onKeyEvent: (node, event) {
+                if (event is KeyDownEvent && _isPlainEnter(event)) {
+                  if (canAddMore) {
+                    _addItem();
+                  }
+                  return KeyEventResult.handled;
+                }
+                return KeyEventResult.ignored;
+              },
+              child: Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: _addController,
-                      maxLines: null,
-                      minLines: 1,
-                      decoration: const InputDecoration(
-                        labelText: 'Add item',
+                      focusNode: _addFocusNode,
+                      maxLines: 1,
+                      textInputAction: TextInputAction.done,
+                      decoration: InputDecoration(
+                        labelText: widget.addItemFieldLabel,
                         isDense: true,
                       ),
                       onSubmitted: (_) => _addItem(),
@@ -145,49 +257,31 @@ class _ChecklistEditorSectionState extends State<ChecklistEditorSection> {
                   SizedBox(width: tokens.spaceXs),
                   FilledButton(
                     onPressed: canAddMore ? _addItem : null,
-                    child: const Text('Add'),
+                    child: Text(widget.addItemButtonLabel),
                   ),
                 ],
               ),
-              SizedBox(height: tokens.spaceSm),
-              ReorderableListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                buildDefaultDragHandles: false,
-                itemCount: widget.titles.length,
-                onReorder: _reorder,
-                itemBuilder: (context, index) {
-                  final item = widget.titles[index];
-                  return ListTile(
-                    key: ValueKey('check-item-$index-$item'),
-                    contentPadding: EdgeInsets.zero,
-                    leading: ReorderableDragStartListener(
-                      index: index,
-                      child: const Icon(Icons.drag_indicator),
-                    ),
-                    title: TextFormField(
-                      key: ValueKey('check-item-input-$index-$item'),
-                      initialValue: item,
-                      minLines: 1,
-                      maxLines: null,
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (value) => _updateAt(index, value),
-                    ),
-                    trailing: IconButton(
-                      tooltip: 'Delete item',
-                      onPressed: () => _deleteAt(index),
-                      icon: const Icon(Icons.delete_outline),
-                    ),
-                  );
-                },
-              ),
-            ],
+            ),
           ],
         ),
       ),
     );
+  }
+}
+
+final class _ChecklistDraftItem {
+  _ChecklistDraftItem({
+    required this.id,
+    required String initialTitle,
+  }) : controller = TextEditingController(text: initialTitle),
+       focusNode = FocusNode();
+
+  final String id;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+
+  void dispose() {
+    controller.dispose();
+    focusNode.dispose();
   }
 }

@@ -36,6 +36,9 @@ class FakeIdGenerator implements IdGenerator {
   int _routineIdCounter = 0;
   int _routineCompletionIdCounter = 0;
   int _routineSkipIdCounter = 0;
+  int _taskChecklistItemIdCounter = 0;
+  int _routineChecklistItemIdCounter = 0;
+  int _checklistEventIdCounter = 0;
 
   // Call counts for verification
   int get taskIdCallCount => _taskIdCounter;
@@ -87,6 +90,17 @@ class FakeIdGenerator implements IdGenerator {
 
   @override
   String routineSkipId() => 'routine-skip-${_routineSkipIdCounter++}';
+
+  @override
+  String taskChecklistItemId() =>
+      'task-checklist-item-${_taskChecklistItemIdCounter++}';
+
+  @override
+  String routineChecklistItemId() =>
+      'routine-checklist-item-${_routineChecklistItemIdCounter++}';
+
+  @override
+  String checklistEventId() => 'checklist-event-${_checklistEventIdCounter++}';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // V5 DETERMINISTIC IDs - Predictable based on inputs
@@ -197,6 +211,28 @@ class FakeIdGenerator implements IdGenerator {
       'project-anchor-$projectId';
 
   @override
+  String taskChecklistItemStateId({
+    required String taskId,
+    required String checklistItemId,
+    required DateTime? occurrenceDate,
+  }) {
+    final dateKey =
+        occurrenceDate?.toIso8601String().split('T').first ?? 'null';
+    return 'task-checklist-state-$taskId-$checklistItemId-$dateKey';
+  }
+
+  @override
+  String routineChecklistItemStateId({
+    required String routineId,
+    required String checklistItemId,
+    required String periodType,
+    required DateTime windowKey,
+  }) {
+    final dateKey = windowKey.toIso8601String().split('T').first;
+    return 'routine-checklist-state-$routineId-$checklistItemId-$periodType-$dateKey';
+  }
+
+  @override
   String attentionResolutionId() =>
       'attention-resolution-${_attentionResolutionIdCounter++}';
 
@@ -221,6 +257,9 @@ class FakeIdGenerator implements IdGenerator {
     _routineIdCounter = 0;
     _routineCompletionIdCounter = 0;
     _routineSkipIdCounter = 0;
+    _taskChecklistItemIdCounter = 0;
+    _routineChecklistItemIdCounter = 0;
+    _checklistEventIdCounter = 0;
   }
 
   /// Get the next task ID without incrementing the counter.

@@ -84,6 +84,30 @@ void main() {
   });
 
   testWidgetsSafe(
+    'shows mark complete action in overflow menu for edit flow',
+    (tester) async {
+      final project = TestData.project(name: 'Project X', completed: false);
+      final state = ProjectDetailState.loadSuccess(
+        availableValues: const <Value>[],
+        project: project,
+      );
+      when(() => bloc.state).thenReturn(state);
+      whenListen(bloc, Stream.value(state), initialState: state);
+
+      await pumpView(
+        tester,
+        const ProjectEditSheetView(projectId: 'project-1'),
+      );
+      await tester.pumpForStream();
+
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpForStream();
+
+      expect(find.text('Mark complete'), findsOneWidget);
+    },
+  );
+
+  testWidgetsSafe(
     'shows compact notes preview and expands/collapses with done',
     (tester) async {
       final project = TestData.project(

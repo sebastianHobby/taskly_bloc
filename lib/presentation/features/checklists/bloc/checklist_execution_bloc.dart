@@ -420,12 +420,27 @@ class ChecklistExecutionBloc
           periodType: RoutinePeriodType.week,
           windowKey: day.subtract(Duration(days: delta)),
         );
+      case RoutinePeriodType.fortnight:
+        final weekDelta = day.weekday - DateTime.monday;
+        final weekStart = day.subtract(Duration(days: weekDelta));
+        final anchor = DateTime.utc(1970, 1, 5);
+        final deltaDays = weekStart.difference(anchor).inDays;
+        final periodIndex = _floorDiv(deltaDays, 14);
+        return (
+          periodType: RoutinePeriodType.fortnight,
+          windowKey: anchor.add(Duration(days: periodIndex * 14)),
+        );
       case RoutinePeriodType.month:
         return (
           periodType: RoutinePeriodType.month,
           windowKey: DateTime.utc(day.year, day.month, 1),
         );
     }
+  }
+
+  int _floorDiv(int value, int divisor) {
+    if (value >= 0) return value ~/ divisor;
+    return -(((-value) + divisor - 1) ~/ divisor);
   }
 
   OperationContext _newContext(String intent, String operation) {

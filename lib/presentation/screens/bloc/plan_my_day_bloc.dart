@@ -63,6 +63,26 @@ final class PlanMyDayPauseRoutineRequested extends PlanMyDayEvent {
   final DateTime pausedUntilUtc;
 }
 
+final class PlanMyDaySkipRoutineInstanceRequested extends PlanMyDayEvent {
+  const PlanMyDaySkipRoutineInstanceRequested({
+    required this.routineId,
+  });
+
+  final String routineId;
+}
+
+final class PlanMyDaySkipRoutinePeriodRequested extends PlanMyDayEvent {
+  const PlanMyDaySkipRoutinePeriodRequested({
+    required this.routineId,
+    required this.periodType,
+    required this.periodKeyUtc,
+  });
+
+  final String routineId;
+  final RoutineSkipPeriodType periodType;
+  final DateTime periodKeyUtc;
+}
+
 final class PlanMyDayConfirm extends PlanMyDayEvent {
   const PlanMyDayConfirm({this.closeOnSuccess = false});
 
@@ -151,6 +171,7 @@ final class PlanMyDayRoutineItem {
     required this.isScheduled,
     required this.isEligibleToday,
     required this.lastScheduledDayUtc,
+    required this.lastCompletedAtUtc,
     required this.completionsInPeriod,
   });
 
@@ -162,6 +183,7 @@ final class PlanMyDayRoutineItem {
   final bool isScheduled;
   final bool isEligibleToday;
   final DateTime? lastScheduledDayUtc;
+  final DateTime? lastCompletedAtUtc;
   final List<RoutineCompletion> completionsInPeriod;
 }
 
@@ -267,7 +289,6 @@ final class PlanMyDayReady extends PlanMyDayState {
     required this.unratedValues,
     required this.scheduledRoutines,
     required this.flexibleRoutines,
-    required this.allRoutines,
     required this.selectedTaskIds,
     required this.selectedRoutineIds,
     required this.allTasks,
@@ -294,7 +315,6 @@ final class PlanMyDayReady extends PlanMyDayState {
   final List<Value> unratedValues;
   final List<PlanMyDayRoutineItem> scheduledRoutines;
   final List<PlanMyDayRoutineItem> flexibleRoutines;
-  final List<PlanMyDayRoutineItem> allRoutines;
   final Set<String> selectedTaskIds;
   final Set<String> selectedRoutineIds;
   final List<Task> allTasks;
@@ -323,7 +343,6 @@ final class PlanMyDayReady extends PlanMyDayState {
     List<Value>? unratedValues,
     List<PlanMyDayRoutineItem>? scheduledRoutines,
     List<PlanMyDayRoutineItem>? flexibleRoutines,
-    List<PlanMyDayRoutineItem>? allRoutines,
     Set<String>? selectedTaskIds,
     Set<String>? selectedRoutineIds,
     List<Task>? allTasks,
@@ -351,7 +370,6 @@ final class PlanMyDayReady extends PlanMyDayState {
       unratedValues: unratedValues ?? this.unratedValues,
       scheduledRoutines: scheduledRoutines ?? this.scheduledRoutines,
       flexibleRoutines: flexibleRoutines ?? this.flexibleRoutines,
-      allRoutines: allRoutines ?? this.allRoutines,
       selectedTaskIds: selectedTaskIds ?? this.selectedTaskIds,
       selectedRoutineIds: selectedRoutineIds ?? this.selectedRoutineIds,
       allTasks: allTasks ?? this.allTasks,
@@ -406,6 +424,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     on<PlanMyDayToggleRoutine>(_onToggleRoutine);
     on<PlanMyDaySwapSuggestionRequested>(_onSwapSuggestionRequested);
     on<PlanMyDayPauseRoutineRequested>(_onPauseRoutineRequested);
+    on<PlanMyDaySkipRoutineInstanceRequested>(_onSkipRoutineInstanceRequested);
+    on<PlanMyDaySkipRoutinePeriodRequested>(_onSkipRoutinePeriodRequested);
     on<PlanMyDayConfirm>(_onConfirm);
     on<PlanMyDayDailyLimitChanged>(_onDailyLimitChanged);
     on<PlanMyDayValueSortChanged>(_onValueSortChanged);
@@ -703,6 +723,75 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     await _routineWriteService.setPausedUntil(
       routine.id,
       pausedUntilUtc: event.pausedUntilUtc,
+      context: context,
+    );
+
+    _selectedRoutineIds = {..._selectedRoutineIds}..remove(routine.id);
+    await _refreshSnapshots(resetSelection: false);
+    if (emit.isDone) return;
+    _emitReady(emit);
+  }
+
+  Future<void> _onSkipRoutineInstanceRequested(
+    PlanMyDaySkipRoutineInstanceRequested event,
+    Emitter<PlanMyDayState> emit,
+  ) async {
+    if (_isDemoMode) return;
+    final routine = _findRoutine(event.routineId);
+    if (routine == null) return;
+
+    final skipDayUtc = dateOnly(_dayKeyUtc);
+    final pausedUntilUtc = skipDayUtc.add(const Duration(days: 1));
+    final context = _contextFactory.create(
+      feature: 'routines',
+      screen: 'plan_my_day',
+      intent: 'skip_instance',
+      operation: 'routine.skip_instance',
+      entityType: 'routine',
+      entityId: routine.id,
+      extraFields: <String, Object?>{
+        'skipDayUtc': skipDayUtc.toIso8601String(),
+        'pausedUntilUtc': pausedUntilUtc.toIso8601String(),
+      },
+    );
+
+    await _routineWriteService.setPausedUntil(
+      routine.id,
+      pausedUntilUtc: pausedUntilUtc,
+      context: context,
+    );
+
+    _selectedRoutineIds = {..._selectedRoutineIds}..remove(routine.id);
+    await _refreshSnapshots(resetSelection: false);
+    if (emit.isDone) return;
+    _emitReady(emit);
+  }
+
+  Future<void> _onSkipRoutinePeriodRequested(
+    PlanMyDaySkipRoutinePeriodRequested event,
+    Emitter<PlanMyDayState> emit,
+  ) async {
+    if (_isDemoMode) return;
+    final routine = _findRoutine(event.routineId);
+    if (routine == null) return;
+
+    final context = _contextFactory.create(
+      feature: 'routines',
+      screen: 'plan_my_day',
+      intent: 'skip_period',
+      operation: 'routine.skip_period',
+      entityType: 'routine',
+      entityId: routine.id,
+      extraFields: <String, Object?>{
+        'periodType': event.periodType.name,
+        'periodKeyUtc': event.periodKeyUtc.toIso8601String(),
+      },
+    );
+
+    await _routineWriteService.recordSkip(
+      routineId: routine.id,
+      periodType: event.periodType,
+      periodKeyUtc: event.periodKeyUtc,
       context: context,
     );
 
@@ -1319,7 +1408,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     final routineItems = _buildRoutineItems();
     final scheduledRoutines = routineItems.scheduledEligible;
     final flexibleRoutines = routineItems.flexibleEligible;
-    final allRoutines = routineItems.allItems;
 
     _dueTodayTaskIds = dueTodayTasks.map((task) => task.id).toSet();
     _plannedTaskIds = plannedTasks.map((task) => task.id).toSet();
@@ -1391,7 +1479,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         unratedValues: unratedValues,
         scheduledRoutines: scheduledRoutines,
         flexibleRoutines: flexibleRoutines,
-        allRoutines: allRoutines,
         selectedTaskIds: selectedTaskIds,
         selectedRoutineIds: selectedRoutineIds,
         allTasks: activeTasks,
@@ -1409,7 +1496,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     final todayKey = dateOnly(_dayKeyUtc);
     final scheduledEligible = <PlanMyDayRoutineItem>[];
     final flexibleEligible = <PlanMyDayRoutineItem>[];
-    final allItems = <PlanMyDayRoutineItem>[];
 
     for (final routine in _routines.where((routine) => routine.isActive)) {
       if (routine.isPausedOn(todayKey)) continue;
@@ -1444,6 +1530,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         isScheduled: policy.cadenceKind == RoutineCadenceKind.scheduled,
         isEligibleToday: policy.isEligibleToday && !isCompletedToday,
         lastScheduledDayUtc: policy.lastScheduledDayUtc,
+        lastCompletedAtUtc: _lastCompletionForRoutine(routine.id),
         completionsInPeriod: completionsInPeriod,
       );
 
@@ -1454,19 +1541,12 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
           flexibleEligible.add(item);
         }
       }
-
-      if (item.isEligibleToday ||
-          _selectedRoutineIds.contains(routine.id) ||
-          _lockedCompletedRoutineIds.contains(routine.id)) {
-        allItems.add(item);
-      }
     }
 
     scheduledEligible.sort(_compareScheduledRoutines);
     flexibleEligible.sort(_compareFlexibleRoutines);
 
     return _RoutineItemBuildResult(
-      allItems: allItems,
       scheduledEligible: scheduledEligible,
       flexibleEligible: flexibleEligible,
     );
@@ -1494,10 +1574,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     final byDaysLeft = a.snapshot.daysLeft.compareTo(b.snapshot.daysLeft);
     if (byDaysLeft != 0) return byDaysLeft;
 
-    final byRemaining = b.snapshot.remainingCount.compareTo(
-      a.snapshot.remainingCount,
-    );
-    if (byRemaining != 0) return byRemaining;
+    final byLastCompleted = _compareLastCompleted(a, b);
+    if (byLastCompleted != 0) return byLastCompleted;
 
     return a.routine.name.compareTo(b.routine.name);
   }
@@ -1512,6 +1590,30 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     if (aDay == null) return 1;
     if (bDay == null) return -1;
     return aDay.compareTo(bDay);
+  }
+
+  int _compareLastCompleted(
+    PlanMyDayRoutineItem a,
+    PlanMyDayRoutineItem b,
+  ) {
+    final aDay = a.lastCompletedAtUtc;
+    final bDay = b.lastCompletedAtUtc;
+    if (aDay == null && bDay == null) return 0;
+    if (aDay == null) return -1;
+    if (bDay == null) return 1;
+    return aDay.compareTo(bDay);
+  }
+
+  DateTime? _lastCompletionForRoutine(String routineId) {
+    DateTime? latest;
+    for (final completion in _routineCompletions) {
+      if (completion.routineId != routineId) continue;
+      final when = completion.completedAtUtc;
+      if (latest == null || when.isAfter(latest)) {
+        latest = when;
+      }
+    }
+    return latest;
   }
 
   Map<String, int> _routineSelectionsByValue() {
@@ -1911,12 +2013,10 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 @immutable
 final class _RoutineItemBuildResult {
   const _RoutineItemBuildResult({
-    required this.allItems,
     required this.scheduledEligible,
     required this.flexibleEligible,
   });
 
-  final List<PlanMyDayRoutineItem> allItems;
   final List<PlanMyDayRoutineItem> scheduledEligible;
   final List<PlanMyDayRoutineItem> flexibleEligible;
 }

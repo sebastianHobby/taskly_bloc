@@ -21,6 +21,9 @@ import 'package:taskly_domain/services.dart';
 
 class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
+class MockTaskChecklistRepository extends Mock
+    implements TaskChecklistRepositoryContract {}
+
 class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
 class MockValueRepository extends Mock implements ValueRepositoryContract {}
@@ -45,6 +48,7 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockTaskRepository taskRepository;
+  late MockTaskChecklistRepository taskChecklistRepository;
   late MockProjectRepository projectRepository;
   late MockValueRepository valueRepository;
   late MockMyDayRepositoryContract myDayRepository;
@@ -57,6 +61,7 @@ void main() {
 
   setUp(() {
     taskRepository = MockTaskRepository();
+    taskChecklistRepository = MockTaskChecklistRepository();
     projectRepository = MockProjectRepository();
     valueRepository = MockValueRepository();
     myDayRepository = MockMyDayRepositoryContract();
@@ -105,6 +110,9 @@ void main() {
         providers: [
           RepositoryProvider<TaskRepositoryContract>.value(
             value: taskRepository,
+          ),
+          RepositoryProvider<TaskChecklistRepositoryContract>.value(
+            value: taskChecklistRepository,
           ),
           RepositoryProvider<ProjectRepositoryContract>.value(
             value: projectRepository,

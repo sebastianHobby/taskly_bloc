@@ -351,6 +351,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                 context,
                 projectId: project.id,
                 projectName: project.name,
+                completed: project.completed,
                 isRepeating: project.isRepeating,
                 seriesEnded: project.seriesEnded,
               ),
@@ -369,6 +370,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
     BuildContext context, {
     required String projectId,
     required String projectName,
+    required bool completed,
     required bool isRepeating,
     required bool seriesEnded,
   }) {
@@ -377,6 +379,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
       entityType: EntityType.project,
       entityId: projectId,
       entityName: projectName,
+      completed: completed,
       isRepeating: isRepeating,
       seriesEnded: seriesEnded,
     );

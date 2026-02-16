@@ -22,11 +22,13 @@ final class RoutineScheduleService {
     final periodStart = switch (periodType) {
       RoutinePeriodType.day => today,
       RoutinePeriodType.week => _weekStart(today),
+      RoutinePeriodType.fortnight => _fortnightStart(today),
       RoutinePeriodType.month => _monthStart(today),
     };
     final periodEnd = switch (periodType) {
       RoutinePeriodType.day => periodStart,
       RoutinePeriodType.week => periodStart.add(const Duration(days: 6)),
+      RoutinePeriodType.fortnight => periodStart.add(const Duration(days: 13)),
       RoutinePeriodType.month => _monthEnd(today),
     };
 
@@ -150,6 +152,13 @@ final class RoutineScheduleService {
                 remainingCount: remainingCount,
                 daysLeft: daysLeft,
               ),
+      RoutinePeriodType.fortnight => _nextFlexibleDay(
+        routine: routine,
+        today: today,
+        periodEndUtc: periodEndUtc,
+        remainingCount: remainingCount,
+        daysLeft: daysLeft,
+      ),
       RoutinePeriodType.month =>
         routine.scheduleMode == RoutineScheduleMode.scheduled
             ? _nextMonthlyScheduledDay(
@@ -233,6 +242,19 @@ final class RoutineScheduleService {
 
   DateTime _monthStart(DateTime dayKeyUtc) {
     return DateTime.utc(dayKeyUtc.year, dayKeyUtc.month);
+  }
+
+  DateTime _fortnightStart(DateTime dayKeyUtc) {
+    final weekStart = _weekStart(dayKeyUtc);
+    final anchor = DateTime.utc(1970, 1, 5); // Monday
+    final deltaDays = weekStart.difference(anchor).inDays;
+    final periodIndex = _floorDiv(deltaDays, 14);
+    return anchor.add(Duration(days: periodIndex * 14));
+  }
+
+  int _floorDiv(int value, int divisor) {
+    if (value >= 0) return value ~/ divisor;
+    return -(((-value) + divisor - 1) ~/ divisor);
   }
 
   DateTime _monthEnd(DateTime dayKeyUtc) {

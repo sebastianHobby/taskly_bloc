@@ -1,4 +1,5 @@
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/session_day_key_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
@@ -28,9 +29,15 @@ final class ScheduledSessionQueryService {
   static const Duration _prewarmWindow = Duration(days: 30);
 
   void start() {
-    _sessionDayKeyService.start();
     final todayDayKeyUtc = _sessionDayKeyService.todayDayKeyUtc.valueOrNull;
-    if (todayDayKeyUtc == null) return;
+    if (todayDayKeyUtc == null) {
+      AppLog.warnStructured(
+        'startup.scheduled',
+        'prewarm skipped: session day key not ready',
+        fields: const <String, Object?>{},
+      );
+      return;
+    }
 
     // Prewarm near-horizon global scope for instant Scheduled tab load.
     _preloadRange(
