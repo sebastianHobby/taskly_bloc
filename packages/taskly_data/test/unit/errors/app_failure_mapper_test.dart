@@ -71,12 +71,28 @@ void main() {
       expect(failure.message, contains('disk I/O error'));
     });
 
-    testSafe('maps AuthException to AuthFailure', () async {
+    testSafe('maps AuthException 401 to UnauthorizedFailure', () async {
       final mapped = AppFailureMapper.fromException(
         AuthException('unauthorized', statusCode: '401'),
       );
-      expect(mapped, isA<AuthFailure>());
+      expect(mapped, isA<UnauthorizedFailure>());
       expect(mapped.message, contains('unauthorized'));
+    });
+
+    testSafe('maps AuthException 403 to ForbiddenFailure', () async {
+      final mapped = AppFailureMapper.fromException(
+        AuthException('forbidden', statusCode: '403'),
+      );
+      expect(mapped, isA<ForbiddenFailure>());
+      expect(mapped.message, contains('forbidden'));
+    });
+
+    testSafe('maps AuthException 429 to RateLimitedFailure', () async {
+      final mapped = AppFailureMapper.fromException(
+        AuthException('rate limited', statusCode: '429'),
+      );
+      expect(mapped, isA<RateLimitedFailure>());
+      expect(mapped.message, contains('rate limited'));
     });
 
     testSafe('maps PostgrestException to NetworkFailure', () async {
@@ -85,6 +101,14 @@ void main() {
       );
       expect(mapped, isA<NetworkFailure>());
       expect(mapped.message, contains('bad request'));
+    });
+
+    testSafe('maps PostgrestException 42501 to ForbiddenFailure', () async {
+      final mapped = AppFailureMapper.fromException(
+        const PostgrestException(message: 'rls denied', code: '42501'),
+      );
+      expect(mapped, isA<ForbiddenFailure>());
+      expect(mapped.message, contains('rls denied'));
     });
 
     testSafe('falls back to UnknownFailure', () async {

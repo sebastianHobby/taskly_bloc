@@ -24,7 +24,7 @@ class ValuesListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppLog.warnThrottledStructured(
+    AppLog.routineThrottledStructured(
       'values.list.build',
       const Duration(seconds: 2),
       'values.list',

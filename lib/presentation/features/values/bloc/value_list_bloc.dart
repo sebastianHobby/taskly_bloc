@@ -154,7 +154,7 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
     ValueListSubscriptionRequested event,
     Emitter<ValueListState> emit,
   ) async {
-    AppLog.warnThrottledStructured(
+    AppLog.routineThrottledStructured(
       'values.list.subscribe',
       const Duration(seconds: 2),
       'values.list',
@@ -180,7 +180,7 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
     emit(createLoadingState());
     try {
       final initialValues = await _valueRepository.getAll();
-      AppLog.warnThrottledStructured(
+      AppLog.routineThrottledStructured(
         'values.list.initial',
         const Duration(seconds: 2),
         'values.list',
@@ -198,7 +198,7 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
     await emit.forEach<List<Value>>(
       stream,
       onData: (values) {
-        AppLog.warnThrottledStructured(
+        AppLog.routineThrottledStructured(
           'values.list.watchAll',
           const Duration(seconds: 2),
           'values.list',

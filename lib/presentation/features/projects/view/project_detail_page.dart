@@ -37,6 +37,7 @@ import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/time.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
@@ -148,7 +149,22 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
           context: contextData,
         );
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      final contextData = _contextFactory.create(
+        feature: 'projects',
+        screen: 'project_detail',
+        intent: 'routine_log_selected',
+        operation: 'routines.complete',
+        entityType: 'routine',
+        extraFields: <String, Object?>{'count': routineIds.length},
+      );
+      AppLog.handleStructured(
+        'projects.detail',
+        'log routines failed',
+        error,
+        stackTrace,
+        contextData.toLogFields(),
+      );
       if (!mounted) return;
       _showRoutineActionFailure();
     }
@@ -177,7 +193,22 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
           context: contextData,
         );
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      final contextData = _contextFactory.create(
+        feature: 'projects',
+        screen: 'project_detail',
+        intent: 'routine_unlog_selected',
+        operation: 'routines.unlog',
+        entityType: 'routine',
+        extraFields: <String, Object?>{'count': routineIds.length},
+      );
+      AppLog.handleStructured(
+        'projects.detail',
+        'unlog routines failed',
+        error,
+        stackTrace,
+        contextData.toLogFields(),
+      );
       if (!mounted) return;
       _showRoutineActionFailure();
     }
@@ -223,7 +254,24 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
           context: contextData,
         );
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      final contextData = _contextFactory.create(
+        feature: 'projects',
+        screen: 'project_detail',
+        intent: isActive
+            ? 'routine_activate_selected'
+            : 'routine_deactivate_selected',
+        operation: isActive ? 'routines.activate' : 'routines.deactivate',
+        entityType: 'routine',
+        extraFields: <String, Object?>{'count': routineIds.length},
+      );
+      AppLog.handleStructured(
+        'projects.detail',
+        'set routine active state failed',
+        error,
+        stackTrace,
+        contextData.toLogFields(),
+      );
       if (!mounted) return;
       _showRoutineActionFailure();
     }
@@ -252,7 +300,22 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
         );
         await routineWriteService.delete(routineId, context: contextData);
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      final contextData = _contextFactory.create(
+        feature: 'projects',
+        screen: 'project_detail',
+        intent: 'routine_delete_selected',
+        operation: 'routines.delete',
+        entityType: 'routine',
+        extraFields: <String, Object?>{'count': routineIds.length},
+      );
+      AppLog.handleStructured(
+        'projects.detail',
+        'delete routines failed',
+        error,
+        stackTrace,
+        contextData.toLogFields(),
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -356,7 +419,22 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
 
     try {
       await completer.future;
-    } catch (_) {
+    } catch (error, stackTrace) {
+      final contextData = _contextFactory.create(
+        feature: 'projects',
+        screen: 'project_detail',
+        intent: shouldComplete ? 'project_complete' : 'project_reopen',
+        operation: 'projects.toggle_completion',
+        entityType: 'project',
+        entityId: project.id,
+      );
+      AppLog.handleStructured(
+        'projects.detail',
+        'project completion change failed',
+        error,
+        stackTrace,
+        contextData.toLogFields(),
+      );
       return;
     }
 

@@ -10,7 +10,6 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/taskly_domain.dart'
     show AppFailure, OperationContext;
-import 'package:taskly_domain/time.dart';
 
 sealed class JournalEntryEditorEvent {
   const JournalEntryEditorEvent();
@@ -41,6 +40,27 @@ final class JournalEntryEditorEntryValueChanged
 
   final String trackerId;
   final Object? value;
+}
+
+final class JournalEntryEditorDailyValueChanged
+    extends JournalEntryEditorEvent {
+  const JournalEntryEditorDailyValueChanged({
+    required this.trackerId,
+    required this.value,
+  });
+
+  final String trackerId;
+  final Object? value;
+}
+
+final class JournalEntryEditorDailyDeltaAdded extends JournalEntryEditorEvent {
+  const JournalEntryEditorDailyDeltaAdded({
+    required this.trackerId,
+    required this.delta,
+  });
+
+  final String trackerId;
+  final int delta;
 }
 
 final class JournalEntryEditorSaveRequested extends JournalEntryEditorEvent {
@@ -80,12 +100,14 @@ final class JournalEntryEditorState {
     required this.selectedDayLocal,
     required this.groups,
     required this.trackers,
+    required this.dailyTrackers,
     required this.definitionById,
+    required this.dayStateByTrackerId,
     required this.moodTrackerId,
     required this.mood,
     required this.note,
     required this.entryValues,
-    required this.dailySummaryItems,
+    required this.dailyDraftValues,
     required this.isDirty,
   });
 
@@ -96,12 +118,14 @@ final class JournalEntryEditorState {
       selectedDayLocal: DateTime(2000),
       groups: const <TrackerGroup>[],
       trackers: const <TrackerDefinition>[],
+      dailyTrackers: const <TrackerDefinition>[],
       definitionById: const <String, TrackerDefinition>{},
+      dayStateByTrackerId: const <String, TrackerStateDay>{},
       moodTrackerId: null,
       mood: null,
       note: '',
       entryValues: const <String, Object?>{},
-      dailySummaryItems: const <JournalDailySummaryItem>[],
+      dailyDraftValues: const <String, Object?>{},
       isDirty: false,
     );
   }
@@ -111,12 +135,14 @@ final class JournalEntryEditorState {
   final DateTime selectedDayLocal;
   final List<TrackerGroup> groups;
   final List<TrackerDefinition> trackers;
+  final List<TrackerDefinition> dailyTrackers;
   final Map<String, TrackerDefinition> definitionById;
+  final Map<String, TrackerStateDay> dayStateByTrackerId;
   final String? moodTrackerId;
   final MoodRating? mood;
   final String note;
   final Map<String, Object?> entryValues;
-  final List<JournalDailySummaryItem> dailySummaryItems;
+  final Map<String, Object?> dailyDraftValues;
   final bool isDirty;
 
   bool get isEditingExisting => entryId != null && entryId!.trim().isNotEmpty;
@@ -127,12 +153,14 @@ final class JournalEntryEditorState {
     DateTime? selectedDayLocal,
     List<TrackerGroup>? groups,
     List<TrackerDefinition>? trackers,
+    List<TrackerDefinition>? dailyTrackers,
     Map<String, TrackerDefinition>? definitionById,
+    Map<String, TrackerStateDay>? dayStateByTrackerId,
     String? moodTrackerId,
     MoodRating? mood,
     String? note,
     Map<String, Object?>? entryValues,
-    List<JournalDailySummaryItem>? dailySummaryItems,
+    Map<String, Object?>? dailyDraftValues,
     bool? isDirty,
   }) {
     return JournalEntryEditorState(
@@ -141,12 +169,14 @@ final class JournalEntryEditorState {
       selectedDayLocal: selectedDayLocal ?? this.selectedDayLocal,
       groups: groups ?? this.groups,
       trackers: trackers ?? this.trackers,
+      dailyTrackers: dailyTrackers ?? this.dailyTrackers,
       definitionById: definitionById ?? this.definitionById,
+      dayStateByTrackerId: dayStateByTrackerId ?? this.dayStateByTrackerId,
       moodTrackerId: moodTrackerId ?? this.moodTrackerId,
       mood: mood ?? this.mood,
       note: note ?? this.note,
       entryValues: entryValues ?? this.entryValues,
-      dailySummaryItems: dailySummaryItems ?? this.dailySummaryItems,
+      dailyDraftValues: dailyDraftValues ?? this.dailyDraftValues,
       isDirty: isDirty ?? this.isDirty,
     );
   }
@@ -160,16 +190,26 @@ class JournalEntryEditorBloc
     required String? entryId,
     required Set<String> preselectedTrackerIds,
     required DateTime Function() nowUtc,
+    DateTime? selectedDayLocal,
   }) : _repository = repository,
        _errorReporter = errorReporter,
        _entryId = entryId,
        _preselectedTrackerIds = preselectedTrackerIds,
        _nowUtc = nowUtc,
+       _selectedDayLocalOverride = selectedDayLocal,
        super(JournalEntryEditorState.initial(entryId: entryId)) {
     on<JournalEntryEditorStarted>(_onStarted, transformer: restartable());
     on<JournalEntryEditorMoodChanged>(_onMoodChanged);
     on<JournalEntryEditorNoteChanged>(_onNoteChanged);
     on<JournalEntryEditorEntryValueChanged>(_onEntryValueChanged);
+    on<JournalEntryEditorDailyValueChanged>(
+      _onDailyValueChanged,
+      transformer: sequential(),
+    );
+    on<JournalEntryEditorDailyDeltaAdded>(
+      _onDailyDeltaAdded,
+      transformer: sequential(),
+    );
     on<JournalEntryEditorSaveRequested>(
       _onSaveRequested,
       transformer: sequential(),
@@ -181,6 +221,7 @@ class JournalEntryEditorBloc
   final String? _entryId;
   final Set<String> _preselectedTrackerIds;
   final DateTime Function() _nowUtc;
+  final DateTime? _selectedDayLocalOverride;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
@@ -237,42 +278,35 @@ class JournalEntryEditorBloc
     return scope == 'day' || scope == 'daily' || scope == 'sleep_night';
   }
 
-  List<JournalDailySummaryItem> _buildDailySummaryItems({
-    required List<TrackerDefinition> defs,
-    required List<TrackerStateDay> dayStates,
-  }) {
-    final dailyDefs =
-        defs
-            .where((d) => d.isActive && d.deletedAt == null)
-            .where(_isDailyScope)
-            .toList(growable: false)
-          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
-    final dayStateByTrackerId = {
-      for (final s in dayStates) s.trackerId: s,
-    };
-
-    final items = <JournalDailySummaryItem>[];
-    for (final d in dailyDefs) {
-      final value = dayStateByTrackerId[d.id]?.value;
-      if (value == null) continue;
-      final formatted = _formatSummaryValue(value);
-      if (formatted == null) continue;
-      items.add(JournalDailySummaryItem(label: d.name, value: formatted));
-      if (items.length == 2) break;
-    }
-
-    return items;
+  DateTime _dayUtcFromLocal(DateTime selectedDayLocal) {
+    return DateTime.utc(
+      selectedDayLocal.year,
+      selectedDayLocal.month,
+      selectedDayLocal.day,
+    );
   }
 
-  String? _formatSummaryValue(Object value) {
-    return switch (value) {
-      final bool v => v ? 'Yes' : null,
-      final int v => v.toString(),
-      final double v => v.toStringAsFixed(1),
-      final String v => v,
-      _ => value.toString(),
-    };
+  DateTime _entryOccurredAtForSelectedDay({
+    required DateTime selectedDayLocal,
+    required DateTime nowUtc,
+  }) {
+    return DateTime.utc(
+      selectedDayLocal.year,
+      selectedDayLocal.month,
+      selectedDayLocal.day,
+      nowUtc.hour,
+      nowUtc.minute,
+      nowUtc.second,
+      nowUtc.millisecond,
+      nowUtc.microsecond,
+    );
+  }
+
+  Object? _effectiveDailyValue(String trackerId) {
+    if (state.dailyDraftValues.containsKey(trackerId)) {
+      return state.dailyDraftValues[trackerId];
+    }
+    return state.dayStateByTrackerId[trackerId]?.value;
   }
 
   JournalEntry? _initialEntry;
@@ -286,11 +320,14 @@ class JournalEntryEditorBloc
     Emitter<JournalEntryEditorState> emit,
   ) async {
     final nowLocal = _nowUtc().toLocal();
-    _selectedDayLocal = DateTime(
-      nowLocal.year,
-      nowLocal.month,
-      nowLocal.day,
-    );
+    final initialLocalDay = _selectedDayLocalOverride == null
+        ? DateTime(nowLocal.year, nowLocal.month, nowLocal.day)
+        : DateTime(
+            _selectedDayLocalOverride.year,
+            _selectedDayLocalOverride.month,
+            _selectedDayLocalOverride.day,
+          );
+    _selectedDayLocal = initialLocalDay;
     emit(state.copyWith(selectedDayLocal: _selectedDayLocal));
 
     try {
@@ -342,7 +379,7 @@ class JournalEntryEditorBloc
     final groups$ = _repository.watchTrackerGroups().startWith(
       const <TrackerGroup>[],
     );
-    final dayUtc = dateOnly(_selectedDayLocal);
+    final dayUtc = _dayUtcFromLocal(_selectedDayLocal);
     final dayState$ = _repository
         .watchTrackerStateDay(
           range: DateRange(start: dayUtc, end: dayUtc),
@@ -378,6 +415,14 @@ class JournalEntryEditorBloc
                 .toList(growable: false)
               ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
+        final dailyTrackers =
+            data.defs
+                .where((d) => d.isActive && d.deletedAt == null)
+                .where(_isDailyScope)
+                .where((d) => d.systemKey != 'mood')
+                .toList(growable: false)
+              ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
         String? moodTrackerId;
         for (final d in data.defs) {
           if (d.systemKey == 'mood') {
@@ -389,19 +434,18 @@ class JournalEntryEditorBloc
         final definitionById = {
           for (final d in data.defs) d.id: d,
         };
-
-        final dailySummaryItems = _buildDailySummaryItems(
-          defs: data.defs,
-          dayStates: data.dayStates,
-        );
+        final dayStateByTrackerId = {
+          for (final s in data.dayStates) s.trackerId: s,
+        };
 
         return state.copyWith(
           status: const JournalEntryEditorIdle(),
           groups: groups,
           trackers: trackers,
+          dailyTrackers: dailyTrackers,
           definitionById: definitionById,
+          dayStateByTrackerId: dayStateByTrackerId,
           moodTrackerId: moodTrackerId,
-          dailySummaryItems: dailySummaryItems,
         );
       },
       onError: (e, st) {
@@ -456,6 +500,158 @@ class JournalEntryEditorBloc
     emit(_withIdleAndDirty(state.copyWith(entryValues: next)));
   }
 
+  Future<void> _onDailyValueChanged(
+    JournalEntryEditorDailyValueChanged event,
+    Emitter<JournalEntryEditorState> emit,
+  ) async {
+    final trackerId = event.trackerId.trim();
+    if (trackerId.isEmpty) return;
+
+    final definition = state.definitionById[trackerId];
+    if (definition == null) return;
+
+    final nextDraft = {...state.dailyDraftValues};
+    nextDraft[trackerId] = event.value;
+
+    emit(
+      state.copyWith(
+        status: const JournalEntryEditorSaving(),
+        dailyDraftValues: nextDraft,
+      ),
+    );
+
+    final context = _newContext(
+      intent: 'set_daily_value',
+      operation: 'journal.entry_editor.daily.set',
+      entryId: state.entryId,
+      extraFields: <String, Object?>{
+        'trackerId': trackerId,
+      },
+    );
+
+    try {
+      final nowUtc = _nowUtc();
+      final dayUtc = _dayUtcFromLocal(state.selectedDayLocal);
+      final op = definition.opKind.trim();
+
+      await _repository.appendTrackerEvent(
+        TrackerEvent(
+          id: '',
+          trackerId: trackerId,
+          anchorType: 'day',
+          anchorDate: dayUtc,
+          op: op.isEmpty ? 'set' : op,
+          value: event.value,
+          occurredAt: _entryOccurredAtForSelectedDay(
+            selectedDayLocal: state.selectedDayLocal,
+            nowUtc: nowUtc,
+          ),
+          recordedAt: nowUtc,
+        ),
+        context: context,
+      );
+
+      emit(state.copyWith(status: const JournalEntryEditorIdle()));
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalEntryEditorBloc] set daily value failed',
+      );
+
+      emit(
+        state.copyWith(
+          status: JournalEntryEditorError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to update daily factor. Please try again.',
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onDailyDeltaAdded(
+    JournalEntryEditorDailyDeltaAdded event,
+    Emitter<JournalEntryEditorState> emit,
+  ) async {
+    final trackerId = event.trackerId.trim();
+    if (trackerId.isEmpty) return;
+
+    final definition = state.definitionById[trackerId];
+    if (definition == null) return;
+
+    final current = _effectiveDailyValue(trackerId);
+    final currentNum = switch (current) {
+      final int v => v.toDouble(),
+      final double v => v,
+      _ => 0.0,
+    };
+    final nextDraft = {...state.dailyDraftValues};
+    nextDraft[trackerId] = currentNum + event.delta;
+
+    emit(
+      state.copyWith(
+        status: const JournalEntryEditorSaving(),
+        dailyDraftValues: nextDraft,
+      ),
+    );
+
+    final context = _newContext(
+      intent: 'add_daily_delta',
+      operation: 'journal.entry_editor.daily.add',
+      entryId: state.entryId,
+      extraFields: <String, Object?>{
+        'trackerId': trackerId,
+        'delta': event.delta,
+      },
+    );
+
+    try {
+      final nowUtc = _nowUtc();
+      final dayUtc = _dayUtcFromLocal(state.selectedDayLocal);
+
+      await _repository.appendTrackerEvent(
+        TrackerEvent(
+          id: '',
+          trackerId: trackerId,
+          anchorType: 'day',
+          anchorDate: dayUtc,
+          op: 'add',
+          value: event.delta,
+          occurredAt: _entryOccurredAtForSelectedDay(
+            selectedDayLocal: state.selectedDayLocal,
+            nowUtc: nowUtc,
+          ),
+          recordedAt: nowUtc,
+        ),
+        context: context,
+      );
+
+      emit(state.copyWith(status: const JournalEntryEditorIdle()));
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalEntryEditorBloc] add daily delta failed',
+      );
+
+      emit(
+        state.copyWith(
+          status: JournalEntryEditorError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to update daily factor. Please try again.',
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _onSaveRequested(
     JournalEntryEditorSaveRequested event,
     Emitter<JournalEntryEditorState> emit,
@@ -493,16 +689,22 @@ class JournalEntryEditorBloc
 
     try {
       final nowUtc = _nowUtc();
-      final dayUtc = dateOnly(nowUtc);
+      final dayUtc = _dayUtcFromLocal(state.selectedDayLocal);
 
       final existing = _initialEntry;
+      final occurredAt =
+          existing?.occurredAt ??
+          _entryOccurredAtForSelectedDay(
+            selectedDayLocal: state.selectedDayLocal,
+            nowUtc: nowUtc,
+          );
 
       final entryToSave = existing == null
           ? JournalEntry(
               id: '',
               entryDate: dayUtc,
-              entryTime: nowUtc,
-              occurredAt: nowUtc,
+              entryTime: occurredAt,
+              occurredAt: occurredAt,
               localDate: dayUtc,
               createdAt: nowUtc,
               updatedAt: nowUtc,
@@ -527,7 +729,7 @@ class JournalEntryEditorBloc
           entryId: entryId,
           op: 'set',
           value: mood.value,
-          occurredAt: nowUtc,
+          occurredAt: occurredAt,
           recordedAt: nowUtc,
         ),
         context: context,
@@ -549,7 +751,7 @@ class JournalEntryEditorBloc
             entryId: entryId,
             op: op.isEmpty ? 'set' : op,
             value: value,
-            occurredAt: nowUtc,
+            occurredAt: occurredAt,
             recordedAt: nowUtc,
           ),
           context: context,
@@ -695,11 +897,4 @@ class JournalEntryEditorBloc
       return const <TrackerDefinitionChoice>[];
     }
   }
-}
-
-final class JournalDailySummaryItem {
-  const JournalDailySummaryItem({required this.label, required this.value});
-
-  final String label;
-  final String value;
 }

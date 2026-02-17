@@ -11,7 +11,6 @@ import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
-import 'package:taskly_core/logging.dart';
 
 class WeeklyReviewConfig {
   WeeklyReviewConfig({
@@ -363,15 +362,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
   ) async {
     final config = event.config;
 
-    AppLog.warnStructured(
-      'weekly_review',
-      'requested',
-      fields: <String, Object?>{
-        'maintenanceEnabled': config.maintenanceEnabled,
-        'checkInWindowWeeks': config.checkInWindowWeeks,
-      },
-    );
-
     emit(state.copyWith(status: WeeklyReviewStatus.loading));
 
     try {
@@ -393,16 +383,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
           routineSteadyCount: 0,
           error: null,
         ),
-      );
-
-      AppLog.warnStructured(
-        'weekly_review',
-        'ready',
-        fields: <String, Object?>{
-          'ratingsEnabled': ratingsSummary.ratingsEnabled,
-          'ratingsEntries': ratingsSummary.entries.length,
-          'ratingsComplete': ratingsSummary.isComplete,
-        },
       );
 
       if (!config.maintenanceEnabled) return;
@@ -570,15 +550,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
     final nowUtc = _nowService.nowUtc();
     final weekStartUtc = _weekStartFor(nowUtc);
 
-    AppLog.warnStructured(
-      'weekly_review',
-      'build_ratings_summary',
-      fields: <String, Object?>{
-        'values': values.length,
-        'weekStartUtc': weekStartUtc.toIso8601String(),
-      },
-    );
-
     if (values.isEmpty) {
       return WeeklyReviewRatingsSummary(
         weekStartUtc: weekStartUtc,
@@ -593,14 +564,6 @@ class WeeklyReviewBloc extends Bloc<WeeklyReviewEvent, WeeklyReviewState> {
 
     final history = await _valueRatingsRepository.getAll(
       weeks: _ratingsHistoryWeeks,
-    );
-    AppLog.warnStructured(
-      'weekly_review',
-      'ratings_history',
-      fields: <String, Object?>{
-        'count': history.length,
-        'weeks': _ratingsHistoryWeeks,
-      },
     );
     final historyByValue = <String, List<ValueWeeklyRating>>{};
     for (final rating in history) {

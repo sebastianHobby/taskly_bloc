@@ -255,18 +255,27 @@ abstract final class Routing {
   static void toJournalEntryNew(
     BuildContext context, {
     Set<String> preselectedTrackerIds = const <String>{},
+    DateTime? selectedDayLocal,
   }) {
     final trackerIds = preselectedTrackerIds
         .where((id) => id.trim().isNotEmpty)
         .toList();
+    final queryParameters = <String, String>{};
+    if (trackerIds.isNotEmpty) {
+      queryParameters['trackerIds'] = trackerIds.join(',');
+    }
+    if (selectedDayLocal != null) {
+      final day = DateTime(
+        selectedDayLocal.year,
+        selectedDayLocal.month,
+        selectedDayLocal.day,
+      );
+      queryParameters['day'] = day.toIso8601String();
+    }
 
     final uri = Uri(
       path: '/journal/entry/new',
-      queryParameters: trackerIds.isEmpty
-          ? null
-          : <String, String>{
-              'trackerIds': trackerIds.join(','),
-            },
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
     );
 
     GoRouter.of(context).push(uri.toString());

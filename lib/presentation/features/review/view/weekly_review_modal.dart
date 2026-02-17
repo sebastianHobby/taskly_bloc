@@ -11,7 +11,6 @@ import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart';
-import 'package:taskly_core/logging.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 Future<void> showWeeklyReviewModal(
@@ -21,43 +20,30 @@ Future<void> showWeeklyReviewModal(
   final config = WeeklyReviewConfig.fromSettings(settings);
   final parentContext = context;
 
-  AppLog.warnStructured(
-    'weekly_review',
-    'open_modal',
-    fields: <String, Object?>{
-      'maintenanceEnabled': config.maintenanceEnabled,
-    },
+  return Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (context) {
+        return BlocProvider(
+          create: (context) => WeeklyReviewBloc(
+            analyticsService: context.read<AnalyticsService>(),
+            attentionEngine: context.read<AttentionEngineContract>(),
+            valueRepository: context.read<ValueRepositoryContract>(),
+            valueRatingsRepository: context
+                .read<ValueRatingsRepositoryContract>(),
+            valueRatingsWriteService: context.read<ValueRatingsWriteService>(),
+            routineRepository: context.read<RoutineRepositoryContract>(),
+            taskRepository: context.read<TaskRepositoryContract>(),
+            nowService: context.read<NowService>(),
+          )..add(WeeklyReviewRequested(config)),
+          child: _WeeklyReviewModal(
+            config: config,
+            parentContext: parentContext,
+          ),
+        );
+      },
+    ),
   );
-
-  return Navigator.of(context)
-      .push<void>(
-        MaterialPageRoute(
-          fullscreenDialog: true,
-          builder: (context) {
-            return BlocProvider(
-              create: (context) => WeeklyReviewBloc(
-                analyticsService: context.read<AnalyticsService>(),
-                attentionEngine: context.read<AttentionEngineContract>(),
-                valueRepository: context.read<ValueRepositoryContract>(),
-                valueRatingsRepository: context
-                    .read<ValueRatingsRepositoryContract>(),
-                valueRatingsWriteService: context
-                    .read<ValueRatingsWriteService>(),
-                routineRepository: context.read<RoutineRepositoryContract>(),
-                taskRepository: context.read<TaskRepositoryContract>(),
-                nowService: context.read<NowService>(),
-              )..add(WeeklyReviewRequested(config)),
-              child: _WeeklyReviewModal(
-                config: config,
-                parentContext: parentContext,
-              ),
-            );
-          },
-        ),
-      )
-      .whenComplete(
-        () => AppLog.warn('weekly_review', 'close_modal'),
-      );
 }
 
 class _WeeklyReviewModal extends StatefulWidget {
@@ -77,7 +63,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   late final PageController _controller = PageController();
   int _pageIndex = 0;
   int _pageCount = 1;
-  int _lastLoggedPageCount = -1;
 
   @override
   void dispose() {
@@ -86,14 +71,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   }
 
   void _goNext() {
-    AppLog.warnStructured(
-      'weekly_review',
-      'next',
-      fields: <String, Object?>{
-        'pageIndex': _pageIndex,
-        'pageCount': _pageCount,
-      },
-    );
     if (_pageIndex >= _pageCount - 1) {
       _finishReview();
       return;
@@ -105,7 +82,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   }
 
   void _finishReview() {
-    AppLog.warn('weekly_review', 'complete_review');
     final nowUtc = context.read<NowService>().nowUtc();
     context.read<GlobalSettingsBloc>().add(
       GlobalSettingsEvent.weeklyReviewCompleted(nowUtc),
@@ -114,7 +90,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   }
 
   void _openSettings() {
-    AppLog.warn('weekly_review', 'open_settings');
     Navigator.of(context).maybePop();
     if (!widget.parentContext.mounted) return;
     Routing.pushSettingsWeeklyReview(widget.parentContext);
@@ -123,42 +98,11 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
   void _ensurePageInRange(int pageCount) {
     if (_pageIndex < pageCount) return;
     final target = pageCount - 1;
-    AppLog.warnStructured(
-      'weekly_review',
-      'page_index_clamped',
-      fields: <String, Object?>{
-        'pageIndex': _pageIndex,
-        'pageCount': pageCount,
-        'targetIndex': target,
-      },
-    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       setState(() => _pageIndex = target);
       _controller.jumpToPage(target);
     });
-  }
-
-  void _logPageCountChange({
-    required int pageCount,
-    required bool ratingsEnabled,
-    required bool ratingsSummary,
-    required bool maintenanceEnabled,
-  }) {
-    if (pageCount == _lastLoggedPageCount) return;
-    AppLog.warnStructured(
-      'weekly_review',
-      'page_count_changed',
-      fields: <String, Object?>{
-        'pageIndex': _pageIndex,
-        'previousPageCount': _lastLoggedPageCount,
-        'pageCount': pageCount,
-        'ratingsEnabled': ratingsEnabled,
-        'ratingsSummary': ratingsSummary,
-        'maintenanceEnabled': maintenanceEnabled,
-      },
-    );
-    _lastLoggedPageCount = pageCount;
   }
 
   @override
@@ -206,13 +150,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
               wizardStep: 1,
               wizardTotal: pageCount,
               onExit: () {
-                AppLog.warnStructured(
-                  'weekly_review',
-                  'exit_checkin',
-                  fields: <String, Object?>{
-                    'maintenanceEnabled': widget.config.maintenanceEnabled,
-                  },
-                );
                 Navigator.of(context).maybePop();
               },
               onComplete: _goNext,
@@ -228,24 +165,7 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
           ),
         ];
 
-        AppLog.warnStructured(
-          'weekly_review',
-          'build_pages',
-          fields: <String, Object?>{
-            'ratingsEnabled': ratingsEnabled,
-            'ratingsSummary': ratingsSummary != null,
-            'maintenanceEnabled': widget.config.maintenanceEnabled,
-            'pageCount': pages.length,
-          },
-        );
-
         _pageCount = pageCount;
-        _logPageCountChange(
-          pageCount: pageCount,
-          ratingsEnabled: ratingsEnabled,
-          ratingsSummary: ratingsSummary != null,
-          maintenanceEnabled: widget.config.maintenanceEnabled,
-        );
         _ensurePageInRange(pageCount);
 
         const checkInIndex = 0;
@@ -329,14 +249,6 @@ class _WeeklyReviewModalState extends State<_WeeklyReviewModal> {
                     ),
                     controller: _controller,
                     onPageChanged: (index) {
-                      AppLog.warnStructured(
-                        'weekly_review',
-                        'page_changed',
-                        fields: <String, Object?>{
-                          'pageIndex': index,
-                          'pageCount': _pageCount,
-                        },
-                      );
                       setState(() => _pageIndex = index);
                     },
                     children: pages,

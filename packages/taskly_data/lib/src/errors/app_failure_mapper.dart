@@ -26,21 +26,11 @@ abstract final class AppFailureMapper {
     }
 
     if (error is AuthException) {
-      return AuthFailure(
-        message: error.message,
-        code: error.statusCode?.toString(),
-        cause: error,
-      );
+      return _fromAuthException(error);
     }
 
     if (error is PostgrestException) {
-      // PostgREST failures are remote/API failures; keep them in the taxonomy so
-      // presentation can handle them predictably.
-      return NetworkFailure(
-        message: error.message,
-        code: error.code,
-        cause: error,
-      );
+      return _fromPostgrestException(error);
     }
 
     if (error is TimeoutException) {
@@ -72,5 +62,68 @@ abstract final class AppFailureMapper {
     }
 
     return error.toString();
+  }
+
+  static AppFailure _fromAuthException(AuthException error) {
+    final status = _parseHttpStatus(error.statusCode);
+    final code = _firstNonEmpty(error.statusCode, error.code);
+    return switch (status) {
+      401 => UnauthorizedFailure(
+        message: error.message,
+        code: code,
+        cause: error,
+      ),
+      403 => ForbiddenFailure(message: error.message, code: code, cause: error),
+      429 => RateLimitedFailure(
+        message: error.message,
+        code: code,
+        cause: error,
+      ),
+      _ => AuthFailure(message: error.message, code: code, cause: error),
+    };
+  }
+
+  static AppFailure _fromPostgrestException(PostgrestException error) {
+    final code = error.code;
+    final status = _parseHttpStatus(code);
+    if (status == 401) {
+      return UnauthorizedFailure(
+        message: error.message,
+        code: code,
+        cause: error,
+      );
+    }
+    if (status == 403 || code == '42501') {
+      return ForbiddenFailure(message: error.message, code: code, cause: error);
+    }
+    if (status == 429) {
+      return RateLimitedFailure(
+        message: error.message,
+        code: code,
+        cause: error,
+      );
+    }
+
+    // PostgREST failures are remote/API failures; keep them in the taxonomy so
+    // presentation can handle them predictably.
+    return NetworkFailure(message: error.message, code: code, cause: error);
+  }
+
+  static int? _parseHttpStatus(String? raw) {
+    final trimmed = raw?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    final direct = int.tryParse(trimmed);
+    if (direct != null) return direct;
+    final match = RegExp(r'\b(401|403|429)\b').firstMatch(trimmed);
+    if (match == null) return null;
+    return int.tryParse(match.group(1)!);
+  }
+
+  static String? _firstNonEmpty(String? a, String? b) {
+    final first = a?.trim();
+    if (first != null && first.isNotEmpty) return first;
+    final second = b?.trim();
+    if (second != null && second.isNotEmpty) return second;
+    return null;
   }
 }

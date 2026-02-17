@@ -136,7 +136,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
 
     _syncDraftFromFormValues(formValues);
 
-    AppLog.warnStructured(
+    AppLog.routineStructured(
       'values.editor',
       id == null ? 'submit create' : 'submit update',
       fields: <String, Object?>{

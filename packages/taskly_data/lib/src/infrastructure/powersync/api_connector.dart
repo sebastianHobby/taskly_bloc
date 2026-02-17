@@ -304,11 +304,11 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         return;
       }
 
-      final userId = currentUser?.id ?? '<null>';
+      final userIdHash = _hashIdentifier(currentUser?.id) ?? '<null>';
       talker.debug(
         '[powersync] uploadData starting\n'
         '  queuedOps=${transaction.crud.length}\n'
-        '  userId=$userId',
+        '  userIdHash=$userIdHash',
       );
 
       if (wasInFlight && transaction.crud.isNotEmpty) {
@@ -316,7 +316,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         talker.warning(
           '[powersync] uploadData re-entered while previous upload is in flight\n'
           '  queuedOps=${transaction.crud.length}\n'
-          '  userId=$userId\n'
+          '  userIdHash=$userIdHash\n'
           '  sample=${op.table}/${op.id}/${op.op.name}',
         );
         _emitAnomaly(
@@ -325,12 +325,12 @@ class SupabaseConnector extends PowerSyncBackendConnector {
           op: op,
           details: <String, Object?>{
             'queuedOps': transaction.crud.length,
-            'userId': userId,
+            'user_id_hash': userIdHash,
           },
         );
       }
 
-      _recordUploadSignature(transaction, userId: userId);
+      _recordUploadSignature(transaction, userIdHash: userIdHash);
 
       rest = Supabase.instance.client.rest;
       // Note: If transactional consistency is important, use database functions
@@ -454,7 +454,9 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         /// Note that these errors typically indicate a bug in the application.
         /// If protecting against data loss is important, save the failing records
         /// elsewhere instead of discarding, and/or notify the user.
-        final userId = Supabase.instance.client.auth.currentUser?.id;
+        final userIdHash = _hashIdentifier(
+          Supabase.instance.client.auth.currentUser?.id,
+        );
         final opContext = lastOp == null
             ? '  lastOp=<null>'
             : '  lastOp.index=$lastOpIndex/${transaction.crud.length - 1}\n'
@@ -467,7 +469,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
           e,
           st,
           '[powersync] Data upload error - discarding transaction\n'
-          '  userId=${userId ?? "<null>"}\n'
+          '  userIdHash=${userIdHash ?? "<null>"}\n'
           '  powersyncEndpoint=${Env.powersyncUrl}\n'
           '  transaction.ops=${transaction.crud.length}\n'
           '$opContext\n'
@@ -711,7 +713,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
   void _recordUploadSignature(
     CrudTransaction transaction, {
-    required String userId,
+    required String userIdHash,
   }) {
     if (transaction.crud.isEmpty) return;
 
@@ -747,7 +749,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       '  windowMs=${_uploadLoopWindow.inMilliseconds}\n'
       '  queuedOps=${transaction.crud.length}\n'
       '  tables=$tables\n'
-      '  userId=$userId',
+      '  userIdHash=$userIdHash',
     );
 
     _emitAnomaly(
@@ -759,7 +761,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         'windowMs': _uploadLoopWindow.inMilliseconds,
         'queuedOps': transaction.crud.length,
         'tables': tables,
-        'userId': userId,
+        'user_id_hash': userIdHash,
       },
     );
   }
@@ -834,6 +836,19 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     return fields.entries
         .map((entry) => '${entry.key}=${entry.value}')
         .join(' ');
+  }
+
+  static String? _hashIdentifier(String? value) {
+    if (value == null) return null;
+    final normalized = value.trim();
+    if (normalized.isEmpty) return null;
+
+    var hash = 0x811c9dc5;
+    for (final unit in normalized.codeUnits) {
+      hash ^= unit;
+      hash = (hash * 0x01000193) & 0xffffffff;
+    }
+    return hash.toRadixString(16).padLeft(8, '0');
   }
 }
 

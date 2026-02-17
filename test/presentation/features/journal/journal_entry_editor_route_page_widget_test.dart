@@ -97,6 +97,7 @@ void main() {
       child: JournalEntryEditorRoutePage(
         entryId: entryId,
         preselectedTrackerIds: const <String>{},
+        selectedDayLocal: null,
       ),
     );
 
@@ -375,7 +376,12 @@ void main() {
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Work'), findsOneWidget);
 
-    await tester.tap(find.text('Home'));
+    final homeChip = find.widgetWithText(ChoiceChip, 'Home');
+    await tester.ensureVisible(homeChip);
+    await tester.pumpUntilCondition(
+      () => homeChip.hitTestable().evaluate().isNotEmpty,
+    );
+    await tester.tap(homeChip.hitTestable().first, warnIfMissed: false);
     await tester.pumpForStream();
 
     final chip = tester.widget<ChoiceChip>(
@@ -427,13 +433,22 @@ void main() {
       of: find.text('Water'),
       matching: find.byType(TrackerQuantityInput),
     );
-    final addButton = find.descendant(
-      of: quantityInput,
-      matching: find.widgetWithIcon(IconButton, Icons.add),
-    );
+    final addButton = find
+        .descendant(
+          of: quantityInput,
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is IconButton &&
+                widget.onPressed != null &&
+                widget.icon is Icon &&
+                (widget.icon as Icon).icon == Icons.add,
+          ),
+        )
+        .first;
+    await tester.ensureVisible(addButton);
 
     for (var i = 0; i < 6; i++) {
-      await tester.tap(addButton);
+      await tester.tap(addButton, warnIfMissed: false);
       await tester.pumpForStream();
     }
 

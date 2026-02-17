@@ -388,7 +388,7 @@ class GlobalSettingsBloc
         event.settings.themeMode != state.settings.themeMode;
 
     if (themeModeChanged && !wasLoading) {
-      talker.warning(
+      talker.debug(
         '[settings.global] Stream overwrote themeMode\n'
         '  current=${state.settings.themeMode}\n'
         '  incoming=${event.settings.themeMode}',
@@ -419,7 +419,7 @@ class GlobalSettingsBloc
   ) async {
     final updated = state.settings.copyWith(themeMode: event.themeMode);
     final startedAtUtc = _nowService.nowUtc();
-    talker.warning(
+    talker.debug(
       '[settings.global] ThemeMode change requested\n'
       '  at=$startedAtUtc\n'
       '  old=${state.settings.themeMode}\n'
@@ -439,7 +439,7 @@ class GlobalSettingsBloc
         updated,
         context: context,
       );
-      talker.warning(
+      talker.debug(
         '[settings.global] ThemeMode persisted\n'
         '  at=${_nowService.nowUtc()}\n'
         '  value=${event.themeMode}',

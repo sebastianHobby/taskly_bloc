@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
+import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/preferences.dart';
 
@@ -100,7 +101,14 @@ class DisplayDensityBloc
         DisplayPreferences(density: density),
         context: context,
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      AppLog.handleStructured(
+        'settings.display_density',
+        'persist failed',
+        error,
+        stackTrace,
+        context.toLogFields(),
+      );
       // Non-fatal: keep UI responsive even if persistence fails.
     }
   }

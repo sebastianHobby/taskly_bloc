@@ -236,20 +236,34 @@ class JournalLogCard extends StatelessWidget {
     final id = moodTrackerId;
     if (id == null) return null;
 
+    TrackerEvent? latestMoodEvent;
     for (final e in events) {
-      if (e.trackerId == id && e.value is int) {
-        return MoodRating.fromValue(e.value! as int);
+      if (e.trackerId != id || e.value is! int) continue;
+      if (latestMoodEvent == null ||
+          latestMoodEvent.occurredAt.isBefore(e.occurredAt)) {
+        latestMoodEvent = e;
       }
     }
 
-    return null;
+    final moodValue = latestMoodEvent?.value;
+    if (moodValue is! int) return null;
+    return MoodRating.fromValue(moodValue);
   }
 
   List<String> _buildSummaryItems(AppLocalizations l10n) {
     final candidates = <String>[];
     final moodId = moodTrackerId;
+    final latestByTrackerId = <String, TrackerEvent>{};
 
     for (final e in events) {
+      if (moodId != null && e.trackerId == moodId) continue;
+      final previous = latestByTrackerId[e.trackerId];
+      if (previous == null || previous.occurredAt.isBefore(e.occurredAt)) {
+        latestByTrackerId[e.trackerId] = e;
+      }
+    }
+
+    for (final e in latestByTrackerId.values) {
       if (moodId != null && e.trackerId == moodId) continue;
 
       final name =

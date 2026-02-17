@@ -327,7 +327,7 @@ class ValueRepository implements ValueRepositoryContract {
         // Generate deterministic v5 ID
         final id = idGenerator.valueId(name: name);
 
-        AppLog.warnStructured(
+        AppLog.routineStructured(
           'data.value',
           'create requested',
           fields: <String, Object?>{
@@ -356,7 +356,7 @@ class ValueRepository implements ValueRepositoryContract {
           ),
         );
 
-        AppLog.warnStructured(
+        AppLog.routineStructured(
           'data.value',
           'create inserted',
           fields: <String, Object?>{'id': id, 'name': name},
@@ -410,7 +410,7 @@ class ValueRepository implements ValueRepositoryContract {
         );
 
         final after = await _getValueById(id);
-        AppLog.warnStructured(
+        AppLog.routineStructured(
           'data.value',
           'update applied',
           fields: <String, Object?>{

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
-import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_daily_detail_sheet.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -97,8 +96,8 @@ class _JournalTodayPageState extends State<JournalTodayPage> {
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   _EntriesHeader(
                     showAdd: entries.isEmpty,
-                    onAddLog: () => AddLogSheet.show(
-                      context: context,
+                    onAddLog: () => Routing.toJournalEntryNew(
+                      context,
                       selectedDayLocal: day,
                     ),
                   ),
@@ -108,8 +107,8 @@ class _JournalTodayPageState extends State<JournalTodayPage> {
                     eventsByEntryId: eventsByEntryId,
                     definitionById: definitionById,
                     moodTrackerId: moodTrackerId,
-                    onAddLog: () => AddLogSheet.show(
-                      context: context,
+                    onAddLog: () => Routing.toJournalEntryNew(
+                      context,
                       selectedDayLocal: day,
                     ),
                     onEntryTap: (entry) => Routing.toJournalEntryEdit(

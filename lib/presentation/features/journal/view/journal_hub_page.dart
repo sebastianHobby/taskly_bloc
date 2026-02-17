@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_today_page.dart';
-import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
@@ -98,8 +97,8 @@ class _JournalHubPageState extends State<JournalHubPage> {
       floatingActionButton: EntityAddFab(
         tooltip: context.l10n.journalAddEntry,
         heroTag: 'journal_add_entry_fab',
-        onPressed: () => AddLogSheet.show(
-          context: context,
+        onPressed: () => Routing.toJournalEntryNew(
+          context,
           selectedDayLocal: _selectedDay,
         ),
       ),

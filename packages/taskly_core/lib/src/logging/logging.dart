@@ -703,6 +703,11 @@ String _truncateStackTrace(StackTrace stackTrace, {required int maxLines}) {
 }
 
 class AppRouteObserver extends NavigatorObserver {
+  static const bool _logRouteArgs = bool.fromEnvironment(
+    'LOG_ROUTE_ARGS',
+    defaultValue: false,
+  );
+
   String? _currentRoute;
 
   String get currentRouteSummary => _currentRoute ?? '<unknown>';
@@ -729,10 +734,15 @@ class AppRouteObserver extends NavigatorObserver {
     if (route == null) return '<null>';
 
     final settings = route.settings;
-    final name = settings.name;
-    final args = settings.arguments;
+    final rawName = settings.name?.trim();
+    final routeName = (rawName == null || rawName.isEmpty)
+        ? route.runtimeType.toString()
+        : rawName;
 
-    return '${route.runtimeType}(name=${name ?? "<null>"}, args=${_formatArgs(args)})';
+    if (!_logRouteArgs || !kDebugMode) return routeName;
+
+    final args = settings.arguments;
+    return '$routeName args=${_formatArgs(args)}';
   }
 
   String _formatArgs(Object? args) {

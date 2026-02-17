@@ -33,9 +33,7 @@ class PendingNotificationsProcessor {
 
     talker.info('[notifications] Starting pending notifications processor');
     _subscription = _repository.watchPending().listen(
-      (items) {
-        unawaited(_process(items));
-      },
+      _scheduleProcess,
       onError: (Object error, StackTrace stackTrace) {
         talker.handle(error, stackTrace, 'Pending notifications stream error');
       },
@@ -80,5 +78,19 @@ class PendingNotificationsProcessor {
         _inFlight.remove(item.id);
       }
     }
+  }
+
+  void _scheduleProcess(List<PendingNotification> items) {
+    unawaited(
+      _process(items).catchError((Object error, StackTrace stackTrace) {
+        AppLog.handleStructured(
+          'notifications',
+          'pending processor cycle failed',
+          error,
+          stackTrace,
+          <String, Object?>{'pendingCount': items.length},
+        );
+      }),
+    );
   }
 }

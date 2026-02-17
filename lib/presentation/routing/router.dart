@@ -322,10 +322,15 @@ GoRouter createRouter({
                   .map((s) => s.trim())
                   .where((s) => s.isNotEmpty)
                   .toSet();
+              final dayRaw = state.uri.queryParameters['day'];
+              final selectedDay = dayRaw == null
+                  ? null
+                  : DateTime.tryParse(dayRaw);
 
               return JournalEntryEditorRoutePage(
                 entryId: null,
                 preselectedTrackerIds: ids,
+                selectedDayLocal: selectedDay,
               );
             },
           ),
@@ -340,6 +345,7 @@ GoRouter createRouter({
             builder: (_, state) => JournalEntryEditorRoutePage(
               entryId: state.pathParameters['id'],
               preselectedTrackerIds: const <String>{},
+              selectedDayLocal: null,
             ),
           ),
 

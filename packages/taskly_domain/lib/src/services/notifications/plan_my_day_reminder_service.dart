@@ -54,21 +54,43 @@ class PlanMyDayReminderService {
     if (_started) return;
     _started = true;
 
-    _settingsSub = _settingsRepository.watch(SettingsKey.global).listen((
-      settings,
-    ) {
-      _settings = settings;
-      _scheduleNextTick();
-      unawaited(_evaluateAndNotify(source: 'settings_change'));
-    });
+    _settingsSub = _settingsRepository
+        .watch(SettingsKey.global)
+        .listen(
+          (
+            settings,
+          ) {
+            _settings = settings;
+            _scheduleNextTick();
+            _scheduleEvaluation(source: 'settings_change');
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            AppLog.handleStructured(
+              'notifications.plan_my_day',
+              'settings stream failed',
+              error,
+              stackTrace,
+            );
+          },
+        );
 
-    _temporalSub = _temporalTriggerService.events.listen((_) {
-      _scheduleNextTick();
-      unawaited(_evaluateAndNotify(source: 'temporal_trigger'));
-    });
+    _temporalSub = _temporalTriggerService.events.listen(
+      (_) {
+        _scheduleNextTick();
+        _scheduleEvaluation(source: 'temporal_trigger');
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        AppLog.handleStructured(
+          'notifications.plan_my_day',
+          'temporal trigger stream failed',
+          error,
+          stackTrace,
+        );
+      },
+    );
 
     _scheduleNextTick();
-    unawaited(_evaluateAndNotify(source: 'start'));
+    _scheduleEvaluation(source: 'start');
   }
 
   void stop() {
@@ -139,9 +161,26 @@ class PlanMyDayReminderService {
     _timer = Timer(
       delay.isNegative ? Duration.zero : delay,
       () {
-        unawaited(_evaluateAndNotify(source: 'timer'));
+        _scheduleEvaluation(source: 'timer');
         _scheduleNextTick();
       },
+    );
+  }
+
+  void _scheduleEvaluation({required String source}) {
+    unawaited(
+      _evaluateAndNotify(source: source).catchError((
+        Object error,
+        StackTrace stackTrace,
+      ) {
+        AppLog.handleStructured(
+          'notifications.plan_my_day',
+          'evaluation failed',
+          error,
+          stackTrace,
+          <String, Object?>{'source': source},
+        );
+      }),
     );
   }
 

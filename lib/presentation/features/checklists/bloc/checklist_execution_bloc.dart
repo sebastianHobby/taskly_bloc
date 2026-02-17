@@ -8,6 +8,7 @@ import 'package:taskly_domain/routines.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_domain/time.dart';
+import 'package:taskly_core/logging.dart';
 
 part 'checklist_execution_bloc.freezed.dart';
 
@@ -240,13 +241,16 @@ class ChecklistExecutionBloc
     Emitter<ChecklistExecutionState> emit,
   ) async {
     emit(state.copyWith(saving: true, effect: null));
+    final operationContext = _kind == ChecklistParentKind.task
+        ? _newContext('task_complete', 'tasks.complete')
+        : _newContext('routine_log', 'routines.complete');
     try {
       if (_kind == ChecklistParentKind.task) {
         await _taskWriteService!.complete(
           _taskId!,
           occurrenceDate: _occurrenceDate,
           originalOccurrenceDate: _originalOccurrenceDate,
-          context: _newContext('task_complete', 'tasks.complete'),
+          context: operationContext,
         );
       } else {
         final nowLocal = _nowService.nowLocal();
@@ -255,7 +259,7 @@ class ChecklistExecutionBloc
           completedAtUtc: _nowService.nowUtc(),
           completedDayLocal: _routineDayKeyUtc,
           completedTimeLocalMinutes: nowLocal.hour * 60 + nowLocal.minute,
-          context: _newContext('routine_log', 'routines.complete'),
+          context: operationContext,
         );
       }
       emit(
@@ -264,7 +268,14 @@ class ChecklistExecutionBloc
           effect: const ChecklistExecutionEffect.close(),
         ),
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      AppLog.handleStructured(
+        'checklists',
+        'complete parent failed',
+        error,
+        stackTrace,
+        operationContext.toLogFields(),
+      );
       emit(
         state.copyWith(
           saving: false,
@@ -281,6 +292,9 @@ class ChecklistExecutionBloc
     Emitter<ChecklistExecutionState> emit,
   ) async {
     emit(state.copyWith(saving: true, effect: null));
+    final operationContext = _kind == ChecklistParentKind.task
+        ? _newContext('checklist_check_all', 'task_checklist.bulk_check')
+        : _newContext('checklist_check_all', 'routine_checklist.bulk_check');
     try {
       if (_kind == ChecklistParentKind.task) {
         for (final item in state.items) {
@@ -290,10 +304,7 @@ class ChecklistExecutionBloc
             itemId: item.id,
             isChecked: true,
             occurrenceDate: _occurrenceDate,
-            context: _newContext(
-              'checklist_check_all',
-              'task_checklist.bulk_check',
-            ),
+            context: operationContext,
           );
         }
       } else {
@@ -306,15 +317,19 @@ class ChecklistExecutionBloc
             isChecked: true,
             periodType: scope.periodType,
             windowKey: scope.windowKey,
-            context: _newContext(
-              'checklist_check_all',
-              'routine_checklist.bulk_check',
-            ),
+            context: operationContext,
           );
         }
       }
       add(const ChecklistExecutionEvent.completeParentNow());
-    } catch (_) {
+    } catch (error, stackTrace) {
+      AppLog.handleStructured(
+        'checklists',
+        'check all failed',
+        error,
+        stackTrace,
+        operationContext.toLogFields(),
+      );
       emit(
         state.copyWith(
           saving: false,
