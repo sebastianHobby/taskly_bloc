@@ -1,7 +1,6 @@
 @Tags(['widget', 'settings'])
 library;
 
-import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 
 import '../../../helpers/test_imports.dart';
@@ -22,11 +21,9 @@ void main() {
     expect(find.text(l10n.weeklyReviewTitle), findsOneWidget);
     expect(find.text(l10n.settingsLanguageRegionTitle), findsOneWidget);
     expect(find.text(l10n.settingsAccountTitle), findsOneWidget);
-    if (kDebugMode) {
-      expect(
-        find.text(l10n.settingsDeveloperTitle, skipOffstage: false),
-        findsOneWidget,
-      );
-    }
+    expect(
+      find.text(l10n.settingsDeveloperTitle, skipOffstage: false),
+      findsOneWidget,
+    );
   });
 }

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -60,13 +59,12 @@ class SettingsScreen extends StatelessWidget {
               subtitle: l10n.settingsAccountSubtitle,
               onTap: () => Routing.pushSettingsAccount(context),
             ),
-            if (kDebugMode)
-              _SettingsNavItem(
-                icon: Icons.bug_report_outlined,
-                title: l10n.settingsDeveloperTitle,
-                subtitle: l10n.settingsDeveloperSubtitle,
-                onTap: () => Routing.pushSettingsDeveloper(context),
-              ),
+            _SettingsNavItem(
+              icon: Icons.bug_report_outlined,
+              title: l10n.settingsDeveloperTitle,
+              subtitle: l10n.settingsDeveloperSubtitle,
+              onTap: () => Routing.pushSettingsDeveloper(context),
+            ),
           ],
         ),
       ),
