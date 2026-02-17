@@ -620,6 +620,30 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       } else {
         // Error may be retryable - e.g. network error or temporary server error.
         // Throwing an error here causes this call to be retried after a delay.
+        final op = lastOp;
+        _logSyncEvent(
+          'sync.upload.retryable_error',
+          level: _SyncLogLevel.warn,
+          fields: <String, Object?>{
+            'table': op?.table,
+            'row_id': op?.id,
+            'op': op?.op.name,
+            'remote_code': e.code,
+            'remote_message': e.message,
+            'remote_details': e.details,
+            'remote_hint': e.hint,
+            'transaction_ops': transaction.crud.length,
+            'last_op_index': lastOpIndex,
+          },
+        );
+        talker.warning(
+          '[powersync] Retryable upload error; transaction will be retried\n'
+          '  table=${op?.table ?? "<null>"}\n'
+          '  op=${op?.op.name ?? "<null>"}\n'
+          '  id=${op?.id ?? "<null>"}\n'
+          '  postgrest.code=${e.code ?? "<null>"}\n'
+          '  postgrest.message=${e.message}',
+        );
         rethrow;
       }
     } finally {
