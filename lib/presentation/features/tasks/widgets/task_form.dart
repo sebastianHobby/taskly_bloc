@@ -720,13 +720,18 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
             submitLabel: submitLabel,
             submitEnabled: submitEnabled,
             onSubmit: widget.onSubmit,
-            leading: FormBuilderField<String>(
-              name: TaskFieldKeys.projectId.id,
-              builder: (field) {
+            leading: Builder(
+              builder: (context) {
+                final field = widget
+                    .formKey
+                    .currentState
+                    ?.fields[TaskFieldKeys.projectId.id];
+                final currentProjectId =
+                    (field?.value as String?) ?? initialProjectId;
                 final selectedProject = widget.availableProjects
-                    .where((p) => p.id == field.value)
+                    .where((p) => p.id == currentProjectId)
                     .firstOrNull;
-                final isInbox = (field.value ?? '').trim().isEmpty;
+                final isInbox = currentProjectId.trim().isEmpty;
                 final projectLabel =
                     selectedProject?.name ?? (isInbox ? l10n.inboxLabel : null);
                 final projectIcon = isInbox
@@ -748,17 +753,23 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                         onTap: () async {
                           final result = await _showProjectPicker(
                             anchorContext: chipContext,
-                            currentProjectId: field.value ?? '',
+                            currentProjectId: currentProjectId,
                           );
                           if (result == null) return;
 
+                          final projectField = widget
+                              .formKey
+                              .currentState
+                              ?.fields[TaskFieldKeys.projectId.id];
+                          if (projectField == null) return;
+
                           switch (result) {
                             case ProjectPickerResultCleared():
-                              field.didChange('');
+                              projectField.didChange('');
                             case ProjectPickerResultSelected(
                               :final project,
                             ):
-                              field.didChange(project.id);
+                              projectField.didChange(project.id);
                               _recordRecentProjectId(project.id);
                           }
 
@@ -1312,6 +1323,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
               FormBuilderField<DateTime?>(
                 name: TaskFieldKeys.startDate.id,
                 builder: (_) => SizedBox.shrink(),
+              ),
+              FormBuilderField<String>(
+                name: TaskFieldKeys.projectId.id,
+                builder: (_) => const SizedBox.shrink(),
               ),
               FormBuilderField<DateTime?>(
                 name: TaskFieldKeys.deadlineDate.id,
