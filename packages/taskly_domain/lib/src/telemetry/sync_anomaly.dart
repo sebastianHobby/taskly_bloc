@@ -116,6 +116,9 @@ enum SyncAnomalyReason {
 
   /// CRUD metadata was present but missing required operation context fields.
   missingOperationContext,
+
+  /// CRUD operation expected payload (`opData`) but received null.
+  missingCrudPayload,
 }
 
 /// A contract for a stream of sync anomalies.

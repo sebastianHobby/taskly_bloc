@@ -1,8 +1,7 @@
-# Local PowerSync service for use with Supabase CLI local dev.
+# Local PowerSync service.
 #
-# Requires the Supabase local stack to be running via `supabase start`.
-# This compose file joins the external Supabase network so it can reach
-# Postgres (`supabase_db_<project_id>`) and Kong (`kong`).
+# Expects a reachable Supabase/Postgres environment and joins an external
+# Docker network so it can reach Postgres (`supabase_db_<project_id>`).
 
 services:
   mongo:
@@ -34,7 +33,7 @@ services:
     command: [ "start", "-r", "unified" ]
     volumes:
       - ./config:/config
-      - ../../supabase/powersync-sync-rules.yaml:/config/sync_rules.yaml:ro
+      - ./config/sync_rules.yaml:/config/sync_rules.yaml:ro
     environment:
       POWERSYNC_CONFIG_PATH: /config/powersync.yaml
       NODE_OPTIONS: --max-old-space-size=1000

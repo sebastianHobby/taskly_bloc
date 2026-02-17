@@ -20,6 +20,7 @@ import 'package:taskly_data/src/features/notifications/services/logging_notifica
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/infrastructure/powersync/api_connector.dart';
+import 'package:taskly_data/src/infrastructure/powersync/identifier_hash.dart';
 import 'package:taskly_data/src/infrastructure/powersync/powersync_status_stream.dart';
 import 'package:taskly_data/src/infrastructure/supabase/supabase.dart';
 import 'package:taskly_data/src/repositories/auth_repository.dart';
@@ -234,10 +235,14 @@ final class TasklyDataStack implements SyncAnomalyStream {
           : <String, String>{'user_id_hash': userIdHash},
     };
 
-    AppLog.info(
+    AppLog.infoStructured(
       'sync',
-      'sync.connect.start | sync_session_id=$syncSessionId '
-          'client_id=$clientId env=${_envName()}',
+      'sync.connect.start',
+      fields: <String, Object?>{
+        'sync_session_id': syncSessionId,
+        'client_id': clientId,
+        'env': _envName(),
+      },
     );
 
     _connector = SupabaseConnector(
@@ -257,12 +262,16 @@ final class TasklyDataStack implements SyncAnomalyStream {
         syncSessionId: syncSessionId,
         clientId: clientId,
       );
-      AppLog.info(
+      AppLog.infoStructured(
         'sync',
-        'sync.connect.success | sync_session_id=$syncSessionId '
-            'client_id=$clientId',
+        'sync.connect.success',
+        fields: <String, Object?>{
+          'sync_session_id': syncSessionId,
+          'client_id': clientId,
+        },
       );
     } catch (error, stackTrace) {
+      _connector = null;
       AppLog.handleStructured(
         'sync',
         'sync.connect.fail',
@@ -278,7 +287,38 @@ final class TasklyDataStack implements SyncAnomalyStream {
       rethrow;
     }
 
-    await runPostAuthMaintenance(driftDb: driftDb, idGenerator: idGenerator);
+    try {
+      await runPostAuthMaintenance(driftDb: driftDb, idGenerator: idGenerator);
+    } catch (error, stackTrace) {
+      AppLog.handleStructured(
+        'sync',
+        'sync.post_auth_maintenance.fail',
+        error,
+        stackTrace,
+        <String, Object?>{
+          'sync_session_id': syncSessionId,
+          'client_id': clientId,
+          'env': _envName(),
+          'platform': _platformLabel(),
+        },
+      );
+
+      await _statusSubscription?.cancel();
+      _statusSubscription = null;
+      _lastStatusSnapshot = null;
+      _lastStatusSnapshotLogAt = null;
+
+      _connector = null;
+      _sessionUserId = null;
+      _syncSessionId = null;
+      _sessionStarted = false;
+
+      try {
+        await syncDb.disconnect();
+      } catch (_) {}
+
+      rethrow;
+    }
 
     _sessionUserId = userId;
     _sessionStarted = true;
@@ -291,10 +331,13 @@ final class TasklyDataStack implements SyncAnomalyStream {
     required String reason,
     required bool clearLocalData,
   }) async {
-    AppLog.info(
+    AppLog.infoStructured(
       'sync',
-      'sync.connect.stop | reason=$reason '
-          'sync_session_id=${_syncSessionId ?? "<none>"}',
+      'sync.connect.stop',
+      fields: <String, Object?>{
+        'reason': reason,
+        'sync_session_id': _syncSessionId ?? '<none>',
+      },
     );
 
     await _statusSubscription?.cancel();
@@ -508,13 +551,18 @@ final class TasklyDataStack implements SyncAnomalyStream {
       final previous = _lastStatusSnapshot;
 
       if (previous == null || previous != next) {
-        AppLog.info(
+        AppLog.infoStructured(
           'sync',
-          'sync.status.transition | '
-              'sync_session_id=$syncSessionId client_id=$clientId '
-              'connected=${next.connected} downloading=${next.downloading} '
-              'uploading=${next.uploading} has_synced=${next.hasSynced} '
-              'last_synced_at=${status.lastSyncedAt?.toUtc().toIso8601String()}',
+          'sync.status.transition',
+          fields: <String, Object?>{
+            'sync_session_id': syncSessionId,
+            'client_id': clientId,
+            'connected': next.connected,
+            'downloading': next.downloading,
+            'uploading': next.uploading,
+            'has_synced': next.hasSynced,
+            'last_synced_at': status.lastSyncedAt?.toUtc().toIso8601String(),
+          },
         );
         _lastStatusSnapshot = next;
       }
@@ -526,15 +574,20 @@ final class TasklyDataStack implements SyncAnomalyStream {
           now.difference(lastSnapshotAt) >= const Duration(seconds: 60);
       if (shouldLogSnapshot) {
         _lastStatusSnapshotLogAt = now;
-        AppLog.info(
+        AppLog.infoStructured(
           'sync',
-          'sync.status.snapshot | '
-              'sync_session_id=$syncSessionId client_id=$clientId '
-              'connected=${status.connected} connecting=${status.connecting} '
-              'downloading=${status.downloading} uploading=${status.uploading} '
-              'has_synced=${status.hasSynced} '
-              'downloaded_fraction=${status.downloadProgress?.downloadedFraction} '
-              'last_synced_at=${status.lastSyncedAt?.toUtc().toIso8601String()}',
+          'sync.status.snapshot',
+          fields: <String, Object?>{
+            'sync_session_id': syncSessionId,
+            'client_id': clientId,
+            'connected': status.connected,
+            'connecting': status.connecting,
+            'downloading': status.downloading,
+            'uploading': status.uploading,
+            'has_synced': status.hasSynced,
+            'downloaded_fraction': status.downloadProgress?.downloadedFraction,
+            'last_synced_at': status.lastSyncedAt?.toUtc().toIso8601String(),
+          },
         );
       }
     });
@@ -566,17 +619,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
   }
 
   static String? _hashIdentifier(String? value) {
-    if (value == null) return null;
-    final normalized = value.trim();
-    if (normalized.isEmpty) return null;
-
-    // Lightweight, non-reversible hash for log correlation without raw IDs.
-    var hash = 0x811c9dc5;
-    for (final unit in normalized.codeUnits) {
-      hash ^= unit;
-      hash = (hash * 0x01000193) & 0xffffffff;
-    }
-    return hash.toRadixString(16).padLeft(8, '0');
+    return hashIdentifierForTelemetry(value);
   }
 }
 

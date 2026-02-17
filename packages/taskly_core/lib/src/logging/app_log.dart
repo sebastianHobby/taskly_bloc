@@ -47,6 +47,15 @@ abstract final class AppLog {
     talker.info(_format(category, message));
   }
 
+  /// Logs a user/dev-relevant milestone with structured fields.
+  static void infoStructured(
+    String category,
+    String message, {
+    required Map<String, Object?> fields,
+  }) {
+    talker.info(_format(category, _withFields(message, fields)));
+  }
+
   /// Logs a recoverable issue or degraded behavior.
   static void warn(String category, String message) {
     talker.warning(_format(category, message));

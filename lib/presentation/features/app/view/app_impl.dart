@@ -14,6 +14,7 @@ import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/debug_bootstrap_bloc.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
+import 'package:taskly_bloc/presentation/features/app/view/auth_session_transition.dart';
 import 'package:taskly_bloc/presentation/features/app/view/debug_bootstrap_sheet.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
@@ -277,15 +278,10 @@ class App extends StatelessWidget {
           ],
           child: BlocListener<AuthBloc, AppAuthState>(
             listenWhen: (previous, current) {
-              final becameAuthenticated =
-                  previous.status != AuthStatus.authenticated &&
-                  current.status == AuthStatus.authenticated;
-
-              final leftAuthenticated =
-                  previous.status == AuthStatus.authenticated &&
-                  current.status != AuthStatus.authenticated;
-
-              return becameAuthenticated || leftAuthenticated;
+              return shouldHandleAuthSessionTransition(
+                previous: previous.status,
+                current: current.status,
+              );
             },
             listener: (context, state) {
               final coordinator = context
@@ -296,7 +292,7 @@ class App extends StatelessWidget {
 
               if (state.status == AuthStatus.authenticated) {
                 syncGate.add(const InitialSyncGateStarted());
-              } else {
+              } else if (state.status == AuthStatus.unauthenticated) {
                 unawaited(() async {
                   try {
                     await sessionCoordinator.stop();

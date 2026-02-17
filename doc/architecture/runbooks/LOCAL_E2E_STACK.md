@@ -12,7 +12,7 @@ Run local Supabase + PowerSync stack and validate app sync behavior end to end.
 
 ## Startup sequence
 
-1. Start Supabase local stack (repo `supabase/` config).
+1. Start your target Supabase environment (local or remote).
 2. Start local PowerSync (`infra/powersync_local/docker-compose.yml`).
 3. Confirm sync rules and schema are loaded.
 4. Launch app and validate local-first reads and write propagation.

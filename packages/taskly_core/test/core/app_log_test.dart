@@ -37,6 +37,11 @@ void main() {
       );
 
       AppLog.info('core', 'info');
+      AppLog.infoStructured(
+        'core',
+        'info structured',
+        fields: <String, Object?>{'flag': true},
+      );
       AppLog.warn('core', 'warn');
       AppLog.warnStructured(
         'core',

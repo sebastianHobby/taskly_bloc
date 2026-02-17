@@ -123,11 +123,22 @@ void main() {
     });
 
     testSafe('structured methods append key=value fields', () async {
+      AppLog.infoStructured(
+        'core',
+        'i',
+        fields: <String, Object?>{'k': 'v', 'n': 1, 'nil': null},
+      );
       AppLog.warnStructured(
         'core',
         'w',
         fields: <String, Object?>{'k': 'v', 'n': 1, 'nil': null},
       );
+
+      final info = recorder.infos.single;
+      expect(info, contains('[core] i |'));
+      expect(info, contains('k=v'));
+      expect(info, contains('n=1'));
+      expect(info, contains('nil='));
 
       final msg = recorder.warnings.single;
       expect(msg, contains('[core] w |'));

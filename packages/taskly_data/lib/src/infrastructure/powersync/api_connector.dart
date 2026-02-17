@@ -12,6 +12,7 @@ import 'package:taskly_core/env.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/src/infrastructure/powersync/powersync_log_forwarding.dart';
 import 'package:taskly_data/src/infrastructure/powersync/powersync_status_stream.dart';
+import 'package:taskly_data/src/infrastructure/powersync/identifier_hash.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/attention/maintenance/attention_seeder.dart';
 import 'package:taskly_data/src/features/journal/maintenance/journal_tracker_seeder.dart';
@@ -296,6 +297,13 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       final session = Supabase.instance.client.auth.currentSession;
       final currentUser = Supabase.instance.client.auth.currentUser;
       if (session == null) {
+        _logSyncEvent(
+          'sync.upload.skipped',
+          fields: <String, Object?>{
+            'reason': 'no_session',
+            'queued_ops': transaction.crud.length,
+          },
+        );
         talker.info(
           '[powersync] uploadData skipped (no Supabase session)\n'
           '  queuedOps=${transaction.crud.length}\n'
@@ -313,6 +321,17 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
       if (wasInFlight && transaction.crud.isNotEmpty) {
         final op = transaction.crud.first;
+        _logSyncEvent(
+          'sync.upload.reentrancy',
+          level: _SyncLogLevel.warn,
+          fields: <String, Object?>{
+            'queued_ops': transaction.crud.length,
+            'sample_table': op.table,
+            'sample_row_id': op.id,
+            'sample_op': op.op.name,
+            'user_id_hash': userIdHash,
+          },
+        );
         talker.warning(
           '[powersync] uploadData re-entered while previous upload is in flight\n'
           '  queuedOps=${transaction.crud.length}\n'
@@ -343,6 +362,17 @@ class SupabaseConnector extends PowerSyncBackendConnector {
             op.metadata != null &&
             !_hasOperationContext(op.metadata)) {
           missingContextReported = true;
+          _logSyncEvent(
+            'sync.upload.missing_operation_context',
+            level: _SyncLogLevel.warn,
+            fields: <String, Object?>{
+              'table': op.table,
+              'row_id': op.id,
+              'op': op.op.name,
+              'queued_ops': transaction.crud.length,
+              'metadata_type': op.metadata.runtimeType.toString(),
+            },
+          );
           talker.warning(
             '[powersync] CRUD metadata missing operation context\n'
             '  table=${op.table}\n'
@@ -375,23 +405,59 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         }
 
         final table = rest.from(op.table);
-        if (op.op == UpdateType.put) {
+        if (op.op == UpdateType.put || op.op == UpdateType.patch) {
+          final opData = op.opData;
+          if (opData == null) {
+            final payloadError = StateError(
+              'PowerSync CRUD payload missing for ${op.op.name}',
+            );
+            final fields = <String, Object?>{
+              ..._syncContextFields(),
+              'table': op.table,
+              'row_id': op.id,
+              'op': op.op.name,
+              'transaction_ops': transaction.crud.length,
+              'last_op_index': lastOpIndex,
+            };
+            AppLog.handleStructured(
+              'sync',
+              'sync.upload.missing_crud_payload',
+              payloadError,
+              null,
+              fields,
+            );
+            _logSyncEvent(
+              'sync.upload.missing_crud_payload',
+              level: _SyncLogLevel.error,
+              fields: fields,
+            );
+            _emitAnomaly(
+              kind: SyncAnomalyKind.syncPipelineIssue,
+              reason: SyncAnomalyReason.missingCrudPayload,
+              op: op,
+              details: <String, Object?>{
+                'transactionOps': transaction.crud.length,
+                'lastOpIndex': lastOpIndex,
+              },
+            );
+
+            // Prevent an endless retry/crash loop on malformed local CRUD.
+            await transaction.complete();
+            return;
+          }
+
           final data = _normalizeUploadData(
             op.table,
             op.id,
             op.op,
-            Map<String, dynamic>.of(op.opData!),
+            Map<String, dynamic>.of(opData),
           );
-          data['id'] = op.id;
-          await table.upsert(data);
-        } else if (op.op == UpdateType.patch) {
-          final data = _normalizeUploadData(
-            op.table,
-            op.id,
-            op.op,
-            Map<String, dynamic>.of(op.opData!),
-          );
-          await table.update(data).eq('id', op.id);
+          if (op.op == UpdateType.put) {
+            data['id'] = op.id;
+            await table.upsert(data);
+          } else {
+            await table.update(data).eq('id', op.id);
+          }
         } else if (op.op == UpdateType.delete) {
           await table.delete().eq('id', op.id);
         }
@@ -417,7 +483,34 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     } on PostgrestException catch (e, st) {
       if (e.code == '23505') {
         // Unique constraint violation - handle based on table ID strategy
-        await _handle23505(rest, lastOp!, e);
+        final op = lastOp;
+        if (op == null) {
+          _logSyncEvent(
+            'sync.upload.unique_violation_without_context',
+            level: _SyncLogLevel.error,
+            fields: <String, Object?>{
+              'remote_code': e.code,
+              'remote_message': e.message,
+              'transaction_ops': transaction.crud.length,
+              'last_op_index': lastOpIndex,
+            },
+          );
+          AppLog.handleStructured(
+            'sync',
+            'sync.upload.unique_violation_without_context',
+            StateError('23505 received without CRUD operation context'),
+            st,
+            <String, Object?>{
+              ..._syncContextFields(),
+              'remote_code': e.code,
+              'remote_message': e.message,
+              'transaction_ops': transaction.crud.length,
+              'last_op_index': lastOpIndex,
+            },
+          );
+        } else {
+          await _handle23505(rest, op, e);
+        }
         // Mark as complete - either expected duplicate or logged conflict
         await transaction.complete();
       } else if (e.code == _schemaNotFoundCode) {
@@ -429,6 +522,18 @@ class SupabaseConnector extends PowerSyncBackendConnector {
           '[powersync] Table not found in Supabase schema - discarding '
           'operation for ${lastOp?.table}/${lastOp?.id}.\n'
           'This is expected after schema migrations.',
+        );
+        _logSyncEvent(
+          'sync.upload.schema_not_found',
+          level: _SyncLogLevel.warn,
+          fields: <String, Object?>{
+            'table': lastOp?.table,
+            'row_id': lastOp?.id,
+            'remote_code': e.code,
+            'remote_message': e.message,
+            'transaction_ops': transaction.crud.length,
+            'last_op_index': lastOpIndex,
+          },
         );
 
         final op = lastOp;
@@ -477,6 +582,21 @@ class SupabaseConnector extends PowerSyncBackendConnector {
           '  postgrest.message=${e.message}\n'
           '  postgrest.details=${e.details ?? "<null>"}\n'
           '  postgrest.hint=${e.hint ?? "<null>"}',
+        );
+        _logSyncEvent(
+          'sync.upload.fatal_remote_rejection',
+          level: _SyncLogLevel.error,
+          fields: <String, Object?>{
+            'table': lastOp?.table,
+            'row_id': lastOp?.id,
+            'op': lastOp?.op.name,
+            'remote_code': e.code,
+            'remote_message': e.message,
+            'remote_details': e.details,
+            'remote_hint': e.hint,
+            'transaction_ops': transaction.crud.length,
+            'last_op_index': lastOpIndex,
+          },
         );
 
         final op = lastOp;
@@ -751,6 +871,17 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       '  tables=$tables\n'
       '  userIdHash=$userIdHash',
     );
+    _logSyncEvent(
+      'sync.upload.loop_detected',
+      level: _SyncLogLevel.warn,
+      fields: <String, Object?>{
+        'repeat_count': _repeatUploadCount,
+        'window_ms': _uploadLoopWindow.inMilliseconds,
+        'queued_ops': transaction.crud.length,
+        'tables': tables.join(','),
+        'user_id_hash': userIdHash,
+      },
+    );
 
     _emitAnomaly(
       kind: SyncAnomalyKind.syncPipelineIssue,
@@ -824,7 +955,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       case _SyncLogLevel.routine:
         AppLog.routineStructured('sync', event, fields: mergedFields);
       case _SyncLogLevel.info:
-        AppLog.info('sync', '$event | ${_fieldsToInlineText(mergedFields)}');
+        AppLog.infoStructured('sync', event, fields: mergedFields);
       case _SyncLogLevel.warn:
         AppLog.warnStructured('sync', event, fields: mergedFields);
       case _SyncLogLevel.error:
@@ -832,23 +963,8 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     }
   }
 
-  String _fieldsToInlineText(Map<String, Object?> fields) {
-    return fields.entries
-        .map((entry) => '${entry.key}=${entry.value}')
-        .join(' ');
-  }
-
   static String? _hashIdentifier(String? value) {
-    if (value == null) return null;
-    final normalized = value.trim();
-    if (normalized.isEmpty) return null;
-
-    var hash = 0x811c9dc5;
-    for (final unit in normalized.codeUnits) {
-      hash ^= unit;
-      hash = (hash * 0x01000193) & 0xffffffff;
-    }
-    return hash.toRadixString(16).padLeft(8, '0');
+    return hashIdentifierForTelemetry(value);
   }
 }
 

@@ -95,7 +95,7 @@ class AuthRepository implements AuthRepositoryContract {
   Future<void> signOut({OperationContext? context}) async {
     AppLog.info('data.auth', 'signOut');
     try {
-      await _client.auth.signOut();
+      await _client.auth.signOut(scope: supabase.SignOutScope.local);
       AppLog.info('data.auth', 'signOut: success');
     } catch (e, st) {
       final failure = AppFailureMapper.fromException(e);
@@ -215,8 +215,6 @@ class AuthRepository implements AuthRepositoryContract {
     if (session == null) return null;
     return AuthSession(
       user: _mapUser(session.user) ?? AuthUser(id: session.user.id),
-      accessToken: session.accessToken,
-      refreshToken: session.refreshToken,
       expiresAt: session.expiresAt == null
           ? null
           : DateTime.fromMillisecondsSinceEpoch(
