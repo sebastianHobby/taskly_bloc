@@ -70,7 +70,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
   final void Function(SyncAnomaly anomaly)? _onAnomaly;
   final Clock _clock;
 
-  Future<void>? _refreshFuture;
+  Future<bool>? _refreshFuture;
   int _uploadInFlightCount = 0;
   String? _lastUploadSignature;
   DateTime? _lastUploadSignatureAt;
@@ -78,6 +78,8 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
   static const Duration _uploadLoopWindow = Duration(seconds: 3);
   static const int _uploadLoopThreshold = 3;
+  static const Duration _refreshTimeout = Duration(seconds: 5);
+  static const Duration _proactiveRefreshLead = Duration(minutes: 1);
 
   /// Get a Supabase token to authenticate against the PowerSync instance.
   @override
@@ -85,24 +87,38 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     // Wait for pending session refresh if any
     await _refreshFuture;
 
-    // Use Supabase token for PowerSync
-    final session = Supabase.instance.client.auth.currentSession;
+    var session = Supabase.instance.client.auth.currentSession;
     if (session == null) {
       // Not logged in
       return null;
     }
 
-    // Use the access token to authenticate against PowerSync
-    final token = session.accessToken;
+    final expiresAt = _expiresAtUtc(session);
+    final now = _clock.nowUtc();
+    final shouldRefresh =
+        expiresAt != null &&
+        !now.isBefore(expiresAt.subtract(_proactiveRefreshLead));
+    if (shouldRefresh) {
+      final refreshed = await _refreshSession(reason: 'proactive_fetch');
+      if (!refreshed) {
+        talker.warning(
+          '[powersync] fetchCredentials returning null after refresh failure\n'
+          '  reason=proactive_fetch\n'
+          '  expiresAtUtc=$expiresAt',
+        );
+        // Do not reuse expired / near-expiry credentials when refresh fails.
+        return null;
+      }
+      session = Supabase.instance.client.auth.currentSession;
+      if (session == null) {
+        return null;
+      }
+    }
 
-    // expiresAt is for debugging purposes only
-    final expiresAt = session.expiresAt == null
-        ? null
-        : DateTime.fromMillisecondsSinceEpoch(session.expiresAt! * 1000);
     return PowerSyncCredentials(
       endpoint: Env.powersyncUrl,
-      token: token,
-      expiresAt: expiresAt,
+      token: session.accessToken,
+      expiresAt: _expiresAtUtc(session),
     );
   }
 
@@ -117,12 +133,61 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     // This could happen if the device was offline for a while and the session
     // expired, and nothing else attempt to use the session it in the meantime.
     //
-    // Timeout the refresh call to avoid waiting for long retries,
-    // and ignore any errors. Errors will surface as expired tokens.
-    _refreshFuture = Supabase.instance.client.auth
+    // Best-effort refresh to recover quickly after auth failure.
+    _refreshSession(reason: 'auth_invalidation');
+  }
+
+  DateTime? _expiresAtUtc(Session session) {
+    final expiresAt = session.expiresAt;
+    if (expiresAt == null) return null;
+    return DateTime.fromMillisecondsSinceEpoch(
+      expiresAt * 1000,
+      isUtc: true,
+    );
+  }
+
+  Future<bool> _refreshSession({required String reason}) async {
+    final inFlight = _refreshFuture;
+    if (inFlight != null) return inFlight;
+
+    final refreshFuture = Supabase.instance.client.auth
         .refreshSession()
-        .timeout(const Duration(seconds: 5))
-        .then((response) => null, onError: (error) => null);
+        .timeout(_refreshTimeout)
+        .then((_) {
+          final session = Supabase.instance.client.auth.currentSession;
+          if (kReleaseMode) {
+            talker.info(
+              '[powersync] supabase session refreshed\n'
+              '  reason=$reason\n'
+              '  expiresAtUtc=${session == null ? null : _expiresAtUtc(session)}',
+            );
+          }
+          return session != null;
+        })
+        .onError((error, stackTrace) {
+          final resolvedError =
+              error ?? StateError('Unknown Supabase refresh error');
+          talker.warning(
+            '[powersync] supabase session refresh failed\n'
+            '  reason=$reason\n'
+            '  error=$resolvedError',
+          );
+          if (kReleaseMode) {
+            talker.handle(
+              resolvedError,
+              stackTrace,
+              '[powersync] production refresh failure (reason=$reason)',
+            );
+          }
+          return false;
+        });
+
+    _refreshFuture = refreshFuture;
+    final refreshed = await refreshFuture;
+    if (identical(_refreshFuture, refreshFuture)) {
+      _refreshFuture = null;
+    }
+    return refreshed;
   }
 
   // Upload pending changes to Supabase.

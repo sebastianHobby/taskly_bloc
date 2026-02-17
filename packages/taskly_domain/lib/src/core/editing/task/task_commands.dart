@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:taskly_domain/src/core/model/task.dart';
 
 @immutable
 final class CreateTaskCommand {
@@ -10,6 +11,9 @@ final class CreateTaskCommand {
     this.deadlineDate,
     this.projectId,
     this.priority,
+    this.reminderKind = TaskReminderKind.none,
+    this.reminderAtUtc,
+    this.reminderMinutesBeforeDue,
     this.repeatIcalRrule,
     this.repeatFromCompletion = false,
     this.seriesEnded = false,
@@ -24,6 +28,9 @@ final class CreateTaskCommand {
   final DateTime? deadlineDate;
   final String? projectId;
   final int? priority;
+  final TaskReminderKind reminderKind;
+  final DateTime? reminderAtUtc;
+  final int? reminderMinutesBeforeDue;
   final String? repeatIcalRrule;
   final bool repeatFromCompletion;
 
@@ -44,6 +51,9 @@ final class UpdateTaskCommand {
     this.deadlineDate,
     this.projectId,
     this.priority,
+    this.reminderKind = TaskReminderKind.none,
+    this.reminderAtUtc,
+    this.reminderMinutesBeforeDue,
     this.repeatIcalRrule,
     this.repeatFromCompletion,
     this.seriesEnded,
@@ -59,6 +69,9 @@ final class UpdateTaskCommand {
   final DateTime? deadlineDate;
   final String? projectId;
   final int? priority;
+  final TaskReminderKind reminderKind;
+  final DateTime? reminderAtUtc;
+  final int? reminderMinutesBeforeDue;
   final String? repeatIcalRrule;
   final bool? repeatFromCompletion;
   final bool? seriesEnded;

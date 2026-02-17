@@ -43,6 +43,12 @@ class SettingsScreen extends StatelessWidget {
               onTap: () => Routing.pushSettingsWeeklyReview(context),
             ),
             _SettingsNavItem(
+              icon: Icons.notifications_none_rounded,
+              title: l10n.settingsNotificationsTitle,
+              subtitle: l10n.settingsNotificationsSubtitle,
+              onTap: () => Routing.pushSettingsNotifications(context),
+            ),
+            _SettingsNavItem(
               icon: Icons.language_outlined,
               title: l10n.settingsLanguageRegionTitle,
               subtitle: l10n.settingsLanguageRegionSubtitle,

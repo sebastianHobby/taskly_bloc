@@ -42,6 +42,7 @@ import 'package:taskly_bloc/presentation/features/settings/view/settings_languag
 import 'package:taskly_bloc/presentation/features/settings/view/settings_account_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_developer_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_micro_learning_page.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_notifications_page.dart';
 import 'package:taskly_bloc/presentation/features/trackers/view/trackers_page.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 import 'package:taskly_bloc/presentation/features/onboarding/view/onboarding_flow_page.dart';
@@ -478,6 +479,10 @@ GoRouter createRouter({
           GoRoute(
             path: '${Routing.screenPath('settings')}/micro-learning',
             builder: (_, __) => const SettingsMicroLearningPage(),
+          ),
+          GoRoute(
+            path: '${Routing.screenPath('settings')}/notifications',
+            builder: (_, __) => const SettingsNotificationsPage(),
           ),
           GoRoute(
             path: Routing.screenPath('journal_history'),

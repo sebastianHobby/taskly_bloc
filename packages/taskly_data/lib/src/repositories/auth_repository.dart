@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_core/logging.dart';
@@ -17,6 +18,7 @@ class AuthRepository implements AuthRepositoryContract {
       .auth
       .onAuthStateChange
       .map(_mapAuthState)
+      .doOnData(_logAuthStateForProduction)
       // Shared + replay-last so multiple UI listeners can attach safely.
       .shareReplay(maxSize: 1);
 
@@ -242,5 +244,16 @@ class AuthRepository implements AuthRepositoryContract {
 
   static UserUpdateResponse _mapUserResponse(supabase.UserResponse response) {
     return UserUpdateResponse(user: _mapUser(response.user));
+  }
+
+  void _logAuthStateForProduction(AuthStateChange state) {
+    if (!kReleaseMode) return;
+    if (state.event != AuthEventKind.tokenRefreshed) return;
+
+    final expiresAt = state.session?.expiresAt?.toUtc().toIso8601String();
+    AppLog.info(
+      'data.auth',
+      'tokenRefreshed event observed (expiresAtUtc=$expiresAt)',
+    );
   }
 }

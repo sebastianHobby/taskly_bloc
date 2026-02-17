@@ -49,6 +49,45 @@ class TaskRepository implements TaskRepositoryContract {
   final TaskPredicateMapper _predicateMapper;
   final Clock _clock;
 
+  String _toDbReminderKind(TaskReminderKind kind) => switch (kind) {
+    TaskReminderKind.none => 'none',
+    TaskReminderKind.absolute => 'absolute',
+    TaskReminderKind.beforeDue => 'before_due',
+  };
+
+  ({
+    String reminderKindDb,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
+  })
+  _normalizeReminder({
+    required TaskReminderKind reminderKind,
+    required DateTime? reminderAtUtc,
+    required int? reminderMinutesBeforeDue,
+  }) {
+    switch (reminderKind) {
+      case TaskReminderKind.none:
+        return (
+          reminderKindDb: _toDbReminderKind(TaskReminderKind.none),
+          reminderAtUtc: null,
+          reminderMinutesBeforeDue: null,
+        );
+      case TaskReminderKind.absolute:
+        return (
+          reminderKindDb: _toDbReminderKind(TaskReminderKind.absolute),
+          reminderAtUtc: reminderAtUtc?.toUtc(),
+          reminderMinutesBeforeDue: null,
+        );
+      case TaskReminderKind.beforeDue:
+        final minutes = reminderMinutesBeforeDue;
+        return (
+          reminderKindDb: _toDbReminderKind(TaskReminderKind.beforeDue),
+          reminderAtUtc: null,
+          reminderMinutesBeforeDue: minutes?.clamp(0, 10080),
+        );
+    }
+  }
+
   // Tier-based shared streams for common query patterns
   // Reduces concurrent queries from 6-7 down to 2-3
   ValueStream<List<Task>>? _sharedInboxStream;
@@ -399,6 +438,9 @@ class TaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     int? priority,
+    TaskReminderKind reminderKind = TaskReminderKind.none,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
@@ -420,6 +462,11 @@ class TaskRepository implements TaskRepositoryContract {
 
         final normalizedStartDate = dateOnlyOrNull(startDate);
         final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
+        final normalizedReminder = _normalizeReminder(
+          reminderKind: reminderKind,
+          reminderAtUtc: reminderAtUtc,
+          reminderMinutesBeforeDue: reminderMinutesBeforeDue,
+        );
 
         final projectPrimaryValueId =
             normalizedProjectId == null || !_hasNonEmptyValueIds(valueIds)
@@ -459,6 +506,15 @@ class TaskRepository implements TaskRepositoryContract {
                   deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
                   projectId: drift_pkg.Value(normalizedProjectId),
                   priority: drift_pkg.Value(priority),
+                  reminderKind: drift_pkg.Value(
+                    normalizedReminder.reminderKindDb,
+                  ),
+                  reminderAtUtc: drift_pkg.Value(
+                    normalizedReminder.reminderAtUtc,
+                  ),
+                  reminderMinutesBeforeDue: drift_pkg.Value(
+                    normalizedReminder.reminderMinutesBeforeDue,
+                  ),
                   isPinned: const drift_pkg.Value(false),
                   repeatIcalRrule: repeatIcalRrule == null
                       ? const drift_pkg.Value<String>.absent()
@@ -503,6 +559,9 @@ class TaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     int? priority,
+    TaskReminderKind reminderKind = TaskReminderKind.none,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
@@ -518,6 +577,9 @@ class TaskRepository implements TaskRepositoryContract {
       deadlineDate: deadlineDate,
       projectId: projectId,
       priority: priority,
+      reminderKind: reminderKind,
+      reminderAtUtc: reminderAtUtc,
+      reminderMinutesBeforeDue: reminderMinutesBeforeDue,
       repeatIcalRrule: repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion,
       seriesEnded: seriesEnded,
@@ -536,6 +598,9 @@ class TaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     int? priority,
+    TaskReminderKind reminderKind = TaskReminderKind.none,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
@@ -551,6 +616,9 @@ class TaskRepository implements TaskRepositoryContract {
       deadlineDate: deadlineDate,
       projectId: projectId,
       priority: priority,
+      reminderKind: reminderKind,
+      reminderAtUtc: reminderAtUtc,
+      reminderMinutesBeforeDue: reminderMinutesBeforeDue,
       repeatIcalRrule: repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion,
       seriesEnded: seriesEnded,
@@ -570,6 +638,9 @@ class TaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     int? priority,
+    TaskReminderKind reminderKind = TaskReminderKind.none,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     bool? seriesEnded,
@@ -599,6 +670,11 @@ class TaskRepository implements TaskRepositoryContract {
 
         final normalizedStartDate = dateOnlyOrNull(startDate);
         final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
+        final normalizedReminder = _normalizeReminder(
+          reminderKind: reminderKind,
+          reminderAtUtc: reminderAtUtc,
+          reminderMinutesBeforeDue: reminderMinutesBeforeDue,
+        );
 
         final nextPinned = !completed && (isPinned ?? existing.isPinned);
 
@@ -644,6 +720,15 @@ class TaskRepository implements TaskRepositoryContract {
                   deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
                   projectId: drift_pkg.Value(normalizedProjectId),
                   priority: drift_pkg.Value(priority),
+                  reminderKind: drift_pkg.Value(
+                    normalizedReminder.reminderKindDb,
+                  ),
+                  reminderAtUtc: drift_pkg.Value(
+                    normalizedReminder.reminderAtUtc,
+                  ),
+                  reminderMinutesBeforeDue: drift_pkg.Value(
+                    normalizedReminder.reminderMinutesBeforeDue,
+                  ),
                   myDaySnoozedUntilUtc: drift_pkg.Value(
                     existing.myDaySnoozedUntilUtc,
                   ),

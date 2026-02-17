@@ -117,6 +117,18 @@ class TaskTable extends Table {
   BoolColumn get isPinned =>
       boolean().clientDefault(() => false).named('pinned')();
 
+  /// Reminder type ('none', 'absolute', 'before_due').
+  TextColumn get reminderKind =>
+      text().clientDefault(() => 'none').named('reminder_kind')();
+
+  /// Absolute reminder timestamp (UTC) for absolute reminders.
+  DateTimeColumn get reminderAtUtc =>
+      dateTime().nullable().named('reminder_at_utc')();
+
+  /// Relative reminder offset in minutes before due date.
+  IntColumn get reminderMinutesBeforeDue =>
+      integer().nullable().named('reminder_minutes_before_due')();
+
   /// Task override primary value slot (nullable).
   ///
   /// When set, the task is considered to override project value slots.

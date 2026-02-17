@@ -19,6 +19,8 @@ void main() {
       expect(settings.themeMode, AppThemeMode.dark);
       expect(settings.textScaleFactor, 1.25);
       expect(settings.onboardingCompleted, isTrue);
+      expect(settings.planMyDayReminderEnabled, isTrue);
+      expect(settings.planMyDayReminderTimeMinutes, 0);
     },
   );
 
@@ -49,6 +51,7 @@ void main() {
       maintenanceDeadlineRiskMinUnscheduledCount: 0,
       maintenanceTaskStaleThresholdDays: 0,
       maintenanceProjectIdleThresholdDays: 200,
+      planMyDayReminderTimeMinutes: 9999,
       textScaleFactor: 0.9,
       onboardingCompleted: true,
     );
@@ -76,6 +79,8 @@ void main() {
       decoded.maintenanceProjectIdleThresholdDays,
       GlobalSettings.maintenanceStaleThresholdDaysMax,
     );
+    expect(decoded.planMyDayReminderEnabled, isTrue);
+    expect(decoded.planMyDayReminderTimeMinutes, 1439);
     expect(
       decoded.textScaleFactor,
       0.9,

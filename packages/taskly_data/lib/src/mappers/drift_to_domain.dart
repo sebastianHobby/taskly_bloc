@@ -47,6 +47,11 @@ Task taskFromTable(
   Project? project,
   List<Value>? values,
 }) {
+  final reminderKind = switch (t.reminderKind) {
+    'absolute' => TaskReminderKind.absolute,
+    'before_due' => TaskReminderKind.beforeDue,
+    _ => TaskReminderKind.none,
+  };
   return Task(
     id: t.id,
     createdAt: t.createdAt,
@@ -63,6 +68,9 @@ Task taskFromTable(
     seriesEnded: t.seriesEnded,
     priority: t.priority,
     isPinned: t.isPinned,
+    reminderKind: reminderKind,
+    reminderAtUtc: t.reminderAtUtc,
+    reminderMinutesBeforeDue: t.reminderMinutesBeforeDue,
     project: project,
     values: values ?? const <Value>[],
     overridePrimaryValueId: t.overridePrimaryValueId,

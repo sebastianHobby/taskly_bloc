@@ -30,6 +30,11 @@ abstract class GlobalSettings with _$GlobalSettings {
     int weeklyReviewCadenceWeeks,
     DateTime? weeklyReviewLastCompletedAt,
 
+    /// Plan My Day reminder scheduling.
+    @Default(true) bool planMyDayReminderEnabled,
+    @Default(GlobalSettings.defaultPlanMyDayReminderTimeMinutes)
+    int planMyDayReminderTimeMinutes,
+
     /// Maintenance checks in weekly review.
     @Default(true) bool maintenanceEnabled,
     @Default(true) bool maintenanceDeadlineRiskEnabled,
@@ -60,6 +65,9 @@ abstract class GlobalSettings with _$GlobalSettings {
         defaultWeeklyReviewCadenceWeeks;
     final rawWeeklyReviewCompleted =
         json['weeklyReviewLastCompletedAt'] as String?;
+    final rawPlanMyDayReminderTimeMinutes =
+        (json['planMyDayReminderTimeMinutes'] as num?)?.toInt() ??
+        defaultPlanMyDayReminderTimeMinutes;
 
     final rawMaintenanceDeadlineRiskDueWithinDays =
         (json['maintenanceDeadlineRiskDueWithinDays'] as num?)?.toInt() ??
@@ -90,6 +98,12 @@ abstract class GlobalSettings with _$GlobalSettings {
       weeklyReviewLastCompletedAt: rawWeeklyReviewCompleted == null
           ? null
           : DateTime.tryParse(rawWeeklyReviewCompleted),
+      planMyDayReminderEnabled:
+          json['planMyDayReminderEnabled'] as bool? ?? true,
+      planMyDayReminderTimeMinutes: rawPlanMyDayReminderTimeMinutes.clamp(
+        0,
+        1439,
+      ),
       maintenanceEnabled: json['maintenanceEnabled'] as bool? ?? true,
       maintenanceDeadlineRiskEnabled:
           json['maintenanceDeadlineRiskEnabled'] as bool? ?? true,
@@ -139,6 +153,9 @@ abstract class GlobalSettings with _$GlobalSettings {
 
   /// Default weekly review cadence (weeks).
   static const int defaultWeeklyReviewCadenceWeeks = 1;
+
+  /// Default Plan My Day reminder time (00:00).
+  static const int defaultPlanMyDayReminderTimeMinutes = 0;
 
   /// Default stale-task threshold (days).
   static const int defaultMaintenanceTaskStaleThresholdDays = 30;
@@ -204,6 +221,11 @@ extension GlobalSettingsJson on GlobalSettings {
     'weeklyReviewLastCompletedAt': weeklyReviewLastCompletedAt
         ?.toUtc()
         .toIso8601String(),
+    'planMyDayReminderEnabled': planMyDayReminderEnabled,
+    'planMyDayReminderTimeMinutes': planMyDayReminderTimeMinutes.clamp(
+      0,
+      1439,
+    ),
     'maintenanceEnabled': maintenanceEnabled,
     'maintenanceDeadlineRiskEnabled': maintenanceDeadlineRiskEnabled,
     'maintenanceDeadlineRiskDueWithinDays': maintenanceDeadlineRiskDueWithinDays

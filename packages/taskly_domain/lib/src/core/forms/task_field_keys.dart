@@ -8,6 +8,11 @@ abstract final class TaskFieldKeys {
   static const projectId = FieldKey('task.projectId');
   static const startDate = FieldKey('task.startDate');
   static const deadlineDate = FieldKey('task.deadlineDate');
+  static const reminderKind = FieldKey('task.reminderKind');
+  static const reminderAtUtc = FieldKey('task.reminderAtUtc');
+  static const reminderMinutesBeforeDue = FieldKey(
+    'task.reminderMinutesBeforeDue',
+  );
   static const repeatIcalRrule = FieldKey('task.repeatIcalRrule');
   static const repeatFromCompletion = FieldKey('task.repeatFromCompletion');
   static const seriesEnded = FieldKey('task.seriesEnded');

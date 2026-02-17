@@ -66,6 +66,16 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
     int cadenceWeeks,
   ) = GlobalSettingsWeeklyReviewCadenceWeeksChanged;
 
+  /// User toggled Plan My Day reminder scheduling.
+  const factory GlobalSettingsEvent.planMyDayReminderEnabledChanged(
+    bool enabled,
+  ) = GlobalSettingsPlanMyDayReminderEnabledChanged;
+
+  /// User changed Plan My Day reminder time.
+  const factory GlobalSettingsEvent.planMyDayReminderTimeMinutesChanged(
+    int minutes,
+  ) = GlobalSettingsPlanMyDayReminderTimeMinutesChanged;
+
   /// User toggled weekly review maintenance.
   const factory GlobalSettingsEvent.maintenanceEnabledChanged(bool enabled) =
       GlobalSettingsMaintenanceEnabledChanged;
@@ -224,6 +234,14 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsWeeklyReviewCadenceWeeksChanged>(
       _onWeeklyReviewCadenceWeeksChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsPlanMyDayReminderEnabledChanged>(
+      _onPlanMyDayReminderEnabledChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsPlanMyDayReminderTimeMinutesChanged>(
+      _onPlanMyDayReminderTimeMinutesChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsMaintenanceEnabledChanged>(
@@ -636,6 +654,35 @@ class GlobalSettingsBloc
       updated,
       intent: 'settings_weekly_review_cadence_changed',
       extraFields: <String, Object?>{'weeks': clamped},
+    );
+  }
+
+  Future<void> _onPlanMyDayReminderEnabledChanged(
+    GlobalSettingsPlanMyDayReminderEnabledChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      planMyDayReminderEnabled: event.enabled,
+    );
+    await _persistSettings(
+      updated,
+      intent: 'settings_plan_my_day_reminder_enabled_changed',
+      extraFields: <String, Object?>{'enabled': event.enabled},
+    );
+  }
+
+  Future<void> _onPlanMyDayReminderTimeMinutesChanged(
+    GlobalSettingsPlanMyDayReminderTimeMinutesChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final clamped = event.minutes.clamp(0, 1439);
+    final updated = state.settings.copyWith(
+      planMyDayReminderTimeMinutes: clamped,
+    );
+    await _persistSettings(
+      updated,
+      intent: 'settings_plan_my_day_reminder_time_changed',
+      extraFields: <String, Object?>{'minutes': clamped},
     );
   }
 

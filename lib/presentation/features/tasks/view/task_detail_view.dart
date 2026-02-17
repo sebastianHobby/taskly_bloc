@@ -92,6 +92,13 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
       TaskFieldKeys.deadlineDate.id,
     );
     final priority = formValues[TaskFieldKeys.priority.id] as int?;
+    final reminderKind =
+        formValues[TaskFieldKeys.reminderKind.id] as TaskReminderKind? ??
+        TaskReminderKind.none;
+    final reminderAtUtc =
+        formValues[TaskFieldKeys.reminderAtUtc.id] as DateTime?;
+    final reminderMinutesBeforeDue =
+        formValues[TaskFieldKeys.reminderMinutesBeforeDue.id] as int?;
     final valueIds = extractStringListValue(
       formValues,
       TaskFieldKeys.valueIds.id,
@@ -116,6 +123,9 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
       startDate: startDate,
       deadlineDate: deadlineDate,
       priority: priority,
+      reminderKind: reminderKind,
+      reminderAtUtc: reminderAtUtc,
+      reminderMinutesBeforeDue: reminderMinutesBeforeDue,
       valueIds: valueIds,
       checklistTitles: checklistTitles,
     );
@@ -204,6 +214,10 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                         deadlineDate: _draft.deadlineDate,
                         projectId: _draft.projectId,
                         priority: _draft.priority,
+                        reminderKind: _draft.reminderKind,
+                        reminderAtUtc: _draft.reminderAtUtc,
+                        reminderMinutesBeforeDue:
+                            _draft.reminderMinutesBeforeDue,
                         repeatIcalRrule: _draft.repeatIcalRrule,
                         repeatFromCompletion: _draft.repeatFromCompletion,
                         seriesEnded: _draft.seriesEnded,
@@ -257,6 +271,10 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                         deadlineDate: _draft.deadlineDate,
                         projectId: _draft.projectId,
                         priority: _draft.priority,
+                        reminderKind: _draft.reminderKind,
+                        reminderAtUtc: _draft.reminderAtUtc,
+                        reminderMinutesBeforeDue:
+                            _draft.reminderMinutesBeforeDue,
                         repeatIcalRrule: _draft.repeatIcalRrule,
                         repeatFromCompletion: _draft.repeatFromCompletion,
                         seriesEnded: _draft.seriesEnded,

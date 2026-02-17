@@ -4912,6 +4912,30 @@
     "@settingsWeeklyReviewSubtitle": {
         "description": "Subtitle for weekly review settings entry"
     },
+    "settingsNotificationsTitle": "Notificaciones",
+    "@settingsNotificationsTitle": {
+        "description": "Title for notifications settings entry and page"
+    },
+    "settingsNotificationsSubtitle": "Recordatorio de Plan My Day",
+    "@settingsNotificationsSubtitle": {
+        "description": "Subtitle for notifications settings entry"
+    },
+    "settingsPlanMyDayReminderTitle": "Recordatorio de Plan My Day",
+    "@settingsPlanMyDayReminderTitle": {
+        "description": "Card title for Plan My Day reminder settings"
+    },
+    "settingsPlanMyDayReminderSubtitle": "Recordatorio diario si el plan de hoy no esta creado.",
+    "@settingsPlanMyDayReminderSubtitle": {
+        "description": "Card subtitle describing Plan My Day reminder behavior"
+    },
+    "settingsPlanMyDayReminderEnabledLabel": "Activar recordatorio",
+    "@settingsPlanMyDayReminderEnabledLabel": {
+        "description": "Toggle label for enabling Plan My Day reminder"
+    },
+    "settingsPlanMyDayReminderTimeLabel": "Hora del recordatorio",
+    "@settingsPlanMyDayReminderTimeLabel": {
+        "description": "Label for selecting Plan My Day reminder time"
+    },
     "settingsLanguageRegionTitle": "Idioma y regiÃ³n",
     "@settingsLanguageRegionTitle": {
         "description": "Title for language and region settings entry"
@@ -4993,6 +5017,49 @@
     "taskFormIncludeInMyDaySubtitle": "Agrega esta tarea al plan de hoy.",
     "@taskFormIncludeInMyDaySubtitle": {
         "description": "Subtitle for the include in My Day toggle in the task form"
+    },
+    "taskReminderChipLabel": "Recordatorio",
+    "@taskReminderChipLabel": {
+        "description": "Label for the reminder metadata chip in task form"
+    },
+    "taskReminderAtLabel": "En fecha y hora",
+    "@taskReminderAtLabel": {
+        "description": "Option label for selecting an absolute task reminder time"
+    },
+    "taskReminderBeforeDueLabel": "Antes del vencimiento",
+    "@taskReminderBeforeDueLabel": {
+        "description": "Option label for selecting a relative reminder before due date"
+    },
+    "taskReminderDueDateRequiredHint": "Primero define una fecha de vencimiento para usar este recordatorio.",
+    "@taskReminderDueDateRequiredHint": {
+        "description": "Hint shown when before-due reminder is unavailable without a due date"
+    },
+    "taskReminderBeforeMinutes": "{minutes, plural, =1{1 minuto antes} other{{minutes} minutos antes}}",
+    "@taskReminderBeforeMinutes": {
+        "description": "Label for reminder offset in minutes before due date",
+        "placeholders": {
+            "minutes": {
+                "type": "int"
+            }
+        }
+    },
+    "taskReminderBeforeHours": "{hours, plural, =1{1 hora antes} other{{hours} horas antes}}",
+    "@taskReminderBeforeHours": {
+        "description": "Label for reminder offset in hours before due date",
+        "placeholders": {
+            "hours": {
+                "type": "int"
+            }
+        }
+    },
+    "taskReminderBeforeDays": "{days, plural, =1{1 dia antes} other{{days} dias antes}}",
+    "@taskReminderBeforeDays": {
+        "description": "Label for reminder offset in days before due date",
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
     },
     "priorityP1Label": "P1",
     "@priorityP1Label": {

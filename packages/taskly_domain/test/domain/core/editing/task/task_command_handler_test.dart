@@ -58,10 +58,13 @@ void main() {
       deadlineDate: DateTime.utc(2026, 1, 2),
       projectId: 'p1',
       priority: 2,
+      reminderKind: TaskReminderKind.absolute,
+      reminderAtUtc: DateTime.utc(2026, 1, 1, 8, 30),
       repeatIcalRrule: 'RRULE:FREQ=DAILY',
       repeatFromCompletion: true,
       seriesEnded: true,
       valueIds: const ['v2'],
+      checklistTitles: const ['Step A', 'Step B'],
     );
 
     final result = await handler.handleCreate(cmd, context: ctx);
@@ -71,6 +74,10 @@ void main() {
     expect(repo.lastCreatedName, 'Hello');
     expect(repo.lastCreatedContext, ctx);
     expect(repo.lastCreatedValueIds, ['v2']);
+    expect(repo.lastCreatedReminderKind, TaskReminderKind.absolute);
+    expect(repo.lastCreatedReminderAtUtc, DateTime.utc(2026, 1, 1, 8, 30));
+    expect(repo.lastCreatedReminderMinutesBeforeDue, isNull);
+    expect(repo.lastCreatedChecklistTitles, ['Step A', 'Step B']);
   });
 
   testSafe('handleUpdate validates deadline after start', () async {
@@ -174,7 +181,10 @@ void main() {
       deadlineDate: DateTime.utc(2026, 1, 2),
       projectId: 'p1',
       priority: 1,
+      reminderKind: TaskReminderKind.beforeDue,
+      reminderMinutesBeforeDue: 30,
       valueIds: const ['v2', 'v3'],
+      checklistTitles: const ['Check 1'],
     );
 
     final result = await handler.handleUpdate(cmd, context: ctx);
@@ -184,6 +194,10 @@ void main() {
     expect(repo.lastUpdatedId, 't1');
     expect(repo.lastUpdatedName, 'Updated');
     expect(repo.lastUpdatedContext, ctx);
+    expect(repo.lastUpdatedReminderKind, TaskReminderKind.beforeDue);
+    expect(repo.lastUpdatedReminderAtUtc, isNull);
+    expect(repo.lastUpdatedReminderMinutesBeforeDue, 30);
+    expect(repo.lastUpdatedChecklistTitles, ['Check 1']);
   });
 
   testSafe(
@@ -220,10 +234,18 @@ final class _RecordingTaskRepository implements TaskRepositoryContract {
 
   String? lastCreatedName;
   List<String>? lastCreatedValueIds;
+  TaskReminderKind? lastCreatedReminderKind;
+  DateTime? lastCreatedReminderAtUtc;
+  int? lastCreatedReminderMinutesBeforeDue;
+  List<String>? lastCreatedChecklistTitles;
   OperationContext? lastCreatedContext;
 
   String? lastUpdatedId;
   String? lastUpdatedName;
+  TaskReminderKind? lastUpdatedReminderKind;
+  DateTime? lastUpdatedReminderAtUtc;
+  int? lastUpdatedReminderMinutesBeforeDue;
+  List<String>? lastUpdatedChecklistTitles;
   OperationContext? lastUpdatedContext;
 
   @override
@@ -235,15 +257,23 @@ final class _RecordingTaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     int? priority,
+    TaskReminderKind reminderKind = TaskReminderKind.none,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) async {
     createCalls++;
     lastCreatedName = name;
     lastCreatedValueIds = valueIds;
+    lastCreatedReminderKind = reminderKind;
+    lastCreatedReminderAtUtc = reminderAtUtc;
+    lastCreatedReminderMinutesBeforeDue = reminderMinutesBeforeDue;
+    lastCreatedChecklistTitles = checklistTitles;
     lastCreatedContext = context;
   }
 
@@ -256,15 +286,23 @@ final class _RecordingTaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     int? priority,
+    TaskReminderKind reminderKind = TaskReminderKind.none,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) async {
     createCalls++;
     lastCreatedName = name;
     lastCreatedValueIds = valueIds;
+    lastCreatedReminderKind = reminderKind;
+    lastCreatedReminderAtUtc = reminderAtUtc;
+    lastCreatedReminderMinutesBeforeDue = reminderMinutesBeforeDue;
+    lastCreatedChecklistTitles = checklistTitles;
     lastCreatedContext = context;
     return 'task-1';
   }
@@ -279,16 +317,24 @@ final class _RecordingTaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     int? priority,
+    TaskReminderKind reminderKind = TaskReminderKind.none,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     bool? seriesEnded,
     List<String>? valueIds,
     bool? isPinned,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) async {
     updateCalls++;
     lastUpdatedId = id;
     lastUpdatedName = name;
+    lastUpdatedReminderKind = reminderKind;
+    lastUpdatedReminderAtUtc = reminderAtUtc;
+    lastUpdatedReminderMinutesBeforeDue = reminderMinutesBeforeDue;
+    lastUpdatedChecklistTitles = checklistTitles;
     lastUpdatedContext = context;
   }
 

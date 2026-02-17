@@ -28,6 +28,8 @@ abstract final class TaskFormFieldKeys {
 
 enum _TaskDateEditorTarget { planned, due }
 
+enum _ReminderSelectionMode { none, absolute, beforeDue }
+
 class TaskForm extends StatefulWidget {
   const TaskForm({
     required this.formKey,
@@ -482,6 +484,149 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     return _PrioritySelectionResult(priority: selected == -1 ? null : selected);
   }
 
+  String _formatReminderLabel(
+    BuildContext context, {
+    required TaskReminderKind reminderKind,
+    required DateTime? reminderAtUtc,
+    required int? reminderMinutesBeforeDue,
+  }) {
+    return switch (reminderKind) {
+      TaskReminderKind.none => context.l10n.offLabel,
+      TaskReminderKind.absolute =>
+        reminderAtUtc == null
+            ? context.l10n.taskReminderAtLabel
+            : '${MaterialLocalizations.of(context).formatFullDate(reminderAtUtc.toLocal())} '
+                  '${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(reminderAtUtc.toLocal()))}',
+      TaskReminderKind.beforeDue => _beforeDueLabel(
+        context,
+        reminderMinutesBeforeDue ?? 0,
+      ),
+    };
+  }
+
+  String _beforeDueLabel(BuildContext context, int minutes) {
+    if (minutes < 60) return context.l10n.taskReminderBeforeMinutes(minutes);
+    if (minutes % (60 * 24) == 0) {
+      return context.l10n.taskReminderBeforeDays(minutes ~/ (60 * 24));
+    }
+    if (minutes % 60 == 0) {
+      return context.l10n.taskReminderBeforeHours(minutes ~/ 60);
+    }
+    return context.l10n.taskReminderBeforeMinutes(minutes);
+  }
+
+  Future<_ReminderSelectionResult?> _showReminderSheet({
+    required BuildContext context,
+    required TaskReminderKind currentKind,
+    required DateTime? currentAtUtc,
+    required int? currentBeforeDueMinutes,
+    required DateTime? dueDate,
+  }) {
+    const options = <int>[5, 10, 15, 30, 60, 120, 24 * 60];
+    return showModalBottomSheet<_ReminderSelectionResult>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return ListView(
+          shrinkWrap: true,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.notifications_off_outlined),
+              title: Text(context.l10n.offLabel),
+              trailing: currentKind == TaskReminderKind.none
+                  ? Icon(
+                      Icons.check,
+                      color: Theme.of(context).colorScheme.primary,
+                    )
+                  : null,
+              onTap: () => Navigator.of(sheetContext).pop(
+                const _ReminderSelectionResult(
+                  mode: _ReminderSelectionMode.none,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.schedule),
+              title: Text(context.l10n.taskReminderAtLabel),
+              subtitle: currentKind == TaskReminderKind.absolute
+                  ? Text(
+                      _formatReminderLabel(
+                        context,
+                        reminderKind: currentKind,
+                        reminderAtUtc: currentAtUtc,
+                        reminderMinutesBeforeDue: currentBeforeDueMinutes,
+                      ),
+                    )
+                  : null,
+              onTap: () async {
+                final nowLocal = context.read<NowService>().nowLocal();
+                final initialDate = currentAtUtc?.toLocal() ?? nowLocal;
+                final date = await showDatePicker(
+                  context: sheetContext,
+                  initialDate: initialDate,
+                  firstDate: DateTime(nowLocal.year - 2),
+                  lastDate: DateTime(nowLocal.year + 10),
+                );
+                if (date == null || !sheetContext.mounted) return;
+
+                final initialTime = TimeOfDay.fromDateTime(initialDate);
+                final time = await showTimePicker(
+                  context: sheetContext,
+                  initialTime: initialTime,
+                );
+                if (time == null || !sheetContext.mounted) return;
+
+                final localDateTime = DateTime(
+                  date.year,
+                  date.month,
+                  date.day,
+                  time.hour,
+                  time.minute,
+                );
+                Navigator.of(sheetContext).pop(
+                  _ReminderSelectionResult(
+                    mode: _ReminderSelectionMode.absolute,
+                    reminderAtUtc: localDateTime.toUtc(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag_outlined),
+              title: Text(context.l10n.taskReminderBeforeDueLabel),
+              subtitle: dueDate == null
+                  ? Text(context.l10n.taskReminderDueDateRequiredHint)
+                  : null,
+            ),
+            for (final minutes in options)
+              ListTile(
+                enabled: dueDate != null,
+                contentPadding: const EdgeInsets.only(left: 72, right: 16),
+                title: Text(_beforeDueLabel(context, minutes)),
+                trailing:
+                    currentKind == TaskReminderKind.beforeDue &&
+                        currentBeforeDueMinutes == minutes
+                    ? Icon(
+                        Icons.check,
+                        color: Theme.of(context).colorScheme.primary,
+                      )
+                    : null,
+                onTap: dueDate == null
+                    ? null
+                    : () => Navigator.of(sheetContext).pop(
+                        _ReminderSelectionResult(
+                          mode: _ReminderSelectionMode.beforeDue,
+                          reminderMinutesBeforeDue: minutes,
+                        ),
+                      ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   bool _hasValidCreateDefaults() {
     if (widget.initialData != null) return false;
     final name =
@@ -519,6 +664,11 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
           widget.initialData?.deadlineDate ?? widget.defaultDeadlineDate,
       TaskFieldKeys.projectId.id: initialProjectId,
       TaskFieldKeys.priority.id: widget.initialData?.priority,
+      TaskFieldKeys.reminderKind.id:
+          widget.initialData?.reminderKind ?? TaskReminderKind.none,
+      TaskFieldKeys.reminderAtUtc.id: widget.initialData?.reminderAtUtc,
+      TaskFieldKeys.reminderMinutesBeforeDue.id:
+          widget.initialData?.reminderMinutesBeforeDue,
       TaskFieldKeys.repeatIcalRrule.id:
           widget.initialData?.repeatIcalRrule ?? '',
       TaskFieldKeys.repeatFromCompletion.id:
@@ -750,6 +900,36 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                               ?.value
                           as int?) ??
                       (initialValues[TaskFieldKeys.priority.id] as int?);
+                  final reminderKind =
+                      (widget
+                              .formKey
+                              .currentState
+                              ?.fields[TaskFieldKeys.reminderKind.id]
+                              ?.value
+                          as TaskReminderKind?) ??
+                      (initialValues[TaskFieldKeys.reminderKind.id]
+                          as TaskReminderKind?) ??
+                      TaskReminderKind.none;
+                  final reminderAtUtc =
+                      (widget
+                              .formKey
+                              .currentState
+                              ?.fields[TaskFieldKeys.reminderAtUtc.id]
+                              ?.value
+                          as DateTime?) ??
+                      (initialValues[TaskFieldKeys.reminderAtUtc.id]
+                          as DateTime?);
+                  final reminderMinutesBeforeDue =
+                      (widget
+                              .formKey
+                              .currentState
+                              ?.fields[TaskFieldKeys
+                                  .reminderMinutesBeforeDue
+                                  .id]
+                              ?.value
+                          as int?) ??
+                      (initialValues[TaskFieldKeys.reminderMinutesBeforeDue.id]
+                          as int?);
                   final checklistTitles =
                       ((widget
                                       .formKey
@@ -796,6 +976,12 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                   final repeatValueLabel = hasRecurrence
                       ? (_recurrenceLabel ?? l10n.loadingTitle)
                       : null;
+                  final reminderLabel = _formatReminderLabel(
+                    context,
+                    reminderKind: reminderKind,
+                    reminderAtUtc: reminderAtUtc,
+                    reminderMinutesBeforeDue: reminderMinutesBeforeDue,
+                  );
 
                   final chips = <Widget>[
                     TasklyFormInlineChip(
@@ -893,6 +1079,87 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           setState(() {});
                         },
                       ),
+                    ),
+                    TasklyFormInlineChip(
+                      label: l10n.taskReminderChipLabel,
+                      icon: Icons.notifications_none_rounded,
+                      valueLabel: reminderLabel,
+                      hasValue: reminderKind != TaskReminderKind.none,
+                      showLabelWhenEmpty: false,
+                      preset: chipPreset,
+                      onTap: () async {
+                        if (_activeDateEditor != null) {
+                          setState(() => _activeDateEditor = null);
+                        }
+
+                        final result = await _showReminderSheet(
+                          context: context,
+                          currentKind: reminderKind,
+                          currentAtUtc: reminderAtUtc,
+                          currentBeforeDueMinutes: reminderMinutesBeforeDue,
+                          dueDate: deadlineDate,
+                        );
+                        if (!mounted || result == null) return;
+
+                        switch (result.mode) {
+                          case _ReminderSelectionMode.none:
+                            widget
+                                .formKey
+                                .currentState
+                                ?.fields[TaskFieldKeys.reminderKind.id]
+                                ?.didChange(TaskReminderKind.none);
+                            widget
+                                .formKey
+                                .currentState
+                                ?.fields[TaskFieldKeys.reminderAtUtc.id]
+                                ?.didChange(null);
+                            widget
+                                .formKey
+                                .currentState
+                                ?.fields[TaskFieldKeys
+                                    .reminderMinutesBeforeDue
+                                    .id]
+                                ?.didChange(null);
+                          case _ReminderSelectionMode.absolute:
+                            widget
+                                .formKey
+                                .currentState
+                                ?.fields[TaskFieldKeys.reminderKind.id]
+                                ?.didChange(TaskReminderKind.absolute);
+                            widget
+                                .formKey
+                                .currentState
+                                ?.fields[TaskFieldKeys.reminderAtUtc.id]
+                                ?.didChange(result.reminderAtUtc);
+                            widget
+                                .formKey
+                                .currentState
+                                ?.fields[TaskFieldKeys
+                                    .reminderMinutesBeforeDue
+                                    .id]
+                                ?.didChange(null);
+                          case _ReminderSelectionMode.beforeDue:
+                            widget
+                                .formKey
+                                .currentState
+                                ?.fields[TaskFieldKeys.reminderKind.id]
+                                ?.didChange(TaskReminderKind.beforeDue);
+                            widget
+                                .formKey
+                                .currentState
+                                ?.fields[TaskFieldKeys.reminderAtUtc.id]
+                                ?.didChange(null);
+                            widget
+                                .formKey
+                                .currentState
+                                ?.fields[TaskFieldKeys
+                                    .reminderMinutesBeforeDue
+                                    .id]
+                                ?.didChange(result.reminderMinutesBeforeDue);
+                        }
+                        markDirty();
+                        setState(() {});
+                      },
                     ),
                     TasklyFormInlineChip(
                       label: l10n.checklistLabel,
@@ -1054,6 +1321,18 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                 name: TaskFieldKeys.repeatIcalRrule.id,
                 builder: (_) => SizedBox.shrink(),
               ),
+              FormBuilderField<TaskReminderKind>(
+                name: TaskFieldKeys.reminderKind.id,
+                builder: (_) => const SizedBox.shrink(),
+              ),
+              FormBuilderField<DateTime?>(
+                name: TaskFieldKeys.reminderAtUtc.id,
+                builder: (_) => const SizedBox.shrink(),
+              ),
+              FormBuilderField<int?>(
+                name: TaskFieldKeys.reminderMinutesBeforeDue.id,
+                builder: (_) => const SizedBox.shrink(),
+              ),
 
               // Hidden recurrence flags fields (set by the picker)
               FormBuilderField<bool>(
@@ -1080,6 +1359,18 @@ final class _PrioritySelectionResult {
   const _PrioritySelectionResult({required this.priority});
 
   final int? priority;
+}
+
+final class _ReminderSelectionResult {
+  const _ReminderSelectionResult({
+    required this.mode,
+    this.reminderAtUtc,
+    this.reminderMinutesBeforeDue,
+  });
+
+  final _ReminderSelectionMode mode;
+  final DateTime? reminderAtUtc;
+  final int? reminderMinutesBeforeDue;
 }
 
 class _TaskProjectValueRow extends StatelessWidget {

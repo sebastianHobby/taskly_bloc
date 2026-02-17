@@ -5,6 +5,7 @@ import 'package:taskly_domain/src/core/editing/validators/task_validators.dart';
 import 'package:taskly_domain/src/forms/field_key.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
+import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 final class TaskCommandHandler {
@@ -32,6 +33,9 @@ final class TaskCommandHandler {
       deadlineDate: command.deadlineDate,
       projectId: command.projectId,
       priority: command.priority,
+      reminderKind: command.reminderKind,
+      reminderAtUtc: command.reminderAtUtc,
+      reminderMinutesBeforeDue: command.reminderMinutesBeforeDue,
       repeatIcalRrule: command.repeatIcalRrule,
       repeatFromCompletion: command.repeatFromCompletion,
       seriesEnded: command.seriesEnded,
@@ -58,6 +62,9 @@ final class TaskCommandHandler {
       deadlineDate: command.deadlineDate,
       projectId: command.projectId,
       priority: command.priority,
+      reminderKind: command.reminderKind,
+      reminderAtUtc: command.reminderAtUtc,
+      reminderMinutesBeforeDue: command.reminderMinutesBeforeDue,
       repeatIcalRrule: command.repeatIcalRrule,
       repeatFromCompletion: command.repeatFromCompletion,
       seriesEnded: command.seriesEnded,
@@ -85,6 +92,9 @@ final class TaskCommandHandler {
       deadlineDate: command.deadlineDate,
       projectId: command.projectId,
       priority: command.priority,
+      reminderKind: command.reminderKind,
+      reminderAtUtc: command.reminderAtUtc,
+      reminderMinutesBeforeDue: command.reminderMinutesBeforeDue,
       repeatIcalRrule: command.repeatIcalRrule,
       repeatFromCompletion: command.repeatFromCompletion,
       seriesEnded: command.seriesEnded,
@@ -102,6 +112,10 @@ final class TaskCommandHandler {
     final startDate = (command as dynamic).startDate as DateTime?;
     final deadlineDate = (command as dynamic).deadlineDate as DateTime?;
     final repeat = (command as dynamic).repeatIcalRrule as String?;
+    final reminderKind = (command as dynamic).reminderKind as TaskReminderKind;
+    final reminderAtUtc = (command as dynamic).reminderAtUtc as DateTime?;
+    final reminderMinutesBeforeDue =
+        (command as dynamic).reminderMinutesBeforeDue as int?;
     final projectId = (command as dynamic).projectId as String?;
     final valueIds = (command as dynamic).valueIds as List<String>?;
     final normalizedProjectId = projectId?.trim();
@@ -129,6 +143,14 @@ final class TaskCommandHandler {
       fieldErrors[TaskFieldKeys.valueIds] = valueErrors;
     }
     fieldErrors.addAll(TaskValidators.dateOrder(startDate, deadlineDate));
+    fieldErrors.addAll(
+      TaskValidators.reminderShape(
+        reminderKind: reminderKind,
+        reminderAtUtc: reminderAtUtc,
+        reminderMinutesBeforeDue: reminderMinutesBeforeDue,
+        deadlineDate: deadlineDate,
+      ),
+    );
 
     final pruned = Map<FieldKey, List<ValidationError>>.fromEntries(
       fieldErrors.entries.where((entry) => entry.value.isNotEmpty),

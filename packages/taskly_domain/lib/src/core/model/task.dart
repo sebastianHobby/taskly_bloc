@@ -3,6 +3,8 @@ import 'package:taskly_domain/src/core/model/value.dart';
 import 'package:taskly_domain/src/core/model/occurrence_data.dart';
 import 'package:taskly_domain/src/core/model/project.dart';
 
+enum TaskReminderKind { none, absolute, beforeDue }
+
 /// Domain representation of a Task used across the app.
 ///
 /// When retrieved via occurrence expansion methods (`getOccurrences`,
@@ -24,6 +26,9 @@ class Task {
     this.projectId,
     this.priority,
     this.isPinned = false,
+    this.reminderKind = TaskReminderKind.none,
+    this.reminderAtUtc,
+    this.reminderMinutesBeforeDue,
     this.repeatIcalRrule,
     this.repeatFromCompletion = false,
     this.seriesEnded = false,
@@ -56,6 +61,17 @@ class Task {
 
   /// Whether this task is pinned to the top of lists
   final bool isPinned;
+
+  /// Reminder scheduling mode for this task.
+  final TaskReminderKind reminderKind;
+
+  /// Absolute reminder instant (UTC). Used when [reminderKind] is `absolute`.
+  final DateTime? reminderAtUtc;
+
+  /// Relative reminder offset in minutes before due date.
+  ///
+  /// Used when [reminderKind] is `beforeDue`.
+  final int? reminderMinutesBeforeDue;
 
   final String? repeatIcalRrule;
 
@@ -112,6 +128,9 @@ class Task {
     String? projectId,
     int? priority,
     bool? isPinned,
+    TaskReminderKind? reminderKind,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     bool? seriesEnded,
@@ -134,6 +153,10 @@ class Task {
       projectId: projectId ?? this.projectId,
       priority: priority ?? this.priority,
       isPinned: isPinned ?? this.isPinned,
+      reminderKind: reminderKind ?? this.reminderKind,
+      reminderAtUtc: reminderAtUtc ?? this.reminderAtUtc,
+      reminderMinutesBeforeDue:
+          reminderMinutesBeforeDue ?? this.reminderMinutesBeforeDue,
       repeatIcalRrule: repeatIcalRrule ?? this.repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion ?? this.repeatFromCompletion,
       seriesEnded: seriesEnded ?? this.seriesEnded,
@@ -163,6 +186,9 @@ class Task {
         other.projectId == projectId &&
         other.priority == priority &&
         other.isPinned == isPinned &&
+        other.reminderKind == reminderKind &&
+        other.reminderAtUtc == reminderAtUtc &&
+        other.reminderMinutesBeforeDue == reminderMinutesBeforeDue &&
         other.repeatIcalRrule == repeatIcalRrule &&
         other.repeatFromCompletion == repeatFromCompletion &&
         other.seriesEnded == seriesEnded &&
@@ -188,6 +214,9 @@ class Task {
       projectId,
       priority,
       isPinned,
+      reminderKind,
+      reminderAtUtc,
+      reminderMinutesBeforeDue,
       repeatIcalRrule,
       repeatFromCompletion,
       seriesEnded,
@@ -203,6 +232,8 @@ class Task {
   String toString() {
     return 'Task(id: $id, name: $name, completed: $completed, isPinned: $isPinned, '
         'projectId: $projectId, values: ${values.length} values, '
+        'reminderKind: $reminderKind, reminderAtUtc: $reminderAtUtc, '
+        'reminderMinutesBeforeDue: $reminderMinutesBeforeDue, '
         'overridePrimaryValueId: $overridePrimaryValueId, '
         'overrideSecondaryValueId: $overrideSecondaryValueId, '
         'isOccurrence: $isOccurrenceInstance)';

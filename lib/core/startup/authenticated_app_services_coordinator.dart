@@ -16,6 +16,7 @@ class AuthenticatedAppServicesCoordinator {
     required HomeDayKeyService homeDayKeyService,
     required AppLifecycleService appLifecycleService,
     required TemporalTriggerService temporalTriggerService,
+    required PlanMyDayReminderService planMyDayReminderService,
     required AttentionTemporalInvalidationService
     attentionTemporalInvalidationService,
     required AttentionPrewarmService attentionPrewarmService,
@@ -23,6 +24,7 @@ class AuthenticatedAppServicesCoordinator {
        _homeDayKeyService = homeDayKeyService,
        _appLifecycleService = appLifecycleService,
        _temporalTriggerService = temporalTriggerService,
+       _planMyDayReminderService = planMyDayReminderService,
        _attentionTemporalInvalidationService =
            attentionTemporalInvalidationService,
        _attentionPrewarmService = attentionPrewarmService;
@@ -31,6 +33,7 @@ class AuthenticatedAppServicesCoordinator {
   final HomeDayKeyService _homeDayKeyService;
   final AppLifecycleService _appLifecycleService;
   final TemporalTriggerService _temporalTriggerService;
+  final PlanMyDayReminderService _planMyDayReminderService;
   final AttentionTemporalInvalidationService
   _attentionTemporalInvalidationService;
   final AttentionPrewarmService _attentionPrewarmService;
@@ -57,6 +60,7 @@ class AuthenticatedAppServicesCoordinator {
 
       _appLifecycleService.start();
       _temporalTriggerService.start();
+      _planMyDayReminderService.start();
 
       _attentionTemporalInvalidationService.start();
       _attentionPrewarmService.start();
@@ -92,6 +96,7 @@ class AuthenticatedAppServicesCoordinator {
       // Stop in reverse-ish order of dependencies.
       await _attentionPrewarmService.stop();
       _attentionTemporalInvalidationService.stop();
+      _planMyDayReminderService.stop();
       _temporalTriggerService.stop();
       _appLifecycleService.stop();
       _homeDayKeyService.stop();

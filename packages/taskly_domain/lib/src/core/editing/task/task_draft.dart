@@ -11,6 +11,9 @@ final class TaskDraft {
     this.deadlineDate,
     this.projectId,
     this.priority,
+    this.reminderKind = TaskReminderKind.none,
+    this.reminderAtUtc,
+    this.reminderMinutesBeforeDue,
     this.repeatIcalRrule,
     this.repeatFromCompletion = false,
     this.seriesEnded = false,
@@ -26,6 +29,9 @@ final class TaskDraft {
     deadlineDate: null,
     projectId: null,
     priority: null,
+    reminderKind: TaskReminderKind.none,
+    reminderAtUtc: null,
+    reminderMinutesBeforeDue: null,
     repeatIcalRrule: null,
     repeatFromCompletion: false,
     seriesEnded: false,
@@ -41,6 +47,9 @@ final class TaskDraft {
     deadlineDate: task.deadlineDate,
     projectId: task.projectId,
     priority: task.priority,
+    reminderKind: task.reminderKind,
+    reminderAtUtc: task.reminderAtUtc,
+    reminderMinutesBeforeDue: task.reminderMinutesBeforeDue,
     repeatIcalRrule: task.repeatIcalRrule,
     repeatFromCompletion: task.repeatFromCompletion,
     seriesEnded: task.seriesEnded,
@@ -55,6 +64,9 @@ final class TaskDraft {
   final DateTime? deadlineDate;
   final String? projectId;
   final int? priority;
+  final TaskReminderKind reminderKind;
+  final DateTime? reminderAtUtc;
+  final int? reminderMinutesBeforeDue;
   final String? repeatIcalRrule;
   final bool repeatFromCompletion;
   final bool seriesEnded;
@@ -69,6 +81,9 @@ final class TaskDraft {
     DateTime? deadlineDate,
     String? projectId,
     int? priority,
+    TaskReminderKind? reminderKind,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     bool? seriesEnded,
@@ -83,6 +98,10 @@ final class TaskDraft {
       deadlineDate: deadlineDate ?? this.deadlineDate,
       projectId: projectId ?? this.projectId,
       priority: priority ?? this.priority,
+      reminderKind: reminderKind ?? this.reminderKind,
+      reminderAtUtc: reminderAtUtc ?? this.reminderAtUtc,
+      reminderMinutesBeforeDue:
+          reminderMinutesBeforeDue ?? this.reminderMinutesBeforeDue,
       repeatIcalRrule: repeatIcalRrule ?? this.repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion ?? this.repeatFromCompletion,
       seriesEnded: seriesEnded ?? this.seriesEnded,

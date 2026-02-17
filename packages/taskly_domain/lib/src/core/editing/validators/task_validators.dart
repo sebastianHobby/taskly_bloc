@@ -1,5 +1,6 @@
 import 'package:taskly_domain/src/core/editing/validation_error.dart';
 import 'package:taskly_domain/src/forms/field_key.dart';
+import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/services/values/task_value_policy.dart';
 
 final class TaskValidators {
@@ -82,5 +83,71 @@ final class TaskValidators {
       TaskFieldKeys.startDate: errors,
       TaskFieldKeys.deadlineDate: errors,
     };
+  }
+
+  static Map<FieldKey, List<ValidationError>> reminderShape({
+    required TaskReminderKind reminderKind,
+    required DateTime? reminderAtUtc,
+    required int? reminderMinutesBeforeDue,
+    required DateTime? deadlineDate,
+  }) {
+    switch (reminderKind) {
+      case TaskReminderKind.none:
+        if (reminderAtUtc == null && reminderMinutesBeforeDue == null) {
+          return const {};
+        }
+        return const {
+          TaskFieldKeys.reminderKind: [
+            ValidationError(
+              code: 'invalid_reminder_shape',
+              messageKey: 'taskFormReminderInvalid',
+            ),
+          ],
+        };
+      case TaskReminderKind.absolute:
+        if (reminderAtUtc != null && reminderMinutesBeforeDue == null) {
+          return const {};
+        }
+        return const {
+          TaskFieldKeys.reminderKind: [
+            ValidationError(
+              code: 'invalid_reminder_shape',
+              messageKey: 'taskFormReminderInvalid',
+            ),
+          ],
+          TaskFieldKeys.reminderAtUtc: [
+            ValidationError(
+              code: 'required',
+              messageKey: 'taskFormReminderAtRequired',
+            ),
+          ],
+        };
+      case TaskReminderKind.beforeDue:
+        final minutes = reminderMinutesBeforeDue;
+        if (deadlineDate == null) {
+          return const {
+            TaskFieldKeys.deadlineDate: [
+              ValidationError(
+                code: 'required_for_reminder',
+                messageKey: 'taskFormReminderDueDateRequired',
+              ),
+            ],
+          };
+        }
+        if (reminderAtUtc == null &&
+            minutes != null &&
+            minutes >= 0 &&
+            minutes <= 10080) {
+          return const {};
+        }
+        return const {
+          TaskFieldKeys.reminderMinutesBeforeDue: [
+            ValidationError(
+              code: 'invalid',
+              messageKey: 'taskFormReminderBeforeDueInvalid',
+            ),
+          ],
+        };
+    }
   }
 }

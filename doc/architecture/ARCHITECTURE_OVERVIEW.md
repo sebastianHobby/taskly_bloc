@@ -1,113 +1,34 @@
-﻿# Taskly -- Architecture Overview
+﻿# Taskly Architecture Overview
 
-> Audience: developers + AI agents
->
-> Scope: a **high-level mental model** of Taskly's architecture: layers,
-> responsibilities, and how data flows through the app.
->
-> This document is **descriptive** (non-normative). All non-negotiable rules
-> live in: [INVARIANTS.md](INVARIANTS.md)
+This document is descriptive. Normative rules are only in [INVARIANTS.md](INVARIANTS.md).
 
-## 1) Big picture
+## Layer model
 
-Taskly is an offline-first Flutter app with a layered architecture:
+Taskly uses an offline-first layered architecture:
 
-- **Presentation**: screens, routing, widgets, BLoCs (screen-shaped reactive
-  composition).
-- **Domain**: business semantics, use-cases, and repository contracts.
-- **Data**: repository implementations, Drift persistence, sync connectors.
+- Presentation: screens, widgets, BLoCs, routing, screen composition.
+- Domain: business semantics, contracts, use-cases, recurrence logic.
+- Data: repository implementations, Drift persistence, PowerSync sync.
 
-Offline-first means the **local SQLite database is the primary source of truth
-for UI**, and sync is responsible for convergence with the backend.
+Dependency direction is governed by invariants:
+- allowed: `presentation -> domain`, `data -> domain`
+- forbidden: `presentation -> data`, `domain -> data`, `domain -> presentation`
 
-## 2) System diagram (conceptual)
+## Runtime flow
 
 ```text
-+-----------------------------------------------------------------------+
-|                              Presentation                             |
-|  - routing / pages / widgets / feature state (BLoCs)                   |
-+------------------------------------+----------------------------------+
-                                     |
-                                     v
-+-----------------------------------------------------------------------+
-|                                 Domain                                |
-|  - business semantics + use-cases                                      |
-|  - repository contracts (interfaces)                                  |
-+------------------------------------+----------------------------------+
-                                     |
-                                     v
-+-----------------------------------------------------------------------+
-|                                  Data                                 |
-|  - repository implementations                                          |
-|  - local persistence (Drift over PowerSync-backed SQLite)              |
-|  - sync connectors / serializers / normalization                       |
-+------------------------------------+----------------------------------+
-                                     |
-                                     v
-+-----------------------------------------------------------------------+
-|                         Sync + Backend (runtime)                       |
-|  PowerSync server <-> Supabase (Postgres + PostgREST + Auth JWT/RLS)   |
-+-----------------------------------------------------------------------+
+User intent -> Widget -> BLoC event -> Domain command -> Repository write
+Local watchers -> Domain read contracts -> BLoC state -> Widgets render
 ```
 
-## 3) How screens work (typical flow)
+## Source-of-truth boundaries
 
-```text
-User intent -> Widget -> BLoC event -> Domain use-case -> Repository write
-Local DB watchers -> Repository stream -> BLoC state -> Widgets render
-```
+- Local database is primary UI source of truth.
+- Sync converges local and backend state.
+- Recurrence keys/window keys are domain-owned and deterministic.
 
-The key architectural move is that **BLoCs own subscriptions** and widgets are
-render-only.
+## Where behavior lives
 
-Canonical rule: [INVARIANTS.md](INVARIANTS.md) (Presentation
-boundary).
-
-### 3.1 Session-shared streams (presentation)
-
-Some data is shared across multiple screens (values list, inbox counts,
-incomplete projects). These are provided as **session-shared streams** in the
-presentation layer and are kept warm via a session cache manager. Session
-streams pause on background unless explicitly exempted, and screens consume
-them via query/services rather than direct repository subscriptions.
-
-## 4) Where code goes (feature slice map)
-
-Use this as a quick orientation when adding a new feature or screen. Paths are
-examples; follow existing feature naming.
-
-Presentation (screen + BLoC):
-- Screen widgets and routing: `lib/presentation/features/<feature>/`
-- BLoC + events/state: `lib/presentation/features/<feature>/bloc/`
-- Screen-local widgets: `lib/presentation/features/<feature>/widgets/`
-
-Domain (business semantics):
-- Use-cases/write facades: `packages/taskly_domain/lib/src/<feature>/use_cases/`
-- Domain models/entities: `packages/taskly_domain/lib/src/<feature>/model/`
-- Repository contracts: `packages/taskly_domain/lib/src/<feature>/contracts/`
-
-Data (persistence + sync):
-- Repository implementations: `packages/taskly_data/lib/src/<feature>/`
-- Drift tables/DAOs: `packages/taskly_data/lib/src/persistence/`
-- Sync adapters/serializers: `packages/taskly_data/lib/src/sync/`
-
-Shared UI (reusable visuals only):
-- Primitives/entities/sections: `packages/taskly_ui/lib/src/`
-
-Related vocabulary: [GLOSSARY.md](GLOSSARY.md)
-
-## 5) Where to read next
-
-- Non-negotiable rules (single source of truth): [INVARIANTS.md](INVARIANTS.md)
-- Screen patterns and BLoC guidance: [guides/BLOC_GUIDELINES.md](guides/BLOC_GUIDELINES.md)
-- Screen composition and routing notes: [guides/SCREEN_ARCHITECTURE.md](guides/SCREEN_ARCHITECTURE.md)
-- Navigation + screen keys: [guides/NAVIGATION_AND_SCREEN_KEYS.md](guides/NAVIGATION_AND_SCREEN_KEYS.md)
-- Session stream cache: [guides/SESSION_STREAM_CACHE.md](guides/SESSION_STREAM_CACHE.md)
-- Screen actions + tile intents: [guides/SCREEN_ACTIONS_AND_TILE_INTENTS.md](guides/SCREEN_ACTIONS_AND_TILE_INTENTS.md)
-- My Day + Plan My Day architecture: [deep_dives/MY_DAY_PLAN_MY_DAY.md](deep_dives/MY_DAY_PLAN_MY_DAY.md)
-- Sync deep dive: [deep_dives/POWERSYNC_SUPABASE.md](deep_dives/POWERSYNC_SUPABASE.md)
-- Notifications (pending): [deep_dives/NOTIFICATIONS.md](deep_dives/NOTIFICATIONS.md)
-- Local E2E stack runbook: [runbooks/LOCAL_E2E_STACK.md](runbooks/LOCAL_E2E_STACK.md)
-- Recurrence sync contract: [specs/RECURRENCE_SYNC_CONTRACT.md](specs/RECURRENCE_SYNC_CONTRACT.md)
-
-
+- Architecture invariants: `doc/architecture/INVARIANTS.md`
+- Feature behavior contracts: `doc/features/README.md`
+- Agent onboarding: `doc/agents/START_HERE.md`
