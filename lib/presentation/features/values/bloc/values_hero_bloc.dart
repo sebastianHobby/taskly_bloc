@@ -167,7 +167,7 @@ class ValuesHeroBloc extends Bloc<ValuesHeroEvent, ValuesHeroState> {
               items: items,
             );
           } catch (error, stackTrace) {
-            AppLog.warnThrottledStructured(
+            AppLog.routineThrottledStructured(
               'values.hero.load.failed',
               const Duration(seconds: 2),
               'values.hero',

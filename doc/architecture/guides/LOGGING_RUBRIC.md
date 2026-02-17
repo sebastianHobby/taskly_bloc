@@ -75,3 +75,17 @@ unawaited(
 );
 ```
 
+## 7-day snapshot capture
+
+Use the repository script to capture warning/error/handle signal quality over a
+rolling window:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tool/logging_7d_snapshot.ps1 -LogPath "<path-to-debug_errors.log>" -Days 7
+```
+
+The script outputs:
+
+- warning/error/handle counts
+- top 20 warning messages
+- warning duplicate rate

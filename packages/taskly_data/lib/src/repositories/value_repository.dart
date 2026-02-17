@@ -82,7 +82,7 @@ class ValueRepository implements ValueRepositoryContract {
 
       // We intentionally keep this lightweight:
       // - routine log on subscribe/first emission
-      // - warn if first emission is delayed (helps identify "infinite loading")
+      // - routine log if first emission is delayed (helps identify loading lag)
       // - error is captured via AppLog.handleStructured
       return Stream<List<Value>>.multi((controller) {
         late final StreamSubscription<List<Value>> sub;
@@ -107,7 +107,7 @@ class ValueRepository implements ValueRepositoryContract {
 
         delayedFirstEmissionTimer = Timer(const Duration(seconds: 2), () {
           if (hasFirstEmission) return;
-          AppLog.warnStructured(
+          AppLog.routineStructured(
             'data.value',
             'watchAll first emission delayed',
             fields: <String, Object?>{...fields, 'delayMs': 2000},
@@ -382,8 +382,10 @@ class ValueRepository implements ValueRepositoryContract {
         talker.debug('[ValueRepository] update: id=$id, name="$name"');
         final existing = await _getValueById(id);
         if (existing == null) {
-          talker.warning(
-            '[ValueRepository] update failed: value not found id=$id',
+          AppLog.routineStructured(
+            'data.value',
+            'update skipped; value not found',
+            fields: <String, Object?>{'id': id},
           );
           throw RepositoryNotFoundException('No value found to update');
         }

@@ -5,6 +5,8 @@ import '../../../helpers/test_imports.dart';
 
 import 'dart:async';
 
+import 'package:taskly_core/logging.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/my_day.dart';
 import 'package:taskly_domain/notifications.dart';
 import 'package:taskly_domain/preferences.dart';
@@ -42,7 +44,8 @@ class _FakeDayKeyService extends Fake implements HomeDayKeyService {
   final _MutableClock _clock;
 
   @override
-  DateTime todayDayKeyUtc({DateTime? nowUtc}) => dateOnly(nowUtc ?? _clock.nowUtc());
+  DateTime todayDayKeyUtc({DateTime? nowUtc}) =>
+      dateOnly(nowUtc ?? _clock.nowUtc());
 
   @override
   DateTime nextHomeDayBoundaryUtc({DateTime? nowUtc}) {
@@ -58,10 +61,12 @@ class _FakeSettingsRepository implements SettingsRepositoryContract {
       StreamController<GlobalSettings>.broadcast();
   GlobalSettings _settings;
 
+  Future<void> dispose() => _controller.close();
+
   @override
   Future<T> load<T>(SettingsKey<T> key) async {
     if (key == SettingsKey.global) return _settings as T;
-    throw UnsupportedError('Unsupported key: ${key.key}');
+    throw UnsupportedError('Unsupported key: $key');
   }
 
   @override
@@ -75,7 +80,7 @@ class _FakeSettingsRepository implements SettingsRepositoryContract {
       _controller.add(_settings);
       return;
     }
-    throw UnsupportedError('Unsupported key: ${key.key}');
+    throw UnsupportedError('Unsupported key: $key');
   }
 
   @override
@@ -85,7 +90,7 @@ class _FakeSettingsRepository implements SettingsRepositoryContract {
       yield* _controller.stream.cast<T>();
       return;
     }
-    throw UnsupportedError('Unsupported key: ${key.key}');
+    throw UnsupportedError('Unsupported key: $key');
   }
 }
 
@@ -98,12 +103,21 @@ class _FakeMyDayRepository implements MyDayRepositoryContract {
 
   @override
   Future<MyDayDayPicks> loadDay(DateTime dayKeyUtc) async {
-    return day.copyWith(dayKeyUtc: dateOnly(dayKeyUtc));
+    return MyDayDayPicks(
+      dayKeyUtc: dateOnly(dayKeyUtc),
+      ritualCompletedAtUtc: day.ritualCompletedAtUtc,
+      picks: day.picks,
+    );
   }
 
   @override
-  Stream<MyDayDayPicks> watchDay(DateTime dayKeyUtc) =>
-      Stream.value(day.copyWith(dayKeyUtc: dateOnly(dayKeyUtc)));
+  Stream<MyDayDayPicks> watchDay(DateTime dayKeyUtc) => Stream.value(
+    MyDayDayPicks(
+      dayKeyUtc: dateOnly(dayKeyUtc),
+      ritualCompletedAtUtc: day.ritualCompletedAtUtc,
+      picks: day.picks,
+    ),
+  );
 
   @override
   Future<void> appendPick({
@@ -134,6 +148,8 @@ Future<void> _flushMicrotasks() async {
 }
 
 void main() {
+  setUpAll(initializeLoggingForTest);
+
   testSafe('notifies once when reminder is due and no plan exists', () async {
     final clock = _MutableClock(DateTime.utc(2026, 1, 2, 0, 5));
     final settingsRepo = _FakeSettingsRepository(
@@ -143,6 +159,7 @@ void main() {
         planMyDayReminderTimeMinutes: 0,
       ),
     );
+    addTearDown(settingsRepo.dispose);
     final myDayRepo = _FakeMyDayRepository();
     final dayKeyService = _FakeDayKeyService(clock);
 
@@ -189,6 +206,7 @@ void main() {
         planMyDayReminderTimeMinutes: 0,
       ),
     );
+    addTearDown(settingsRepo.dispose);
     final myDayRepo = _FakeMyDayRepository()
       ..day = MyDayDayPicks(
         dayKeyUtc: DateTime.utc(2026, 1, 2),

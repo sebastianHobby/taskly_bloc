@@ -31,11 +31,16 @@ class PendingNotificationsProcessor {
   void start() {
     if (_subscription != null) return;
 
-    talker.info('[notifications] Starting pending notifications processor');
+    AppLog.info('notifications', 'starting pending notifications processor');
     _subscription = _repository.watchPending().listen(
       _scheduleProcess,
       onError: (Object error, StackTrace stackTrace) {
-        talker.handle(error, stackTrace, 'Pending notifications stream error');
+        AppLog.handleStructured(
+          'notifications',
+          'pending notifications stream error',
+          error,
+          stackTrace,
+        );
       },
     );
   }
@@ -44,7 +49,7 @@ class PendingNotificationsProcessor {
     await _subscription?.cancel();
     _subscription = null;
     _inFlight.clear();
-    talker.info('[notifications] Stopped pending notifications processor');
+    AppLog.info('notifications', 'stopped pending notifications processor');
   }
 
   Future<void> _process(List<PendingNotification> items) async {
@@ -69,10 +74,15 @@ class PendingNotificationsProcessor {
         );
         await _repository.markDelivered(id: item.id, context: context);
       } catch (error, stackTrace) {
-        talker.handle(
+        AppLog.handleStructured(
+          'notifications',
+          'process pending notification failed',
           error,
           stackTrace,
-          'Failed to process pending notification ${item.id}',
+          <String, Object?>{
+            'pendingNotificationId': item.id,
+            'scheduledFor': item.scheduledFor.toIso8601String(),
+          },
         );
       } finally {
         _inFlight.remove(item.id);

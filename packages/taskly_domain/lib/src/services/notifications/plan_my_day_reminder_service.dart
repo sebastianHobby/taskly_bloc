@@ -48,6 +48,7 @@ class PlanMyDayReminderService {
   Timer? _timer;
   GlobalSettings _settings = const GlobalSettings();
   DateTime? _lastNotifiedDayKeyUtc;
+  Future<void> _evaluationQueue = Future<void>.value();
   bool _started = false;
 
   void start() {
@@ -116,9 +117,13 @@ class PlanMyDayReminderService {
 
     final day = await _myDayRepository.loadDay(dayKeyUtc);
     if (day.ritualCompletedAtUtc != null) {
-      talker.debug(
-        '[PlanMyDayReminder] skip; plan already exists '
-        'day=${dayKeyUtc.toIso8601String()} source=$source',
+      AppLog.routineStructured(
+        'notifications.plan_my_day',
+        'skip reminder; plan already exists',
+        fields: <String, Object?>{
+          'dayKeyUtc': dayKeyUtc.toIso8601String(),
+          'source': source,
+        },
       );
       return;
     }
@@ -140,9 +145,9 @@ class PlanMyDayReminderService {
 
     await _presenter(notification);
     _lastNotifiedDayKeyUtc = dayKeyUtc;
-    talker.info(
-      '[PlanMyDayReminder] delivered day=${dayKeyUtc.toIso8601String()} '
-      'source=$source',
+    AppLog.info(
+      'notifications.plan_my_day',
+      'delivered day=${dayKeyUtc.toIso8601String()} source=$source',
     );
   }
 
@@ -168,20 +173,21 @@ class PlanMyDayReminderService {
   }
 
   void _scheduleEvaluation({required String source}) {
-    unawaited(
-      _evaluateAndNotify(source: source).catchError((
-        Object error,
-        StackTrace stackTrace,
-      ) {
-        AppLog.handleStructured(
-          'notifications.plan_my_day',
-          'evaluation failed',
-          error,
-          stackTrace,
-          <String, Object?>{'source': source},
-        );
-      }),
-    );
+    _evaluationQueue = _evaluationQueue
+        .catchError((_) {
+          // Keep evaluation queue alive after previous failures.
+        })
+        .then((_) => _evaluateAndNotify(source: source))
+        .catchError((Object error, StackTrace stackTrace) {
+          AppLog.handleStructured(
+            'notifications.plan_my_day',
+            'evaluation failed',
+            error,
+            stackTrace,
+            <String, Object?>{'source': source},
+          );
+        });
+    unawaited(_evaluationQueue);
   }
 
   DateTime _dueUtcForDay(DateTime dayKeyUtc) {

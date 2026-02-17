@@ -897,8 +897,10 @@ class GlobalSettingsBloc
     try {
       final rule = await _attentionRepository.getRuleByKey(ruleKey);
       if (rule == null) {
-        talker.warning(
-          '[GlobalSettingsBloc] Missing attention rule for key: $ruleKey',
+        AppLog.warnStructured(
+          'settings.global',
+          'attention rule missing',
+          fields: <String, Object?>{'ruleKey': ruleKey},
         );
         return;
       }
@@ -940,8 +942,10 @@ class GlobalSettingsBloc
     try {
       final rule = await _attentionRepository.getRuleByKey(ruleKey);
       if (rule == null) {
-        talker.warning(
-          '[GlobalSettingsBloc] Missing attention rule for key: $ruleKey',
+        AppLog.warnStructured(
+          'settings.global',
+          'attention rule missing',
+          fields: <String, Object?>{'ruleKey': ruleKey},
         );
         return;
       }
