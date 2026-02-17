@@ -12,6 +12,8 @@ class EnvConfig {
     required this.supabaseUrl,
     required this.supabasePublishableKey,
     required this.powersyncUrl,
+    this.appVersion = '',
+    this.buildSha = '',
   });
 
   /// Human-readable environment name (e.g. "local", "prod").
@@ -20,4 +22,14 @@ class EnvConfig {
   final String supabaseUrl;
   final String supabasePublishableKey;
   final String powersyncUrl;
+
+  /// Optional app version for sync/app telemetry.
+  ///
+  /// When empty, callers should fall back to build-time defaults.
+  final String appVersion;
+
+  /// Optional build SHA for deployment correlation.
+  ///
+  /// When empty, callers should fall back to build-time defaults.
+  final String buildSha;
 }

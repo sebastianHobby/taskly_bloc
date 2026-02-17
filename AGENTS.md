@@ -80,6 +80,13 @@ When asked to design UI/UX:
 - When adding new features always add corresponding tests including unit tests and integration or E2E tests if appropiate. 
 - When creating new tests, always run them and ensure they pass.
 - After any significant change, run the appropriate regression tests and ensure  they pass.
+- If you change any shared contract/signature (repository/service interface,
+  command DTO, table schema used across packages), you must:
+  - find all implementers/usages with `rg` and update them in the same change,
+  - run a broad regression sweep for all impacted packages (not only targeted tests).
+- Do not mark work as complete unless you report the exact validation commands
+  run and their pass/fail result.
+- If full regression is not run, explicitly state what was not run and why.
 - Do not try to “fix tests to make them pass” while the analyzer reports
   problems.
 - If `dart analyze` fails to start due to sandbox restrictions (e.g. “windows

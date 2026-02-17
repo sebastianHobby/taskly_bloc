@@ -62,6 +62,9 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     this.db, {
     void Function(SyncAnomaly anomaly)? onAnomaly,
     Clock clock = systemClock,
+    this.syncSessionId,
+    this.clientId,
+    this.userIdHash,
   }) : _onAnomaly = onAnomaly,
        _clock = clock;
 
@@ -69,6 +72,9 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
   final void Function(SyncAnomaly anomaly)? _onAnomaly;
   final Clock _clock;
+  final String? syncSessionId;
+  final String? clientId;
+  final String? userIdHash;
 
   Future<bool>? _refreshFuture;
   int _uploadInFlightCount = 0;
@@ -78,6 +84,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
   static const Duration _uploadLoopWindow = Duration(seconds: 3);
   static const int _uploadLoopThreshold = 3;
+  static const int _uploadQueueHighThreshold = 100;
   static const Duration _refreshTimeout = Duration(seconds: 5);
   static const Duration _proactiveRefreshLead = Duration(minutes: 1);
 
@@ -89,7 +96,12 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
     var session = Supabase.instance.client.auth.currentSession;
     if (session == null) {
-      // Not logged in
+      _logSyncEvent(
+        'sync.credentials.fetch',
+        fields: <String, Object?>{
+          'result': 'no_session',
+        },
+      );
       return null;
     }
 
@@ -101,25 +113,47 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     if (shouldRefresh) {
       final refreshed = await _refreshSession(reason: 'proactive_fetch');
       if (!refreshed) {
-        talker.warning(
-          '[powersync] fetchCredentials returning null after refresh failure\n'
-          '  reason=proactive_fetch\n'
-          '  expiresAtUtc=$expiresAt',
+        _logSyncEvent(
+          'sync.credentials.fetch',
+          level: _SyncLogLevel.warn,
+          fields: <String, Object?>{
+            'result': 'refresh_failed',
+            'reason': 'proactive_fetch',
+            'expires_at_utc': expiresAt.toIso8601String(),
+          },
         );
         // Do not reuse expired / near-expiry credentials when refresh fails.
         return null;
       }
       session = Supabase.instance.client.auth.currentSession;
       if (session == null) {
+        _logSyncEvent(
+          'sync.credentials.fetch',
+          fields: <String, Object?>{
+            'result': 'session_missing_after_refresh',
+          },
+        );
         return null;
       }
     }
 
-    return PowerSyncCredentials(
+    final refreshedExpiresAt = _expiresAtUtc(session);
+    final credentials = PowerSyncCredentials(
       endpoint: Env.powersyncUrl,
       token: session.accessToken,
-      expiresAt: _expiresAtUtc(session),
+      expiresAt: refreshedExpiresAt,
     );
+
+    _logSyncEvent(
+      'sync.credentials.fetch',
+      fields: <String, Object?>{
+        'result': 'success',
+        'refreshed': shouldRefresh,
+        'expires_at_utc': refreshedExpiresAt?.toIso8601String(),
+      },
+    );
+
+    return credentials;
   }
 
   @override
@@ -134,6 +168,14 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     // expired, and nothing else attempt to use the session it in the meantime.
     //
     // Best-effort refresh to recover quickly after auth failure.
+    _logSyncEvent(
+      'sync.auth.expired',
+      level: _SyncLogLevel.warn,
+      fields: <String, Object?>{
+        'action': 'refresh_session',
+        'reason': 'connector_invalidate_credentials',
+      },
+    );
     _refreshSession(reason: 'auth_invalidation');
   }
 
@@ -150,11 +192,27 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     final inFlight = _refreshFuture;
     if (inFlight != null) return inFlight;
 
+    _logSyncEvent(
+      'sync.token.refresh.start',
+      fields: <String, Object?>{
+        'reason': reason,
+      },
+    );
+
     final refreshFuture = Supabase.instance.client.auth
         .refreshSession()
         .timeout(_refreshTimeout)
         .then((_) {
           final session = Supabase.instance.client.auth.currentSession;
+          _logSyncEvent(
+            'sync.token.refresh.success',
+            fields: <String, Object?>{
+              'reason': reason,
+              'expires_at_utc': session == null
+                  ? null
+                  : _expiresAtUtc(session)?.toIso8601String(),
+            },
+          );
           if (kReleaseMode) {
             talker.info(
               '[powersync] supabase session refreshed\n'
@@ -167,6 +225,14 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         .onError((error, stackTrace) {
           final resolvedError =
               error ?? StateError('Unknown Supabase refresh error');
+          _logSyncEvent(
+            'sync.token.refresh.fail',
+            level: _SyncLogLevel.warn,
+            fields: <String, Object?>{
+              'reason': reason,
+              'error': resolvedError.runtimeType.toString(),
+            },
+          );
           talker.warning(
             '[powersync] supabase session refresh failed\n'
             '  reason=$reason\n'
@@ -203,6 +269,20 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
     final wasInFlight = _uploadInFlightCount > 0;
     _uploadInFlightCount++;
+
+    if (transaction.crud.length >= _uploadQueueHighThreshold) {
+      AppLog.warnThrottledStructured(
+        'sync.upload.queue.high.${syncSessionId ?? "unknown"}',
+        const Duration(seconds: 30),
+        'sync',
+        'sync.upload.queue.high',
+        fields: <String, Object?>{
+          ..._syncContextFields(),
+          'queued_ops': transaction.crud.length,
+          'threshold': _uploadQueueHighThreshold,
+        },
+      );
+    }
 
     late final PostgrestClient rest;
     CrudEntry? lastOp;
@@ -706,7 +786,58 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     if (cid is String && cid.trim().isNotEmpty) return true;
     return false;
   }
+
+  Map<String, Object?> _syncContextFields() {
+    final envConfig = Env.config;
+    final configuredAppVersion = envConfig?.appVersion.trim() ?? '';
+    final configuredBuildSha = envConfig?.buildSha.trim() ?? '';
+
+    return <String, Object?>{
+      'sync_session_id': syncSessionId,
+      'client_id': clientId,
+      'user_id_hash': userIdHash,
+      'platform': kIsWeb ? 'web' : defaultTargetPlatform.name,
+      'env': envConfig?.name ?? 'unknown',
+      'app_version': configuredAppVersion.isEmpty
+          ? const String.fromEnvironment('APP_VERSION', defaultValue: 'unknown')
+          : configuredAppVersion,
+      'build_sha': configuredBuildSha.isEmpty
+          ? const String.fromEnvironment('BUILD_SHA', defaultValue: 'unknown')
+          : configuredBuildSha,
+    };
+  }
+
+  void _logSyncEvent(
+    String event, {
+    _SyncLogLevel level = _SyncLogLevel.info,
+    Map<String, Object?> fields = const <String, Object?>{},
+  }) {
+    final mergedFields = <String, Object?>{
+      'event': event,
+      ..._syncContextFields(),
+      ...fields,
+    };
+
+    switch (level) {
+      case _SyncLogLevel.routine:
+        AppLog.routineStructured('sync', event, fields: mergedFields);
+      case _SyncLogLevel.info:
+        AppLog.info('sync', '$event | ${_fieldsToInlineText(mergedFields)}');
+      case _SyncLogLevel.warn:
+        AppLog.warnStructured('sync', event, fields: mergedFields);
+      case _SyncLogLevel.error:
+        AppLog.errorStructured('sync', event, fields: mergedFields);
+    }
+  }
+
+  String _fieldsToInlineText(Map<String, Object?> fields) {
+    return fields.entries
+        .map((entry) => '${entry.key}=${entry.value}')
+        .join(' ');
+  }
 }
+
+enum _SyncLogLevel { routine, info, warn, error }
 
 bool isLoggedIn() {
   try {

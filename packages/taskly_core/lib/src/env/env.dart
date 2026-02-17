@@ -41,6 +41,11 @@ class Env {
     return _requireConfig().supabaseUrl;
   }
 
+  /// Human-readable environment name (for example: local/prod).
+  static String get name {
+    return _requireConfig().name;
+  }
+
   /// Supabase anonymous/public key
   static String get supabasePublishableKey {
     return _requireConfig().supabasePublishableKey;
@@ -49,6 +54,26 @@ class Env {
   /// PowerSync instance URL
   static String get powersyncUrl {
     return _requireConfig().powersyncUrl;
+  }
+
+  /// App version used for telemetry metadata.
+  ///
+  /// Uses configured value when provided, otherwise falls back to build-time
+  /// define `APP_VERSION`, and then `unknown`.
+  static String get appVersion {
+    final configured = _requireConfig().appVersion.trim();
+    if (configured.isNotEmpty) return configured;
+    return const String.fromEnvironment('APP_VERSION', defaultValue: 'unknown');
+  }
+
+  /// Build SHA used for telemetry metadata.
+  ///
+  /// Uses configured value when provided, otherwise falls back to build-time
+  /// define `BUILD_SHA`, and then `unknown`.
+  static String get buildSha {
+    final configured = _requireConfig().buildSha.trim();
+    if (configured.isNotEmpty) return configured;
+    return const String.fromEnvironment('BUILD_SHA', defaultValue: 'unknown');
   }
 
   /// Logs a short summary of environment configuration sources.

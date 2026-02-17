@@ -9,6 +9,23 @@ Defines auth states, onboarding progression, startup synchronization gates, and 
 - Session state transitions are explicit and testable.
 - Startup gating must not bypass required sync/ready checks.
 - Navigation transitions are deterministic from state.
+- Sync connect cycles must emit structured telemetry events for traceability.
+
+## Sync observability contract
+
+- Each PowerSync connect cycle has a unique `sync_session_id`.
+- Connect app metadata includes:
+  `client_id`, `app_version`, `build_sha`, `platform`, `env`,
+  `sync_session_id`, and optional `user_id_hash`.
+- Structured sync events:
+  `sync.connect.start`, `sync.connect.success`, `sync.connect.fail`,
+  `sync.credentials.fetch`, `sync.token.refresh.start`,
+  `sync.token.refresh.success`, `sync.token.refresh.fail`,
+  `sync.status.transition`, `sync.upload.queue.high`, `sync.auth.expired`.
+- Status telemetry:
+  - log transitions only when `connected`/`downloading`/`uploading`/`hasSynced`
+    changes.
+  - emit throttled snapshots (target: every 60 seconds).
 
 ## Testing minimums
 

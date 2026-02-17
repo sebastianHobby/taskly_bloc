@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:drift/drift.dart';
 import 'package:drift_sqlite_async/drift_sqlite_async.dart';
+import 'package:flutter/foundation.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:taskly_core/env.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_domain/services.dart';
@@ -18,6 +20,7 @@ import 'package:taskly_data/src/features/notifications/services/logging_notifica
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/infrastructure/powersync/api_connector.dart';
+import 'package:taskly_data/src/infrastructure/powersync/powersync_status_stream.dart';
 import 'package:taskly_data/src/infrastructure/supabase/supabase.dart';
 import 'package:taskly_data/src/repositories/auth_repository.dart';
 import 'package:taskly_data/src/repositories/project_anchor_state_repository.dart';
@@ -109,7 +112,8 @@ final class TasklyDataStack implements SyncAnomalyStream {
     required this.idGenerator,
     required this.authRepository,
     required this.localDataMaintenanceService,
-  });
+    required Clock clock,
+  }) : _clock = clock;
 
   /// Supabase client (auth + PostgREST).
   final SupabaseClient supabaseClient;
@@ -128,6 +132,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
 
   /// Local maintenance service implementation.
   final LocalDataMaintenanceService localDataMaintenanceService;
+  final Clock _clock;
 
   final StreamController<SyncAnomaly> _syncAnomaliesController =
       StreamController<SyncAnomaly>.broadcast();
@@ -141,6 +146,11 @@ final class TasklyDataStack implements SyncAnomalyStream {
 
   SupabaseConnector? _connector;
   String? _sessionUserId;
+  String? _syncSessionId;
+  StreamSubscription<SyncStatus>? _statusSubscription;
+  _SyncStatusSnapshot? _lastStatusSnapshot;
+  DateTime? _lastStatusSnapshotLogAt;
+  int _sessionSequence = 0;
   bool _sessionStarted = false;
 
   bool get isSessionStarted => _sessionStarted;
@@ -152,6 +162,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
   /// runs (seeders/cleanup).
   static Future<TasklyDataStack> initialize({
     String? powersyncPathOverride,
+    Clock clock = systemClock,
   }) async {
     await loadSupabase();
 
@@ -183,6 +194,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
       localDataMaintenanceService: _PowerSyncLocalDataMaintenanceService(
         syncDb,
       ),
+      clock: clock,
     );
 
     return stack;
@@ -207,12 +219,64 @@ final class TasklyDataStack implements SyncAnomalyStream {
       await stopSession(reason: 'user switch', clearLocalData: true);
     }
 
-    talker.info('[data_stack] Starting session (userId=$userId)');
+    final clientId = await syncDb.getClientId();
+    final syncSessionId = _nextSyncSessionId(clientId: clientId);
+    final userIdHash = _hashIdentifier(userId);
+    final appMetadata = <String, String>{
+      'client_id': clientId,
+      'app_version': _appVersion(),
+      'build_sha': _buildSha(),
+      'platform': _platformLabel(),
+      'env': _envName(),
+      'sync_session_id': syncSessionId,
+      ...?userIdHash == null
+          ? null
+          : <String, String>{'user_id_hash': userIdHash},
+    };
+
+    AppLog.info(
+      'sync',
+      'sync.connect.start | sync_session_id=$syncSessionId '
+          'client_id=$clientId env=${_envName()}',
+    );
+
     _connector = SupabaseConnector(
       syncDb,
       onAnomaly: _syncAnomaliesController.add,
+      syncSessionId: syncSessionId,
+      clientId: clientId,
+      userIdHash: userIdHash,
     );
-    await syncDb.connect(connector: _connector!);
+    try {
+      await syncDb.connect(
+        connector: _connector!,
+        options: SyncOptions(appMetadata: appMetadata),
+      );
+      _syncSessionId = syncSessionId;
+      await _startStatusTelemetry(
+        syncSessionId: syncSessionId,
+        clientId: clientId,
+      );
+      AppLog.info(
+        'sync',
+        'sync.connect.success | sync_session_id=$syncSessionId '
+            'client_id=$clientId',
+      );
+    } catch (error, stackTrace) {
+      AppLog.handleStructured(
+        'sync',
+        'sync.connect.fail',
+        error,
+        stackTrace,
+        <String, Object?>{
+          'sync_session_id': syncSessionId,
+          'client_id': clientId,
+          'env': _envName(),
+          'platform': _platformLabel(),
+        },
+      );
+      rethrow;
+    }
 
     await runPostAuthMaintenance(driftDb: driftDb, idGenerator: idGenerator);
 
@@ -227,10 +291,20 @@ final class TasklyDataStack implements SyncAnomalyStream {
     required String reason,
     required bool clearLocalData,
   }) async {
-    talker.info('[data_stack] Stopping session ($reason)');
+    AppLog.info(
+      'sync',
+      'sync.connect.stop | reason=$reason '
+          'sync_session_id=${_syncSessionId ?? "<none>"}',
+    );
+
+    await _statusSubscription?.cancel();
+    _statusSubscription = null;
+    _lastStatusSnapshot = null;
+    _lastStatusSnapshotLogAt = null;
 
     _connector = null;
     _sessionUserId = null;
+    _syncSessionId = null;
     _sessionStarted = false;
 
     try {
@@ -246,6 +320,10 @@ final class TasklyDataStack implements SyncAnomalyStream {
   ///
   /// In most app lifecycles this is not needed, but it is useful for tests.
   Future<void> dispose() async {
+    await _statusSubscription?.cancel();
+    _statusSubscription = null;
+    _lastStatusSnapshotLogAt = null;
+
     try {
       await syncDb.disconnect();
     } catch (_) {}
@@ -416,6 +494,125 @@ final class TasklyDataStack implements SyncAnomalyStream {
       initialSyncService: initialSyncService,
     );
   }
+
+  Future<void> _startStatusTelemetry({
+    required String syncSessionId,
+    required String clientId,
+  }) async {
+    await _statusSubscription?.cancel();
+    _lastStatusSnapshot = null;
+    _lastStatusSnapshotLogAt = null;
+
+    _statusSubscription = sharedPowerSyncStatusStream(syncDb).listen((status) {
+      final next = _SyncStatusSnapshot.fromStatus(status);
+      final previous = _lastStatusSnapshot;
+
+      if (previous == null || previous != next) {
+        AppLog.info(
+          'sync',
+          'sync.status.transition | '
+              'sync_session_id=$syncSessionId client_id=$clientId '
+              'connected=${next.connected} downloading=${next.downloading} '
+              'uploading=${next.uploading} has_synced=${next.hasSynced} '
+              'last_synced_at=${status.lastSyncedAt?.toUtc().toIso8601String()}',
+        );
+        _lastStatusSnapshot = next;
+      }
+
+      final now = _clock.nowUtc();
+      final lastSnapshotAt = _lastStatusSnapshotLogAt;
+      final shouldLogSnapshot =
+          lastSnapshotAt == null ||
+          now.difference(lastSnapshotAt) >= const Duration(seconds: 60);
+      if (shouldLogSnapshot) {
+        _lastStatusSnapshotLogAt = now;
+        AppLog.info(
+          'sync',
+          'sync.status.snapshot | '
+              'sync_session_id=$syncSessionId client_id=$clientId '
+              'connected=${status.connected} connecting=${status.connecting} '
+              'downloading=${status.downloading} uploading=${status.uploading} '
+              'has_synced=${status.hasSynced} '
+              'downloaded_fraction=${status.downloadProgress?.downloadedFraction} '
+              'last_synced_at=${status.lastSyncedAt?.toUtc().toIso8601String()}',
+        );
+      }
+    });
+  }
+
+  String _nextSyncSessionId({required String clientId}) {
+    _sessionSequence += 1;
+    final epochMs = _clock.nowUtc().millisecondsSinceEpoch;
+    return '$clientId:$epochMs:$_sessionSequence';
+  }
+
+  static String _platformLabel() {
+    if (kIsWeb) return 'web';
+    return defaultTargetPlatform.name;
+  }
+
+  String _envName() => Env.config?.name ?? 'unknown';
+
+  String _appVersion() {
+    final configured = Env.config?.appVersion.trim() ?? '';
+    if (configured.isNotEmpty) return configured;
+    return const String.fromEnvironment('APP_VERSION', defaultValue: 'unknown');
+  }
+
+  String _buildSha() {
+    final configured = Env.config?.buildSha.trim() ?? '';
+    if (configured.isNotEmpty) return configured;
+    return const String.fromEnvironment('BUILD_SHA', defaultValue: 'unknown');
+  }
+
+  static String? _hashIdentifier(String? value) {
+    if (value == null) return null;
+    final normalized = value.trim();
+    if (normalized.isEmpty) return null;
+
+    // Lightweight, non-reversible hash for log correlation without raw IDs.
+    var hash = 0x811c9dc5;
+    for (final unit in normalized.codeUnits) {
+      hash ^= unit;
+      hash = (hash * 0x01000193) & 0xffffffff;
+    }
+    return hash.toRadixString(16).padLeft(8, '0');
+  }
+}
+
+final class _SyncStatusSnapshot {
+  const _SyncStatusSnapshot({
+    required this.connected,
+    required this.downloading,
+    required this.uploading,
+    required this.hasSynced,
+  });
+
+  factory _SyncStatusSnapshot.fromStatus(SyncStatus status) {
+    return _SyncStatusSnapshot(
+      connected: status.connected,
+      downloading: status.downloading,
+      uploading: status.uploading,
+      hasSynced: status.hasSynced ?? false,
+    );
+  }
+
+  final bool connected;
+  final bool downloading;
+  final bool uploading;
+  final bool hasSynced;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _SyncStatusSnapshot &&
+        other.connected == connected &&
+        other.downloading == downloading &&
+        other.uploading == uploading &&
+        other.hasSynced == hasSynced;
+  }
+
+  @override
+  int get hashCode => Object.hash(connected, downloading, uploading, hasSynced);
 }
 
 final class _PowerSyncLocalDataMaintenanceService

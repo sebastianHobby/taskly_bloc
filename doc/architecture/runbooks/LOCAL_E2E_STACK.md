@@ -22,6 +22,16 @@ Run local Supabase + PowerSync stack and validate app sync behavior end to end.
 - Create/update/delete task and routine locally.
 - Confirm changes appear in local watchers.
 - Confirm sync convergence after reconnect.
+- Confirm structured sync telemetry appears in app logs:
+  - `sync.connect.start/success`
+  - `sync.status.transition`
+  - `sync.status.snapshot` (about every 60s while active)
+  - `sync.credentials.fetch`
+  - `sync.token.refresh.*` when refresh is triggered
+  - `sync.upload.queue.high` under heavy local backlog
+  - `sync.auth.expired` when credentials are invalidated
+- Confirm backend diagnostics can be correlated by `sync_session_id`
+  from PowerSync `app_metadata`.
 
 ## Common failures
 
