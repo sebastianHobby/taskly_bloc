@@ -19,7 +19,17 @@ Future<bool> preCommit() async {
 Future<bool> prePush() async {
   print('Running pre-push checks...\n');
 
+  if (!await _runFormat()) {
+    _printFailure();
+    return false;
+  }
+
   if (!await _runGuardrails()) {
+    _printFailure();
+    return false;
+  }
+
+  if (!await _runSupabaseSchemaAlignment()) {
     _printFailure();
     return false;
   }
@@ -36,6 +46,26 @@ Future<bool> prePush() async {
 
   print('\nAll pre-push checks passed!');
   return true;
+}
+
+Future<bool> _runFormat() async {
+  print('Running dart format...');
+
+  try {
+    final result = await Process.run(
+      'dart',
+      ['format', '.'],
+      runInShell: true,
+    );
+
+    stdout.write(result.stdout);
+    stderr.write(result.stderr);
+
+    return result.exitCode == 0;
+  } catch (e) {
+    print('   Could not run formatter: $e');
+    return false;
+  }
 }
 
 Future<bool> _runGuardrails() async {
@@ -74,6 +104,26 @@ Future<bool> _runAnalyze() async {
     return result.exitCode == 0;
   } catch (e) {
     print('   Could not run analyzer: $e');
+    return false;
+  }
+}
+
+Future<bool> _runSupabaseSchemaAlignment() async {
+  print('Running Supabase schema alignment guard...');
+
+  try {
+    final result = await Process.run(
+      'dart',
+      ['run', 'tool/validate_supabase_schema_alignment.dart', '--require-db'],
+      runInShell: true,
+    );
+
+    stdout.write(result.stdout);
+    stderr.write(result.stderr);
+
+    return result.exitCode == 0;
+  } catch (e) {
+    print('   Could not run Supabase schema guard: $e');
     return false;
   }
 }

@@ -69,7 +69,6 @@ class IdGenerator {
     'analytics_insights',
     'attention_resolutions',
     'attention_rule_runtime_state',
-    'attention_condition_states',
     'task_snooze_events',
     'routines',
     'routine_completions',

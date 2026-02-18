@@ -278,17 +278,6 @@ const schema = Schema([
     Column.text('action_details'),
     Column.text('created_at'),
   ], trackMetadata: true),
-  Table('attention_condition_states', [
-    Column.text('user_id'),
-    Column.text('entity_type'),
-    Column.text('entity_id'),
-    Column.text('condition_key'),
-    Column.text('first_detected_at'),
-    Column.text('last_detected_at'),
-    Column.text('last_cleared_at'),
-    Column.text('created_at'),
-    Column.text('updated_at'),
-  ], trackMetadata: true),
   Table('analytics_snapshots', [
     Column.text('user_id'),
     Column.text('entity_type'),

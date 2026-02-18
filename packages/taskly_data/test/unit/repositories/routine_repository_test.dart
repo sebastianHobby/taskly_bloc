@@ -69,10 +69,42 @@ void main() {
       final completions = await repo.getCompletions();
       expect(completions, isEmpty);
     });
+
+    testSafe('routine value is inherited from project primary value', () async {
+      final db = createAutoClosingDb();
+      await _seedProject(db);
+
+      final repo = RoutineRepository(
+        driftDb: db,
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      await repo.create(
+        name: 'Hydrate',
+        projectId: 'project-1',
+        periodType: RoutinePeriodType.week,
+        scheduleMode: RoutineScheduleMode.flexible,
+        targetCount: 3,
+      );
+
+      final routine = await repo.getAll();
+      expect(routine, hasLength(1));
+      expect(routine.single.value?.id, 'value-1');
+    });
   });
 }
 
 Future<void> _seedProject(AppDatabase db) async {
+  await db
+      .into(db.valueTable)
+      .insert(
+        ValueTableCompanion.insert(
+          id: 'value-1',
+          name: 'Health',
+          color: '#00AA88',
+        ),
+      );
+
   await db
       .into(db.projectTable)
       .insert(
@@ -80,6 +112,7 @@ Future<void> _seedProject(AppDatabase db) async {
           id: drift.Value('project-1'),
           name: 'Health',
           completed: false,
+          primaryValueId: const drift.Value('value-1'),
         ),
       );
 }

@@ -225,8 +225,8 @@ class UserProfileTable extends Table {
   String get tableName => 'user_profiles';
 
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
-
-  // Note: user_id not included - managed by Supabase, not synced to client
+  // Server-owned (auth.uid()) but synced to client for reads.
+  TextColumn get userId => text().nullable().named('user_id')();
 
   /// Settings override map (jsonb in Supabase, TEXT in SQLite).
   ///
@@ -610,7 +610,11 @@ class RoutineChecklistItemStateTable extends Table {
       .references(RoutinesTable, #id, onDelete: KeyAction.cascade)();
   TextColumn get checklistItemId => text()
       .named('checklist_item_id')
-      .references(RoutineChecklistItemsTable, #id, onDelete: KeyAction.cascade)();
+      .references(
+        RoutineChecklistItemsTable,
+        #id,
+        onDelete: KeyAction.cascade,
+      )();
   TextColumn get periodType => text().named('period_type')();
   TextColumn get windowKey =>
       text().map(dateOnlyStringConverter).named('window_key')();
@@ -635,7 +639,8 @@ class ChecklistEventsTable extends Table {
   TextColumn get userId => text().nullable().named('user_id')();
   TextColumn get parentType => text().named('parent_type')();
   TextColumn get parentId => text().named('parent_id')();
-  TextColumn get checklistItemId => text().nullable().named('checklist_item_id')();
+  TextColumn get checklistItemId =>
+      text().nullable().named('checklist_item_id')();
   TextColumn get scopePeriodType =>
       text().nullable().named('scope_period_type')();
   TextColumn get scopeDate =>

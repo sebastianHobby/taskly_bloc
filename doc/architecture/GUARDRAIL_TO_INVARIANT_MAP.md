@@ -16,6 +16,7 @@ Maps executable guardrails to normative invariant areas.
 | `tool/no_test_directory_tag_violations.dart` | `INV-TEST-004` |
 | `tool/no_expired_arch_exceptions.dart` | Exception policy compliance |
 | `tool/validate_id_generator_table_registration.dart` | `INV-SYNC-001` |
+| `tool/validate_supabase_schema_alignment.dart` | `INV-SYNC-001` (pre-push guard via `git_hooks.dart`) |
 
 ## Runner
 

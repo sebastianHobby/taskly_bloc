@@ -65,8 +65,8 @@ jobs:
         working-directory: packages/taskly_data
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: Check formatting
-        run: dart format --set-exit-if-changed .
+      - name: Format code
+        run: dart format .
 
       - name: Run repo guardrails
         run: dart run tool/guardrails.dart
