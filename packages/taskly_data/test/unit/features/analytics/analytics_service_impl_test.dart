@@ -374,10 +374,14 @@ class _FakeTaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     int? priority,
+    TaskReminderKind reminderKind = TaskReminderKind.none,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) async => throw UnimplementedError();
 
@@ -390,10 +394,14 @@ class _FakeTaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     int? priority,
+    TaskReminderKind reminderKind = TaskReminderKind.none,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) async => throw UnimplementedError();
 
@@ -407,11 +415,15 @@ class _FakeTaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     int? priority,
+    TaskReminderKind reminderKind = TaskReminderKind.none,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     bool? seriesEnded,
     List<String>? valueIds,
     bool? isPinned,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) async => throw UnimplementedError();
 

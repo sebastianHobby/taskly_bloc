@@ -129,3 +129,6 @@ lib/l10n/gen/
 
 # Test artifacts
 test/last_run.json
+
+# Supabase CLI local cache/state
+supabase/.temp/

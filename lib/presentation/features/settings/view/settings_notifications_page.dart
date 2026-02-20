@@ -74,7 +74,10 @@ class _PlanMyDayReminderCardState extends State<_PlanMyDayReminderCard> {
             ),
             _SettingsNavigationRow(
               title: context.l10n.settingsPlanMyDayReminderTimeLabel,
-              value: _formatMinutes(context, settings.planMyDayReminderTimeMinutes),
+              value: _formatMinutes(
+                context,
+                settings.planMyDayReminderTimeMinutes,
+              ),
               enabled: settings.planMyDayReminderEnabled,
               onTap: () async {
                 final selected = await _pickTime(
