@@ -1,4 +1,4 @@
-{
+﻿{
     "selectedCountLabel": "{count} selected",
     "moveToProjectAction": "Move to project",
     "completeSeriesAction": "Complete series",
@@ -911,7 +911,7 @@
     "@myDayTimeSensitiveOutsideValuesSubtitle": {
         "description": "Subtitle clarifying the Time sensitive section excludes value suggestions."
     },
-    "myDayTimeSensitiveBannerBoth": "{dueCount} due soon • {plannedCount} planned outside your suggestions",
+    "myDayTimeSensitiveBannerBoth": "{dueCount} due soon â€¢ {plannedCount} planned outside your suggestions",
     "@myDayTimeSensitiveBannerBoth": {
         "description": "Banner title showing due soon and planned counts outside value suggestions.",
         "placeholders": {
@@ -1039,11 +1039,11 @@
             },
             "availablePart": {
                 "type": "String",
-                "example": " · 3 available to start"
+                "example": " Â· 3 available to start"
             }
         }
     },
-    "myDayAvailableToStartCountPart": " · {count} available to start",
+    "myDayAvailableToStartCountPart": " Â· {count} available to start",
     "@myDayAvailableToStartCountPart": {
         "description": "Suffix part appended to the heads-up summary when the 'available to start' lane is enabled.",
         "placeholders": {
@@ -1200,7 +1200,7 @@
     "@myDaySuggestionSettingsBody": {
         "description": "Body text for the suggestion settings sheet in the My Day ritual."
     },
-    "myDayDueSoonWindowLabel": "Due soon window · {days} days",
+    "myDayDueSoonWindowLabel": "Due soon window Â· {days} days",
     "@myDayDueSoonWindowLabel": {
         "description": "Label for the due-soon window slider in the My Day ritual suggestion settings.",
         "placeholders": {
@@ -1240,7 +1240,7 @@
     "@myDaySnoozedSectionTitle": {
         "description": "Section title for snoozed tasks in the My Day ritual."
     },
-    "myDaySnoozedCollapsedTitle": "Snoozed · {count}",
+    "myDaySnoozedCollapsedTitle": "Snoozed Â· {count}",
     "@myDaySnoozedCollapsedTitle": {
         "description": "Collapsed header for the snoozed tasks section in the My Day ritual.",
         "placeholders": {
@@ -1292,7 +1292,7 @@
     "@pickDateButton": {
         "description": "Button/row label that opens a date picker"
     },
-    "focusModeHelperLine": "Mode: {mode} · {tagline}",
+    "focusModeHelperLine": "Mode: {mode} Â· {tagline}",
     "@focusModeHelperLine": {
         "description": "Helper line describing the active focus mode.",
         "placeholders": {
@@ -1306,7 +1306,7 @@
             }
         }
     },
-    "showMoreCountLabel": "Show {count} more · {label} ({total})",
+    "showMoreCountLabel": "Show {count} more Â· {label} ({total})",
     "@showMoreCountLabel": {
         "description": "Label for expanding a list to show more items.",
         "placeholders": {
@@ -1618,7 +1618,7 @@
             }
         }
     },
-    "projectsAverageRatingUnavailable": "–",
+    "projectsAverageRatingUnavailable": "â€“",
     "@projectsAverageRatingUnavailable": {
         "description": "Placeholder shown when no average rating is available in Projects"
     },
@@ -1640,7 +1640,7 @@
     "@projectsValueProjectCountLabel": {
         "description": "Project count label shown in Projects value headers"
     },
-    "projectsValueHeaderSeparator": " · ",
+    "projectsValueHeaderSeparator": " Â· ",
     "@projectsValueHeaderSeparator": {
         "description": "Separator string used between stats in Projects value headers"
     },
@@ -2257,7 +2257,7 @@
     "@gapLabel": {
         "description": "Label for gap percentage in value stats"
     },
-    "valueActivityCounts": "{taskCount} tasks · {projectCount} projects",
+    "valueActivityCounts": "{taskCount} tasks Â· {projectCount} projects",
     "@valueActivityCounts": {
         "description": "Activity counts for a value showing tasks and projects",
         "placeholders": {
@@ -2466,7 +2466,7 @@
     "@myDayPlanCardTitle": {
         "description": "Title shown in the My Day plan card when nothing is selected yet."
     },
-    "myDayPlanCardTitleWithPicked": "Plan for today · {count}",
+    "myDayPlanCardTitleWithPicked": "Plan for today Â· {count}",
     "@myDayPlanCardTitleWithPicked": {
         "description": "Title shown in the My Day plan card when items have been selected.",
         "placeholders": {
@@ -2576,11 +2576,11 @@
   "@myDayPlanSubtitle": {
     "description": "Subtitle shown at the top of the My Day ritual wizard when planning."
   },
-    "myDayUpdatePlanSubtitle": "Pick what matters next—values-led focus plus what’s due soon.",
+    "myDayUpdatePlanSubtitle": "Pick what matters nextâ€”values-led focus plus whatâ€™s due soon.",
     "@myDayUpdatePlanSubtitle": {
         "description": "Subtitle shown at the top of the My Day ritual wizard when resuming and no completed picks exist."
     },
-    "myDayUpdatePlanSubtitleWithCompleted": "Pick what matters next—values-led focus plus what’s due soon. Completed items are shown below.",
+    "myDayUpdatePlanSubtitleWithCompleted": "Pick what matters nextâ€”values-led focus plus whatâ€™s due soon. Completed items are shown below.",
     "@myDayUpdatePlanSubtitleWithCompleted": {
         "description": "Subtitle shown at the top of the My Day ritual wizard when resuming and some picks are completed."
     },
@@ -2601,7 +2601,7 @@
     "@myDayClearMyDayLabel": {
         "description": "Bottom bar button label when clearing today's plan (resume flow with zero picks)."
     },
-    "myDayUpdateMyDayLabel": "Update today's plan · {count}",
+    "myDayUpdateMyDayLabel": "Update today's plan Â· {count}",
     "@myDayUpdateMyDayLabel": {
         "description": "Bottom bar button label when updating today's plan (resume flow).",
         "placeholders": {
@@ -2615,7 +2615,7 @@
     "@myDaySelectItemsToContinueLabel": {
         "description": "Bottom bar label when planning My Day but nothing is selected yet."
     },
-    "myDayContinueToMyDayLabel": "Continue to My Day · {count}",
+    "myDayContinueToMyDayLabel": "Continue to My Day Â· {count}",
     "@myDayContinueToMyDayLabel": {
         "description": "Bottom bar label when planning My Day with some selected items.",
         "placeholders": {
@@ -2695,7 +2695,7 @@
     "@myDayTimePlanSheetTitle": {
         "description": "Title for the bottom sheet opened from the time/plan banner in the My Day ritual."
     },
-    "myDayTimePlanBannerSubtitle": "{dueCount} time-critical · {plannedCount} planned",
+    "myDayTimePlanBannerSubtitle": "{dueCount} time-critical Â· {plannedCount} planned",
     "@myDayTimePlanBannerSubtitle": {
         "description": "Subtitle shown in the time/plan banner and sheet, summarizing counts.",
         "placeholders": {
@@ -2793,7 +2793,7 @@
     "@myDayAddFirstValueLabel": {
         "description": "Label for the values setup requirement row in the My Day suggestions setup card."
     },
-    "myDaySuggestedForYouTitle": "Suggested for you · {count}",
+    "myDaySuggestedForYouTitle": "Suggested for you Â· {count}",
     "@myDaySuggestedForYouTitle": {
         "description": "Section header title for suggested picks in the My Day ritual.",
         "placeholders": {
@@ -2907,7 +2907,7 @@
             }
         }
     },
-    "dotSeparator": " · ",
+    "dotSeparator": " Â· ",
     "@dotSeparator": {
         "description": "Separator used between two short inline labels."
     },
@@ -3304,7 +3304,7 @@
       }
     }
   },
-  "routineWindowMonthlyByDate": "Window ends {endLabel} · {daysLeft} days left",
+  "routineWindowMonthlyByDate": "Window ends {endLabel} Â· {daysLeft} days left",
   "@routineWindowMonthlyByDate": {
     "description": "Window label for monthly routines using an end date.",
     "placeholders": {
@@ -3598,16 +3598,13 @@
     "journalChooseOptionLabel": "Choose an option",
     "journalClearSelectionLabel": "Clear selection",
     "journalDailyNoTrackers": "No trackers yet",
-    "journalDailySummaryTitle": "Daily summary",
     "journalDateRangeTitle": "Date range",
     "journalEditLargeNumberHint": "Use the editor to enter large numbers.",
     "journalEditValueTitle": "Edit value",
-    "journalEditDaily": "Edit daily",
     "journalEntriesTitle": "Entries",
     "journalEntryCountLabel": "{count, plural, =1{1 entry} other{{count} entries}}",
     "journalGroupNameHint": "Group name",
     "journalGroupUngrouped": "Ungrouped",
-    "journalHistoryTooltip": "Journal history",
     "journalLogsTitle": "Logs",
     "journalManageTrackersLabel": "Manage trackers",
     "journalManageTrackersTitle": "Manage trackers",
@@ -3633,7 +3630,6 @@
     "journalScopeMomentary": "Per entry",
     "journalScopeSleepNight": "Sleep night",
     "journalSearchOptionsLabel": "Search options",
-    "journalSeeAll": "See all",
     "journalTrackerFallbackName": "Tracker",
     "journalTrackerMoreLabel": "+{count} more",
     "journalTrackerOkLabel": "{name} ok",
@@ -3694,7 +3690,6 @@
     "labelLabel": "Label",
     "nextLabel": "Next",
     "journalAddOptionHint": "Add at least one option.",
-    "journalHistoryTooltip": "History",
     "maxLabel": "Max",
     "maxOptionalLabel": "Max (optional)",
     "minLabel": "Min",
@@ -4220,7 +4215,7 @@
             }
         }
     },
-    "planMyDayTrendDownLabel": "↓ {value}",
+    "planMyDayTrendDownLabel": "â†“ {value}",
     "@planMyDayTrendDownLabel": {
         "description": "Trend-down label for Plan My Day",
         "placeholders": {
@@ -4229,7 +4224,7 @@
             }
         }
     },
-    "planMyDayTrendUpLabel": "↑ {value}",
+    "planMyDayTrendUpLabel": "â†‘ {value}",
     "@planMyDayTrendUpLabel": {
         "description": "Trend-up label for Plan My Day",
         "placeholders": {

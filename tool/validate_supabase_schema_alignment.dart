@@ -13,6 +13,7 @@ const _ignoredColumns = <String>{'_metadata'};
 
 Future<void> main(List<String> args) async {
   final requireDb = args.contains('--require-db');
+  final linkedOnly = args.contains('--linked-only');
 
   final powersyncTables = _parsePowerSyncSchema(_powersyncSchemaPath);
   if (powersyncTables.isEmpty) {
@@ -48,11 +49,12 @@ Future<void> main(List<String> args) async {
     return;
   }
 
-  final dumpResult = await _dumpSupabasePublicSchema();
+  final dumpResult = await _dumpSupabasePublicSchema(linkedOnly: linkedOnly);
   if (dumpResult == null) {
-    const msg =
-        'Could not read Supabase schema via CLI '
-        '(tried remote via SUPABASE_DB_URL and --linked).';
+    final msg = linkedOnly
+        ? 'Could not read Supabase schema via CLI (--linked).'
+        : 'Could not read Supabase schema via CLI '
+              '(tried remote via SUPABASE_DB_URL and --linked).';
     if (requireDb) {
       stderr.writeln(msg);
       stderr.writeln(
@@ -246,37 +248,40 @@ void _parseDriftFileInto(String content, Map<String, Set<String>> tables) {
   }
 }
 
-Future<String?> _dumpSupabasePublicSchema() async {
+Future<String?> _dumpSupabasePublicSchema({required bool linkedOnly}) async {
   final tempDir = await Directory.systemTemp.createTemp(
     'taskly_supabase_schema_',
   );
   final tempFile = File('${tempDir.path}${Platform.pathSeparator}public.sql');
 
   try {
-    final attempts = <List<String>>[];
-    final dbUrl = Platform.environment['SUPABASE_DB_URL']?.trim();
-    if (dbUrl != null && dbUrl.isNotEmpty) {
-      attempts.add([
+    final attempts = <List<String>>[
+      [
         'db',
         'dump',
-        '--db-url',
-        dbUrl,
+        '--linked',
         '--schema',
         'public',
         '--file',
         tempFile.path,
-      ]);
-    }
+      ],
+    ];
 
-    attempts.add([
-      'db',
-      'dump',
-      '--linked',
-      '--schema',
-      'public',
-      '--file',
-      tempFile.path,
-    ]);
+    if (!linkedOnly) {
+      final dbUrl = Platform.environment['SUPABASE_DB_URL']?.trim();
+      if (dbUrl != null && dbUrl.isNotEmpty) {
+        attempts.add([
+          'db',
+          'dump',
+          '--db-url',
+          dbUrl,
+          '--schema',
+          'public',
+          '--file',
+          tempFile.path,
+        ]);
+      }
+    }
 
     for (final args in attempts) {
       final result = await Process.run('supabase', args, runInShell: true);
@@ -284,6 +289,28 @@ Future<String?> _dumpSupabasePublicSchema() async {
         return tempFile.readAsStringSync();
       }
     }
+
+    if (!linkedOnly) {
+      // Backward-compatible fallback for older local setups.
+      final fallback = [
+        'db',
+        'dump',
+        '--linked',
+        '--schema',
+        'public',
+        '--file',
+        tempFile.path,
+      ];
+      final result = await Process.run(
+        'supabase',
+        fallback,
+        runInShell: true,
+      );
+      if (result.exitCode == 0 && tempFile.existsSync()) {
+        return tempFile.readAsStringSync();
+      }
+    }
+
     return null;
   } finally {
     if (tempFile.existsSync()) {

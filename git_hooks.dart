@@ -34,6 +34,11 @@ Future<bool> prePush() async {
     return false;
   }
 
+  if (!await _runSchemaParityCheck()) {
+    _printFailure();
+    return false;
+  }
+
   if (!await _runAnalyze()) {
     _printFailure();
     return false;
@@ -144,6 +149,31 @@ Future<bool> _runAnalyze() async {
     return result.exitCode == 0;
   } catch (e) {
     print('   Could not run analyzer: $e');
+    return false;
+  }
+}
+
+Future<bool> _runSchemaParityCheck() async {
+  print('Running Supabase linked-remote schema parity check...');
+
+  try {
+    final result = await Process.run(
+      'dart',
+      [
+        'run',
+        'tool/validate_supabase_schema_alignment.dart',
+        '--require-db',
+        '--linked-only',
+      ],
+      runInShell: true,
+    );
+
+    stdout.write(result.stdout);
+    stderr.write(result.stderr);
+
+    return result.exitCode == 0;
+  } catch (e) {
+    print('   Could not run schema parity check: $e');
     return false;
   }
 }
